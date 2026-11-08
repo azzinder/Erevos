@@ -242,6 +242,10 @@ type Message = {
    *  say it tells none, and wants none of it kept. Absent says nothing of it: an Erevos before, hidden
    *  chats, a chat that appears offline, or a time not known since the app started. */
   ls?: number;
+  /** When the sender sealed this one (ms, its clock), in one with a tag: so a message that waited
+   *  on a relay, as for a device or hidden chats that were closed, shows the time it was sent, not
+   *  the time it came (lib/later.ts cameAt). An Erevos before says none, and it shows when it came. */
+  st?: number;
 };
 
 /** What else a message can carry. */
@@ -304,7 +308,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -343,6 +347,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(hi ? { hi } : {}),
       ...(ns !== undefined ? { ns } : {}),
       ...(fa ? { fa } : {}),
+      ...(tag && st ? { st } : {}),
       ...more,
     }),
   );
@@ -469,6 +474,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(isHi(value.hi) ? { hi: value.hi } : {}),
       ...(isTime(value.ls) ? { ls: value.ls } : {}),
       ...(isTime(value.fa) && value.fa > 0 ? { fa: value.fa } : {}),
+      ...(isTime(value.st) && value.st > 0 ? { st: value.st } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -547,6 +553,8 @@ export type Received =
       quiet: boolean;
       // When one sent for later should show (milliseconds), or 0.
       due: number;
+      // When the sender sealed it (milliseconds, its clock), or 0 when it said none (lib/later.ts cameAt).
+      sent: number;
       // The tag of the message this one answers, or ''.
       re: string;
       // Their reaction to one of the chat's messages.
@@ -2434,6 +2442,8 @@ export class E2E {
         read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
         ...(leaving ? {} : this.saysDevices(contact)),
         ...this.saysSeen(contact),
+        // When it is sealed, or, written on a linked device, when the device sealed it for the phone.
+        ...(message.tag ? { st: message.st && message.st <= now ? message.st : now } : {}),
       };
     });
     // A linked device's chats restored from its backup have no conversation to write in (lib/devices.ts, copied).
@@ -3528,11 +3538,12 @@ export class E2E {
     const online = this.heard(identity, message);
     const quiet = message.quiet === true;
     const due = message.due ?? 0;
+    const sent = message.st ?? 0;
     const re = message.re ?? '';
     const react = message.react ?? null;
     const more = message.more ?? {};
     const seen = message.ls !== undefined && !!this.seenWay;
-    return { kind: 'message', identity, text, tag, added, request, erase, got, read, voice, file, online, ask, seen, call, group, quiet, due, re, react, more, from, twice, ...timing };
+    return { kind: 'message', identity, text, tag, added, request, erase, got, read, voice, file, online, ask, seen, call, group, quiet, due, sent, re, react, more, from, twice, ...timing };
   }
 
   // A contact's newer prekeys (`ak`), given in their conversation: kept, and a new conversation

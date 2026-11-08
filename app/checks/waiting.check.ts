@@ -20,7 +20,7 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
 import { createQueue, fromHex, receiveMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
-import { canPick, firstLater, LATEST, laterTheirs, quickTimes, showsAt, stepLater } from '../lib/later';
+import { cameAt, canPick, firstLater, LATEST, laterTheirs, quickTimes, SENT_WITHIN, showsAt, stepLater } from '../lib/later';
 import { nextDue, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
 import { WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
@@ -252,6 +252,19 @@ test('one that comes well before its time shows then; one sent for later goes at
   assert.equal(canPick(now - 1, now), false);
   assert.equal(canPick(now + LATEST, now), true);
   assert.equal(canPick(now + LATEST + 60_000, now), false);
+});
+
+test('one that waited on a relay shows when it was sent, unless that time cannot be', () => {
+  const now = Date.now();
+  // From an Erevos before: when it came.
+  assert.equal(cameAt(0, 0, now), now);
+  // Two hours on the relay while the device or the hidden chats were closed.
+  assert.equal(cameAt(0, now - 2 * 3600_000, now), now - 2 * 3600_000);
+  // A sender's clock ahead of this one, or a time older than any relay holds: when it came.
+  assert.equal(cameAt(0, now + 60_000, now), now);
+  assert.equal(cameAt(0, now - SENT_WITHIN - 1, now), now);
+  // One sent for later that came early still shows at its time.
+  assert.equal(cameAt(now + 3600_000, now - 1000, now), now + 3600_000);
 });
 
 test('a contact\'s messages that wait for their time are the ones whose notice waits too', () => {

@@ -39,7 +39,7 @@ import {
 } from './relay';
 import { answerInvites, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
-import { showsAt } from './later';
+import { cameAt } from './later';
 import { linkOf, spaceMover, tookOf, type Took } from './queue-move';
 import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
@@ -690,8 +690,9 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   const peer = `${CONTACT_PREFIX}${received.identity}`;
   const { identity, tag, timer } = received;
   const at = Date.now();
-  // One sent for later that a relay sent too soon shows at its time (lib/later.ts).
-  const shows = showsAt(received.due, at);
+  // One sent for later that a relay sent too soon shows at its time, and one that waited on a relay
+  // shows when it was sent (lib/later.ts).
+  const shows = cameAt(received.due, received.sent, at);
   const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
   // Their phone says it is open, or when it last was: the home screen shows it.
   let changed = received.added || received.timerChanged || received.online > 0 || received.seen;

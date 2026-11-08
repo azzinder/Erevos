@@ -20,6 +20,11 @@ On main, not released yet:
 
 ### Under the hood
 
+- **The time of a message that waited**: each message now says, inside its encryption, when its sender sealed it
+  (`st`), and a message that waited on the relay, as for a linked computer or for hidden chats that were closed,
+  shows at that time instead of when it came, unless that time is ahead of this clock or more than 30 days back
+  (lib/later.ts `cameAt`). The phone's own messages copied to a device do the same. Reported by the maintainer.
+
 ## 7.0.0-rc.2 (2026-11-07)
 
 ### For you

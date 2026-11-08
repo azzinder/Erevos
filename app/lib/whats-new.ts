@@ -24,7 +24,9 @@ export const NEXT: Changes = {
   forYou: [
     mark("**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone)."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

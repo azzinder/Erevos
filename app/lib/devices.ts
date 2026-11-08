@@ -150,6 +150,7 @@ import type { ChunkWay } from './sync/chunks';
 import { ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from './sync/lan-chunks';
 import { CollectionSync } from './collection-links';
 import { laterChanges, laterFrom, laterGone, type Scheduled } from './sync/later';
+import { cameAt } from './later';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -443,6 +444,7 @@ function offerOf(ref: FileRef): FileOffer | null {
 }
 
 const fromOf = (offer: FileOffer): FileFrom => ({ relay: offer.relay, ids: offer.ids, ...(offer.via ? { via: offer.via, ...(offer.url ? { url: offer.url } : {}), ...(offer.x ? { x: offer.x } : {}) } : {}) });
+const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isTimed = (field: string): field is (typeof TIMED)[number] => (TIMED as readonly string[]).includes(field);
 const contactsOf = (contacts: ((c: Contact[]) => Contact[]) | null) => (contacts ? { contacts } : {});
 const removedOf = (removed: Record<string, number>) => ({ removed: Object.keys(removed).length > 0 ? removed : undefined });
@@ -3413,7 +3415,8 @@ export class Links implements Link, TakenFiles {
       peer,
       text: isText(m.text) ? m.text : '',
       mine: true,
-      at: Date.now(),
+      // When the device sealed it, as it may have waited on the relay for this phone.
+      at: cameAt(0, isTime(m.st) ? m.st : 0),
       tag,
       lasts: mark === WAITING ? lasts : lasts || timer,
       mark,
@@ -4318,7 +4321,8 @@ export class Links implements Link, TakenFiles {
         // With what it answers, and what it is beyond words (lib/chat-parts.ts): a sticker, a place, a poll, a payment request, a preview.
         const { sticker, place, poll, preview, forwarded, pay } = carriedOf(m);
         const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
-        const base: Message = { peer, text: '', mine: true, at: now, tag, lasts, mark: mark ?? 0, ...parts };
+        // At when the phone sealed it, as a place closed here takes it only as it opens.
+        const base: Message = { peer, text: '', mine: true, at: cameAt(0, isTime(m.st) ? m.st : 0, now), tag, lasts, mark: mark ?? 0, ...parts };
         const voice = voiceOf(m.voice);
         const offer = isObject(m.file) ? readOffer(m.file) : null;
         if (isText(m.text) && m.text) await history.add({ ...base, text: m.text });

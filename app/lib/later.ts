@@ -25,6 +25,21 @@ export function showsAt(due: number, now = Date.now()): number {
   return due >= now + EARLY && due <= now + LATEST + 30 * DAY ? due : now;
 }
 
+/** How long ago a sender may say it sent a message that comes now: what a relay holds goes in 14 days. */
+export const SENT_WITHIN = 30 * DAY;
+
+/**
+ * When a contact's message that comes now shows in the chat: at its time when sent for later
+ * (`showsAt`), or else when its sender sealed it (lib/e2e.ts, `st`), as one that waited on a relay
+ * while this device or these hidden chats were closed came long after it was sent. A time not
+ * said, ahead of this clock, or older than SENT_WITHIN shows as now.
+ */
+export function cameAt(due: number, sent: number, now = Date.now()): number {
+  const later = showsAt(due, now);
+  if (later !== now) return later;
+  return sent > 0 && sent <= now && sent >= now - SENT_WITHIN ? sent : now;
+}
+
 /** The contacts' messages that came before their time and wait for it still, not gone meanwhile. */
 export function laterTheirs<M extends { peer: string; mine: boolean; at: number; until?: number }>(messages: M[], now = Date.now()): M[] {
   return messages.filter((m) => m.peer.startsWith('contact:') && !m.mine && m.at > now && (!m.until || m.until > now));

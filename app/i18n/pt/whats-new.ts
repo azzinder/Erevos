@@ -14,6 +14,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
     "**Mudar para um celular novo**: um novo capítulo do guia leva você passo a passo do celular antigo para o novo com um só backup: o que preparar, o que vai junto, o que configurar de novo, e apagar o antigo no fim. Veja [Mudar para um celular novo](#new-phone).",
+  "**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came.":
+    "**A hora de uma mensagem que esperou**: uma mensagem que esperou no relay, como para um computador ou para conversas ocultas fechadas, mostra agora quando foi enviada, não quando chegou. De um Erevos anterior a esta versão continua a mostrar quando chegou.",
   // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Encontre estações pelo nome**: Adicionar uma estação na aba Rádio da Coleção busca no Radio Browser, um diretório livre, que recebe só as palavras que você digita quando aperta Buscar. Veja [Coleção](#collection).",

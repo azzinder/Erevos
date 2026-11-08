@@ -84,7 +84,7 @@ import { chatLines, isSmsLine, plainSmsHref, smsFailed, smsFindables, smsLineId,
 import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
 import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
-import { canPick, laterLabel, showsAt } from '../lib/later';
+import { cameAt, canPick, laterLabel, showsAt } from '../lib/later';
 import { inTurn, SAFETY_HOURS, safetyDue, stopSafety } from '../lib/safety';
 import { ask, choose } from '../lib/alert';
 import { fasouliPaidLink, payAmount, takePay, type Pay } from '../lib/pay';
@@ -2327,6 +2327,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // Erevos in the background: the notice says one more came (lib/background.ts), at its time
     // for one sent for later that a relay sent too soon (lib/later.ts), and so it shows.
     const shows = showsAt(received.due);
+    // In the chat, one that waited on a relay is put at when it was sent (lib/later.ts cameAt).
+    const placed = cameAt(received.due, received.sent);
     // One that came already, from their account and again from one of their endpoints, or through
     // the phone and again directly, is shown once (docs/multi-device.md); so is a part of a voice
     // message that came already, as it goes again whole after only some of it went.
@@ -2367,7 +2369,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           .then((voice) => {
             // Its other copy, whole meanwhile.
             if (tag && history.current?.has(peer, tag)) return deleteClip(voice.id);
-            addMessage(peer, '', false, tag, timer, voice, undefined, 0, shows, parts);
+            addMessage(peer, '', false, tag, timer, voice, undefined, 0, placed, parts);
             if (tag) receipt(peer, 'got', [tag]);
           })
           .catch((error) => setNote(t('A voice message came but could not be kept. {error}', { error: errorText(error) })));
@@ -2375,11 +2377,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     if (received.file && !twice) {
       // Taken from the relay by the effect that watches for files waiting.
-      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, shows, parts);
+      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, placed, parts);
       receipt(peer, 'got', [tag]);
     }
     if (received.text && !twice) {
-      addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, shows, parts);
+      addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, placed, parts);
       if (received.tag) receipt(peer, 'got', [received.tag]);
     }
     // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
