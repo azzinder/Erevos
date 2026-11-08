@@ -24,6 +24,8 @@ On main, not released yet:
   4 KB or more, kept only if it hashes as the JavaScript one does: in JavaScript it hashed a megabyte or two a second on
   a phone, and each 4 MB part of an automatic backup is hashed. The stamps of the files a backup holds are read 200 at a
   time, the screen answering between.
+- **Matrix photos and files hashed natively**: the SHA-256 that an encrypted Matrix file is checked against, when it
+  is sent and when it is opened, is the native one too (lib/matrix-media.ts), so a large one no longer holds the screen.
 
 ## 7.0.0-rc.3 (2026-11-08)
 

@@ -3,9 +3,8 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { ctr } from '@noble/ciphers/aes.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 
-import { fromBase64, randomBytes, toBase64 } from './crypto';
+import { fromBase64, randomBytes, sha256Bytes, toBase64 } from './crypto';
 import { t } from './i18n';
 import { request, sendContent, type EncryptedFile, type MatrixFile, type MatrixMessage, type MatrixState } from './matrix';
 
@@ -42,7 +41,7 @@ export function encryptFile(bytes: Uint8Array): { data: Uint8Array; file: Omit<E
     file: {
       key: { kty: 'oct', key_ops: ['encrypt', 'decrypt'], alg: 'A256CTR', k: urlSafe(key), ext: true },
       iv: unpadded(iv),
-      hashes: { sha256: unpadded(sha256(data)) },
+      hashes: { sha256: unpadded(sha256Bytes(data)) },
       v: 'v2',
     },
   };
@@ -57,7 +56,7 @@ export class ChangedFileError extends Error {
 /** The bytes of an encrypted file, once its SHA-256 matches. */
 export function decryptFile(data: Uint8Array, file: Omit<EncryptedFile, 'url'>): Uint8Array {
   const hash = fromAnyBase64(file.hashes.sha256);
-  const actual = sha256(data);
+  const actual = sha256Bytes(data);
   if (hash.length !== actual.length || hash.some((b, i) => b !== actual[i])) throw new ChangedFileError();
   return ctr(fromAnyBase64(file.key.k), fromAnyBase64(file.iv)).decrypt(data);
 }
