@@ -2202,6 +2202,32 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
   zapečaćeni njegovom lozinkom. Same SMS poruke ostaju u SMS porukama telefona: drugi prostor ih vidi onakve kakve
   jesu, a razgovor koji je ovdje u otpadu tamo se prikazuje dok se ne obriše s telefona.
 
+### Na vašim povezanim uređajima
+
+SMS poruke telefona mogu se prikazati i na [povezanim uređajima](#devices) ovog prostora: računaru, pregledniku,
+tabletu. Tamo ih čitate i odgovarate, a telefon šalje odgovor kao SMS. Isključeno je dok ne uključite, na telefonu:
+**Postavke** → **Telefon i SMS** → **SMS** → **I na mojim povezanim uređajima** → **Šalji moje SMS poruke i na moje
+uređaje**.
+
+- **Šta ide:** posljednjih 50 razgovora s popisa i iz **Arhivirano**, svaki sa posljednjih 50 poruka, end-to-end
+  šifrirano kao sve što uređaji dijele. Starije, one u **Otpad** i u **Spam**, te fotografije ostaju na telefonu:
+  poruka s fotografijom kaže **📷 Fotografija, na telefonu**. Imena idu samo dok ih telefon prikazuje (**Imena iz
+  vaših kontakata**).
+- **Odgovaranje:** ono što napišete na uređaju prikazuje se kao slanje dok ga telefon ne pošalje, s SIM kartice koju
+  koristi za taj broj, a zatim je među porukama samog telefona. Ona koju telefon nije mogao poslati to kaže: dodirnite
+  je da je ponovo pošaljete. Telefon šalje svaku samo jednom, i najviše 60 na sat s uređaja, da izgubljen uređaj ne
+  bi mogao poslati poplavu SMS poruka; ona koja je čekala više od jednog dana ne odlazi.
+- **Pročitano:** razgovor pročitan na uređaju označen je kao pročitan i na telefonu.
+- **Obavijesti:** nova SMS poruka daje obavijest i na uređaju, kako kažu njegove postavke obavijesti.
+- **Preko telefona:** SMS poruke dolaze i odlaze samo dok je ovaj prostor otvoren na telefonu, kao sve što ide preko
+  telefona. Na uređaju su ekrani telefonski, bez onoga što radi samo telefon: brisanje, blokiranje, slanje kasnije,
+  fotografije i pozivnice.
+- **Svaki prostor svoje:** prekidač pripada prostoru. Mjesto skrivenih razgovora nikad ne šalje SMS poruke na uređaje.
+- **Isključivanje:** **Zaustavi SMS poruke na mojim uređajima**, na telefonu, skida ih sa svih uređaja.
+
+**Zašto:** samo telefon ima SIM karticu, pa samo telefon šalje i prima SMS poruke. Uređaji ih vide preko telefona,
+end-to-end šifrirano kao ostalo, a telefonski operater ne vidi ništa više nego prije.
+
 ## Telefon {#phone}
 
 Na Androidu Erevos može biti aplikacija za telefon: pod **Telefon** u meniju dodirnite **Postavke** → **Postavi Erevos
@@ -3392,6 +3418,8 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   način, iz svojih vlastitih **Povezani uređaji**, na isto mjesto na računaru: nikad one prostora, a oni prostora
   nikad ne idu njemu. Svaki uređaj se prijavljuje kao on sam, nikad s kopijom ključeva telefona, koja bi se tada
   koristila dvaput i pokvarila šifriranje; tako se svaki može odjaviti sam, s uređaja računa.
+- **SMS**: SMS poruke telefona mogu se prikazati i na uređajima, i odgovara im se tamo preko telefona, kad se uključi
+  pod **Postavke** → **Telefon i SMS** → **SMS** → **I na mojim povezanim uređajima**, vidi [SMS](#sms).
 - **Odvoji**, na telefonu, odmah isključuje uređaj: ništa mu više ne ide, i ništa što pošalje ne prima se. Kontaktima
   s ovom verzijom to se javlja sljedeći put kad telefon dođe do relaya: prestaju mu pisati i više ništa od njega ne
   primaju. Tako se isključuje izgubljeni računar. Ako je uključen, to mu se javlja, a razgovori naloga ga napuštaju. Na

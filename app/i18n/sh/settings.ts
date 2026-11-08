@@ -392,4 +392,15 @@ export const settings: Record<string, string> = {
   'Letters': 'Font',
   'Serif letters have small strokes at their ends, as in books; in monospace every letter is as wide, as on a typewriter.': 'Serifna slova imaju male crtice na krajevima, kao u knjigama; kod jednake širine svako slovo je jednako široko, kao na pisaćoj mašini.',
   'Text size': 'Veličina teksta',
+  "These are your phone's SMS. They come here through the phone, and what you write here goes from the phone as soon as it gets it. Older SMS and photos stay on the phone. To stop them, turn off On my linked devices too on the phone, under Settings → SMS.":
+    'Ovo su SMS poruke vašeg telefona. Ovdje stižu preko telefona, a ono što ovdje napišete odlazi s telefona čim ga primi. Starije SMS poruke i fotografije ostaju na telefonu. Da ih zaustavite, isključite i I na mojim povezanim uređajima na telefonu, pod Postavke → SMS.',
+  "Your SMS go to this space's linked devices too: a computer, a browser, a tablet. There you read them and answer, and the answer goes from this phone as soon as it gets it, while this space is open here. The latest 50 conversations go, each with its latest 50 messages, end-to-end encrypted like all the devices share; older ones and photos stay on this phone, and so do those in the Trash and in Spam. Off unless you turn it on.":
+    'Vaše SMS poruke idu i na povezane uređaje ovog prostora: računar, preglednik, tablet. Tamo ih čitate i odgovarate, a odgovor odlazi s ovog telefona čim ga primi, dok je ovaj prostor otvoren ovdje. Idu posljednjih 50 razgovora, svaki sa posljednjih 50 poruka, end-to-end šifrirano kao sve što uređaji dijele; starije i fotografije ostaju na ovom telefonu, kao i one u otpadu i u spamu. Isključeno dok ne uključite.',
+  'Stop the SMS on my devices': 'Zaustavi SMS poruke na mojim uređajima',
+  'Send my SMS to my devices too': 'Šalji moje SMS poruke i na moje uređaje',
+  'The SMS go through your phone, and they no longer come to this device.':
+    'SMS poruke idu preko vašeg telefona i više ne stižu na ovaj uređaj.',
+  'Your SMS on your computer, answered through this phone':
+    'Vaše SMS poruke na računaru, s odgovorom preko ovog telefona',
+  'A photo, on the phone': 'Fotografija, na telefonu',
 };

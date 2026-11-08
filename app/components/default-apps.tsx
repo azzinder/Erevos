@@ -9,7 +9,7 @@ import { AppState, Linking, Platform } from 'react-native';
 import { t } from '../lib/i18n';
 import type { Module } from '../lib/modules';
 import { phoneStatus, requestDefaultPhone } from '../modules/erevos-phone';
-import { requestDefaultSms, smsStatus } from '../modules/erevos-sms';
+import { requestDefaultSms, smsMirrored, smsStatus } from '../modules/erevos-sms';
 import { useColors } from '../theme/context';
 
 import { Button, Card, Row, Text } from './ui';
@@ -39,7 +39,8 @@ export function DefaultAppCards({ modules }: { modules: readonly Module[] }) {
 
   if (Platform.OS !== 'android') return null;
   const phone = modules.includes('phone') && phoneStatus() !== null;
-  const sms = modules.includes('sms') && smsStatus() !== null;
+  // On a linked device given the phone's SMS, the phone's SMS app is the phone's own.
+  const sms = modules.includes('sms') && smsStatus() !== null && !smsMirrored();
   if (!phone && !sms) return null;
   return (
     <>

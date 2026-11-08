@@ -20,6 +20,15 @@ On main, not released yet:
 
 ### For you
 
+- **Your SMS on your linked devices**: with **On my linked devices too** turned on under Settings → Phone and SMS →
+  SMS on the phone (off unless turned on; each space its own), the phone's SMS show on the space's linked devices too:
+  the latest 50 conversations of the list and Archived, each with its latest 50 messages, their names only as the phone
+  shows them, never those in the Trash or Spam, never a hidden place's. They show there as on the phone, in the home
+  screen, the SMS screen and a contact's chat, with notices as a chat on another network has. An answer written there
+  shows as sending until the phone sent it, once only, on the SIM it uses for that number (a group's as one MMS), and
+  then is among the phone's own; one the phone could not send says so, and is sent again with a tap. A conversation
+  read there is marked read on the phone. Photos, deleting, blocking, sending later and invites stay on the phone.
+  Requested by the maintainer.
 - **TV in the Collection**: a new **TV** tab, beside Radio, keeps TV channels sealed in the Collection's catalogue,
   each by its https link with its group and logo: from an IPTV list (.m3u) by its link, read once, or from a file on
   the device, read there; from iptv-org's public list of free channels, by country (the device's region first) or
@@ -95,6 +104,14 @@ On main, not released yet:
 
 ### Under the hood
 
+- **The phone's SMS in the space's log** (docs/sync.md, phase S8; lib/sync/sms.ts): a kind only the phone writes,
+  `sms`, a record for each conversation and message, whole in one field and written again only when it changed, the
+  phone reading a conversation again only when it changed or every 10 minutes (lib/sms-share.ts). Devices write
+  `sms-ask` (an SMS to send, 16 random hex as its id) and `sms-read`. The phone keeps in the space's sealed SMS data
+  what it took of each ask before sending it, so none goes twice, even if Erevos stops on the way, and sends at most
+  60 an hour from the devices; asks older than a day are refused, those not sent are removed after a week. On a
+  device the SMS module (modules/erevos-sms) reads the phone's in place of its own (lib/sms-mirror.ts), so the screens
+  are those of the phone, without the tools only the phone has. Requested by the maintainer.
 - **Groups after a restore**: a member put back from a backup asks its admin, once, to put it in anew in each group,
   which brings it back while the group moved on fewer than 5 key changes; an admin asks nothing, as its own commit
   from an old key change would only fork the group (lib/groups.ts `renewAgain`). Requested by the maintainer.

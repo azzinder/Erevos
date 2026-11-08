@@ -62,6 +62,8 @@ import { forgetSigns } from '../lib/unread-signs';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { startLinkedAccounts } from '../lib/linked-accounts';
+// Gives the phone's SMS to the space's linked devices, once turned on (lib/sms-share.ts sets its hand in lib/devices.ts).
+import '../lib/sms-share';
 import { startChunkChannel } from '../lib/chunk-channel';
 import { followModuleIcons } from '../lib/module-icons';
 import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules, type Module } from '../lib/modules';

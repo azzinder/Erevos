@@ -392,4 +392,15 @@ export const settings: Record<string, string> = {
   'Letters': 'Schrift',
   'Serif letters have small strokes at their ends, as in books; in monospace every letter is as wide, as on a typewriter.': 'Serifenschrift hat kleine Striche an den Enden der Buchstaben, wie in Büchern; bei fester Breite ist jeder Buchstabe gleich breit, wie bei einer Schreibmaschine.',
   'Text size': 'Textgröße',
+  "These are your phone's SMS. They come here through the phone, and what you write here goes from the phone as soon as it gets it. Older SMS and photos stay on the phone. To stop them, turn off On my linked devices too on the phone, under Settings → SMS.":
+    'Das sind die SMS deines Telefons. Sie kommen über das Telefon hierher, und was du hier schreibst, geht vom Telefon, sobald es es bekommt. Ältere SMS und Fotos bleiben auf dem Telefon. Um das zu beenden, schalte auf dem Telefon „Auch auf meinen verknüpften Geräten“ aus, unter Einstellungen → SMS.',
+  "Your SMS go to this space's linked devices too: a computer, a browser, a tablet. There you read them and answer, and the answer goes from this phone as soon as it gets it, while this space is open here. The latest 50 conversations go, each with its latest 50 messages, end-to-end encrypted like all the devices share; older ones and photos stay on this phone, and so do those in the Trash and in Spam. Off unless you turn it on.":
+    'Deine SMS gehen auch an die verknüpften Geräte dieses Bereichs: einen Computer, einen Browser, ein Tablet. Dort liest du sie und antwortest, und die Antwort geht von diesem Telefon, sobald es sie bekommt, solange dieser Bereich hier geöffnet ist. Die letzten 50 Unterhaltungen gehen, jede mit ihren letzten 50 Nachrichten, Ende-zu-Ende-verschlüsselt wie alles, was die Geräte teilen; ältere und Fotos bleiben auf diesem Telefon, ebenso die im Papierkorb und im Spam. Aus, bis du es einschaltest.',
+  'Stop the SMS on my devices': 'SMS auf meinen Geräten beenden',
+  'Send my SMS to my devices too': 'Meine SMS auch an meine Geräte senden',
+  'The SMS go through your phone, and they no longer come to this device.':
+    'Die SMS gehen über dein Telefon und kommen nicht mehr auf dieses Gerät.',
+  'Your SMS on your computer, answered through this phone':
+    'Deine SMS auf dem Computer, beantwortet über dieses Telefon',
+  'A photo, on the phone': 'Ein Foto, auf dem Telefon',
 };

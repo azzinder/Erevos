@@ -52,6 +52,9 @@ export type Trashed = { address: string; upTo: number; at: number };
 export type SmsDraft = { address: string; text: string; at: number };
 /** A number the owner said sends spam, or does not. */
 export type SpamMark = { number: string; spam: boolean; at: number };
+/** An SMS a linked device asked this phone to send (lib/sms-share.ts), by its id in the log: taken
+ *  (`sending`), and what came of it, so none goes twice. */
+export type DeviceAsk = { id: string; at: number; done: 'sending' | 'sent' | 'failed' };
 
 export type SmsData = {
   /** Send an invite with the first SMS to a number with no contact. */
@@ -96,6 +99,11 @@ export type SmsData = {
   smsWay: boolean;
   /** The contacts (identity, hex) whose messages go so, whatever `smsWay` says. */
   smsWayFor: string[];
+  /** The phone's SMS go to the space's linked devices too (docs/sync.md, S8), which can answer
+   *  through it. Off unless turned on. */
+  devices: boolean;
+  /** What the devices asked to send, those taken in the last DEVICE_ASKS_KEPT. */
+  fromDevices: DeviceAsk[];
 };
 
 export const EMPTY_SMS: SmsData = {
@@ -123,6 +131,8 @@ export const EMPTY_SMS: SmsData = {
   undo: 5,
   smsWay: false,
   smsWayFor: [],
+  devices: false,
+  fromDevices: [],
 };
 
 /** The rest of the space's SMS data. Backups hold it too, from the version that holds photos and
@@ -152,6 +162,10 @@ export const TRASH_DAYS = 30;
 export const UNDO_SECONDS = [0, 5, 10];
 /** The contacts SMS can be on for one by one, at most. */
 export const MAX_SMS_WAY = 500;
+/** What the devices asked to send is kept this long, and this much of it at most: longer than an ask
+ *  waits to be sent (lib/sync/sms.ts ASK_LASTS). */
+export const DEVICE_ASKS_KEPT = 7 * 24 * 3600 * 1000;
+const MAX_DEVICE_ASKS = 500;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
@@ -213,6 +227,12 @@ function checked(value: unknown): SmsData {
     undo: UNDO_SECONDS.includes(v.undo as number) ? (v.undo as number) : EMPTY_SMS.undo,
     smsWay: v.smsWay === true,
     smsWayFor: [...new Set((Array.isArray(v.smsWayFor) ? v.smsWayFor : []).filter((id): id is string => isText(id) && /^[0-9a-f]{2,128}$/.test(id)))].slice(-MAX_SMS_WAY),
+    devices: v.devices === true,
+    fromDevices: list(
+      v.fromDevices,
+      (a) => (isText(a.id) && /^[0-9a-f]{16}$/.test(a.id) && isTime(a.at) && (a.done === 'sending' || a.done === 'sent' || a.done === 'failed') ? { id: a.id, at: a.at, done: a.done } : null),
+      MAX_DEVICE_ASKS,
+    ),
   };
 }
 

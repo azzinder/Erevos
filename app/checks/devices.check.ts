@@ -52,7 +52,7 @@ import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, dropFile, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { addToCollection, deleteItems, loadCollection, setCollectionOption } from '../lock/collection-data';
 import { bodyOf, nextList, readPass, signList, signPass, verifyList, type Body } from '../lib/device-list';
-import { GroupsHeldError, handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
+import { GroupsHeldError, handAccounts, handChunks, handSms, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -119,6 +119,8 @@ import { nearby } from '../lib/nearby';
 import { contactsIn } from '../lib/sync/contacts';
 import { valueOf as syncValueOf, whole as syncWhole, type Json as SyncJson } from '../lib/sync/log';
 import { onSettingCame } from '../lib/sync/settings';
+import type { SharedSms, SharedSmsAll, SmsAsk } from '../lib/sync/sms';
+import { contactCards, markSmsRead, sendSms, smsMessages, smsMirrored, smsThreads } from '../modules/erevos-sms';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
 import { store as secureStore } from './secure-memory';
@@ -807,6 +809,105 @@ test('the space\'s Matrix, XMPP and Nostr accounts go to every device linked, ar
     assert.deepEqual([kept.given, kept.brought], [undefined, undefined]);
   } finally {
     handAccounts(null);
+  }
+});
+
+test("the phone's SMS on the computer: shown there with their names, read there and on the phone, answered once through the phone, and gone once turned off", { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { phone, take, linkUp } = await setup();
+  const now = Date.now();
+  const sms = (row: number, text: string, at: number, more: Partial<SharedSms> = {}): SharedSms => ({ kind: 'sms', row, text, at, mine: false, state: 'done', read: false, ...more });
+  // The phone's SMS as lib/sms-share.ts gives them: what it sends goes among them, what is read is read.
+  let shared: SharedSmsAll | null = {
+    names: true,
+    conversations: [
+      { thread: 7, address: '+306900000001', at: now - 1000, unread: 2, name: 'Anna', messages: [sms(1, 'hello', now - 3000), sms(2, 'are you there?', now - 1000)] },
+      { thread: 8, address: '+306900000002,+306900000003', at: now - 5000, unread: 0, name: 'Bob, +306900000003', names: { '+306900000002': 'Bob' }, messages: [sms(3, '', now - 5000, { kind: 'mms', read: true, from: '+306900000002', pictures: 1 })] },
+    ],
+  };
+  const sent: SmsAsk[] = [];
+  const read: string[] = [];
+  handSms({
+    shared: async () => (shared ? structuredClone(shared) : null),
+    send: async (_space, _key, ask) => {
+      sent.push(ask);
+      const c = shared!.conversations.find((x) => x.address === ask.address)!;
+      c.messages.push(sms(10 + sent.length, ask.text, Date.now(), { mine: true, state: 'sent', read: true }));
+      c.at = Date.now();
+      return 'sent';
+    },
+    read: async (address) => {
+      read.push(address);
+      const c = shared!.conversations.find((x) => x.address === address)!;
+      c.unread = 0;
+      for (const m of c.messages) m.read = true;
+    },
+    watch: () => () => undefined,
+  });
+  try {
+    const pixel = await phone(0);
+    const dell = await phone(1);
+    await linkUp(pixel, dell, { since: null, files: false });
+    const share = () => (pixel.links as unknown as { smsShare(): Promise<void> }).smsShare();
+    // From the phone to the computer, and back.
+    const toDell = async () => {
+      await share();
+      await pixel.links.settled();
+      await take(dell);
+      await dell.links.smsSettled();
+    };
+    const toPixel = async () => {
+      await dell.links.settled();
+      await take(pixel);
+      await share();
+      await pixel.links.settled();
+    };
+    assert.equal(smsMirrored(), false);
+    await toDell();
+    assert.equal(smsMirrored(), true);
+    const threads = await smsThreads();
+    assert.deepEqual(
+      threads.map((t) => [t.thread, t.address, t.unread]),
+      [
+        [7, '+306900000001', 2],
+        [8, '+306900000002,+306900000003', 0],
+      ],
+    );
+    assert.equal(threads[0].text, 'are you there?');
+    // Pictures stay on the phone: the message says so.
+    assert.ok(threads[1].text.startsWith('📷'));
+    assert.deepEqual((await smsMessages('+306900000001')).map((m) => m.text), ['hello', 'are you there?']);
+    assert.deepEqual(await contactCards(['+306900000001', '+306900000002', '+306900000003']), { '+306900000001': { name: 'Anna', photo: '' }, '+306900000002': { name: 'Bob', photo: '' } });
+
+    // Read on the computer: none unread there at once, and the phone marks it read too.
+    await markSmsRead('+306900000001');
+    assert.equal((await smsThreads()).find((t) => t.thread === 7)?.unread, 0);
+    await toPixel();
+    assert.deepEqual(read, ['+306900000001']);
+    await toDell();
+    assert.equal((await smsThreads()).find((t) => t.thread === 7)?.unread, 0);
+
+    // Answered on the computer: it waits for the phone, which sends it once, and then it is among the phone's.
+    const row = await sendSms('+306900000001', 'yes, here');
+    assert.ok(row < 0);
+    const waiting = await smsMessages('+306900000001');
+    assert.deepEqual([waiting[waiting.length - 1].text, waiting[waiting.length - 1].state], ['yes, here', 'sending']);
+    await toPixel();
+    assert.deepEqual(sent.map((a) => [a.address, a.text]), [['+306900000001', 'yes, here']]);
+    await toDell();
+    const after = await smsMessages('+306900000001');
+    assert.deepEqual(after.map((m) => [m.text, m.state]), [['hello', 'done'], ['are you there?', 'done'], ['yes, here', 'sent']]);
+    assert.ok(after.every((m) => m.id >= 0));
+    await toPixel();
+    assert.equal(sent.length, 1);
+
+    // Turned off on the phone: gone from the computer, and its SMS screens with them.
+    shared = null;
+    await toDell();
+    assert.equal(smsMirrored(), false);
+    assert.deepEqual(await smsThreads(), []);
+    await assert.rejects(sendSms('+306900000001', 'and now?'));
+  } finally {
+    handSms(null);
   }
 });
 

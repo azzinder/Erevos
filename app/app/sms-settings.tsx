@@ -14,9 +14,10 @@ import { mark, plural, t } from '../lib/i18n';
 import { guessHome, smsOrderChanged } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
+import { smsDevicesChanged } from '../lib/sms-share';
 import { currentSpace } from '../lock/keys';
 import { MAX_WORDS, UNDO_SECONDS, WORD, type SmsData } from '../lock/sms-data';
-import { requestDefaultSms, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
+import { requestDefaultSms, smsMirrored, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
@@ -49,6 +50,7 @@ const PARTS = {
   find: mark('Find Erevos on a number'),
   last: mark('SMS when nothing else works'),
   names: mark('Names from your contacts'),
+  devices: mark('On my linked devices too'),
   folders: mark('Archived, Spam and Trash'),
   spam: mark('Spam filter'),
   blocked: mark('Blocked numbers'),
@@ -87,6 +89,8 @@ export default function SmsSettings() {
   // SMS when nothing else works, for every contact with a number, and how many have it one by one.
   const [smsWay, setSmsWay] = useState<{ all: boolean; some: number }>({ all: false, some: 0 });
   const [names, setNames] = useState(false);
+  // The phone's SMS on the space's linked devices too (lib/sms-share.ts).
+  const [devices, setDevices] = useState(false);
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
   // The spam filter (lib/sms-folders.ts) and the seconds to take an SMS back, as the space keeps them.
@@ -105,6 +109,7 @@ export default function SmsSettings() {
         setInvites(opened.invites);
         setSmsWay({ all: opened.smsWay.all, some: opened.smsWay.some.length });
         setNames(opened.names);
+        setDevices(opened.devices);
         setSpam(spamOf(opened.state));
         setHome(opened.state.home);
         setUndo(opened.undo);
@@ -130,6 +135,18 @@ export default function SmsSettings() {
     const subscription = AppState.addEventListener('change', (state) => state === 'active' && look());
     return () => subscription.remove();
   }, []);
+
+  // On a linked device, the SMS are the phone's: what they are, and where they are turned off.
+  if (smsMirrored()) {
+    return (
+      <Page>
+        <Text variant="title">SMS</Text>
+        <Text tone="muted">
+          {t("These are your phone's SMS. They come here through the phone, and what you write here goes from the phone as soon as it gets it. Older SMS and photos stay on the phone. To stop them, turn off On my linked devices too on the phone, under Settings → SMS.")}
+        </Text>
+      </Page>
+    );
+  }
 
   if (Platform.OS !== 'android' || !smsReady()) {
     return (
@@ -201,6 +218,20 @@ export default function SmsSettings() {
     }
     await link.setNames(!names);
     setNames(!names);
+    smsDevicesChanged();
+  }
+
+  async function toggleDevices() {
+    if (!link) return;
+    setNote('');
+    const next = !devices;
+    try {
+      await link.setDevices(next);
+      setDevices(next);
+      smsDevicesChanged();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function changeSpam(change: (opened: SmsLink) => Promise<unknown>) {
@@ -368,6 +399,18 @@ export default function SmsSettings() {
             <Text variant="caption" tone="faint">
               {t('With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.')}
             </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('devices') ? (
+        <>
+          {part ? null : <SectionTitle title={t('On my linked devices too')} />}
+          <Card>
+            <Text tone="muted">
+              {t("Your SMS go to this space's linked devices too: a computer, a browser, a tablet. There you read them and answer, and the answer goes from this phone as soon as it gets it, while this space is open here. The latest 50 conversations go, each with its latest 50 messages, end-to-end encrypted like all the devices share; older ones and photos stay on this phone, and so do those in the Trash and in Spam. Off unless you turn it on.")}
+            </Text>
+            <Button title={devices ? t('Stop the SMS on my devices') : t('Send my SMS to my devices too')} kind="secondary" onPress={() => void toggleDevices()} />
           </Card>
         </>
       ) : null}

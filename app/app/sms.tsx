@@ -18,7 +18,7 @@ import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgai
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { showSmsOnScreen } from '../lib/background';
+import { showOnScreen, showSmsOnScreen } from '../lib/background';
 import { isContactNumber, sealedNamer } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -58,6 +58,7 @@ import {
   sendSmsData,
   smsMessages,
   smsSims,
+  smsMirrored,
   smsStatus,
   type Sim,
   type SmsMessage,
@@ -128,7 +129,8 @@ async function deliver(sms: Outgoing): Promise<void> {
     return;
   }
   delivered.forEach((listener) => listener(sms, null));
-  if (!sms.group) await invite(sms.to, sms.space).catch(() => undefined);
+  // On a linked device the phone sends it, with no invite: that is the phone's own to send.
+  if (!sms.group && !smsMirrored()) await invite(sms.to, sms.space).catch(() => undefined);
 }
 
 // With the first SMS to a number that is no contact: a hidden invite, answered through the relay
@@ -262,6 +264,8 @@ export default function Sms() {
 
   // On the screen, an SMS that comes in it only sounds (lib/background.ts).
   useFocusEffect(useCallback(() => (to ? showSmsOnScreen(numbers.length > 0 ? numbers : [to]) : undefined), [to]));
+  // On a linked device given the phone's SMS, what comes here only sounds, as in a chat on another network.
+  useFocusEffect(useCallback(() => (to && smsMirrored() ? showOnScreen(`sms:${to}`) : undefined), [to]));
 
   // Shown, and Erevos back on the screen: what came meanwhile is read.
   useFocusEffect(
@@ -455,7 +459,7 @@ export default function Sms() {
     setNote('');
     try {
       await maySendSms();
-      if (group && !mmsReady()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
+      if (group && !mmsReady() && !smsMirrored()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
       // A group's message goes to everyone as one MMS, even without a photo.
       const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text, photo, sim, group, space: currentSpace().space };
       setDraft('');
@@ -764,7 +768,7 @@ export default function Sms() {
             busy={sending}
             disabled={!draft.trim() && !photo}
             onPress={() => void send()}
-            onLongPress={!group && !photo && draft.trim() ? () => setLaterMenu(true) : undefined}
+            onLongPress={!group && !photo && draft.trim() && !smsMirrored() ? () => setLaterMenu(true) : undefined}
           />
         </View>
       ) : (
@@ -809,11 +813,13 @@ export default function Sms() {
                 <Text variant="bodyStrong">{t('Send again')}</Text>
               </Pressable>
             ) : null}
-            <Pressable accessibilityRole="button" onPress={() => deleteOne(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-              <Text variant="bodyStrong" color={colors.danger}>
-                {t('Delete')}
-              </Text>
-            </Pressable>
+            {smsMirrored() ? null : (
+              <Pressable accessibilityRole="button" onPress={() => deleteOne(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+                <Text variant="bodyStrong" color={colors.danger}>
+                  {t('Delete')}
+                </Text>
+              </Pressable>
+            )}
           </>
         ) : null}
       </Sheet>

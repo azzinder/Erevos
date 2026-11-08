@@ -2280,6 +2280,33 @@ escolhe.
   pertencem ao espaço, selados com a senha dele. Os próprios SMS ficam nos SMS do celular: outro espaço os vê como
   estão, e um que está na Lixeira aqui aparece lá até ser apagado do celular.
 
+### Nos seus dispositivos conectados
+
+Os SMS do celular podem aparecer também nos [dispositivos conectados](#devices) deste espaço: um computador, um
+navegador, um tablet. Lá você os lê e responde, e o celular envia a resposta como SMS. Fica desativado até você
+ativar, no celular: **Configurações** → **Telefone e SMS** → **SMS** → **Também nos meus dispositivos conectados** →
+**Enviar também os meus SMS aos meus dispositivos**.
+
+- **O que vai:** as últimas 50 conversas da lista e de **Arquivadas**, cada uma com as suas últimas 50 mensagens, com
+  criptografia de ponta a ponta como tudo o que os dispositivos compartilham. As mais antigas, as da **Lixeira** e do
+  **Spam**, e as fotos ficam no celular: uma mensagem com foto diz **📷 Uma foto, no celular**. Os nomes vão só
+  enquanto o celular os mostra (**Nomes dos seus contatos**).
+- **Responder:** o que você escreve em um dispositivo aparece como enviando até o celular enviar, no chip que ele usa
+  para esse número, e depois fica entre os do próprio celular. Uma que o celular não conseguiu enviar diz isso: toque
+  nela para enviá-la de novo. O celular envia cada uma só uma vez, e no máximo 60 por hora dos dispositivos, para que
+  um dispositivo perdido não mande uma enxurrada de SMS; uma que esperou mais de um dia não sai.
+- **Lido:** uma conversa lida em um dispositivo fica marcada como lida também no celular.
+- **Avisos:** um novo SMS dá um aviso também no dispositivo, como dizem as configurações de notificação dele.
+- **Pelo celular:** os SMS vêm e vão só enquanto este espaço está aberto no celular, como tudo o que passa pelo
+  celular. Num dispositivo as telas são as do celular, sem o que só o celular faz: apagar, bloquear, enviar mais
+  tarde, fotos e convites.
+- **Cada espaço com o seu:** o interruptor pertence ao espaço. Um lugar de conversas ocultas nunca envia os SMS aos
+  dispositivos.
+- **Desativar:** **Parar os SMS nos meus dispositivos**, no celular, tira os SMS de todos os dispositivos.
+
+**Por quê:** só o celular tem um chip, então só o celular envia e recebe SMS. Os dispositivos os veem pelo celular,
+com criptografia de ponta a ponta como o resto, e a operadora não vê nada além do que via antes.
+
 ## Telefone {#phone}
 
 No Android, o Erevos pode ser o app de telefone do celular: em **Telefone** no menu, toque em **Configurações** →
@@ -3506,6 +3533,9 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   conectados**, para a mesma posição no computador: nunca as do espaço, e as do espaço nunca vão para ela. Cada
   dispositivo entra como ele mesmo, nunca com uma cópia das chaves do celular, que seria usada duas vezes e quebraria
   a criptografia; assim cada um pode ser desconectado sozinho, a partir dos dispositivos da conta.
+- **SMS**: os SMS do celular podem aparecer também nos dispositivos, e ser respondidos de lá pelo celular, depois de
+  ativar em **Configurações** → **Telefone e SMS** → **SMS** → **Também nos meus dispositivos conectados**, veja
+  [SMS](#sms).
 - **Desvincular**, no celular, desconecta um dispositivo na hora: nada mais vai para ele, e nada que ele envia é
   aceito. Os contatos nesta versão ficam sabendo na próxima vez que o celular alcança o relay: param de escrever para
   ele, e não aceitam mais nada dele. É assim que se desconecta um computador perdido. Se ele estiver ligado, ele é

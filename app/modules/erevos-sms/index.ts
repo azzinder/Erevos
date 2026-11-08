@@ -7,6 +7,10 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 // The phone's SMS, for Android: Erevos as the default SMS app, its conversations, sending, and
 // the hidden SMS invites between Erevos phones (data SMS to a port, see lib/sms-invite.ts).
 // On other platforms, and in an app built before this module, there is no SMS: smsReady() is false.
+// On a linked device whose phone gives it its SMS (lib/sms-mirror.ts, docs/sync.md S8), they are
+// the phone's, as the account's log brings them, in place of any this device has: it reads them,
+// marks them read and sends through the phone, and nothing else (no SIMs, deleting, blocking, MMS
+// pictures, invites or encrypted SMS).
 
 /** `slots`: how many SIMs the phone can hold (0 in an app built before it). */
 export type SmsStatus = { sdk: number; phone: boolean; isDefault: boolean; slots?: number };
@@ -113,68 +117,116 @@ type NativeSms = {
 
 const native = requireOptionalNativeModule<NativeSms>('ErevosSms');
 
+/** The phone's SMS on a linked device (lib/sms-mirror.ts): what it reads, marks and sends through the phone. */
+export type SmsMirror = {
+  threads(limit: number): Promise<SmsThread[]>;
+  messages(address: string, limit: number): Promise<SmsMessage[]>;
+  markRead(address: string): Promise<void>;
+  /** Asks the phone to send it; returns the row it shows as until the phone sent it (below 0). */
+  send(address: string, text: string): Promise<number>;
+  cards(numbers: string[]): Record<string, ContactCard>;
+};
+
+let mirror: SmsMirror | null = null;
+const mirrorListeners = new Map<keyof SmsEvents, Set<(event: never) => void>>();
+
+/** The phone's SMS as this linked device has them, or none (null): set by lib/sms-mirror.ts. */
+export function setSmsMirror(next: SmsMirror | null): void {
+  mirror = next;
+}
+
+/** Whether the SMS here are the phone's, on a linked device. */
+export function smsMirrored(): boolean {
+  return mirror !== null;
+}
+
+/** Tells those who listen of a change of the phone's SMS on this linked device. */
+export function smsMirrorEvent<Name extends keyof SmsEvents>(name: Name, event: Parameters<SmsEvents[Name]>[0]): void {
+  for (const listener of [...(mirrorListeners.get(name) ?? [])]) {
+    try {
+      (listener as (event: Parameters<SmsEvents[Name]>[0]) => void)(event);
+    } catch {
+      // One listener's trouble stops none of the others.
+    }
+  }
+}
+
+// The phone's own module, where its SMS are this device's own: none on a linked device given the phone's.
+const own = (): NativeSms | null => (mirror ? null : native);
+
 export function smsReady(): boolean {
-  return native !== null;
+  return native !== null || mirror !== null;
 }
 
 export function smsStatus(): SmsStatus | null {
+  if (mirror) return { sdk: 0, phone: false, isDefault: true, slots: 0 };
   return native ? native.status() : null;
 }
 
 /** Shows Android's question whether Erevos should be the phone's SMS app. */
 export function requestDefaultSms(): void {
-  native?.requestDefault();
+  own()?.requestDefault();
 }
 
 export function smsThreads(limit = 200): Promise<SmsThread[]> {
+  if (mirror) return mirror.threads(limit);
   return native ? native.threads(limit) : Promise.resolve([]);
 }
 
 export function smsMessages(address: string, limit = 300): Promise<SmsMessage[]> {
+  if (mirror) return mirror.messages(address, limit);
   return native ? native.messages(address, limit) : Promise.resolve([]);
 }
 
 export function markSmsRead(address: string): Promise<void> {
+  if (mirror) return mirror.markRead(address);
   return native ? native.markRead(address) : Promise.resolve();
 }
 
 /** Sends a plain, unencrypted SMS, on a SIM (-1: the phone's default). Returns its row in the
  *  phone's SMS store, or -1. */
 export function sendSms(address: string, text: string, sim = -1): Promise<number> {
+  if (mirror) return mirror.send(address, text);
   if (!native) return Promise.reject(new Error('This app was built without SMS.'));
   return mmsReady() ? native.send(address, text, sim) : native.send(address, text);
 }
 
-/** Whether this build can send and receive MMS. */
+/** Whether this build can send and receive MMS. On a linked device given the phone's SMS: no
+ *  pictures, though words to a group go (sendMms with none). */
 export function mmsReady(): boolean {
-  return typeof native?.sendMms === 'function';
+  return typeof own()?.sendMms === 'function';
 }
 
 /** Sends an MMS to one number, or to a group's numbers comma-separated: a picture with text, or
  *  text alone (a group's). As plain as an SMS. Returns its row, or -1. */
 export function sendMms(address: string, text: string, picture: { bytes: Uint8Array; mime: string } | null, sim = -1): Promise<number> {
+  if (mirror && !picture) return mirror.send(address, text);
+  if (mirror) return Promise.reject(new Error('A photo goes by MMS from the phone itself.'));
   if (!native?.sendMms) return Promise.reject(new Error('This build of Erevos cannot send MMS yet.'));
   return native.sendMms(address, text, picture?.bytes ?? new Uint8Array(0), picture?.mime ?? '', sim);
 }
 
 /** The SIMs in the phone, once Erevos may read the phone's state; else none. */
 export function smsSims(): Promise<Sim[]> {
-  return native?.sims ? native.sims() : Promise.resolve([]);
+  const sms = own();
+  return sms?.sims ? sms.sims() : Promise.resolve([]);
 }
 
 /** The names the phone's contacts give these numbers, once Erevos may read them; else none. */
 export function contactNames(numbers: string[]): Promise<Record<string, string>> {
+  if (mirror) return Promise.resolve(Object.fromEntries(Object.entries(mirror.cards(numbers)).map(([number, card]) => [number, card.name])));
   return native?.contactNames && numbers.length > 0 ? native.contactNames(numbers) : Promise.resolve({});
 }
 
 export function sendSmsData(address: string, data: Uint8Array): Promise<void> {
-  if (!native) return Promise.reject(new Error('This app was built without SMS.'));
-  return native.sendData(address, data);
+  const sms = own();
+  if (!sms) return Promise.reject(new Error('This app was built without SMS.'));
+  return sms.sendData(address, data);
 }
 
 /** Whether this build can send and take encrypted messages by SMS (lib/sms-way.ts). */
 export function smsPacketsReady(): boolean {
-  return typeof native?.sendPacket === 'function';
+  return typeof own()?.sendPacket === 'function';
 }
 
 /**
@@ -183,7 +235,8 @@ export function smsPacketsReady(): boolean {
  * True once the phone said each went.
  */
 export function sendSmsPacket(address: string, data: Uint8Array, piece: number, sim = -1): Promise<boolean> {
-  return native?.sendPacket ? native.sendPacket(address, data, piece, sim) : notInBuild();
+  const sms = own();
+  return sms?.sendPacket ? sms.sendPacket(address, data, piece, sim) : notInBuild();
 }
 
 /** The pieces of encrypted messages that came by SMS and are kept until forgotten, oldest first. */
@@ -198,7 +251,7 @@ export function forgetSmsPacketParts(ns: number[]): Promise<void> {
 
 /** Android's hold on SMS sent for later, or null in a build without it (and with no SMS). */
 export function laterSmsHolder(): LaterSmsHolder | null {
-  const sms = native;
+  const sms = own();
   if (!sms?.scheduleLater || !sms.cancelLater || !sms.laterState) return null;
   return {
     schedule: (l) => sms.scheduleLater!(l.id, l.to, l.text, l.sim, l.at),
@@ -211,6 +264,7 @@ export function laterSmsHolder(): LaterSmsHolder | null {
  *  else none. A build before pictures gives the names alone. */
 export async function contactCards(numbers: string[]): Promise<Record<string, ContactCard>> {
   if (numbers.length === 0) return {};
+  if (mirror) return mirror.cards(numbers);
   if (native?.contactCards) return native.contactCards(numbers);
   const names = await contactNames(numbers);
   return Object.fromEntries(Object.entries(names).map(([number, name]) => [number, { name, photo: '' }]));
@@ -218,59 +272,69 @@ export async function contactCards(numbers: string[]): Promise<Record<string, Co
 
 /** Whether this build can delete SMS, send again, block numbers and back up the phone's SMS. */
 export function smsToolsReady(): boolean {
-  return typeof native?.deleteThread === 'function';
+  return typeof own()?.deleteThread === 'function';
 }
 
 const notInBuild = () => Promise.reject(new Error('This build of Erevos cannot do this yet.'));
 
 /** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as the SMS app. */
 export function deleteSmsThread(address: string, upTo: number): Promise<number> {
-  return native?.deleteThread ? native.deleteThread(address, upTo) : notInBuild();
+  const sms = own();
+  return sms?.deleteThread ? sms.deleteThread(address, upTo) : notInBuild();
 }
 
 /** Deletes messages from the phone, each by its kind and row: "sms:12", "mms:3". */
 export function deleteSmsMessages(ids: string[]): Promise<number> {
-  return native?.deleteMessages ? native.deleteMessages(ids) : notInBuild();
+  const sms = own();
+  return sms?.deleteMessages ? sms.deleteMessages(ids) : notInBuild();
 }
 
 /** Sends one of ours that did not go again, in its place, on `sim` (-1: the SIM it was for). */
 export function resendSms(message: Pick<SmsMessage, 'kind' | 'id'>, sim = -1): Promise<number> {
-  return native?.resend ? native.resend(message.kind ?? 'sms', message.id, sim) : notInBuild();
+  const sms = own();
+  return sms?.resend ? sms.resend(message.kind ?? 'sms', message.id, sim) : notInBuild();
 }
 
 /** The bytes of an MMS's picture, by its address (SmsPicture.uri). */
 export function smsPictureBytes(uri: string): Promise<Uint8Array> {
-  return native?.pictureBytes ? native.pictureBytes(uri) : notInBuild();
+  const sms = own();
+  return sms?.pictureBytes ? sms.pictureBytes(uri) : notInBuild();
 }
 
 /** Whether Erevos may block numbers in Android's own list: as the SMS app or the phone app, in a build with it. */
 export function canBlockNumbers(): Promise<boolean> {
-  return native?.canBlock ? native.canBlock().catch(() => false) : Promise.resolve(false);
+  const sms = own();
+  return sms?.canBlock ? sms.canBlock().catch(() => false) : Promise.resolve(false);
 }
 
 /** The numbers in Android's list of blocked numbers, as the SMS app or the phone app may read them; else none. */
 export function blockedNumbers(): Promise<string[]> {
-  return native?.blocked ? native.blocked().catch(() => []) : Promise.resolve([]);
+  const sms = own();
+  return sms?.blocked ? sms.blocked().catch(() => []) : Promise.resolve([]);
 }
 
 /** Puts a number in Android's list: Android then rejects its SMS, MMS and calls. */
 export function blockNumber(number: string): Promise<boolean> {
-  return native?.block ? native.block(number) : notInBuild();
+  const sms = own();
+  return sms?.block ? sms.block(number) : notInBuild();
 }
 
 export function unblockNumber(number: string): Promise<boolean> {
-  return native?.unblock ? native.unblock(number) : notInBuild();
+  const sms = own();
+  return sms?.unblock ? sms.unblock(number) : notInBuild();
 }
 
 /** Every SMS and MMS on the phone, for a backup (lib/backup-sms.ts reads them); null in a build
  *  without it. */
 export function exportPhoneSms(): Promise<Uint8Array | null> {
-  return native?.exportSms ? native.exportSms() : Promise.resolve(null);
+  const sms = own();
+  return sms?.exportSms ? sms.exportSms() : Promise.resolve(null);
 }
 
 /** Puts the SMS and MMS of a backup into the phone's, those it does not have yet, as the SMS app. */
 export function importPhoneSms(data: Uint8Array): Promise<{ sms: number; mms: number }> {
-  return native?.importSms ? native.importSms(data) : notInBuild();
+  const sms = own();
+  return sms?.importSms ? sms.importSms(data) : notInBuild();
 }
 
 /** The invite pieces that came since the last call. Each is given once. */
@@ -282,7 +346,7 @@ export function takeSmsInvites(): Promise<SmsInvitePart[]> {
  *  them comes with no notice, only its sound (lib/background.ts). A build before it notices none
  *  while Erevos shows. */
 export function smsShowOnScreen(numbers: string[]): void {
-  native?.showOnScreen?.(numbers);
+  own()?.showOnScreen?.(numbers);
 }
 
 /** Tells the phone whether Spam's filter is on, the only thing of it kept outside the encrypted
@@ -295,6 +359,17 @@ export function smsSpamFilter(on: boolean): void {
   }
 }
 
-export function onSmsEvent<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription | null {
-  return native ? native.addListener(name, listener) : null;
+/** Listens to the phone's SMS: this device's own, and on a linked device the phone's as they come. */
+export function onSmsEvent<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription {
+  const listeners = mirrorListeners.get(name) ?? new Set();
+  mirrorListeners.set(name, listeners);
+  const mine = listener as (event: never) => void;
+  listeners.add(mine);
+  const subscription = native ? native.addListener(name, listener) : null;
+  return {
+    remove: () => {
+      listeners.delete(mine);
+      subscription?.remove();
+    },
+  };
 }

@@ -51,7 +51,7 @@ import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '.
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
 import { hiddenSign, onSignsChange, spacesSign } from '../lib/unread-signs';
-import { deleteSmsThread, onSmsEvent, smsStatus, smsToolsReady } from '../modules/erevos-sms';
+import { deleteSmsThread, onSmsEvent, smsMirrored, smsStatus, smsToolsReady } from '../modules/erevos-sms';
 import { NO_SMS, smsRows, type SmsList } from '../lib/sms-rows';
 import { Archive } from '../lock/archive';
 import type { ChatNotify } from '../lock/chat-notify';
@@ -653,7 +653,7 @@ function Home() {
                 </View>
               ))
             : null}
-          {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
+          {hasSmsRows && !smsMirrored() ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
         </ScrollView>
       ) : null}
       {feedShown ? feed.intro : null}

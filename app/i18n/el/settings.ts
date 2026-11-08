@@ -392,4 +392,15 @@ export const settings: Record<string, string> = {
   'Letters': 'Γραμματοσειρά',
   'Serif letters have small strokes at their ends, as in books; in monospace every letter is as wide, as on a typewriter.': 'Τα γράμματα με πατούρες έχουν μικρές γραμμές στις άκρες τους, όπως στα βιβλία· στα σταθερού πλάτους κάθε γράμμα πιάνει τον ίδιο χώρο, όπως στη γραφομηχανή.',
   'Text size': 'Μέγεθος κειμένου',
+  "These are your phone's SMS. They come here through the phone, and what you write here goes from the phone as soon as it gets it. Older SMS and photos stay on the phone. To stop them, turn off On my linked devices too on the phone, under Settings → SMS.":
+    'Αυτά είναι τα SMS του τηλεφώνου σου. Έρχονται εδώ μέσω του τηλεφώνου, και ό,τι γράψεις εδώ φεύγει από το τηλέφωνο μόλις το πάρει. Τα παλαιότερα SMS και οι φωτογραφίες μένουν στο τηλέφωνο. Για να τα σταματήσεις, κλείσε το «Και στις συνδεδεμένες συσκευές μου» στο τηλέφωνο, στις Ρυθμίσεις → SMS.',
+  "Your SMS go to this space's linked devices too: a computer, a browser, a tablet. There you read them and answer, and the answer goes from this phone as soon as it gets it, while this space is open here. The latest 50 conversations go, each with its latest 50 messages, end-to-end encrypted like all the devices share; older ones and photos stay on this phone, and so do those in the Trash and in Spam. Off unless you turn it on.":
+    'Τα SMS σου πηγαίνουν και στις συνδεδεμένες συσκευές αυτού του χώρου: έναν υπολογιστή, έναν browser, ένα tablet. Εκεί τα διαβάζεις και απαντάς, και η απάντηση φεύγει από αυτό το τηλέφωνο μόλις το πάρει, όσο αυτός ο χώρος είναι ανοιχτός εδώ. Πηγαίνουν οι 50 πιο πρόσφατες συνομιλίες, καθεμία με τα 50 πιο πρόσφατα μηνύματά της, κρυπτογραφημένα από άκρο σε άκρο όπως ό,τι μοιράζονται οι συσκευές· οι παλαιότερες και οι φωτογραφίες μένουν σε αυτό το τηλέφωνο, και το ίδιο όσες είναι στον Κάδο και στα «Ανεπιθύμητα». Ανενεργό, εκτός αν το ανοίξεις.',
+  'Stop the SMS on my devices': 'Σταμάτα τα SMS στις συσκευές μου',
+  'Send my SMS to my devices too': 'Στείλε τα SMS μου και στις συσκευές μου',
+  'The SMS go through your phone, and they no longer come to this device.':
+    'Τα SMS περνούν από το τηλέφωνό σου και δεν έρχονται πια σε αυτή τη συσκευή.',
+  'Your SMS on your computer, answered through this phone':
+    'Τα SMS σου στον υπολογιστή, με απάντηση μέσω αυτού του τηλεφώνου',
+  'A photo, on the phone': 'Μια φωτογραφία, στο τηλέφωνο',
 };

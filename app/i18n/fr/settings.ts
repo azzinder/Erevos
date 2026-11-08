@@ -392,4 +392,18 @@ export const settings: Record<string, string> = {
   'Letters': 'Police',
   'Serif letters have small strokes at their ends, as in books; in monospace every letter is as wide, as on a typewriter.': 'Les lettres à empattements ont de petits traits à leurs extrémités, comme dans les livres ; en chasse fixe, chaque lettre a la même largeur, comme sur une machine à écrire.',
   'Text size': 'Taille du texte',
+  "These are your phone's SMS. They come here through the phone, and what you write here goes from the phone as soon as it gets it. Older SMS and photos stay on the phone. To stop them, turn off On my linked devices too on the phone, under Settings → SMS.":
+    'Ce sont les SMS de ton téléphone. Ils arrivent ici par le téléphone, et ce que tu écris ici part du téléphone dès qu’il le reçoit. Les SMS plus anciens et les photos restent sur le téléphone. Pour les arrêter, désactive Aussi sur mes appareils associés sur le téléphone, sous Réglages → SMS.',
+  "Your SMS go to this space's linked devices too: a computer, a browser, a tablet. There you read them and answer, and the answer goes from this phone as soon as it gets it, while this space is open here. The latest 50 conversations go, each with its latest 50 messages, end-to-end encrypted like all the devices share; older ones and photos stay on this phone, and so do those in the Trash and in Spam. Off unless you turn it on.":
+    'Tes SMS vont aussi aux appareils associés de cet espace : un ordinateur, un navigateur, une tablette. Tu les y lis et tu y réponds, et la réponse part de ce téléphone dès qu’il la reçoit, tant que cet espace est ouvert ici. Les 50 dernières conversations partent, chacune avec ses 50 derniers messages, chiffrés de bout en bout comme tout ce que les appareils partagent ; les plus anciennes et les photos restent sur ce téléphone, tout comme celles de la corbeille et du spam. Désactivé tant que tu ne l’actives pas.',
+  'Stop the SMS on my devices':
+    'Arrêter les SMS sur mes appareils',
+  'Send my SMS to my devices too':
+    'Envoyer aussi mes SMS à mes appareils',
+  'The SMS go through your phone, and they no longer come to this device.':
+    'Les SMS passent par ton téléphone, et ils ne viennent plus sur cet appareil.',
+  'Your SMS on your computer, answered through this phone':
+    'Tes SMS sur ton ordinateur, avec réponse via ce téléphone',
+  'A photo, on the phone':
+    'Une photo, sur le téléphone',
 };

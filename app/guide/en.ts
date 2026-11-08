@@ -2113,6 +2113,31 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
   with its password. The SMS themselves stay in the phone's SMS: another space sees them as they are, and one in the
   Trash here shows there until it is deleted from the phone.
 
+### On your linked devices
+
+The phone's SMS can show on this space's [linked devices](#devices) too: a computer, a browser, a tablet. There you
+read them and answer them, and the phone sends the answer as an SMS. It is off unless you turn it on, on the phone:
+**Settings** → **Phone and SMS** → **SMS** → **On my linked devices too** → **Send my SMS to my devices too**.
+
+- **What goes:** the latest 50 conversations of the list and of **Archived**, each with its latest 50 messages,
+  end-to-end encrypted as everything the devices share. Older ones, those in the **Trash** and in **Spam**, and the
+  photos stay on the phone: a message with a photo says **📷 A photo, on the phone**. Names go only while the phone
+  shows them (**Names from your contacts**).
+- **Answering:** what you write on a device shows as sending until the phone sent it, on the SIM it uses for that
+  number, and then it is among the phone's own. One the phone could not send says so: tap it to send it again. The
+  phone sends each one once only, and at most 60 an hour from the devices, so a lost device cannot send a flood of
+  SMS; one that waited more than a day does not go.
+- **Read:** a conversation read on a device is marked read on the phone too.
+- **Notices:** a new SMS gives a notice on the device too, as its notification settings say.
+- **Through the phone:** the SMS come and go only while this space is open on the phone, as all that goes through
+  the phone. On a device the screens are the phone's, without what only the phone does: deleting, blocking, sending
+  later, photos and invites.
+- **Each space its own:** the switch belongs to the space. A place of hidden chats never sends the SMS to devices.
+- **Off:** **Stop the SMS on my devices**, on the phone, takes them off every device.
+
+**Why:** only the phone has a SIM, so only the phone sends and receives SMS. The devices see them through the phone,
+end-to-end encrypted like the rest, and the phone company sees nothing more than before.
+
 ## Phone {#phone}
 
 On Android, Erevos can be the phone's phone app: under **Phone** in the menu, tap **Settings** → **Make Erevos the
@@ -3238,6 +3263,8 @@ The chats then come to the computer, and after them the messages chosen.
   devices**, into the same place on the computer: never the space's, and the space's never go to it. Each device signs
   in as itself, never with a copy of the phone's keys, which would then be used twice and break the encryption; so
   either can be signed out alone, from the account's devices.
+- **SMS**: the phone's SMS can show on the devices too, and be answered there through the phone, once you turn it on
+  under **Settings** → **Phone and SMS** → **SMS** → **On my linked devices too**, see [SMS](#sms).
 - **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken.
   Contacts on this version are told the next time the phone reaches the relay: they stop writing to it, and take
   nothing more from it. That is how to cut off a lost computer. If it is on, it is told, and the account's chats leave

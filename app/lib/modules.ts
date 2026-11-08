@@ -91,6 +91,18 @@ let on: Set<Module> = new Set(modulesHere());
 let chosen = false;
 let loaded: Promise<void> | null = null;
 const changes = new Set<() => void>();
+// On a linked device given the phone's SMS (lib/sms-mirror.ts): the SMS are on where this device
+// has none of its own, a computer or a browser; on an Android device, as its modules say.
+let mirrored = false;
+
+const onNow = (): ReadonlySet<Module> => (mirrored && !modulesHere().includes('sms') ? new Set([...on, 'sms']) : on);
+
+/** Whether the phone's SMS show on this linked device (set by lib/sms-mirror.ts). */
+export function setSmsMirrored(next: boolean): void {
+  if (next === mirrored) return;
+  mirrored = next;
+  changes.forEach((listener) => listener());
+}
 
 /** Reads the modules chosen, once; again with `again`. */
 export function loadModules(again = false): Promise<void> {
@@ -120,12 +132,13 @@ export function modulesChosen(): boolean {
 
 /** Whether `module` is on: on this device, and chosen. */
 export function moduleOn(module: Module): boolean {
-  return on.has(module);
+  return onNow().has(module);
 }
 
 /** The modules on, in their order. */
 export function modulesOn(): Module[] {
-  return MODULES.filter((m) => on.has(m));
+  const now = onNow();
+  return MODULES.filter((m) => now.has(m));
 }
 
 /** Keeps `next` as the modules on; refused (false) when none of them could be on. */
@@ -152,9 +165,9 @@ export function onModulesChange(listener: () => void): () => void {
 
 /** The modules on, again each time one is turned on or off: for a screen that shows or hides their parts. */
 export function useModules(): ReadonlySet<Module> {
-  const [now, setNow] = useState<ReadonlySet<Module>>(() => new Set(on));
+  const [now, setNow] = useState<ReadonlySet<Module>>(() => new Set(onNow()));
   useEffect(() => {
-    const read = () => setNow(new Set(on));
+    const read = () => setNow(new Set(onNow()));
     read();
     void loadModules().then(read);
     return onModulesChange(read);

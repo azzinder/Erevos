@@ -94,6 +94,11 @@ export const KINDS: Record<string, Writer> = {
   group: 'any',
   // What the account decides: which device holds its groups (field `d` of record `groups`).
   holder: 'primary',
+  // The phone's SMS, which only the phone has (S8, lib/sync/sms.ts); what a device asks to send,
+  // and the conversations read on one, any device writes.
+  sms: 'primary',
+  'sms-ask': 'any',
+  'sms-read': 'any',
 };
 
 export type Log = {

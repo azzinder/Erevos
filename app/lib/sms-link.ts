@@ -11,7 +11,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
+import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -105,6 +105,28 @@ export class SmsLink {
 
   setNames(on: boolean): Promise<void> {
     return this.update((d) => ({ ...d, names: on }));
+  }
+
+  /** Whether the phone's SMS go to the space's linked devices too (lib/sms-share.ts). */
+  get devices(): boolean {
+    return this.data.devices;
+  }
+
+  setDevices(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, devices: on }));
+  }
+
+  /** What became of an SMS a device asked to send (its id in the log), or null for one never taken. */
+  deviceAsk(id: string): DeviceAsk['done'] | null {
+    return this.data.fromDevices.find((a) => a.id === id)?.done ?? null;
+  }
+
+  /** Keeps what became of an SMS a device asked to send: taken before it goes, so it never goes twice. */
+  setDeviceAsk(id: string, done: DeviceAsk['done'], now = Date.now()): Promise<void> {
+    return this.update((d) => ({
+      ...d,
+      fromDevices: [...d.fromDevices.filter((a) => a.id !== id && a.at > now - DEVICE_ASKS_KEPT), { id, at: now, done }],
+    }));
   }
 
   /** The SIM chosen for `number` (or a group's numbers, comma-separated), or -1. */

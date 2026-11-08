@@ -15,7 +15,8 @@ import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 // with the chat in the account's encrypted value: a muted one tells of nothing, and the icon's
 // number leaves it out. Kept apart from React Native, so the checks run in Node.
 
-export const NETWORK_PREFIXES = ['matrix:', 'xmpp:', 'nostr:'] as const;
+// And on a linked device, the phone's SMS (lib/sms-mirror.ts): `sms:` and the conversation's address.
+export const NETWORK_PREFIXES = ['matrix:', 'xmpp:', 'nostr:', 'sms:'] as const;
 
 /** Whether `where` is a chat on another network. */
 export const isNetworkChat = (where: string): boolean => NETWORK_PREFIXES.some((prefix) => where.startsWith(prefix));

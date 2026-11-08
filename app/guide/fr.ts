@@ -2415,6 +2415,34 @@ dernier chemin, et seulement quand tu le choisis.
   téléphone : un autre espace les voit tels qu’ils sont, et une conversation dans la corbeille ici s’affiche là-bas
   jusqu’à ce qu’elle soit supprimée du téléphone.
 
+### Sur tes appareils associés
+
+Les SMS du téléphone peuvent aussi s’afficher sur les [appareils associés](#devices) de cet espace : un ordinateur, un
+navigateur, une tablette. Tu les y lis et tu y réponds, et le téléphone envoie la réponse en SMS. C’est désactivé tant
+que tu ne l’actives pas, sur le téléphone : **Réglages** → **Téléphone et SMS** → **SMS** → **Aussi sur mes appareils
+associés** → **Envoyer aussi mes SMS à mes appareils**.
+
+- **Ce qui part :** les 50 dernières conversations de la liste et d’**Archivées**, chacune avec ses 50 derniers
+  messages, chiffrés de bout en bout comme tout ce que les appareils partagent. Les plus anciennes, celles de la
+  **Corbeille** et de **Spam**, et les photos restent sur le téléphone : un message avec photo dit **📷 Une photo, sur
+  le téléphone**. Les noms ne partent que tant que le téléphone les affiche (**Noms de tes contacts**).
+- **Répondre :** ce que tu écris sur un appareil s’affiche comme en cours d’envoi jusqu’à ce que le téléphone l’ait
+  envoyé, par la SIM qu’il utilise pour ce numéro, puis il fait partie de ceux du téléphone. Un message que le
+  téléphone n’a pas pu envoyer le dit : appuie dessus pour l’envoyer de nouveau. Le téléphone n’envoie chacun qu’une
+  fois, et au plus 60 par heure depuis les appareils, pour qu’un appareil perdu ne puisse pas envoyer un déluge de SMS ;
+  un message qui a attendu plus d’un jour ne part pas.
+- **Lu :** une conversation lue sur un appareil est aussi marquée comme lue sur le téléphone.
+- **Notifications :** un nouveau SMS donne aussi une notification sur l’appareil, selon ses réglages de notifications.
+- **Par le téléphone :** les SMS vont et viennent seulement tant que cet espace est ouvert sur le téléphone, comme tout
+  ce qui passe par le téléphone. Sur un appareil, les écrans sont ceux du téléphone, sans ce que seul le téléphone
+  fait : supprimer, bloquer, envoyer plus tard, photos et invitations.
+- **Chaque espace a le sien :** l’interrupteur appartient à l’espace. Un emplacement de discussions masquées n’envoie
+  jamais les SMS aux appareils.
+- **Désactiver :** **Arrêter les SMS sur mes appareils**, sur le téléphone, les retire de tous les appareils.
+
+**Pourquoi :** seul le téléphone a une SIM, donc seul le téléphone envoie et reçoit des SMS. Les appareils les voient
+par le téléphone, chiffrés de bout en bout comme le reste, et l’opérateur ne voit rien de plus qu’avant.
+
 ## Téléphone {#phone}
 
 Sur Android, Erevos peut être l’app de téléphone du téléphone : sous **Téléphone** dans le menu, appuie sur **Réglages**
@@ -3732,6 +3760,9 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   l’ordinateur : jamais ceux de l’espace, et ceux de l’espace ne vont jamais à lui. Chaque appareil se connecte en son
   propre nom, jamais avec une copie des clés du téléphone, qui serviraient alors deux fois et casseraient le
   chiffrement ; ainsi chacun peut être déconnecté seul, depuis les appareils du compte.
+- **SMS** : les SMS du téléphone peuvent aussi s’afficher sur les appareils, et y recevoir une réponse par le
+  téléphone, une fois que tu l’actives sous **Réglages** → **Téléphone et SMS** → **SMS** → **Aussi sur mes appareils
+  associés**, voir [SMS](#sms).
 - **Dissocier**, sur le téléphone, coupe un appareil sur-le-champ : plus rien ne lui est envoyé, et rien de ce qu’il
   envoie n’est pris. Les contacts sur cette version sont prévenus la prochaine fois que le téléphone joint le relais :
   ils cessent de lui écrire, et ne prennent plus rien de lui. C’est ainsi qu’on coupe un ordinateur perdu. S’il est

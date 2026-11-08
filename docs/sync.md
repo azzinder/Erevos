@@ -291,6 +291,31 @@ desktop/chunks.js (modules/erevos-radio/android/lan-check).
   joined again).
 - A copy of a photo or file the holder keeps, put on the relay for the phone, stays there till it expires (14 days).
 
+## Phase S8: the phone's SMS on the linked devices
+
+- The switch **On my linked devices too** under Settings → Phone and SMS → SMS (per space, off until turned on) is the
+  phone's own (`SmsData.devices`, sealed with the space's SMS data). On, the phone writes record `on` of kind `sms`
+  (`{names}`: whether names go, as the phone shows them); off, it removes every `sms`, `sms-ask` and `sms-read`
+  record. Kind `sms` only the phone writes: a device's is refused (lib/sync/log.ts `KINDS`).
+- Each conversation is record `c<thread>` (`{a, at, u, n?, nn?}`: address, latest, unread, name, the names of a
+  group's numbers), each message `ms<row>` or `mm<row>` (`{c, x, at, s, o?, r?, w?, p?}`: its conversation, words,
+  time, state, mine, read, from, how many photos), each whole in field `v` and written again only when it changed.
+  The latest 50 conversations of the list and Archived go, each with its latest 50 messages (lib/sync/sms.ts); the
+  Trash, Spam and a hidden place's never. The phone reads a conversation again only when it changed (its latest, its
+  unread), an SMS came, went or was delivered in it, or after 10 minutes (lib/sms-share.ts), and looks every minute
+  and as the SMS change.
+- A device asks the phone to send with record `<16 hex>` of kind `sms-ask` (`{a, x, at}`), and shows it as sending.
+  The phone keeps what it took of each in `SmsData.fromDevices` before sending (`sending`, then `sent` or `failed`), so
+  none goes twice, even after a restart: one found `sending` is not sent again but said not sent. Sent, it removes the
+  record, as the SMS is then among its own; not sent (`failed`), or older than a day (`old`), it says so in field `d`
+  and removes it after a week. At most 60 an hour from the devices.
+- A conversation read on a device is record `c<thread>` of kind `sms-read` (the latest time read): the phone marks it
+  read once that is at least its latest that came, and the device counts as unread only those that came after.
+- On a device the SMS module (modules/erevos-sms) takes the phone's from lib/sms-mirror.ts in place of its own: the
+  home screen, the SMS screen, a contact's chat and the notices (`sms:` of lib/network-notices.ts) show them as they
+  are, and the tools only the phone has (deleting, blocking, SIMs, sending later, photos, invites) are not there.
+- Only the space's links: a hidden place's links never give the SMS.
+
 ## Next
 
-All of S0 to S7 are on main. Not device-tested.
+All of S0 to S8 are on main. Not device-tested.

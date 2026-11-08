@@ -2444,6 +2444,35 @@ wenn du ihn wählst.
   Bereich sieht sie, wie sie sind, und eine, die hier im Papierkorb ist, erscheint dort, bis sie vom Telefon gelöscht
   wird.
 
+### Auf deinen verknüpften Geräten
+
+Die SMS des Telefons können auch auf den [verknüpften Geräten](#devices) dieses Bereichs erscheinen: einem Computer,
+einem Browser, einem Tablet. Dort liest du sie und antwortest, und das Telefon sendet die Antwort als SMS. Es ist aus,
+bis du es einschaltest, auf dem Telefon: **Einstellungen** → **Telefon und SMS** → **SMS** → **Auch auf meinen
+verknüpften Geräten** → **Meine SMS auch an meine Geräte senden**.
+
+- **Was geht:** die letzten 50 Unterhaltungen der Liste und von **Archiviert**, jede mit ihren letzten 50 Nachrichten,
+  Ende-zu-Ende-verschlüsselt wie alles, was die Geräte teilen. Ältere, die im **Papierkorb** und im **Spam** sowie die
+  Fotos bleiben auf dem Telefon: Eine Nachricht mit Foto sagt **📷 Ein Foto, auf dem Telefon**. Namen gehen nur, solange
+  das Telefon sie zeigt (**Namen aus deinen Kontakten**).
+- **Antworten:** Was du auf einem Gerät schreibst, erscheint als „wird gesendet“, bis das Telefon es gesendet hat, mit
+  der SIM, die es für diese Nummer nutzt, und gehört dann zu den eigenen des Telefons. Eine, die das Telefon nicht
+  senden konnte, sagt das: Tippe darauf, um sie erneut zu senden. Das Telefon sendet jede nur einmal und höchstens 60
+  pro Stunde von den Geräten, damit ein verlorenes Gerät keine Flut an SMS senden kann; eine, die länger als einen Tag
+  gewartet hat, geht nicht.
+- **Gelesen:** Eine Unterhaltung, die auf einem Gerät gelesen wurde, ist auch auf dem Telefon als gelesen markiert.
+- **Hinweise:** Eine neue SMS gibt auch auf dem Gerät einen Hinweis, wie dessen Benachrichtigungseinstellungen es
+  sagen.
+- **Über das Telefon:** Die SMS kommen und gehen nur, solange dieser Bereich auf dem Telefon geöffnet ist, wie alles,
+  was über das Telefon geht. Auf einem Gerät sind die Bildschirme die des Telefons, ohne das, was nur das Telefon kann:
+  Löschen, Blockieren, später Senden, Fotos und Einladungen.
+- **Jeder Bereich für sich:** Der Schalter gehört zum Bereich. Ein Bereich versteckter Chats sendet die SMS nie an
+  Geräte.
+- **Aus:** **SMS auf meinen Geräten beenden** nimmt sie auf dem Telefon von jedem Gerät.
+
+**Warum:** Nur das Telefon hat eine SIM, also sendet und empfängt nur das Telefon SMS. Die Geräte sehen sie über das
+Telefon, Ende-zu-Ende-verschlüsselt wie der Rest, und der Mobilfunkanbieter sieht nicht mehr als zuvor.
+
 ## Telefon {#phone}
 
 Auf Android kann Erevos die Telefon-App des Telefons sein: Tippe unter **Telefon** im Menü auf **Einstellungen** →
@@ -3751,6 +3780,9 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   nie die des Bereichs, und die des Bereichs gehen nie an ihn. Jedes Gerät meldet sich als es selbst an, nie mit einer
   Kopie der Schlüssel des Telefons, die dann doppelt benutzt würde und die Verschlüsselung kaputtmachen würde; so
   lässt sich jedes allein abmelden, bei den Geräten des Kontos.
+- **SMS**: Die SMS des Telefons können auch auf den Geräten erscheinen und dort über das Telefon beantwortet werden,
+  sobald du es einschaltest unter **Einstellungen** → **Telefon und SMS** → **SMS** → **Auch auf meinen verknüpften
+  Geräten**, siehe [SMS](#sms).
 - **Trennen**, auf dem Telefon, sperrt ein Gerät sofort aus: Nichts geht mehr an es, und nichts, was es sendet, wird
   angenommen. Kontakte mit dieser Version erfahren es, wenn das Telefon das nächste Mal das Relay erreicht: Sie hören
   auf, an es zu schreiben, und nehmen nichts mehr von ihm an. So sperrst du einen verlorenen Computer aus. Ist er an,

@@ -15,7 +15,7 @@ import { t } from '../lib/i18n';
 import { modulesHere, setModules, useModules, type Module } from '../lib/modules';
 import { HAS_CHECKS } from '../lib/permissions';
 import { phoneStatus } from '../modules/erevos-phone';
-import { smsStatus } from '../modules/erevos-sms';
+import { smsMirrored, smsStatus } from '../modules/erevos-sms';
 import { space } from '../theme/colors';
 
 // Settings → General → Modules: the parts of Erevos this phone uses (lib/modules.ts), any of them,
@@ -38,7 +38,7 @@ export default function ModulesScreen() {
       }
       if (!(await confirm(t('Turn {module} off?', { module: moduleName(module) }), moduleOffNote(module), t('Turn off')))) return;
       if (!(await setModules(here.filter((m) => m !== module && on.has(m))))) return;
-      const role = module === 'phone' ? phoneStatus()?.isDefault : module === 'sms' ? smsStatus()?.isDefault : false;
+      const role = module === 'phone' ? phoneStatus()?.isDefault : module === 'sms' ? !smsMirrored() && smsStatus()?.isDefault : false;
       setStill(role ? module : null);
       return;
     }

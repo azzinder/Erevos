@@ -151,6 +151,8 @@ import type { ChunkWay } from './sync/chunks';
 import { ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from './sync/lan-chunks';
 import { CollectionSync } from './collection-links';
 import { laterChanges, laterFrom, laterGone, type Scheduled } from './sync/later';
+import { ASK_KIND, askDone, asksOf, oldAsks, READ_KIND, readsOf, SMS_KIND, smsChanges, smsShared, smsView, type SharedSmsAll, type SmsAsk } from './sync/sms';
+import { showMirrored } from './sms-mirror';
 import { cameAt } from './later';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
@@ -384,6 +386,28 @@ export function handAccounts(next: AccountsHand | null): void {
   hand = next;
 }
 
+/**
+ * What gives the phone's SMS to the space's linked devices and does what they ask of them
+ * (lib/sms-share.ts, docs/sync.md S8), so this file need not know the phone's SMS.
+ */
+export type SmsHand = {
+  /** On the phone: its SMS as they go to the devices of the space now; null while they do not go, undefined when they cannot be read now. `known`: the numbers of the space's contacts. */
+  shared(space: number, key: Uint8Array, known: readonly string[]): Promise<SharedSmsAll | null | undefined>;
+  /** On the phone: sends what a device asked, once ever; 'old' for one asked too long ago. */
+  send(space: number, key: Uint8Array, ask: SmsAsk): Promise<'sent' | 'failed' | 'old'>;
+  /** On the phone: a conversation read on a device, marked read here too. */
+  read(address: string): Promise<void>;
+  /** Calls `changed` as the phone's SMS change, once they settle; returns how to stop. */
+  watch(changed: () => void): () => void;
+};
+
+let smsHand: SmsHand | null = null;
+
+/** Has `next` give the phone's SMS to the devices (lib/sms-share.ts sets it once). */
+export function handSms(next: SmsHand | null): void {
+  smsHand = next;
+}
+
 /** On a linked device: the accounts the phone gave that it still waits to bring, those it brought, and what went wrong last. */
 export type AccountsHere = { left: GivenAccounts; brought: Brought; problems: string[] };
 
@@ -614,6 +638,15 @@ export class Links implements Link, TakenFiles {
   private collectionWork: Promise<unknown> = Promise.resolve();
   // What is sent for later, as the place's log says it (lib/sync/later.ts): written and taken in turn.
   private laterWork: Promise<unknown> = Promise.resolve();
+  // The phone's SMS on the devices (lib/sync/sms.ts), the space's links only: on the phone, given
+  // and what the devices ask done, in turn, when last looked at, and whether to look again once that
+  // look is done; on a linked device, whether they show here.
+  private smsWork: Promise<unknown> = Promise.resolve();
+  private smsLooked = 0;
+  private smsAgain = false;
+  private smsLooking = false;
+  private smsShowing = false;
+  private stopSms?: () => void;
 
   private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData, pocket: number | null) {
     this.space = space;
@@ -679,6 +712,11 @@ export class Links implements Link, TakenFiles {
     links.stopNotes = onNotesWritten((place) => links.notesWritten(place));
     // The settings the devices share (lib/sync/settings.ts) go in the space's log only.
     if (pocket === null) links.stopSettings = onSettingChanged((id, value) => links.syncSetting(id, value));
+    // So do the phone's SMS (lib/sync/sms.ts): the phone gives them as they change, a device shows them.
+    if (pocket === null) {
+      links.stopSms = smsHand?.watch(() => void links.smsShare().catch(() => undefined));
+      if (links.data.primary) void links.smsShow().catch(() => undefined);
+    }
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     links.act(() => links.listsAtOpen());
@@ -697,6 +735,11 @@ export class Links implements Link, TakenFiles {
     this.stopMoves?.();
     this.stopNotes?.();
     this.stopSettings?.();
+    this.stopSms?.();
+    if (this.smsShowing) {
+      this.smsShowing = false;
+      showMirrored(null, null);
+    }
     this.collection.close();
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
@@ -1210,6 +1253,7 @@ export class Links implements Link, TakenFiles {
           if (heard) this.settingsFrom(heard);
           if (heard) this.collectionFrom(heard);
           if (heard) this.laterFrom(heard);
+          if (heard && heard.took.some((op) => op.k === ASK_KIND || op.k === READ_KIND)) void this.smsShare().catch(() => undefined);
         }
         break;
       case 'unblock':
@@ -1979,6 +2023,99 @@ export class Links implements Link, TakenFiles {
     await this.laterWork.catch(() => undefined);
   }
 
+  /**
+   * On the phone, in the space's links: what the devices asked of its SMS, done (each SMS sent once,
+   * each conversation read marked read), then its SMS as they go now written into the log, with what
+   * became of each ask, in one write; with none linked, nothing. A look asked for while one is under
+   * way follows it.
+   */
+  smsShare(): Promise<void> {
+    if (this.pocket !== null || this.data.primary || !smsHand) return Promise.resolve();
+    if (this.smsLooking) {
+      this.smsAgain = true;
+      return this.smsWork.then(() => undefined, () => undefined);
+    }
+    this.smsLooking = true;
+    this.smsLooked = Date.now();
+    const run = this.smsWork
+      .catch(() => undefined)
+      .then(async () => {
+        do {
+          this.smsAgain = false;
+          await this.smsLook();
+        } while (this.smsAgain && !this.closed);
+      })
+      .finally(() => {
+        this.smsLooking = false;
+      });
+    this.smsWork = run;
+    return run.then(() => undefined, () => undefined);
+  }
+
+  private async smsLook(): Promise<void> {
+    const sms = smsHand;
+    if (!sms || this.linked().length === 0) return;
+    const log = await this.syncs.read();
+    if (!log) return;
+    const done: { id: string; how: 'sent' | 'failed' | 'old' }[] = [];
+    if (smsShared(log)) {
+      for (const ask of asksOf(log)) {
+        if (ask.d) continue;
+        done.push({ id: ask.id, how: await sms.send(this.space, this.key, ask).catch(() => 'failed' as const) });
+      }
+      // A conversation read on a device up to its latest that came, read here too.
+      const view = smsView(log);
+      for (const [thread, at] of readsOf(log)) {
+        const c = view?.conversations.find((x) => x.thread === thread);
+        const latest = c ? Math.max(0, ...c.messages.filter((m) => !m.mine).map((m) => m.at)) : 0;
+        if (c && c.unread > 0 && at >= latest) await sms.read(c.address).catch(() => undefined);
+      }
+    }
+    const known = this.chats.e2e.phones().map((p) => p.phone);
+    const shared = await sms.shared(this.space, this.key, known).catch(() => undefined);
+    if (shared === undefined && done.length === 0) return;
+    const now = Date.now();
+    await this.syncs.writeFrom((l) => [...(shared === undefined ? [] : smsChanges(l, shared)), ...done.flatMap(({ id, how }) => askDone(l, id, how)), ...oldAsks(l, now)]);
+  }
+
+  // On a linked device, in the space's links: the phone's SMS as the log took them, shown here.
+  private smsFrom({ took, whole }: SyncHeard): void {
+    if (this.pocket !== null || !this.data.primary) return;
+    if (!whole && !took.some((op) => op.k === SMS_KIND || op.k === ASK_KIND || op.k === READ_KIND)) return;
+    void this.smsShow().catch(() => undefined);
+  }
+
+  // On a linked device: the phone's SMS as the log has them now, shown here, with what is written of them.
+  private smsShow(): Promise<void> {
+    const run = this.smsWork
+      .catch(() => undefined)
+      .then(async () => {
+        if (this.closed || this.pocket !== null || !this.data.primary) return;
+        const log = await this.syncs.read();
+        const view = log ? smsView(log) : null;
+        this.smsShowing = view !== null;
+        showMirrored(view, (changesOf) => this.smsWrite(changesOf));
+      });
+    this.smsWork = run;
+    return run.then(() => undefined);
+  }
+
+  // On a linked device: what is written of the phone's SMS here (an SMS to send, a conversation read), then shown again.
+  private async smsWrite(changesOf: (log: SyncLog) => readonly SyncChange[]): Promise<void> {
+    if (this.closed || !this.data.primary) throw new Error(t('The SMS go through your phone, and they no longer come to this device.'));
+    await this.syncs.writeFrom(changesOf);
+    await this.smsShow();
+  }
+
+  /** For the checks: the work on the phone's SMS under way here, done. */
+  async smsSettled(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      const work = this.smsWork;
+      await work.catch(() => undefined);
+      if (work === this.smsWork) return;
+    }
+  }
+
   // The settings another device changed, as the space's log took them, put in place here.
   private settingsFrom({ log, took, whole }: SyncHeard): void {
     if (this.pocket !== null) return;
@@ -2000,6 +2137,7 @@ export class Links implements Link, TakenFiles {
     this.accountsFrom(heard);
     this.collectionFrom(heard);
     this.laterFrom(heard);
+    this.smsFrom(heard);
     const { log, took, whole } = heard;
     const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
     const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];
@@ -2336,6 +2474,11 @@ export class Links implements Link, TakenFiles {
     if (brought && hand) await hand.letGo(this.space, this.key, brought, this.pocket).catch(() => undefined);
     await e2e.dropEndpoint().catch(() => undefined);
     await this.syncs.forget().catch(() => undefined);
+    // The phone's SMS show here no more.
+    if (this.smsShowing) {
+      this.smsShowing = false;
+      showMirrored(null, null);
+    }
     await e2e.forgetBlocked().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
@@ -3709,6 +3852,7 @@ export class Links implements Link, TakenFiles {
       void this.collection.written().catch(() => undefined);
       void this.laterWritten().catch(() => undefined);
     }
+    if (!this.data.primary && Date.now() - this.smsLooked >= ACCOUNTS_EVERY) void this.smsShare().catch(() => undefined);
     if (!this.data.primary && Date.now() - this.accountsLooked >= ACCOUNTS_EVERY) {
       this.accountsLooked = Date.now();
       void this.followAccounts().catch(() => undefined);

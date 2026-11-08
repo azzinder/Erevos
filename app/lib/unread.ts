@@ -13,7 +13,8 @@ import { spaceGroups } from './space-groups';
 // (app/app/index.tsx, lib/inbox.ts): its contacts' and its groups', a chat locked with its PIN too,
 // and its chats on Matrix, XMPP and Nostr (lib/network-notices.ts). Never a hidden chat's: hidden
 // chats are not the space's chats (lib/space-chats.ts), nor a muted chat's or group's
-// (lock/chat-notify.ts). Not the phone's SMS. For the number on Erevos's icon
+// (lock/chat-notify.ts). Not the phone's SMS, which Android counts, but on a linked device given them
+// (lib/sms-mirror.ts), where they count as a chat on another network. For the number on Erevos's icon
 // (lib/push-notice.web.ts, and on Android the messages notice, lib/background.ts).
 
 /** The open space's unread messages, or null when no space is open or its chats cannot be read. */

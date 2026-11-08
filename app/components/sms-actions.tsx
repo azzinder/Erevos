@@ -15,7 +15,7 @@ import { sameConversation, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
 import { MAX_PINS, TRASH_DAYS } from '../lock/sms-data';
-import { blockedNumbers, blockNumber, canBlockNumbers, unblockNumber } from '../modules/erevos-sms';
+import { blockedNumbers, blockNumber, canBlockNumbers, smsMirrored, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 import { Sheet, Text } from './ui';
@@ -178,7 +178,8 @@ export function SmsActions({ target, onClose, onTrashed }: {
   if (target.folder !== 'spam') rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });
   if (one && state?.blocked !== true) rows.push({ label: spam ? t('Not spam') : t('Mark as spam'), run: markSpam });
   if (one && state && state.blocked !== null) rows.push({ label: state.blocked ? t('Unblock {number}', { number: one }) : t('Block {number}', { number: one }), run: block });
-  rows.push({ label: t('Delete'), run: trash, danger: true });
+  // On a linked device the SMS are the phone's: only the phone deletes them.
+  if (!smsMirrored()) rows.push({ label: t('Delete'), run: trash, danger: true });
 
   return (
     <Sheet visible onClose={onClose} title={target.name}>
