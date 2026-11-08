@@ -60,6 +60,50 @@ const resumed = new Set<number>();
 const positions = new Map<number, [number, number]>();
 // Each file opened counts one up, so a file that took long to decrypt does not play after another was asked for.
 let turn = 0;
+
+// A station whose server, or a proxy on the way, drops the stream (ends it quietly, errs, or
+// sends nothing for STALL_MS) is asked again after 1, 2, 4… seconds, at most 30, while the owner
+// still wants it playing; one that then plays a minute starts the count anew. After
+// MOST_RECONNECTS tries in a row it is left stopped, and the error said.
+let station: string | null = null;
+let stationWanted = false;
+let reconnects = 0;
+let reconnectedAt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let stallTimer: ReturnType<typeof setTimeout> | null = null;
+const MOST_RECONNECTS = 12;
+const STEADY_MS = 60_000;
+const STALL_MS = 20_000;
+
+function clearStationTimers(): void {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  if (stallTimer) clearTimeout(stallTimer);
+  reconnectTimer = null;
+  stallTimer = null;
+}
+
+/** Asks the station again a little later; false when it is not one, not wanted, or tried enough. */
+function reconnectStation(): boolean {
+  if (!station || !stationWanted) return false;
+  if (Date.now() - reconnectedAt > STEADY_MS) reconnects = 0;
+  if (reconnects >= MOST_RECONNECTS) return false;
+  const delay = Math.min(1000 * 2 ** reconnects, 30_000);
+  reconnects++;
+  clearStationTimers();
+  buffering = true;
+  tell();
+  const mine = turn;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (mine !== turn || !station || !stationWanted || !media) return;
+    reconnectedAt = Date.now();
+    error = null;
+    ended = false;
+    media.src = station;
+    void media.play().catch(() => undefined);
+  }, delay);
+  return true;
+}
 const listeners = new Set<Listener>();
 
 // The desktop app's shell answers the element from the chunks (desktop/play.js): known once asked.
@@ -146,6 +190,15 @@ function element(): HTMLVideoElement {
   m.style.background = '#000000';
   m.style.objectFit = 'contain';
   for (const name of ['play', 'pause', 'durationchange', 'seeked', 'ratechange']) m.addEventListener(name, tell);
+  // Paused or played by the element's own controls or the keyboard's media keys: a station is then
+  // wanted, or not, as for Pause and Play here. A pause that comes with the stream's end or an
+  // error is the stream dropped, not the owner.
+  m.addEventListener('pause', () => {
+    if (station && !m.ended && !m.error) stationWanted = false;
+  });
+  m.addEventListener('play', () => {
+    if (station) stationWanted = true;
+  });
   m.addEventListener('loadedmetadata', () => {
     m.playbackRate = speed;
     const from = resumes[index] ?? 0;
@@ -157,13 +210,29 @@ function element(): HTMLVideoElement {
   });
   m.addEventListener('waiting', () => {
     buffering = true;
+    if (station && !stallTimer) {
+      stallTimer = setTimeout(() => {
+        stallTimer = null;
+        if (buffering) reconnectStation();
+      }, STALL_MS);
+    }
     tell();
   });
   m.addEventListener('playing', () => {
     buffering = false;
+    if (stallTimer) clearTimeout(stallTimer);
+    stallTimer = null;
     tell();
   });
   m.addEventListener('ended', () => {
+    // A station's stream has no end: one that ended was dropped on the way.
+    if (station) {
+      if (!reconnectStation()) {
+        ended = true;
+        tell();
+      }
+      return;
+    }
     positions.set(index, [0, durationNow(m)]);
     const next = nextIndex(queue, true);
     if (next === null) {
@@ -176,6 +245,7 @@ function element(): HTMLVideoElement {
   });
   m.addEventListener('error', () => {
     if (!m.getAttribute('src')) return;
+    if (reconnectStation()) return;
     error = 'MEDIA_ERROR';
     tell();
   });
@@ -184,6 +254,9 @@ function element(): HTMLVideoElement {
 }
 
 function letGo(): void {
+  clearStationTimers();
+  station = null;
+  stationWanted = false;
   if (media) {
     if (index >= 0 && media.getAttribute('src') && !media.ended) positions.set(index, [Math.round(media.currentTime * 1000), durationNow(media)]);
     media.pause();
@@ -318,6 +391,10 @@ export async function deskPlayStation(url: string): Promise<void> {
   buffering = true;
   tell();
   const m = element();
+  station = url;
+  stationWanted = true;
+  reconnects = 0;
+  reconnectedAt = 0;
   m.src = url;
   try {
     await m.play();
@@ -349,11 +426,26 @@ export async function deskPlay(items: CollectionItem[], start: number, resume: n
 }
 
 export function deskPause(): void {
+  stationWanted = false;
+  clearStationTimers();
   media?.pause();
 }
 
 export function deskResume(): void {
   if (!media || index < 0) return;
+  if (station) {
+    stationWanted = true;
+    reconnects = 0;
+    // A live stream starts again from what it sends now, not from where it was paused.
+    if (ended || error || media.readyState === 0) {
+      clearStationTimers();
+      error = null;
+      ended = false;
+      media.src = station;
+    }
+    void media.play().catch(() => undefined);
+    return;
+  }
   if (ended) {
     ended = false;
     media.currentTime = 0;

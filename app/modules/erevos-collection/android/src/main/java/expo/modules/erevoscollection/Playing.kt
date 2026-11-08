@@ -110,6 +110,42 @@ internal object Playing {
   // The file of the list whose failed read was tried again already (onPlayerError), until another plays.
   private var retried = -1
 
+  // A station whose server, or a proxy on the way, drops the stream (closes it quietly, or the
+  // network goes for a moment) is asked again, after 1, 2, 4… seconds, at most 30, while the owner
+  // still wants it playing; a stream that then plays a minute starts the count anew. After
+  // MOST_RECONNECTS tries in a row it is left stopped, and the error said.
+  private var reconnects = 0
+  private var reconnectedAt = 0L
+  private val reconnect = Runnable { reconnectNow() }
+
+  private fun isStation(index: Int) = items.getOrNull(index)?.url != null
+
+  private fun scheduleReconnect(p: Player): Boolean {
+    if (p !== player || !isStation(p.currentMediaItemIndex) || !p.playWhenReady) return false
+    val now = android.os.SystemClock.elapsedRealtime()
+    if (now - reconnectedAt > STEADY_MS) reconnects = 0
+    if (reconnects >= MOST_RECONNECTS) return false
+    val delay = minOf(1_000L shl reconnects, 30_000L)
+    reconnects++
+    main.removeCallbacks(reconnect)
+    main.postDelayed(reconnect, delay)
+    tell(null)
+    return true
+  }
+
+  private fun reconnectNow(force: Boolean = false) {
+    val p = player ?: return
+    if (!isStation(p.currentMediaItemIndex) || (!force && !p.playWhenReady)) return
+    reconnectedAt = android.os.SystemClock.elapsedRealtime()
+    // A live stream has no place to go back to: it starts again from what it sends now.
+    p.seekToDefaultPosition(p.currentMediaItemIndex)
+    p.prepare()
+    p.play()
+  }
+
+  private const val MOST_RECONNECTS = 12
+  private const val STEADY_MS = 60_000L
+
   /** Told the state whenever it changes, on the main thread: the module's event. */
   var onState: ((Map<String, Any?>) -> Unit)? = null
 
@@ -140,8 +176,25 @@ internal object Playing {
       p.seekTo(index, item.resume)
     }
 
+    override fun onPlaybackStateChanged(playbackState: Int) {
+      val p = player ?: return
+      // A station's stream has no end: one that ended was dropped on the way.
+      if (playbackState == Player.STATE_ENDED) scheduleReconnect(p)
+    }
+
+    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+      val p = player ?: return
+      // Play from the notice or the lock screen on a station that was dropped while paused.
+      if (playWhenReady && isStation(p.currentMediaItemIndex) && p.playbackState in listOf(Player.STATE_ENDED, Player.STATE_IDLE)) reconnectNow()
+    }
+
     override fun onPlayerError(error: PlaybackException) {
       val p = player ?: return
+      if (scheduleReconnect(p)) return
+      if (isStation(p.currentMediaItemIndex)) {
+        tell(error.errorCodeName)
+        return
+      }
       // A read that failed once (the phone's storage slow to answer with the screen off) is tried
       // again where it stopped, once for each file; the player then waits no more for it.
       val index = p.currentMediaItemIndex
@@ -183,6 +236,9 @@ internal object Playing {
     durations.clear()
     resumed.clear()
     retried = -1
+    main.removeCallbacks(reconnect)
+    reconnects = 0
+    reconnectedAt = 0L
     val folder = appContext.filesDir
     // No title in the items themselves: what is shown is made by ShownPlayer, and what the player
     // reports of the file (getMediaMetadata) is then only what the file says.
@@ -273,6 +329,12 @@ internal object Playing {
 
   fun resume() {
     val p = player ?: return
+    main.removeCallbacks(reconnect)
+    reconnects = 0
+    if (isStation(p.currentMediaItemIndex) && p.playbackState in listOf(Player.STATE_ENDED, Player.STATE_IDLE)) {
+      reconnectNow(force = true)
+      return
+    }
     if (p.playbackState == Player.STATE_ENDED) p.seekTo(p.currentMediaItemIndex, 0L)
     if (p.playbackState == Player.STATE_IDLE) p.prepare()
     p.play()
@@ -363,6 +425,7 @@ internal object Playing {
    * playing got to stays, for JavaScript to take.
    */
   fun stop(context: Context?, fromService: Boolean = false) {
+    main.removeCallbacks(reconnect)
     val p = player
     if (p != null && p.mediaItemCount > 0) {
       val index = p.currentMediaItemIndex

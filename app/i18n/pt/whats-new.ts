@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping.":
+    "**Rádio que continua tocando**: quando o servidor de uma estação, ou um proxy no caminho, corta o fluxo, ou a rede cai por um instante, o Erevos reconecta sozinho alguns segundos depois, em vez de parar.",
   "**Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u, .pls) that names many stations and adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file from your device. Only stations with an https link are added, and Erevos says how many were left out.":
     "**Playlists de rádio com muitas estações**: no Rádio da Coleção, **Adicionar uma estação** aceita um link de playlist (.m3u, .pls) com muitas estações e adiciona todas, e **Importar um arquivo de playlist** adiciona as estações de um arquivo .m3u ou .pls do seu aparelho. Só estações com link https são adicionadas, e o Erevos diz quantas ficaram de fora.",
   "**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay).":

@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Radio that keeps playing**: a station whose server or proxy drops the stream (ends it quietly, errs, or
+  stalls), or whose network goes for a moment, is asked again after 1, 2, 4… seconds (at most 30, 12 tries in a
+  row) instead of stopping; on Android, on a computer and in a browser.
 - **Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u,
   .pls) that names many stations and adds each of them (500 at most), and **Import a playlist file** adds the
   stations of a .m3u or .pls file from the device, read there and sent nowhere. Only https stations are added.
