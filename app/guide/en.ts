@@ -2612,22 +2612,28 @@ A backup holds everything Erevos keeps on this phone: every space, with its cont
 its messages, photos, files, voice messages, imported chats and hidden chats, its accounts on Matrix, XMPP and Nostr,
 its Chat with myself, the lock and the panic password, and the settings that go with you to another phone. Inside it
 each space stays sealed with its own password, and the backup is sealed again with a password of its own. Its photos,
-files and voice messages go in files of their own beside it, up to 4 MB each, whose names start as the backup's: keep
-them together. It is under **Settings** → **Data and devices** → **Backups**.
+files and voice messages go in files of their own beside it, up to 4 MB each, whose names start as the backup's; an
+automatic backup uses the files of the ones before it too: keep the whole folder together. It is under **Settings** → **Data and devices** → **Backups**.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
    its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
    four words) and tap **Save**. In a browser the backup and its files go to the share sheet, or to the downloads: the first at once, each next one after a tap on **Save**.
-2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
-   it opens and the last one is older than that, and the folder keeps the 3 newest, each with its files. Under them are **Back up now**,
+2. **Automatic backups:** choose **Every 6 hours**, **Every day** or **Every week**, then a folder and a password.
+   Erevos makes one while it is open, once the last one is older than that: when a space opens, every 15 minutes, and
+   as it goes to the background, before it locks; never with no space open. Each one writes only the photos, files and
+   voice messages that are new since the one before, and names again the files of the earlier ones for the rest, so
+   one every 6 hours costs little. The folder keeps the 3 newest, with every file they need, and deletes the files none
+   of them needs. One that failed is tried again when a space opens, or an hour later. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
 3. **To a server too:** on Android and in the desktop app, with automatic backups on, **Add a server** under **To a
    server too** sends each one also to a folder on a server you choose that speaks WebDAV, such as your own Nextcloud:
    give the folder's address, a user name and, best, an app password made for Erevos alone, then tap **Connect**. The
-   server keeps the 3 newest; **Stop sending** stops it, and those there stay. In the web app, which makes no backups
+   server keeps the 3 newest, with every file they need, and each one sends only what is new; **Stop sending** stops
+   it, and those there stay. In the web app, which makes no backups
    by itself, **Send a backup now** sends one there, with a password you type each time.
 4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
-   backup's files beside it, or asks you to choose them or their folder, then puts the backup in place of everything on
+   backup's files beside it, or asks you to choose them or their folder (for an automatic backup, choose every file of
+   the folder, as some of its files may start as an earlier backup's name), then puts the backup in place of everything on
    the phone, and opens as it was when the backup was made, with the passwords used then. With one of its files missing, damaged or another backup's, Erevos says which, and nothing is changed unless you choose to restore the rest without it: then the photos, files and voice messages on the phone stay as they are, and those it holds do not come back. **Restore from a server** looks in the folder automatic
    backups go to, or in one you give with its user name and password, and lists the backups there, newest first:
    choose one, type its password, and it is restored the same way, with its files from there.
@@ -2642,7 +2648,7 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   sizes, so neither says it is Erevos's nor tells exactly how much it holds. Its photos, files and voice messages go
   as uploads of their own, all of one size, each under a random name too and sealed with the backup's password, bound
   to that backup and to their place in it, so none can be swapped, dropped or taken from another backup unseen; the
-  server keeps them with their backup and deletes them with it. Their names are as long as the backup's, but their size tells them from it, so the server can count them, and so tell roughly how much the backup holds. What a backup cut short left there is deleted before the next one goes, so a server that had no room left has some again. The server still sees your account, when one comes and
+  server keeps each as long as one of the backups it keeps needs it, and then deletes it. Their names are as long as the backup's, but their size tells them from it, so the server can count them, and so tell roughly how much the backup holds. What a backup cut short left there is deleted before the next one goes, so a server that had no room left has some again. The server still sees your account, when one comes and
   roughly how big it is. On Android, backups go to it as the space's choice under **Settings** → **Relay
   and networks** → **Tor** says, as Matrix does: with **Everything** only through Tor, so the server does not see the
   phone's address; with **Messages** through Tor once Tor is ready, and straight while Tor starts or when it fails;
@@ -2658,10 +2664,14 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
   purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
-  that came after the backup and were already read are not in it, and a chat that went on may stop opening new
-  messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations
-  skip ahead past the keys they may have used since the backup, so no key ever seals two messages: one sealed twice
-  would let whoever kept both packets read the two together.
+  that came after the backup and were already read are not in it. A conversation that went on after the backup would
+  stop opening new messages, so each restored chat, the space's and each hidden place's as it opens, starts a new
+  conversation with every contact by itself, quietly, from the newest keys they gave it, and their Erevos goes on in
+  it. With a contact whose Erevos is older, ask them for their contact link again. Before a restored chat writes again,
+  its conversations skip ahead past the keys they may have used since the backup, so no key ever seals two messages:
+  one sealed twice would let whoever kept both packets read the two together. In a group, a restored member asks the
+  admin's Erevos to put it in again, which works while the group moved on only a little; otherwise ask to be added
+  again.
 - **Matrix, XMPP and Nostr:** the accounts of each space and of its hidden chats are in the backup. A **Nostr** key
   comes back with its chats, as they were. An **XMPP** account comes back with its sign-in, contacts, chats and the keys
   it knows of other people, and goes on as a new device of the account: it keeps its identity key, so your contacts'
@@ -2684,6 +2694,13 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   **Backups** says to choose one, and until then they go only to the server.
 - **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
   takes messages the other then never gets. Use it to move to a new phone, not to keep two.
+- **The old phone was lost:** a phone that was lost or stolen and is still on goes on reading the relay queues it
+  knew, so messages sent there may reach it and never the new phone. After restoring the backup on the new phone, tap
+  **The old phone was lost** under **Backups** (after a restore of a backup from another phone, Erevos points at it)
+  and say **Move the queues**. Every space and its hidden chats then move to new relay queues, each the next time it
+  opens here, and your contacts and groups are told quietly. The old queues are read here until each contact writes
+  to the new ones, 14 days at most, and the contact links and QR codes you gave before work for 14 days, then no more.
+  What comes through Nostr, XMPP or Matrix still reaches the old phone. After another restore, tap it again.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
   many spaces there are or whether hidden chats are set. The files' names say they are an Erevos backup, and their
   number and size show roughly how much is kept.
@@ -2692,6 +2709,14 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
   Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
   every space. An older Erevos does not open a backup that holds SMS.
+- **The phone's calls:** on Android, **Put the calls in backups**, under **The phone's calls**, adds the phone's call
+  history (its newest 10,000 calls, without voicemail) and Android's own list of blocked numbers to each backup from
+  then on, while Android lets Erevos read the call history; the blocked numbers only while Erevos is the Phone or SMS
+  app. It is off until you turn it on, and the choice goes in backups. They are sealed with the backup's password like
+  the rest. Restoring the backup adds to the phone each call and blocked number it does not have yet, and deletes
+  none; Erevos has to be the Phone app then (**Settings** → **Phone and SMS** → **Phone**), or the rest is restored
+  without them. Android keeps about the newest 500 calls of each SIM, so older ones restored may go as new calls come.
+  An older Erevos does not open a backup that holds calls.
 - **The SMS in order:** each space's pins, archived conversations, Trash, drafts, spam filter and marks, how long an
   SMS waits to be taken back, the SMS to go later (**SMS later**), invites, names from your contacts, whether messages
   to Erevos contacts may go by SMS, and the SIM chosen for each number are in every backup, sealed with the space's
@@ -2703,13 +2728,19 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   cannot bring it: the fingerprint or face, whose key Android keeps in that phone's chip; the folders Erevos may write
   in, as that of automatic backups, which Android lets it into only on the phone they were chosen on; what Android lets
   Erevos do and which apps make calls and send SMS, which only you can allow on each phone, so after a restore on
-  Android **Permissions** opens for the modules that are on; what Android keeps for every app, as the call history and
-  its own list of blocked numbers; and the count of wrong passwords. An XMPP account comes back as a new device of
-  itself and Matrix signs in again, as above, and linked devices are not in a backup for now, as below.
-- **Linked devices** are not in a backup: a link stays with the phone and the computer it was made on. After restoring
-  a backup on another phone, link the computer again: on the computer, tap **Unlink this device**, then link it as the
-  first time, see [Linked devices](#devices). Contacts on this version then stop writing to your computers until you
-  do: the phone gives them a new list of its devices that names none. If this phone's clock is behind the lost one's,
+  Android **Permissions** opens for the modules that are on; the call history and Android's own list of blocked
+  numbers, unless **Put the calls in backups** was on, as above; and the count of wrong passwords. An XMPP account comes
+  back as a new device of itself and Matrix signs in again, as above, and linked devices link again, as below.
+- **Linked devices:** a link stays with the phone and the computer it was made on, and no backup holds it, but a
+  backup holds what lets the phone it is restored on ask each of them to link again. After restoring a backup on
+  another phone, open **Settings** → **Data and devices** → **Linked devices** there: under **From the backup**, tap
+  **Ask to link again** for each device that is still yours, or **Let go** for one that is not. The device, which has
+  to be on, shows the ask: tap **Link again** there only if you restored the backup yourself, otherwise **Not now**.
+  It then links to the new phone with no code to scan, keeps its chats and gets what came since; messages that reached
+  the old phone after the backup stay on it only. Once linked again, neither the old phone nor anyone with the same
+  backup reaches it. An ask is good for 14 days, and a hidden place's devices are asked from inside that place. A
+  device on an older Erevos shows no ask: tap **Unlink this device** on it, then link it as the first time, see
+  [Linked devices](#devices). Contacts on this version stop writing to your computers until they link again: the phone gives them a new list of its devices that names none. If this phone's clock is behind the lost one's,
   that list goes once they write to it, and their chat details may say it changed the day after you restored. A
   linked computer's own backup holds the phone's chats as they were, but
   not the link to write in them: restored, they can be read there but not written in, and Erevos says so once. To write
@@ -2758,7 +2789,7 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
 1. **On the new phone, install Erevos:** the same version as on the old phone, or newer, as an older Erevos refuses
    a backup a newer one made. With no internet, the old phone can give it, see [Erevos to a phone nearby](#give-app).
 2. **On the old phone, get it ready:** for the phone's SMS to come too, turn on **Put the SMS in backups** under
-   **Backups**. A Collection left out of the backups stays behind: put it back in, or give it a WebDAV server, see
+   **Backups**, and for its call history **Put the calls in backups**. A Collection left out of the backups stays behind: put it back in, or give it a WebDAV server, see
    [Collection](#collection). Have your Matrix Security Key at hand, as Matrix signs in again on the new phone.
 3. **On the old phone, make the backup:** under **Settings** → **Data and devices** → **Backups**, tap **Make a
    backup**, or **Back up now** with automatic backups. Make it last, just before you move, and from then on do not
@@ -2784,16 +2815,19 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
   that there are any, see [Hidden chats](#hidden).
 - **Matrix, XMPP and Nostr:** a Nostr key goes on as it was, an XMPP account as a new device of itself, and Matrix
   signs in again as a new device, its Security Key opening the messages from before, see [Backups](#backup).
-- **Linked devices:** a link stays with the phone it was made on. On each computer or browser, tap **Unlink this
-  device**, then link it to the new phone as the first time; a hidden place's devices from inside that place. See
-  [Linked devices](#devices).
+- **Linked devices:** on the new phone, under **Settings** → **Data and devices** → **Linked devices**, tap **Ask to
+  link again** for each computer or browser that is still yours, then **Link again** on it: it keeps its chats, with
+  no code to scan. A hidden place's devices from inside that place. A device on an older Erevos: tap **Unlink this
+  device** on it, then link it to the new phone as the first time. See [Backups](#backup).
 - **The Collection:** it comes in the backup's files. One left out of the backups comes only from its WebDAV server,
   each file as it opens; one with neither stays on the old phone, and the wipe deletes it.
 - **Modules and settings:** the modules that are on, the language and your other settings come with the backup.
-  What Android keeps for each phone stays there: the call history, its blocked numbers, and what it lets Erevos do.
+  What Android keeps for each phone stays there, as what it lets Erevos do; the call history and its blocked numbers
+  come too with **Put the calls in backups** on.
 - **A file missing:** with a file of the backup missing or damaged, Erevos says which and changes nothing, unless you
   choose to restore the rest without it.
-- **If the old phone is lost:** restore your newest backup on the new phone as soon as you can, from your server too.
+- **If the old phone is lost:** restore your newest backup on the new phone as soon as you can, from your server too,
+  then tap **The old phone was lost** under **Backups**, so it reads nothing more of yours on the relays.
   If you lost the backup's password, friends holding its pieces can give it back, see
   [Backup pieces with friends](#backup-pieces).
 
@@ -3201,8 +3235,9 @@ The chats then come to the computer, and after them the messages chosen.
   Contacts on this version are told the next time the phone reaches the relay: they stop writing to it, and take
   nothing more from it. That is how to cut off a lost computer. If it is on, it is told, and the account's chats leave
   it. On the computer, **Unlink this device** does the same from there.
-- **Up to four** devices link to one phone. A backup does not carry the links: after restoring one on another phone,
-  tap **Unlink this device** on the computer and link it again, see [Backups](#backup).
+- **Up to four** devices link to one phone. A backup does not carry the links, but after restoring one on
+  another phone, that phone asks each device that is still yours to link again, with a tap on each, see
+  [Backups](#backup).
 
 ## On an iPhone, from the browser {#iphone}
 

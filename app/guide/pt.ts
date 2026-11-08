@@ -2822,24 +2822,33 @@ as mensagens, as fotos, os arquivos, as mensagens de voz, as conversas importada
 Matrix, XMPP e Nostr de cada um, a Conversa comigo dele, o bloqueio e a senha de pânico, e as configurações que vão com
 você para outro celular. Dentro dele cada espaço continua selado com a própria senha, e o backup é selado de novo com
 uma senha própria. As fotos, os arquivos e as mensagens de voz dele vão em arquivos próprios ao lado dele, de até 4 MB
-cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configurações** → **Dados e dispositivos** →
+cada, cujos nomes começam como o dele; um backup automático usa também os arquivos dos anteriores: mantenha junta a
+pasta toda. Fica em **Configurações** → **Dados e dispositivos** →
 **Backups**.
 
 1. **Fazer um backup:** toque em **Fazer um backup**, escolha uma pasta (no celular, num cartão de memória, ou num app
    de nuvem que mostre as pastas dele ali; num computador, qualquer pasta), digite duas vezes uma senha para o backup
    (pelo menos 12 caracteres, ou quatro palavras) e toque em **Salvar**. Num navegador, o backup e os arquivos dele vão para o menu de compartilhamento ou para os downloads: o primeiro na hora, e cada um dos seguintes depois de um toque em **Salvar**.
-2. **Backups automáticos:** escolha **Todo dia** ou **Toda semana**, depois uma pasta e uma senha. O Erevos faz um
-   quando abre e o último é mais antigo que isso, e a pasta guarda os 3 mais recentes, cada um com seus arquivos. Abaixo deles ficam **Fazer
+2. **Backups automáticos:** escolha **A cada 6 horas**, **Todo dia** ou **Toda semana**, depois uma pasta e uma senha.
+   O Erevos faz um enquanto está aberto, assim que o último é mais antigo que isso: quando um espaço abre, a cada 15
+   minutos e quando vai para o segundo plano, antes de bloquear; nunca sem um espaço aberto. Cada um escreve só as
+   fotos, os arquivos e as mensagens de voz que são novos desde o anterior, e nomeia de novo os arquivos dos
+   anteriores para o resto, então um a cada 6 horas custa pouco. A pasta guarda os 3 mais recentes, com todos os
+   arquivos de que eles precisam, e apaga os arquivos de que nenhum precisa. Um que falhou é tentado de novo quando um
+   espaço abre, ou uma hora depois. Abaixo deles ficam **Fazer
    backup agora**, **Mudar de pasta** e **Alterar senha**; **Desativado** os interrompe, e os já feitos ficam na
    pasta.
 3. **Também para um servidor:** no Android e no app para computador, com os backups automáticos ligados, **Adicionar
    um servidor** em **Também para um servidor** envia cada um também para uma pasta num servidor que você escolher e
    que fale WebDAV, como o seu próprio Nextcloud: informe o endereço da pasta, um nome de usuário e, melhor, uma senha
-   de aplicativo só para o Erevos, e toque em **Conectar**. O servidor guarda os 3 mais recentes; **Parar de enviar**
+   de aplicativo só para o Erevos, e toque em **Conectar**. O servidor guarda os 3 mais recentes, com todos os
+   arquivos de que eles precisam, e cada um envia só o que é novo; **Parar de enviar**
    interrompe, e os que estão lá ficam. No web app, que não faz backups sozinho, **Enviar um backup agora** envia um
    para lá, com uma senha que você digita a cada vez.
 4. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
-   uma vez, encontra os arquivos do backup ao lado dele, ou pede que você os escolha, ou a pasta deles, depois põe o
+   uma vez, encontra os arquivos do backup ao lado dele, ou pede que você os escolha, ou a pasta deles (para um backup
+   automático, escolha todos os arquivos da pasta, pois alguns dos arquivos dele podem começar como o nome de um
+   backup anterior), depois põe o
    backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito, com as senhas usadas
    então. Se um dos arquivos dele faltar, estiver danificado ou for de outro backup, o Erevos diz qual, e nada muda, a não ser que você escolha restaurar o resto sem ele: então as fotos, os arquivos e as mensagens de voz do celular ficam como estão, e os que ele contém não voltam. **Restaurar de um
    servidor** procura na pasta para onde vão os backups automáticos, ou numa que você indicar com usuário e senha, e
@@ -2857,7 +2866,8 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   poucos tamanhos, então nenhum dos dois diz que é do Erevos nem exatamente quanto guarda. As fotos, os arquivos e as
   mensagens de voz dele vão como envios próprios, todos do mesmo tamanho, cada um também com um nome aleatório e selado
   com a senha do backup, preso a esse backup e ao lugar dele nele, para que nenhum possa ser trocado, tirado ou vir de
-  outro backup sem que se perceba; o servidor os guarda com o backup deles e os apaga junto com ele. Os nomes deles têm o mesmo comprimento que o do backup, mas o tamanho os distingue dele, então o servidor pode contá-los e saber assim mais ou menos quanto o backup guarda. O que um backup interrompido deixou lá é apagado antes que o próximo vá, então um servidor que ficou sem espaço volta a ter. O servidor ainda
+  outro backup sem que se perceba; o servidor guarda cada um enquanto algum dos backups que ele guarda precisar dele,
+  e depois o apaga. Os nomes deles têm o mesmo comprimento que o do backup, mas o tamanho os distingue dele, então o servidor pode contá-los e saber assim mais ou menos quanto o backup guarda. O que um backup interrompido deixou lá é apagado antes que o próximo vá, então um servidor que ficou sem espaço volta a ter. O servidor ainda
   vê sua conta, quando chega um e mais ou menos o tamanho. No Android, os backups vão para lá como diz a escolha do espaço em
   **Configurações** → **Relay e redes** → **Tor**, como o Matrix: com **Tudo** só pelo Tor, então o servidor não vê o
   endereço do celular; com **Mensagens** pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou
@@ -2874,10 +2884,14 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   assim. O Google Drive ficou de fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos
   apps do Google e de um login no Google no celular.
 - **Conversas que continuaram depois do backup:** restaurar devolve as chaves de cada conversa como estavam então. As
-  mensagens que chegaram depois do backup e já foram lidas não estão nele, e uma conversa que continuou pode deixar de
-  abrir mensagens novas. Então peça de novo ao contato o link de contato dele. Antes de uma conversa restaurada
+  mensagens que chegaram depois do backup e já foram lidas não estão nele. Uma conversa que continuou depois do backup
+  deixaria de abrir mensagens novas, então cada conversa restaurada, a do espaço e a de cada lugar oculto quando abre,
+  começa sozinha e em silêncio uma conversa nova com cada contato, a partir das chaves mais novas que ele deu a ela, e
+  o Erevos dele segue nela. Com um contato cujo Erevos é mais antigo, peça de novo o link de contato dele. Antes de uma conversa restaurada
   escrever de novo, as conversas dela pulam adiante das chaves que podem ter usado desde o backup, para que nenhuma
-  chave sele duas mensagens: uma selada duas vezes deixaria quem guardou os dois pacotes ler os dois juntos.
+  chave sele duas mensagens: uma selada duas vezes deixaria quem guardou os dois pacotes ler os dois juntos. Em um
+  grupo, um membro restaurado pede ao Erevos do administrador que o ponha de novo, o que funciona enquanto o grupo
+  avançou só um pouco; se não, peça para ser adicionado de novo.
 - **Matrix, XMPP e Nostr:** as contas de cada espaço e de suas conversas ocultas estão no backup. Uma chave **Nostr**
   volta com as conversas dela, como estavam. Uma conta **XMPP** volta com a sessão, os contatos, as conversas e as
   chaves que ela conhece dos outros, e segue como um novo dispositivo da conta: mantém a chave de identidade, então os
@@ -2902,6 +2916,14 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   celular, **Backups** pede que você escolha uma, e até lá eles vão só para o servidor.
 - **Um celular de cada vez:** um backup restaurado num segundo celular lê as mesmas filas do relay que o primeiro, e
   cada um pega mensagens que o outro então nunca recebe. Use-o para mudar para um celular novo, não para manter dois.
+- **O celular antigo foi perdido:** um celular que foi perdido ou roubado e ainda está ligado continua lendo as filas
+  do relay que conhecia, então mensagens enviadas para lá podem chegar a ele e nunca ao celular novo. Depois de
+  restaurar o backup no celular novo, toque em **O celular antigo foi perdido** em **Backups** (depois de restaurar um
+  backup de outro celular, o Erevos aponta para isso) e diga **Trocar as filas**. Cada espaço e suas conversas ocultas
+  passam então para filas novas do relay, cada um na próxima vez que abre aqui, e os seus contatos e grupos são
+  avisados em silêncio. As filas antigas são lidas aqui até cada contato escrever nas novas, 14 dias no máximo, e os
+  links de contato e os QR codes que você deu antes valem por 14 dias, depois não mais. O que chega por Nostr, XMPP ou
+  Matrix ainda chega ao celular antigo. Depois de outra restauração, toque nele de novo.
 - **Discrição:** todos os espaços mostram a mesma tela de Backups, e um backup guarda todos os espaços, então nenhum
   dos dois diz quantos espaços há nem se há conversas ocultas definidas. Os nomes dos arquivos dizem que são um backup do
   Erevos, e a quantidade e o tamanho deles mostram mais ou menos quanto está guardado.
@@ -2910,6 +2932,15 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   backup como o resto. Restaurar o backup devolve aos SMS do celular cada mensagem que ele ainda não tem, e não apaga
   nenhuma; o Erevos tem de ser o app de SMS então também, ou o resto é restaurado sem eles. Os SMS são do celular, os
   mesmos em todos os espaços. Um Erevos mais antigo não abre um backup que contém SMS.
+- **As chamadas do celular:** no Android, **Incluir as chamadas nos backups**, em **As chamadas do celular**,
+  acrescenta a cada backup a partir daí o histórico de chamadas do celular (as 10.000 chamadas mais recentes dele, sem
+  o correio de voz) e a própria lista de números bloqueados do Android, enquanto o Android deixa o Erevos ler o
+  histórico de chamadas; os números bloqueados só enquanto o Erevos é o app de Telefone ou SMS. Fica desligado até
+  você ligar, e a escolha vai nos backups. Eles são selados com a senha do backup como o resto. Restaurar o backup
+  acrescenta ao celular cada chamada e cada número bloqueado que ele ainda não tem, e não apaga nenhum; o Erevos tem
+  de ser o app de Telefone então (**Configurações** → **Telefone e SMS** → **Telefone**), ou o resto é restaurado sem
+  eles. O Android guarda mais ou menos as 500 chamadas mais recentes de cada SIM, então as mais antigas restauradas
+  podem sumir conforme chegam chamadas novas. Um Erevos mais antigo não abre um backup que contém chamadas.
 - **Os SMS em ordem:** os fixados, as conversas arquivadas, a Lixeira, os rascunhos, o filtro e as marcas de spam de
   cada espaço, quanto tempo um SMS espera para poder ser desfeito, os SMS para enviar mais tarde (**SMS mais tarde**),
   os convites, os nomes dos seus contatos, se as mensagens para contatos do Erevos podem ir por SMS, e o chip escolhido
@@ -2922,13 +2953,21 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   em que o Erevos pode gravar, como a dos backups automáticos, nas quais o Android só o deixa entrar no celular em que
   foram escolhidas; o que o Android permite ao Erevos e quais apps fazem as chamadas e enviam os SMS, que só você pode
   permitir em cada celular, por isso depois de uma restauração no Android abre **Permissões** para os módulos ativados;
-  o que o Android guarda para todos os apps, como o histórico de chamadas e a própria lista de números bloqueados; e a
-  contagem de senhas erradas. Uma conta XMPP volta como um novo dispositivo dela mesma e o Matrix entra de novo, como
-  acima, e os dispositivos conectados não estão num backup por enquanto, como abaixo.
-- **Os dispositivos conectados** não estão num backup: uma conexão fica com o celular e o computador em que foi
-  feita. Depois de restaurar um backup em outro celular, conecte o computador de novo: no computador, toque em
-  **Desconectar este dispositivo**, depois conecte-o como na primeira vez, veja [Dispositivos conectados](#devices).
-  Os contatos com esta versão então param de escrever para os seus computadores até você fazer isso: o celular lhes dá
+  o histórico de chamadas e a própria lista de números bloqueados do Android, a menos que **Incluir as chamadas nos
+  backups** estivesse ligado, como acima; e a contagem de senhas erradas. Uma conta XMPP volta como um novo dispositivo dela mesma e o Matrix entra de novo, como
+  acima, e os dispositivos conectados se conectam de novo, como abaixo.
+- **Dispositivos conectados:** uma conexão fica com o celular e o computador em que foi feita, e nenhum backup a
+  guarda, mas um backup guarda o que permite ao celular em que é restaurado pedir a cada um deles que se conecte de
+  novo. Depois de restaurar um backup em outro celular, abra lá **Configurações** → **Dados e dispositivos** →
+  **Dispositivos conectados**: em **Do backup**, toque em **Pedir para conectar de novo** para cada dispositivo que
+  ainda é seu, ou em **Esquecer** para um que não é. O dispositivo, que tem de estar ligado, mostra o pedido: toque lá
+  em **Conectar de novo** só se foi você que restaurou o backup, senão em **Agora não**. Ele se conecta então ao
+  celular novo sem código para ler, mantém as conversas dele e recebe o que veio desde então; as mensagens que
+  chegaram ao celular antigo depois do backup ficam só nele. Depois de conectado de novo, nem o celular antigo nem
+  quem tiver o mesmo backup chega a ele. Um pedido vale por 14 dias, e os dispositivos de um lugar oculto são pedidos
+  de dentro desse lugar. Um dispositivo com um Erevos mais antigo não mostra pedido: toque nele em **Desconectar este
+  dispositivo**, depois conecte-o como na primeira vez, veja [Dispositivos conectados](#devices). Os contatos com esta
+  versão param de escrever para os seus computadores até eles se conectarem de novo: o celular lhes dá
   uma nova lista dos dispositivos dele que não nomeia nenhum. Se o relógio deste celular estiver atrasado em relação
   ao do perdido, essa lista só vai para eles quando escreverem para ele, e os detalhes da conversa deles podem dizer
   que ela mudou no dia depois de você restaurar. O próprio backup de um computador conectado guarda as conversas do
@@ -2982,7 +3021,7 @@ com a própria senha.
    recusa um backup feito por um mais novo. Sem internet, o celular antigo pode dá-lo, veja
    [O Erevos para um telefone próximo](#give-app).
 2. **No celular antigo, prepare-o:** para os SMS do celular também irem, ative **Incluir os SMS nos backups** em
-   **Backups**. Uma Coleção deixada fora dos backups fica para trás: coloque-a de volta, ou dê a ela um servidor
+   **Backups**, e para o histórico de chamadas dele **Incluir as chamadas nos backups**. Uma Coleção deixada fora dos backups fica para trás: coloque-a de volta, ou dê a ela um servidor
    WebDAV, veja [Coleção](#collection). Deixe a sua chave de segurança do Matrix à mão, pois o Matrix entra de novo no
    celular novo.
 3. **No celular antigo, faça o backup:** em **Configurações** → **Dados e dispositivos** → **Backups**, toque em
@@ -3010,18 +3049,21 @@ com a própria senha.
 - **Matrix, XMPP e Nostr:** uma chave Nostr continua como estava, uma conta XMPP como um novo dispositivo dela mesma, e
   o Matrix entra de novo como novo dispositivo, com a chave de segurança dele abrindo as mensagens de antes, veja
   [Backups](#backup).
-- **Dispositivos conectados:** uma conexão fica com o celular em que foi feita. Em cada computador ou navegador, toque
-  em **Desconectar este dispositivo**, depois conecte-o ao celular novo como na primeira vez; os dispositivos de um
-  lugar oculto, de dentro desse lugar. Veja [Dispositivos conectados](#devices).
+- **Dispositivos conectados:** no celular novo, em **Configurações** → **Dados e dispositivos** → **Dispositivos
+  conectados**, toque em **Pedir para conectar de novo** para cada computador ou navegador que ainda é seu, depois em
+  **Conectar de novo** nele: ele mantém as conversas dele, sem código para ler. Os dispositivos de um lugar oculto, de
+  dentro desse lugar. Um dispositivo com um Erevos mais antigo: toque nele em **Desconectar este dispositivo**, depois
+  conecte-o ao celular novo como na primeira vez. Veja [Backups](#backup).
 - **A Coleção:** vem nos arquivos do backup. Uma deixada fora dos backups vem só do servidor WebDAV dela, cada arquivo
   quando é aberto; uma sem nenhum dos dois fica no celular antigo, e o apagamento a elimina.
-- **Módulos e configurações:** os módulos ativados, o idioma e as outras configurações vêm com o backup. O que o Android
-  guarda para cada celular fica lá: o histórico de chamadas, os números bloqueados dele, e o que ele deixa o Erevos
-  fazer.
+- **Módulos e configurações:** os módulos ativados, o idioma e as outras configurações vêm com o backup. O que o
+  Android guarda para cada celular fica lá, como o que ele deixa o Erevos fazer; o histórico de chamadas e os números
+  bloqueados dele vêm também com **Incluir as chamadas nos backups** ligado.
 - **Um arquivo faltando:** se um arquivo do backup faltar ou estiver danificado, o Erevos diz qual e não muda nada, a
   não ser que você escolha restaurar o resto sem ele.
 - **Se o celular antigo se perdeu:** restaure o seu backup mais novo no celular novo assim que puder, também do seu
-  servidor. Se você perdeu a senha do backup, os amigos que têm as partes dela podem devolvê-la, veja
+  servidor, depois toque em **O celular antigo foi perdido** em **Backups**, para ele não ler mais nada seu nos
+  relays. Se você perdeu a senha do backup, os amigos que têm as partes dela podem devolvê-la, veja
   [Partes do backup com amigos](#backup-pieces).
 
 **Por quê:** o Erevos não guarda nada seu em um servidor que possa devolvê-lo, então nenhuma conta leva as suas
@@ -3459,8 +3501,9 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   aceito. Os contatos nesta versão ficam sabendo na próxima vez que o celular alcança o relay: param de escrever para
   ele, e não aceitam mais nada dele. É assim que se desconecta um computador perdido. Se ele estiver ligado, ele é
   avisado, e as conversas da conta saem dele. No computador, **Desconectar este dispositivo** faz o mesmo de lá.
-- **Até quatro** dispositivos se conectam a um celular. Um backup não leva as conexões: depois de restaurar um em outro
-  celular, toque em **Desconectar este dispositivo** no computador e conecte-o de novo, veja [Backups](#backup).
+- **Até quatro** dispositivos se conectam a um celular. Um backup não leva as conexões, mas depois de restaurar um em
+  outro celular, esse celular pede a cada dispositivo que ainda é seu que se conecte de novo, com um toque em cada um,
+  veja [Backups](#backup).
 
 ## Num iPhone, pelo navegador {#iphone}
 

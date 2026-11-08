@@ -2998,26 +2998,34 @@ conversations, ses messages, photos, fichiers, messages vocaux, discussions impo
 comptes Matrix, XMPP et Nostr, sa Discussion avec moi-même, le verrou et le mot de passe de panique, et les réglages qui
 te suivent sur un autre téléphone. À l’intérieur, chaque espace reste scellé avec son propre mot de passe, et la
 sauvegarde est scellée de nouveau avec un mot de passe à elle. Ses photos, fichiers et messages vocaux vont dans des
-fichiers à part, à côté d’elle, de 4 Mo au plus chacun, dont le nom commence comme le sien : garde-les ensemble. C’est
+fichiers à part, à côté d’elle, de 4 Mo au plus chacun, dont le nom commence comme le sien ; une sauvegarde
+automatique utilise aussi les fichiers de celles d’avant : garde tout le dossier ensemble. C’est
 sous **Réglages** → **Données et appareils** → **Sauvegardes**.
 
 1. **Créer une sauvegarde :** appuie sur **Créer une sauvegarde**, choisis un dossier (sur le téléphone, une carte
    mémoire, ou une app cloud qui y montre ses dossiers ; sur un ordinateur, n’importe quel dossier), tape deux fois un
    mot de passe pour la sauvegarde (au moins 12 caractères, ou quatre mots) et appuie sur **Enregistrer**. Dans un navigateur, la sauvegarde et ses fichiers vont au menu de partage ou dans les téléchargements : le premier tout de suite, chacun des suivants après un appui sur **Enregistrer**.
-2. **Sauvegardes automatiques :** choisis **Chaque jour** ou **Chaque semaine**, puis un dossier et un mot de passe.
-   Erevos en crée une quand il s’ouvre et que la dernière est plus ancienne que cela, et le dossier garde les 3 plus
-   récentes, chacune avec ses fichiers. En dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
+2. **Sauvegardes automatiques :** choisis **Toutes les 6 heures**, **Chaque jour** ou **Chaque semaine**, puis un
+   dossier et un mot de passe. Erevos en crée une tant qu’il est ouvert, dès que la dernière est plus ancienne que
+   cela : quand un espace s’ouvre, toutes les 15 minutes, et quand il passe en arrière-plan, avant de se verrouiller ;
+   jamais sans espace ouvert. Chacune n’écrit que les photos, fichiers et messages vocaux qui sont nouveaux depuis la
+   précédente, et nomme de nouveau les fichiers de celles d’avant pour le reste, si bien qu’une toutes les 6 heures
+   coûte peu. Le dossier garde les 3 plus récentes, avec tous les fichiers dont elles ont besoin, et supprime les
+   fichiers dont aucune n’a besoin. Une qui a échoué est retentée quand un espace s’ouvre, ou une heure plus tard. En
+   dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
    **Désactivé** les arrête, et celles déjà faites restent dans le dossier.
 3. **Aussi vers un serveur :** sur Android et dans l’app de bureau, avec les sauvegardes automatiques activées,
    **Ajouter un serveur** sous **Aussi vers un serveur** envoie chacune aussi dans un dossier sur un serveur de ton
    choix qui parle WebDAV, comme ton propre Nextcloud : donne l’adresse du dossier, un nom d’utilisateur et, mieux, un
    mot de passe d’application rien que pour Erevos, puis appuie sur **Connecter**. Le serveur garde les 3 plus
-   récentes ; **Ne plus envoyer** l’arrête, et celles qui y sont restent. Dans l’app web, qui ne fait pas de
+   récentes, avec tous les fichiers dont elles ont besoin, et chacune n’envoie que ce qui est nouveau ; **Ne plus
+   envoyer** l’arrête, et celles qui y sont restent. Dans l’app web, qui ne fait pas de
    sauvegardes d’elle-même, **Envoyer une sauvegarde maintenant** en envoie une là-bas, avec un mot de passe que tu
    tapes à chaque fois.
 4. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
    demande encore une fois, trouve les fichiers de la sauvegarde à côté d’elle, ou te demande de les choisir, ou leur
-   dossier, puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel qu’il était quand la
+   dossier (pour une sauvegarde automatique, choisis tous les fichiers du dossier, car certains de ses fichiers
+   peuvent commencer par le nom d’une sauvegarde plus ancienne), puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel qu’il était quand la
    sauvegarde a été faite, avec les mots de passe utilisés alors. Si l’un de ses fichiers manque, est abîmé ou appartient à une autre sauvegarde, Erevos dit lequel, et rien n’est changé, sauf si tu choisis de restaurer le reste sans lui : alors les photos, les fichiers et les messages vocaux du téléphone restent tels quels, et ceux qu’il contient ne reviennent pas. **Restaurer depuis un serveur** regarde dans le dossier où
    vont les sauvegardes automatiques, ou dans un dossier que tu donnes avec son nom d’utilisateur et son mot de passe,
    et montre les sauvegardes qui s’y trouvent, les plus récentes d’abord : choisis-en une, tape son mot de passe, et
@@ -3035,7 +3043,7 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   d’Erevos ni combien il contient exactement. Ses photos, fichiers et messages vocaux partent en envois à part, tous
   de la même taille, chacun aussi sous un nom aléatoire et scellé avec le mot de passe de la sauvegarde, lié à cette
   sauvegarde et à sa place en elle, si bien qu’aucun ne peut être échangé, retiré ou pris d’une autre sauvegarde sans
-  que cela se voie ; le serveur les garde avec leur sauvegarde et les supprime avec elle. Leurs noms sont aussi longs que celui de la sauvegarde, mais leur taille les distingue d’elle : le serveur peut donc les compter, et savoir ainsi à peu près ce que la sauvegarde contient. Ce qu’une sauvegarde coupée en route a laissé là-bas est supprimé avant que la suivante parte, si bien qu’un serveur qui n’avait plus de place en a de nouveau. Le serveur voit quand même ton
+  que cela se voie ; le serveur garde chacun tant qu’une des sauvegardes qu’il garde en a besoin, puis le supprime. Leurs noms sont aussi longs que celui de la sauvegarde, mais leur taille les distingue d’elle : le serveur peut donc les compter, et savoir ainsi à peu près ce que la sauvegarde contient. Ce qu’une sauvegarde coupée en route a laissé là-bas est supprimé avant que la suivante parte, si bien qu’un serveur qui n’avait plus de place en a de nouveau. Le serveur voit quand même ton
   compte, quand une arrive et à peu près sa taille. Sur Android, les sauvegardes y vont comme le dit le choix de l’espace sous **Réglages** → **Relais et
   réseaux** → **Tor**, comme Matrix : avec **Tout** seulement par Tor, donc le serveur ne voit pas l’adresse du
   téléphone ; avec **Messages** par Tor dès que Tor est prêt, et en direct tant que Tor démarre ou quand il échoue ;
@@ -3053,11 +3061,16 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
   connexion Google sur le téléphone.
 - **Les discussions qui ont continué après la sauvegarde :** restaurer remet les clés de chaque conversation telles
-  qu’elles étaient alors. Les messages arrivés après la sauvegarde et déjà lus n’y sont pas, et une discussion qui a
-  continué peut ne plus ouvrir les nouveaux messages. Demande alors de nouveau son lien de contact au contact. Avant
+  qu’elles étaient alors. Les messages arrivés après la sauvegarde et déjà lus n’y sont pas. Une conversation qui a
+  continué après la sauvegarde n’ouvrirait plus les nouveaux messages, si bien que chaque discussion restaurée, celle
+  de l’espace et celle de chaque lieu caché à son ouverture, ouvre d’elle-même et sans bruit une nouvelle conversation
+  avec chaque contact, à partir des clés les plus récentes qu’il lui a données, et son Erevos continue dedans. Avec un
+  contact dont l’Erevos est plus ancien, demande-lui de nouveau son lien de contact. Avant
   qu’une discussion restaurée écrive de nouveau, ses conversations sautent au-delà des clés qu’elles ont pu utiliser
   depuis la sauvegarde, si bien qu’aucune clé ne scelle jamais deux messages : une clé qui en scellerait deux
-  permettrait à celui qui a gardé les deux paquets de les lire ensemble.
+  permettrait à celui qui a gardé les deux paquets de les lire ensemble. Dans un groupe, un membre restauré demande à
+  l’Erevos de l’admin de le remettre dedans, ce qui marche tant que le groupe n’a avancé que de peu ; sinon demande à
+  être ajouté de nouveau.
 - **Matrix, XMPP et Nostr :** les comptes de chaque espace et de ses discussions masquées sont dans la sauvegarde. Une
   clé **Nostr** revient avec ses discussions, telles qu’elles étaient. Un compte **XMPP** revient avec sa connexion, ses
   contacts, ses discussions et les clés qu’il connaît des autres, et continue comme un nouvel appareil du compte : il
@@ -3085,6 +3098,15 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
 - **Un téléphone à la fois :** une sauvegarde restaurée sur un second téléphone lit les mêmes files d’attente sur le
   relais que le premier, et chacun prend des messages que l’autre ne reçoit alors jamais. Utilise-la pour passer à un
   nouveau téléphone, pas pour en garder deux.
+- **L’ancien téléphone est perdu :** un téléphone perdu ou volé qui est encore allumé continue de lire les files
+  d’attente sur le relais qu’il connaissait, donc des messages envoyés là peuvent lui arriver et jamais au nouveau
+  téléphone. Après avoir restauré la sauvegarde sur le nouveau téléphone, appuie sur **L’ancien téléphone est perdu**
+  sous **Sauvegardes** (après la restauration d’une sauvegarde venue d’un autre téléphone, Erevos le signale) et dis
+  **Changer les files**. Chaque espace et ses discussions masquées passent alors à de nouvelles files d’attente sur le
+  relais, chacun la prochaine fois qu’il s’ouvre ici, et tes contacts et groupes sont prévenus sans bruit. Les
+  anciennes files sont lues ici jusqu’à ce que chaque contact écrive dans les nouvelles, 14 jours au plus, et les
+  liens de contact et codes QR que tu as donnés avant marchent 14 jours, puis plus. Ce qui passe par Nostr, XMPP ou
+  Matrix arrive toujours sur l’ancien téléphone. Après une autre restauration, appuie dessus de nouveau.
 - **Discrétion :** chaque espace montre le même écran Sauvegardes, et une sauvegarde contient chaque espace, si bien que
   ni l’un ni l’autre ne dit combien il y a d’espaces ni si des discussions masquées sont définies. Le nom des fichiers dit
   que c’est une sauvegarde Erevos, et leur nombre et leur taille montrent à peu près combien est gardé.
@@ -3094,6 +3116,16 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   message qu’il n’a pas encore, et n’en supprime aucun ; Erevos doit alors aussi être l’app SMS, sinon le reste est
   restauré sans eux. Les SMS sont ceux du téléphone, les mêmes dans chaque espace. Un Erevos plus ancien n’ouvre pas une
   sauvegarde qui contient des SMS.
+- **Les appels du téléphone :** sur Android, **Inclure les appels dans les sauvegardes**, sous **Les appels du
+  téléphone**, ajoute à chaque sauvegarde à partir de là l’historique des appels du téléphone (ses 10 000 appels les
+  plus récents, sans la messagerie vocale) et la liste de numéros bloqués d’Android elle-même, tant qu’Android laisse
+  Erevos lire l’historique des appels ; les numéros bloqués seulement tant qu’Erevos est l’app Téléphone ou SMS. C’est
+  désactivé jusqu’à ce que tu l’actives, et le choix va dans les sauvegardes. Ils sont scellés avec le mot de passe de
+  la sauvegarde comme le reste. Restaurer la sauvegarde ajoute au téléphone chaque appel et chaque numéro bloqué qu’il
+  n’a pas encore, et n’en supprime aucun ; Erevos doit alors être l’app Téléphone (**Réglages** → **Téléphone et SMS**
+  → **Téléphone**), sinon le reste est restauré sans eux. Android garde à peu près les 500 appels les plus récents de
+  chaque SIM, donc les plus anciens restaurés peuvent partir à mesure que de nouveaux arrivent. Un Erevos plus ancien
+  n’ouvre pas une sauvegarde qui contient des appels.
 - **Les SMS en ordre :** les épingles, conversations archivées, corbeille, brouillons, filtre anti-spam et marques de
   chaque espace, le délai pendant lequel un SMS peut encore être annulé, les SMS à envoyer plus tard (**SMS plus
   tard**), les invitations, les noms de tes contacts, si les messages aux contacts Erevos peuvent passer par SMS, et la
@@ -3107,15 +3139,24 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   la puce de ce téléphone ; les dossiers où Erevos peut écrire, comme celui des sauvegardes automatiques, où Android ne
   le laisse entrer que sur le téléphone où ils ont été choisis ; ce qu’Android permet à Erevos et quelles apps passent
   les appels et envoient les SMS, que toi seul peux autoriser sur chaque téléphone, c’est pourquoi après une
-  restauration sur Android **Autorisations** s’ouvre pour les modules activés ; ce qu’Android garde pour toutes les
-  apps, comme l’historique des appels et sa propre liste de numéros bloqués ; et le compte des mots de passe erronés.
-  Un compte XMPP revient comme un nouvel appareil de lui-même et Matrix se reconnecte, comme plus haut, et les appareils
-  associés ne sont pas dans une sauvegarde pour l’instant, comme plus bas.
-- **Les appareils associés** ne sont pas dans une sauvegarde : une association reste avec le téléphone et l’ordinateur
-  où elle a été faite. Après la restauration d’une sauvegarde sur un autre téléphone, associe de nouveau l’ordinateur :
-  sur l’ordinateur, appuie sur **Dissocier cet appareil**, puis associe-le comme la première fois, voir [Appareils
-  associés](#devices). Les contacts qui ont cette version cessent alors d’écrire à tes ordinateurs jusqu’à ce que tu le
-  fasses : le téléphone leur donne une nouvelle liste de ses appareils qui n’en nomme aucun. Si l’horloge de ce
+  restauration sur Android **Autorisations** s’ouvre pour les modules activés ; l’historique des appels et la liste de
+  numéros bloqués d’Android elle-même, sauf si **Inclure les appels dans les sauvegardes** était activé, comme plus
+  haut ; et le compte des mots de passe erronés.
+  Un compte XMPP revient comme un nouvel appareil de lui-même et Matrix se reconnecte, comme plus haut, et les
+  appareils associés s’associent de nouveau, comme plus bas.
+- **Appareils associés :** une association reste avec le téléphone et l’ordinateur où elle a été faite, et aucune
+  sauvegarde ne la garde, mais une sauvegarde garde de quoi laisser le téléphone où elle est restaurée demander à
+  chacun de s’associer de nouveau. Après la restauration d’une sauvegarde sur un autre téléphone, ouvre là
+  **Réglages** → **Données et appareils** → **Appareils associés** : sous **De la sauvegarde**, appuie sur **Demander
+  une nouvelle association** pour chaque appareil qui est encore à toi, ou sur **Oublier** pour un qui ne l’est plus.
+  L’appareil, qui doit être allumé, montre la demande : appuie là sur **Associer de nouveau** seulement si c’est toi
+  qui as restauré la sauvegarde, sinon sur **Pas maintenant**. Il s’associe alors au nouveau téléphone sans code à
+  scanner, garde ses discussions et reçoit ce qui est venu depuis ; les messages arrivés sur l’ancien téléphone après
+  la sauvegarde restent sur lui seul. Une fois associé de nouveau, ni l’ancien téléphone ni quiconque a la même
+  sauvegarde ne l’atteint. Une demande vaut 14 jours, et les appareils d’un lieu caché sont demandés depuis
+  l’intérieur de ce lieu. Un appareil avec un Erevos plus ancien ne montre aucune demande : appuie dessus sur
+  **Dissocier cet appareil**, puis associe-le comme la première fois, voir [Appareils associés](#devices). Les
+  contacts qui ont cette version cessent d’écrire à tes ordinateurs jusqu’à ce qu’ils soient associés de nouveau : le téléphone leur donne une nouvelle liste de ses appareils qui n’en nomme aucun. Si l’horloge de ce
   téléphone retarde sur celle du téléphone perdu, cette liste disparaît dès qu’ils lui écrivent, et les détails de leur
   discussion peuvent dire qu’elle a changé le lendemain de ta restauration. La propre sauvegarde d’un ordinateur associé
   contient les discussions du téléphone telles qu’elles étaient, mais pas l’association permettant d’y écrire :
@@ -3173,7 +3214,8 @@ porte, scellée avec son mot de passe.
    plus ancien refuse une sauvegarde faite par un plus récent. Sans internet, l’ancien téléphone peut te le donner,
    voir [Erevos vers un téléphone proche](#give-app).
 2. **Sur l’ancien téléphone, prépare-le :** pour que les SMS du téléphone passent aussi, active **Inclure les SMS dans
-   les sauvegardes** sous **Sauvegardes**. Une Collection laissée hors des sauvegardes reste derrière : remets-la, ou
+   les sauvegardes** sous **Sauvegardes**, et pour son historique des appels **Inclure les appels dans les
+   sauvegardes**. Une Collection laissée hors des sauvegardes reste derrière : remets-la, ou
    donne-lui un serveur WebDAV, voir [Collection](#collection). Aie ta clé de sécurité Matrix sous la main, car Matrix
    se reconnecte sur le nouveau téléphone.
 3. **Sur l’ancien téléphone, fais la sauvegarde :** sous **Réglages** → **Données et appareils** → **Sauvegardes**,
@@ -3207,19 +3249,22 @@ porte, scellée avec son mot de passe.
 - **Matrix, XMPP et Nostr :** une clé Nostr continue comme avant, un compte XMPP comme un nouvel appareil de lui-même,
   et Matrix se reconnecte comme un nouvel appareil, sa clé de sécurité ouvrant les messages d’avant, voir
   [Sauvegardes](#backup).
-- **Appareils associés :** une association reste avec le téléphone où elle a été faite. Sur chaque ordinateur ou
-  navigateur, appuie sur **Dissocier cet appareil**, puis associe-le au nouveau téléphone comme la première fois ; les
-  appareils d’un lieu caché depuis l’intérieur de ce lieu. Voir [Appareils associés](#devices).
+- **Appareils associés :** sur le nouveau téléphone, sous **Réglages** → **Données et appareils** → **Appareils
+  associés**, appuie sur **Demander une nouvelle association** pour chaque ordinateur ou navigateur qui est encore à
+  toi, puis sur **Associer de nouveau** dessus : il garde ses discussions, sans code à scanner. Les appareils d’un
+  lieu caché depuis l’intérieur de ce lieu. Un appareil avec un Erevos plus ancien : appuie dessus sur **Dissocier cet
+  appareil**, puis associe-le au nouveau téléphone comme la première fois. Voir [Sauvegardes](#backup).
 - **La Collection :** elle vient dans les fichiers de la sauvegarde. Une laissée hors des sauvegardes vient seulement de
   son serveur WebDAV, chaque fichier à son ouverture ; une sans l’un ni l’autre reste sur l’ancien téléphone, et
   l’effacement la supprime.
 - **Modules et réglages :** les modules activés, la langue et tes autres réglages viennent avec la sauvegarde. Ce
-  qu’Android garde pour chaque téléphone y reste : l’historique des appels, ses numéros bloqués et ce qu’il permet à
-  Erevos.
+  qu’Android garde pour chaque téléphone y reste, comme ce qu’il permet à Erevos ; l’historique des appels et ses
+  numéros bloqués viennent aussi avec **Inclure les appels dans les sauvegardes** activé.
 - **Un fichier manque :** si un fichier de la sauvegarde manque ou est abîmé, Erevos dit lequel et ne change rien, sauf
   si tu choisis de restaurer le reste sans lui.
-- **Si l’ancien téléphone est perdu :** restaure ta sauvegarde la plus récente sur le nouveau téléphone dès que tu peux,
-  depuis ton serveur aussi. Si tu as perdu le mot de passe de la sauvegarde, les amis qui en gardent les morceaux
+- **Si l’ancien téléphone est perdu :** restaure ta sauvegarde la plus récente sur le nouveau téléphone dès que tu
+  peux, depuis ton serveur aussi, puis appuie sur **L’ancien téléphone est perdu** sous **Sauvegardes**, pour qu’il ne
+  lise plus rien de toi sur les relais. Si tu as perdu le mot de passe de la sauvegarde, les amis qui en gardent les morceaux
   peuvent te le rendre, voir [Morceaux de sauvegarde chez des amis](#backup-pieces).
 
 **Pourquoi :** Erevos ne garde rien de toi sur un serveur qui pourrait le rendre, donc aucun compte ne porte tes
@@ -3687,9 +3732,9 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   ils cessent de lui écrire, et ne prennent plus rien de lui. C’est ainsi qu’on coupe un ordinateur perdu. S’il est
   allumé, il est prévenu, et les discussions du compte le quittent. Sur l’ordinateur, **Dissocier cet appareil** fait la
   même chose de là-bas.
-- **Jusqu’à quatre** appareils s’associent à un téléphone. Une sauvegarde n’emporte pas les associations : après en
-  avoir restauré une sur un autre téléphone, appuie sur **Dissocier cet appareil** sur l’ordinateur et associe-le de
-  nouveau, voir [Sauvegardes](#backup).
+- **Jusqu’à quatre** appareils s’associent à un téléphone. Une sauvegarde n’emporte pas les associations, mais après
+  en avoir restauré une sur un autre téléphone, ce téléphone demande à chaque appareil qui est encore à toi de
+  s’associer de nouveau, d’un appui sur chacun, voir [Sauvegardes](#backup).
 
 ## Sur un iPhone, depuis le navigateur {#iphone}
 

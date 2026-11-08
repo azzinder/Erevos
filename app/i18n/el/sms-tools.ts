@@ -121,7 +121,7 @@ export const smsTools: Record<string, string> = {
     'Τα αντίγραφα μπορούν να έχουν και τα SMS και τα MMS του τηλεφώνου, με έως {mb} MB από τις εικόνες τους, κρυπτογραφημένα με τον κωδικό του αντιγράφου. Η επαναφορά του αντιγράφου βάζει πίσω στα SMS του τηλεφώνου όσα δεν έχει, και δεν διαγράφει κανένα.',
   'Erevos reads them only while it is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS.': 'Το Erevos τα διαβάζει μόνο όσο είναι η εφαρμογή SMS: κάνε το εφαρμογή SMS στις Ρυθμίσεις → Τηλέφωνο και SMS → SMS.',
   'Put the SMS in backups': 'Να μπαίνουν τα SMS στα αντίγραφα',
-  'Leave the SMS out': 'Να μη μπαίνουν τα SMS',
+  'Leave the SMS out': 'Να μην μπαίνουν τα SMS',
   "It holds {sms} SMS and {mms} MMS of the phone's.": 'Έχει {sms} SMS και {mms} MMS του τηλεφώνου.',
   '{n} picture did not fit and stayed out.': '{n} εικόνα δεν χώρεσε και έμεινε έξω.',
   '{n} pictures did not fit and stayed out.': '{n} εικόνες δεν χώρεσαν και έμειναν έξω.',
@@ -139,7 +139,7 @@ export const smsTools: Record<string, string> = {
   'Erevos reads them only while Android lets it read the call history: make it the phone app under Settings → Phone and SMS → Phone.':
     'Το Erevos τα διαβάζει μόνο όσο το Android το αφήνει να διαβάζει το ιστορικό κλήσεων: κάνε το εφαρμογή τηλεφώνου στις Ρυθμίσεις → Τηλέφωνο και SMS → Τηλέφωνο.',
   'Put the calls in backups': 'Να μπαίνουν οι κλήσεις στα αντίγραφα',
-  'Leave the calls out': 'Να μη μπαίνουν οι κλήσεις',
+  'Leave the calls out': 'Να μην μπαίνουν οι κλήσεις',
   "It holds {n} call of the phone's.": 'Έχει {n} κλήση του τηλεφώνου.',
   "It holds {n} calls of the phone's.": 'Έχει {n} κλήσεις του τηλεφώνου.',
   '{n} blocked number is in it too.': 'Έχει και {n} αποκλεισμένο αριθμό.',

@@ -2729,23 +2729,30 @@ njegovih razgovora, porukama, fotografijama, datotekama, glasovnim porukama, uve
 Matrix, XMPP i Nostr računima, njegovim Razgovorom sa sobom, zaključavanje i lozinku za paniku, i postavke koje idu s
 vama na drugi telefon. Unutar nje svaki prostor ostaje zapečaćen vlastitom lozinkom, a rezervna kopija je ponovo
 zapečaćena vlastitom lozinkom. Njene fotografije, datoteke i glasovne poruke idu u zasebne datoteke pored nje, do 4 MB
-svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Postavke** → **Podaci i uređaji** →
+svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke prethodnih: držite zajedno cijeli folder. Nalazi se pod **Postavke** → **Podaci i uređaji** →
 **Rezervne kopije**.
 
 1. **Napravi rezervnu kopiju:** dodirnite **Napravi rezervnu kopiju**, izaberite folder (na telefonu, memorijskoj
    kartici ili u aplikaciji za oblak koja tamo prikazuje svoje foldere; na računaru, bilo koji folder), upišite
    lozinku za rezervnu kopiju dvaput (najmanje 12 znakova, ili četiri riječi) i dodirnite **Sačuvaj**. U pregledniku rezervna kopija i njene datoteke idu u meni za dijeljenje ili u preuzimanja: prva odmah, a svaka sljedeća nakon dodira na **Sačuvaj**.
-2. **Automatske rezervne kopije:** izaberite **Svaki dan** ili **Svake sedmice**, zatim folder i lozinku. Erevos pravi
-   kopiju kad se otvori, a posljednja je starija od toga, a folder čuva 3 najnovije, svaku s njenim datotekama. Ispod njih su **Napravi kopiju
+2. **Automatske rezervne kopije:** izaberite **Svakih 6 sati**, **Svaki dan** ili **Svake sedmice**, zatim folder i
+   lozinku. Erevos pravi kopiju dok je otvoren, čim je posljednja starija od toga: kad se otvori prostor, svakih 15
+   minuta, i kad ode u pozadinu, prije nego što se zaključa; nikad bez otvorenog prostora. Svaka upisuje samo
+   fotografije, datoteke i glasovne poruke koje su nove od prethodne, a za ostalo ponovo imenuje datoteke prethodnih,
+   pa jedna svakih 6 sati malo košta. Folder čuva 3 najnovije, sa svakom datotekom koja im treba, i briše datoteke
+   koje ne treba nijedna od njih. Ona koja nije uspjela pokušava se ponovo kad se otvori prostor, ili sat kasnije.
+   Ispod njih su **Napravi kopiju
    sada**, **Promijeni folder** i **Promijeni lozinku**; **Isključeno** ih zaustavlja, a napravljene ostaju u folderu.
 3. **I na server:** na Androidu i u aplikaciji za računar, s uključenim automatskim rezervnim kopijama, **Dodaj
    server** pod **I na server** šalje svaku i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš
    vlastiti Nextcloud: upišite adresu foldera, korisničko ime i, najbolje, lozinku aplikacije samo za Erevos, pa
-   dodirnite **Poveži**. Server čuva 3 najnovije; **Prestani slati** to zaustavlja, a one koje su tamo ostaju. U web
+   dodirnite **Poveži**. Server čuva 3 najnovije, sa svakom datotekom koja im treba, a svaka šalje samo ono što je
+   novo; **Prestani slati** to zaustavlja, a one koje su tamo ostaju. U web
    aplikaciji, koja ne pravi rezervne kopije sama, **Pošalji rezervnu kopiju sada** šalje jednu tamo, s lozinkom koju
    upisujete svaki put.
 4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
-   nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder, a zatim stavlja rezervnu
+   nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder (za automatsku kopiju
+   izaberite svaku datoteku foldera, jer neke njegove datoteke mogu počinjati kao ime ranije kopije), a zatim stavlja rezervnu
    kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija napravljena, s lozinkama koje
    su se tada koristile. Ako neka od njenih datoteka nedostaje, oštećena je ili pripada drugoj kopiji, Erevos kaže koja, i ništa se ne mijenja, osim ako izaberete da vratite ostalo bez nje: tada fotografije, datoteke i glasovne poruke na telefonu ostaju kakve jesu, a one koje ona sadrži se ne vraćaju. **Vrati sa servera** gleda u folder u koji idu automatske rezervne kopije, ili u onaj koji navedete s
    korisničkim imenom i lozinkom, i prikazuje rezervne kopije koje su tamo, najnovije prve: izaberite jednu, upišite
@@ -2762,8 +2769,8 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
   jedne od nekoliko veličina, pa ni jedno ni drugo ne kaže da je Erevosova niti koliko tačno sadrži. Njene
   fotografije, datoteke i glasovne poruke idu kao zasebna slanja, sva iste veličine, svako također pod nasumičnim
   imenom i zapečaćeno lozinkom rezervne kopije, vezano za tu kopiju i za svoje mjesto u njoj, pa nijedno ne može
-  neprimjetno biti zamijenjeno, izostavljeno ili uzeto iz druge kopije; server ih čuva uz njihovu kopiju i briše ih s
-  njom. Imena su im iste dužine kao ime kopije, ali ih veličina razlikuje od nje, pa ih server može prebrojati i tako otprilike znati koliko kopija sadrži. Ono što je tamo ostavila prekinuta kopija briše se prije nego što ode sljedeća, pa server kojem je ponestalo mjesta opet ga ima. Server ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika. Na Androidu rezervne kopije idu tamo kako kaže izbor
+  neprimjetno biti zamijenjeno, izostavljeno ili uzeto iz druge kopije; server čuva svaku dok je treba jedna od kopija
+  koje čuva, a zatim je briše. Imena su im iste dužine kao ime kopije, ali ih veličina razlikuje od nje, pa ih server može prebrojati i tako otprilike znati koliko kopija sadrži. Ono što je tamo ostavila prekinuta kopija briše se prije nego što ode sljedeća, pa server kojem je ponestalo mjesta opet ga ima. Server ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika. Na Androidu rezervne kopije idu tamo kako kaže izbor
   prostora pod **Postavke** → **Relay i mreže** → **Tor**, kao i Matrix: sa **Sve** samo preko Tora, pa server ne vidi
   adresu telefona; s **Poruke** preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; s
   **Ništa** direktno, i server vidi adresu telefona. Kopija prvo čeka do dvije minute da se Tor pokrene, a **I na
@@ -2778,10 +2785,14 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
   stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
   ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke
-  koje su stigle nakon kopije i već su pročitane nisu u njoj, a razgovor koji se nastavio može prestati otvarati nove
-  poruke. Tada zamolite kontakt ponovo za njegov link za kontakt. Prije nego što vraćeni razgovor ponovo piše, njegovi
+  koje su stigle nakon kopije i već su pročitane nisu u njoj. Razgovor koji se nastavio nakon kopije prestao bi
+  otvarati nove poruke, pa svaki vraćeni razgovor, onaj prostora i onaj svakog skrivenog mjesta kad se otvori, sam i
+  tiho započinje novi razgovor sa svakim kontaktom, iz najnovijih ključeva koje mu je dao, a njegov Erevos nastavlja u
+  njemu. S kontaktom čiji je Erevos stariji, zamolite ga ponovo za njegov link za kontakt. Prije nego što vraćeni razgovor ponovo piše, njegovi
   razgovori preskaču ključeve koje su možda koristili od kopije, pa nijedan ključ nikad ne zapečaćuje dvije poruke:
-  poruka zapečaćena dvaput omogućila bi onome ko je sačuvao oba paketa da ih pročita zajedno.
+  poruka zapečaćena dvaput omogućila bi onome ko je sačuvao oba paketa da ih pročita zajedno. U grupi vraćeni član
+  traži od Erevosa admina da ga ponovo unese, što uspijeva dok je grupa otišla samo malo dalje; inače tražite da vas
+  ponovo dodaju.
 - **Matrix, XMPP i Nostr:** računi svakog prostora i njegovih skrivenih razgovora nalaze se u rezervnoj kopiji. Nostr
   ključ se vraća sa svojim razgovorima, kakvi su bili. XMPP račun se vraća sa svojom prijavom, kontaktima, razgovorima i
   ključevima koje poznaje od drugih, i nastavlja kao novi uređaj računa: zadržava svoj identitetski ključ, pa aplikacije
@@ -2806,6 +2817,14 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
 - **Jedan po jedan telefon:** rezervna kopija vraćena na drugom telefonu čita iste redove na relayu kao i prvi, i
   svaki preuzima poruke koje drugi tada nikad ne dobije. Koristite je za prelazak na novi telefon, a ne za držanje
   dva.
+- **Stari telefon je izgubljen:** telefon koji je izgubljen ili ukraden i još je uključen i dalje čita redove na
+  relayu koje je poznavao, pa poruke poslane tamo mogu stići do njega, a nikad do novog telefona. Nakon vraćanja
+  rezervne kopije na novom telefonu dodirnite **Stari telefon je izgubljen** pod **Rezervne kopije** (nakon vraćanja
+  kopije s drugog telefona Erevos na to upozorava) i recite **Promijeni redove**. Svaki prostor i njegovi skriveni
+  razgovori tada prelaze na nove redove na relayu, svaki sljedeći put kad se ovdje otvori, a vaši kontakti i grupe se
+  obavještavaju tiho. Stari redovi se ovdje čitaju dok svaki kontakt ne počne pisati u nove, najviše 14 dana, a
+  linkovi za kontakt i QR kodovi koje ste dali prije vrijede 14 dana, a zatim više ne. Ono što dolazi preko Nostra,
+  XMPP-a ili Matrixa i dalje stiže na stari telefon. Nakon još jednog vraćanja, dodirnite ga ponovo.
 - **Diskrecija:** svaki prostor prikazuje isti ekran Rezervne kopije, a rezervna kopija sadrži svaki prostor, pa ni
   jedno ni drugo ne govori koliko ima prostora ni jesu li postavljeni skriveni razgovori. Imena datoteka kažu da je to
   Erevos rezervna kopija, a njihov broj i veličina otprilike pokazuju koliko se čuva.
@@ -2814,6 +2833,15 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
   lozinkom rezervne kopije kao i ostalo. Vraćanje rezervne kopije vraća u SMS poruke telefona svaku poruku koju još
   nema, i ne briše nijednu; Erevos tada također mora biti SMS aplikacija, inače se ostalo vraća bez njih. SMS poruke
   pripadaju telefonu, iste su u svakom prostoru. Stariji Erevos ne otvara rezervnu kopiju koja sadrži SMS poruke.
+- **Pozivi telefona:** na Androidu, **Stavljaj pozive u rezervne kopije**, pod **Pozivi telefona**, od tada dodaje
+  svakoj rezervnoj kopiji historiju poziva telefona (njegovih 10.000 najnovijih poziva, bez govorne pošte) i
+  Androidovu vlastitu listu blokiranih brojeva, dok Android dopušta Erevosu da čita historiju poziva; blokirane
+  brojeve samo dok je Erevos aplikacija Telefon ili SMS. Isključeno je dok ga ne uključite, a izbor ide u rezervne
+  kopije. Zapečaćeni su lozinkom rezervne kopije kao i ostalo. Vraćanje rezervne kopije dodaje telefonu svaki poziv i
+  svaki blokirani broj koji još nema, i ne briše nijedan; Erevos tada mora biti aplikacija Telefon (**Postavke** →
+  **Telefon i SMS** → **Telefon**), inače se ostalo vraća bez njih. Android čuva otprilike 500 najnovijih poziva svake
+  SIM kartice, pa stariji vraćeni mogu nestati kako stižu novi pozivi. Stariji Erevos ne otvara rezervnu kopiju koja
+  sadrži pozive.
 - **Red u SMS porukama:** prikvačeni i arhivirani razgovori svakog prostora, otpad, nacrti, filter spama i oznake,
   koliko SMS čeka da bi se mogao povući, SMS poruke za kasnije (**SMS kasnije**), pozivnice, imena iz vaših kontakata,
   smiju li poruke Erevos kontaktima ići SMS-om, i SIM kartica izabrana za svaki broj nalaze se u svakoj rezervnoj
@@ -2825,14 +2853,22 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
   na drugom telefonu ne može donijeti: otisak prsta ili lice, čiji ključ Android čuva u čipu tog telefona; folderi u
   koje Erevos smije pisati, kao onaj automatskih rezervnih kopija, u koje ga Android pušta samo na telefonu na kojem
   su izabrani; ono što Android dozvoljava Erevosu i koje aplikacije obavljaju pozive i šalju SMS, što samo vi možete
-  dozvoliti na svakom telefonu, pa se nakon vraćanja na Androidu otvaraju **Dozvole** za uključene module; ono što
-  Android čuva za sve aplikacije, kao historija poziva i njegova vlastita lista blokiranih brojeva; i broj pogrešnih
-  lozinki. XMPP račun se vraća kao novi uređaj samog sebe, a Matrix se ponovo prijavljuje, kao gore, a povezani uređaji
-  zasad nisu u rezervnoj kopiji, kao dolje.
-- **Povezani uređaji** nisu u rezervnoj kopiji: veza ostaje s telefonom i računarom na kojima je napravljena. Nakon
-  vraćanja rezervne kopije na drugom telefonu ponovo povežite računar: na računaru dodirnite **Odvoji ovaj uređaj**, a
-  zatim ga povežite kao prvi put, pogledajte [Povezani uređaji](#devices). Kontakti s ovom verzijom tada prestaju pisati
-  vašim računarima dok to ne uradite: telefon im daje novi popis svojih uređaja koji ne navodi nijedan. Ako sat ovog
+  dozvoliti na svakom telefonu, pa se nakon vraćanja na Androidu otvaraju **Dozvole** za uključene module; historija
+  poziva i Androidova vlastita lista blokiranih brojeva, osim ako je **Stavljaj pozive u rezervne kopije** bilo
+  uključeno, kao gore; i broj pogrešnih
+  lozinki. XMPP račun se vraća kao novi uređaj samog sebe, a Matrix se ponovo prijavljuje, kao gore, a povezani
+  uređaji se ponovo povezuju, kao dolje.
+- **Povezani uređaji:** veza ostaje s telefonom i računarom na kojima je napravljena, i nijedna rezervna kopija je ne
+  čuva, ali rezervna kopija čuva ono što telefonu na kojem se vrati omogućava da zatraži od svakog od njih da se
+  ponovo poveže. Nakon vraćanja rezervne kopije na drugom telefonu, tamo otvorite **Postavke** → **Podaci i uređaji**
+  → **Povezani uređaji**: pod **Iz rezervne kopije** dodirnite **Zatraži ponovno povezivanje** za svaki uređaj koji je
+  još vaš, ili **Zaboravi** za onaj koji nije. Uređaj, koji mora biti uključen, prikazuje zahtjev: tamo dodirnite
+  **Ponovo poveži** samo ako ste kopiju vratili vi, inače **Ne sada**. Tada se povezuje s novim telefonom bez koda za
+  skeniranje, zadržava svoje razgovore i dobija ono što je stiglo od tada; poruke koje su stigle na stari telefon
+  nakon kopije ostaju samo na njemu. Kad se jednom ponovo poveže, ni stari telefon ni iko s istom kopijom ne dopire do
+  njega. Zahtjev vrijedi 14 dana, a uređaji skrivenog mjesta traže se iznutra tog mjesta. Uređaj sa starijim Erevosom
+  ne prikazuje zahtjev: na njemu dodirnite **Odvoji ovaj uređaj**, a zatim ga povežite kao prvi put, pogledajte
+  [Povezani uređaji](#devices). Kontakti s ovom verzijom prestaju pisati vašim računarima dok se ne povežu ponovo: telefon im daje novi popis svojih uređaja koji ne navodi nijedan. Ako sat ovog
   telefona kasni za satom izgubljenog, taj popis nestaje čim mu oni pišu, a detalji njihovog razgovora mogu reći da se
   promijenio dan nakon što ste vratili kopiju. Vlastita rezervna kopija povezanog računara sadrži razgovore telefona
   kakvi su bili, ali
@@ -2885,7 +2921,7 @@ svojom lozinkom.
    odbija kopiju koju je napravio noviji. Bez interneta ga stari telefon može dati, pogledajte
    [Erevos obližnjem telefonu](#give-app).
 2. **Na starom telefonu ga pripremite:** da bi i SMS poruke telefona prešle, uključite **Stavljaj SMS poruke u
-   rezervne kopije** pod **Rezervne kopije**. Zbirka izostavljena iz kopija ostaje iza: vratite je unutra, ili joj dajte
+   rezervne kopije** pod **Rezervne kopije**, a za njegovu historiju poziva **Stavljaj pozive u rezervne kopije**. Zbirka izostavljena iz kopija ostaje iza: vratite je unutra, ili joj dajte
    WebDAV server, pogledajte [Zbirka](#collection). Imajte pri ruci svoj sigurnosni ključ za Matrix, jer se Matrix
    ponovo prijavljuje na novom telefonu.
 3. **Na starom telefonu napravite kopiju:** pod **Postavke** → **Podaci i uređaji** → **Rezervne kopije** dodirnite
@@ -2914,16 +2950,20 @@ svojom lozinkom.
 - **Matrix, XMPP i Nostr:** Nostr ključ nastavlja kakav je bio, XMPP račun kao novi uređaj samog sebe, a Matrix se
   ponovo prijavljuje kao novi uređaj, a njegov sigurnosni ključ otvara ranije poruke, pogledajte
   [Rezervne kopije](#backup).
-- **Povezani uređaji:** veza ostaje uz telefon na kojem je napravljena. Na svakom računaru ili pregledniku dodirnite
-  **Odvoji ovaj uređaj**, zatim ga povežite s novim telefonom kao prvi put; uređaje skrivenog mjesta iznutra tog mjesta.
-  Pogledajte [Povezani uređaji](#devices).
+- **Povezani uređaji:** na novom telefonu, pod **Postavke** → **Podaci i uređaji** → **Povezani uređaji**, dodirnite
+  **Zatraži ponovno povezivanje** za svaki računar ili preglednik koji je još vaš, zatim **Ponovo poveži** na njemu:
+  zadržava svoje razgovore, bez koda za skeniranje. Uređaje skrivenog mjesta iznutra tog mjesta. Uređaj sa starijim
+  Erevosom: na njemu dodirnite **Odvoji ovaj uređaj**, zatim ga povežite s novim telefonom kao prvi put. Pogledajte
+  [Rezervne kopije](#backup).
 - **Zbirka:** dolazi u datotekama kopije. Ona izostavljena iz kopija dolazi samo s svog WebDAV servera, svaka datoteka
   kad se otvori; ona bez jednog i drugog ostaje na starom telefonu, a brisanje je briše.
 - **Moduli i postavke:** uključeni moduli, jezik i druge postavke dolaze s kopijom. Ono što Android čuva za svaki
-  telefon ostaje tamo: historija poziva, njegovi blokirani brojevi, i ono što dopušta Erevosu.
+  telefon ostaje tamo, kao ono što dopušta Erevosu; historija poziva i njegovi blokirani brojevi dolaze također kad je
+  uključeno **Stavljaj pozive u rezervne kopije**.
 - **Nedostaje datoteka:** ako datoteka kopije nedostaje ili je oštećena, Erevos kaže koja i ne mijenja ništa, osim ako
   izaberete da vratite ostalo bez nje.
-- **Ako je stari telefon izgubljen:** vratite najnoviju kopiju na novi telefon čim možete, i sa svog servera. Ako ste
+- **Ako je stari telefon izgubljen:** vratite najnoviju kopiju na novi telefon čim možete, i sa svog servera, zatim
+  dodirnite **Stari telefon je izgubljen** pod **Rezervne kopije**, da ne čita ništa više vaše na relayima. Ako ste
   izgubili lozinku kopije, prijatelji koji drže njene dijelove mogu je vratiti, pogledajte
   [Dijelovi rezervne kopije kod prijatelja](#backup-pieces).
 
@@ -3348,8 +3388,9 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   s ovom verzijom to se javlja sljedeći put kad telefon dođe do relaya: prestaju mu pisati i više ništa od njega ne
   primaju. Tako se isključuje izgubljeni računar. Ako je uključen, to mu se javlja, a razgovori naloga ga napuštaju. Na
   računaru, **Odvoji ovaj uređaj** radi isto odande.
-- **Do četiri** uređaja povezuje se s jednim telefonom. Rezervna kopija ne nosi veze: nakon vraćanja kopije na drugom
-  telefonu, na računaru dodirnite **Odvoji ovaj uređaj** i ponovo ga povežite, pogledajte [Rezervne kopije](#backup).
+- **Do četiri** uređaja povezuje se s jednim telefonom. Rezervna kopija ne nosi veze, ali nakon vraćanja kopije na
+  drugom telefonu, taj telefon traži od svakog uređaja koji je još vaš da se ponovo poveže, jednim dodirom na svaki,
+  pogledajte [Rezervne kopije](#backup).
 
 ## Na iPhoneu, iz preglednika {#iphone}
 

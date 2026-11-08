@@ -3031,24 +3031,31 @@ Schlüsseln seiner Unterhaltungen, seinen Nachrichten, Fotos, Dateien, Sprachnac
 versteckten Chats, seinen Konten bei Matrix, XMPP und Nostr, seinem „Chat mit mir selbst“, die Sperre und das
 Panik-Passwort, und die Einstellungen, die mit dir auf ein anderes Telefon gehen. Darin bleibt jeder Bereich mit seinem
 eigenen Passwort versiegelt, und das Backup wird noch einmal mit einem eigenen Passwort versiegelt. Seine Fotos, Dateien
-und Sprachnachrichten kommen in eigene Dateien daneben, bis zu 4 MB jede, deren Namen wie der des Backups anfangen:
-Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
+und Sprachnachrichten kommen in eigene Dateien daneben, bis zu 4 MB jede, deren Namen wie der des Backups anfangen;
+ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen Ordner zusammen. Backups findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
 
 1. **Backup erstellen:** Tippe auf **Backup erstellen**, wähle einen Ordner (auf dem Telefon, einer Speicherkarte oder
    einer Cloud-App, die dort ihre Ordner zeigt; auf einem Computer jeden Ordner), gib zweimal ein Passwort für das
    Backup ein (mindestens 12 Zeichen oder vier Wörter) und tippe auf **Speichern**. In einem Browser gehen das Backup und seine Dateien ins Teilen-Menü oder in die Downloads: die erste sofort, jede nächste nach einem Tippen auf **Speichern**.
-2. **Automatische Backups:** Wähle **Jeden Tag** oder **Jede Woche**, dann einen Ordner und ein Passwort. Erevos macht
-   eines, wenn es öffnet und das letzte älter ist, und der Ordner behält die 3 neuesten, jedes mit seinen Dateien. Darunter sind
+2. **Automatische Backups:** Wähle **Alle 6 Stunden**, **Jeden Tag** oder **Jede Woche**, dann einen Ordner und ein
+   Passwort. Erevos macht eines, solange es offen ist, sobald das letzte älter ist: wenn ein Bereich sich öffnet, alle
+   15 Minuten und wenn es in den Hintergrund geht, bevor es sich sperrt; nie ohne einen offenen Bereich. Jedes
+   schreibt nur die Fotos, Dateien und Sprachnachrichten, die seit dem vorigen neu sind, und nennt für den Rest die
+   Dateien der früheren wieder, sodass eines alle 6 Stunden wenig kostet. Der Ordner behält die 3 neuesten, mit jeder
+   Datei, die sie brauchen, und löscht die Dateien, die keines von ihnen braucht. Eines, das scheiterte, wird erneut
+   versucht, wenn ein Bereich sich öffnet, oder eine Stunde später. Darunter sind
    **Jetzt sichern**, **Ordner ändern** und **Passwort ändern**; **Aus** beendet sie, und die gemachten bleiben im
    Ordner.
 3. **Auch auf einen Server:** Auf Android und in der Desktop-App schickt **Server hinzufügen** unter **Auch auf einen
    Server**, bei eingeschalteten automatischen Backups, jedes davon auch in einen Ordner auf einem Server deiner Wahl,
    der WebDAV spricht, etwa deiner eigenen Nextcloud: Gib die Adresse des Ordners, einen Benutzernamen und am besten
-   ein App-Passwort nur für Erevos ein, dann tippe auf **Verbinden**. Der Server behält die 3 neuesten; **Nicht mehr
-   senden** beendet es, und die dort bleiben. In der Web-App, die keine Backups von selbst macht, schickt **Jetzt ein
+   ein App-Passwort nur für Erevos ein, dann tippe auf **Verbinden**. Der Server behält die 3 neuesten, mit jeder
+   Datei, die sie brauchen, und jedes schickt nur, was neu ist; **Nicht mehr senden** beendet es, und die dort bleiben. In der Web-App, die keine Backups von selbst macht, schickt **Jetzt ein
    Backup senden** eines dorthin, mit einem Passwort, das du jedes Mal eingibst.
 4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
-   noch einmal, findet die Dateien des Backups daneben oder bittet dich, sie oder ihren Ordner zu wählen, setzt dann das
+   noch einmal, findet die Dateien des Backups daneben oder bittet dich, sie oder ihren Ordner zu wählen (bei einem
+   automatischen Backup wähle jede Datei des Ordners, da manche seiner Dateien wie der Name eines früheren Backups
+   anfangen können), setzt dann das
    Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das Backup gemacht wurde, mit den
    damals genutzten Passwörtern. Fehlt eine seiner Dateien, ist sie beschädigt oder gehört sie zu einem anderen Backup, sagt Erevos, welche, und es wird nichts geändert, außer du wählst, den Rest ohne sie wiederherzustellen: Dann bleiben die Fotos, Dateien und Sprachnachrichten auf dem Telefon, wie sie sind, und die in ihr kommen nicht zurück. **Von einem Server wiederherstellen** sieht im Ordner nach, in den automatische Backups gehen,
    oder in einem, den du mit Benutzername und Passwort angibst, und zeigt die Backups dort, die neuesten zuerst: Wähle
@@ -3066,7 +3073,7 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
   genau, wie viel es enthält. Seine Fotos, Dateien und Sprachnachrichten gehen als eigene Uploads, alle gleich groß,
   jeder ebenfalls unter einem zufälligen Namen und mit dem Passwort des Backups versiegelt, an dieses Backup und ihren
   Platz darin gebunden, sodass keiner unbemerkt vertauscht, weggelassen oder aus einem anderen Backup genommen werden
-  kann; der Server behält sie mit ihrem Backup und löscht sie mit ihm. Ihre Namen sind so lang wie der des Backups, aber ihre Größe unterscheidet sie von ihm, also kann der Server sie zählen und so ungefähr sagen, wie viel das Backup enthält. Was ein abgebrochenes Backup dort ließ, wird gelöscht, bevor das nächste geht, sodass ein Server ohne Platz wieder welchen hat. Der Server sieht aber dein Konto, wann eines
+  kann; der Server behält jede, solange eines der Backups, die er behält, sie braucht, und löscht sie dann. Ihre Namen sind so lang wie der des Backups, aber ihre Größe unterscheidet sie von ihm, also kann der Server sie zählen und so ungefähr sagen, wie viel das Backup enthält. Was ein abgebrochenes Backup dort ließ, wird gelöscht, bevor das nächste geht, sodass ein Server ohne Platz wieder welchen hat. Der Server sieht aber dein Konto, wann eines
   kommt und ungefähr wie groß es ist. Auf
   Android gehen Backups dorthin, wie die Wahl des Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**
   sagt, wie bei Matrix: mit **Alles** nur über Tor, sodass der Server die Adresse des Telefons nicht sieht; mit
@@ -3085,11 +3092,16 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
   nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
   Google und eine Google-Anmeldung auf dem Telefon.
 - **Chats, die nach dem Backup weitergingen:** Das Wiederherstellen setzt die Schlüssel jeder Unterhaltung so zurück,
-  wie sie damals waren. Nachrichten, die nach dem Backup kamen und schon gelesen waren, sind nicht darin, und ein Chat,
-  der weiterging, kann aufhören, neue Nachrichten zu öffnen. Bitte den Kontakt dann erneut um seinen Kontaktlink. Bevor
+  wie sie damals waren. Nachrichten, die nach dem Backup kamen und schon gelesen waren, sind nicht darin. Eine
+  Unterhaltung, die nach dem Backup weiterging, würde keine neuen Nachrichten mehr öffnen, also beginnt jeder
+  wiederhergestellte Chat, der des Bereichs und der jedes versteckten Ortes beim Öffnen, von selbst und leise eine
+  neue Unterhaltung mit jedem Kontakt, aus den neuesten Schlüsseln, die er ihm gab, und ihr Erevos geht darin weiter.
+  Bei einem Kontakt, dessen Erevos älter ist, bitte ihn erneut um seinen Kontaktlink. Bevor
   ein wiederhergestellter Chat wieder schreibt, springen seine Unterhaltungen über die Schlüssel hinaus, die sie seit
   dem Backup genutzt haben könnten, sodass nie ein Schlüssel zwei Nachrichten versiegelt: Einer, der zweimal
-  versiegelt, würde jedem, der beide Pakete aufbewahrt hat, erlauben, die beiden zusammen zu lesen.
+  versiegelt, würde jedem, der beide Pakete aufbewahrt hat, erlauben, die beiden zusammen zu lesen. In einer Gruppe
+  bittet ein wiederhergestelltes Mitglied das Erevos des Admins, es wieder aufzunehmen, was klappt, solange die Gruppe
+  nur wenig weitergezogen ist; sonst bitte darum, wieder hinzugefügt zu werden.
 - **Matrix, XMPP und Nostr:** Die Konten jedes Bereichs und seiner versteckten Chats sind im Backup. Ein
   **Nostr**-Schlüssel kommt mit seinen Chats zurück, so wie er war. Ein **XMPP**-Konto kommt mit seiner Anmeldung,
   seinen Kontakten, Chats und den Schlüsseln, die es von anderen kennt, und geht als neues Gerät des Kontos weiter: Es
@@ -3117,6 +3129,15 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
 - **Ein Telefon nach dem anderen:** Ein auf einem zweiten Telefon wiederhergestelltes Backup liest dieselben
   Relay-Warteschlangen wie das erste, und jedes holt Nachrichten, die das andere dann nie bekommt. Nutze es, um auf ein
   neues Telefon umzuziehen, nicht um zwei zu führen.
+- **Das alte Telefon ist verloren:** Ein Telefon, das verloren ging oder gestohlen wurde und noch an ist, liest
+  weiter die Relay-Warteschlangen, die es kannte, also können Nachrichten dorthin kommen und nie zum neuen Telefon.
+  Tippe nach dem Wiederherstellen des Backups auf dem neuen Telefon unter **Backups** auf **Das alte Telefon ist
+  verloren** (nach dem Wiederherstellen eines Backups von einem anderen Telefon weist Erevos darauf hin) und sag
+  **Warteschlangen wechseln**. Jeder Bereich und seine versteckten Chats ziehen dann auf neue Relay-Warteschlangen um,
+  jeder beim nächsten Öffnen hier, und deine Kontakte und Gruppen werden leise benachrichtigt. Die alten
+  Warteschlangen werden hier gelesen, bis jeder Kontakt in die neuen schreibt, höchstens 14 Tage, und die Kontaktlinks
+  und QR-Codes, die du vorher gabst, gelten 14 Tage, dann nicht mehr. Was über Nostr, XMPP oder Matrix kommt, erreicht
+  weiter das alte Telefon. Tippe nach einer weiteren Wiederherstellung erneut darauf.
 - **Diskretion:** Jeder Bereich zeigt denselben Backup-Bildschirm, und ein Backup enthält jeden Bereich, also verrät
   keines von beiden, wie viele Bereiche es gibt oder ob versteckte Chats angelegt sind. Die Namen der Dateien sagen, dass
   sie ein Erevos-Backup sind, und ihre Zahl und Größe zeigen ungefähr, wie viel aufbewahrt wird.
@@ -3126,6 +3147,15 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
   nicht haben, dorthin zurück und löscht keine; Erevos muss dann auch die SMS-App sein, sonst wird der Rest ohne sie
   wiederhergestellt. Die SMS gehören dem Telefon und sind in jedem Bereich gleich. Ein älteres Erevos öffnet kein
   Backup, das SMS enthält.
+- **Die Anrufe des Telefons:** Auf Android fügt **Anrufe in Backups aufnehmen** unter **Die Anrufe des Telefons** ab
+  dann jedem Backup den Anrufverlauf des Telefons (seine neuesten 10.000 Anrufe, ohne Mailbox) und Androids eigene
+  Liste blockierter Nummern hinzu, solange Android Erevos den Anrufverlauf lesen lässt; die blockierten Nummern nur,
+  solange Erevos die Telefon- oder SMS-App ist. Es ist aus, bis du es einschaltest, und die Wahl geht in die Backups.
+  Sie werden wie der Rest mit dem Passwort des Backups versiegelt. Das Wiederherstellen des Backups fügt dem Telefon
+  jeden Anruf und jede blockierte Nummer hinzu, die es noch nicht hat, und löscht keine; Erevos muss dann die
+  Telefon-App sein (**Einstellungen** → **Telefon und SMS** → **Telefon**), sonst wird der Rest ohne sie
+  wiederhergestellt. Android behält etwa die neuesten 500 Anrufe jeder SIM, also können ältere wiederhergestellte
+  verschwinden, wenn neue Anrufe kommen. Ein älteres Erevos öffnet kein Backup, das Anrufe enthält.
 - **Die SMS in Ordnung:** Die Anheftungen, archivierten Unterhaltungen, der Papierkorb, die Entwürfe, der Spamfilter
   und die Markierungen jedes Bereichs, wie lange eine SMS wartet, bevor sie nicht mehr zurückgeholt werden kann, die
   später zu sendenden SMS (**SMS später**), Einladungen, Namen aus deinen Kontakten, ob Nachrichten an Erevos-Kontakte
@@ -3139,15 +3169,23 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
   Telefons aufbewahrt; die Ordner, in die Erevos schreiben darf, wie der automatischer Backups, in die Android es nur
   auf dem Telefon lässt, auf dem sie gewählt wurden; was Android Erevos erlaubt und welche Apps Anrufe und SMS
   übernehmen, was nur du auf jedem Telefon erlauben kannst, weshalb sich nach einer Wiederherstellung auf Android
-  **Berechtigungen** für die eingeschalteten Module öffnet; was Android für jede App aufbewahrt, wie die Anrufliste und
-  seine eigene Liste blockierter Nummern; und die Zählung falscher Passwörter. Ein XMPP-Konto kommt als neues Gerät
-  seiner selbst zurück und Matrix meldet sich neu an, wie oben, und verknüpfte Geräte sind vorerst nicht in einem
-  Backup, wie unten.
-- **Verknüpfte Geräte** sind nicht in einem Backup: Eine Verknüpfung bleibt bei dem Telefon und dem Computer, auf
-  denen sie gemacht wurde. Nachdem du ein Backup auf einem anderen Telefon wiederhergestellt hast, verknüpfe den
-  Computer erneut: Tippe auf dem Computer auf **Dieses Gerät trennen** und verknüpfe ihn dann wie beim ersten Mal,
-  siehe [Verknüpfte Geräte](#devices). Kontakte mit dieser Version schreiben dann deinen Computern nicht mehr, bis du
-  das tust: Das Telefon gibt ihnen eine neue Liste seiner Geräte, die keines nennt. Geht die Uhr dieses Telefons hinter
+  **Berechtigungen** für die eingeschalteten Module öffnet; die Anrufliste und Androids eigene Liste blockierter
+  Nummern, außer **Anrufe in Backups aufnehmen** war an, wie oben; und die Zählung falscher Passwörter. Ein XMPP-Konto kommt als neues Gerät
+  seiner selbst zurück und Matrix meldet sich neu an, wie oben, und verknüpfte Geräte verknüpfen sich erneut, wie
+  unten.
+- **Verknüpfte Geräte:** Eine Verknüpfung bleibt bei dem Telefon und dem Computer, auf denen sie gemacht wurde, und
+  kein Backup enthält sie, aber ein Backup enthält, was dem Telefon, auf dem es wiederhergestellt wird, erlaubt, jedes
+  von ihnen zu bitten, sich erneut zu verknüpfen. Nachdem du ein Backup auf einem anderen Telefon wiederhergestellt
+  hast, öffne dort **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte**: Tippe unter **Aus der Sicherung**
+  auf **Um erneute Verknüpfung bitten** für jedes Gerät, das noch dir gehört, oder auf **Entfernen** für eines, das es
+  nicht mehr ist. Das Gerät, das an sein muss, zeigt die Bitte: Tippe dort nur auf **Erneut verknüpfen**, wenn du das
+  Backup selbst wiederhergestellt hast, sonst auf **Nicht jetzt**. Es verknüpft sich dann ohne Code zum Scannen mit
+  dem neuen Telefon, behält seine Chats und bekommt, was seitdem kam; Nachrichten, die nach dem Backup das alte
+  Telefon erreichten, bleiben nur dort. Sobald es erneut verknüpft ist, erreicht weder das alte Telefon noch jemand
+  mit demselben Backup es. Eine Bitte gilt 14 Tage, und die Geräte eines versteckten Ortes werden von innerhalb dieses
+  Ortes gebeten. Ein Gerät mit einem älteren Erevos zeigt keine Bitte: Tippe darauf auf **Dieses Gerät trennen**, dann
+  verknüpfe es wie beim ersten Mal, siehe [Verknüpfte Geräte](#devices). Kontakte mit dieser Version schreiben deinen
+  Computern nicht mehr, bis sie sich erneut verknüpfen: Das Telefon gibt ihnen eine neue Liste seiner Geräte, die keines nennt. Geht die Uhr dieses Telefons hinter
   der des verlorenen her, verschwindet diese Liste, sobald sie ihm schreiben, und ihre Chatdetails können sagen, dass
   sie sich am Tag nach deinem Wiederherstellen geändert hat. Das eigene Backup eines verknüpften Computers enthält die
   Chats des Telefons so, wie sie waren, aber
@@ -3202,7 +3240,7 @@ trägt es, versiegelt mit seinem Passwort.
    älteres Erevos weigert sich, ein Backup zu öffnen, das ein neueres gemacht hat. Ohne Internet kann das alte Telefon
    es weitergeben, siehe [Erevos an ein Telefon in der Nähe](#give-app).
 2. **Auf dem alten Telefon alles vorbereiten:** Damit auch die SMS des Telefons mitkommen, schalte **SMS in Backups
-   aufnehmen** unter **Backups** ein. Eine Sammlung, die nicht in den Backups ist, bleibt zurück: Nimm sie wieder auf
+   aufnehmen** unter **Backups** ein, und für seinen Anrufverlauf **Anrufe in Backups aufnehmen**. Eine Sammlung, die nicht in den Backups ist, bleibt zurück: Nimm sie wieder auf
    oder gib ihr einen WebDAV-Server, siehe [Sammlung](#collection). Halte deinen Matrix-Sicherheitsschlüssel bereit,
    denn Matrix meldet sich auf dem neuen Telefon neu an.
 3. **Auf dem alten Telefon das Backup machen:** Tippe unter **Einstellungen** → **Daten und Geräte** → **Backups** auf
@@ -3232,19 +3270,22 @@ trägt es, versiegelt mit seinem Passwort.
 - **Matrix, XMPP und Nostr:** Ein Nostr-Schlüssel geht weiter wie zuvor, ein XMPP-Konto als neues Gerät seiner selbst,
   und Matrix meldet sich als neues Gerät neu an, sein Sicherheitsschlüssel öffnet die Nachrichten von früher, siehe
   [Backups](#backup).
-- **Verknüpfte Geräte:** Eine Verknüpfung bleibt bei dem Telefon, auf dem sie gemacht wurde. Tippe auf jedem Computer
-  oder Browser auf **Dieses Gerät trennen** und verknüpfe ihn dann mit dem neuen Telefon wie beim ersten Mal; die
-  Geräte eines versteckten Ortes von innerhalb dieses Ortes. Siehe [Verknüpfte Geräte](#devices).
+- **Verknüpfte Geräte:** Tippe auf dem neuen Telefon unter **Einstellungen** → **Daten und Geräte** → **Verknüpfte
+  Geräte** auf **Um erneute Verknüpfung bitten** für jeden Computer oder Browser, der noch dir gehört, dann auf ihm
+  auf **Erneut verknüpfen**: Er behält seine Chats, ohne Code zum Scannen. Die Geräte eines versteckten Ortes von
+  innerhalb dieses Ortes. Bei einem Gerät mit einem älteren Erevos: Tippe darauf auf **Dieses Gerät trennen**, dann
+  verknüpfe es mit dem neuen Telefon wie beim ersten Mal. Siehe [Backups](#backup).
 - **Die Sammlung:** Sie kommt in den Dateien des Backups. Eine, die nicht in den Backups ist, kommt nur von ihrem
   WebDAV-Server, jede Datei beim Öffnen; eine mit keinem von beidem bleibt auf dem alten Telefon, und das Löschen
   löscht sie.
 - **Module und Einstellungen:** Die eingeschalteten Module, die Sprache und deine anderen Einstellungen kommen mit dem
-  Backup. Was Android für jedes Telefon einzeln aufbewahrt, bleibt dort: den Anrufverlauf, seine gesperrten Nummern und
-  was es Erevos erlaubt.
+  Backup. Was Android für jedes Telefon einzeln aufbewahrt, bleibt dort, wie das, was es Erevos erlaubt; der
+  Anrufverlauf und seine gesperrten Nummern kommen auch mit, wenn **Anrufe in Backups aufnehmen** an ist.
 - **Eine Datei fehlt:** Fehlt eine Datei des Backups oder ist sie beschädigt, sagt Erevos, welche, und ändert nichts,
   außer du wählst, den Rest ohne sie wiederherzustellen.
 - **Wenn das alte Telefon verloren ist:** Stelle dein neuestes Backup so bald wie möglich auf dem neuen Telefon wieder
-  her, auch von deinem Server. Hast du das Passwort des Backups verloren, können Freunde, die seine Teile halten, es
+  her, auch von deinem Server, tippe dann unter **Backups** auf **Das alte Telefon ist verloren**, damit es nichts
+  mehr von dir auf den Relays liest. Hast du das Passwort des Backups verloren, können Freunde, die seine Teile halten, es
   zurückgeben, siehe [Backup-Teile bei Freunden](#backup-pieces).
 
 **Warum:** Erevos hält nichts von dir auf einem Server, der es herausgeben könnte, also bringt kein Konto deine Chats
@@ -3709,9 +3750,9 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   auf, an es zu schreiben, und nehmen nichts mehr von ihm an. So sperrst du einen verlorenen Computer aus. Ist er an,
   erfährt er es, und die Chats des Kontos verschwinden von ihm. Auf dem Computer macht **Dieses Gerät trennen**
   dasselbe von dort aus.
-- **Bis zu vier** Geräte lassen sich mit einem Telefon verknüpfen. Ein Backup nimmt die Verknüpfungen nicht mit:
-  Nachdem du eines auf einem anderen Telefon wiederhergestellt hast, tippe auf dem Computer auf
-  **Dieses Gerät trennen** und verknüpfe ihn erneut, siehe [Backups](#backup).
+- **Bis zu vier** Geräte lassen sich mit einem Telefon verknüpfen. Ein Backup nimmt die Verknüpfungen nicht mit, aber
+  nachdem du eines auf einem anderen Telefon wiederhergestellt hast, bittet dieses Telefon jedes Gerät, das noch dir
+  gehört, sich erneut zu verknüpfen, mit einem Tippen auf jedes, siehe [Backups](#backup).
 
 ## Auf einem iPhone, im Browser {#iphone}
 

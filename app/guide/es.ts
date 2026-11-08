@@ -2842,24 +2842,33 @@ claves de sus conversaciones, sus mensajes, fotos, archivos, mensajes de voz, ch
 cuentas de Matrix, XMPP y Nostr, su Chat conmigo, el bloqueo y la contraseña de pánico, y los ajustes que te acompañan
 a otro teléfono. Dentro de ella cada espacio sigue sellado con su propia contraseña, y la copia se vuelve a sellar con
 una contraseña propia. Sus fotos, archivos y mensajes de voz van en archivos propios junto a ella, de hasta 4 MB cada
-uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Ajustes** → **Datos y dispositivos** →
+uno, cuyos nombres empiezan como el de la copia; una copia automática usa también los archivos de las anteriores:
+mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos** →
 **Copias de seguridad**.
 
 1. **Hacer una copia de seguridad:** toca **Hacer una copia de seguridad**, elige una carpeta (en el teléfono, una
    tarjeta de memoria, o una app en la nube que muestre ahí sus carpetas; en un ordenador, cualquier carpeta), escribe
    dos veces una contraseña para la copia (al menos 12 caracteres, o cuatro palabras) y toca **Guardar**. En un navegador, la copia y sus archivos van al menú de compartir o a las descargas: el primero enseguida, y cada uno de los siguientes tras un toque en **Guardar**.
-2. **Copias automáticas:** elige **Cada día** o **Cada semana**, y luego una carpeta y una contraseña. Erevos hace una
-   cuando se abre y la última es más antigua que eso, y la carpeta conserva las 3 más nuevas, cada una con sus archivos. Debajo están **Hacer
+2. **Copias automáticas:** elige **Cada 6 horas**, **Cada día** o **Cada semana**, y luego una carpeta y una
+   contraseña. Erevos hace una mientras está abierto, en cuanto la última es más antigua que eso: cuando se abre un
+   espacio, cada 15 minutos y al pasar a segundo plano, antes de bloquearse; nunca sin un espacio abierto. Cada una
+   escribe solo las fotos, archivos y mensajes de voz que son nuevos desde la anterior, y nombra de nuevo los archivos
+   de las anteriores para el resto, así que una cada 6 horas cuesta poco. La carpeta conserva las 3 más nuevas, con
+   todos los archivos que necesitan, y borra los archivos que ninguna de ellas necesita. Una que falló se vuelve a
+   intentar cuando se abre un espacio, o una hora después. Debajo están **Hacer
    copia ahora**, **Cambiar carpeta** y **Cambiar contraseña**; **Desactivado** las detiene, y las ya hechas se quedan
    en la carpeta.
 3. **También a un servidor:** en Android y en la app de escritorio, con las copias automáticas activadas, **Añadir un
    servidor** en **También a un servidor** envía cada una también a una carpeta en un servidor que elijas y que hable
    WebDAV, como tu propio Nextcloud: da la dirección de la carpeta, un nombre de usuario y, mejor, una contraseña de
-   aplicación solo para Erevos, y toca **Conectar**. El servidor guarda las 3 más recientes; **Dejar de enviar** lo
+   aplicación solo para Erevos, y toca **Conectar**. El servidor guarda las 3 más recientes, con todos los archivos
+   que necesitan, y cada una envía solo lo nuevo; **Dejar de enviar** lo
    detiene, y las que hay allí se quedan. En la web app, que no hace copias por sí sola, **Enviar una copia ahora**
    envía una allí, con una contraseña que escribes cada vez.
 4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
-   una vez más, encuentra los archivos de la copia junto a ella, o te pide que los elijas a ellos o su carpeta, y luego
+   una vez más, encuentra los archivos de la copia junto a ella, o te pide que los elijas a ellos o su carpeta (para
+   una copia automática, elige todos los archivos de la carpeta, pues algunos de sus archivos pueden empezar como el
+   nombre de una copia anterior), y luego
    pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo la copia, con las
    contraseñas de entonces. Si falta uno de sus archivos, está dañado o es de otra copia, Erevos dice cuál, y no se cambia nada a menos que elijas restaurar el resto sin él: entonces las fotos, los archivos y los mensajes de voz del teléfono quedan como están, y los que contiene no vuelven.
    **Restaurar desde un servidor** mira en la carpeta a la que van las copias automáticas, o en una que des con su
@@ -2877,7 +2886,8 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   uno de pocos tamaños, así que ninguno dice que es de Erevos ni cuánto guarda exactamente. Sus fotos, archivos y
   mensajes de voz van como subidas propias, todas del mismo tamaño, cada una también con un nombre aleatorio y sellada
   con la contraseña de la copia, atada a esa copia y a su lugar en ella, así que ninguna puede cambiarse, faltar o
-  venir de otra copia sin que se note; el servidor las guarda con su copia y las borra con ella. Sus nombres son tan largos como el de la copia, pero su tamaño las distingue de ella, así que el servidor puede contarlas, y saber así más o menos cuánto guarda la copia. Lo que dejó allí una copia cortada a medias se borra antes de que vaya la siguiente, así que un servidor que no tenía sitio vuelve a tenerlo. Aun así el servidor ve
+  venir de otra copia sin que se note; el servidor guarda cada una mientras la necesite alguna de las copias que
+  guarda, y luego la borra. Sus nombres son tan largos como el de la copia, pero su tamaño las distingue de ella, así que el servidor puede contarlas, y saber así más o menos cuánto guarda la copia. Lo que dejó allí una copia cortada a medias se borra antes de que vaya la siguiente, así que un servidor que no tenía sitio vuelve a tenerlo. Aun así el servidor ve
   tu cuenta, cuándo llega una y más o menos cuánto ocupa. En Android, las copias van allí como dice la elección del
   espacio en **Ajustes** → **Relay y redes** → **Tor**, como Matrix: con **Todo** solo por Tor, así que el servidor no
   ve la dirección del teléfono; con **Mensajes** por Tor en cuanto Tor está listo, y directo mientras Tor arranca o
@@ -2894,11 +2904,15 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive queda fuera a propósito: Google
   ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban
-  entonces. Los mensajes que llegaron después de la copia y ya se leyeron no están en ella, y un chat que siguió puede
-  dejar de abrir mensajes nuevos. Entonces pide al contacto su enlace de contacto otra vez. Antes de que un chat
+  entonces. Los mensajes que llegaron después de la copia y ya se leyeron no están en ella. Una conversación que
+  siguió después de la copia dejaría de abrir mensajes nuevos, así que cada chat restaurado, el del espacio y el de
+  cada lugar oculto al abrirse, empieza solo y sin ruido una conversación nueva con cada contacto, desde las claves
+  más nuevas que este le dio, y su Erevos sigue en ella. Con un contacto cuyo Erevos es más antiguo, pídele su enlace
+  de contacto otra vez. Antes de que un chat
   restaurado vuelva a escribir, sus conversaciones saltan por delante de las claves que puedan haber usado desde la
   copia, para que ninguna clave selle nunca dos mensajes: uno sellado dos veces dejaría a quien guardara los dos
-  paquetes leerlos juntos.
+  paquetes leerlos juntos. En un grupo, un miembro restaurado pide al Erevos del administrador que lo vuelva a meter,
+  lo que funciona mientras el grupo solo ha avanzado un poco; si no, pide que te añadan de nuevo.
 - **Matrix, XMPP y Nostr:** las cuentas de cada espacio y de sus chats ocultos están en la copia. Una clave de
   **Nostr** vuelve con sus chats, como estaban. Una cuenta de **XMPP** vuelve con su sesión, sus contactos, sus chats y
   las claves que conoce de otras personas, y sigue como un dispositivo nuevo de la cuenta: conserva su clave de
@@ -2924,6 +2938,14 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   que se eligió: en otro teléfono, **Copias de seguridad** dice que elijas una, y hasta entonces solo van al servidor.
 - **Un teléfono a la vez:** una copia restaurada en un segundo teléfono lee las mismas colas del relay que el primero,
   y cada uno recoge mensajes que entonces el otro nunca recibe. Úsala para pasar a un teléfono nuevo, no para tener dos.
+- **El teléfono anterior se perdió:** un teléfono que se perdió o te robaron y sigue encendido sigue leyendo las colas
+  del relay que conocía, así que los mensajes enviados allí pueden llegarle a él y nunca al teléfono nuevo. Tras
+  restaurar la copia en el teléfono nuevo, toca **El teléfono anterior se perdió** en **Copias de seguridad** (tras
+  restaurar una copia de otro teléfono, Erevos lo señala) y di **Cambiar las colas**. Cada espacio y sus chats ocultos
+  pasan entonces a colas nuevas del relay, cada uno la próxima vez que se abre aquí, y tus contactos y grupos reciben
+  el aviso sin ruido. Las colas antiguas se leen aquí hasta que cada contacto escribe en las nuevas, 14 días como
+  máximo, y los enlaces de contacto y los códigos QR que diste antes sirven 14 días, y luego ya no. Lo que llega por
+  Nostr, XMPP o Matrix sigue llegando al teléfono anterior. Tras otra restauración, tócalo de nuevo.
 - **Discreción:** todos los espacios muestran la misma pantalla de Copias de seguridad, y una copia contiene todos los
   espacios, así que ninguna de las dos dice cuántos espacios hay ni si hay chats ocultos configurados. Los nombres de
   los archivos dicen que son una copia de seguridad de Erevos, y su número y tamaño muestran más o menos cuánto se guarda.
@@ -2932,6 +2954,16 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   de la copia como el resto. Restaurar la copia devuelve a los SMS del teléfono cada mensaje que aún no tiene, y no
   elimina ninguno; Erevos también tiene que ser la app de SMS entonces, o el resto se restaura sin ellos. Los SMS son
   del teléfono, los mismos en todos los espacios. Un Erevos más antiguo no abre una copia que contenga SMS.
+- **Las llamadas del teléfono:** en Android, **Incluir las llamadas en las copias**, en **Las llamadas del teléfono**,
+  añade a cada copia, a partir de entonces, el historial de llamadas del teléfono (sus 10.000 llamadas más recientes,
+  sin el buzón de voz) y la propia lista de números bloqueados de Android, mientras Android deja a Erevos leer el
+  historial de llamadas; los números bloqueados, solo mientras Erevos es la app de Teléfono o SMS. Está desactivado
+  hasta que lo actives, y la elección va en las copias. Se sellan con la contraseña de la copia como el resto.
+  Restaurar la copia añade al teléfono cada llamada y cada número bloqueado que aún no tiene, y no borra ninguno;
+  Erevos tiene que ser entonces la app de Teléfono (**Ajustes** → **Teléfono y SMS** → **Teléfono**), o el resto se
+  restaura sin ellos. Android guarda más o menos las 500 llamadas más recientes de cada SIM, así que las más antiguas
+  restauradas pueden irse a medida que llegan llamadas nuevas. Un Erevos más antiguo no abre una copia que contenga
+  llamadas.
 - **Los SMS en orden:** las conversaciones fijadas, las archivadas, la Papelera, los borradores, el filtro y las marcas
   de spam de cada espacio, cuánto espera un SMS para poder deshacer su envío, los SMS que se envían más tarde (**SMS
   más tarde**), las invitaciones, los nombres de tus contactos, si los mensajes a contactos de Erevos pueden ir por SMS,
@@ -2945,14 +2977,23 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   carpetas en las que Erevos puede escribir, como la de las copias automáticas, en las que Android solo lo deja entrar
   en el teléfono en que se eligieron; lo que Android permite hacer a Erevos y qué apps hacen las llamadas y envían los
   SMS, que solo tú puedes permitir en cada teléfono, por eso tras restaurar en Android se abre **Permisos** para los
-  módulos activados; lo que Android guarda para todas las apps, como el historial de llamadas y su propia lista de
-  números bloqueados; y el contador de contraseñas incorrectas. Una cuenta XMPP vuelve como un dispositivo nuevo de sí
-  misma y Matrix vuelve a iniciar sesión, como arriba, y los dispositivos vinculados no están en una copia por ahora,
-  como abajo.
-- **Los dispositivos vinculados** no están en una copia: un vínculo se queda con el teléfono y el ordenador en los que
-  se hizo. Después de restaurar una copia en otro teléfono, vuelve a vincular el ordenador: en el ordenador, toca
-  **Desvincular este dispositivo**, y luego vincúlalo como la primera vez, ver [Dispositivos vinculados](#devices). Los
-  contactos con esta versión dejan entonces de escribir a tus ordenadores hasta que lo hagas: el teléfono les da una
+  módulos activados; el historial de llamadas y la propia lista de números bloqueados de Android, salvo que **Incluir
+  las llamadas en las copias** estuviera activado, como arriba; y el contador de contraseñas incorrectas. Una cuenta XMPP vuelve como un dispositivo nuevo de sí
+  misma y Matrix vuelve a iniciar sesión, como arriba, y los dispositivos vinculados se vuelven a vincular, como
+  abajo.
+- **Dispositivos vinculados:** un vínculo se queda con el teléfono y el ordenador en los que se hizo, y ninguna copia
+  lo guarda, pero una copia guarda lo que permite al teléfono en que se restaura pedir a cada uno de ellos que se
+  vincule de nuevo. Después de restaurar una copia en otro teléfono, abre allí **Ajustes** → **Datos y dispositivos**
+  → **Dispositivos vinculados**: en **De la copia de seguridad**, toca **Pedir que vuelva a vincularse** para cada
+  dispositivo que sigue siendo tuyo, o **Olvidar** para uno que ya no lo es. El dispositivo, que tiene que estar
+  encendido, muestra la petición: toca ahí **Volver a vincular** solo si restauraste tú la copia, y si no **Ahora
+  no**. Entonces se vincula al teléfono nuevo sin código que escanear, conserva sus chats y recibe lo que llegó desde
+  entonces; los mensajes que llegaron al teléfono anterior después de la copia se quedan solo en él. Una vez vinculado
+  de nuevo, ni el teléfono anterior ni nadie con la misma copia llega a él. Una petición vale 14 días, y los
+  dispositivos de un lugar oculto se piden desde dentro de ese lugar. Un dispositivo con un Erevos más antiguo no
+  muestra la petición: toca en él **Desvincular este dispositivo**, y luego vincúlalo como la primera vez, ver
+  [Dispositivos vinculados](#devices). Los contactos con esta versión dejan de escribir a tus ordenadores hasta que se
+  vinculen de nuevo: el teléfono les da una
   nueva lista de sus dispositivos que no nombra ninguno. Si el reloj de este teléfono va por detrás del del teléfono
   perdido, esa lista desaparece en cuanto le escriben, y los detalles de su chat pueden decir que cambió el día después
   de que restauraras. La propia copia de un ordenador vinculado contiene los chats del teléfono como estaban, pero
@@ -3005,7 +3046,7 @@ ajustes. Ningún servidor guarda una copia por ti, así que nada pasa solo: lo l
    antiguo rechaza una copia hecha por uno más nuevo. Sin internet, el teléfono viejo puede dártelo, mira
    [Erevos a un teléfono cercano](#give-app).
 2. **En el teléfono viejo, prepáralo:** para que pasen también los SMS del teléfono, activa **Incluir los SMS en las
-   copias** en **Copias de seguridad**. Una Colección que no está en las copias se queda atrás: vuelve a incluirla, o
+   copias** en **Copias de seguridad**, y para su historial de llamadas **Incluir las llamadas en las copias**. Una Colección que no está en las copias se queda atrás: vuelve a incluirla, o
    dale un servidor WebDAV, mira [Colección](#collection). Ten a mano tu clave de seguridad de Matrix, porque Matrix
    inicia sesión de nuevo en el teléfono nuevo.
 3. **En el teléfono viejo, haz la copia:** en **Ajustes** → **Datos y dispositivos** → **Copias de seguridad**, toca
@@ -3036,17 +3077,21 @@ ajustes. Ningún servidor guarda una copia por ti, así que nada pasa solo: lo l
 - **Matrix, XMPP y Nostr:** una clave de Nostr sigue como era, una cuenta de XMPP como un dispositivo nuevo de sí
   misma, y Matrix inicia sesión de nuevo como dispositivo nuevo, con su clave de seguridad abriendo los mensajes de
   antes, mira [Copias de seguridad](#backup).
-- **Dispositivos vinculados:** un vínculo se queda con el teléfono donde se hizo. En cada ordenador o navegador, toca
-  **Desvincular este dispositivo** y vincúlalo al teléfono nuevo como la primera vez; los dispositivos de un lugar
-  oculto, desde dentro de ese lugar. Mira [Dispositivos vinculados](#devices).
+- **Dispositivos vinculados:** en el teléfono nuevo, en **Ajustes** → **Datos y dispositivos** → **Dispositivos
+  vinculados**, toca **Pedir que vuelva a vincularse** para cada ordenador o navegador que siga siendo tuyo, y luego
+  **Volver a vincular** en él: conserva sus chats, sin código que escanear. Los dispositivos de un lugar oculto, desde
+  dentro de ese lugar. Un dispositivo con un Erevos más antiguo: toca en él **Desvincular este dispositivo** y
+  vincúlalo al teléfono nuevo como la primera vez. Mira [Copias de seguridad](#backup).
 - **La Colección:** viene en los archivos de la copia. Una que no está en las copias viene solo de su servidor WebDAV,
   cada archivo al abrirlo; una sin ninguna de las dos se queda en el teléfono viejo, y el borrado la elimina.
-- **Módulos y ajustes:** los módulos activados, el idioma y tus otros ajustes vienen con la copia. Lo que Android guarda
-  para cada teléfono se queda allí: el historial de llamadas, sus números bloqueados y lo que permite a Erevos.
+- **Módulos y ajustes:** los módulos activados, el idioma y tus otros ajustes vienen con la copia. Lo que Android
+  guarda para cada teléfono se queda allí, como lo que permite a Erevos; el historial de llamadas y sus números
+  bloqueados vienen también con **Incluir las llamadas en las copias** activado.
 - **Falta un archivo:** si falta un archivo de la copia o está dañado, Erevos dice cuál y no cambia nada, a menos que
   elijas restaurar el resto sin él.
-- **Si el teléfono viejo se pierde:** restaura tu copia más reciente en el teléfono nuevo cuanto antes, también desde tu
-  servidor. Si perdiste la contraseña de la copia, los amigos que guardan sus piezas pueden devolvértela, mira
+- **Si el teléfono viejo se pierde:** restaura tu copia más reciente en el teléfono nuevo cuanto antes, también desde
+  tu servidor, y luego toca **El teléfono anterior se perdió** en **Copias de seguridad**, para que no lea nada más
+  tuyo en los relays. Si perdiste la contraseña de la copia, los amigos que guardan sus piezas pueden devolvértela, mira
   [Piezas de copias con amigos](#backup-pieces).
 
 **Por qué:** Erevos no guarda nada tuyo en un servidor que pudiera devolverlo, así que ninguna cuenta lleva tus chats a
@@ -3489,9 +3534,9 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   que envíe. A los contactos con esta versión se les dice la próxima vez que el teléfono contacta con el relay: dejan de
   escribirle, y no aceptan nada más de él. Así se corta un ordenador perdido. Si está encendido, se le dice, y los chats
   de la cuenta salen de él. En el ordenador, **Desvincular este dispositivo** hace lo mismo desde ahí.
-- **Hasta cuatro** dispositivos se vinculan a un teléfono. Una copia de seguridad no lleva los vínculos: después de
-  restaurar una en otro teléfono, toca **Desvincular este dispositivo** en el ordenador y vuelve a vincularlo, ver
-  [Copias de seguridad](#backup).
+- **Hasta cuatro** dispositivos se vinculan a un teléfono. Una copia de seguridad no lleva los vínculos, pero después
+  de restaurar una en otro teléfono, ese teléfono pide a cada dispositivo que siga siendo tuyo que se vincule de
+  nuevo, con un toque en cada uno, ver [Copias de seguridad](#backup).
 
 ## En un iPhone, desde el navegador {#iphone}
 

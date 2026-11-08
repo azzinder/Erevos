@@ -44,9 +44,43 @@ On main, not released yet:
 - **Moving to a new phone**: a new chapter of the guide (#new-phone), in every language, takes you step by step from
   the old phone to the new one with one backup: what to get ready, what comes over, what to set again on the new
   phone, and wiping the old one with the panic button at the end, never with Delete me from everywhere.
+- **A lost phone**: Backups has **The old phone was lost**: a phone a backup came from that was lost or stolen and
+  is still on went on reading the relay queues it knew. It marks this phone (lock/restored.ts, kept in no backup),
+  and each space and hidden place a backup put back here then moves once, as it next opens: its contacts' own queues,
+  its own queue with each home relay's, its ring queue and watch slot and its linked devices' places, the contact
+  link's queue, and the groups' and public groups' (lib/queue-move.ts `lostNow`, move reason `phone`), each step kept
+  as made. Contacts and groups are told quietly; the old queues are read until each contact was heard on a new one,
+  14 days at most, and links and QR codes given before work for 14 days. Nostr, XMPP and Matrix are not moved.
+  Requested by the maintainer.
+- **Restored chats go on by themselves**: a chat put back from a backup starts a new conversation with every kept
+  contact as it opens, from the newest prekeys they gave it (`bundleAt` says when), with a first message that shows
+  nothing and a later `fa`, so their Erevos sends in it from then on (lib/e2e.ts `startAnew`); a contact's endpoints
+  start one with the next copy. With a contact on an Erevos that gives no prekeys, the link is still needed.
+  Requested by the maintainer.
+- **Backups every 6 hours, and lighter**: automatic backups can be made every 6 hours too, while a space is open:
+  when it opens, every 15 minutes, and as Erevos goes to the background, before it locks; one that failed is tried
+  again after an hour. Each names again the parts of earlier automatic backups in the same folder or on the same
+  server whose files are all still there unchanged, and makes new ones only for the rest, in a new entry kind
+  (SHARED, 9) that binds each part by its size, SHA-256, backup id and number; an older Erevos refuses it and asks to
+  be updated. A ledger on the phone (lib/backup-ledger.ts, in no backup) keeps what each backup named; the folder and
+  the server keep the 3 newest and every part they name. Manual backups stay whole. Requested by the maintainer.
+- **Linked devices after a restore**: a backup now holds, for each linked device, what reaches it and a key it gave
+  its phone (`relinks`), never a link's conversation. On a phone it was restored on, Linked devices lists them under
+  **From the backup**; **Ask to link again** sends one an ask signed by the account and by that key (lib/link-again.ts),
+  and **Link again** on the device links it anew, with no code, keeping its chats. Linked again, it has a new endpoint
+  and key, so neither the old phone nor the same backup elsewhere reaches it. Older devices link again as the first
+  time. Requested by the maintainer.
+- **The phone's calls in backups**: on Android, **Put the calls in backups** (off until turned on, kept in backups)
+  adds the call history (the newest 10,000 calls, without voicemail; the SIM as its slot) and Android's own blocked
+  numbers to each backup, in a new entry kind (PHONE_CALLS, 8) an older Erevos refuses (CallsBackup.kt,
+  lib/backup-calls.ts). Restoring adds those the phone lacks, deletes none, and needs Erevos to be the Phone app.
+  Requested by the maintainer.
 
 ### Under the hood
 
+- **Groups after a restore**: a member put back from a backup asks its admin, once, to put it in anew in each group,
+  which brings it back while the group moved on fewer than 5 key changes; an admin asks nothing, as its own commit
+  from an old key change would only fork the group (lib/groups.ts `renewAgain`). Requested by the maintainer.
 - **The time of a message that waited**: each message now says, inside its encryption, when its sender sealed it
   (`st`), and a message that waited on the relay, as for a linked computer or for hidden chats that were closed,
   shows at that time instead of when it came, unless that time is ahead of this clock or more than 30 days back

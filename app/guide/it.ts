@@ -2857,24 +2857,33 @@ delle sue conversazioni, i suoi messaggi, foto, file, messaggi vocali, chat impo
 Matrix, XMPP e Nostr, la sua Chat con me stesso, il blocco e la password di panico, e le impostazioni che ti seguono su
 un altro telefono. Al suo interno ogni spazio resta sigillato con la sua password, e il backup è sigillato di nuovo con
 una sua password. Le sue foto, i file e i messaggi vocali vanno in file a parte accanto a lui, di 4 MB al massimo
-ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impostazioni** → **Dati e dispositivi** →
+ciascuno, il cui nome comincia come il suo; un backup automatico usa anche i file di quelli prima: tieni insieme tutta
+la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
 **Backup**.
 
 1. **Crea un backup:** tocca **Crea un backup**, scegli una cartella (sul telefono, su una scheda di memoria, o in
    un’app cloud che vi mostra le sue cartelle; su un computer, qualsiasi cartella), scrivi due volte una password per
    il backup (almeno 12 caratteri, o quattro parole) e tocca **Salva**. In un browser, il backup e i suoi file vanno al menu di condivisione o nei download: il primo subito, ognuno dei successivi dopo un tocco su **Salva**.
-2. **Backup automatici:** scegli **Ogni giorno** o **Ogni settimana**, poi una cartella e una password. Erevos ne fa
-   uno quando si apre e l’ultimo è più vecchio di così, e la cartella conserva i 3 più recenti, ognuno con i suoi file. Sotto ci sono **Fai il
+2. **Backup automatici:** scegli **Ogni 6 ore**, **Ogni giorno** o **Ogni settimana**, poi una cartella e una
+   password. Erevos ne fa uno mentre è aperto, appena l’ultimo è più vecchio di così: quando si apre uno spazio, ogni
+   15 minuti, e quando passa in secondo piano, prima di bloccarsi; mai senza uno spazio aperto. Ognuno scrive solo le
+   foto, i file e i messaggi vocali che sono nuovi rispetto al precedente, e nomina di nuovo i file di quelli prima
+   per il resto, così uno ogni 6 ore costa poco. La cartella conserva i 3 più recenti, con ogni file di cui hanno
+   bisogno, ed elimina i file di cui nessuno ha bisogno. Uno che è fallito viene ritentato quando si apre uno spazio,
+   o un’ora dopo. Sotto ci sono **Fai il
    backup ora**, **Cambia cartella** e **Cambia password**; **Disattivato** li ferma, e quelli fatti restano nella
    cartella.
 3. **Anche su un server:** su Android e nell’app per computer, con i backup automatici attivi, **Aggiungi un server**
    sotto **Anche su un server** invia ognuno anche in una cartella su un server che scegli tu e che parla WebDAV, come
    il tuo Nextcloud: dai l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per Erevos,
-   poi tocca **Connetti**. Il server tiene i 3 più recenti; **Smetti di inviare** lo ferma, e quelli che ci sono
+   poi tocca **Connetti**. Il server tiene i 3 più recenti, con ogni file di cui hanno bisogno, e ognuno invia solo
+   ciò che è nuovo; **Smetti di inviare** lo ferma, e quelli che ci sono
    restano. Nella web app, che non fa backup da sé, **Invia un backup ora** ne invia uno lì, con una password che
    scrivi ogni volta.
 4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
-   volta, trova i file del backup accanto a lui, o ti chiede di sceglierli, o la loro cartella, poi mette il backup al
+   volta, trova i file del backup accanto a lui, o ti chiede di sceglierli, o la loro cartella (per un backup
+   automatico, scegli ogni file della cartella, perché alcuni dei suoi file possono cominciare come il nome di un
+   backup precedente), poi mette il backup al
    posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è stato fatto, con le password di
    allora. Se uno dei suoi file manca, è danneggiato o è di un altro backup, Erevos dice quale, e non cambia niente, a meno che tu non scelga di ripristinare il resto senza di esso: allora le foto, i file e i messaggi vocali del telefono restano come sono, e quelli che contiene non tornano. **Ripristina da un
    server** guarda nella cartella in cui vanno i backup automatici, o in una che indichi con nome utente e password, e
@@ -2892,8 +2901,8 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   una tra poche dimensioni, quindi né l’uno né l’altro dice che è di Erevos né quanto contiene esattamente. Le sue
   foto, i file e i messaggi vocali vanno come caricamenti a parte, tutti della stessa dimensione, ognuno anche con un
   nome casuale e sigillato con la password del backup, legato a quel backup e al suo posto in esso, così nessuno può
-  essere scambiato, tolto o preso da un altro backup senza che si veda; il server li tiene con il loro backup e li
-  elimina con esso. I loro nomi sono lunghi quanto quello del backup, ma la loro dimensione li distingue da esso, quindi il server può contarli, e sapere così più o meno quanto contiene il backup. Quello che un backup interrotto ha lasciato lì viene eliminato prima che parta il successivo, così un server rimasto senza spazio ne ha di nuovo. Il server vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande. Su Android, i backup ci vanno come
+  essere scambiato, tolto o preso da un altro backup senza che si veda; il server tiene ognuno finché ne ha bisogno
+  uno dei backup che conserva, e poi lo elimina. I loro nomi sono lunghi quanto quello del backup, ma la loro dimensione li distingue da esso, quindi il server può contarli, e sapere così più o meno quanto contiene il backup. Quello che un backup interrotto ha lasciato lì viene eliminato prima che parta il successivo, così un server rimasto senza spazio ne ha di nuovo. Il server vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande. Su Android, i backup ci vanno come
   dice la scelta dello spazio in **Impostazioni** → **Relay e reti** → **Tor**, come Matrix: con **Tutto** solo
   tramite Tor, così il server non vede l’indirizzo del telefono; con **Messaggi** tramite Tor appena Tor è pronto, e
   direttamente mentre Tor parte o quando fallisce; con **Niente** direttamente, e il server vede l’indirizzo del
@@ -2909,10 +2918,15 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   un backup**. Un Erevos precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google
   lega il file al tuo nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
-  messaggi arrivati dopo il backup e già letti non ci sono, e una chat che è proseguita potrebbe non aprire più i nuovi
-  messaggi. Allora chiedi di nuovo al contatto il suo link di contatto. Prima che una chat ripristinata scriva di nuovo,
+  messaggi arrivati dopo il backup e già letti non ci sono. Una conversazione proseguita dopo il backup smetterebbe di
+  aprire i nuovi messaggi, quindi ogni chat ripristinata, quella dello spazio e quella di ogni posto nascosto quando
+  si apre, avvia da sola e in silenzio una nuova conversazione con ogni contatto, dalle chiavi più recenti che le ha
+  dato, e il suo Erevos prosegue in essa. Con un contatto il cui Erevos è più vecchio, chiedigli di nuovo il suo link
+  di contatto. Prima che una chat ripristinata scriva di nuovo,
   le sue conversazioni saltano oltre le chiavi che potrebbero aver usato dopo il backup, così nessuna chiave sigilla
-  mai due messaggi: una usata due volte permetterebbe a chi ha conservato entrambi i pacchetti di leggerli insieme.
+  mai due messaggi: una usata due volte permetterebbe a chi ha conservato entrambi i pacchetti di leggerli insieme. In
+  un gruppo, un membro ripristinato chiede all’Erevos dell’amministratore di rimetterlo dentro, cosa che funziona
+  finché il gruppo è andato avanti solo di poco; altrimenti chiedi di essere aggiunto di nuovo.
 - **Matrix, XMPP e Nostr:** gli account di ogni spazio e delle sue chat nascoste sono nel backup. Una chiave **Nostr**
   torna con le sue chat, com’erano. Un account **XMPP** torna con il suo accesso, i contatti, le chat e le chiavi che
   conosce degli altri, e prosegue come nuovo dispositivo dell’account: tiene la sua chiave d’identità, così le app dei
@@ -2938,6 +2952,14 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   al server.
 - **Un telefono alla volta:** un backup ripristinato su un secondo telefono legge le stesse code sul relay del primo, e
   ognuno prende messaggi che l’altro poi non riceve mai. Usalo per passare a un nuovo telefono, non per tenerne due.
+- **Il vecchio telefono è perso:** un telefono perso o rubato che è ancora acceso continua a leggere le code sul relay
+  che conosceva, quindi i messaggi mandati lì possono arrivare a lui e mai al telefono nuovo. Dopo aver ripristinato
+  il backup sul telefono nuovo, tocca **Il vecchio telefono è perso** sotto **Backup** (dopo il ripristino di un
+  backup di un altro telefono, Erevos lo indica) e dì **Cambia le code**. Ogni spazio e le sue chat nascoste passano
+  allora a nuove code sul relay, ognuno la prossima volta che si apre qui, e i tuoi contatti e gruppi vengono avvisati
+  in silenzio. Le vecchie code vengono lette qui finché ogni contatto non scrive in quelle nuove, 14 giorni al
+  massimo, e i link di contatto e i codici QR che hai dato prima valgono 14 giorni, poi più. Quello che passa da
+  Nostr, XMPP o Matrix arriva ancora al vecchio telefono. Dopo un altro ripristino, toccalo di nuovo.
 - **Discrezione:** ogni spazio mostra la stessa schermata Backup, e un backup contiene ogni spazio, quindi né l’una né
   l’altro dicono quanti spazi ci sono o se ci sono chat nascoste impostate. I nomi dei file dicono che sono un backup di
   Erevos, e il loro numero e la loro dimensione mostrano più o meno quanto viene conservato.
@@ -2947,6 +2969,16 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   ha ancora, e non ne elimina nessuno; anche allora Erevos deve essere l’app per gli SMS, altrimenti il resto viene
   ripristinato senza di loro. Gli SMS sono del telefono, gli stessi in ogni spazio. Un Erevos più vecchio non apre un
   backup che contiene SMS.
+- **Le chiamate del telefono:** su Android, **Includi le chiamate nei backup**, sotto **Le chiamate del telefono**,
+  aggiunge da quel momento a ogni backup la cronologia delle chiamate del telefono (le sue 10.000 chiamate più
+  recenti, senza la segreteria) e la lista di numeri bloccati di Android stessa, mentre Android lascia a Erevos
+  leggere la cronologia delle chiamate; i numeri bloccati solo mentre Erevos è l’app Telefono o SMS. È disattivato
+  finché non lo attivi, e la scelta va nei backup. Sono sigillati con la password del backup come il resto. Il
+  ripristino del backup aggiunge al telefono ogni chiamata e ogni numero bloccato che non ha ancora, e non ne elimina
+  nessuno; anche allora Erevos deve essere l’app Telefono (**Impostazioni** → **Telefono e SMS** → **Telefono**),
+  altrimenti il resto viene ripristinato senza di loro. Android tiene più o meno le 500 chiamate più recenti di ogni
+  SIM, quindi quelle più vecchie ripristinate possono sparire man mano che arrivano nuove chiamate. Un Erevos più
+  vecchio non apre un backup che contiene chiamate.
 - **Gli SMS in ordine:** i messaggi fissati, le conversazioni archiviate, il Cestino, le bozze, il filtro antispam e i
   segni di ogni spazio, quanto aspetta un SMS per poter essere annullato, gli SMS da inviare più tardi (**SMS più
   tardi**), gli inviti, i nomi dai tuoi contatti, se i messaggi ai contatti Erevos possono andare via SMS, e la SIM
@@ -2960,14 +2992,23 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   telefono; le cartelle in cui Erevos può scrivere, come quella dei backup automatici, in cui Android lo lascia entrare
   solo sul telefono su cui sono state scelte; quello che Android consente a Erevos e quali app fanno le chiamate e
   mandano gli SMS, che solo tu puoi consentire su ogni telefono, per questo dopo un ripristino su Android si apre
-  **Autorizzazioni** per i moduli attivi; quello che Android tiene per tutte le app, come la cronologia delle chiamate e
-  la sua lista di numeri bloccati; e il conteggio delle password sbagliate. Un account XMPP torna come un nuovo
-  dispositivo di sé stesso e Matrix accede di nuovo, come sopra, e i dispositivi collegati per ora non sono in un
-  backup, come sotto.
-- **I dispositivi collegati** non sono in un backup: un collegamento resta con il telefono e il computer su cui è stato
-  fatto. Dopo aver ripristinato un backup su un altro telefono, collega di nuovo il computer: sul computer, tocca
-  **Scollega questo dispositivo**, poi collegalo come la prima volta, vedi [Dispositivi collegati](#devices). I
-  contatti con questa versione smettono allora di scrivere ai tuoi computer finché non lo fai: il telefono dà loro un
+  **Autorizzazioni** per i moduli attivi; la cronologia delle chiamate e la lista di numeri bloccati di Android
+  stesso, a meno che **Includi le chiamate nei backup** fosse attivo, come sopra; e il conteggio delle password sbagliate. Un account XMPP torna come un nuovo
+  dispositivo di sé stesso e Matrix accede di nuovo, come sopra, e i dispositivi collegati si collegano di nuovo, come
+  sotto.
+- **Dispositivi collegati:** un collegamento resta con il telefono e il computer su cui è stato fatto, e nessun backup
+  lo tiene, ma un backup tiene ciò che permette al telefono su cui viene ripristinato di chiedere a ognuno di loro di
+  collegarsi di nuovo. Dopo aver ripristinato un backup su un altro telefono, apri lì **Impostazioni** → **Dati e
+  dispositivi** → **Dispositivi collegati**: sotto **Dal backup**, tocca **Chiedi di collegarsi di nuovo** per ogni
+  dispositivo che è ancora tuo, o **Dimentica** per uno che non lo è. Il dispositivo, che deve essere acceso, mostra
+  la richiesta: tocca lì **Collega di nuovo** solo se hai ripristinato tu il backup, altrimenti **Non ora**. Si
+  collega allora al telefono nuovo senza codice da scansionare, tiene le sue chat e riceve ciò che è arrivato da
+  allora; i messaggi arrivati al vecchio telefono dopo il backup restano solo su di esso. Una volta collegato di
+  nuovo, né il vecchio telefono né chiunque abbia lo stesso backup lo raggiunge. Una richiesta vale 14 giorni, e i
+  dispositivi di un posto nascosto si chiedono da dentro quel posto. Un dispositivo con un Erevos più vecchio non
+  mostra nessuna richiesta: tocca su di esso **Scollega questo dispositivo**, poi collegalo come la prima volta, vedi
+  [Dispositivi collegati](#devices). I contatti con questa versione smettono di scrivere ai tuoi computer finché non
+  si collegano di nuovo: il telefono dà loro un
   nuovo elenco dei suoi dispositivi che non ne nomina nessuno. Se l’orologio di questo telefono è indietro rispetto a
   quello perso, quell’elenco parte appena gli scrivono, e i dettagli della loro chat potrebbero dire che è cambiato il
   giorno dopo il ripristino. Il backup di un computer collegato contiene le chat del telefono com’erano, ma
@@ -3021,7 +3062,7 @@ la sua password.
    Erevos più vecchio rifiuta un backup fatto da uno più nuovo. Senza internet, il telefono vecchio può dartelo, vedi
    [Erevos a un telefono vicino](#give-app).
 2. **Sul telefono vecchio, preparalo:** perché passino anche gli SMS del telefono, attiva **Includi gli SMS nei
-   backup** sotto **Backup**. Una Raccolta lasciata fuori dai backup resta indietro: rimettila dentro, o dalle un
+   backup** sotto **Backup**, e per la sua cronologia delle chiamate **Includi le chiamate nei backup**. Una Raccolta lasciata fuori dai backup resta indietro: rimettila dentro, o dalle un
    server WebDAV, vedi [Raccolta](#collection). Tieni a portata di mano la tua Chiave di sicurezza di Matrix, perché
    Matrix accede di nuovo sul telefono nuovo.
 3. **Sul telefono vecchio, fai il backup:** sotto **Impostazioni** → **Dati e dispositivi** → **Backup**, tocca **Crea
@@ -3051,17 +3092,21 @@ la sua password.
 - **Matrix, XMPP e Nostr:** una chiave Nostr continua com’era, un account XMPP come un nuovo dispositivo di sé stesso, e
   Matrix accede di nuovo come nuovo dispositivo, con la sua Chiave di sicurezza che apre i messaggi di prima, vedi
   [Backup](#backup).
-- **Dispositivi collegati:** un collegamento resta con il telefono su cui è stato fatto. Su ogni computer o browser,
-  tocca **Scollega questo dispositivo**, poi collegalo al telefono nuovo come la prima volta; i dispositivi di un posto
-  nascosto, da dentro quel posto. Vedi [Dispositivi collegati](#devices).
+- **Dispositivi collegati:** sul telefono nuovo, sotto **Impostazioni** → **Dati e dispositivi** → **Dispositivi
+  collegati**, tocca **Chiedi di collegarsi di nuovo** per ogni computer o browser che è ancora tuo, poi **Collega di
+  nuovo** su di esso: tiene le sue chat, senza codice da scansionare. I dispositivi di un posto nascosto, da dentro
+  quel posto. Un dispositivo con un Erevos più vecchio: tocca su di esso **Scollega questo dispositivo**, poi
+  collegalo al telefono nuovo come la prima volta. Vedi [Backup](#backup).
 - **La Raccolta:** arriva nei file del backup. Una lasciata fuori dai backup arriva solo dal suo server WebDAV, ogni
   file quando lo apri; una senza né l’uno né l’altro resta sul telefono vecchio, e la cancellazione la elimina.
-- **Moduli e impostazioni:** i moduli attivi, la lingua e le altre impostazioni arrivano con il backup. Ciò che Android
-  tiene per ogni telefono resta lì: la cronologia delle chiamate, i suoi numeri bloccati, e ciò che permette a Erevos.
+- **Moduli e impostazioni:** i moduli attivi, la lingua e le altre impostazioni arrivano con il backup. Ciò che
+  Android tiene per ogni telefono resta lì, come ciò che permette a Erevos; la cronologia delle chiamate e i suoi
+  numeri bloccati arrivano anch’essi con **Includi le chiamate nei backup** attivo.
 - **Un file mancante:** se un file del backup manca o è danneggiato, Erevos dice quale e non cambia niente, a meno che
   tu non scelga di ripristinare il resto senza di esso.
-- **Se il telefono vecchio è perso:** ripristina il tuo backup più recente sul telefono nuovo appena puoi, anche dal tuo
-  server. Se hai perso la password del backup, gli amici che ne hanno i pezzi possono restituirtela, vedi
+- **Se il telefono vecchio è perso:** ripristina il tuo backup più recente sul telefono nuovo appena puoi, anche dal
+  tuo server, poi tocca **Il vecchio telefono è perso** sotto **Backup**, così non legge più niente di tuo sui relay.
+  Se hai perso la password del backup, gli amici che ne hanno i pezzi possono restituirtela, vedi
   [Pezzi del backup presso amici](#backup-pieces).
 
 **Perché:** Erevos non tiene niente di tuo su un server che potrebbe restituirlo, quindi nessun account porta le tue
@@ -3502,9 +3547,9 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   viene preso. Ai contatti con questa versione viene detto la prossima volta che il telefono raggiunge il relay:
   smettono di scrivergli, e non prendono più nulla da lui. È così che si esclude un computer perso. Se è acceso, gli
   viene detto, e le chat dell’account lo lasciano. Sul computer, **Scollega questo dispositivo** fa lo stesso da lì.
-- **Fino a quattro** dispositivi si collegano a un telefono. Un backup non porta i collegamenti: dopo averne
-  ripristinato uno su un altro telefono, tocca **Scollega questo dispositivo** sul computer e collegalo di nuovo, vedi
-  [Backup](#backup).
+- **Fino a quattro** dispositivi si collegano a un telefono. Un backup non porta i collegamenti, ma dopo averne
+  ripristinato uno su un altro telefono, quel telefono chiede a ogni dispositivo che è ancora tuo di collegarsi di
+  nuovo, con un tocco su ognuno, vedi [Backup](#backup).
 
 ## Su iPhone, dal browser {#iphone}
 
