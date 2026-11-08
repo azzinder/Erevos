@@ -33,6 +33,9 @@ export type PanicState = {
   pendingLabel: string;
 };
 
+/** A file of a folder picked with Android's folder picker (Folders.kt). */
+export type FolderFile = { name: string; size: number; uri: string };
+
 /** This Erevos given nearby (NearbyApk.kt): where, the package's SHA-256, size and version, and its certificates' SHA-256s, joined with commas. */
 export type GivingApp = { addresses: string[]; port: number; token: string; sha256: string; size: number; version: string; cert: string; until: number };
 
@@ -97,6 +100,12 @@ type Device = {
   nearbyAppProgress?(): { received: number; total: number };
   /** Stops taking it. */
   cancelNearbyApp?(): void;
+  /** A folder picked with Android's folder picker (a tree uri): its files with their names, sizes (-1 where it does not say) and uris, in one look (Folders.kt). Null where it cannot be read. Missing in a build before it. */
+  folderFiles?(folder: string): Promise<FolderFile[] | null>;
+  /** Writes `bytes` as a new file in that folder: its name as the folder gave it, and its uri. Rejects, with none of it left, when it could not be written whole. */
+  folderWrite?(folder: string, name: string, bytes: Uint8Array): Promise<{ name: string; uri: string }>;
+  /** Deletes the files of these uris; how many went. */
+  folderDelete?(uris: string[]): Promise<number>;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

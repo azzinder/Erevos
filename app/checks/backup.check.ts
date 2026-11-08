@@ -103,10 +103,11 @@ import { changeAutoBackup, CHECK_MS, checkAutoBackup, isAutoBackupPassword, KEEP
 import { phoneCallsEntry } from '../lib/backup-calls';
 import { folderPlace, loadLedger, saveLedger, serverPlace, type Ledger } from '../lib/backup-ledger';
 import { phoneSettingsForBackup, putPhoneSettings } from '../lib/backup-native';
-import { partsIn, writeBackup } from '../lib/backup-place';
+import { deleteBackupFiles, listBackupFiles, partsIn, writeBackup } from '../lib/backup-place';
 import { rulesFrom, rulesJson } from '../lib/phone-rules';
 import { blobs, files, stampsTold } from './files-memory';
-import { folders, writes } from './folder-memory';
+import { nativeFolders } from './device-memory';
+import { folders, looks, writes } from './folder-memory';
 import { panic } from './panic-memory';
 import { clearPhone, phone as phoneModule } from './phone-memory';
 import { ready as relayReady, startRelay } from './real-relay';
@@ -1392,6 +1393,7 @@ t('into a folder on the phone: the parts as they are made, then the backup; the 
   folders.set(uri, new Map([['notes.txt', new Uint8Array([1])]]));
   const key = await backupKey('backup-pass');
   const day = (n: number) => new Date(2026, 10, n, 3, 12).getTime();
+  looks.count = 0;
   for (const n of [1, 2, 3, 4]) {
     const written = await writeBackup(uri, (parts) => makeBackup(key, { parts }), day(n), 3);
     assert.deepEqual(written, { name: `erevos-backup-2026-11-0${n}-0312.erevos`, size: written.size, parts: 2 });
@@ -1413,6 +1415,9 @@ t('into a folder on the phone: the parts as they are made, then the backup; the 
   }
   // A folder gone says so.
   await assert.rejects(writeBackup('content://gone', (parts) => makeBackup(key, { parts }), day(6), 3), /not there/);
+  // All through the folder functions, off the thread the screen answers on (Folders.kt): never a
+  // look for each file's name and size on it.
+  assert.equal(looks.count, 0);
 
   // Restored from that folder on another phone.
   const file = folder.get('erevos-backup-2026-11-04-0312.erevos')!;
@@ -1425,6 +1430,43 @@ t('into a folder on the phone: the parts as they are made, then the backup; the 
   for (const [name, bytes] of chunks) assert.deepEqual(blobs.get(name), bytes);
   assert.deepEqual(await loadClip(clip), new Uint8Array([1, 2, 3, 4]));
   folders.clear();
+});
+
+t('a build before the folder functions writes, lists and deletes in the folder through expo-file-system alike', async () => {
+  await phone();
+  photos(5);
+  const uri = 'content://com.android.externalstorage.documents/tree/primary%3AOlder';
+  folders.set(uri, new Map([['notes.txt', new Uint8Array([1])]]));
+  const key = await backupKey('backup-pass');
+  const day = (n: number) => new Date(2026, 10, n, 3, 12).getTime();
+  nativeFolders.on = false;
+  try {
+    for (const n of [1, 2, 3, 4]) {
+      const written = await writeBackup(uri, (parts) => makeBackup(key, { parts }), day(n), 3);
+      assert.deepEqual(written, { name: `erevos-backup-2026-11-0${n}-0312.erevos`, size: written.size, parts: 2 });
+    }
+    const folder = folders.get(uri)!;
+    const kept = [2, 3, 4].flatMap((n) => [`erevos-backup-2026-11-0${n}-0312.erevos`, `erevos-backup-2026-11-0${n}-0312.part1.erevos`, `erevos-backup-2026-11-0${n}-0312.part2.erevos`]);
+    assert.deepEqual([...folder.keys()].sort(), ['notes.txt', ...kept].sort());
+    const before = [...folder.keys()].sort();
+    for (const failAt of [3, 2]) {
+      writes.failAt = failAt;
+      await assert.rejects(writeBackup(uri, (parts) => makeBackup(key, { parts }), day(5), 3), /No room left/);
+      writes.failAt = 0;
+      assert.deepEqual([...folder.keys()].sort(), before, `at write ${failAt}`);
+    }
+    // Each backup file with its size, and those asked for gone.
+    const listed = await listBackupFiles(uri);
+    assert.deepEqual([...listed!.keys()].sort(), [...kept].sort());
+    for (const [name, size] of listed!) assert.equal(size, folder.get(name)!.length);
+    await deleteBackupFiles(uri, kept.slice(0, 3));
+    assert.deepEqual([...folder.keys()].sort(), ['notes.txt', ...kept.slice(3)].sort());
+    assert.ok(looks.count > 0);
+  } finally {
+    nativeFolders.on = true;
+    writes.failAt = 0;
+    folders.clear();
+  }
 });
 
 t('sends the parts to a server under names of their own, restores from there, deletes them with their backup, and those of one cut short the next time', async () => {

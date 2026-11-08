@@ -35,8 +35,9 @@ import {
   type FileOffer,
 } from '../lib/attachments';
 import { gcm } from '@noble/ciphers/aes.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
-import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, type Gcm } from '../lib/crypto';
+import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, setSha256, sha256Bytes, type Gcm } from '../lib/crypto';
 import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
@@ -296,6 +297,32 @@ test('a native AES-GCM is used only when it seals as the JavaScript one does', (
   sealed[100] ^= 1;
   assert.throws(() => decryptBytes(key, sealed), DecryptError);
   assert.throws(() => decryptBytes(key, sealed.subarray(0, 20)), DecryptError);
+});
+
+test('a native SHA-256 is used, for what is 4 KB or more, only when it hashes as the JavaScript one does', () => {
+  const big = randomBytes(5 * 1024 * 1024).subarray(7);
+  const small = randomBytes(100);
+  const want = [sha256(big), sha256(small)];
+  let asked = 0;
+  const native = (data: Uint8Array): Uint8Array => {
+    asked++;
+    return nodeCrypto.createHash('sha256').update(data).digest();
+  };
+  // Hashes the whole array a part of it is in, or something else, or nothing.
+  assert.equal(setSha256((data) => nodeCrypto.createHash('sha256').update(new Uint8Array(data.buffer)).digest()), false);
+  assert.equal(setSha256((data) => native(data.map((b) => b ^ 1))), false);
+  assert.equal(setSha256(() => { throw new Error('no hash here'); }), false);
+  assert.equal(setSha256(() => 'cafe' as unknown as Uint8Array), false);
+  assert.equal(setSha256(native), true);
+  asked = 0;
+  const got = [sha256Bytes(big), sha256Bytes(small)];
+  assert.deepEqual(got, want);
+  assert.equal(asked, 1, 'only the large one natively');
+  assert.equal(got[0].constructor, Uint8Array, 'plain bytes, not a Buffer');
+  // A part of a backup, and an attachment, check out as before.
+  assert.equal(setSha256(null), true);
+  assert.deepEqual(sha256Bytes(big), want[0]);
+  assert.equal(setSha256(native), true);
 });
 
 test('a file from where its sender chose is taken by itself only through Tor; one through our relay always', () => {

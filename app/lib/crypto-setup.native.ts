@@ -5,7 +5,7 @@
 import { nativeCore } from '../modules/erevos-core';
 
 import { setCore } from './core';
-import { nodeStyleGcm, setBase64, setGcm, setPbkdf2, setRandomSource } from './crypto';
+import { nodeStyleGcm, setBase64, setGcm, setPbkdf2, setRandomSource, setSha256 } from './crypto';
 
 // Native randomness (expo-crypto), and PBKDF2 and AES-GCM (OpenSSL, through
 // react-native-quick-crypto) on Android and iOS, as in LPHL FASOULI. They are loaded here rather
@@ -36,6 +36,8 @@ export function setupCrypto(): void {
   const { pbkdf2 } = quick;
   // Kept only if it seals exactly as the JavaScript one does (setGcm checks).
   setGcm(nodeStyleGcm(quick));
+  // Kept only if it hashes as the JavaScript one does (setSha256 checks).
+  setSha256((data) => quick.createHash('sha256').update(data).digest());
   setPbkdf2(
     (password, salt, iterations, length) =>
       new Promise((resolve, reject) => {

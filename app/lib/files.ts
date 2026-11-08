@@ -127,6 +127,9 @@ export async function filesThere(names: readonly string[], prefix: string): Prom
   return new Set(names.filter((name) => all.has(name)));
 }
 
+// How many files' stamps are asked for at once, before the screen is let answer (fileStamps).
+const STAMPS_AT_ONCE = 200;
+
 /**
  * What tells whether each of `names`, which start with `prefix`, was written again since: its size
  * and when it was last written, as one text, by its name; none for one not here. Automatic backups
@@ -137,7 +140,10 @@ export async function fileStamps(names: readonly string[], prefix: string): Prom
   const stamps = new Map<string, string>();
   const fs = fileSystem();
   if (fs) {
-    for (const name of names) {
+    for (let i = 0; i < names.length; i++) {
+      // Asked on the thread the screen answers on: it answers between each STAMPS_AT_ONCE files.
+      if (i > 0 && i % STAMPS_AT_ONCE === 0) await new Promise((go) => setTimeout(go, 0));
+      const name = names[i];
       const file = new fs.File(fs.Paths.document, name);
       const at = file.exists ? file.lastModified : null;
       if (typeof at === 'number') stamps.set(name, `${file.size}:${at}`);

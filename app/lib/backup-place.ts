@@ -5,6 +5,8 @@
 import { Directory, File } from 'expo-file-system';
 
 import { backupFileName, backupFileOf, backupStem, freeStem, partFileName, staleBackups, type PartReader, type PartSink } from '../lock/backup';
+import { device } from '../modules/erevos-device';
+import { t } from './i18n';
 import { whilePicking } from './picking';
 
 // Where backups go on the phone (lib/backup-folder.ts): a folder the owner picks with Android's
@@ -59,41 +61,78 @@ export type Written = { name: string; size: number; parts: number; where?: strin
 
 const filesIn = (folder: Directory): File[] => folder.list().filter((entry): entry is File => entry instanceof File);
 
+// A file of the folder: its name, its size (-1 where the folder does not say it), and what deletes it.
+type Entry = { name: string; size: number; uri?: string; file?: File };
+
+// The folder's files, in one look, off the thread the screen answers on, where this Erevos can
+// (modules/erevos-device, Folders.kt). Otherwise through expo-file-system, which asks Android
+// again for each file's name and size, one look each, on that thread: a backup into a folder of a
+// few hundred files held the screen for minutes (7.0.0-rc.3). Their sizes only when `sizes`.
+async function entriesOf(folder: string, sizes = false): Promise<Entry[]> {
+  if (device?.folderFiles) {
+    const listed = await device.folderFiles(folder);
+    if (!listed) throw new Error(t('That folder is not there any more. Choose it again.'));
+    return listed.map(({ name, size, uri }) => ({ name, size, uri }));
+  }
+  return filesIn(new Directory(folder)).map((file) => ({ name: file.name, size: sizes ? (file.size ?? -1) : -1, file }));
+}
+
+// Writes `bytes` as a new file of the folder, named `name`, or as the folder names it where that
+// is taken. One that could not be written whole is not left there.
+async function writeEntry(folder: string, name: string, bytes: Uint8Array): Promise<Entry> {
+  if (device?.folderWrite) {
+    const made = await device.folderWrite(folder, name, bytes);
+    return { name: made.name || name, size: bytes.length, uri: made.uri };
+  }
+  const file = new Directory(folder).createFile(name, 'application/octet-stream');
+  try {
+    file.write(bytes);
+  } catch (error) {
+    deleteQuietly(file);
+    throw error;
+  }
+  return { name: file.name || name, size: bytes.length, file };
+}
+
+function deleteQuietly(file: File): void {
+  try {
+    file.delete();
+  } catch {
+    // Left for the owner to delete, or for the next automatic backup.
+  }
+}
+
+// Deletes these files of the folder; one that does not go is left for the owner, or the next time.
+async function deleteEntries(entries: readonly Entry[]): Promise<void> {
+  const uris = entries.flatMap((entry) => (entry.uri ? [entry.uri] : []));
+  if (uris.length && device?.folderDelete) await device.folderDelete(uris).catch(() => 0);
+  for (const entry of entries) if (entry.file) deleteQuietly(entry.file);
+}
+
 /**
  * Makes a backup into the folder: `make` makes it, giving each part as it is made, which is
  * written at once, and the backup itself at the end, written last. With `keep`, deletes the older
  * backups there but the `keep` newest, with their parts.
  */
 export async function writeBackup(folder: string, make: (part: PartSink) => Promise<Uint8Array>, now = Date.now(), keep = 0): Promise<Written> {
-  const directory = new Directory(folder);
-  const stem = freeStem(backupStem(now), filesIn(directory).map((file) => file.name));
-  const written: File[] = [];
+  const stem = freeStem(backupStem(now), (await entriesOf(folder)).map((entry) => entry.name));
+  const written: Entry[] = [];
   let bytes: Uint8Array;
-  let file: File;
+  let file: Entry;
   try {
     bytes = await make(async (part) => {
-      const name = partFileName(stem, written.length + 1);
-      const made = directory.createFile(name, 'application/octet-stream');
+      const made = await writeEntry(folder, partFileName(stem, written.length + 1), part);
       written.push(made);
-      made.write(part);
-      return made.name || name;
+      return made.name;
     });
-    file = directory.createFile(backupFileName(stem), 'application/octet-stream');
-    // Last in the list, so one cut short goes too.
-    written.push(file);
-    file.write(bytes);
+    // Last, so one cut short leaves none of its files there.
+    file = await writeEntry(folder, backupFileName(stem), bytes);
   } catch (error) {
-    for (const part of written) {
-      try {
-        part.delete();
-      } catch {
-        // Left for the owner to delete, or for the next automatic backup.
-      }
-    }
+    await deleteEntries(written);
     throw error;
   }
-  if (keep) prune(directory, keep);
-  return { name: file.name || backupFileName(stem), size: bytes.length, parts: written.length - 1 };
+  if (keep) await prune(folder, keep);
+  return { name: file.name, size: bytes.length, parts: written.length };
 }
 
 /** The backups' files in a folder, their own and their parts', each with its size (-1 where the
@@ -101,32 +140,21 @@ export async function writeBackup(folder: string, make: (part: PartSink) => Prom
  *  then delete there those no backup kept names. Null where they cannot be listed; on the phone they
  *  always can. */
 export async function listBackupFiles(folder: string): Promise<Map<string, number> | null> {
-  return new Map(filesIn(new Directory(folder)).filter((file) => backupFileOf(file.name) !== null).map((file) => [file.name, file.size ?? -1]));
+  const entries = (await entriesOf(folder, true)).filter((entry) => backupFileOf(entry.name) !== null);
+  return new Map(entries.map((entry) => [entry.name, entry.size]));
 }
 
 /** Deletes those of a folder's backup files; one that does not go is left for the next time. */
 export async function deleteBackupFiles(folder: string, names: string[]): Promise<void> {
-  const files = new Map(filesIn(new Directory(folder)).map((file) => [file.name, file]));
-  for (const name of names) {
-    try {
-      files.get(name)?.delete();
-    } catch {
-      // Left for the next automatic backup.
-    }
-  }
+  if (names.length === 0) return;
+  const gone = new Set(names);
+  await deleteEntries((await entriesOf(folder)).filter((entry) => gone.has(entry.name)));
 }
 
-function prune(folder: Directory, keep: number) {
-  const files = filesIn(folder);
-  const stale = new Set(staleBackups(files.map((file) => file.name), keep));
-  for (const old of files) {
-    if (!stale.has(old.name)) continue;
-    try {
-      old.delete();
-    } catch {
-      // Left for the owner to delete.
-    }
-  }
+async function prune(folder: string, keep: number) {
+  const entries = await entriesOf(folder);
+  const stale = new Set(staleBackups(entries.map((entry) => entry.name), keep));
+  await deleteEntries(entries.filter((entry) => stale.has(entry.name)));
 }
 
 /** Where a backup's parts are, to restore it: which of their names are not there, and each one's bytes. */

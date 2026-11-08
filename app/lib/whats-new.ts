@@ -22,7 +22,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

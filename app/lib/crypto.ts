@@ -399,8 +399,39 @@ export function fromHex(text: string): Uint8Array {
   return out;
 }
 
+// SHA-256 in JavaScript hashes a megabyte or two a second on a phone, on the thread the screen
+// answers on: an automatic backup, which hashes each 4 MB part it writes, held the screen for
+// minutes. So the app plugs in a native one at startup (lib/crypto-setup.native.ts), for what is
+// at least NATIVE_SHA_FROM long; it is kept only if it gives what the JavaScript one gives.
+const NATIVE_SHA_FROM = 4096;
+let nativeSha: ((data: Uint8Array) => Uint8Array) | null = null;
+
+/**
+ * Takes `next` as SHA-256 for what is NATIVE_SHA_FROM bytes or more, if it hashes as the
+ * JavaScript one does, a part of a larger array too; says whether it was taken. null puts the
+ * JavaScript one back for everything.
+ */
+export function setSha256(next: ((data: Uint8Array) => Uint8Array) | null): boolean {
+  if (!next) {
+    nativeSha = null;
+    return true;
+  }
+  try {
+    const big = Uint8Array.from({ length: 70_003 }, (_, i) => (i * 31 + 7) & 255);
+    const samples = [new Uint8Array(0), utf8Encode('abc'), big.subarray(0, 64), big.subarray(1, 4097), big.subarray(3), randomBytes(5000)];
+    for (const sample of samples) {
+      const got = next(sample);
+      if (!(got instanceof Uint8Array) || !sameBytes(new Uint8Array(got), sha256(sample))) return false;
+    }
+  } catch {
+    return false;
+  }
+  nativeSha = (data) => new Uint8Array(next(data));
+  return true;
+}
+
 export function sha256Bytes(data: Uint8Array): Uint8Array {
-  return sha256(data);
+  return nativeSha && data.length >= NATIVE_SHA_FROM ? nativeSha(data) : sha256(data);
 }
 
 /** Constant-time comparison. */

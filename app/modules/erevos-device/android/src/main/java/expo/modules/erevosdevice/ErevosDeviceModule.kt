@@ -88,6 +88,24 @@ class ErevosDeviceModule : Module() {
       activity.window?.decorView?.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
     }.runOnQueue(Queues.MAIN)
 
+    // The folder automatic backups go to (Folders.kt), off the screen's thread: its files with
+    // their names and sizes in one look (null where it cannot be read), a file written into it, and
+    // files deleted.
+    AsyncFunction("folderFiles") { folder: String ->
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      Folders.files(app, folder)
+    }
+
+    AsyncFunction("folderWrite") { folder: String, name: String, bytes: ByteArray ->
+      val app = context?.applicationContext ?: throw IllegalStateException("No app context.")
+      Folders.write(app, folder, name, bytes)
+    }
+
+    AsyncFunction("folderDelete") { uris: List<String> ->
+      val app = context?.applicationContext ?: return@AsyncFunction 0
+      Folders.delete(app, uris)
+    }
+
     // The phone's own clock that the owner cannot set (lock/tries.ts): how long since it started, in
     // ms, sleep included, and which start that is, so a wait for wrong passwords ends only when that
     // long has really passed, whatever the date and time are moved to. The start is Android's count

@@ -16,6 +16,15 @@ On main, not released yet:
 
 ### Under the hood
 
+- **No more freezing after a space opens**: an automatic backup, which starts ten seconds
+  after a space opens, could keep the screen from answering for minutes on Android, more so the first one after
+  7.0.0-rc.3. Its files are now written, listed with their names and sizes in one look, and deleted in their folder away
+  from the thread the screen answers on (Folders.kt in modules/erevos-device), where expo-file-system asked Android
+  again for each file's name and size there. SHA-256 is native (OpenSSL, through react-native-quick-crypto) for what is
+  4 KB or more, kept only if it hashes as the JavaScript one does: in JavaScript it hashed a megabyte or two a second on
+  a phone, and each 4 MB part of an automatic backup is hashed. The stamps of the files a backup holds are read 200 at a
+  time, the screen answering between.
+
 ## 7.0.0-rc.3 (2026-11-08)
 
 ### For you

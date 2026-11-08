@@ -7,6 +7,9 @@
 // Android's folders give it; `writes.failAt` makes that write from now fail, as a full memory card.
 export const folders = new Map<string, Map<string, Uint8Array>>();
 export const writes = { failAt: 0 };
+// How often a folder was listed or written in through these, as a build before the folder functions
+// of modules/erevos-device does (checks/device-memory.ts).
+export const looks = { count: 0 };
 
 function inFolder(uri: string): Map<string, Uint8Array> {
   const folder = folders.get(uri);
@@ -59,10 +62,12 @@ export class Directory {
   }
 
   list(): File[] {
+    looks.count++;
     return [...inFolder(this.uri).keys()].map((name) => new File(this.uri, name));
   }
 
   createFile(name: string, _type: string): File {
+    looks.count++;
     const folder = inFolder(this.uri);
     let free = name;
     for (let n = 1; folder.has(free); n++) free = `${name} (${n})`;
