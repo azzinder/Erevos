@@ -8,7 +8,7 @@ import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
-import { keepPrivate } from '../lib/screen-privacy';
+import { CAN_KEEP_PRIVATE, keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
@@ -2463,6 +2463,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
+    if (received.shotsChanged) {
+      setNote(received.noShots ? t('{name} blocked screenshots of this chat, on both phones.', { name }) : t('{name} allowed screenshots of this chat again.', { name }));
+    }
     // Once gone, the notice no longer counts it (lib/background.ts).
     const gone = (tag: string | null) => () => void messageGone(screenOfChat(received.identity), tag, !hiddenKey).catch(() => undefined);
     if (received.erase && 'all' in received.erase) {
@@ -4819,6 +4822,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Blocks screenshots of a chat on both phones, or allows them again: told to them as the timer is.
+  async function changeShots(peer: string, on: boolean) {
+    if (!e2e) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    try {
+      await e2e.setShots(identity, on);
+      setContacts(e2e.contacts());
+    } catch (error) {
+      setNote(errorText(error));
+      return;
+    }
+    const set = on ? t('Screenshots of this chat are now blocked on both phones.') : t('Screenshots of this chat are allowed again.');
+    const target = relayTarget();
+    try {
+      if (!target) throw new Error(t('Type the relay address in Relay first.'));
+      await sendToContact(target, identity, '');
+      setNote(set);
+    } catch (error) {
+      setNote(t("{set} {name}'s phone learns it with your next message. {reason}", { set, name: label(peer, shownContacts), reason: notSentReason(error) }));
+    }
+  }
+
   // Saves this hidden place's home relay and makes its queue there, if it can be reached now.
   async function saveHome() {
     setHomeNote('');
@@ -5410,6 +5435,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive && !gated ? selectedContact : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
+  const selectedShots = contacts.find((c) => c.identity === selectedIdentity)?.shots ?? false;
   // Under the note that it was added, while its chat shows and it has no name: given one in its details (Rename), it goes.
   const connectShown = shown && !!connecting && selected === `${CONTACT_PREFIX}${connecting}` && canConnect && !contacts.find((c) => c.identity === connecting)?.name;
   // As the thread nears the top of what shows: earlier messages drawn above what is read, the
@@ -5724,6 +5750,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     keepPrivate('chat', true);
     return () => keepPrivate('chat', false);
   }, [pinOpen]);
+  // A chat either phone set to block screenshots keeps out of them, and of the recent apps preview,
+  // while it shows (Contact.shots): Android only, as lib/screen-privacy.ts says.
+  const shotsBlocked = shown && !!selectedContact && selectedShots;
+  useEffect(() => {
+    if (!shotsBlocked) return;
+    keepPrivate('shots', true);
+    return () => keepPrivate('shots', false);
+  }, [shotsBlocked]);
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
   const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
   useEffect(() => {
@@ -6081,6 +6115,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             </Row>
                           </View>
                         ) : null}
+                        <View style={styles.rule} />
+                        <DetailRow title={t('Block screenshots')} checked={selectedShots} onPress={() => void changeShots(selectedContact, !selectedShots)} />
+                        <Text variant="caption" tone="muted" style={styles.rowMore}>
+                          {t('Screenshots and screen recordings of this chat are blocked on both phones, on Android. Either of you can turn it on or off. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and nothing stops a photo of the screen taken with another camera.')}
+                          {selectedShots && !CAN_KEEP_PRIVATE ? ` ${t('Erevos here cannot block them.')}` : ''}
+                        </Text>
                         {canNotifyChats ? (
                           <>
                             <View style={styles.rule} />

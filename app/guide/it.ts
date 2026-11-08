@@ -160,7 +160,7 @@ Dentro una chat, in alto ci sono il suo nome e la sua immagine, con il modo in c
 cronometro quando i messaggi della chat scompaiono. Accanto, il riquadro blu con una videocamera avvia una
 videochiamata e quello verde con una cornetta una chiamata vocale. Tocca il nome, o **⋯** dopo di loro (**⋮** su
 Android), per i **Dettagli** della chat: la sua immagine (toccala per cambiarla), **Chiama**, **Video**, **Rinomina** e
-**Immagine**, poi **Messaggi effimeri**, **Mostrati offline**, **Aspetto della chat**, il **Codice di sicurezza**,
+**Immagine**, poi **Messaggi effimeri**, **Blocca gli screenshot**, **Mostrati offline**, **Aspetto della chat**, il **Codice di sicurezza**,
 **Sposta nelle chat nascoste**, **Sposta in un altro spazio** ed **Elimina messaggi**. **Fatto** li chiude.
 
 **Media, link e file**, nei dettagli sotto **Cerca in questa chat**, elenca quello che contiene la chat, ogni tipo
@@ -1020,6 +1020,15 @@ chat restano.
   Fino ad allora resta sul telefono, sigillato come il resto.
 - **Non è una garanzia:** il suo Erevos li elimina, ma un’app modificata, uno screenshot o una copia possono comunque
   conservarli.
+
+### Blocca gli screenshot
+
+Apri una chat, tocca il suo nome e poi **Blocca gli screenshot**: su Android, nessuno dei due telefoni può fare uno screenshot o una registrazione dello schermo della chat mentre si vede, e le app recenti la mostrano vuota. L’altro telefono lo scopre con il tuo prossimo messaggio, e ognuno dei due può disattivarlo di nuovo: vale la modifica più recente. La chat lo dice quando l’altra persona lo cambia.
+
+**Perché:** ciò che scrivi resta tra voi due, a meno che qualcuno non voglia copiarlo apposta.
+
+- **Solo su Android:** Erevos su un iPhone, su un computer, in un browser o su Sailfish non può bloccare gli screenshot, e lì la chat lo dice.
+- **Non è una garanzia:** una foto dello schermo fatta con un’altra fotocamera, o un’app modificata, la conserva comunque.
 
 ### Notifiche di questa chat
 

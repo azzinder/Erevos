@@ -300,7 +300,7 @@ const RESIGN_EVERY = 60 * 60_000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
-const QUIET = new Set(['from', 'relay', 'relayKey', 'spare', 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'read', 'on', 'onAt', 'ask', 'ls', 'quiet', 'due']);
+const QUIET = new Set(['from', 'relay', 'relayKey', 'spare', 'text', 'tag', 'timer', 'timerAt', 'sh', 'lasts', 'got', 'read', 'on', 'onAt', 'ask', 'ls', 'quiet', 'due']);
 
 /** What a device was told of a contact's devices (`way`), in short (Peer.ways): enough to tell whether it changed since. */
 export function wayDigest(way: { dv: number; list?: DeviceList }): string {

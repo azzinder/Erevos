@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay).":
+    "**Μπλοκάρισμα στιγμιότυπων οθόνης σε μια συνομιλία**: στις λεπτομέρειες μιας συνομιλίας, το **Μπλοκάρισμα στιγμιότυπων οθόνης** δεν αφήνει στιγμιότυπα και εγγραφές οθόνης της και στα δύο κινητά, σε Android, και οποιοσδήποτε από τους δύο μπορεί να το κλείσει ξανά. Το Erevos σε iPhone, σε υπολογιστή, σε browser ή σε Sailfish δεν μπορεί να τα μπλοκάρει, και το λέει. Δες [Συνομιλία μέσω relay](#relay).",
   "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
     "**Μετάβαση σε νέο κινητό**: ένα νέο κεφάλαιο του οδηγού σε πάει βήμα βήμα από το παλιό κινητό στο νέο με ένα αντίγραφο ασφαλείας: τι να ετοιμάσεις, τι έρχεται μαζί, τι ρυθμίζεις ξανά, και το σβήσιμο του παλιού στο τέλος. Δες [Μετάβαση σε νέο κινητό](#new-phone).",
   "**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came.":

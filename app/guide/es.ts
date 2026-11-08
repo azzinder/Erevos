@@ -159,7 +159,7 @@ Dentro de un chat, su nombre y su imagen están arriba con cómo viaja: **Cifrad
 **Cerca** mientras su teléfono está conectado al tuyo por radio, o **escribiendo…**, con un cronómetro cuando los
 mensajes del chat desaparecen. A su lado, el recuadro azul con una cámara inicia una videollamada y el verde con un
 auricular, una llamada de voz. Toca el nombre, o **⋯** tras ellos (**⋮** en Android), para los **Detalles** del chat: su
-imagen (tócala para cambiarla), **Llamar**, **Vídeo**, **Cambiar nombre** e **Imagen**, luego **Mensajes temporales**,
+imagen (tócala para cambiarla), **Llamar**, **Vídeo**, **Cambiar nombre** e **Imagen**, luego **Mensajes temporales**, **Bloquear capturas de pantalla**,
 **Aparecer sin conexión**, **Apariencia del chat**, el **Número de seguridad**, **Mover a chats ocultos**, **Mover a otro espacio** y **Eliminar
 mensajes**. **Hecho** los cierra.
 
@@ -1018,6 +1018,15 @@ reciente. Los mensajes que ya están en el chat se quedan.
   Hasta entonces se queda en el teléfono, sellado como el resto.
 - **No es una garantía:** su Erevos los elimina, pero una app modificada, una captura de pantalla o una copia todavía
   pueden conservarlos.
+
+### Bloquear capturas de pantalla
+
+Abre un chat, toca su nombre y luego **Bloquear capturas de pantalla**: en Android, ninguno de los dos teléfonos puede hacer una captura ni una grabación de pantalla del chat mientras se ve, y las apps recientes lo muestran en blanco. El otro teléfono lo sabe con tu próximo mensaje, y cualquiera de los dos puede volver a desactivarlo: vale el cambio más reciente. El chat lo dice cuando la otra persona lo cambia.
+
+**Por qué:** lo que escribes queda entre vosotros dos, salvo que alguien se proponga copiarlo.
+
+- **Solo en Android:** Erevos en un iPhone, en un ordenador, en un navegador o en Sailfish no puede bloquear las capturas de pantalla, y el chat lo dice allí.
+- **No es una garantía:** una foto de la pantalla hecha con otra cámara, o una app modificada, lo guarda igualmente.
 
 ### Notificaciones de este chat
 

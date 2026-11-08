@@ -149,7 +149,7 @@ same whether a space has any or not: their messages can be read only while their
 Inside a chat, its name and picture are at the top with how it travels: **Encrypted** (end to end), **Online**,
 **Nearby** while their phone is linked to yours over the radio, or **typing…**, with a stopwatch when the chat's
 messages disappear. Beside them, the blue tile with a camera starts a video call and the green one with a handset a voice call. Tap the name, or **⋯**
-after them (**⋮** on Android), for the chat's **Details**: its picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
+after them (**⋮** on Android), for the chat's **Details**: its picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**, **Block screenshots**,
 **Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats**, **Move to another space** and **Delete messages**. **Done**
 closes them.
 
@@ -940,6 +940,15 @@ the relay, and either phone can change it: the later change wins. Messages alrea
 - **While Erevos is closed:** a message whose time has come is deleted when the chat next opens. Until then it stays
   on the phone, sealed like the rest.
 - **Not a guarantee:** their Erevos deletes them, but a changed app, a screenshot or a copy can still keep them.
+
+### Block screenshots
+
+Open a chat, tap its name and then **Block screenshots**: on Android, neither phone can take a screenshot or a screen recording of the chat while it shows, and the recent apps show it blank. The other phone learns it with your next message, and either of you can turn it off again: the later change wins. The chat says so when they change it.
+
+**Why:** what you write stays between the two of you, unless someone sets out to copy it.
+
+- **Android only:** Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block screenshots, and the chat says so there.
+- **Not a guarantee:** a photo of the screen taken with another camera, or a changed app, still keeps it.
 
 ### Notifications for this chat
 

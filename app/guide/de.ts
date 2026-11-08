@@ -164,7 +164,7 @@ Ende), **Online**, **In der Nähe**, solange das Telefon des Kontakts per Funk m
 **schreibt…**, mit einer Stoppuhr, wenn die Nachrichten des Chats verschwinden. Daneben startet die blaue Kachel mit
 einer Kamera einen Videoanruf und die grüne mit einem Hörer einen Sprachanruf. Tippe auf den Namen oder auf **⋯**
 dahinter (**⋮** auf Android), um die **Details** des Chats zu öffnen: sein Bild (tippe darauf, um es zu ändern),
-**Anrufen**, **Video**, **Umbenennen** und **Bild**, dann **Verschwindende Nachrichten**, **Offline erscheinen**,
+**Anrufen**, **Video**, **Umbenennen** und **Bild**, dann **Verschwindende Nachrichten**, **Bildschirmfotos blockieren**, **Offline erscheinen**,
 **Chat-Aussehen**, die **Sicherheitsnummer**, **In versteckte Chats verschieben**, **In einen anderen Bereich verschieben** und **Nachrichten löschen**.
 **Fertig** schließt sie.
 
@@ -1092,6 +1092,15 @@ schon im Chat sind, bleiben.
   nächste Mal öffnet. Bis dahin bleibt sie auf dem Telefon, versiegelt wie der Rest.
 - **Keine Garantie:** Das Erevos des Kontakts löscht sie, aber eine veränderte App, ein Screenshot oder eine Kopie kann
   sie trotzdem behalten.
+
+### Bildschirmfotos blockieren
+
+Öffne einen Chat, tippe auf seinen Namen und dann auf **Bildschirmfotos blockieren**: Unter Android kann keines der beiden Telefone ein Bildschirmfoto oder eine Bildschirmaufnahme des Chats machen, solange er angezeigt wird, und die letzten Apps zeigen ihn leer. Das andere Telefon erfährt es mit deiner nächsten Nachricht, und jeder von euch kann es wieder ausschalten: Die spätere Änderung gilt. Der Chat sagt es, wenn die andere Person es ändert.
+
+**Warum:** Was du schreibst, bleibt zwischen euch beiden, außer jemand will es gezielt kopieren.
+
+- **Nur unter Android:** Erevos auf einem iPhone, auf einem Computer, im Browser oder unter Sailfish kann Bildschirmfotos nicht blockieren, und der Chat sagt es dort.
+- **Keine Garantie:** Ein Foto des Bildschirms mit einer anderen Kamera oder eine veränderte App hält ihn trotzdem fest.
 
 ### Benachrichtigungen für diesen Chat
 

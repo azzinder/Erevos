@@ -155,7 +155,7 @@ Unutar razgovora, njegovo ime i slika su na vrhu, s tim kako poruke putuju: **Š
 mreži**, **U blizini** dok je telefon te osobe povezan s vašim preko radija, ili **piše…**, sa štopericom kad poruke
 razgovora nestaju. Pored njih, plava pločica s kamerom pokreće videopoziv, a zelena sa slušalicom glasovni poziv.
 Dodirnite ime ili **⋯** iza njih (**⋮** na Androidu) za **Detalji** razgovora: njegova slika (dodirnite je da je
-promijenite), **Pozovi**, **Video**, **Preimenuj** i **Slika**, zatim **Poruke koje nestaju**, **Prikazuj me kao da
+promijenite), **Pozovi**, **Video**, **Preimenuj** i **Slika**, zatim **Poruke koje nestaju**, **Blokiraj snimke ekrana**, **Prikazuj me kao da
 nisam na mreži**, **Izgled razgovora**, **Sigurnosni broj**, **Premjesti u skrivene razgovore**, **Premjesti u drugi prostor** i **Obriši poruke**.
 **Gotovo** ih zatvara.
 
@@ -990,6 +990,15 @@ pogleda relay, a oba telefona je mogu promijeniti: važi kasnija promjena. Poruk
   ostaje na telefonu, zapečaćena kao i ostale.
 - **Nije garancija:** Erevos te osobe ih briše, ali izmijenjena aplikacija, snimak ekrana ili kopija ih ipak mogu
   zadržati.
+
+### Blokiraj snimke ekrana
+
+Otvorite razgovor, dodirnite njegovo ime, pa **Blokiraj snimke ekrana**: na Androidu nijedan od dva telefona ne može napraviti snimak ni snimanje ekrana razgovora dok se prikazuje, a nedavne aplikacije ga prikazuju prazno. Drugi telefon to saznaje s vašom sljedećom porukom, i bilo ko od vas dvoje može to ponovo isključiti: važi kasnija promjena. Razgovor to kaže kad je druga osoba promijeni.
+
+**Zašto:** ono što pišete ostaje između vas dvoje, osim ako neko namjerno ne krene da to kopira.
+
+- **Samo na Androidu:** Erevos na iPhoneu, na računaru, u pregledniku ili na Sailfishu ne može blokirati snimke ekrana, i razgovor to tamo kaže.
+- **Nije garancija:** fotografija ekrana napravljena drugom kamerom, ili izmijenjena aplikacija, i dalje ga čuva.
 
 ### Obavijesti za ovaj razgovor
 

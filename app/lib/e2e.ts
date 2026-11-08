@@ -246,7 +246,23 @@ type Message = {
    *  on a relay, as for a device or hidden chats that were closed, shows the time it was sent, not
    *  the time it came (lib/later.ts cameAt). An Erevos before says none, and it shows when it came. */
   st?: number;
+  /** Whether the chat keeps screenshots out on both phones, and when the sender's phone, or one it
+   *  heard from, set it (ms): each phone takes the later setting, as the timer (Contact.shots).
+   *  Absent says nothing of it: an Erevos before, or a chat where neither ever set it. */
+  sh?: Shots;
 };
+
+/** A chat's screenshot setting as a message says it (Message.sh). */
+type Shots = { on: boolean; at: number };
+
+function checkedShots(value: unknown): Shots | null {
+  const v = value as { on?: unknown; at?: unknown } | null;
+  if (!v || typeof v !== 'object' || typeof v.on !== 'boolean' || typeof v.at !== 'number' || !Number.isFinite(v.at) || v.at <= 0) return null;
+  return { on: v.on, at: v.at };
+}
+
+/** What a message says of a contact's screenshot setting: nothing until either phone set it. */
+const shotsSaid = (contact: Contact): { sh?: Shots } => (contact.shotsAt ? { sh: { on: contact.shots === true, at: contact.shotsAt } } : {});
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
@@ -308,7 +324,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -348,6 +364,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(ns !== undefined ? { ns } : {}),
       ...(fa ? { fa } : {}),
       ...(tag && st ? { st } : {}),
+      ...(sh ? { sh } : {}),
       ...more,
     }),
   );
@@ -475,6 +492,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(isTime(value.ls) ? { ls: value.ls } : {}),
       ...(isTime(value.fa) && value.fa > 0 ? { fa: value.fa } : {}),
       ...(isTime(value.st) && value.st > 0 ? { st: value.st } : {}),
+      ...(checkedShots(value.sh) ? { sh: checkedShots(value.sh)! } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -484,14 +502,31 @@ function decodeMessage(bytes: Uint8Array): Message {
 
 /**
  * The chat's timer once a message came: the message's if it was set later than the one kept,
- * and how long the message itself lasts, as its sender meant: its own time, or the chat's.
+ * and how long the message itself lasts, as its sender meant: its own time, or the chat's. The
+ * screenshot setting the same way (`shots`, kept as Contact.shots and shotsAt).
  */
 function timerOf(message: Message, contact: Contact | undefined) {
   const kept = { timer: contact?.timer ?? 0, timerAt: contact?.timerAt ?? 0 };
   const later = message.timer !== null && message.timerAt > kept.timerAt;
   const now = later ? { timer: message.timer!, timerAt: message.timerAt } : kept;
   const lasts = message.lasts || (message.timer ?? now.timer);
-  return { ...now, received: { timer: lasts, timerChanged: later && now.timer !== kept.timer } };
+  const keptShots = contact?.shots === true;
+  const shotsLater = !!message.sh && message.sh.at > (contact?.shotsAt ?? 0);
+  const shots: Shots | null = shotsLater ? message.sh! : contact?.shotsAt ? { on: keptShots, at: contact.shotsAt } : null;
+  return {
+    ...now,
+    shots,
+    received: { timer: lasts, timerChanged: later && now.timer !== kept.timer, noShots: shots?.on === true, shotsChanged: shotsLater && shots!.on !== keptShots },
+  };
+}
+
+/** How a contact keeps the screenshot setting timerOf says (Contact.shots and shotsAt). */
+const shotsKept = (shots: Shots | null): Pick<Contact, 'shots' | 'shotsAt'> => (shots ? { shotsAt: shots.at, ...(shots.on ? { shots: true as const } : {}) } : {});
+
+/** A contact with the screenshot setting `shots`, or none. */
+function withShots<C extends Contact>(contact: C, shots: Shots | null): C {
+  const { shots: _on, shotsAt: _at, ...rest } = contact;
+  return { ...rest, ...shotsKept(shots) } as C;
 }
 
 /** Base64url without padding, as the contact link carries the bundle. */
@@ -509,6 +544,8 @@ export type ContactInfo = {
   sender: string;
   name: string;
   timer: number;
+  /** Screenshots of this chat are kept out on both phones (Contact.shots). */
+  shots: boolean;
   request: boolean;
   look: Look | null;
   avatar: Avatar | null;
@@ -533,6 +570,9 @@ export type Received =
       erase: Erase | null;
       timer: number;
       timerChanged: boolean;
+      // The chat keeps screenshots out (Contact.shots), and the other phone changed that now.
+      noShots: boolean;
+      shotsChanged: boolean;
       got: string[];
       read: string[];
       // One part of a voice message, whose tag is `tag`.
@@ -1470,11 +1510,12 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide, pin, notify }) => ({
+    return this.data.contacts.map(({ identity, sender, name, timer, shots, request, look, avatar, hide, pin, notify }) => ({
       identity,
       sender,
       name,
       timer,
+      shots: shots === true,
       request,
       look,
       avatar,
@@ -1693,6 +1734,18 @@ export class E2E {
       if (!contact) throw new Error(t('No such contact.'));
       if (!isTimer(timer)) throw new Error(t('Not a time Erevos keeps messages for.'));
       await this.save(this.withContact({ ...contact, timer, timerAt: Math.max(Date.now(), contact.timerAt + 1) }));
+    });
+  }
+
+  /**
+   * Sets whether screenshots of a chat are kept out on both phones. Set after any setting this phone
+   * has seen, whatever its clock says, so the other phone takes it, as the timer.
+   */
+  setShots(identity: string, on: boolean): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      await this.save(this.withContact(withShots(contact, { on, at: Math.max(Date.now(), (contact.shotsAt ?? 0) + 1) })));
     });
   }
 
@@ -2244,6 +2297,7 @@ export class E2E {
         more: toCarry(more, !!text),
         ...keyed,
         ...(ns !== undefined ? { ns } : {}),
+        ...shotsSaid(contact),
         rf,
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
@@ -2305,6 +2359,7 @@ export class E2E {
         read: [],
         voice,
         file: null,
+        ...shotsSaid(contact),
         ...SAYS_NOTHING, call: null, group: null,
         due,
         re: isTag(re) ? re : '',
@@ -2334,7 +2389,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
-      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
+      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...shotsSaid(contact), ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
       const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, [message], true);
       // Pieces of a file that go through Nostr tell where they are in the same way (lib/nostr-files-own.ts).
       const nostr = this.nostrWay(contact, from, sender, first, [packet], through, offer.via !== undefined, due);
@@ -3246,6 +3301,7 @@ export class E2E {
       name: known?.name ?? welcomed?.name ?? '',
       timer: timing.timer,
       timerAt: timing.timerAt,
+      ...shotsKept(timing.shots),
       // Someone new who has this chat's link writes first: a request until accepted, unless invited.
       request: known ? known.request : !welcomed,
       look: known?.look ?? null,
@@ -3423,6 +3479,7 @@ export class E2E {
       name: welcomed?.name ?? '',
       timer: timing.timer,
       timerAt: timing.timerAt,
+      ...shotsKept(timing.shots),
       request: !welcomed,
       look: null,
       avatar: null,
@@ -3460,7 +3517,7 @@ export class E2E {
   private async tookFirst(contact: Contact, was: Contact, opened: core.Opened, message: Message, id: string, from: string, packet: string): Promise<Received> {
     const timing = timerOf(message, contact);
     const learned = from ? {} : await this.heardOf(contact, message);
-    const { contact: next, twice } = tookIn(this.seenIn({ ...contact, ...learned, timer: timing.timer, timerAt: timing.timerAt }, message), message, this.link?.through === true);
+    const { contact: next, twice } = tookIn(this.seenIn(withShots({ ...contact, ...learned, timer: timing.timer, timerAt: timing.timerAt }, timing.shots), message), message, this.link?.through === true);
     const unverified = this.data.unverified?.filter((u) => u.packet !== packet);
     await this.save({ ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN), ...(unverified ? { unverified } : {}) });
     if (next.list && next.list.n !== was.list?.n) await this.retryUnverified(next.identity);
@@ -3532,7 +3589,7 @@ export class E2E {
   }
 
   // A contact's message, as the chat takes it: `twice` when it was taken before.
-  private receivedOf(contact: Contact, message: Message, timing: { timer: number; timerChanged: boolean }, added: boolean, from: string, twice = false): Received {
+  private receivedOf(contact: Contact, message: Message, timing: { timer: number; timerChanged: boolean; noShots: boolean; shotsChanged: boolean }, added: boolean, from: string, twice = false): Received {
     const { identity, request } = contact;
     const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
     const online = this.heard(identity, message);
@@ -3660,7 +3717,7 @@ export class E2E {
     const renewed = account && !way ? await this.startedAgain(updated, message) : null;
     const learned = account && this.partOf(updated) ? await this.heardOf(updated, message) : null;
     const { contact: took, twice } = tookIn(this.seenIn({ ...updated, ...renewed, ...learned }, message), message, this.link?.through === true);
-    const next = cameThrough(took, message);
+    const next = withShots(cameThrough(took, message), timing.shots);
     await this.save(this.withContact(next));
     if (next.list && next.list.n !== contact.list?.n) await this.retryUnverified(contact.identity);
     if (!given) this.link?.opened(contact.identity, opened.plaintext);

@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings
+  of the chat (and its picture in the recent apps) out on both phones, on Android. Either phone can turn it on or off,
+  and the later change wins, told with the next message as the disappearing-messages timer is. Erevos on an iPhone,
+  on a computer, in a browser or on Sailfish cannot block them, and says so; nothing stops a photo of the screen.
 - **Moving to a new phone**: a new chapter of the guide (#new-phone), in every language, takes you step by step from
   the old phone to the new one with one backup: what to get ready, what comes over, what to set again on the new
   phone, and wiping the old one with the panic button at the end, never with Delete me from everywhere.

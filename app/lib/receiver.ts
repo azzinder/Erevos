@@ -695,7 +695,7 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   const shows = cameAt(received.due, received.sent, at);
   const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
   // Their phone says it is open, or when it last was: the home screen shows it.
-  let changed = received.added || received.timerChanged || received.online > 0 || received.seen;
+  let changed = received.added || received.timerChanged || received.shotsChanged || received.online > 0 || received.seen;
   const twice = received.twice || history.has(peer, tag);
   const add = async (message: Partial<Message>) => {
     if (twice) return;

@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay).":
+    "**Bloquear capturas de tela em uma conversa**: nos detalhes de uma conversa, **Bloquear capturas de tela** impede capturas e gravações de tela dela nos dois celulares, no Android, e qualquer um de vocês pode desativar de novo. O Erevos em um iPhone, em um computador, em um navegador ou no Sailfish não consegue bloqueá-las, e avisa. Veja [Conversar por um relay](#relay).",
   "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
     "**Mudar para um celular novo**: um novo capítulo do guia leva você passo a passo do celular antigo para o novo com um só backup: o que preparar, o que vai junto, o que configurar de novo, e apagar o antigo no fim. Veja [Mudar para um celular novo](#new-phone).",
   "**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came.":

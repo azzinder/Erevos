@@ -99,7 +99,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null, hide: false, locked: false }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, shots: false, request: true, look: null, avatar: null, hide: false, locked: false }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -800,6 +800,40 @@ t('a message sent without sound says so inside the encryption, and one sent as u
   // Only words come quiet: what came or was read is no message to hear.
   const marks = await bob.e2e.seal(hello.identity, '', bob.from, { got: [hush.tag], quiet: true });
   assert.equal(message(await alice.e2e.receive(marks.packet)).quiet, false);
+});
+
+t('blocking screenshots travels with the messages, either phone sets it, and the later setting wins', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  assert.deepEqual([hello.noShots, hello.shotsChanged, bob.e2e.contacts()[0].shots], [false, false, false]);
+  await alice.e2e.firstSent(identity);
+
+  // Bob writes before Alice blocks them: his message does not take it back.
+  const before = await bob.e2e.seal(hello.identity, 'before', bob.from);
+  await alice.e2e.setShots(identity, true);
+  assert.equal(alice.e2e.contacts()[0].shots, true);
+  const told = await alice.e2e.seal(identity, '', alice.from);
+  const stale = message(await alice.e2e.receive(before.packet));
+  assert.deepEqual([stale.noShots, stale.shotsChanged, alice.e2e.contacts()[0].shots], [true, false, true]);
+
+  const learnt = message(await bob.e2e.receive(told.packet));
+  assert.deepEqual([learnt.text, learnt.noShots, learnt.shotsChanged, bob.e2e.contacts()[0].shots], ['', true, true, true]);
+  // Said again with every message, it changes nothing more.
+  const again = message(await bob.e2e.receive((await alice.e2e.seal(identity, 'hi', alice.from)).packet));
+  assert.deepEqual([again.noShots, again.shotsChanged], [true, false]);
+
+  // Bob allows them again: Alice's phone takes it.
+  await bob.e2e.setShots(hello.identity, false);
+  const off = message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'off', bob.from)).packet));
+  assert.deepEqual([off.noShots, off.shotsChanged, alice.e2e.contacts()[0].shots], [false, true, false]);
+
+  // Kept, sealed, between launches.
+  await alice.e2e.setShots(identity, true);
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].shots, true);
+  await assert.rejects(alice.e2e.setShots('00'.repeat(32), true));
 });
 
 t('a chat timer travels with the messages, the later setting wins, and old messages keep theirs', async () => {

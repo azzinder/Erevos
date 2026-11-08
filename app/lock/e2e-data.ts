@@ -46,6 +46,11 @@ export type Contact = {
   timer: number;
   /** When either phone last set the timer, milliseconds on that phone's clock: the later setting wins. */
   timerAt: number;
+  /** Screenshots and screen recordings of this chat are kept out on both phones, where the phone can
+   *  (Android): set from either phone, the later setting wins (`shotsAt`, that phone's clock), as the
+   *  timer. Missing while neither ever set it, or off. */
+  shots?: true;
+  shotsAt?: number;
   /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
    *  request. Their phone hears nothing back (not even that a message came) until it does. */
   request: boolean;
@@ -652,6 +657,7 @@ function checkedContact(value: unknown): Contact | null {
     name: isText(v.name) ? cleanName(v.name) : '',
     timer: isTimer(v.timer) ? v.timer : 0,
     timerAt: isTime(v.timerAt) ? v.timerAt : 0,
+    ...(isTime(v.shotsAt) && v.shotsAt > 0 ? { shotsAt: v.shotsAt, ...(v.shots === true ? { shots: true as const } : {}) } : {}),
     request: v.request === true,
     look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
     avatar: checkedAvatar(v.avatar),

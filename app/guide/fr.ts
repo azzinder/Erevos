@@ -167,7 +167,7 @@ Dans une discussion, son nom et son image sont en haut avec la façon dont elle 
 quand les messages de la discussion disparaissent. À côté, la tuile bleue avec une caméra lance un appel vidéo et la
 verte avec un combiné un appel vocal. Appuie sur le nom, ou sur **⋯** après eux (**⋮** sur Android), pour les
 **Détails** de la discussion : son image (appuie dessus pour la changer), **Appeler**, **Vidéo**, **Renommer** et
-**Image**, puis **Messages éphémères**, **Apparaître hors ligne**, **Apparence de la discussion**, le **Numéro de
+**Image**, puis **Messages éphémères**, **Bloquer les captures d’écran**, **Apparaître hors ligne**, **Apparence de la discussion**, le **Numéro de
 sécurité**, **Déplacer dans les discussions masquées**, **Déplacer dans un autre espace** et **Supprimer les messages**. **Terminé** les ferme.
 
 **Médias, liens et fichiers**, dans les détails sous **Rechercher dans cette discussion**, liste ce que contient la
@@ -1080,6 +1080,15 @@ l’emporte. Les messages déjà dans la discussion restent.
   discussion. D’ici là, il reste sur le téléphone, scellé comme le reste.
 - **Pas une garantie :** son Erevos les supprime, mais une app modifiée, une capture d’écran ou une copie peut encore
   les garder.
+
+### Bloquer les captures d’écran
+
+Ouvre une discussion, touche son nom puis **Bloquer les captures d’écran** : sous Android, aucun des deux téléphones ne peut faire de capture ni d’enregistrement d’écran de la discussion tant qu’elle s’affiche, et les applis récentes la montrent vide. L’autre téléphone l’apprend avec ton prochain message, et l’un ou l’autre de vous peut le désactiver : le changement le plus récent l’emporte. La discussion le dit quand l’autre le change.
+
+**Pourquoi :** ce que tu écris reste entre vous deux, sauf si quelqu’un cherche exprès à le copier.
+
+- **Seulement sous Android :** Erevos sur un iPhone, sur un ordinateur, dans un navigateur ou sous Sailfish ne peut pas bloquer les captures d’écran, et la discussion le dit là.
+- **Pas une garantie :** une photo de l’écran prise avec un autre appareil, ou une appli modifiée, la garde quand même.
 
 ### Notifications de cette discussion
 

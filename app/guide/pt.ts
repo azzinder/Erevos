@@ -158,7 +158,7 @@ ponta), **Online**, **Por perto** enquanto o celular da pessoa está conectado a
 um cronômetro quando as mensagens da conversa desaparecem. Ao lado deles, o bloco azul com uma câmera inicia uma
 videochamada e o verde com um fone, uma chamada de voz. Toque no nome, ou em **⋯** depois deles (**⋮** no Android),
 para os **Detalhes** da conversa: a imagem dela (toque nela para mudá-la), **Ligar**, **Vídeo**, **Renomear** e
-**Imagem**, depois **Mensagens temporárias**, **Aparecer offline**, **Aparência da conversa**, o **Número de segurança**,
+**Imagem**, depois **Mensagens temporárias**, **Bloquear capturas de tela**, **Aparecer offline**, **Aparência da conversa**, o **Número de segurança**,
 **Mover para conversas ocultas**, **Mover para outro espaço** e **Apagar mensagens**. **Pronto** os fecha.
 
 **Mídia, links e arquivos**, nos detalhes abaixo de **Buscar nesta conversa**, lista o que a conversa guarda,
@@ -1015,6 +1015,15 @@ ficam.
   ela fica no celular, selada como o resto.
 - **Não é uma garantia:** o Erevos da pessoa as apaga, mas um app modificado, uma captura de tela ou uma cópia ainda
   podem guardá-las.
+
+### Bloquear capturas de tela
+
+Abra uma conversa, toque no nome dela e depois em **Bloquear capturas de tela**: no Android, nenhum dos dois celulares consegue fazer captura nem gravação de tela da conversa enquanto ela aparece, e os apps recentes a mostram em branco. O outro celular fica sabendo com a sua próxima mensagem, e qualquer um de vocês pode desativar de novo: vale a mudança mais recente. A conversa avisa quando a outra pessoa muda.
+
+**Por quê:** o que você escreve fica entre vocês dois, a não ser que alguém queira copiar de propósito.
+
+- **Só no Android:** o Erevos em um iPhone, em um computador, em um navegador ou no Sailfish não consegue bloquear capturas de tela, e a conversa avisa isso lá.
+- **Não é garantia:** uma foto da tela tirada com outra câmera, ou um app modificado, ainda guarda a conversa.
 
 ### Notificações desta conversa
 
