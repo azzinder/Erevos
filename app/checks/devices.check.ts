@@ -32,7 +32,11 @@
 // of the list at once, though a place has no queue yet; and the places that fill the list keeping
 // their queues and keys while the relay's key is not known, offline, or a queue cannot be made
 // again; and who is blocked known on a device too, which asks to unblock them as the phone does and
-// has the phone unblock them. Copies alone, without a relay: checks/copies.check.ts. Skipped, with a note, when the core
+// has the phone unblock them. And a phone put back from a backup asking a device of the phone it
+// was made on to link again: only once told there, signed by the account and with the device's own
+// key, linking once said yes on the device, which keeps its chats with what came since, and then
+// out of reach of the lost phone and of the same backup elsewhere; hidden chats asking their own.
+// Copies alone, without a relay: checks/copies.check.ts. Skipped, with a note, when the core
 // or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -43,7 +47,7 @@ import { afterEach, test } from 'node:test';
 
 import { Call, currentCall } from '../lib/call';
 import type { CallSignal } from '../lib/call-signal';
-import { acceptConversation, accountBundle, accountIdentity, newAccount, open as openIn, seal as sealIn, setCore, startConversation, type Core } from '../lib/core';
+import { acceptConversation, accountBundle, accountIdentity, accountSign, newAccount, open as openIn, seal as sealIn, setCore, startConversation, type Core } from '../lib/core';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, dropFile, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { addToCollection, deleteItems, loadCollection, setCollectionOption } from '../lock/collection-data';
@@ -54,6 +58,7 @@ import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
 import type { GroupSignal } from '../lib/group-signal';
 import { Groups, type GroupTransport } from '../lib/groups';
+import { againBytes, againMac, AGAIN_LASTS, checkAgain, makeAgain, readAgain } from '../lib/link-again';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '../lib/link-code';
 import {
   changedFields,
@@ -4269,4 +4274,255 @@ test('a hidden place links on its own: its own link and list, messages both ways
     handAccounts(null);
   }
   for (const p of [pixel, dell, carol, hiddenPixel, hiddenDell]) p.links.close();
+});
+
+test('an ask to link again holds only as the account signed it, for that endpoint, with the key that device gave, and lately; and what goes for it between devices', { skip: !coreReady }, async () => {
+  const account = await newAccount();
+  const bundle = await accountBundle(account);
+  const identity = toHex(await accountIdentity(account));
+  const other = await newAccount();
+  const key = randomBytes(32);
+  const endpoint = 'e'.repeat(64);
+  const now = Date.now();
+  const body = { a: identity, e: endpoint, at: now, name: 'Pixel' };
+  const said = await makeAgain((context, message) => accountSign(account, context, message), key, body);
+  assert.deepEqual(await checkAgain(bundle, identity, endpoint, key, said, now), body);
+  // For another endpoint, with another key, from another account's bundle, too old or from too far
+  // ahead: none.
+  assert.equal(await checkAgain(bundle, identity, 'f'.repeat(64), key, said, now), null);
+  assert.equal(await checkAgain(bundle, identity, endpoint, randomBytes(32), said, now), null);
+  assert.equal(await checkAgain(await accountBundle(other), identity, endpoint, key, said, now), null);
+  assert.equal(await checkAgain(bundle, identity, endpoint, key, said, now + AGAIN_LASTS + 1), null);
+  assert.equal(await checkAgain(bundle, identity, endpoint, key, said, now - 2 * 24 * 60 * 60_000), null);
+  // Another account signing it, though with the device's key: none. Nor one changed after it was
+  // signed, nor one in another form than the one signed.
+  const forged = await makeAgain((context, message) => accountSign(other, context, message), key, body);
+  assert.equal(await checkAgain(bundle, identity, endpoint, key, forged, now), null);
+  const renamed = toBase64Url(againBytes({ ...body, name: 'Thief' }));
+  assert.equal(await checkAgain(bundle, identity, endpoint, key, { ...said, b: renamed, m: toBase64Url(againMac(key, fromBase64Url(renamed))) }, now), null);
+  const plain = JSON.parse(utf8Decode(fromBase64Url(said.b))) as Record<string, unknown>;
+  assert.deepEqual(readAgain(said.b), body);
+  assert.equal(readAgain(toBase64Url(utf8Encode(JSON.stringify({ name: plain.name, ...plain })))), null);
+  assert.equal(readAgain('not base64!'), null);
+  // Between devices: each as it is, and nothing else of their kinds.
+  const parts = new Parts();
+  const relinkKey = toBase64Url(randomBytes(32));
+  const link = linkCodeLink({ key: KEY, senderHex: SENDER, relayUrl: 'ws://localhost:1', secret: SECRET, name: '' });
+  for (const envelope of [{ k: 'again', ...said }, { k: 'relink', key: relinkKey }, { k: 'relink' }, { k: 'agreed', link, since: now }, { k: 'match', code: '12345 67890 11111 22222' }] as Envelope[]) {
+    assert.deepEqual(parts.take('a', encodeEnvelope(envelope, null)[0]), envelope);
+  }
+  for (const wrong of [{ k: 'relink', key: 'short' }, { k: 'again', b: said.b, s: said.s, m: 'short' }, { k: 'agreed', link: 'https://example.org', since: now }, { k: 'match', code: 'x' }]) {
+    assert.equal(parts.take('a', utf8Encode(JSON.stringify({ v: 1, ...wrong }))), null);
+  }
+});
+
+test('a phone put back from a backup asks a device of the phone it was made on to link again only once told there, the device links once said yes on it, keeping its chats with what came since, and neither the lost phone nor the same backup elsewhere then reaches it', { skip: !coreReady || !relayReady, timeout: 150_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2, false);
+  const account = pixel.chats.e2e.identityHex();
+  const carolId = carol.chats.e2e.identityHex();
+  await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, account, 'before the computer');
+  await take(pixel);
+  await pixel.chats.e2e.acceptRequest(carolId);
+  await linkUp(pixel, dell);
+  // The computer gives the phone a key to be asked with once it has its endpoint, and the phone
+  // keeps it with the chat, which its backup carries: where the computer reads and its endpoint,
+  // never a key of their link's conversation.
+  await until(async () => {
+    await take(pixel);
+    await take(dell);
+    return pixel.chats.e2e.relinks()?.now.length === 1 && dell.chats.history.messages().length === 1;
+  });
+  const dells = dell.chats.e2e.endpoint()!;
+  const linkedBefore = (await loadDevicesData(dell.space, dell.key)).primary!;
+  const given = pixel.chats.e2e.relinks()!.now[0];
+  assert.deepEqual([given.id, given.bundle, given.name, given.s, given.key], [dells.id, dells.bundle, 'DELL', dell.queue.senderHex, linkedBefore.relink]);
+  const backup = await loadE2EData('space', pixel.space, pixel.key);
+  const pixelSide = (await loadDevicesData(pixel.space, pixel.key)).devices[0];
+  assert.ok(backup.relinks && !JSON.stringify(backup).includes(pixelSide.conversation) && !JSON.stringify(backup).includes(linkedBefore.conversation));
+  // What came after the backup was made: the computer has it, the backup does not.
+  await write(carol, account, 'after the backup');
+  await take(pixel);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().some((m) => m.text === 'after the backup');
+  });
+
+  // The phone is lost, and the backup put back on another, on the same queue as a backup puts it.
+  pixel.links.close();
+  await markRestore();
+  const put = await phone(4, true, backup);
+  await saveSpaceData(put.space, put.key, { ...EMPTY_SPACE, url, ownQueue: pixel.queue });
+  put.queue = pixel.queue;
+  await put.links.settled();
+  assert.equal(put.links.role(), null);
+  assert.deepEqual(
+    put.links.fromBackup().map((d) => [d.id, d.name, d.asked, d.said]),
+    [[dells.id, 'DELL', 0, false]],
+  );
+  // Nothing is asked until the holder says so on the phone put back.
+  assert.equal(await receiveMessage(relay, fromHex(dell.queue.recipientHex)), null);
+  assert.equal(dell.links.askedHere(), null);
+  await write(carol, account, 'while the computer is away');
+  await take(put);
+  assert.ok(put.chats.history.messages().some((m) => m.text === 'while the computer is away'));
+
+  // Asked: the computer shows it, and stays the lost phone's until said yes there.
+  await put.links.askAgain(dells.id);
+  assert.ok(put.links.fromBackup()[0].asked > 0);
+  assert.deepEqual(
+    (await loadDevicesData(put.space, put.key)).asked?.map((a) => a.outbox.length),
+    [0],
+  );
+  await take(dell);
+  assert.deepEqual([dell.links.askedHere()?.name, dell.links.askedHere()?.said], ['Phone', false]);
+  assert.equal((await loadDevicesData(dell.space, dell.key)).primary!.id, linkedBefore.id);
+  assert.equal(put.links.role(), null);
+  // Said yes: a new link with keys of its own, no code typed or read; the chats stay, with what
+  // came since from the phone put back, each message once.
+  await dell.links.linkAgain();
+  assert.equal(dell.links.askedHere()?.said, true);
+  await until(async () => {
+    await take(put);
+    await take(dell);
+    return put.links.role() === 'primary' && dell.chats.history.messages().some((m) => m.text === 'while the computer is away');
+  });
+  const linkedNow = (await loadDevicesData(dell.space, dell.key)).primary!;
+  assert.notEqual(linkedNow.id, linkedBefore.id);
+  assert.equal(dell.links.askedHere(), null);
+  assert.deepEqual(
+    put.links.devices().map((d) => [d.name, d.linked]),
+    [['DELL', true]],
+  );
+  const texts = dell.chats.history.messages().map((m) => m.text);
+  for (const text of ['before the computer', 'after the backup', 'while the computer is away']) assert.equal(texts.filter((x) => x === text).length, 1);
+  // With a new endpoint, which the list the phone put back signs, and a new key to be asked with;
+  // nothing of the backup is left to ask.
+  await until(async () => {
+    await take(put);
+    await take(dell);
+    const endpoint = dell.chats.e2e.endpoint();
+    return !!endpoint && endpoint.id !== dells.id && !!put.chats.e2e.signedList()?.real.includes(endpoint.id) && put.chats.e2e.relinks()?.now[0]?.id === endpoint.id && !!dell.chats.e2e.own()?.list?.real.includes(endpoint.id);
+  });
+  const renewed = dell.chats.e2e.endpoint()!;
+  const relinks = put.chats.e2e.relinks()!;
+  assert.deepEqual([relinks.back, relinks.now.length, relinks.now[0].key === given.key, relinks.now[0].key === (await loadDevicesData(dell.space, dell.key)).primary!.relink], [[], 1, false, true]);
+  assert.deepEqual(put.links.fromBackup(), []);
+  assert.equal(put.chats.e2e.signedList()!.real.includes(dells.id), false);
+  assert.equal(dell.chats.e2e.own()!.list!.n, put.chats.e2e.signedList()!.n);
+  // It writes through the phone put back, as the account.
+  const fromDell = await write(dell, carolId, 'from the computer, linked again');
+  await take(put);
+  const [toCarol] = await take(carol);
+  assert.deepEqual([toCarol.identity, toCarol.text, toCarol.tag], [account, 'from the computer, linked again', fromDell]);
+
+  // The lost phone turns up: what it says in their link before is nothing to the computer, its
+  // unlinking too.
+  pixel.links = await Links.open(pixel.space, pixel.key, pixel.chats, 60 * 60_000);
+  opened.push(pixel.links);
+  await pixel.links.settled();
+  assert.equal(await pixel.links.unlink(pixelSide.id), true);
+  await take(dell);
+  assert.equal(dell.links.role(), 'linked');
+  assert.equal((await loadDevicesData(dell.space, dell.key)).primary!.id, linkedNow.id);
+  // The same backup put back elsewhere asks the endpoint the computer had, which is gone; and one
+  // that learned its new endpoint asks it with the key it had, which is gone too: neither is shown.
+  put.links.close();
+  await markRestore();
+  const thief = await phone(5, true, backup);
+  await thief.links.settled();
+  const sent = async () => (await loadDevicesData(thief.space, thief.key)).asked?.every((a) => a.outbox.length === 0) === true;
+  await thief.links.askAgain(dells.id);
+  assert.ok(await sent());
+  await take(dell);
+  assert.equal(dell.links.askedHere(), null);
+  const held = thief.chats.e2e.relinks()!;
+  const aimed = (key: string) => thief.chats.e2e.keepRelinks({ ...held, back: [{ ...held.back[0], id: renewed.id, bundle: renewed.bundle, key }] });
+  await aimed(held.back[0].key);
+  await thief.links.askAgain(renewed.id);
+  assert.ok(await sent());
+  await take(dell);
+  assert.equal(dell.links.askedHere(), null);
+  assert.equal((await loadDevicesData(dell.space, dell.key)).primary!.id, linkedNow.id);
+  // Only the key the computer gave this link asks it: then it shows the ask, and not now, it
+  // stays as it is.
+  await aimed((await loadDevicesData(dell.space, dell.key)).primary!.relink!);
+  await thief.links.askAgain(renewed.id);
+  await take(dell);
+  assert.equal(dell.links.askedHere()?.said, false);
+  await dell.links.notAgain();
+  assert.deepEqual([dell.links.askedHere(), dell.links.role(), (await loadDevicesData(dell.space, dell.key)).primary!.id], [null, 'linked', linkedNow.id]);
+  // Let go of there, it is asked nothing more from that phone.
+  await thief.links.forgetAgain(renewed.id);
+  assert.deepEqual([thief.links.fromBackup(), thief.chats.e2e.relinks()], [[], null]);
+
+  secureStore.delete('erevos.restored');
+  for (const p of [pixel, dell, carol, thief]) p.links.close();
+});
+
+test('hidden chats put back from a backup ask their own devices to link again, from inside them: the computer\'s hidden chats link again, and the space and its devices see none of it', { skip: !coreReady || !relayReady, timeout: 150_000 }, async () => {
+  const { relay, url, phone, take, linkUp } = await setup();
+  const place = async (space: number, pocket: number, restored?: E2EData, queue?: Queue): Promise<Phone> => {
+    const key = randomBytes(32);
+    const ids = queue ? null : await createQueue(relay);
+    const own: Queue = queue ?? { recipientHex: toHex(ids!.recipientId), senderHex: toHex(ids!.senderId) };
+    await saveHiddenData(space, pocket, key, { ...EMPTY_SPACE, url, ownQueue: own });
+    if (restored) await saveE2EData(hiddenHolder(pocket), space, key, restored);
+    const chats = { e2e: await E2E.open(hiddenHolder(pocket), space, key), history: await History.open(hiddenHolder(pocket), space, key), voiceParts: new VoiceAssembler() };
+    const links = await Links.open(space, key, chats, 60 * 60_000, pocket);
+    opened.push(links);
+    return { chats, queue: own, links, space, key };
+  };
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  await linkUp(pixel, dell);
+  const hiddenPixel = await place(0, 2);
+  const hiddenDell = await place(1, 0);
+  await linkUp(hiddenPixel, hiddenDell);
+  await until(async () => {
+    for (const p of [pixel, dell, hiddenPixel, hiddenDell]) await take(p);
+    return hiddenPixel.chats.e2e.relinks()?.now.length === 1 && pixel.chats.e2e.relinks()?.now.length === 1;
+  });
+  const hiddenDells = hiddenDell.chats.e2e.endpoint()!;
+  const before = (await loadDevicesData(1, hiddenDell.key, hiddenHolder(0))).primary!;
+  const backup = await loadE2EData(hiddenHolder(2), 0, hiddenPixel.key);
+  const spaceBackup = await loadE2EData('space', pixel.space, pixel.key);
+  assert.deepEqual(
+    backup.relinks?.now.map((r) => r.id),
+    [hiddenDells.id],
+  );
+  assert.equal(spaceBackup.relinks?.now.some((r) => r.id === hiddenDells.id), false);
+
+  // The phone lost, its space and hidden chats put back on another: each shows its own devices
+  // only, the space's no hidden chats' device.
+  for (const p of [pixel, hiddenPixel]) p.links.close();
+  await markRestore();
+  const put = await phone(4, true, spaceBackup);
+  const hiddenPut = await place(4, 1, backup, hiddenPixel.queue);
+  await put.links.settled();
+  await hiddenPut.links.settled();
+  assert.deepEqual(
+    hiddenPut.links.fromBackup().map((d) => d.id),
+    [hiddenDells.id],
+  );
+  assert.equal(put.links.fromBackup().some((d) => d.id === hiddenDells.id), false);
+  await hiddenPut.links.askAgain(hiddenDells.id);
+  await take(dell);
+  await take(hiddenDell);
+  assert.deepEqual([dell.links.askedHere(), hiddenDell.links.askedHere()?.name], [null, 'Phone']);
+  await hiddenDell.links.linkAgain();
+  await until(async () => {
+    await take(hiddenPut);
+    await take(hiddenDell);
+    return hiddenPut.links.role() === 'primary' && !!hiddenDell.chats.e2e.endpoint() && hiddenDell.chats.e2e.endpoint()!.id !== hiddenDells.id;
+  });
+  assert.notEqual((await loadDevicesData(1, hiddenDell.key, hiddenHolder(0))).primary!.id, before.id);
+  assert.deepEqual([put.links.role(), dell.links.role(), hiddenDell.links.role()], [null, 'linked', 'linked']);
+  assert.deepEqual(put.links.devices(), []);
+
+  secureStore.delete('erevos.restored');
+  for (const p of [pixel, dell, put, hiddenPixel, hiddenDell, hiddenPut]) p.links.close();
 });

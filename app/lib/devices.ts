@@ -4,8 +4,8 @@
 
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadNotes, mergeNotes, notesSince, onNotesWritten, setNoteFile, stampOf as noteStamp, type Note, type NoteCame, type NotesChanges, type NotesPlace } from '../lock/myself-data';
-import { keepDevicesFile, loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer, type Told } from '../lock/devices-data';
-import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
+import { keepDevicesFile, loadDevicesData, MAX_ASKS_SEEN, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Answer, type Asked, type Asking, type Brought, type DevicesData, type Left, type OutMark, type Peer, type Told } from '../lock/devices-data';
+import { againAfter, MAX_BACK, type Blocked, type Contact, type OldFiller, type OwnList, type Relink, type Relinks, type Route } from '../lock/e2e-data';
 import { checkedGroupData, MAX_HELD_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
@@ -47,6 +47,7 @@ import { groupPartsOf } from './group-parts';
 import type { GroupMember, Groups, GroupTransport, HeldGroups } from './groups';
 import type { GroupSignal } from './group-signal';
 import { t } from './i18n';
+import { AGAIN_LASTS, checkAgain, makeAgain } from './link-again';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode, type LinkCode } from './link-code';
 import {
   changedFields,
@@ -198,6 +199,17 @@ import { cameAt } from './later';
 // Such a space links again: the chats the phone still has stay, with what came since, and the
 // others go.
 //
+// The phone's own backup holds no link either, but it carries, for each linked device, what the
+// phone needs to reach and recognise it, and a key the device gave the phone to be asked with
+// (lock/e2e-data.ts Relinks). On a phone a backup was put back on, the devices of the phone it was
+// made on show under From the backup; each one the holder asks there is asked, in a conversation
+// that phone starts as the account with the device's endpoint, signed with the account's key and
+// with the device's (lib/link-again.ts). The device shows the ask, and once Link again is tapped
+// on it, sends that phone the code of a new link in it, which the phone links as if it read it:
+// fresh keys, no code to read or compare, the chats kept and what came since brought. Linked
+// again, the device lets go of the link before, its endpoint and its key, so the phone the backup
+// came from, or another with the same backup, can ask it nothing more.
+//
 // Each linked device also has an endpoint of its own (docs/multi-device.md): a core account it
 // makes once linked, never the key of its link, and says to the phone (`endpoint`). The phone
 // signs, with the account's own key, the list of its devices' endpoints (lib/device-list.ts), again
@@ -297,6 +309,11 @@ const ACCOUNTS_EVERY = 60_000;
 const DRAIN_MOST = 1000;
 // After the phone's queue moved for a contact deleted or blocked, a new device list at most this often.
 const RESIGN_EVERY = 60 * 60_000;
+// A device linked again after a backup was put back on another phone is brought the history from a
+// day before it last heard from the phone it was linked to, should their clocks differ.
+const AGAIN_BEFORE = 24 * 60 * 60_000;
+// How often the phone asks a device that gave no key to be asked to link again with for one.
+const RELINK_ASK_EVERY = 24 * 60 * 60_000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
@@ -318,6 +335,16 @@ export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 
 /** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not. `accounts` is of before: the accounts go always now. */
 export type HistoryChoice = { since: number | null; files: boolean; accounts?: boolean };
+
+/**
+ * On a phone a backup was put back on: a device of the phone it was made on, which can be asked to
+ * link again (Links.askAgain): its endpoint's id, its name, when it was linked there, when it was
+ * asked here (0 for not yet), and whether it said yes.
+ */
+export type AgainInfo = { id: string; name: string; since: number; asked: number; said: boolean };
+
+/** On a linked device: its phone, put back from a backup, asking it to link again: the name it gives, when it asked, and whether yes was said here. */
+export type AskedHere = { name: string; made: number; said: boolean };
 
 /**
  * What gives and brings the accounts on other networks of a space, or of its hidden place `pocket`
@@ -457,6 +484,15 @@ function withoutSiblings(data: DevicesData): DevicesData {
 
 // A key this side gives another for the packets it sends here.
 const newPacketKey = () => toBase64Url(randomBytes(32));
+// The links without an ask to link again (Links.linkAgain), or with only the asks `asked` keeps.
+function withoutAsking(data: DevicesData): DevicesData {
+  const { asking: _asking, ...rest } = data;
+  return rest;
+}
+function withAsked(data: DevicesData, asked: Asked[]): DevicesData {
+  const { asked: _asked, ...rest } = data;
+  return asked.length > 0 ? { ...rest, asked } : rest;
+}
 // What the contacts become with two changes, one after the other.
 const both = (a: ((c: Contact[]) => Contact[]) | null, b: ((c: Contact[]) => Contact[]) | null) => (a && b ? (c: Contact[]) => b(a(c)) : (a ?? b));
 
@@ -543,6 +579,8 @@ export class Links implements Link, TakenFiles {
   // On the primary: when a device set what it changed of a contact, until the devices are told.
   private readonly stamps = new Map<string, { at: number; change: Change; added?: true }>();
   private keyOf: { url: string; key: string } | null = null;
+  // On the primary: when each device that gave no key to be asked to link again with was asked for one.
+  private readonly relinkAsked = new Map<string, number>();
   // On the primary: when the queues of the places that fill the device list were last emptied, and
   // whether a device is still to be told what is known of some contacts' devices (tellWays).
   private drainedAt = 0;
@@ -897,7 +935,7 @@ export class Links implements Link, TakenFiles {
   // ---- What the chat calls (lib/e2e.ts, Link) ----
 
   open(packet: Uint8Array, near?: string): ReturnType<Link['open']> {
-    if (!this.data.primary && this.data.devices.length === 0 && !this.data.offer) return Promise.resolve(null);
+    if (!this.data.primary && this.data.devices.length === 0 && !this.data.offer && !this.data.asked?.length) return Promise.resolve(null);
     return this.run(async () => {
       const taken = await this.openNow(packet);
       // Came on a link nearby (the same Wi-Fi, lib/nearby.ts): what goes to that device goes there
@@ -921,13 +959,19 @@ export class Links implements Link, TakenFiles {
         const marked = (p: Sealable) => !!p.key && sealedWith(this.keysOf(p.key), packet);
         const peer = peers.find(marked);
         const sibling = peer ? undefined : siblings.find(marked);
-        const inner = peer ?? sibling ? openPacket(this.keysOf((peer ?? sibling)!.key!), packet) : null;
+        // Or an ask to link again's, on either side.
+        const asked = peer ?? sibling ? undefined : (this.data.asked ?? []).find(marked);
+        const asking = peer ?? sibling ?? asked ? undefined : this.data.asking && marked(this.data.asking) ? this.data.asking : undefined;
+        const key = (peer ?? sibling ?? asked ?? asking)?.key;
+        const inner = key ? openPacket(this.keysOf(key), packet) : null;
         if (!inner || (await core.packetKind(inner)) !== 'following') return null;
+        if (asked) return this.openAsked(asked, inner);
+        if (asking) return this.openAsking(asking, inner);
         this.openedFrom = (peer ?? sibling)!.id;
         return peer ? this.openFrom(peer, inner) : this.openFromSibling(sibling!, inner);
       }
       const kind = await core.packetKind(packet);
-      if (kind === 'first') return (await this.answered(packet)) ?? this.siblingFirst(packet);
+      if (kind === 'first') return (await this.answered(packet)) ?? (await this.againAnswered(packet)) ?? this.siblingFirst(packet);
       if (kind !== 'following') return null;
       for (const peer of peers) {
         const taken = await this.openFrom(peer, packet);
@@ -943,7 +987,11 @@ export class Links implements Link, TakenFiles {
           return taken;
         }
       }
-      return null;
+      for (const asked of this.data.asked ?? []) {
+        const taken = await this.openAsked(asked, packet);
+        if (taken) return taken;
+      }
+      return this.data.asking ? this.openAsking(this.data.asking, packet) : null;
     }
   }
 
@@ -990,15 +1038,22 @@ export class Links implements Link, TakenFiles {
       this.announce();
       return { kind: 'taken' };
     }
+    await this.save({ ...this.data, answer: await this.answerOf(offer.account, opened, said) });
+    this.announce();
+    return { kind: 'taken' };
+  }
+
+  // The phone that answered a code with `hello` in the conversation it started (`opened`), and the code to compare.
+  private async answerOf(account: string, opened: core.Opened, said: Extract<Envelope, { k: 'hello' }> & { at?: Place; pk?: string }): Promise<Answer> {
     const phone = await core.conversationPeer(opened.conversation);
-    const own = await core.accountIdentity(fromBase64(offer.account));
+    const own = await core.accountIdentity(fromBase64(account));
     const code = linkSafetyCode(await core.safetyNumber(own, phone));
     const now = Date.now();
     const peer: Peer = {
       id: toHex(phone),
       name: cleanDeviceName(said.name),
       conversation: toBase64(opened.conversation),
-      at: said.at,
+      at: said.at!,
       since: now,
       heard: now,
       linked: true,
@@ -1010,9 +1065,7 @@ export class Links implements Link, TakenFiles {
       groups: {},
       ...(said.pk ? { sealTo: said.pk } : {}),
     };
-    await this.save({ ...this.data, answer: { peer, account: said.account, code } });
-    this.announce();
-    return { kind: 'taken' };
+    return { peer, account: said.account, code };
   }
 
   // What one envelope from a peer says, in the turn. What the chat keeps of the contacts changes
@@ -1034,6 +1087,7 @@ export class Links implements Link, TakenFiles {
           await this.routeList();
           await this.tellList();
           if ((this.data.moving ?? 0) > Date.now()) await this.resignSoon();
+          await this.keepRelinks();
         });
     }
     if (said.pk && said.pk !== peer.sealTo) moved = { ...moved, sealTo: said.pk };
@@ -1107,6 +1161,13 @@ export class Links implements Link, TakenFiles {
         this.announce();
         break;
       }
+      case 'relink': {
+        // The key the device gives to be asked to link again with, which the backup carries.
+        const now = this.data.devices.find((d) => d.id === peer.id);
+        if (now && said.key) await this.keepPeer({ ...now, relink: said.key });
+        this.act(() => this.keepRelinks());
+        break;
+      }
       case 'endpoint':
         if (core.canSign()) await this.endpointFrom(peer.id, said.bundle, said.ek);
         // The log names it from now: what it lacks of it goes, the contacts first written should none be.
@@ -1163,6 +1224,7 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.letGo(peer.id, null));
         this.callSteps(this.calls.unlinked(peer.id));
         this.act(() => this.signAgain());
+        this.act(() => this.keepRelinks());
         this.announce();
         break;
       default:
@@ -1305,6 +1367,14 @@ export class Links implements Link, TakenFiles {
         this.announce();
         break;
       }
+      case 'relink':
+        // The phone asks for the key to be asked to link again with: one it was given before it
+        // took it is given again, the same.
+        if (!said.key) {
+          if (primary.relink) await this.save({ ...this.data, primary: await this.seal(primary, { k: 'relink', key: primary.relink }) });
+          else await this.giveRelink();
+        }
+        break;
       case 'bye':
         this.chunksGone(primary.id);
         this.act(() => this.forget());
@@ -1656,6 +1726,8 @@ export class Links implements Link, TakenFiles {
     // The accounts always go, apart from the history, which may be long to go.
     void this.aside(() => this.giveAccounts(peer.id));
     this.act(() => this.bringHistory(peer.id));
+    // A device of a backup's phone linked again here is no longer to ask (keepRelinks).
+    this.act(() => this.keepRelinks());
     // The notes of Chat with myself, once it says it takes them.
     void this.noting(() => this.tellNotes());
     this.announce();
@@ -2031,6 +2103,7 @@ export class Links implements Link, TakenFiles {
       // Its own endpoint, a new one, said after the codes matched: a phone from before leaves it alone.
       await this.newEndpoint(true).catch(() => undefined);
       await this.sayCan();
+      await this.run(() => this.giveRelink()).catch(() => undefined);
       return this.flush().catch(() => undefined);
     });
   }
@@ -2070,6 +2143,17 @@ export class Links implements Link, TakenFiles {
     this.pending = null;
     const here = await this.here();
     if (!here) throw new Error(t('Type the relay address in Relay first: linked devices reach this phone through it.'));
+    const peer = await this.linkPeer(pending, history, phone, here);
+    await this.run(async () => {
+      await this.save({ ...this.data, devices: [...this.data.devices.filter((d) => d.id !== peer.id), peer] });
+    });
+    this.announce();
+    await this.flush().catch(() => undefined);
+  }
+
+  // On the primary: a device whose code was read (`pending`), as it is kept until it says the codes
+  // match: the conversation started with it, saying the code's secret first, and the history chosen.
+  private async linkPeer(pending: Pending, history: HistoryChoice, phone: string, here: Here): Promise<Peer> {
     const now = Date.now();
     const key = newPacketKey();
     // Whether this is a space or hidden chats, always said, at the same size: the device takes the
@@ -2077,7 +2161,7 @@ export class Links implements Link, TakenFiles {
     const hello = encodeOne({ k: 'hello', secret: pending.code.secret, name: cleanDeviceName(phone), account: this.chats.e2e.identityHex(), h: this.pocket === null ? 0 : 1 }, here.place, key)!;
     const started = await core.startConversation(pending.account, pending.bundle, hello);
     const { senderHex, relayUrl, relayKey: rk, name } = pending.code;
-    const peer: Peer = {
+    return {
       id: pending.device,
       name: name || t('Computer'),
       conversation: toBase64(started.conversation),
@@ -2095,11 +2179,6 @@ export class Links implements Link, TakenFiles {
       key,
       ...(history.accounts ? { accounts: true as const } : {}),
     };
-    await this.run(async () => {
-      await this.save({ ...this.data, devices: [...this.data.devices.filter((d) => d.id !== peer.id), peer] });
-    });
-    this.announce();
-    await this.flush().catch(() => undefined);
   }
 
   /** On the primary: brings a linked device a period of the history again; what it has already is not kept twice. */
@@ -2238,6 +2317,7 @@ export class Links implements Link, TakenFiles {
       this.act(() => this.letGo(peer.id, null));
       this.callSteps(this.calls.unlinked(peer.id));
       this.act(() => this.signAgain());
+      this.act(() => this.keepRelinks());
     }
     return told;
   }
@@ -2249,7 +2329,7 @@ export class Links implements Link, TakenFiles {
     const { e2e } = this.chats;
     const brought = await this.run(async () => {
       const was = this.data.brought;
-      await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined, given: undefined, brought: undefined, holds: undefined, handing: undefined, tookHold: undefined });
+      await this.save({ ...withoutAsking(withoutSiblings(this.data)), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined, given: undefined, brought: undefined, holds: undefined, handing: undefined, tookHold: undefined, asksSeen: undefined });
       return was;
     });
     // The accounts brought from the phone go with the chats.
@@ -2270,15 +2350,347 @@ export class Links implements Link, TakenFiles {
     this.announce({ gone: identities.map((identity) => ({ peer: peerOf(identity) })) });
   }
 
+  // ---- Linking again, once a backup was put back on another phone (lib/link-again.ts) ----
+
+  // On a linked device, in the turn: gives the phone, in their link, a key to ask this device to
+  // link again with (lib/link-again.ts), should the phone's backup be put back on another: only the
+  // two of them hold it, and the phone's backup carries it (keepRelinks). Once with each link, as
+  // this device has an endpoint to be asked at; a phone from before lets it be.
+  private async giveRelink(): Promise<void> {
+    const primary = this.data.primary;
+    if (!primary || primary.relink || !core.canSign() || !this.chats.e2e.endpoint()) return;
+    const key = toBase64Url(randomBytes(32));
+    const sealed = await this.seal(primary, { k: 'relink', key });
+    await this.save({ ...this.data, primary: sealed.outbox.length > primary.outbox.length ? { ...sealed, relink: key } : sealed });
+  }
+
+  // What the chat keeps to link again is changed one change after another (keepRelinks, forgetAgain).
+  private relinkWork: Promise<unknown> = Promise.resolve();
+  private relinking<T>(call: () => Promise<T>): Promise<T> {
+    const next = this.relinkWork.catch(() => undefined).then(call);
+    this.relinkWork = next.catch(() => undefined);
+    return next;
+  }
+
+  // On the primary, in the work after: keeps with the chat, which a backup carries, what a phone it
+  // is put back on needs to ask each linked device to link again (lock/e2e-data.ts Relinks), and
+  // never a key of a link's conversation. Once a backup was put back here, the devices of the phone
+  // it was made on are kept apart (`back`), each until it is linked again here (its ask names the
+  // link made, which said the codes match) or let go of (forgetAgain), and so is what it was asked.
+  private keepRelinks(): Promise<void> {
+    return this.relinking(async () => {
+      if (this.data.primary || !core.canSign()) return;
+      const { e2e } = this.chats;
+      const held = e2e.relinks();
+      const at = e2e.restoreId();
+      const now: Relink[] = this.data.devices.flatMap((d) =>
+        d.linked && d.endpoint?.ek && d.relink ? [{ id: d.endpoint.id, bundle: d.endpoint.bundle, s: d.at.sender, relay: d.at.relay, rk: d.at.relayKey, name: d.name, since: d.since, files: d.files, key: d.relink }] : [],
+      );
+      const asked = this.data.asked ?? [];
+      const done = new Set(asked.filter((a) => a.link && this.data.devices.some((d) => d.id === a.link && d.linked)).map((a) => a.id));
+      // Those of a backup put back since they were kept are the phone's before; of each, the last kept.
+      const was = !held ? [] : held.at === at ? held.back : [...held.back, ...held.now];
+      const back: Relink[] = [];
+      for (const r of [...was].reverse()) if (!done.has(r.id) && !now.some((n) => n.id === r.id) && !back.some((b) => b.id === r.id)) back.unshift(r);
+      const next: Relinks = { at, now, back: back.slice(-MAX_BACK) };
+      if (JSON.stringify(next) !== JSON.stringify(held ?? { at, now: [], back: [] })) await e2e.keepRelinks(next);
+      const gone =
+        (this.data.asked ?? []).length > 0 &&
+        (await this.run(async () => {
+          const left = (this.data.asked ?? []).filter((a) => next.back.some((b) => b.id === a.id));
+          if (left.length === (this.data.asked ?? []).length) return false;
+          await this.save(withAsked(this.data, left));
+          return true;
+        }));
+      if (gone || JSON.stringify(next.back) !== JSON.stringify(held?.back ?? [])) this.announce();
+    });
+  }
+
+  /** On a phone a backup was put back on: the devices of the phone it was made on, to ask to link again (askAgain). */
+  fromBackup(): AgainInfo[] {
+    if (this.data.primary) return [];
+    const asked = this.data.asked ?? [];
+    return (this.chats.e2e.relinks()?.back ?? []).map((r) => {
+      const ask = asked.find((a) => a.id === r.id);
+      return { id: r.id, name: r.name || t('Computer'), since: r.since, asked: ask?.made ?? 0, said: !!ask?.link };
+    });
+  }
+
+  /**
+   * On a phone a backup was put back on: asks the device `id` of the phone it was made on
+   * (fromBackup) to link again, as the account's holder said here. The ask goes in a conversation
+   * this phone starts as the account with that device's endpoint, signed with the account's key
+   * and with the key the device gave the phone before (lib/link-again.ts): the device shows it, and
+   * links again only once it is said yes there too. Asked again, the ask before goes.
+   */
+  async askAgain(id: string): Promise<void> {
+    if (this.data.primary) throw new Error(t('This is a linked device. Link from the phone that holds the account.'));
+    const back = this.chats.e2e.relinks()?.back.find((r) => r.id === id);
+    if (!back || !core.canSign()) return;
+    if (this.linked().length >= MAX_DEVICES) throw new Error(t('{n} devices are linked already, the most there can be.', { n: MAX_DEVICES }));
+    const here = await this.here();
+    if (!here) throw new Error(t('Type the relay address in Relay first: linked devices reach this phone through it.'));
+    const { e2e } = this.chats;
+    const key = newPacketKey();
+    const said = await makeAgain((context, message) => e2e.sign(context, message), fromBase64Url(back.key), { a: e2e.identityHex(), e: back.id, at: Date.now(), name: t('Phone') });
+    const first = encodeOne({ k: 'again', ...said }, here.place, key);
+    if (!first) return;
+    const started = await e2e.startAsAccount(fromBase64Url(back.bundle), first);
+    const asked: Asked = { id, conversation: toBase64(started.conversation), outbox: [toBase64(started.packet)], told: JSON.stringify(here.place), behind: 0, key, at: { sender: back.s, relay: back.relay, relayKey: back.rk, spare: null }, made: Date.now() };
+    await this.run(async () => {
+      await this.save(withAsked(this.data, [...(this.data.asked ?? []).filter((a) => a.id !== id), asked].slice(-MAX_BACK)));
+    });
+    this.announce();
+    await this.flush().catch(() => undefined);
+  }
+
+  /** On a phone a backup was put back on: lets go of the device `id` of the phone it was made on, which is asked nothing more from here. */
+  async forgetAgain(id: string): Promise<void> {
+    await this.relinking(async () => {
+      const held = this.chats.e2e.relinks();
+      if (held?.back.some((r) => r.id === id)) await this.chats.e2e.keepRelinks({ ...held, back: held.back.filter((r) => r.id !== id) });
+    });
+    await this.run(async () => {
+      await this.save(withAsked(this.data, (this.data.asked ?? []).filter((a) => a.id !== id)));
+    });
+    this.announce();
+  }
+
+  // On a phone a backup was put back on, in the turn: a packet in the conversation it started with
+  // a device to ask it to link again, or null if it is not one; there the device says yes.
+  private async openAsked(asked: Asked, packet: Uint8Array): Promise<Taken> {
+    let opened: core.Opened;
+    try {
+      opened = await core.open(fromBase64(asked.conversation), packet);
+    } catch {
+      return null;
+    }
+    const said = this.parts.take(`asked:${asked.id}`, opened.plaintext);
+    let moved: Asked = { ...asked, conversation: toBase64(opened.conversation) };
+    if (said?.at) moved = { ...moved, at: said.at };
+    if (said?.pk) moved = { ...moved, sealTo: said.pk };
+    await this.save(withAsked(this.data, (this.data.asked ?? []).map((a) => (a.id === asked.id ? moved : a))));
+    if (said?.k === 'agreed') await this.agreedFrom(moved, said.link, said.since);
+    return { kind: 'taken' };
+  }
+
+  // On a phone a backup was put back on, in the turn: a device asked to link again said yes, with
+  // the code of a new link it made for this phone, as a device being linked shows one. The phone
+  // links it as if it read that code there (link), bringing it the history from a day before it last
+  // heard from the phone it was linked to, and says in the ask's conversation the code to compare,
+  // which the device compares by itself: nothing is typed or read, as the code came where only the
+  // account could ask. Once, for each ask.
+  private async agreedFrom(asked: Asked, text: string, since: number): Promise<void> {
+    const code = parseLinkCode(text);
+    const back = this.chats.e2e.relinks()?.back.find((r) => r.id === asked.id);
+    if (!code || !back || asked.link || this.data.primary || this.linked().length >= MAX_DEVICES) return;
+    const here = await this.here();
+    const bundle = fromBase64Url(code.key);
+    const device = await core.bundleIdentity(bundle).catch(() => null);
+    if (!here || !device || this.data.devices.some((d) => d.id === toHex(device) && d.linked)) return;
+    const account = await core.newAccount();
+    const safety = linkSafetyCode(await core.safetyNumber(await core.accountIdentity(account), device));
+    const now = Date.now();
+    const peer = await this.linkPeer({ code: { ...code, name: back.name }, bundle, account, device: toHex(device), safety }, { since: Math.max(0, Math.min(since, now) - AGAIN_BEFORE), files: back.files }, t('Phone'), here);
+    const told = await this.seal({ ...asked, link: peer.id }, { k: 'match', code: safety });
+    await this.save({ ...withAsked(this.data, (this.data.asked ?? []).map((a) => (a.id === asked.id ? told : a))), devices: [...this.data.devices.filter((d) => d.id !== peer.id), peer] });
+    this.announce();
+    void this.flush().catch(() => undefined);
+  }
+
+  // On a linked device, in the turn: a first packet the account started a conversation with this
+  // device's endpoint with, which may be its phone, put back from a backup, asking it to link again
+  // (lib/link-again.ts). Kept to show, once, when the account signed it with the bundle its phone
+  // gave over their link, for this endpoint, lately, with the key this device gave that phone to be
+  // asked with: a phone that has the account but not that key asks nothing. Nothing links until it
+  // is said yes here (linkAgain).
+  private async askedFrom(opened: core.Opened, packet: Uint8Array): Promise<Taken> {
+    const { e2e } = this.chats;
+    const own = e2e.own();
+    const endpoint = e2e.endpoint();
+    const relink = this.data.primary?.relink;
+    const account = this.data.account;
+    const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
+    const said = this.parts.take('ask', opened.plaintext);
+    if (!relink || !endpoint || own?.identity !== account || said?.k !== 'again' || !said.at || (this.data.asksSeen ?? []).includes(id)) return { kind: 'taken' };
+    const body = await checkAgain(fromBase64Url(own.bundle), account, endpoint.id, fromBase64Url(relink), said).catch(() => null);
+    if (!body) return { kind: 'taken' };
+    const asking: Asking = { conversation: toBase64(opened.conversation), outbox: [], told: '', behind: 0, ...(said.pk ? { sealTo: said.pk } : {}), at: said.at, name: cleanDeviceName(body.name) || t('Phone'), made: Date.now() };
+    await this.save({ ...this.data, asking, asksSeen: [...(this.data.asksSeen ?? []), id].slice(-MAX_ASKS_SEEN) });
+    this.announce();
+    return { kind: 'taken' };
+  }
+
+  /** On a linked device: its phone, put back from a backup, asking it to link again, or null. */
+  askedHere(): AskedHere | null {
+    const asking = this.data.asking;
+    if (!asking || !this.data.primary) return null;
+    return { name: asking.name, made: asking.made, said: !!asking.offer };
+  }
+
+  /**
+   * On a linked device: says yes to its phone, put back from a backup, asking it to link again
+   * (askedHere). A new link is made, with keys of its own, as with a code shown for a phone to read;
+   * but the code goes to that phone in the ask's conversation, and the code to compare comes back
+   * there, compared here by itself. Once both match, this device is that phone's, and keeps its
+   * chats, with what came since.
+   */
+  linkAgain(): Promise<void> {
+    return this.run(async () => {
+      const asking = this.data.asking;
+      const primary = this.data.primary;
+      if (!asking || !primary) throw new Error(t('The phone no longer asks this device to link again.'));
+      if (asking.offer) return;
+      const here = await this.here();
+      if (!here) throw new Error(t('Type the relay address first.'));
+      const account = await core.newAccount();
+      const secret = toHex(randomBytes(16));
+      const bundle = await core.accountBundle(account);
+      const { sender, relay, relayKey: rk } = here.place;
+      const link = linkCodeLink({ key: toBase64Url(bundle), senderHex: sender, relayUrl: relay, relayKey: rk || undefined, secret, name: '' });
+      const sealed = await this.seal(asking, { k: 'agreed', link, since: primary.heard });
+      await this.save({ ...this.data, asking: { ...sealed, offer: { account: toBase64(account), secret, name: '', made: Date.now() } } });
+    }).then(() => {
+      this.announce();
+      return this.flush().catch(() => undefined);
+    });
+  }
+
+  /** On a linked device: not now, to its phone put back from a backup asking it to link again. It stays linked as it is; asked again, it shows that. */
+  notAgain(): Promise<void> {
+    return this.run(async () => {
+      await this.save(withoutAsking(this.data));
+    }).then(() => this.announce());
+  }
+
+  // On a linked device, in the turn: a packet in the conversation its phone, put back from a backup,
+  // started to ask it to link again, or null if it is not one: the code to compare for the new link,
+  // once this device said yes. Linked again once it is that link's (relinked); one that differs
+  // ends the ask.
+  private async openAsking(asking: Asking, packet: Uint8Array): Promise<Taken> {
+    let opened: core.Opened;
+    try {
+      opened = await core.open(fromBase64(asking.conversation), packet);
+    } catch {
+      return null;
+    }
+    const said = this.parts.take('asking', opened.plaintext);
+    let moved: Asking = { ...asking, conversation: toBase64(opened.conversation) };
+    if (said?.at) moved = { ...moved, at: said.at };
+    if (said?.pk) moved = { ...moved, sealTo: said.pk };
+    if (said?.k === 'match' && moved.offer) {
+      if (moved.answer?.code === said.code) return this.relinked(moved.answer);
+      if (moved.answer) {
+        await this.save(withoutAsking(this.data));
+        this.announce();
+        return { kind: 'taken' };
+      }
+      moved = { ...moved, match: said.code };
+    }
+    await this.save({ ...this.data, asking: moved });
+    return { kind: 'taken' };
+  }
+
+  // On a linked device that said yes to linking again, in the turn: the phone's first word on the
+  // new link, as a device being linked hears it (answered), from the account this device is linked
+  // to, and of the same kind of place. Linked again once the code the phone said in the ask's
+  // conversation is that link's own (relinked).
+  private async againAnswered(packet: Uint8Array): Promise<Taken> {
+    const asking = this.data.asking;
+    const offer = asking?.offer;
+    if (!asking || !offer || asking.answer || !this.data.primary || Date.now() - offer.made > AGAIN_LASTS) return null;
+    let opened: core.Opened;
+    try {
+      opened = await core.acceptConversation(fromBase64(offer.account), packet);
+    } catch {
+      return null;
+    }
+    const said = this.parts.take('answer', opened.plaintext);
+    if (said?.k !== 'hello' || said.secret !== offer.secret || !said.at) return { kind: 'taken' };
+    const answer = await this.answerOf(offer.account, opened, said);
+    if (said.account !== this.data.account || (said.h === 1) !== (this.pocket !== null) || (asking.match && asking.match !== answer.code)) {
+      await this.save(withoutAsking(this.data));
+      this.announce();
+      return { kind: 'taken' };
+    }
+    if (asking.match) return this.relinked(answer);
+    await this.save({ ...this.data, asking: { ...asking, answer } });
+    return { kind: 'taken' };
+  }
+
+  // On a linked device, in the turn: linked again, to its phone put back from a backup. The chats
+  // stay, with what came since, which that phone brings. The link to the phone before goes, told
+  // nothing, as that phone is lost; so do this device's endpoint, the others it met as that endpoint
+  // and the account's list it last checked, and the key it gave to be asked with: a new endpoint,
+  // which the phone the backup came from never knew, is said in the new link with a new key, so
+  // that phone, or whoever holds the same backup, can ask this device nothing more.
+  private async relinked(answer: Answer): Promise<Taken> {
+    await this.here().catch(() => null);
+    const primary = await this.seal({ ...answer.peer, since: Date.now() }, { k: 'ready', name: '' });
+    await this.save({ ...withoutAsking(withoutSiblings(this.data)), primary, account: answer.account, offer: null, answer: null, removed: undefined });
+    this.saidCan = false;
+    this.act(async () => {
+      await this.chats.e2e.dropEndpoint().catch(() => undefined);
+      await this.newEndpoint(true).catch(() => undefined);
+      await this.run(() => this.giveRelink());
+      await this.sayCan();
+    });
+    this.announce();
+    void this.flush().catch(() => undefined);
+    return { kind: 'taken' };
+  }
+
+  // What waits in the conversation of an ask to link again, on either side, to where the other reads.
+  private async flushAsked(here: Here, id: string): Promise<void> {
+    const asked = this.data.asked?.find((a) => a.id === id);
+    if (!asked || asked.outbox.length === 0) return;
+    await this.sendOut(here, asked.at, asked.outbox, async (sent) => {
+      await this.save(withAsked(this.data, (this.data.asked ?? []).map((a) => (a.id === id ? withoutSent(a, sent) : a))));
+    });
+  }
+
+  private async flushAsking(here: Here): Promise<void> {
+    const asking = this.data.asking;
+    if (!asking || asking.outbox.length === 0) return;
+    await this.sendOut(here, asking.at, asking.outbox, async (sent) => {
+      if (this.data.asking) await this.save({ ...this.data, asking: withoutSent(this.data.asking, sent) });
+    });
+  }
+
+  /**
+   * Whether to say, once, as the space's first screen shows: on a phone a backup was put back on,
+   * that the devices of the phone it was made on can be asked to link again; on a linked device,
+   * that its phone asks it to. What to say, or null.
+   */
+  sayAgain(): Promise<string | null> {
+    return this.run(async () => {
+      const asking = this.data.asking;
+      if (this.data.primary && asking && !asking.offer && this.data.askSaid !== asking.made) {
+        await this.save({ ...this.data, askSaid: asking.made });
+        return t('{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.', { name: asking.name });
+      }
+      if (!this.data.primary && !this.data.backSaid && this.fromBackup().length > 0) {
+        await this.save({ ...this.data, backSaid: true });
+        return t('The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.');
+      }
+      return null;
+    });
+  }
+
   // ---- Endpoints and the device list (lib/device-list.ts) ----
 
   // As the space opens, in the work after. On a linked device: one linked before endpoints, or that
   // did not say its endpoint yet, makes one or says it. On the primary: the device list is signed
-  // again if it does not name the linked devices as they are, and each is told it.
+  // again if it does not name the linked devices as they are, and each is told it; and what a backup
+  // carries to ask them to link again is kept as they are, the devices of the phone a backup put back
+  // since was made on apart.
   private async listsAtOpen(): Promise<void> {
     if (!core.canSign()) return;
     if (this.data.primary) await this.newEndpoint(false);
-    else await this.signAgain();
+    else {
+      await this.signAgain();
+      await this.keepRelinks();
+    }
   }
 
   // On a linked device: makes its endpoint, a new one (`fresh`, as it is linked) or only if it has
@@ -2328,6 +2740,7 @@ export class Links implements Link, TakenFiles {
     const { ways: _ways, ...told } = peer;
     await this.keepPeer({ ...told, endpoint: { id: endpoint, bundle, ...(ek ? { ek } : {}) }, listed: 0 });
     this.act(() => this.signAgain());
+    this.act(() => this.keepRelinks());
     if (ek) this.act(() => this.run(() => this.tellWays()));
   }
 
@@ -2719,6 +3132,8 @@ export class Links implements Link, TakenFiles {
     const value = parse(opened.plaintext);
     if (value?.v !== 1 || !isText(value.k)) return null;
     const from = toHex(await core.conversationPeer(opened.conversation));
+    // The account itself: its phone, put back from a backup, asking to link again.
+    if (from === this.data.account) return this.askedFrom(opened, packet);
     const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
     const early = toBase64(packet);
     const held = this.data.siblings?.of === own.id ? this.data.siblings : null;
@@ -3123,6 +3538,14 @@ export class Links implements Link, TakenFiles {
             failed ??= error;
           });
         }
+        for (const asked of this.data.asked ?? []) {
+          await this.flushAsked(here, asked.id).catch((error: unknown) => {
+            failed ??= error;
+          });
+        }
+        await this.flushAsking(here).catch((error: unknown) => {
+          failed ??= error;
+        });
         await this.catchUp();
         if (failed) throw failed;
       } while (this.again);
@@ -3252,7 +3675,31 @@ export class Links implements Link, TakenFiles {
         await this.save({ ...this.data, left: this.data.left.filter((l) => l.at >= old) });
       }).catch(() => undefined);
     }
-    if (!this.role()) return;
+    // Linking again (lib/link-again.ts): on a linked device, the key to be asked with, given the
+    // phone once with each link, and an ask no longer taken, after as long as the relay keeps what
+    // waits; on the primary, what a backup carries for it kept as the devices are, and what waits
+    // for a device of a backup's phone asked, whether or not one is linked here.
+    if (this.data.primary && !this.data.primary.relink && this.chats.e2e.endpoint()) this.act(() => this.run(() => this.giveRelink()));
+    const asking = this.data.asking;
+    if (asking && Date.now() - (asking.offer?.made ?? asking.made) > AGAIN_LASTS) {
+      void this.run(async () => {
+        if (this.data.asking === asking) await this.save(withoutAsking(this.data));
+      }).then(() => this.announce(), () => undefined);
+    }
+    if (!this.data.primary) this.act(() => this.keepRelinks());
+    // A device linked a day or more ago that says its endpoint as this version does but gave no
+    // key, as one linked while this phone's Erevos was older: asked for it once as the space opens,
+    // then once a day.
+    for (const d of this.data.devices) {
+      const now = Date.now();
+      if (!d.linked || !d.endpoint?.ek || d.relink || now - d.since < RELINK_ASK_EVERY || now - (this.relinkAsked.get(d.id) ?? 0) < RELINK_ASK_EVERY) continue;
+      this.relinkAsked.set(d.id, now);
+      this.act(() => this.say({ k: 'relink' }, d.id));
+    }
+    if (!this.role()) {
+      if (this.data.asked?.some((a) => a.outbox.length > 0)) this.flush().catch(() => undefined);
+      return;
+    }
     if (Date.now() - this.syncSaid >= SYNC_EVERY) {
       this.syncSaid = Date.now();
       void this.syncs.ask().catch(() => undefined);
@@ -4449,6 +4896,17 @@ export async function copyNote(): Promise<string | null> {
   if (!core.hasCore()) return null;
   const links = await spaceLinks().catch(() => null);
   return links && (await links.sayCopy().catch(() => false)) ? t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.') : null;
+}
+
+/**
+ * Once, in the open space: on a phone a backup was put back on, that the devices of the phone it
+ * was made on can be asked to link again; on a linked device, that its phone asks it to (Links,
+ * sayAgain). Null otherwise. Hidden chats say theirs only in their own Linked devices.
+ */
+export async function againNote(): Promise<string | null> {
+  if (!core.hasCore()) return null;
+  const links = await spaceLinks().catch(() => null);
+  return links ? links.sayAgain().catch(() => null) : null;
 }
 
 /**

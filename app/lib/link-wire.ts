@@ -114,6 +114,16 @@ export type Envelope =
   | { k: 'held'; f: string }
   | { k: 'nohold'; f: string }
   | { k: 'can'; g: 1 }
+  // Linking again (lib/link-again.ts): the key a device gives the phone to be asked with (`relink`,
+  // in their link), which the phone asks for without one; then, in a conversation the account
+  // starts with the device's endpoint once a backup was put back on another phone, the ask
+  // (`again`), the device's yes with the code of a new link to read (`agreed`, and when it last
+  // heard from its phone), and the code the phone has for that link, which the device compares by
+  // itself (`match`).
+  | { k: 'relink'; key?: string }
+  | { k: 'again'; b: string; s: string; m: string }
+  | { k: 'agreed'; link: string; since: number }
+  | { k: 'match'; code: string }
   | { k: 'bye' };
 
 /**
@@ -558,6 +568,14 @@ function checkedEnvelope(v: Json): Envelope | null {
       return isHex(v.f, HELD_MARK) ? { k: v.k, f: v.f } : null;
     case 'can':
       return v.g === 1 ? { k: 'can', g: 1 } : null;
+    case 'relink':
+      return isRelayKey(v.key) ? { k: 'relink', key: v.key } : v.key === undefined ? { k: 'relink' } : null;
+    case 'again':
+      return isBundle(v.b) && v.b.length <= 1024 && isBundle(v.s) && v.s.length <= 128 && isRelayKey(v.m) ? { k: 'again', b: v.b, s: v.s, m: v.m } : null;
+    case 'agreed':
+      return isText(v.link) && v.link.length <= 8192 && v.link.toLowerCase().startsWith('erevos://link?') && isTime(v.since) ? { k: 'agreed', link: v.link, since: v.since } : null;
+    case 'match':
+      return isText(v.code) && /^[0-9 ]{1,40}$/.test(v.code) ? { k: 'match', code: v.code } : null;
     case 'here':
     case 'move':
     case 'give':

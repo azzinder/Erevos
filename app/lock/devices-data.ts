@@ -7,7 +7,7 @@ import { isGroupId } from '../lib/group-signal';
 import { checkedGiven, checkedPlace, checkedSeat, checkedSynced, type GivenAccounts, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
 import { checkedErased, checkedRemoved, checkedSiblings, type Siblings } from '../lib/siblings';
 
-import { isRelayKey, type Endpoint } from './e2e-data';
+import { isRelayKey, MAX_BACK, type Endpoint } from './e2e-data';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps of its links to the account's other devices (lib/devices.ts): on the phone
@@ -20,8 +20,9 @@ import { sealedFile, type Holder } from './sealed-file';
 // written or not, of the same size, so neither the file nor the space's value says which places
 // link. The file is there whichever do: each space writes its own value again as it opens
 // (keepDevicesFile), so neither its being there nor its time says that anything links. A backup leaves
-// this file out, and restoring one leaves it as it is: on another phone there is none, and the
-// devices are linked again.
+// this file out, as it holds the links' conversations, and restoring one deletes it: what the phone
+// needs to ask each device to link again, and never a key of a link's conversation, the backup
+// carries with the chat (lock/e2e-data.ts Relinks), and the devices are linked again from that.
 
 /** What of the history still goes to a device: from `since` (milliseconds, 0 for all of it) up to `upTo`, photos and files too or not, and how many of those messages went. */
 export type Job = { since: number; files: boolean; upTo: number; done: number };
@@ -92,6 +93,11 @@ export type Peer = {
   notesHeard?: true;
   notesSaid?: true;
   notesTold?: number;
+  /** The key to ask a device to link again with (lib/link-again.ts), base64url, which the device
+   *  makes and gives the phone in their link: on the primary the device's, which a backup carries
+   *  (lock/e2e-data.ts Relink); on a linked device its own. Missing while not given: a version from
+   *  before gives none. */
+  relink?: string;
 };
 
 /**
@@ -113,6 +119,28 @@ export type Offer = { account: string; secret: string; name: string; made: numbe
 
 /** A device being linked, once a phone answered: the phone, the account's identity, and the code to compare. */
 export type Answer = { peer: Peer; account: string; code: string };
+
+/**
+ * On a phone a backup was put back on: a device of the phone it was made on, asked to link again
+ * (lib/devices.ts askAgain): its endpoint's identity (as lock/e2e-data.ts Relink names it), the
+ * conversation this phone started with it as the account, what waits to go in it and where the
+ * device reads, the keys of the packets each sends the other, when it was asked, and once it said
+ * yes, the id of the new link made with it (`link`).
+ */
+export type Asked = { id: string; conversation: string; outbox: string[]; told: string; behind: number; key?: string; sealTo?: string; at: Place; made: number; link?: string };
+
+/**
+ * On a linked device: its phone, put back from a backup, asking it to link again (lib/devices.ts
+ * linkAgain): the conversation that phone started with this device's endpoint as the account, what
+ * waits to go in it and where the phone reads, the keys of the packets each sends the other, the
+ * phone's name and when it asked; once the owner said yes here, the key made for the new link
+ * (`offer`), and, each until the other comes, the phone's first word on it (`answer`) and the code
+ * the phone said for it (`match`).
+ */
+export type Asking = { conversation: string; outbox: string[]; told: string; behind: number; key?: string; sealTo?: string; at: Place; name: string; made: number; offer?: Offer; answer?: Answer; match?: string };
+
+/** The most first packets of asks kept as taken on a linked device, so the relay cannot replay one. */
+export const MAX_ASKS_SEEN = 16;
 
 export type DevicesData = {
   /** On the primary: its linked devices, and those still being linked. */
@@ -162,6 +190,15 @@ export type DevicesData = {
   /** The state last taken here, by its file's first piece (lib/link-wire.ts heldMark): told again,
    *  it is said taken again. */
   tookHold?: string;
+  /** On a phone a backup was put back on: the devices of the phone it was made on, asked to link again. */
+  asked?: Asked[];
+  /** On a linked device: its phone asking it to link again, and the first packets of asks taken (their ids, hex). */
+  asking?: Asking;
+  asksSeen?: string[];
+  /** Whether it was said once, on the space's first screen: on a phone, that devices of the backup
+   *  put back can be asked to link again; on a linked device, that its phone asks it to, by when it asked. */
+  backSaid?: true;
+  askSaid?: number;
   /** Set in every file saved since packets said what they carry: in one from before (0.1.16), what
    *  waited for a device was kept with no marks, and goes with none (lib/relay.ts, Mark). */
   marked?: true;
@@ -259,6 +296,56 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(v.notesHeard === true ? { notesHeard: true as const } : {}),
     ...(v.notesSaid === true ? { notesSaid: true as const } : {}),
     ...(isTime(v.notesTold) && v.notesTold > 0 ? { notesTold: v.notesTold } : {}),
+    ...(isRelayKey(v.relink) ? { relink: v.relink } : {}),
+  };
+}
+
+function checkedOffer(value: unknown): Offer | null {
+  const o = value as Partial<Record<keyof Offer, unknown>> | null;
+  return o && typeof o === 'object' && isBase64(o.account) && o.account && isHex(o.secret, 32) ? { account: o.account, secret: o.secret, name: isText(o.name) ? o.name : '', made: isTime(o.made) ? o.made : 0 } : null;
+}
+
+function checkedAnswer(value: unknown): Answer | null {
+  const a = value as Partial<Record<keyof Answer, unknown>> | null;
+  const peer = a && typeof a === 'object' ? checkedPeer(a.peer) : null;
+  return a && peer && isHex(a.account, 64) && isText(a.code) ? { peer, account: a.account, code: a.code } : null;
+}
+
+// What both sides of an ask to link again keep of its conversation.
+function checkedAskWay(v: Record<string, unknown>): Omit<Asked, 'id' | 'made'> | null {
+  const at = checkedPlace(v.at);
+  if (!isBase64(v.conversation) || !v.conversation || !at) return null;
+  return {
+    conversation: v.conversation,
+    outbox: Array.isArray(v.outbox) ? v.outbox.filter(isBase64) : [],
+    told: isText(v.told) ? v.told : '',
+    behind: isTime(v.behind) ? v.behind : 0,
+    ...(isRelayKey(v.key) ? { key: v.key } : {}),
+    ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
+    at,
+  };
+}
+
+function checkedAsked(value: unknown): Asked | null {
+  const v = (value ?? {}) as Record<string, unknown>;
+  const way = checkedAskWay(v);
+  if (!way || !isHex(v.id, 64) || !isTime(v.made)) return null;
+  return { id: v.id, ...way, made: v.made, ...(isHex(v.link, 64) ? { link: v.link } : {}) };
+}
+
+function checkedAsking(value: unknown): Asking | null {
+  const v = (value ?? {}) as Record<string, unknown>;
+  const way = checkedAskWay(v);
+  if (!way || !isTime(v.made)) return null;
+  const offer = checkedOffer(v.offer);
+  const answer = checkedAnswer(v.answer);
+  return {
+    ...way,
+    name: isText(v.name) ? v.name : '',
+    made: v.made,
+    ...(offer ? { offer } : {}),
+    ...(answer ? { answer } : {}),
+    ...(isText(v.match) && /^[0-9 ]{1,40}$/.test(v.match) ? { match: v.match } : {}),
   };
 }
 
@@ -291,9 +378,11 @@ function checkedHanding(value: unknown): DevicesData['handing'] | null {
 
 function checked(value: unknown): DevicesData {
   const v = (value ?? {}) as Partial<Record<keyof DevicesData, unknown>>;
-  const o = v.offer as Partial<Record<keyof Offer, unknown>> | null;
-  const a = v.answer as Partial<Record<keyof Answer, unknown>> | null;
-  const answerPeer = a ? checkedPeer(a.peer) : null;
+  const offer = checkedOffer(v.offer);
+  const answer = checkedAnswer(v.answer);
+  const asking = checkedAsking(v.asking);
+  const asked = Array.isArray(v.asked) ? v.asked.map(checkedAsked).filter((a): a is Asked => a !== null).slice(-MAX_BACK) : [];
+  const asksSeen = Array.isArray(v.asksSeen) ? v.asksSeen.filter((id): id is string => isHex(id, 32)).slice(-MAX_ASKS_SEEN) : [];
   const synced: Record<string, Synced> = {};
   if (v.synced && typeof v.synced === 'object') {
     for (const [id, s] of Object.entries(v.synced)) {
@@ -317,8 +406,8 @@ function checked(value: unknown): DevicesData {
     primary: checkedPeer(v.primary),
     account: isHex(v.account, 64) ? v.account : '',
     link: isText(v.link) ? v.link : '',
-    offer: o && isBase64(o.account) && o.account && isHex(o.secret, 32) ? { account: o.account, secret: o.secret, name: isText(o.name) ? o.name : '', made: isTime(o.made) ? o.made : 0 } : null,
-    answer: a && answerPeer && isHex(a.account, 64) && isText(a.code) ? { peer: answerPeer, account: a.account, code: a.code } : null,
+    offer,
+    answer,
     synced,
     packs: Array.isArray(v.packs) ? v.packs.map(readOffer).filter((o): o is FileOffer => o !== null) : [],
     left: Array.isArray(v.left) ? v.left.map(checkedLeft).filter((l): l is Left => l !== null).slice(-MAX_LEFT) : [],
@@ -337,6 +426,11 @@ function checked(value: unknown): DevicesData {
     ...(v.holds === true ? { holds: true as const } : {}),
     ...(checkedHanding(v.handing) ? { handing: checkedHanding(v.handing)! } : {}),
     ...(isText(v.tookHold) && /^[0-9a-f]{48}$/.test(v.tookHold) ? { tookHold: v.tookHold } : {}),
+    ...(asked.length > 0 ? { asked } : {}),
+    ...(asking ? { asking } : {}),
+    ...(asksSeen.length > 0 ? { asksSeen } : {}),
+    ...(v.backSaid === true ? { backSaid: true as const } : {}),
+    ...(isTime(v.askSaid) && v.askSaid > 0 ? { askSaid: v.askSaid } : {}),
     marked: true,
   };
 }

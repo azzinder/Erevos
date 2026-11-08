@@ -201,4 +201,42 @@ export const devices: Record<string, string> = {
     'Το relay Nostr δεν το δέχτηκε.',
   'No Nostr relay took it.':
     'Κανένα relay Nostr δεν το δέχτηκε.',
+  'Asked. On {name}, tap Link again: it links to this phone and keeps its chats.':
+    'Ζητήθηκε. Στη συσκευή «{name}» πάτα «Επανασύνδεση»: συνδέεται με αυτό το τηλέφωνο και κρατά τις συνομιλίες της.',
+  'Let go of {name}':
+    'Αφαίρεση: {name}',
+  'It is asked nothing from this phone. To link it later, link it as the first time.':
+    'Από αυτό το τηλέφωνο δεν θα της ζητηθεί τίποτα. Για να τη συνδέσεις αργότερα, σύνδεσέ τη όπως την πρώτη φορά.',
+  'Let go':
+    'Αφαίρεση',
+  'Said yes. Once the phone hears it, this device is linked to it again.':
+    'Είπες ναι. Μόλις το μάθει το τηλέφωνο, αυτή η συσκευή συνδέεται ξανά μαζί του.',
+  '{name} asks to link again':
+    '«{name}»: αίτημα επανασύνδεσης',
+  'A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.':
+    'Ένα αντίγραφο ασφαλείας του τηλεφώνου επαναφέρθηκε στο «{name}», που ζήτησε την επανασύνδεση {when}. Αν το έκανες εσύ, σύνδεσε αυτή τη συσκευή μαζί του: κρατά τις συνομιλίες της και παίρνει ό,τι ήρθε από τότε, και το προηγούμενο τηλέφωνο δεν παίρνει πια τίποτα από αυτήν. Αν όχι, πάτα «Όχι τώρα»: μένει συνδεδεμένη όπως είναι.',
+  'Waiting for {name}: it has to be on.':
+    'Αναμονή για το «{name}»: πρέπει να είναι ανοιχτό.',
+  'Link again':
+    'Επανασύνδεση',
+  'From the backup':
+    'Από το αντίγραφο ασφαλείας',
+  'These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.':
+    'Αυτές οι συσκευές ήταν συνδεδεμένες με το τηλέφωνο όπου φτιάχτηκε αυτό το αντίγραφο ασφαλείας. Ζήτησε επανασύνδεση μόνο από όσες είναι ακόμα δικές σου: η καθεμιά δείχνει το αίτημα και συνδέεται με αυτό το τηλέφωνο μόλις πατηθεί εκεί η «Επανασύνδεση». Κρατά τις συνομιλίες της και παίρνει ό,τι ήρθε από τότε.',
+  'It said yes. Linking…':
+    'Είπε ναι. Γίνεται σύνδεση…',
+  'Asked {when}. Waiting for Link again to be tapped on it.':
+    'Ζητήθηκε {when}. Περιμένει να πατηθεί εκεί η «Επανασύνδεση».',
+  'Linked there {when}.':
+    'Συνδέθηκε εκεί {when}.',
+  'Not asked yet.':
+    'Δεν έχει ζητηθεί ακόμα.',
+  'Ask to link again':
+    'Αίτημα επανασύνδεσης',
+  'The phone no longer asks this device to link again.':
+    'Το τηλέφωνο δεν ζητά πια επανασύνδεση από αυτή τη συσκευή.',
+  '{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.':
+    'Το «{name}» ζητά επανασύνδεση από αυτή τη συσκευή, γιατί εκεί επαναφέρθηκε ένα αντίγραφο ασφαλείας του τηλεφώνου. Αν το έκανες εσύ, πάτα «Επανασύνδεση» στις Συνδεδεμένες συσκευές.',
+  'The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.':
+    'Το τηλέφωνο όπου φτιάχτηκε αυτό το αντίγραφο ασφαλείας είχε συνδεδεμένες συσκευές. Στις Συνδεδεμένες συσκευές, ζήτησε επανασύνδεση από όσες είναι δικές σου: η καθεμιά κρατά τις συνομιλίες της.',
 };

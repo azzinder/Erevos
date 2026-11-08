@@ -206,4 +206,42 @@ export const devices: Record<string, string> = {
     'Nostr relay ga nije prihvatio.',
   'No Nostr relay took it.':
     'Nijedan Nostr relay ga nije prihvatio.',
+  'Asked. On {name}, tap Link again: it links to this phone and keeps its chats.':
+    'Zatraženo. Na uređaju {name} dodirnite „Ponovo poveži“: povezuje se s ovim telefonom i zadržava svoje razgovore.',
+  'Let go of {name}':
+    'Zaboravi {name}',
+  'It is asked nothing from this phone. To link it later, link it as the first time.':
+    'Ovaj telefon od njega više ništa ne traži. Da biste ga kasnije povezali, povežite ga kao prvi put.',
+  'Let go':
+    'Zaboravi',
+  'Said yes. Once the phone hears it, this device is linked to it again.':
+    'Pristali ste. Čim telefon to sazna, ovaj uređaj je ponovo povezan s njim.',
+  '{name} asks to link again':
+    '{name} traži ponovno povezivanje',
+  'A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.':
+    'Rezervna kopija telefona vraćena je na {name}, koji je to zatražio {when}. Ako ste to vi uradili, povežite ovaj uređaj s njim: zadržava svoje razgovore i dobija ono što je stiglo u međuvremenu, a prethodni telefon od njega više ništa ne dobija. Ako niste, dodirnite „Ne sada“: ostaje povezan kao što jeste.',
+  'Waiting for {name}: it has to be on.':
+    'Čeka se {name}: mora biti uključen.',
+  'Link again':
+    'Ponovo poveži',
+  'From the backup':
+    'Iz rezervne kopije',
+  'These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.':
+    'Ovi uređaji su bili povezani s telefonom na kojem je napravljena ova rezervna kopija. Zatražite samo od onih koji su još vaši: svaki prikazuje zahtjev i povezuje se s ovim telefonom čim se na njemu dodirne „Ponovo poveži“. Zadržava svoje razgovore i dobija ono što je stiglo u međuvremenu.',
+  'It said yes. Linking…':
+    'Pristao je. Povezuje se…',
+  'Asked {when}. Waiting for Link again to be tapped on it.':
+    'Zatraženo {when}. Čeka se da se na njemu dodirne „Ponovo poveži“.',
+  'Linked there {when}.':
+    'Tamo povezan {when}.',
+  'Not asked yet.':
+    'Još nije zatraženo.',
+  'Ask to link again':
+    'Zatraži ponovno povezivanje',
+  'The phone no longer asks this device to link again.':
+    'Telefon više ne traži od ovog uređaja ponovno povezivanje.',
+  '{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.':
+    '{name} traži od ovog uređaja ponovno povezivanje, jer je tamo vraćena rezervna kopija telefona. Ako ste to vi uradili, dodirnite „Ponovo poveži“ u „Povezani uređaji“.',
+  'The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.':
+    'Telefon na kojem je napravljena ova rezervna kopija imao je povezane uređaje. U „Povezani uređaji“ zatražite ponovno povezivanje od onih koji su vaši: svaki zadržava svoje razgovore.',
 };

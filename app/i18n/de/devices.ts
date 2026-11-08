@@ -202,4 +202,42 @@ export const devices: Record<string, string> = {
     'Das Nostr-Relay hat es nicht angenommen.',
   'No Nostr relay took it.':
     'Kein Nostr-Relay hat es angenommen.',
+  'Asked. On {name}, tap Link again: it links to this phone and keeps its chats.':
+    'Angefragt. Tippe auf {name} auf „Erneut verknüpfen“: Es verknüpft sich mit diesem Telefon und behält seine Chats.',
+  'Let go of {name}':
+    '{name} entfernen',
+  'It is asked nothing from this phone. To link it later, link it as the first time.':
+    'Dieses Telefon fragt es nichts mehr. Um es später zu verknüpfen, verknüpfe es wie beim ersten Mal.',
+  'Let go':
+    'Entfernen',
+  'Said yes. Once the phone hears it, this device is linked to it again.':
+    'Zugestimmt. Sobald das Telefon es erfährt, ist dieses Gerät wieder mit ihm verknüpft.',
+  '{name} asks to link again':
+    '{name} bittet um erneute Verknüpfung',
+  'A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.':
+    'Eine Sicherung des Telefons wurde auf {name} wiederhergestellt, das {when} angefragt hat. Wenn du das warst, verknüpfe dieses Gerät damit: Es behält seine Chats und bekommt, was seitdem kam, und das bisherige Telefon bekommt nichts mehr von ihm. Wenn nicht, tippe auf „Nicht jetzt“: Es bleibt verknüpft, wie es ist.',
+  'Waiting for {name}: it has to be on.':
+    'Warte auf {name}: Es muss eingeschaltet sein.',
+  'Link again':
+    'Erneut verknüpfen',
+  'From the backup':
+    'Aus der Sicherung',
+  'These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.':
+    'Diese Geräte waren mit dem Telefon verknüpft, auf dem diese Sicherung erstellt wurde. Frage nur die an, die noch dir gehören: Jedes zeigt die Anfrage und verknüpft sich mit diesem Telefon, sobald dort „Erneut verknüpfen“ angetippt wird. Es behält seine Chats und bekommt, was seitdem kam.',
+  'It said yes. Linking…':
+    'Es hat zugestimmt. Wird verknüpft…',
+  'Asked {when}. Waiting for Link again to be tapped on it.':
+    'Angefragt am {when}. Wartet darauf, dass dort „Erneut verknüpfen“ angetippt wird.',
+  'Linked there {when}.':
+    'Dort verknüpft am {when}.',
+  'Not asked yet.':
+    'Noch nicht angefragt.',
+  'Ask to link again':
+    'Um erneute Verknüpfung bitten',
+  'The phone no longer asks this device to link again.':
+    'Das Telefon bittet dieses Gerät nicht mehr um erneute Verknüpfung.',
+  '{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.':
+    '{name} bittet dieses Gerät um erneute Verknüpfung, weil dort eine Sicherung des Telefons wiederhergestellt wurde. Wenn du das warst, tippe unter „Verknüpfte Geräte“ auf „Erneut verknüpfen“.',
+  'The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.':
+    'Das Telefon, auf dem diese Sicherung erstellt wurde, hatte verknüpfte Geräte. Bitte unter „Verknüpfte Geräte“ die, die dir gehören, um erneute Verknüpfung: Jedes behält seine Chats.',
 };

@@ -201,4 +201,42 @@ export const devices: Record<string, string> = {
     'Il relay Nostr non l’ha accettato.',
   'No Nostr relay took it.':
     'Nessun relay Nostr l’ha accettato.',
+  'Asked. On {name}, tap Link again: it links to this phone and keeps its chats.':
+    'Richiesto. Su {name}, tocca «Collega di nuovo»: si collega a questo telefono e tiene le sue chat.',
+  'Let go of {name}':
+    'Dimentica {name}',
+  'It is asked nothing from this phone. To link it later, link it as the first time.':
+    'Questo telefono non gli chiede più nulla. Per collegarlo più tardi, collegalo come la prima volta.',
+  'Let go':
+    'Dimentica',
+  'Said yes. Once the phone hears it, this device is linked to it again.':
+    'Hai detto sì. Appena il telefono lo sa, questo dispositivo è di nuovo collegato a lui.',
+  '{name} asks to link again':
+    '{name} chiede di collegarsi di nuovo',
+  'A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.':
+    'Un backup del telefono è stato ripristinato su {name}, che l’ha chiesto il {when}. Se sei stato tu, collega questo dispositivo a esso: tiene le sue chat e riceve ciò che è arrivato da allora, e il telefono di prima non riceve più nulla da lui. Se no, tocca «Non ora»: resta collegato com’è.',
+  'Waiting for {name}: it has to be on.':
+    'In attesa di {name}: deve essere acceso.',
+  'Link again':
+    'Collega di nuovo',
+  'From the backup':
+    'Dal backup',
+  'These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.':
+    'Questi dispositivi erano collegati al telefono su cui è stato fatto questo backup. Chiedi solo a quelli che sono ancora tuoi: ognuno mostra la richiesta e si collega a questo telefono appena lì viene toccato «Collega di nuovo». Tiene le sue chat e riceve ciò che è arrivato da allora.',
+  'It said yes. Linking…':
+    'Ha detto sì. Collegamento…',
+  'Asked {when}. Waiting for Link again to be tapped on it.':
+    'Richiesto il {when}. In attesa che lì venga toccato «Collega di nuovo».',
+  'Linked there {when}.':
+    'Collegato lì il {when}.',
+  'Not asked yet.':
+    'Non ancora richiesto.',
+  'Ask to link again':
+    'Chiedi di collegarsi di nuovo',
+  'The phone no longer asks this device to link again.':
+    'Il telefono non chiede più a questo dispositivo di collegarsi di nuovo.',
+  '{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.':
+    '{name} chiede a questo dispositivo di collegarsi di nuovo, perché lì è stato ripristinato un backup del telefono. Se sei stato tu, tocca «Collega di nuovo» in Dispositivi collegati.',
+  'The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.':
+    'Il telefono su cui è stato fatto questo backup aveva dispositivi collegati. In Dispositivi collegati, chiedi a quelli tuoi di collegarsi di nuovo: ognuno tiene le sue chat.',
 };

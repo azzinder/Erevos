@@ -11,7 +11,7 @@ import { QuickFromComputer, QuickToPhone } from '../components/quick-link';
 import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
-import { GroupsHeldError, onLinked, placeLinks, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { GroupsHeldError, onLinked, placeLinks, spaceLinks, type AccountsHere, type AgainInfo, type AskedHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
 import { tap } from '../lib/haptics';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { mark, t } from '../lib/i18n';
@@ -37,6 +37,11 @@ import { space } from '../theme/colors';
 // space's Matrix, XMPP and Nostr accounts go with every link, follow as they change, or go again
 // with Send the accounts (lib/linked-accounts.ts); the linked device says which it has from the phone, and asks
 // for the Matrix sign-in when the homeserver gave no token for it.
+//
+// On a phone a backup was put back on, From the backup lists the devices of the phone it was made
+// on: Ask to link again asks one, which shows the ask, and links to this phone once Link again is
+// tapped there, keeping its chats (lib/link-again.ts). Nothing is asked until it is tapped here, and
+// nothing links until it is tapped there too.
 //
 // Opened from hidden chats (`hidden=1`, or a code the camera opened while they are open beneath,
 // app/link.tsx) it is theirs: the place's own links (lib/devices.ts, placeLinks), its own accounts,
@@ -114,6 +119,10 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const [here, setHere] = useState<AccountsHere | null>(null);
   // Where the groups are held (docs/sync.md, S6), and where they go while they move.
   const [holder, setHolder] = useState<ReturnType<Links['groupsHolder']>>({ on: null, to: undefined, can: [], problem: null });
+  // On a phone a backup was put back on: the devices of the phone it was made on. On a linked device:
+  // its phone, put back from a backup, asking it to link again.
+  const [back, setBack] = useState<AgainInfo[]>([]);
+  const [asking, setAsking] = useState<AskedHere | null>(null);
 
   const refresh = (l: Links) => {
     setDevices(l.devices());
@@ -122,6 +131,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     setCopied(l.copied());
     setHere(l.accountsHere());
     setHolder(l.groupsHolder());
+    setBack(l.fromBackup());
+    setAsking(l.askedHere());
     // A code gone meanwhile, as when a phone's space read a place's: Link to my phone starts again.
     if (!l.offered()) setOffer(null);
   };
@@ -328,6 +339,41 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
       },
     ]);
   }
+
+  // On a phone a backup was put back on: a device of the phone it was made on, asked to link again, or let go of.
+  const askAgain = (device: AgainInfo) =>
+    run(async () => {
+      if (!links) return;
+      await links.askAgain(device.id);
+      setNote(t('Asked. On {name}, tap Link again: it links to this phone and keeps its chats.', { name: device.name }));
+    });
+
+  function forgetAgain(device: AgainInfo) {
+    ask(t('Let go of {name}', { name: device.name }), t('It is asked nothing from this phone. To link it later, link it as the first time.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Let go'),
+        style: 'destructive',
+        onPress: () =>
+          void run(async () => {
+            if (links) await links.forgetAgain(device.id);
+          }),
+      },
+    ]);
+  }
+
+  // On a linked device: yes, or not now, to its phone asking it to link again.
+  const linkAgain = () =>
+    run(async () => {
+      if (!links) return;
+      await links.linkAgain();
+      setNote(t('Said yes. Once the phone hears it, this device is linked to it again.'));
+    });
+
+  const notAgain = () =>
+    run(async () => {
+      if (links) await links.notAgain();
+    });
 
   const bringAgain = (id: string) =>
     run(async () => {
@@ -575,6 +621,27 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           </Text>
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}
         </Card>
+        {asking ? (
+          <Card>
+            <Text variant="heading">{t('{name} asks to link again', { name: asking.name })}</Text>
+            <Text tone="muted">
+              {t('A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.', {
+                name: asking.name,
+                when: whenText(asking.made),
+              })}
+            </Text>
+            {asking.said ? (
+              <Text variant="caption" tone="faint">
+                {t('Waiting for {name}: it has to be on.', { name: asking.name })}
+              </Text>
+            ) : (
+              <Row wrap>
+                <Button title={t('Link again')} disabled={busy} onPress={() => void linkAgain()} />
+                <Button title={t('Not now')} kind="secondary" disabled={busy} onPress={() => void notAgain()} />
+              </Row>
+            )}
+          </Card>
+        ) : null}
         {holder.on === 'here' ? (
           <Card>
             <Text variant="heading">{t('The groups are held here')}</Text>
@@ -655,6 +722,33 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
                   <Button title={t('Unlink')} kind="danger" compact disabled={busy} onPress={() => unlink(device)} />
                 </Row>
               )}
+            </Card>
+          ))}
+        </>
+      ) : null}
+
+      {back.length > 0 ? (
+        <>
+          <SectionTitle title={t('From the backup')} />
+          <Text tone="muted">
+            {t('These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.')}
+          </Text>
+          {back.map((device) => (
+            <Card key={device.id}>
+              <Text variant="heading">{device.name}</Text>
+              <Text tone="muted">
+                {device.said
+                  ? t('It said yes. Linking…')
+                  : device.asked
+                    ? t('Asked {when}. Waiting for Link again to be tapped on it.', { when: whenText(device.asked) })
+                    : device.since
+                      ? t('Linked there {when}.', { when: whenText(device.since) })
+                      : t('Not asked yet.')}
+              </Text>
+              <Row wrap>
+                <Button title={device.asked ? t('Ask again') : t('Ask to link again')} kind="secondary" compact disabled={busy || device.said} onPress={() => void askAgain(device)} />
+                <Button title={t('Let go')} kind="danger" compact disabled={busy} onPress={() => forgetAgain(device)} />
+              </Row>
             </Card>
           ))}
         </>

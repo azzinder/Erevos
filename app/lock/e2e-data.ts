@@ -530,6 +530,26 @@ function checkedOwnPass(value: unknown): { b: string; s: string } | null {
 
 export type Own = { identity: string; bundle: string; list: OwnList | null; ab?: string; ap?: { b: string; s: string } };
 
+/**
+ * On the primary: one of its linked devices as a phone this account's backup is put back on needs
+ * it, to ask that device to link again (lib/devices.ts askAgain): its endpoint's identity (hex) and
+ * bundle (base64url), where it reads (its queue's sender id, hex, its relay and that relay's key),
+ * its name, when it was linked (ms), whether photos and files went to it, and the key it gave this
+ * phone in their link to be asked with (`key`, base64url, lib/link-again.ts), which only the two of
+ * them hold. Nothing of the link's conversation, whose keys a backup never holds.
+ */
+export type Relink = { id: string; bundle: string; s: string; relay: string; rk: string; name: string; since: number; files: boolean; key: string };
+
+/**
+ * On the primary: its linked devices as Relink keeps them (`now`), as of the restore of a backup
+ * they were kept under (`at`, E2EData.restore); and, on a phone a backup was put back on since,
+ * the devices of the phone it was made on (`back`), each until it is linked again or let go of.
+ */
+export type Relinks = { at: string; now: Relink[]; back: Relink[] };
+
+/** The most devices of a phone a backup came from that are kept to ask: those of two backups put back one after the other. */
+export const MAX_BACK = 8;
+
 /** A linked device's own endpoint (docs/multi-device.md) as others know it: its identity, hex, and its bundle, base64url. */
 /** A linked device's endpoint: its identity (hex) and bundle (base64url), and what the key each contact seals what they send it with for the relay is drawn from (`ek`, base64url, lib/sealed-packet.ts entryKey), which a device from before does not say. */
 export type Endpoint = { id: string; bundle: string; ek?: string };
@@ -556,6 +576,10 @@ export type E2EData = {
   /** On the primary: the device list as last signed, which a backup carries, so a phone put back
    *  from one signs a later one. */
   list?: OwnList;
+  /** On the primary: what a backup carries for a phone it is put back on to ask each linked device
+   *  to link again (Relinks). Missing on one that never linked a device of this version, and in
+   *  what was kept before it: an Erevos from before leaves it out. */
+  relinks?: Relinks;
   /** When a backup was last put back under this account (ms, by this phone's clock then): its
    *  contacts may hold a later list than the one kept, signed after the backup was made. Missing on
    *  one never put back, and on an account made since. */
@@ -875,6 +899,20 @@ function checkedOldFiller(value: unknown): OldFiller | null {
   return isHex(v.q) && v.q.length === 48 && isText(v.relay) && v.relay.length <= 2048 && isTime(v.until) ? { q: v.q, relay: v.relay, until: v.until } : null;
 }
 
+function checkedRelink(value: unknown): Relink | null {
+  const v = (value ?? {}) as Partial<Record<keyof Relink, unknown>>;
+  if (!isHex(v.id) || v.id.length !== 64 || !isBase64Url(v.bundle, MAX_BUNDLE) || !isHex(v.s) || v.s.length !== 48 || !isRelay(v.relay) || !isRelayKey(v.key)) return null;
+  return { id: v.id, bundle: v.bundle, s: v.s, relay: v.relay, rk: isRelayKey(v.rk) ? v.rk : '', name: isText(v.name) ? v.name.slice(0, 40) : '', since: isTime(v.since) ? v.since : 0, files: v.files === true, key: v.key };
+}
+
+function checkedRelinks(value: unknown): Relinks | null {
+  const v = (value ?? {}) as Partial<Record<keyof Relinks, unknown>>;
+  if (!isHex(v.at) || (v.at.length !== 0 && v.at.length !== 32)) return null;
+  const now = Array.isArray(v.now) ? v.now.map(checkedRelink).filter((r): r is Relink => r !== null).slice(0, MAX_REAL) : [];
+  const back = Array.isArray(v.back) ? v.back.map(checkedRelink).filter((r): r is Relink => r !== null).slice(-MAX_BACK) : [];
+  return now.length + back.length > 0 ? { at: v.at, now, back } : null;
+}
+
 function checkedOwn(value: unknown): Own | null {
   const v = (value ?? {}) as Partial<Record<keyof Own, unknown>>;
   if (!isHex(v.identity) || v.identity.length !== 64 || !isBase64Url(v.bundle, MAX_BUNDLE)) return null;
@@ -887,6 +925,7 @@ function checked(value: unknown): E2EData {
   const contacts = Array.isArray(v.contacts) ? v.contacts.map(checkedContact).filter((c): c is Contact => c !== null) : [];
   const own = checkedOwn(v.own);
   const list = checkedList(v.list);
+  const relinks = checkedRelinks(v.relinks);
   return {
     account: isBase64(v.account) ? v.account : '',
     contacts,
@@ -896,6 +935,7 @@ function checked(value: unknown): E2EData {
     ...(isBase64(v.endpoint) && v.endpoint ? { endpoint: v.endpoint } : {}),
     ...(own ? { own } : {}),
     ...(list ? { list } : {}),
+    ...(relinks ? { relinks } : {}),
     ...(isTime(v.putBack) && v.putBack > 0 ? { putBack: v.putBack } : {}),
     ...(Array.isArray(v.unverified) ? { unverified: v.unverified.map(checkedUnverified).filter((u): u is Unverified => u !== null).slice(-MAX_UNVERIFIED) } : {}),
     ...(Array.isArray(v.early) ? { early: v.early.map(checkedEarly).filter((e): e is Early => e !== null).slice(-MAX_EARLY) } : {}),

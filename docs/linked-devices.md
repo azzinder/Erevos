@@ -462,10 +462,50 @@ endpoint, which takes a place in the list as a device linked does.
 
 ### Backups
 
-A backup does not carry links (lock/devices-data.ts is left out), and restoring one leaves them as
-they are: on the same phone the devices stay linked, and on another phone there are none. There, a
-computer is linked again once it unlinked itself (**Unlink this device**, which clears the account's
-chats from it). A linked computer's own backup holds the phone's chats as they were, without the
+A backup does not carry links (lock/devices-data.ts is left out, as it holds the links'
+conversations, and restoring one deletes it), so no message key of a link is ever used twice. It
+carries instead, with the chat (lock/e2e-data.ts `relinks`), what a phone it is put back on needs to
+ask each linked device to link again: the device's endpoint and its bundle, where it reads, its
+name, and a key the device made and gave the phone in their link (`relink`), which only the two of
+them hold. A device gives it once its link has an endpoint, and gives it again when the phone asks
+for it (`relink` with no key: a phone updated after the device was linked).
+
+#### Linking again
+
+On a phone a backup was put back on, the devices of the phone it was made on are kept apart
+(`back`, by the restore id of lock/restored.ts) and show under **From the backup** in Linked
+devices, of the space or of hidden chats, each in its own. Nothing goes to them until the holder
+taps **Ask to link again** for one: a device the backup names may since have been sold, lost or
+stolen. Then the phone starts a conversation of the core's own kind as the account itself with the
+device's endpoint, and says first `again` (lib/link-again.ts): a statement the account signs
+(context `again`: the account, that endpoint, when, the phone's name) and an HMAC of it with the
+device's key. The device takes it only from its own account (the peer of that conversation, which
+only the holder of the account's identity can start), signed by the bundle its phone gave over their
+link, for its own endpoint, from no more than 14 days before, with its own key, and each once. It
+shows it as **{name} asks to link again**, and links nothing until **Link again** is tapped there:
+a backup that leaked, with its password, asks devices, but cannot have them link.
+
+Said yes, the device makes the key of a new link and its secret, as for a code to show, and sends
+that code in the conversation of the ask (`agreed`, with when it last heard from its phone). The
+phone links it as if it read the code, bringing the history from a day before then, and sends back
+in the same conversation the safety code of the new link (`match`), which the device compares
+itself with the one it works out from the phone's `hello`: equal, the device takes the new link,
+says `ready`, and is that phone's. Nothing is typed, scanned or compared by hand, as the code only
+travels inside a conversation started by the account and opened by that endpoint alone. The device
+keeps its chats, its contacts as the phone sends them (all of them, so one the backup does not have
+goes), and gets what came since; what came to the lost phone after the backup was made stays on
+the device only. It lets go of the link before, without telling the lost phone, of its endpoint,
+the others it met as that endpoint and the account's list it checked, and makes a new endpoint,
+which the phone signs a new list for and gives contacts; and of its key, giving the new phone a
+new one. So the lost phone, or anyone with the same backup, can ask it nothing more: what it says
+in the link before opens nowhere, its asks go to an endpoint that is gone, and even one aimed at the
+new endpoint fails on the key. A device of a version before this one ignores an ask, and a device
+that gave no key takes none: those link again as the first time, after **Unlink this device**
+there, which clears the account's chats from it. **Let go** drops a device from the backup's list.
+
+#### A device's own backup
+
+A linked computer's own backup holds the phone's chats as they were, without the
 link to write in them, so the guide says to make backups on the phone. Restored on another computer,
 those chats open to be read: Erevos says once that they came from a linked device's backup, and what
 is written there says why it cannot go (a contact as a device keeps it has no conversation of its
@@ -489,6 +529,8 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
   two sides talking through Nostr until the link is made.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
 - `lib/device-list.ts`: the device list, signed by the account and checked against its bundle.
+- `lib/link-again.ts`: the ask to link again, signed by the account and with the device's key, and
+  how a device checks it.
 - `lib/endpoints.ts`: the ways to the endpoints of a contact's account, and what goes to them.
 - `lib/fanout.ts`, `lock/fanout-data.ts`: the copies for those endpoints, and sending them.
 - `lib/siblings.ts`: on a linked device, the account's other devices it reaches directly, and how
@@ -524,7 +566,9 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
   the places keeping their queues and keys offline or while the relay's key is not known; and a
   hidden place linked on its own, with its own list and accounts, messages both ways, its contacts
   writing to the device's place directly, unlinking, and nothing of it in the space, on the space's
-  devices or in the size of the file.
+  devices or in the size of the file; and a phone put back from a backup asking a device to link
+  again, the device linking once said yes there, keeping its chats with what came since, and then
+  out of reach of the lost phone and of the same backup elsewhere, hidden chats asking their own.
 - `app/checks/place-receiver.check.ts`, last: a hidden place linked on its own syncing while it
   receives closed, and not while closed without it, what was sent then waiting on the relay.
 - `app/checks/endpoints.check.ts`: what goes to which endpoint, and what is kept of them.

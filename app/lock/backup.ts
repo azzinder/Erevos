@@ -128,9 +128,11 @@ import { FILE as XMPP } from './xmpp-data';
 // Erevos write in, what the permissions check saw (lib/permissions.ts), the packets carried for
 // strangers with their key (lib/carried-store.ts), when and that a backup was restored here
 // (lock/restored.ts), and what automatic backups made where (lib/backup-ledger.ts). Nor the inbox's
-// list (lock/inbox-cache.ts), made again from the chats, nor, for now, linked devices
-// (lock/devices-data.ts) and the account's log (lock/sync-data.ts), which a restore deletes
-// (PHONE_FILES).
+// list (lock/inbox-cache.ts), made again from the chats, nor the links to linked devices
+// (lock/devices-data.ts), whose conversations' keys must never be used twice, and the account's
+// log (lock/sync-data.ts), which a restore deletes (PHONE_FILES). What a phone it is put back on
+// needs to ask each linked device to link again goes with the chat (lock/e2e-data.ts Relinks,
+// lib/link-again.ts).
 //
 // When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
@@ -225,7 +227,8 @@ const LATER_KEYS = [PANIC_KEY, ...SETTINGS, AUTO, CLOUD];
 const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES, COLLECTION];
 // The sealed files no backup holds, whose values may lie in pages too: the linked devices and the
 // account's log (lock/devices-data.ts, lock/sync-data.ts). Restoring deletes every page the backup
-// does not hold, theirs among them, so they go with their pages: a restored space links anew.
+// does not hold, theirs among them, so they go with their pages: a restored space links anew, its
+// devices asked to from the chat's Relinks.
 const PHONE_FILES = [DEVICES, SYNC];
 // Those a backup holds from PARTS on, the copies and carried packets first (see above); restoring
 // one deletes those it does not hold.

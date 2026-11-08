@@ -203,4 +203,42 @@ export const devices: Record<string, string> = {
     'Le relay Nostr ne l’a pas accepté.',
   'No Nostr relay took it.':
     'Aucun relay Nostr ne l’a accepté.',
+  'Asked. On {name}, tap Link again: it links to this phone and keeps its chats.':
+    'Demandé. Sur {name}, appuie sur « Associer de nouveau » : il s’associe à ce téléphone et garde ses discussions.',
+  'Let go of {name}':
+    'Oublier {name}',
+  'It is asked nothing from this phone. To link it later, link it as the first time.':
+    'Ce téléphone ne lui demande plus rien. Pour l’associer plus tard, associe-le comme la première fois.',
+  'Let go':
+    'Oublier',
+  'Said yes. Once the phone hears it, this device is linked to it again.':
+    'Accepté. Dès que le téléphone l’apprend, cet appareil lui est de nouveau associé.',
+  '{name} asks to link again':
+    '{name} demande une nouvelle association',
+  'A backup of the phone was put back on {name}, which asked {when}. If you did that, link this device to it: it keeps its chats and gets what came since, and the phone before gets nothing more from it. If not, tap Not now: it stays linked as it is.':
+    'Une sauvegarde du téléphone a été restaurée sur {name}, qui l’a demandé le {when}. Si c’est toi, associe cet appareil à celui-ci : il garde ses discussions et reçoit ce qui est arrivé depuis, et le téléphone d’avant ne reçoit plus rien de lui. Sinon, appuie sur « Pas maintenant » : il reste associé comme il l’est.',
+  'Waiting for {name}: it has to be on.':
+    'En attente de {name} : il doit être allumé.',
+  'Link again':
+    'Associer de nouveau',
+  'From the backup':
+    'De la sauvegarde',
+  'These devices were linked to the phone this backup was made on. Ask only those that are still yours: each shows the ask, and links to this phone once Link again is tapped on it. It keeps its chats, and gets what came since.':
+    'Ces appareils étaient associés au téléphone sur lequel cette sauvegarde a été faite. Ne demande qu’à ceux qui sont encore à toi : chacun affiche la demande et s’associe à ce téléphone dès qu’on y appuie sur « Associer de nouveau ». Il garde ses discussions et reçoit ce qui est arrivé depuis.',
+  'It said yes. Linking…':
+    'Il a accepté. Association…',
+  'Asked {when}. Waiting for Link again to be tapped on it.':
+    'Demandé le {when}. Attend qu’on y appuie sur « Associer de nouveau ».',
+  'Linked there {when}.':
+    'Associé là-bas le {when}.',
+  'Not asked yet.':
+    'Pas encore demandé.',
+  'Ask to link again':
+    'Demander une nouvelle association',
+  'The phone no longer asks this device to link again.':
+    'Le téléphone ne demande plus à cet appareil une nouvelle association.',
+  '{name} asks this device to link again, as a backup of the phone was put back there. If you did that, tap Link again in Linked devices.':
+    '{name} demande une nouvelle association à cet appareil, car une sauvegarde du téléphone y a été restaurée. Si c’est toi, appuie sur « Associer de nouveau » dans Appareils associés.',
+  'The phone this backup was made on had linked devices. In Linked devices, ask those that are yours to link again: each keeps its chats.':
+    'Le téléphone sur lequel cette sauvegarde a été faite avait des appareils associés. Dans Appareils associés, demande une nouvelle association à ceux qui sont à toi : chacun garde ses discussions.',
 };

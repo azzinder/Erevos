@@ -172,6 +172,13 @@ Older versions ignore an unknown `k`.
   fields was set (`at`: `name`, `look`, `avatar`, `hide`, and `added`), so changes made at once
   settle last writer first. `call`, `took` and `changed` still go between a device and the
   primary only (phase 4 for calls).
+- `relink` (device → primary): a key the device makes for each link once it has an endpoint, for
+  a phone its backup is put back on to ask it to link again with (docs/linked-devices.md,
+  Linking again); said again, the same, when the primary asks with `relink` and no key, as a phone
+  updated after the device was linked does once a day. Then, in a conversation the account starts
+  with the device's endpoint: `again` (primary → device: the signed ask, `b`, `s`, and its HMAC
+  with that key, `m`), `agreed` (device → primary: the code of a new link, and when it last heard
+  from its phone) and `match` (primary → device: that link's safety code).
 - `pk`, in every envelope of this version, on the primary's links and between devices: the key its
   sender gives the other for the packets it sends back (lib/sealed-packet.ts, a random one for each
   link, kept with it). Once a side has the other's, every packet but a conversation's first goes to
@@ -451,11 +458,16 @@ contacts on this version also write to each device directly (above), and a devic
   routes it gives with it, each with the key contacts' keys for it are drawn from, `r`, the queues
   it made for the fillers, `q`, when it was signed or `r`
   changed, `rAt`, the restore of a backup it was signed after, `restore`, and the `n` up to which a
-  contact's list may name a device it does not, `cut`), `putBack`, `unverified`
+  contact's list may name a device it does not, `cut`), on the primary `relinks` (its devices'
+  endpoints, bundles, where each reads, names and the key each gave, `now`, and once a backup was
+  put back, by its restore id `at`, those of the phone it was made on, `back`), `putBack`, `unverified`
   (with the endpoint each came from, `peer`), and on a device `early` (first packets of contacts
   it did not know yet, with whose each is).
 - Links (lock/devices-data.ts, in no backup): on a linked device `siblings`, `removed` and `erased`
-  (Own devices, above), and each contact's field times (`at`, in `synced`); on each link its
+  (Own devices, above), its phone asking it to link again (`asking`, with the first packets of asks
+  taken, `asksSeen`), and each contact's field times (`at`, in `synced`); on a phone a backup was
+  put back on, the devices asked (`asked`, each with the conversation of its ask); on each link its
+  key to be asked to link again with (`relink`), and its
   sealing keys (`key`, `sealTo`), and on the primary the routes each device was told (`routed`)
   and a digest of what each device was told of each contact's devices (`ways`, lib/devices.ts
   `wayDigest`, 16 hex characters each).
@@ -495,7 +507,9 @@ contacts on this version also write to each device directly (above), and a devic
   contact it accepted says they hold one; and either signs once more should such a contact still
   say they hold a later one than it signed, as with its clock behind: a device linked after the
   backup was made is named no more. Each of those lists goes to every contact who holds an older
-  one, though a place in it has no queue yet. A device unlinked drops its endpoint too.
+  one, though a place in it has no queue yet. A device unlinked drops its endpoint too. A device
+  of the lost phone linked again to the one put back makes a new endpoint, which that phone's next
+  list names.
 
 ## Hidden places (phase 5)
 

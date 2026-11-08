@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_LINES, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type InviteLine, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type HeldCopy, type Way } from '../lock/e2e-data';
+import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_LINES, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type InviteLine, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Relinks, type Route, type Spare, type Took, type Undropped, type HeldCopy, type Way } from '../lock/e2e-data';
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
@@ -1953,6 +1953,29 @@ export class E2E {
       if (held?.identity === own.identity && (held.list?.n ?? 0) >= (own.list?.n ?? 0)) return false;
       await this.save({ ...this.data, own });
       return true;
+    });
+  }
+
+  /**
+   * On the primary: starts, as the account, a conversation with one of its devices' endpoints from
+   * that endpoint's bundle, saying `plaintext` first: a phone a backup was put back on, asking that
+   * device to link again (lib/devices.ts askAgain). Not in the chat's turn, as the links keep that
+   * conversation, and moves nothing the chat keeps; its keys are its own, never a contact's.
+   */
+  startAsAccount(bundle: Uint8Array, plaintext: Uint8Array): Promise<core.Sealed> {
+    return core.startConversation(this.account, bundle, plaintext);
+  }
+
+  /** On the primary: what a backup carries to ask its linked devices to link again (lock/e2e-data.ts Relinks), or null. */
+  relinks(): Relinks | null {
+    return this.data.relinks ?? null;
+  }
+
+  /** On the primary: keeps what a backup carries to ask its linked devices to link again, or none. */
+  keepRelinks(relinks: Relinks | null): Promise<void> {
+    return this.run(async () => {
+      const { relinks: _was, ...rest } = this.data;
+      await this.save(relinks && relinks.now.length + relinks.back.length > 0 ? { ...rest, relinks } : rest);
     });
   }
 

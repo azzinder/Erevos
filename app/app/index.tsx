@@ -23,7 +23,7 @@ import { Button, Chip, font, fontStyle, Input, Row, Sheet, Text } from '../compo
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { canGroup, canNostrChat, canPublicGroup, hasCore } from '../lib/core';
-import { copyNote, linkedRole } from '../lib/devices';
+import { againNote, copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { press } from '../lib/haptics';
@@ -397,8 +397,15 @@ function Home() {
       load();
       lookOnline();
       // Once, in a linked device's chats restored from its backup: that they are read, not written in, here.
-      void copyNote().then((text) => {
-        if (text && active) ask(t('Linked devices'), text, [{ text: t('OK') }]);
+      // Else once, on a phone a backup was put back on, that its devices can be asked to link again;
+      // or on a linked device, that its phone asks it to.
+      void copyNote().then(async (text) => {
+        if (text) {
+          if (active) ask(t('Linked devices'), text, [{ text: t('OK') }]);
+          return;
+        }
+        const again = await againNote();
+        if (again && active) ask(t('Linked devices'), again, [{ text: t('Not now'), style: 'cancel' }, { text: t('Open'), onPress: () => router.push('/devices') }]);
       });
       const every = setInterval(lookOnline, 5000);
       // What comes while this screen shows moves its chat to the top.
