@@ -120,9 +120,49 @@ function reconnectStation(): boolean {
 }
 
 function dropHls(): void {
+  if (hlsToken) forgetHlsStream(hlsToken);
+  hlsToken = null;
   if (!hls) return;
   hls.destroy();
   hls = null;
+}
+
+// In the desktop app, the shell fetches an HLS stream for the page (desktop/stream.js, /__stream):
+// many stations and channels send no CORS headers, so hls.js could not read them from the page
+// itself. Known once asked; the token of the stream playing, to let go of it.
+let hlsStreams: boolean | null = SHELL === 'electron' ? null : false;
+let hlsToken: string | null = null;
+
+async function canHlsStream(): Promise<boolean> {
+  if (hlsStreams !== null) return hlsStreams;
+  try {
+    // A shell that does refuses an empty ask (400); one from before knows no such path (404).
+    hlsStreams = (await shellFetch('/__stream', { method: 'POST', body: '{}' })).status === 400;
+  } catch {
+    hlsStreams = false;
+  }
+  return hlsStreams;
+}
+
+// The address hls.js reads `url` from: through the shell where it can, else the link itself.
+async function hlsSource(url: string): Promise<{ source: string; token: string | null }> {
+  if (!(await canHlsStream())) return { source: url, token: null };
+  try {
+    const response = await shellFetch('/__stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+    if (response.ok) {
+      const { token } = (await response.json()) as { token?: string };
+      if (typeof token === 'string' && /^[0-9a-f]{32}$/.test(token)) return { source: `${location.origin}/__stream/${token}/0`, token };
+    }
+  } catch {
+    // The link itself, then.
+  }
+  return { source: url, token: null };
+}
+
+// The shell lets go of one stream, or of all of them.
+function forgetHlsStream(token: string | null): void {
+  if (!hlsStreams) return;
+  void shellFetch(token ? `/__stream?token=${token}` : '/__stream', { method: 'DELETE' }).catch(() => undefined);
 }
 
 /**
@@ -141,6 +181,11 @@ async function streamFrom(m: HTMLVideoElement, url: string, mime: string, mine: 
     }
     if (mine !== turn || station !== url) return;
     if (Player?.isSupported()) {
+      const { source, token } = await hlsSource(url);
+      if (mine !== turn || station !== url) {
+        if (token) forgetHlsStream(token);
+        return;
+      }
       const made = new Player({ enableWorker: false, lowLatencyMode: false });
       hls = made;
       made.on(Player.Events.ERROR, (_event, data) => {
@@ -155,8 +200,9 @@ async function streamFrom(m: HTMLVideoElement, url: string, mime: string, mine: 
         buffering = false;
         tell();
       });
+      hlsToken = token;
       made.attachMedia(m);
-      made.loadSource(url);
+      made.loadSource(source);
       void m.play().catch(() => undefined);
       return;
     }
@@ -589,6 +635,7 @@ export function deskStop(): void {
   media?.remove();
   // Nothing of the list stays in the shell either.
   forgetStream(null);
+  forgetHlsStream(null);
   tell();
 }
 
