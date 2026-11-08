@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
+    "**Prelazak na novi telefon**: novo poglavlje vodiča vodi te korak po korak sa starog telefona na novi s jednom rezervnom kopijom: što pripremiti, što prelazi, što ponovo podesiti, i brisanje starog na kraju. Vidi [Prelazak na novi telefon](#new-phone).",
   // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Nađi stanice po imenu**: Dodaj stanicu u kartici Radio Zbirke traži u Radio Browseru, slobodnom imeniku, kojem se šalju samo riječi koje upišeš kad pritisneš Traži. Vidi [Zbirka](#collection).",

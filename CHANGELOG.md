@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Moving to a new phone**: a new chapter of the guide (#new-phone), in every language, takes you step by step from
+  the old phone to the new one with one backup: what to get ready, what comes over, what to set again on the new
+  phone, and wiping the old one with the panic button at the end, never with Delete me from everywhere.
+
 ### Under the hood
 
 ## 7.0.0-rc.2 (2026-11-07)

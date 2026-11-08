@@ -2989,6 +2989,63 @@ Erevos conserva il pezzo a parte dalla chat, in **Pezzi che tieni per gli amici*
 **Perché:** un backup è sicuro quanto la sua password, e una password forte si perde facilmente. Divisa così (la
 condivisione di segreti di Shamir), nessun amico da solo, e nessun relay, tiene qualcosa che la apra.
 
+## Passare a un nuovo telefono {#new-phone}
+
+Tutto ciò che Erevos conserva passa a un nuovo telefono in un solo backup: ogni spazio con le sue chat nascoste, i
+contatti, i messaggi, le foto, i file e la Raccolta, i suoi account e relay, il blocco, la password di panico e le tue
+impostazioni. Nessun server ne tiene una copia per te, quindi niente arriva da solo: lo porta il backup, sigillato con
+la sua password.
+
+1. **Sul telefono nuovo, installa Erevos:** la stessa versione del telefono vecchio, o una più recente, perché un
+   Erevos più vecchio rifiuta un backup fatto da uno più nuovo. Senza internet, il telefono vecchio può dartelo, vedi
+   [Erevos a un telefono vicino](#give-app).
+2. **Sul telefono vecchio, preparalo:** perché passino anche gli SMS del telefono, attiva **Includi gli SMS nei
+   backup** sotto **Backup**. Una Raccolta lasciata fuori dai backup resta indietro: rimettila dentro, o dalle un
+   server WebDAV, vedi [Raccolta](#collection). Tieni a portata di mano la tua Chiave di sicurezza di Matrix, perché
+   Matrix accede di nuovo sul telefono nuovo.
+3. **Sul telefono vecchio, fai il backup:** sotto **Impostazioni** → **Dati e dispositivi** → **Backup**, tocca **Crea
+   un backup**, o **Fai il backup ora** con i backup automatici. Fallo per ultimo, subito prima del passaggio, e da
+   quel momento non aprire più Erevos sul telefono vecchio: ciò che arriva dopo aspetta sul relay per quello nuovo.
+4. **Portalo di là:** copia il backup e ogni file il cui nome comincia come il suo, tutti in una cartella, sul telefono
+   nuovo, con un cavo, una scheda di memoria o un’app cloud. Un backup sul tuo server non va copiato.
+5. **Sul telefono nuovo, ripristina:** fai il primo avvio. Su Android, per gli SMS, fai che Erevos sia anche lì l’app
+   SMS. Poi sotto **Impostazioni** → **Dati e dispositivi** → **Backup** tocca **Ripristina un backup** e scegli il
+   file, oppure **Ripristina da un server** e dai l’indirizzo, il nome utente e la password del server; scrivi la
+   password del backup e di’ di sì. Erevos si apre com’era il telefono vecchio, con le stesse password.
+6. **Sul telefono nuovo, reimposta ciò che è del telefono:** **Autorizzazioni** si apre per ciò che Android deve
+   consentire. Poi attiva di nuovo l’impronta o il volto (vedi [Blocco con password](#lock)), scegli di nuovo la
+   cartella dei backup automatici sotto **Backup**, e la SIM per ogni numero, e accedi a Matrix con la sua Chiave di
+   sicurezza.
+7. **Sul telefono vecchio, cancella Erevos:** quando il telefono nuovo mostra le tue chat e i nuovi messaggi arrivano
+   lì, tocca **Cancella tutto ora** sotto **Impostazioni** → **Privacy e sicurezza** → **Pulsante di panico**. Non
+   **Cancellami da ovunque**: cancella le code del relay che legge il telefono nuovo.
+
+- **Un telefono alla volta:** i due telefoni leggono le stesse code del relay, e un messaggio va a quello che lo
+  prende per primo, così l’altro non lo riceve mai. Tieni chiuso quello vecchio dal backup in poi, e cancellalo alla
+  fine.
+- **I tuoi contatti:** ogni spazio conserva il suo relay, il suo token e il suo relay di casa, quindi non c’è niente da
+  scrivere di nuovo né inviti da chiedere. I tuoi contatti ti scrivono come prima.
+- **Chat nascoste:** ogni posto nascosto arriva con il backup, ciascuno con il suo PIN, e niente sul telefono nuovo dice
+  che ce ne sono, vedi [Chat nascoste](#hidden).
+- **Matrix, XMPP e Nostr:** una chiave Nostr continua com’era, un account XMPP come un nuovo dispositivo di sé stesso, e
+  Matrix accede di nuovo come nuovo dispositivo, con la sua Chiave di sicurezza che apre i messaggi di prima, vedi
+  [Backup](#backup).
+- **Dispositivi collegati:** un collegamento resta con il telefono su cui è stato fatto. Su ogni computer o browser,
+  tocca **Scollega questo dispositivo**, poi collegalo al telefono nuovo come la prima volta; i dispositivi di un posto
+  nascosto, da dentro quel posto. Vedi [Dispositivi collegati](#devices).
+- **La Raccolta:** arriva nei file del backup. Una lasciata fuori dai backup arriva solo dal suo server WebDAV, ogni
+  file quando lo apri; una senza né l’uno né l’altro resta sul telefono vecchio, e la cancellazione la elimina.
+- **Moduli e impostazioni:** i moduli attivi, la lingua e le altre impostazioni arrivano con il backup. Ciò che Android
+  tiene per ogni telefono resta lì: la cronologia delle chiamate, i suoi numeri bloccati, e ciò che permette a Erevos.
+- **Un file mancante:** se un file del backup manca o è danneggiato, Erevos dice quale e non cambia niente, a meno che
+  tu non scelga di ripristinare il resto senza di esso.
+- **Se il telefono vecchio è perso:** ripristina il tuo backup più recente sul telefono nuovo appena puoi, anche dal tuo
+  server. Se hai perso la password del backup, gli amici che ne hanno i pezzi possono restituirtela, vedi
+  [Pezzi del backup presso amici](#backup-pieces).
+
+**Perché:** Erevos non tiene niente di tuo su un server che potrebbe restituirlo, quindi nessun account porta le tue
+chat su un nuovo telefono. Un solo backup, sigillato con la sua password, porta tutto, e solo tu puoi aprirlo.
+
 ## Pulsante di panico {#panic}
 
 Quando sei in pericolo, Erevos può cancellarsi all’istante, in **Impostazioni** → **Privacy e sicurezza** → **Pulsante

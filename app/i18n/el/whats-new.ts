@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
+    "**Μετάβαση σε νέο κινητό**: ένα νέο κεφάλαιο του οδηγού σε πάει βήμα βήμα από το παλιό κινητό στο νέο με ένα αντίγραφο ασφαλείας: τι να ετοιμάσεις, τι έρχεται μαζί, τι ρυθμίζεις ξανά, και το σβήσιμο του παλιού στο τέλος. Δες [Μετάβαση σε νέο κινητό](#new-phone).",
   // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Βρες σταθμούς ραδιοφώνου με το όνομα**: η Προσθήκη σταθμού στην καρτέλα Ραδιόφωνο της Συλλογής ψάχνει στο Radio Browser, έναν ελεύθερο κατάλογο, που του στέλνονται μόνο οι λέξεις που γράφεις όταν πατάς Αναζήτηση. Δες [Συλλογή](#collection).",

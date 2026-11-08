@@ -2728,6 +2728,57 @@ chat, under **Pieces you keep for friends**.
 **Why:** a backup is only as safe as its password, and a strong password is easy to lose. Split this way (Shamir's
 secret sharing), no single friend, and no relay, holds anything that opens it.
 
+## Moving to a new phone {#new-phone}
+
+Everything Erevos keeps goes to a new phone in one backup: every space with its hidden chats, contacts, messages,
+photos, files and Collection, its accounts and relays, the lock, the panic password and your settings. No server
+keeps a copy of it for you, so nothing comes over by itself: the backup carries it, sealed with its password.
+
+1. **On the new phone, install Erevos:** the same version as on the old phone, or newer, as an older Erevos refuses
+   a backup a newer one made. With no internet, the old phone can give it, see [Erevos to a phone nearby](#give-app).
+2. **On the old phone, get it ready:** for the phone's SMS to come too, turn on **Put the SMS in backups** under
+   **Backups**. A Collection left out of the backups stays behind: put it back in, or give it a WebDAV server, see
+   [Collection](#collection). Have your Matrix Security Key at hand, as Matrix signs in again on the new phone.
+3. **On the old phone, make the backup:** under **Settings** → **Data and devices** → **Backups**, tap **Make a
+   backup**, or **Back up now** with automatic backups. Make it last, just before you move, and from then on do not
+   open Erevos on the old phone: what comes after waits on the relays for the new one.
+4. **Bring it over:** copy the backup and every file whose name starts as its name, all in one folder, to the new
+   phone, by cable, a memory card or a cloud app. A backup on your server needs no copying.
+5. **On the new phone, restore:** go through the first start. On Android, for the SMS, let Erevos be the SMS app
+   there too. Then under **Settings** → **Data and devices** → **Backups** tap **Restore a backup** and choose the
+   file, or **Restore from a server** and give the server's address, user name and password; type the backup's
+   password and say yes. Erevos opens as the old phone was, with the same passwords.
+6. **On the new phone, set again what is the phone's:** **Permissions** opens for what Android should allow. Then
+   turn on the fingerprint or face again (see [Password lock](#lock)), choose the folder of automatic backups again
+   under **Backups**, and the SIM for each number, and sign in to Matrix with its Security Key.
+7. **On the old phone, wipe Erevos:** once the new phone shows your chats and new messages come there, tap **Wipe
+   everything now** under **Settings** → **Privacy and security** → **Panic button**. Not **Delete me from
+   everywhere**: that deletes the relay queues the new phone reads.
+
+- **One phone at a time:** both phones read the same relay queues, and a message goes to whichever takes it first,
+  so the other never gets it. Keep the old one closed from the backup on, and wipe it at the end.
+- **Your contacts:** each space keeps its relay, its token and its home relay, so there is nothing to type again and
+  no invite to ask for. Your contacts write to you as before.
+- **Hidden chats:** every hidden place comes with the backup, each with its PIN, and nothing on the new phone tells
+  that there are any, see [Hidden chats](#hidden).
+- **Matrix, XMPP and Nostr:** a Nostr key goes on as it was, an XMPP account as a new device of itself, and Matrix
+  signs in again as a new device, its Security Key opening the messages from before, see [Backups](#backup).
+- **Linked devices:** a link stays with the phone it was made on. On each computer or browser, tap **Unlink this
+  device**, then link it to the new phone as the first time; a hidden place's devices from inside that place. See
+  [Linked devices](#devices).
+- **The Collection:** it comes in the backup's files. One left out of the backups comes only from its WebDAV server,
+  each file as it opens; one with neither stays on the old phone, and the wipe deletes it.
+- **Modules and settings:** the modules that are on, the language and your other settings come with the backup.
+  What Android keeps for each phone stays there: the call history, its blocked numbers, and what it lets Erevos do.
+- **A file missing:** with a file of the backup missing or damaged, Erevos says which and changes nothing, unless you
+  choose to restore the rest without it.
+- **If the old phone is lost:** restore your newest backup on the new phone as soon as you can, from your server too.
+  If you lost the backup's password, friends holding its pieces can give it back, see
+  [Backup pieces with friends](#backup-pieces).
+
+**Why:** Erevos keeps nothing of yours on a server that could hand it back, so no account brings your chats to a new
+phone. One backup, sealed with its password, carries all of it, and only you can open it.
+
 ## Panic button {#panic}
 
 When you are in danger, Erevos can wipe itself at once, under **Settings** → **Privacy and security** → **Panic

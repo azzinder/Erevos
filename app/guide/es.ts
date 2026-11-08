@@ -2973,6 +2973,63 @@ es, y su Erevos guarda la pieza aparte del chat, en **Piezas que guardas para am
 **Por qué:** una copia de seguridad es tan segura como su contraseña, y una contraseña fuerte se pierde con facilidad.
 Repartida así (el reparto de secretos de Shamir), ningún amigo por sí solo, ni ningún relay, tiene nada que la abra.
 
+## Pasar a un teléfono nuevo {#new-phone}
+
+Todo lo que guarda Erevos pasa a un teléfono nuevo en una sola copia de seguridad: cada espacio con sus chats ocultos,
+contactos, mensajes, fotos, archivos y Colección, sus cuentas y relays, el bloqueo, la contraseña de pánico y tus
+ajustes. Ningún servidor guarda una copia por ti, así que nada pasa solo: lo lleva la copia, sellada con su contraseña.
+
+1. **En el teléfono nuevo, instala Erevos:** la misma versión que en el viejo, o una más nueva, porque un Erevos más
+   antiguo rechaza una copia hecha por uno más nuevo. Sin internet, el teléfono viejo puede dártelo, mira
+   [Erevos a un teléfono cercano](#give-app).
+2. **En el teléfono viejo, prepáralo:** para que pasen también los SMS del teléfono, activa **Incluir los SMS en las
+   copias** en **Copias de seguridad**. Una Colección que no está en las copias se queda atrás: vuelve a incluirla, o
+   dale un servidor WebDAV, mira [Colección](#collection). Ten a mano tu clave de seguridad de Matrix, porque Matrix
+   inicia sesión de nuevo en el teléfono nuevo.
+3. **En el teléfono viejo, haz la copia:** en **Ajustes** → **Datos y dispositivos** → **Copias de seguridad**, toca
+   **Hacer una copia de seguridad**, o **Hacer copia ahora** si usas copias automáticas. Hazla la última, justo antes
+   de mudarte, y desde entonces no abras Erevos en el teléfono viejo: lo que llegue después espera en los relays al
+   nuevo.
+4. **Pásala:** copia la copia y todos los archivos cuyo nombre empieza como el suyo, todos en una carpeta, al teléfono
+   nuevo, con un cable, una tarjeta de memoria o una app en la nube. Una copia en tu servidor no hay que copiarla.
+5. **En el teléfono nuevo, restaura:** pasa por el primer inicio. En Android, para los SMS, deja que Erevos sea también
+   allí la app de SMS. Luego, en **Ajustes** → **Datos y dispositivos** → **Copias de seguridad**, toca **Restaurar una
+   copia de seguridad** y elige el archivo, o **Restaurar desde un servidor** y da la dirección, el nombre de usuario y
+   la contraseña del servidor; escribe la contraseña de la copia y di que sí. Erevos se abre como estaba el teléfono
+   viejo, con las mismas contraseñas.
+6. **En el teléfono nuevo, vuelve a poner lo que es del teléfono:** **Permisos** se abre para lo que Android debe
+   permitir. Luego activa de nuevo la huella o el rostro (mira [Bloqueo con contraseña](#lock)), elige otra vez la
+   carpeta de las copias automáticas en **Copias de seguridad**, y la SIM de cada número, e inicia sesión en Matrix con
+   su clave de seguridad.
+7. **En el teléfono viejo, borra Erevos:** cuando el teléfono nuevo muestre tus chats y los mensajes nuevos lleguen
+   allí, toca **Borrarlo todo ahora** en **Ajustes** → **Privacidad y seguridad** → **Botón de pánico**. No **Borrarme
+   de todas partes**: eso borra las colas de los relays que lee el teléfono nuevo.
+
+- **Un teléfono a la vez:** los dos teléfonos leen las mismas colas de los relays, y un mensaje va a quien lo recoge
+  primero, así que el otro nunca lo recibe. Deja el viejo cerrado desde la copia y bórralo al final.
+- **Tus contactos:** cada espacio conserva su relay, su token y su relay de casa, así que no hay nada que escribir de
+  nuevo ni invitación que pedir. Tus contactos te escriben como antes.
+- **Chats ocultos:** cada lugar oculto viene con la copia, cada uno con su PIN, y nada en el teléfono nuevo dice que
+  haya alguno, mira [Chats ocultos](#hidden).
+- **Matrix, XMPP y Nostr:** una clave de Nostr sigue como era, una cuenta de XMPP como un dispositivo nuevo de sí
+  misma, y Matrix inicia sesión de nuevo como dispositivo nuevo, con su clave de seguridad abriendo los mensajes de
+  antes, mira [Copias de seguridad](#backup).
+- **Dispositivos vinculados:** un vínculo se queda con el teléfono donde se hizo. En cada ordenador o navegador, toca
+  **Desvincular este dispositivo** y vincúlalo al teléfono nuevo como la primera vez; los dispositivos de un lugar
+  oculto, desde dentro de ese lugar. Mira [Dispositivos vinculados](#devices).
+- **La Colección:** viene en los archivos de la copia. Una que no está en las copias viene solo de su servidor WebDAV,
+  cada archivo al abrirlo; una sin ninguna de las dos se queda en el teléfono viejo, y el borrado la elimina.
+- **Módulos y ajustes:** los módulos activados, el idioma y tus otros ajustes vienen con la copia. Lo que Android guarda
+  para cada teléfono se queda allí: el historial de llamadas, sus números bloqueados y lo que permite a Erevos.
+- **Falta un archivo:** si falta un archivo de la copia o está dañado, Erevos dice cuál y no cambia nada, a menos que
+  elijas restaurar el resto sin él.
+- **Si el teléfono viejo se pierde:** restaura tu copia más reciente en el teléfono nuevo cuanto antes, también desde tu
+  servidor. Si perdiste la contraseña de la copia, los amigos que guardan sus piezas pueden devolvértela, mira
+  [Piezas de copias con amigos](#backup-pieces).
+
+**Por qué:** Erevos no guarda nada tuyo en un servidor que pudiera devolverlo, así que ninguna cuenta lleva tus chats a
+un teléfono nuevo. Una copia, sellada con su contraseña, lo lleva todo, y solo tú puedes abrirla.
+
 ## Botón de pánico {#panic}
 
 Cuando estás en peligro, Erevos puede borrarse al instante, en **Ajustes** → **Privacidad y seguridad** → **Botón de

@@ -21,7 +21,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone)."),
+  ],
   underTheHood: [],
 };
 

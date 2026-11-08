@@ -2949,6 +2949,62 @@ e o Erevos dele guarda a parte separada da conversa, em **Partes que você guard
 **Por quê:** um backup é tão seguro quanto a senha dele, e uma senha forte se perde com facilidade. Dividida assim (o
 compartilhamento de segredos de Shamir), nenhum amigo sozinho, e nenhum relay, tem algo que o abra.
 
+## Mudar para um celular novo {#new-phone}
+
+Tudo o que o Erevos guarda vai para um celular novo em um só backup: cada espaço com as conversas ocultas, os contatos,
+as mensagens, as fotos, os arquivos e a Coleção, as contas e os relays, o bloqueio, a senha de pânico e as suas
+configurações. Nenhum servidor guarda uma cópia disso para você, então nada chega sozinho: o backup leva tudo, selado
+com a própria senha.
+
+1. **No celular novo, instale o Erevos:** a mesma versão do celular antigo, ou uma mais nova, pois um Erevos mais antigo
+   recusa um backup feito por um mais novo. Sem internet, o celular antigo pode dá-lo, veja
+   [O Erevos para um telefone próximo](#give-app).
+2. **No celular antigo, prepare-o:** para os SMS do celular também irem, ative **Incluir os SMS nos backups** em
+   **Backups**. Uma Coleção deixada fora dos backups fica para trás: coloque-a de volta, ou dê a ela um servidor
+   WebDAV, veja [Coleção](#collection). Deixe a sua chave de segurança do Matrix à mão, pois o Matrix entra de novo no
+   celular novo.
+3. **No celular antigo, faça o backup:** em **Configurações** → **Dados e dispositivos** → **Backups**, toque em
+   **Fazer um backup**, ou em **Fazer backup agora** com backups automáticos. Faça-o por último, logo antes de mudar, e
+   daí em diante não abra o Erevos no celular antigo: o que chega depois espera nos relays pelo novo.
+4. **Leve-o para lá:** copie o backup e todo arquivo cujo nome comece como o dele, todos em uma pasta, para o celular
+   novo, por cabo, cartão de memória ou app de nuvem. Um backup no seu servidor não precisa ser copiado.
+5. **No celular novo, restaure:** faça a primeira abertura. No Android, para os SMS, deixe o Erevos ser também lá o app
+   de SMS. Depois, em **Configurações** → **Dados e dispositivos** → **Backups**, toque em **Restaurar um backup** e
+   escolha o arquivo, ou em **Restaurar de um servidor** e dê o endereço, o nome de usuário e a senha do servidor;
+   digite a senha do backup e diga que sim. O Erevos abre como o celular antigo estava, com as mesmas senhas.
+6. **No celular novo, configure de novo o que é do celular:** **Permissões** abre para o que o Android deve permitir.
+   Depois ative de novo a digital ou o rosto (veja [Bloqueio com senha](#lock)), escolha de novo a pasta dos backups
+   automáticos em **Backups**, e o chip de cada número, e entre no Matrix com a chave de segurança dele.
+7. **No celular antigo, apague o Erevos:** quando o celular novo mostrar as suas conversas e as mensagens novas
+   chegarem lá, toque em **Apagar tudo agora** em **Configurações** → **Privacidade e segurança** → **Botão de
+   pânico**. Não em **Apagar-me de todos os lugares**: isso apaga as filas dos relays que o celular novo lê.
+
+- **Um celular de cada vez:** os dois celulares leem as mesmas filas dos relays, e uma mensagem vai para o que a pegar
+  primeiro, então o outro nunca a recebe. Deixe o antigo fechado a partir do backup, e apague-o no fim.
+- **Seus contatos:** cada espaço mantém o seu relay, o seu token e o seu relay de casa, então não há nada para digitar
+  de novo nem convite para pedir. Seus contatos escrevem para você como antes.
+- **Conversas ocultas:** cada lugar oculto vem com o backup, cada um com o seu PIN, e nada no celular novo diz que
+  existe algum, veja [Conversas ocultas](#hidden).
+- **Matrix, XMPP e Nostr:** uma chave Nostr continua como estava, uma conta XMPP como um novo dispositivo dela mesma, e
+  o Matrix entra de novo como novo dispositivo, com a chave de segurança dele abrindo as mensagens de antes, veja
+  [Backups](#backup).
+- **Dispositivos conectados:** uma conexão fica com o celular em que foi feita. Em cada computador ou navegador, toque
+  em **Desconectar este dispositivo**, depois conecte-o ao celular novo como na primeira vez; os dispositivos de um
+  lugar oculto, de dentro desse lugar. Veja [Dispositivos conectados](#devices).
+- **A Coleção:** vem nos arquivos do backup. Uma deixada fora dos backups vem só do servidor WebDAV dela, cada arquivo
+  quando é aberto; uma sem nenhum dos dois fica no celular antigo, e o apagamento a elimina.
+- **Módulos e configurações:** os módulos ativados, o idioma e as outras configurações vêm com o backup. O que o Android
+  guarda para cada celular fica lá: o histórico de chamadas, os números bloqueados dele, e o que ele deixa o Erevos
+  fazer.
+- **Um arquivo faltando:** se um arquivo do backup faltar ou estiver danificado, o Erevos diz qual e não muda nada, a
+  não ser que você escolha restaurar o resto sem ele.
+- **Se o celular antigo se perdeu:** restaure o seu backup mais novo no celular novo assim que puder, também do seu
+  servidor. Se você perdeu a senha do backup, os amigos que têm as partes dela podem devolvê-la, veja
+  [Partes do backup com amigos](#backup-pieces).
+
+**Por quê:** o Erevos não guarda nada seu em um servidor que possa devolvê-lo, então nenhuma conta leva as suas
+conversas para um celular novo. Um só backup, selado com a própria senha, leva tudo, e só você pode abri-lo.
+
 ## Botão de pânico {#panic}
 
 Quando você está em perigo, o Erevos pode se apagar na hora, em **Configurações** → **Privacidade e segurança** →

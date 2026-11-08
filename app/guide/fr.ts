@@ -3140,6 +3140,70 @@ Chaque contact reçoit un message qui dit ce que c’est, et son Erevos garde le
 **Pourquoi :** une sauvegarde n’est pas plus sûre que son mot de passe, et un mot de passe fort se perd facilement.
 Partagé ainsi (le partage de secret de Shamir), aucun ami seul, ni aucun relay, ne détient de quoi l’ouvrir.
 
+## Passer à un nouveau téléphone {#new-phone}
+
+Tout ce qu’Erevos garde passe sur un nouveau téléphone dans une seule sauvegarde : chaque espace avec ses discussions
+masquées, contacts, messages, photos, fichiers et Collection, ses comptes et relais, le verrou, le mot de passe de
+panique et tes réglages. Aucun serveur n’en garde une copie pour toi, donc rien ne passe tout seul : la sauvegarde le
+porte, scellée avec son mot de passe.
+
+1. **Sur le nouveau téléphone, installe Erevos :** la même version que sur l’ancien, ou une plus récente, car un Erevos
+   plus ancien refuse une sauvegarde faite par un plus récent. Sans internet, l’ancien téléphone peut te le donner,
+   voir [Erevos vers un téléphone proche](#give-app).
+2. **Sur l’ancien téléphone, prépare-le :** pour que les SMS du téléphone passent aussi, active **Inclure les SMS dans
+   les sauvegardes** sous **Sauvegardes**. Une Collection laissée hors des sauvegardes reste derrière : remets-la, ou
+   donne-lui un serveur WebDAV, voir [Collection](#collection). Aie ta clé de sécurité Matrix sous la main, car Matrix
+   se reconnecte sur le nouveau téléphone.
+3. **Sur l’ancien téléphone, fais la sauvegarde :** sous **Réglages** → **Données et appareils** → **Sauvegardes**,
+   appuie sur **Créer une sauvegarde**, ou sur **Sauvegarder maintenant** avec les sauvegardes automatiques. Fais-la en
+   dernier, juste avant de changer, et ensuite n’ouvre plus Erevos sur l’ancien téléphone : ce qui arrive après attend
+   sur les relais pour le nouveau.
+4. **Apporte-la :** copie la sauvegarde et chaque fichier dont le nom commence comme le sien, tous dans un dossier, sur
+   le nouveau téléphone, par câble, carte mémoire ou app cloud. Une sauvegarde sur ton serveur n’a pas besoin d’être
+   copiée.
+5. **Sur le nouveau téléphone, restaure :** passe le premier démarrage. Sur Android, pour les SMS, laisse Erevos être
+   aussi l’app SMS là-bas. Puis, sous **Réglages** → **Données et appareils** → **Sauvegardes**, appuie sur **Restaurer
+   une sauvegarde** et choisis le fichier, ou sur **Restaurer depuis un serveur** et donne l’adresse, le nom
+   d’utilisateur et le mot de passe du serveur ; tape le mot de passe de la sauvegarde et dis oui. Erevos s’ouvre comme
+   l’ancien téléphone était, avec les mêmes mots de passe.
+6. **Sur le nouveau téléphone, remets ce qui est propre au téléphone :** **Autorisations** s’ouvre pour ce qu’Android
+   doit permettre. Puis réactive l’empreinte ou le visage (voir [Verrou par mot de passe](#lock)), choisis de nouveau le
+   dossier des sauvegardes automatiques sous **Sauvegardes**, et la SIM de chaque numéro, et connecte-toi à Matrix avec
+   sa clé de sécurité.
+7. **Sur l’ancien téléphone, efface Erevos :** quand le nouveau téléphone montre tes discussions et que les nouveaux
+   messages y arrivent, appuie sur **Tout effacer maintenant** sous **Réglages** → **Confidentialité et sécurité** →
+   **Bouton de panique**. Pas sur **Me supprimer partout** : cela supprime les files d’attente des relais que lit le
+   nouveau téléphone.
+
+- **Un téléphone à la fois :** les deux téléphones lisent les mêmes files d’attente des relais, et un message va à celui
+  qui le prend le premier, donc l’autre ne le reçoit jamais. Garde l’ancien fermé dès la sauvegarde et efface-le à la
+  fin.
+- **Tes contacts :** chaque espace garde son relais, son jeton et son relais d’attache, donc rien à retaper et aucune
+  invitation à demander. Tes contacts t’écrivent comme avant.
+- **Discussions masquées :** chaque lieu caché vient avec la sauvegarde, chacun avec son code PIN, et rien sur le
+  nouveau téléphone ne dit qu’il y en a, voir [Discussions masquées](#hidden).
+- **Matrix, XMPP et Nostr :** une clé Nostr continue comme avant, un compte XMPP comme un nouvel appareil de lui-même,
+  et Matrix se reconnecte comme un nouvel appareil, sa clé de sécurité ouvrant les messages d’avant, voir
+  [Sauvegardes](#backup).
+- **Appareils associés :** une association reste avec le téléphone où elle a été faite. Sur chaque ordinateur ou
+  navigateur, appuie sur **Dissocier cet appareil**, puis associe-le au nouveau téléphone comme la première fois ; les
+  appareils d’un lieu caché depuis l’intérieur de ce lieu. Voir [Appareils associés](#devices).
+- **La Collection :** elle vient dans les fichiers de la sauvegarde. Une laissée hors des sauvegardes vient seulement de
+  son serveur WebDAV, chaque fichier à son ouverture ; une sans l’un ni l’autre reste sur l’ancien téléphone, et
+  l’effacement la supprime.
+- **Modules et réglages :** les modules activés, la langue et tes autres réglages viennent avec la sauvegarde. Ce
+  qu’Android garde pour chaque téléphone y reste : l’historique des appels, ses numéros bloqués et ce qu’il permet à
+  Erevos.
+- **Un fichier manque :** si un fichier de la sauvegarde manque ou est abîmé, Erevos dit lequel et ne change rien, sauf
+  si tu choisis de restaurer le reste sans lui.
+- **Si l’ancien téléphone est perdu :** restaure ta sauvegarde la plus récente sur le nouveau téléphone dès que tu peux,
+  depuis ton serveur aussi. Si tu as perdu le mot de passe de la sauvegarde, les amis qui en gardent les morceaux
+  peuvent te le rendre, voir [Morceaux de sauvegarde chez des amis](#backup-pieces).
+
+**Pourquoi :** Erevos ne garde rien de toi sur un serveur qui pourrait le rendre, donc aucun compte ne porte tes
+discussions sur un nouveau téléphone. Une sauvegarde, scellée avec son mot de passe, porte tout, et toi seul peux
+l’ouvrir.
+
 ## Bouton de panique {#panic}
 
 Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglages** → **Confidentialité et sécurité** →

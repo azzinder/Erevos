@@ -2853,6 +2853,62 @@ njegov Erevos čuva dio odvojeno od razgovora, pod **Dijelovi koje čuvate za pr
 **Zašto:** rezervna kopija sigurna je koliko i njena lozinka, a jaka lozinka lako se izgubi. Podijeljena ovako
 (Shamirovo dijeljenje tajne), nijedan prijatelj sam, ni nijedan relay, ne drži ništa što je otvara.
 
+## Prelazak na novi telefon {#new-phone}
+
+Sve što Erevos čuva prelazi na novi telefon u jednoj rezervnoj kopiji: svaki prostor sa skrivenim razgovorima,
+kontaktima, porukama, fotografijama, datotekama i Zbirkom, računi i relayi, zaključavanje, lozinka za paniku i vaše
+postavke. Nijedan server ne čuva kopiju za vas, pa ništa ne dolazi samo od sebe: nosi ga rezervna kopija, zapečaćena
+svojom lozinkom.
+
+1. **Na novom telefonu instalirajte Erevos:** istu verziju kao na starom telefonu, ili noviju, jer stariji Erevos
+   odbija kopiju koju je napravio noviji. Bez interneta ga stari telefon može dati, pogledajte
+   [Erevos obližnjem telefonu](#give-app).
+2. **Na starom telefonu ga pripremite:** da bi i SMS poruke telefona prešle, uključite **Stavljaj SMS poruke u
+   rezervne kopije** pod **Rezervne kopije**. Zbirka izostavljena iz kopija ostaje iza: vratite je unutra, ili joj dajte
+   WebDAV server, pogledajte [Zbirka](#collection). Imajte pri ruci svoj sigurnosni ključ za Matrix, jer se Matrix
+   ponovo prijavljuje na novom telefonu.
+3. **Na starom telefonu napravite kopiju:** pod **Postavke** → **Podaci i uređaji** → **Rezervne kopije** dodirnite
+   **Napravi rezervnu kopiju**, ili **Napravi kopiju sada** s automatskim kopijama. Napravite je posljednju, tik prije
+   prelaska, i od tada ne otvarajte Erevos na starom telefonu: ono što stigne poslije čeka na relayima novi.
+4. **Prenesite je:** kopirajte rezervnu kopiju i svaku datoteku čije ime počinje kao njeno, sve u jednom folderu, na
+   novi telefon, kablom, memorijskom karticom ili aplikacijom za oblak. Kopija na vašem serveru ne treba kopiranje.
+5. **Na novom telefonu vratite:** prođite prvo pokretanje. Na Androidu, zbog SMS poruka, neka Erevos i tamo bude SMS
+   aplikacija. Zatim pod **Postavke** → **Podaci i uređaji** → **Rezervne kopije** dodirnite **Vrati rezervnu kopiju**
+   i izaberite datoteku, ili **Vrati sa servera** i dajte adresu servera, korisničko ime i lozinku; upišite lozinku
+   rezervne kopije i recite da. Erevos se otvara kakav je bio stari telefon, s istim lozinkama.
+6. **Na novom telefonu ponovo podesite ono što pripada telefonu:** **Dozvole** se otvaraju za ono što Android treba
+   dozvoliti. Zatim ponovo uključite otisak prsta ili lice (pogledajte [Zaključavanje lozinkom](#lock)), ponovo
+   izaberite folder automatskih kopija pod **Rezervne kopije**, i SIM za svaki broj, i prijavite se u Matrix njegovim
+   sigurnosnim ključem.
+7. **Na starom telefonu obrišite Erevos:** kad novi telefon pokaže vaše razgovore i nove poruke stižu tamo, dodirnite
+   **Obriši sve sada** pod **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**. Ne **Obriši me odasvud**: to
+   briše redove na relayima koje čita novi telefon.
+
+- **Jedan telefon odjednom:** oba telefona čitaju iste redove na relayima, a poruka ide onom koji je prvi uzme, pa je
+  drugi nikad ne dobije. Držite stari zatvoren od kopije nadalje, i obrišite ga na kraju.
+- **Vaši kontakti:** svaki prostor zadržava svoj relay, svoj token i svoj kućni relay, pa nema ničega za ponovno
+  upisivanje ni pozivnice za traženje. Vaši kontakti vam pišu kao prije.
+- **Skriveni razgovori:** svako skriveno mjesto dolazi s kopijom, svako sa svojim PIN-om, a ništa na novom telefonu ne
+  govori da ih ima, pogledajte [Skriveni razgovori](#hidden).
+- **Matrix, XMPP i Nostr:** Nostr ključ nastavlja kakav je bio, XMPP račun kao novi uređaj samog sebe, a Matrix se
+  ponovo prijavljuje kao novi uređaj, a njegov sigurnosni ključ otvara ranije poruke, pogledajte
+  [Rezervne kopije](#backup).
+- **Povezani uređaji:** veza ostaje uz telefon na kojem je napravljena. Na svakom računaru ili pregledniku dodirnite
+  **Odvoji ovaj uređaj**, zatim ga povežite s novim telefonom kao prvi put; uređaje skrivenog mjesta iznutra tog mjesta.
+  Pogledajte [Povezani uređaji](#devices).
+- **Zbirka:** dolazi u datotekama kopije. Ona izostavljena iz kopija dolazi samo s svog WebDAV servera, svaka datoteka
+  kad se otvori; ona bez jednog i drugog ostaje na starom telefonu, a brisanje je briše.
+- **Moduli i postavke:** uključeni moduli, jezik i druge postavke dolaze s kopijom. Ono što Android čuva za svaki
+  telefon ostaje tamo: historija poziva, njegovi blokirani brojevi, i ono što dopušta Erevosu.
+- **Nedostaje datoteka:** ako datoteka kopije nedostaje ili je oštećena, Erevos kaže koja i ne mijenja ništa, osim ako
+  izaberete da vratite ostalo bez nje.
+- **Ako je stari telefon izgubljen:** vratite najnoviju kopiju na novi telefon čim možete, i sa svog servera. Ako ste
+  izgubili lozinku kopije, prijatelji koji drže njene dijelove mogu je vratiti, pogledajte
+  [Dijelovi rezervne kopije kod prijatelja](#backup-pieces).
+
+**Zašto:** Erevos ne čuva ništa vaše na serveru koji bi to mogao vratiti, pa nijedan račun ne nosi vaše razgovore na
+novi telefon. Jedna rezervna kopija, zapečaćena svojom lozinkom, nosi sve, i samo je vi možete otvoriti.
+
 ## Gumb za paniku {#panic}
 
 Kad ste u opasnosti, Erevos se može odmah obrisati, u **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**:

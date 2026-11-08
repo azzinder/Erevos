@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":
+    "**Pasar a un teléfono nuevo**: un capítulo nuevo de la guía te lleva paso a paso del teléfono viejo al nuevo con una sola copia de seguridad: qué preparar, qué pasa, qué volver a poner y cómo borrar el viejo al final. Consulta [Pasar a un teléfono nuevo](#new-phone).",
   // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Encuentra emisoras por su nombre**: Añadir una emisora en la pestaña Radio de la Colección busca en Radio Browser, un directorio libre, al que solo se envían las palabras que escribes cuando pulsas Buscar. Consulta [Colección](#collection).",
