@@ -24,6 +24,7 @@ import {
   backupKey,
   backupName,
   backupNative,
+  backupPhoneCalls,
   backupPhoneSms,
   backupStem,
   DamagedPartError,
@@ -90,6 +91,7 @@ import { newNostrDm, type NostrDmState } from '../lib/nostr-dm';
 import type { XmppState } from '../lib/xmpp';
 import { cloudRequest as browserRequest } from '../lib/backup-http.web';
 import { changeAutoBackup, isAutoBackupPassword, KEEP, loadAutoBackup, runAutoBackup, startAutoBackup } from '../lib/backup-folder';
+import { phoneCallsEntry } from '../lib/backup-calls';
 import { phoneSettingsForBackup, putPhoneSettings } from '../lib/backup-native';
 import { partsIn, writeBackup } from '../lib/backup-place';
 import { rulesFrom, rulesJson } from '../lib/phone-rules';
@@ -423,6 +425,41 @@ t('holds the phone\'s SMS when given them, sealed, and restoring writes them now
   assert.deepEqual(
     without.entries.map((entry) => entry.name),
     opened.entries.map((entry) => entry.name).filter((name) => name !== 'phone-sms'),
+  );
+});
+
+t("holds the phone's calls and blocked numbers when given them, sealed, as an entry an Erevos from before them refuses", async () => {
+  await phone();
+  const calls = phoneCallsEntry({ calls: [{ number: '+306922222222', presentation: 1, date: 1_800_000_000_000, duration: 75, type: 2, features: 0, new: false, sim: 0 }], blocked: ['+302103333333'] });
+  const password = 'backup-pass';
+  const file = await backUp(await backupKey(password), { phoneCalls: calls });
+  assert.doesNotMatch(Buffer.from(file).toString('latin1'), /6922222222|2103333333|"calls"/);
+  const opened = await openBackup(file, password);
+  assert.deepEqual(backupPhoneCalls(opened), calls);
+  // Restoring writes them nowhere: the backup screen adds them to the phone's (lib/backup-calls.ts).
+  const before = { files: new Map(files), blobs: new Map(blobs) };
+  await restoreBackup(opened, fromShelf);
+  assert.deepEqual({ files: new Map(files), blobs: new Map(blobs) }, before);
+  assert.ok(![...store.values()].some((value) => value.includes('6922222222')));
+  // A kind of its own, which no Erevos before it knows (they know 0 to 7): such an Erevos says a
+  // newer one made the backup, and changes nothing.
+  const head = Buffer.from(file.subarray(16, 60));
+  const { key } = await backupKey(password, head.subarray(0, 16), head.readUInt32BE(16), { salt: head.subarray(20, 36), m: head.readUInt32BE(36), t: head.readUInt32BE(40) });
+  const packed = Buffer.from(decryptBytes(key, file.subarray(60)));
+  const kinds: [number, string][] = [];
+  for (let at = 0; at < packed.length; ) {
+    const length = packed.readUInt16BE(at + 1);
+    kinds.push([packed[at], packed.subarray(at + 3, at + 3 + length).toString('utf8')]);
+    at += 3 + length;
+    at += 4 + packed.readUInt32BE(at);
+  }
+  assert.deepEqual(kinds.filter(([kind]) => kind > 7), [[8, 'phone-calls']]);
+  // A backup made without them is as it was, and opens in an Erevos from before them.
+  const without = await openBackup(await backUp(await backupKey(password)), password);
+  assert.equal(backupPhoneCalls(without), null);
+  assert.deepEqual(
+    without.entries.map((entry) => entry.name),
+    opened.entries.map((entry) => entry.name).filter((name) => name !== 'phone-calls'),
   );
 });
 
@@ -1027,6 +1064,7 @@ t("holds the panic password, the phone's settings, and automatic backups' and th
     'erevos.lora': '{"address":"AA:BB","name":"Mesh"}',
     'erevos.phone-open': 'yes',
     'erevos.backup-sms': '1',
+    'erevos.backup-calls': '1',
   };
   for (const [name, value] of Object.entries(settings)) store.set(name, value);
   const panic = store.get('erevos.lock-panic')!;

@@ -10,8 +10,9 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 // is false and everything here does nothing.
 
 /** `calls`: how many calls are on now; `slots`: how many SIMs the phone can hold; `screens`:
- *  whether Android asks Erevos about each call before it rings (the call screening role). */
-export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number; slots: number; screens: boolean };
+ *  whether Android asks Erevos about each call before it rings (the call screening role);
+ *  `callLog`: whether Android lets Erevos read the call history, unknown to a build before it. */
+export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number; slots: number; screens: boolean; callLog?: boolean };
 
 /** A way the phone can call: a SIM. `id` is what placeCall takes and the call history keeps;
  *  `slot` counts from 0, -1 for an account that is no SIM's; `name` is "SIM 1" or the account's. */
@@ -82,6 +83,8 @@ type NativePhone = {
   setKnownNames(names: Record<string, string>): void;
   clearKnownNames(): void;
   forgetKnownNamesAfter(ms: number): void;
+  backupCalls?(): Promise<string>;
+  restoreCalls?(json: string): Promise<{ calls: number; blocked: number }>;
   addListener<Name extends keyof PhoneEvents>(name: Name, listener: PhoneEvents[Name]): EventSubscription;
 };
 
@@ -146,6 +149,27 @@ export function deleteCalls(ids: number[]): Promise<number> {
  *  deleted them), the older ones too. */
 export function deleteCallsOf(number: string, before: number): Promise<number> {
   return native ? native.deleteCallsOf(number, before) : Promise.resolve(0);
+}
+
+/** Whether this build can put the call history and the blocked numbers in backups (lib/backup-calls.ts). */
+export function callsBackupReady(): boolean {
+  return typeof native?.backupCalls === 'function';
+}
+
+/**
+ * The call history, its newest calls, and Android's blocked numbers, for a backup, as JSON
+ * (CallsBackup.kt): `allowed` false while Android does not let Erevos read the call history, no
+ * `blocked` while it does not let it read the list, as only the phone app and the SMS app may.
+ * Null in a build without it.
+ */
+export function backupCallLog(): Promise<string | null> {
+  return native?.backupCalls ? native.backupCalls() : Promise.resolve(null);
+}
+
+/** Adds to the phone's call history and blocked numbers those of a backup it lacks (JSON, as
+ *  lib/backup-calls.ts gives them), as the phone app; how many of each went in. */
+export function restoreCallLog(json: string): Promise<{ calls: number; blocked: number }> {
+  return native?.restoreCalls ? native.restoreCalls(json) : Promise.reject(new Error('This build of Erevos cannot do this yet.'));
 }
 
 /** The phone's starred contacts, by name; `allowed` is false while Android does not let Erevos

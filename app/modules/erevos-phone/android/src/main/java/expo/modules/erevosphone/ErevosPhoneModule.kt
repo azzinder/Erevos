@@ -52,6 +52,7 @@ class ErevosPhoneModule : Module() {
         "calls" to Calls.live().size,
         "slots" to (context?.let { Sims.slots(it) } ?: 0),
         "screens" to (context != null && screens(context)),
+        "callLog" to (context != null && History.allowed(context)),
       )
     }
 
@@ -117,6 +118,16 @@ class ErevosPhoneModule : Module() {
 
     AsyncFunction("deleteCallsOf") { number: String, before: Double ->
       History.deleteNumber(context(), number, before.toLong())
+    }
+
+    // The call history and the blocked numbers for a backup, as JSON, and those of a backup the
+    // phone lacks put back (CallsBackup.kt).
+    AsyncFunction("backupCalls") {
+      CallsBackup.read(context())
+    }
+
+    AsyncFunction("restoreCalls") { json: String ->
+      CallsBackup.add(context(), json)
     }
 
     // The phone's starred contacts, once Erevos may read the contacts.

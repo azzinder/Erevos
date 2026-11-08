@@ -138,6 +138,29 @@ export const smsTools: Record<string, string> = {
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.":
     '{sms} SMS e {mms} MMS voltaram para os SMS do celular. Os que ele já tinha ficaram como estavam.',
   "The SMS could not go back into the phone's SMS: {error}": 'Não foi possível devolver os SMS aos SMS do celular: {error}',
+  // The phone's calls and blocked numbers in backups (app/backup.tsx, lib/backup-calls.ts).
+  "The phone's calls": 'As chamadas do celular',
+  "Backups can hold the phone's call history too, and Android's own list of blocked numbers, sealed with the backup's password. Restoring the backup adds to the phone each call and blocked number it does not have, and deletes none.":
+    'Os backups também podem incluir o histórico de chamadas do celular e a lista de números bloqueados do próprio Android, selados com a senha do backup. Restaurar o backup adiciona ao celular cada chamada e cada número bloqueado que ele não tiver, e não apaga nada.',
+  'Erevos reads them only while Android lets it read the call history: make it the phone app under Settings → Phone and SMS → Phone.':
+    'O Erevos só os lê enquanto o Android o deixa ler o histórico de chamadas: torne-o o app de telefone em “Configurações → Telefone e SMS → Telefone”.',
+  'Put the calls in backups': 'Incluir as chamadas nos backups',
+  'Leave the calls out': 'Deixar as chamadas de fora',
+  "It holds {n} call of the phone's.": 'Ele contém {n} chamada do celular.',
+  "It holds {n} calls of the phone's.": 'Ele contém {n} chamadas do celular.',
+  '{n} blocked number is in it too.': 'Também contém {n} número bloqueado.',
+  '{n} blocked numbers are in it too.': 'Também contém {n} números bloqueados.',
+  'Calls in this backup': 'Chamadas neste backup',
+  "This backup also holds the phone's calls and blocked numbers. They go back only into an Android phone, while Erevos is its phone app: make it the phone app under Settings → Phone and SMS → Phone, then restore again. Or restore the rest now, without them.":
+    'Este backup também contém as chamadas e os números bloqueados do celular. Eles só voltam para um celular Android, enquanto o Erevos for o app de telefone dele: torne-o o app de telefone em “Configurações → Telefone e SMS → Telefone” e restaure de novo. Ou restaure o resto agora, sem eles.',
+  'Without the calls': 'Sem as chamadas',
+  'Putting the calls back into the phone…': 'Devolvendo as chamadas ao celular…',
+  "{n} call went back into the phone's call history.": '{n} chamada voltou para o histórico de chamadas do celular.',
+  "{n} calls went back into the phone's call history.": '{n} chamadas voltaram para o histórico de chamadas do celular.',
+  '{n} number went back into its blocked numbers.': '{n} número voltou para os números bloqueados dele.',
+  '{n} numbers went back into its blocked numbers.': '{n} números voltaram para os números bloqueados dele.',
+  'Those it had already stayed as they were.': 'O que ele já tinha ficou como estava.',
+  'The calls could not go back into the phone: {error}': 'Não foi possível devolver as chamadas ao celular: {error}',
   'Copy code': 'Copiar código',
   'The code is copied: any app that reads the clipboard can read it.': 'O código foi copiado: qualquer app que leia a área de transferência pode lê-lo.',
   'The code could not be copied.': 'Não foi possível copiar o código.',

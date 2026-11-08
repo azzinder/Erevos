@@ -50,6 +50,7 @@ import {
   type AutoBackup,
   type PartSource,
 } from '../lib/backup-folder';
+import { backsUpCalls, callCounts, canBackUpCalls, phoneCallsForBackup, putPhoneCalls, setBacksUpCalls } from '../lib/backup-calls';
 import { phoneSettingsForBackup } from '../lib/backup-native';
 import { afterRestore, beforeRestore } from '../lib/backup-settings';
 import { backsUpSms, canBackUpSms, phoneSmsForBackup, setBacksUpSms, smsCounts, SMS_PICTURES_MB } from '../lib/backup-sms';
@@ -57,9 +58,10 @@ import { takeHandedServer } from '../lib/backup-pieces';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
-import { backupKey, backupNative, backupPhoneSms, DamagedPartError, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup, type MissingPartError } from '../lock/backup';
+import { backupKey, backupNative, backupPhoneCalls, backupPhoneSms, DamagedPartError, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup, type MissingPartError } from '../lock/backup';
 import { openCollectionSkips } from '../lock/collection-data';
 import { useLock } from '../lock/context';
+import { phoneStatus } from '../modules/erevos-phone';
 import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
 
@@ -67,7 +69,8 @@ import { useTheme } from '../theme/context';
 // owner picks, made by themselves every day or week (lib/backup-folder.ts), and put back. Every
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
 // here says how many there are. On Android a backup can hold the phone's SMS and MMS too
-// (lib/backup-sms.ts), put back into the phone's SMS when it is restored. On Android, automatic
+// (lib/backup-sms.ts), put back into the phone's SMS when it is restored, and its call history and
+// blocked numbers (lib/backup-calls.ts), added to the phone's. On Android, automatic
 // backups can go to a server too (lib/backup-cloud.ts), once the owner gives one, and a backup there
 // can be restored from the server itself; in the desktop app too, and in the web app, which makes
 // no backups by itself, one sent there when the owner asks. A backup's photos, files and voice
@@ -126,8 +129,9 @@ export default function Backups() {
   const [busy, setBusy] = useState(false);
   // A folder or file picker is open: a second tap opens no second one.
   const picking = useRef(false);
-  // Whether backups hold the phone's SMS and MMS.
+  // Whether backups hold the phone's SMS and MMS, and its calls and blocked numbers.
   const [smsToo, setSmsToo] = useState(false);
+  const [callsToo, setCallsToo] = useState(false);
   // The server automatic backups go to as well, and what is typed to add one or to restore from one.
   const [cloud, setCloud] = useState<CloudBackup | null>(null);
   const [form, setForm] = useState<'add' | 'restore' | null>(null);
@@ -142,6 +146,7 @@ export default function Backups() {
     loadAutoBackup().then(setAuto);
     void loadCloudBackup().then(setCloud);
     void backsUpSms().then(setSmsToo);
+    void backsUpCalls().then(setCallsToo);
     // The server backup pieces gave back (app/backup-pieces.tsx): its backups listed at once.
     const handed = takeHandedServer();
     if (handed) void listServer(handed);
@@ -344,6 +349,11 @@ export default function Backups() {
     setSmsToo(!smsToo);
   }
 
+  async function toggleCalls() {
+    await setBacksUpCalls(!callsToo);
+    setCallsToo(!callsToo);
+  }
+
   // Says how far a backup's photos, files and voice messages are, made or put back, as they go.
   const shownPercent = useRef(-1);
   function progress(making: boolean) {
@@ -427,6 +437,14 @@ export default function Backups() {
     return counts.left > 0 ? `${held} ${plural(counts.left, '{n} picture did not fit and stayed out.', '{n} pictures did not fit and stayed out.')}` : held;
   }
 
+  // What a backup holds of the phone's calls and blocked numbers, said after it is made.
+  function callsText(calls: Uint8Array | null): string {
+    const counts = calls ? callCounts(calls) : null;
+    if (!counts) return '';
+    const held = ` ${plural(counts.calls, "It holds {n} call of the phone's.", "It holds {n} calls of the phone's.")}`;
+    return counts.blocked > 0 ? `${held} ${plural(counts.blocked, '{n} blocked number is in it too.', '{n} blocked numbers are in it too.')}` : held;
+  }
+
   async function submit(password: string): Promise<boolean | void> {
     if (!asking) return;
     if (asking.kind === 'make') {
@@ -435,10 +453,11 @@ export default function Backups() {
       setBusy(true);
       try {
         const phoneSms = await phoneSmsForBackup();
+        const phoneCalls = await phoneCallsForBackup();
         const native = await phoneSettingsForBackup();
         const skip = await openCollectionSkips();
-        const { name, size, parts, where } = await writeBackup(asking.folder, (part) => makeBackup(key, { parts: part, phoneSms, native, progress: progress(true), skip }));
-        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + partsText(parts) + smsText(phoneSms));
+        const { name, size, parts, where } = await writeBackup(asking.folder, (part) => makeBackup(key, { parts: part, phoneSms, phoneCalls, native, progress: progress(true), skip }));
+        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + partsText(parts) + smsText(phoneSms) + callsText(phoneCalls));
       } catch (error) {
         say(errorText(error), true);
       } finally {
@@ -503,11 +522,24 @@ export default function Backups() {
         );
         if (!without) return;
       }
+      // So the phone's calls and blocked numbers, only while Erevos is the phone app.
+      const calls = backupPhoneCalls(backup);
+      const putCalls = !!calls && canBackUpCalls() && !!phoneStatus()?.isDefault;
+      if (calls && !putCalls) {
+        const withoutCalls = await chooseOne(
+          t('Calls in this backup'),
+          t("This backup also holds the phone's calls and blocked numbers. They go back only into an Android phone, while Erevos is its phone app: make it the phone app under Settings → Phone and SMS → Phone, then restore again. Or restore the rest now, without them."),
+          t('Cancel'),
+          t('Without the calls'),
+        );
+        if (!withoutCalls) return;
+      }
       if (await confirm(t('Replace everything'), t('Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.', { device: t(THIS_DEVICE) }))) {
         // Nothing may keep what was here over what the backup brings: the receiver stops first,
         // and starts again with the space as restored.
         const release = await holdReceiver();
         let told = '';
+        let toldCalls = '';
         let left: string[] = [];
         setBusy(true);
         try {
@@ -530,6 +562,21 @@ export default function Backups() {
               (error) => t("The SMS could not go back into the phone's SMS: {error}", { error: errorText(error) }),
             );
           }
+          if (calls && putCalls) {
+            setBusy(true);
+            say(t('Putting the calls back into the phone…'));
+            toldCalls = await putPhoneCalls(calls).then(
+              (put) =>
+                [
+                  plural(put.calls, "{n} call went back into the phone's call history.", "{n} calls went back into the phone's call history."),
+                  put.blocked > 0 ? plural(put.blocked, '{n} number went back into its blocked numbers.', '{n} numbers went back into its blocked numbers.') : '',
+                  t('Those it had already stayed as they were.'),
+                ]
+                  .filter(Boolean)
+                  .join(' '),
+              (error) => t('The calls could not go back into the phone: {error}', { error: errorText(error) }),
+            );
+          }
           closeNow();
         } finally {
           setBusy(false);
@@ -544,7 +591,7 @@ export default function Backups() {
               { name: left[0] },
             )
           : '';
-        if (leftText || told) ask(leftText ? t('Restore a backup') : t('SMS'), [leftText, told].filter(Boolean).join('\n\n'), [{ text: t('OK') }]);
+        if (leftText || told || toldCalls) ask(leftText || toldCalls ? t('Restore a backup') : t('SMS'), [leftText, told, toldCalls].filter(Boolean).join('\n\n'), [{ text: t('OK') }]);
       }
     }
   }
@@ -585,6 +632,25 @@ export default function Backups() {
             ) : null}
             <Row wrap>
               <Button title={smsToo ? t('Leave the SMS out') : t('Put the SMS in backups')} kind="secondary" compact onPress={toggleSms} disabled={busy} />
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
+      {canBackUpCalls() ? (
+        <>
+          <SectionTitle title={t("The phone's calls")} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t("Backups can hold the phone's call history too, and Android's own list of blocked numbers, sealed with the backup's password. Restoring the backup adds to the phone each call and blocked number it does not have, and deletes none.")}
+            </Text>
+            {callsToo && !phoneStatus()?.callLog ? (
+              <Text variant="caption" color={colors.danger} style={hint}>
+                {t('Erevos reads them only while Android lets it read the call history: make it the phone app under Settings → Phone and SMS → Phone.')}
+              </Text>
+            ) : null}
+            <Row wrap>
+              <Button title={callsToo ? t('Leave the calls out') : t('Put the calls in backups')} kind="secondary" compact onPress={toggleCalls} disabled={busy} />
             </Row>
           </Card>
         </>

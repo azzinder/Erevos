@@ -115,7 +115,10 @@ import { FILE as XMPP } from './xmpp-data';
 // When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
 // space. Restoring the backup does not write them anywhere; the backup screen puts them back into
-// the phone's SMS. An Erevos from before this kind does not open such a backup.
+// the phone's SMS. An Erevos from before this kind does not open such a backup. So too the phone's
+// call history and Android's own list of blocked numbers (lib/backup-calls.ts), as one entry of
+// kind PHONE_CALLS, which the backup screen adds to the phone's: an Erevos from before it says a
+// newer Erevos made the backup, and changes nothing.
 //
 // A backup sent to a server (lib/backup-cloud.ts) is made bare: without MAGIC, and with what
 // follows the first salt in the head masked with that salt's SHA-256, so the whole file looks like
@@ -162,7 +165,8 @@ const HEARD = [...Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.watch.${
 // (lib/screen-privacy.ts), the photos' quality (lib/photo-quality.ts), carrying for phones nearby,
 // the same Wi-Fi, Wi-Fi Direct and Wi-Fi Aware (lib/nearby-links.ts), the LoRa radio, which is the
 // owner's and not the phone's (lib/radio.ts), whether the Phone opens without the password
-// (lib/phone-open.ts), and whether backups hold the phone's SMS (lib/backup-sms.ts).
+// (lib/phone-open.ts), and whether backups hold the phone's SMS (lib/backup-sms.ts) and its calls
+// (lib/backup-calls.ts).
 const SETTINGS = [
   'erevos.lang',
   'erevos.modules',
@@ -180,6 +184,7 @@ const SETTINGS = [
   'erevos.lora',
   'erevos.phone-open',
   'erevos.backup-sms',
+  'erevos.backup-calls',
 ];
 const AUTO = 'erevos.backup-auto';
 const CLOUD = 'erevos.backup-cloud';
@@ -222,8 +227,11 @@ const KIND_NATIVE = 6;
 const NATIVE = 'phone';
 // A keystore entry, as written from 6.0.0 on; read as KEY (see above).
 const KIND_SECRET = 7;
+// The phone's call history and blocked numbers (lib/backup-calls.ts).
+const KIND_PHONE_CALLS = 8;
+const PHONE_CALLS = 'phone-calls';
 // The kinds this Erevos knows: any other is a newer one's.
-const KINDS = new Set([KIND_KEY, KIND_TEXT, KIND_BYTES, KIND_PHONE_SMS, KIND_PAD, KIND_PARTS, KIND_NATIVE, KIND_SECRET]);
+const KINDS = new Set([KIND_KEY, KIND_TEXT, KIND_BYTES, KIND_PHONE_SMS, KIND_PAD, KIND_PARTS, KIND_NATIVE, KIND_SECRET, KIND_PHONE_CALLS]);
 // An entry's kind, name length and data length, and PAD's name.
 const PAD_ENTRY = 1 + 2 + 4 + PAD.length;
 // What follows MAGIC: the salt, PBKDF2's rounds, Argon2id's salt, memory and passes.
@@ -429,6 +437,7 @@ function allowed(kind: number, name: string): boolean {
   if (kind === KIND_KEY) return KEYS.includes(name) || HEARD.includes(name) || LATER_KEYS.includes(name);
   if (kind === KIND_TEXT) return TEXT_FILES.includes(name) || LATER_FILES.includes(name);
   if (kind === KIND_PHONE_SMS) return name === PHONE_SMS;
+  if (kind === KIND_PHONE_CALLS) return name === PHONE_CALLS;
   if (kind === KIND_PARTS) return name === PARTS;
   if (kind === KIND_NATIVE) return name === NATIVE;
   return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && fileName(name);
@@ -547,6 +556,8 @@ export type MakeOptions = {
   parts: PartSink;
   /** The phone's SMS and MMS (lib/backup-sms.ts). */
   phoneSms?: Uint8Array | null;
+  /** The phone's call history and blocked numbers (lib/backup-calls.ts). */
+  phoneCalls?: Uint8Array | null;
   /** The phone module's own settings (lib/backup-native.ts). */
   native?: Uint8Array | null;
   /** Made as one sent to a server is: random bytes to look at, the backup of one of Padmé's
@@ -560,12 +571,13 @@ export type MakeOptions = {
 
 /** A backup of everything on the phone, sealed with `key`: its parts go to `parts` first, one at a
  *  time, then the bytes of the backup itself, which names them, are given back. */
-export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, native = null, bare = false, progress, skip }: MakeOptions): Promise<Uint8Array> {
+export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, phoneCalls = null, native = null, bare = false, progress, skip }: MakeOptions): Promise<Uint8Array> {
   // Every backup made has Argon2id: a key without it is only for opening old ones.
   if (!hard) throw new Error('a backup is made with Argon2id');
   // The backup itself is read first, then the parts: a photo its messages show is on the phone then.
   const entries = await collect();
   if (phoneSms) entries.push({ kind: KIND_PHONE_SMS, name: PHONE_SMS, data: phoneSms });
+  if (phoneCalls) entries.push({ kind: KIND_PHONE_CALLS, name: PHONE_CALLS, data: phoneCalls });
   if (native) entries.push({ kind: KIND_NATIVE, name: NATIVE, data: native });
   const id = randomBytes(ID);
   const phone = await phoneId();
@@ -760,6 +772,11 @@ export async function restoreBackup(
 /** The phone's SMS and MMS a backup holds, or null when it holds none. */
 export function backupPhoneSms({ entries }: Backup): Uint8Array | null {
   return entries.find((entry) => entry.kind === KIND_PHONE_SMS)?.data ?? null;
+}
+
+/** The phone's call history and blocked numbers a backup holds, or null when it holds none. */
+export function backupPhoneCalls({ entries }: Backup): Uint8Array | null {
+  return entries.find((entry) => entry.kind === KIND_PHONE_CALLS)?.data ?? null;
 }
 
 /** The phone module's settings a backup holds (lib/backup-native.ts), or null when it holds none. */

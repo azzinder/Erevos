@@ -7,7 +7,8 @@ import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps for the phone's calls (app/phone.tsx), sealed like its contacts
 // (sealed-file.ts): the SIM chosen for each number called. The calls themselves stay in the phone's
-// call history, where Android keeps them for every phone app; the rules that turn calls away stay
+// call history, where Android keeps them for every phone app, and backups hold them only when the
+// owner wants (lib/backup-calls.ts); the rules that turn calls away stay
 // with Android too (lib/phone-rules.ts), as it applies them while Erevos is locked, and backups
 // hold them with the quick replies (lib/backup-native.ts). The SIMs are known by the ids this
 // phone gave them, which on another phone may name another SIM: they count only on the phone they

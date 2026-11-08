@@ -5,6 +5,7 @@
 import { hardBackupKey, isBackupPassword, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
 
 import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
+import { phoneCallsForBackup } from './backup-calls';
 import { phoneSettingsForBackup } from './backup-native';
 import { writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
@@ -139,22 +140,24 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
         auto = { ...auto, key: toBase64(await hardBackupKey(fromBase64(auto.key), fresh)), hard };
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      // With the phone's SMS, when the owner wants them (lib/backup-sms.ts), and the phone module's settings.
+      // With the phone's SMS and calls, when the owner wants them (lib/backup-sms.ts,
+      // lib/backup-calls.ts), and the phone module's settings.
       const phoneSms = await phoneSmsForBackup();
+      const phoneCalls = await phoneCallsForBackup();
       const native = await phoneSettingsForBackup();
       // Without the open space's Collection when its owner keeps it out of backups.
       const skip = await openCollectionSkips();
       const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...hard, salt: fromBase64(hard.salt) } };
       if (due) {
         try {
-          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, native, skip }), now, KEEP);
+          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, phoneCalls, native, skip }), now, KEEP);
           auto = { ...auto, last: now, error: '' };
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, native, bare: true, skip }), KEEP, now);
+      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, phoneCalls, native, bare: true, skip }), KEEP, now);
     } catch (error) {
       auto = { ...auto, error: errorText(error) };
       await secureSet(AUTO, JSON.stringify(auto));

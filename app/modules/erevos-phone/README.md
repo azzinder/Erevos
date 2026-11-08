@@ -41,6 +41,12 @@ been compile-checked against Android 16's framework classes, not built or run.
   `onHistory` event follows changes to either. Nothing of it is kept. `deleteCalls(ids)` and
   `deleteCallsOf(number, before)` delete calls the owner deletes, with `WRITE_CALL_LOG`, which the
   phone app role grants.
+- **Backups.** `CallsBackup`: `backupCalls()` reads the call history, its newest 10,000 calls
+  without voicemails, and the blocked numbers (`BlockedNumberContract`, which only the phone app
+  and the SMS app may read) as JSON, each call with its SIM as a slot; `restoreCalls(json)` adds
+  those of a backup that `lib/backup-calls.ts` found the phone lacks, as the phone app
+  (`bulkInsert` into `CallLog.Calls`, and `BlockedNumberContract.isBlocked` before each number).
+  Nothing is deleted or changed.
 
 ## JS API
 

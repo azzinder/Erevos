@@ -138,6 +138,30 @@ export const smsTools: Record<string, string> = {
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.":
     'U SMS poruke telefona vraćeno je: {sms} SMS i {mms} MMS. One koje je telefon već imao ostale su kakve su bile.',
   "The SMS could not go back into the phone's SMS: {error}": 'SMS poruke nisu se mogle vratiti u SMS poruke telefona: {error}',
+  // The phone's calls and blocked numbers in backups (app/backup.tsx, lib/backup-calls.ts).
+  "The phone's calls": 'Pozivi telefona',
+  "Backups can hold the phone's call history too, and Android's own list of blocked numbers, sealed with the backup's password. Restoring the backup adds to the phone each call and blocked number it does not have, and deletes none.":
+    'Rezervne kopije mogu obuhvatiti i popis poziva telefona i Androidov vlastiti popis blokiranih brojeva, zapečaćene lozinkom rezervne kopije. Pri vraćanju rezervne kopije telefonu se dodaje svaki poziv i svaki blokirani broj koji nema, a ništa se ne briše.',
+  'Erevos reads them only while Android lets it read the call history: make it the phone app under Settings → Phone and SMS → Phone.':
+    'Erevos ih čita samo dok mu Android dozvoljava da čita popis poziva: postavite ga kao aplikaciju za telefon pod „Postavke → Telefon i SMS → Telefon“.',
+  'Put the calls in backups': 'Stavljaj pozive u rezervne kopije',
+  'Leave the calls out': 'Izostavi pozive',
+  "It holds {n} call of the phone's.": 'Sadrži {n} poziv telefona.',
+  "It holds {n} calls of the phone's.": 'Sadrži {n} poziv telefona. | Sadrži {n} poziva telefona. | Sadrži {n} poziva telefona.',
+  '{n} blocked number is in it too.': 'Sadrži i {n} blokirani broj.',
+  '{n} blocked numbers are in it too.': 'Sadrži i {n} blokirani broj. | Sadrži i {n} blokirana broja. | Sadrži i {n} blokiranih brojeva.',
+  'Calls in this backup': 'Pozivi u ovoj rezervnoj kopiji',
+  "This backup also holds the phone's calls and blocked numbers. They go back only into an Android phone, while Erevos is its phone app: make it the phone app under Settings → Phone and SMS → Phone, then restore again. Or restore the rest now, without them.":
+    'Ova rezervna kopija sadrži i pozive i blokirane brojeve telefona. Oni se vraćaju samo u Android telefon, dok je Erevos njegova aplikacija za telefon: postavite ga kao aplikaciju za telefon pod „Postavke → Telefon i SMS → Telefon“, pa ponovo vratite kopiju. Ili sada vratite ostalo, bez njih.',
+  'Without the calls': 'Bez poziva',
+  'Putting the calls back into the phone…': 'Vraćanje poziva u telefon…',
+  "{n} call went back into the phone's call history.": 'U popis poziva telefona vraćen je {n} poziv.',
+  "{n} calls went back into the phone's call history.":
+    'U popis poziva telefona vraćen je {n} poziv. | U popis poziva telefona vraćena su {n} poziva. | U popis poziva telefona vraćeno je {n} poziva.',
+  '{n} number went back into its blocked numbers.': 'Među blokirane brojeve vraćen je {n} broj.',
+  '{n} numbers went back into its blocked numbers.': 'Među blokirane brojeve vraćen je {n} broj. | Među blokirane brojeve vraćena su {n} broja. | Među blokirane brojeve vraćeno je {n} brojeva.',
+  'Those it had already stayed as they were.': 'Ono što je telefon već imao ostalo je kakvo je bilo.',
+  'The calls could not go back into the phone: {error}': 'Pozivi se nisu mogli vratiti u telefon: {error}',
   'Copy code': 'Kopiraj kod',
   'The code is copied: any app that reads the clipboard can read it.': 'Kod je kopiran: svaka aplikacija koja čita međuspremnik može ga pročitati.',
   'The code could not be copied.': 'Kod nije mogao biti kopiran.',
