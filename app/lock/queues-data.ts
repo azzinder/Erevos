@@ -37,9 +37,13 @@ export type OldQueue = KeptQueue & { kind: QueueKind; until: number; by?: number
 /** The queues that move for junk on them. */
 export type MovingKind = Exclude<QueueKind, 'spare'>;
 
-/** Why the own queue moves (lib/queue-move.ts): a contact deleted or blocked, junk on it, the relay lost it, or a new contact link. */
-export type MoveReason = 'due' | 'junk' | 'lost' | 'link';
-const REASONS: MoveReason[] = ['due', 'junk', 'lost', 'link'];
+/** Why the own queue moves (lib/queue-move.ts): a contact deleted or blocked, junk on it, the relay lost it, a new contact link, or the phone a backup came from was lost (`phone`). */
+export type MoveReason = 'due' | 'junk' | 'lost' | 'link' | 'phone';
+const REASONS: MoveReason[] = ['due', 'junk', 'lost', 'link', 'phone'];
+
+/** What moves, one step after another, once the phone a backup came from was lost (lib/queue-move.ts lostNow): the contacts' own queues, the own one, the contact link's, the groups' and the public groups'. */
+export type LostStep = 'mines' | 'own' | 'link' | 'group' | 'public';
+const LOST_STEPS: LostStep[] = ['mines', 'own', 'link', 'group', 'public'];
 
 export type QueuesData = {
   /** The own queue (SpaceData.ownQueue) as the last move or look left it, with its relay: one set
@@ -79,9 +83,14 @@ export type QueuesData = {
   /** The backup put back (lock/restored.ts) when this was last looked at: one put back since makes
    *  the own queue say a later `moved`, so contacts who learned a later queue meanwhile take it. */
   restore: string;
+  /** The mark of the phone lost (lock/restored.ts lostMark) the queues last moved for, '' for none;
+   *  while that move is under way, the mark it is for (`losing`) and the steps it made. */
+  lost: string;
+  losing: string;
+  lostDone: LostStep[];
 };
 
-export const EMPTY_QUEUES: QueuesData = { now: null, link: null, group: null, public: null, was: [], early: [], next: null, moved: 0, offset: 0, since: 0, junk: {}, junkSaid: {}, linkAt: 0, linkUntil: 0, rings: [], ringDue: false, restore: '' };
+export const EMPTY_QUEUES: QueuesData = { now: null, link: null, group: null, public: null, was: [], early: [], next: null, moved: 0, offset: 0, since: 0, junk: {}, junkSaid: {}, linkAt: 0, linkUntil: 0, rings: [], ringDue: false, restore: '', lost: '', losing: '', lostDone: [] };
 
 /** The bytes every entry is padded to: what one holds at the most kept, on relays of long addresses
  *  in letters beyond ASCII, with tokens in them too, fits. */
@@ -148,6 +157,9 @@ export function checkedQueues(value: unknown): QueuesData {
     rings: Array.isArray(v.rings) ? v.rings.filter(isTime).slice(-MAX_RINGS) : [],
     ringDue: v.ringDue === true,
     restore: typeof v.restore === 'string' && v.restore.length <= 64 ? v.restore : '',
+    lost: typeof v.lost === 'string' && v.lost.length <= 64 ? v.lost : '',
+    losing: typeof v.losing === 'string' && v.losing.length <= 64 ? v.losing : '',
+    lostDone: Array.isArray(v.lostDone) ? LOST_STEPS.filter((step) => (v.lostDone as unknown[]).includes(step)) : [],
   };
 }
 

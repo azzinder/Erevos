@@ -152,13 +152,15 @@ export function toldOnce(told: Told | undefined, qa: number, now = Date.now()): 
  * space names it (`named`), as one does the own queue from before this version until it renews
  * there, whatever kind it is now; else a group or public one at once, and any other once its 14
  * days ended, or, of an own one, once every kept contact was heard on the queue that took its place
- * or a later one (`heardSince`, the least `onNew` of them, Infinity with none).
+ * or a later one (`heardSince`, the least `onNew` of them, Infinity with none). So too a backup one
+ * given a `by`, as after the phone a backup came from was lost: each contact heard on that own
+ * queue was told the backup queue that took its place with it.
  */
 export function graceOver(old: OldQueue, heardSince: number, named: boolean, now = Date.now()): boolean {
   if (named) return false;
   if (old.kind === 'group' || old.kind === 'public') return true;
   if (now >= old.until) return true;
-  return old.kind === 'own' && old.by !== undefined && heardSince >= old.by;
+  return (old.kind === 'own' || old.kind === 'spare') && old.by !== undefined && heardSince >= old.by;
 }
 
 /**

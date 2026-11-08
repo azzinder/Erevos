@@ -62,6 +62,7 @@ import { backupKey, backupNative, backupPhoneCalls, backupPhoneSms, DamagedPartE
 import { openCollectionSkips } from '../lock/collection-data';
 import { useLock } from '../lock/context';
 import { phoneStatus } from '../modules/erevos-phone';
+import { lostAt, markLost, restoredFromOther } from '../lock/restored';
 import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
 
@@ -79,6 +80,12 @@ import { useTheme } from '../theme/context';
 // owner chooses; all of them are there, and open, before anything is replaced. Should one be
 // missing or damaged, the screen says which, and the owner may restore all the rest without such
 // files: the photos, files and voice messages on the phone then stay as they are.
+//
+// The phone a backup came from may be lost or stolen and still on: The old phone was lost marks
+// this phone so (lock/restored.ts markLost), and each space and hidden place a backup put back here
+// moves every relay queue that phone knows as it next opens (lib/queue-move.ts). The mark is the
+// phone's, so the button and what it says are the same in every space. After a restore of a
+// backup from another phone, the card points at it; nothing moves until it is pressed.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
 // A backup to open says the server it came from, if one: its parts are there too.
@@ -141,12 +148,15 @@ export default function Backups() {
   const [address, setAddress] = useState('');
   const [user, setUser] = useState('');
   const [secret, setSecret] = useState('');
+  // Whether the last backup put back here came from another phone, and when the old phone was said lost since (0: not).
+  const [lost, setLost] = useState<{ other: boolean; at: number } | null>(null);
 
   useEffect(() => {
     loadAutoBackup().then(setAuto);
     void loadCloudBackup().then(setCloud);
     void backsUpSms().then(setSmsToo);
     void backsUpCalls().then(setCallsToo);
+    void Promise.all([restoredFromOther(), lostAt()]).then(([other, at]) => setLost({ other, at }));
     // The server backup pieces gave back (app/backup-pieces.tsx): its backups listed at once.
     const handed = takeHandedServer();
     if (handed) void listServer(handed);
@@ -251,6 +261,22 @@ export default function Backups() {
     }
     if (CAN_AUTO_BACKUP) await backUpNow();
     else setAsking({ kind: 'cloud' });
+  }
+
+  async function lostPhone() {
+    say('');
+    const told = t(
+      'Every space and its hidden chats move to new relay queues as each next opens here, and your contacts and groups are told quietly. The old queues are read here until each contact writes to the new ones, 14 days at most. The contact links and QR codes you gave before work for 14 days, then no more. What comes through Nostr, XMPP or Matrix still reaches the old phone.',
+    );
+    if (!(await confirm(t('The old phone was lost'), told, t('Move the queues')))) return;
+    const now = Date.now();
+    try {
+      await markLost(now);
+    } catch (error) {
+      say(errorText(error), true);
+      return;
+    }
+    setLost((was) => ({ other: was?.other ?? false, at: now }));
   }
 
   async function stopServer() {
@@ -814,6 +840,25 @@ export default function Backups() {
             </Row>
           </>
         ) : null}
+      </Card>
+
+      <SectionTitle title={t('A lost phone')} />
+      <Card>
+        <Text variant="caption" tone="muted" style={hint}>
+          {t('A phone that was lost or stolen and is still on keeps reading the relay queues it knew, so messages sent to them may reach it and never come here. This moves every space, with its hidden chats, to new relay queues, each as it next opens here.')}
+        </Text>
+        {lost?.at ? (
+          <Text variant="caption" style={hint}>
+            {t('The old phone was said lost on {date}. Every space and its hidden chats move to new relay queues as each next opens here.', { date: new Date(lost.at).toLocaleDateString(locale()) })}
+          </Text>
+        ) : lost?.other ? (
+          <Text variant="caption" style={hint}>
+            {t('The backup put back here was made on another phone. If that phone was lost or stolen, tap the button below.')}
+          </Text>
+        ) : null}
+        <Row wrap>
+          <Button title={t('The old phone was lost')} kind="secondary" compact onPress={() => void lostPhone()} disabled={busy} />
+        </Row>
       </Card>
 
       {note ? (

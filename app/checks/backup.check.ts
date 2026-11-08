@@ -80,7 +80,7 @@ import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-data';
 import { prepareQueueEntries } from '../lock/queues-data';
-import { lastRestore, phoneId, restoredAt } from '../lock/restored';
+import { lastRestore, lostAt, lostMark, markLost, phoneId, restoredAt, restoredFromOther } from '../lock/restored';
 import { sealedFile } from '../lock/sealed-file';
 import { PhoneSims } from '../lib/phone-sims';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
@@ -175,7 +175,7 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   // message keys its conversations may have used since the backup.
   const mark = await lastRestore();
   assert.match(mark, /^[0-9a-f]{32}$/);
-  assert.deepEqual(new Map([...store].filter(([name]) => !['erevos.restored', 'erevos.restored-at', 'erevos.restored-elsewhere', 'erevos.phone-id'].includes(name))), before);
+  assert.deepEqual(new Map([...store].filter(([name]) => !['erevos.restored', 'erevos.restored-at', 'erevos.restored-elsewhere', 'erevos.restored-other', 'erevos.phone-id'].includes(name))), before);
   assert.equal(files.has('erevos-archive'), false);
   assert.equal(blobs.has('erevos-voice-ffffffffffffffffffffffffffffffff'), false);
   assert.equal(blobs.has('erevos-avatar-ffffffffffffffffffffffffffffffff'), false);
@@ -248,7 +248,9 @@ const DEVICE_BOUND = [
   'erevos.restored',
   'erevos.restored-at',
   'erevos.restored-elsewhere',
+  'erevos.restored-other',
   'erevos.phone-id',
+  'erevos.lost-phone',
   'erevos.carried-key',
   'erevos.relay',
 ];
@@ -1172,6 +1174,36 @@ t('the SIMs chosen for calls come back only on the phone they were chosen on; th
   await (await PhoneSims.open(0, key)).remember('+306933333333', 'account-4');
   assert.equal((await PhoneSims.open(0, key)).accountFor('+306933333333'), 'account-4');
   assert.notEqual(await phoneId(), id);
+});
+
+t('a backup from another phone is said so after its restore; the old phone said lost counts until a backup is restored again, so nothing moves by itself for that one', async () => {
+  await phone();
+  const file = await backUp(await backupKey('backup-pass'));
+  // On the same phone: nothing to say.
+  await restoreBackup(await openBackup(file, 'backup-pass'), fromShelf);
+  assert.equal(await restoredFromOther(), false);
+  assert.equal(await lostMark(), '');
+  // On another phone: said, and the old phone may be said lost.
+  wipe();
+  await restoreBackup(await openBackup(file, 'backup-pass'), fromShelf);
+  assert.equal(await restoredFromOther(), true);
+  assert.deepEqual([await lostMark(), await lostAt()], ['', 0]);
+  await markLost(1000);
+  const mark = await lostMark();
+  assert.match(mark, /^[0-9a-f]{32}$/);
+  assert.equal(await lostAt(), 1000);
+  // Said again: a new mark, so each place moves once more.
+  await markLost(2000);
+  assert.notEqual(await lostMark(), mark);
+  assert.equal(await lostAt(), 2000);
+  // The mark is in no backup.
+  const later = await backUp(await backupKey('backup-pass'));
+  assert.ok(!(await openBackup(later, 'backup-pass')).entries.some((entry) => entry.name === 'erevos.lost-phone'));
+  // A backup restored since: the mark counts no more, until the owner says so again.
+  await restoreBackup(await openBackup(file, 'backup-pass'), fromShelf);
+  assert.deepEqual([await lostMark(), await lostAt()], ['', 0]);
+  store.set('erevos.lost-phone', 'not a mark');
+  assert.equal(await lostMark(), '');
 });
 
 t("restored with the same LoRa radio, what this phone kept of the radio's own settings stays, to put back", async () => {

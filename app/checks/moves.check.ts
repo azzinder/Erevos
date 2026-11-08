@@ -176,6 +176,14 @@ test('an old queue is read for 14 days, or until every kept contact was heard on
   assert.equal(graceOver(group, Infinity, true, now), false);
   assert.equal(graceOver(group, Infinity, true, now + GRACE * 4), false);
   assert.equal(graceOver(old(4, 'public', moved + GRACE), Infinity, false, now), true);
+  // A backup one goes with its 14 days, or, once given a `by` as after the phone a backup came from
+  // was lost, as an own one does.
+  assert.equal(graceOver(old(5, 'spare', moved + GRACE), Infinity, false, now), false);
+  assert.equal(graceOver(old(5, 'spare', moved + GRACE), 0, false, moved + GRACE), true);
+  const spare = old(6, 'spare', moved + GRACE, moved);
+  assert.equal(graceOver(spare, moved - 1, false, now), false);
+  assert.equal(graceOver(spare, moved, false, now), true);
+  assert.equal(graceOver(spare, Infinity, true, now), false);
 });
 
 test('at most four old own queues, four old backup ones and twelve in all are kept: those over are emptied early, oldest first', () => {
@@ -261,6 +269,9 @@ test('the queues entry is there for every space and pocket from the first, one s
     rings: [1, 2, 3, 4, 5, 6, 7, 8],
     ringDue: true,
     restore: 'r'.repeat(64),
+    lost: 'l'.repeat(64),
+    losing: 'm'.repeat(64),
+    lostDone: ['mines', 'own', 'link', 'group', 'public'],
   }));
   assert.equal(store.get('erevos.queues.1')!.length, unused);
   // Addresses and tokens of letters beyond ASCII, each two bytes or more: one size still.

@@ -191,9 +191,10 @@ export type Contact = {
  * the relay it is on (`u`), the `qa` said with it, and the group it is read in (`g`,
  * lib/contact-queues.ts). `heard`: they wrote to it. `told`: when they were told it, as of the own
  * queue (lib/moves.ts tellDue). `was`: the one it took the place of, read until its time, then
- * deleted. `junk`: when it last moved for junk on it.
+ * deleted. `junk`: when it last moved for junk on it. `move`: the phone a backup came from knows it
+ * and was lost, so it moves to one made ahead with a next look (lib/queue-move.ts lostNow).
  */
-export type Mine = { r: string; s: string; u: string; qa: number; g: number; heard?: true; told?: Told; was?: OldMine; junk?: number };
+export type Mine = { r: string; s: string; u: string; qa: number; g: number; heard?: true; told?: Told; was?: OldMine; junk?: number; move?: true };
 
 /** A contact queue no one is to write to any more: its recipient id (hex), its relay, and until when it is read (ms); 0: deleted at once. */
 export type OldMine = { r: string; u: string; until: number };
@@ -732,6 +733,7 @@ function checkedMine(value: unknown): Mine | null {
     ...(checkedTold(v.told) ? { told: checkedTold(v.told)! } : {}),
     ...(was ? { was } : {}),
     ...(isTime(v.junk) && v.junk > 0 ? { junk: v.junk } : {}),
+    ...(v.move === true ? { move: true as const } : {}),
   };
 }
 

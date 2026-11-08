@@ -2476,10 +2476,11 @@ export class Links implements Link, TakenFiles {
   }
 
   // Once the space's own queue moved (lib/queue-move.ts): the devices are told where this side
-  // reads now at once, and on the primary, for a contact deleted or blocked, the rest moves too.
+  // reads now at once, and on the primary, for a contact deleted or blocked, or the phone a backup
+  // came from lost, the rest moves too.
   private spaceMoved(why: MoveWhy): void {
     if (this.closed || !this.isOpenSpace()) return;
-    if (why === 'due' && !this.data.primary) this.act(() => this.movedFor());
+    if ((why === 'due' || why === 'phone') && !this.data.primary) this.act(() => this.movedFor());
     void this.flush().catch(() => undefined);
   }
 
@@ -2492,8 +2493,8 @@ export class Links implements Link, TakenFiles {
     }
   }
 
-  // On the primary, its own queue moved for a contact deleted or blocked: they may know every place
-  // the device list says too. So the places that fill it get new queues (the old ones are emptied
+  // On the primary, its own queue moved for a contact deleted or blocked, or the phone lost: they
+  // may know every place the device list says too. So the places that fill it get new queues (the old ones are emptied
   // until their grace ends, drainOldFillers), each linked device is asked to move its own (`move`),
   // and the list is signed anew, `n` + 1, so a contact who holds the one before is given it again
   // (lib/e2e.ts listFor), with each device's new place once it moved.

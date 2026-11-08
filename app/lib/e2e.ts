@@ -1090,7 +1090,7 @@ export class E2E {
   /** How many kept contacts are to take a queue of their own on the relay at `url` and have none there, and how many are made ahead there. */
   queuesWanted(url: string): { want: number; ready: number } {
     if (this.link?.through) return { want: 0, ready: 0 };
-    const want = this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && !(c.mine && sameRelay(c.mine.u, url))).length;
+    const want = this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && !(c.mine && sameRelay(c.mine.u, url) && !c.mine.move)).length;
     return { want, ready: (this.data.ready ?? []).filter((r) => sameRelay(r.u, url)).length };
   }
 
@@ -1155,11 +1155,29 @@ export class E2E {
   }
 
   /**
-   * A contact's own queue changes: the relay lost it (`lost`), or junk came to it. They take one
-   * made ahead now, which the next tell says; the one before is read through its grace, but one the
-   * relay lost. Says whether one was made ahead: with none, nothing changes yet.
+   * The phone a backup put this chat back from was lost (lib/queue-move.ts lostNow): each contact's
+   * own queue, which that phone knows, is to move to one made ahead (`move`), a few with each look
+   * (renewMine). Not on a linked device, whose phone holds them.
    */
-  renewMine(identity: string, lost: boolean, now = Date.now()): Promise<boolean> {
+  moveMines(): Promise<void> {
+    return this.run(async () => {
+      if (this.link?.through || !this.data.contacts.some((c) => c.mine && !c.mine.move)) return;
+      await this.save({ ...this.data, contacts: this.data.contacts.map((c) => (c.mine && !c.mine.move ? { ...c, mine: { ...c.mine, move: true as const } } : c)) });
+    });
+  }
+
+  /** The contacts whose own queue is to move (moveMines). */
+  minesToMove(): string[] {
+    return this.link?.through ? [] : this.data.contacts.filter((c) => c.mine?.move).map((c) => c.identity);
+  }
+
+  /**
+   * A contact's own queue changes: the relay lost it (`lost`), junk came to it, or the phone a
+   * backup came from knows it (`moved`, moveMines). They take one made ahead now, which the next
+   * tell says; the one before is read through its grace, but one the relay lost. Says whether one
+   * was made ahead: with none, nothing changes yet.
+   */
+  renewMine(identity: string, lost: boolean, now = Date.now(), moved = false): Promise<boolean> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact?.mine) return false;
@@ -1171,7 +1189,7 @@ export class E2E {
       const was = lost ? before.was : { r: before.r, u: before.u, until: now + GRACE };
       const gone = lost && before.was ? this.data.gone : before.was ? withGone(this.data.gone, [before.was]) : this.data.gone;
       await this.save({
-        ...this.withContact({ ...rest, mine: { ...mine, qa: Math.max(mine.qa, before.qa + 1), ...(was ? { was } : {}), ...(lost ? {} : { junk: now }) } }),
+        ...this.withContact({ ...rest, mine: { ...mine, qa: Math.max(mine.qa, before.qa + 1), ...(was ? { was } : {}), ...(lost || moved ? {} : { junk: now }) } }),
         ...(gone ? { gone } : {}),
       });
       return true;
