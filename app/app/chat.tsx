@@ -5542,6 +5542,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     follow.current.go();
     atEnd.current = true;
     thread.current?.scrollToEnd({ animated });
+    // On Android the scroll can run before the rows that grew the thread are on screen, and stop at
+    // the end of what was there before: once more a frame later, unless the person took it meanwhile.
+    if (!animated) {
+      requestAnimationFrame(() => {
+        if (atEnd.current && !above.current && !holdScroll.current) thread.current?.scrollToEnd({ animated: false });
+      });
+    }
   };
   // To the chat's start: the first of what was imported and of the thread are drawn, from the top.
   const toStart = () => {
@@ -7213,6 +7220,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             }}
             onContentSizeChange={(_, height) => {
               const was = above.current;
+              const grew = height - readAt.current.height;
               readAt.current.height = height;
               lookNear();
               growing.current = false;
@@ -7222,11 +7230,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 holdScroll.current = false;
                 thread.current?.scrollTo({ y: was.offset + height - was.height, animated: false });
               } else if (holdScroll.current) holdScroll.current = false;
-              // Read from its start, it stays where it is read. Otherwise at its end: at once as the
-              // chat opens, animated after that.
+              // Read from its start, it stays where it is read. Otherwise at its end: at once when its
+              // messages first show (not the empty thread before they are read) and when it grew by a
+              // screen or more (the history read in two steps, what was imported), so it never passes
+              // over the top of what shows on the way; animated only for a little more at its end.
               else if (!stretch) {
-                toEndBySelf(endShown.current);
-                endShown.current = true;
+                toEndBySelf(endShown.current && grew < readAt.current.seen);
+                if (lines.length > 0 || imported.length > 0) endShown.current = true;
               }
             }}
             onScrollBeginDrag={() => follow.current.take()}

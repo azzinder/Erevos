@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [],
   underTheHood: [
+    mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),
     mark("**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay)."),
   ],
 };

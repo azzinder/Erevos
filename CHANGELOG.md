@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A chat opens at its last message again**: a chat opened as a screen of its own (from the home screen or a
+  notification) first shows its empty thread while its history is read, and that empty thread used up the jump to the
+  end made at once; when the messages came, the thread went to its end animated from the top, which on Android can
+  stop short of rows not yet on screen, or count as the person scrolling and draw earlier messages there. Now the
+  first jump is made once messages show, a thread that grew by a screen or more goes to its end at once, and a jump
+  made at once is made again a frame later, after its rows are on screen. Inferred from the code, not seen on a phone.
 - **A new sign-in to a relay is no longer undone**: signing in again (with LPHL, or by an invite) gives the phone a
   new token and the relay takes the old one's line away. The token went into the space's settings only when the chat
   screen saved all of its relay settings, and a chat screen opened from before, holding the old token, could write all of

@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view.":
+    "**Une discussion s’ouvre de nouveau sur son dernier message** : ouverte depuis l’écran d’accueil ou une notification, une discussion pouvait s’arrêter au-dessus de ses messages les plus récents, souvent au-dessus des non lus. Désormais elle va aussitôt à sa fin, et encore une fois dès que ses messages s’affichent.",
   "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":
     "**Une nouvelle connexion au relais n’est plus annulée** : après une nouvelle connexion à votre relais, un écran de discussion ouvert depuis avant pouvait plus tard réécrire l’ancien jeton, que le relais n’accepte plus, et le relais refusait alors ce téléphone. Désormais le nouveau jeton est gardé aussitôt, et chaque écran de discussion ouvert le prend. Voir [Discuter par un relais](#relay).",
   // 7.0.0-rc.5
