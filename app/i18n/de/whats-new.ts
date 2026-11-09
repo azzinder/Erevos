@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
+    "**Fotos und Dateien aus der Sammlung, direkt aus einem Chat**: **+** in einem Chat hat jetzt **Sammlung**, die die Sammlung des Ortes dieses Chats öffnet, mit ihren Fotos und anderen Dateien. Tippe an, was du senden willst, dann **Senden**, und es geht in den Chat. Vorher öffnete **Foto** nur die Galerie des Telefons. Siehe [Sammlung](#collection).",
   "**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view.":
     "**Ein Chat öffnet sich wieder bei seiner letzten Nachricht**: Vom Startbildschirm oder aus einer Benachrichtigung geöffnet, konnte ein Chat über seinen neuesten Nachrichten stehen bleiben, oft über den ungelesenen. Jetzt geht er sofort an sein Ende, und noch einmal, sobald seine Nachrichten zu sehen sind.",
   "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":

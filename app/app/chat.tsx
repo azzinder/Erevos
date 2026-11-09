@@ -5543,6 +5543,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return all;
   }, [hiddenKey, shownContacts, messages, archive, archiveTick, now, placeGroupList, placeMatrix, placeXmpp, placeNostr, placeNetTick]);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
+  // Photos and files picked in the Collection for this chat ("+" → Collection, app/collection.tsx
+  // with `to`), sent one after the other as the chat shows again.
+  useEffect(() => {
+    if (!focused || !e2e || !selectedContact) return;
+    const peer = selectedContact;
+    let sending = Promise.resolve();
+    for (let shared = takeShared(peer); shared; shared = takeShared(peer)) {
+      const one = shared;
+      sending = sending.then(() => sendAttachment(isSharedPhoto(one) ? 'photo' : 'file', () => readShared(one), peer));
+    }
+  }, [focused, e2e, selectedContact]);
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive && !gated ? selectedContact : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
@@ -5754,6 +5765,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   tiles.push(
     { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
+  );
+  // From the Collection: the photos and files kept encrypted in this space, or in these hidden chats.
+  if (CAN_COLLECT && modules.has('collection') && selectedContact) {
+    const to = selectedContact;
+    tiles.push({ key: 'collection', title: t('Collection'), icon: 'collection', onPress: () => afterSheet(() => router.push(`/collection?to=${encodeURIComponent(to)}${hiddenKey ? '&hidden=1' : ''}`)) });
+  }
+  tiles.push(
     { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterSheet(() => setStickering(true)) },
   );
   if (CAN_PLACE) tiles.push({ key: 'place', title: t('Location'), icon: 'place', onPress: () => afterSheet(() => setPlacing(true)) });

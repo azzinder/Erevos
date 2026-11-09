@@ -38,6 +38,7 @@ import {
   CloseIcon,
   FileIcon,
   LaterIcon,
+  LockIcon,
   MicIcon,
   PencilIcon,
   PhotoIcon,
@@ -79,7 +80,7 @@ const CANCEL_SLIDE = 96;
 const BAR_ROUND = 26;
 
 /** The icons the panel's tiles and rows, and the send arrow's menu, are drawn with. */
-export type ComposerIcon = 'photo' | 'camera' | 'file' | 'sticker' | 'place' | 'poll' | 'timer' | 'talkie' | 'later' | 'sms' | 'quiet';
+export type ComposerIcon = 'photo' | 'camera' | 'file' | 'sticker' | 'place' | 'poll' | 'timer' | 'talkie' | 'later' | 'sms' | 'quiet' | 'collection';
 
 const ICONS: Record<ComposerIcon, ComponentType<{ color: string; size?: number }>> = {
   photo: PhotoIcon,
@@ -93,6 +94,7 @@ const ICONS: Record<ComposerIcon, ComponentType<{ color: string; size?: number }
   later: LaterIcon,
   sms: SmsIcon,
   quiet: QuietIcon,
+  collection: LockIcon,
 };
 
 /** Something to send, a tile of the panel's grid. */

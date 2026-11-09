@@ -6,6 +6,7 @@
 // send to it) (i18n/el/index.ts).
 export const collectionText: Record<string, string> = {
   "Save to the Collection": "Αποθήκευση στη Συλλογή",
+  "Tap what to send, then Send": "Πάτα ό,τι θα στείλεις, μετά Αποστολή",
   "Saved to the Collection.": "Αποθηκεύτηκε στη Συλλογή.",
   "Collection": "Συλλογή",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Ένας κρυπτογραφημένος χώρος σε κάθε χώρο και κάθε κρυφό μέρος για φωτογραφίες, αρχεία και φακέλους.",

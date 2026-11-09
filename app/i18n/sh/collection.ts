@@ -6,6 +6,7 @@
 // send to it) (i18n/sh/index.ts).
 export const collectionText: Record<string, string> = {
   "Save to the Collection": "Spremi u Zbirku",
+  "Tap what to send, then Send": "Dodirnite ono što šaljete, pa Pošalji",
   "Saved to the Collection.": "Spremljeno u Zbirku.",
   "Collection": "Zbirka",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Šifrirano mjesto u svakom prostoru i skrivenom mjestu za fotografije, datoteke i foldere.",

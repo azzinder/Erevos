@@ -19,13 +19,14 @@ import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
 import { CAN_COLLECT, CAN_TAKE_PHOTO, importFromCamera, importFromFiles } from '../lib/collection-import';
 import { TooLargeToSaveError, memoryUri, mostSavedOut, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
-import { dropOpened, openWithOtherApp } from '../lib/collection-out';
+import { copyToSend, dropOpened, openWithOtherApp } from '../lib/collection-out';
 import { placeShown, usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
 import { enterHiddenScreen } from '../lib/hidden-contacts';
 import { fileLook, folderTiles, folderTilesFor, gridEntries, inFolder, isPhoto, playKind, search, tabOf, type FileLook, type FileTab, type GridEntry } from '../lib/collection-view';
 import { locale, t } from '../lib/i18n';
 import { saveFile } from '../lib/save-file';
+import { dropShared, handShared, type SharedFile } from '../lib/share-in';
 import { keepPrivate } from '../lib/screen-privacy';
 import { SHELL } from '../lib/shell';
 import {
@@ -128,8 +129,12 @@ export default function CollectionScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  const { hidden, to } = useLocalSearchParams<{ hidden?: string; to?: string }>();
   const inHidden = hidden === '1';
+  // Opened from a chat's "+" (app/chat.tsx) to pick photos or files for it: a tap chooses, and Send
+  // hands them to that chat, which sends them as it shows again (lib/share-in.ts).
+  const pickFor = typeof to === 'string' && /^contact:[0-9a-f]{64}$/.test(to) ? to : null;
+  const handing = useRef(false);
   const place = useCollectionPlace(inHidden);
   // Counted among the screens over the hidden chats, to go back to them from a picker opened here.
   useEffect(() => (inHidden ? enterHiddenScreen() : undefined), [inHidden]);
@@ -276,7 +281,7 @@ export default function CollectionScreen() {
     });
 
   function open(item: CollectionItem) {
-    if (choosing) {
+    if (choosing || pickFor) {
       toggle(item.id);
       return;
     }
@@ -295,7 +300,32 @@ export default function CollectionScreen() {
   function send(ids: string[]) {
     setViewing(null);
     setChosen(new Set());
+    if (pickFor) {
+      void sendToChat(pickFor, ids);
+      return;
+    }
     router.push(`${inHidden ? '/collection-send' : '/share'}?collection=${ids.join(',')}`);
+  }
+
+  // Plain copies, or sources read from the encrypted chunks, handed to the chat that asked, which
+  // deletes each as it sends it; then back to that chat.
+  async function sendToChat(chat: string, ids: string[]) {
+    const items = there.items.filter((i) => ids.includes(i.id));
+    if (items.length === 0 || handing.current) return;
+    handing.current = true;
+    setNote('');
+    const copies: SharedFile[] = [];
+    try {
+      for (const item of items) copies.push(await copyToSend(item));
+    } catch (error) {
+      copies.forEach(dropShared);
+      handing.current = false;
+      setNote(errorText(error));
+      return;
+    }
+    handShared(chat, copies);
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   }
 
   async function saveToPhone(item: CollectionItem) {
@@ -430,7 +460,7 @@ export default function CollectionScreen() {
           {folderNow ? folderNow.name : t('Collection')}
         </Text>
         <Text variant="caption" tone="muted">
-          {t('Encrypted collection')}
+          {pickFor ? t('Tap what to send, then Send') : t('Encrypted collection')}
         </Text>
       </View>
       <IconTap label={folderNow ? t('Folder options') : t('More')} onPress={() => setMenu(folderNow ? { folder: folderNow } : { top: true })}>
@@ -642,10 +672,12 @@ export default function CollectionScreen() {
 
       {choosing ? (
         <View style={[styles.actions, { paddingBottom: Math.max(space.md, insets.bottom) }]}>
-          <ActionTile label={t('Move')} onPress={() => setMoving([...chosen])}>
-            <MoveIcon color={colors.text} size={22} />
-          </ActionTile>
-          {tab === 'music' ? (
+          {pickFor ? null : (
+            <ActionTile label={t('Move')} onPress={() => setMoving([...chosen])}>
+              <MoveIcon color={colors.text} size={22} />
+            </ActionTile>
+          )}
+          {tab === 'music' && !pickFor ? (
             <ActionTile label={t('Playlist')} onPress={() => setListing([...chosen])}>
               <MusicIcon color={colors.text} size={22} />
             </ActionTile>
@@ -653,9 +685,11 @@ export default function CollectionScreen() {
           <ActionTile label={t('Send')} onPress={() => send([...chosen])}>
             <SendIcon color={colors.text} cut={colors.sheet} size={22} />
           </ActionTile>
-          <ActionTile label={t('Delete')} danger onPress={() => void removeItems([...chosen])}>
-            <TrashIcon color={colors.danger} size={22} />
-          </ActionTile>
+          {pickFor ? null : (
+            <ActionTile label={t('Delete')} danger onPress={() => void removeItems([...chosen])}>
+              <TrashIcon color={colors.danger} size={22} />
+            </ActionTile>
+          )}
         </View>
       ) : (
         <Pressable

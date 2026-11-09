@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**Choose the name others see**: under Settings → Privacy and security → **My name**, give this space a name that your contacts and your private groups see instead of a code, always encrypted. Hidden chats have a name of their own, in their settings, empty at first. See [Chat through a relay](#relay)."),
+    mark("**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection)."),
   ],
   underTheHood: [
     mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),

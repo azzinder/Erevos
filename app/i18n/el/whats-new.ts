@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
+    "**Φωτογραφίες και αρχεία από τη Συλλογή, κατευθείαν από μια συνομιλία**: το **+** σε μια συνομιλία έχει τώρα **Συλλογή**, που ανοίγει τη Συλλογή του μέρους εκείνης της συνομιλίας, με τις φωτογραφίες και τα άλλα αρχεία της. Πάτα ό,τι θα στείλεις και μετά **Αποστολή**, και πηγαίνει στη συνομιλία. Πριν, η **Φωτογραφία** άνοιγε μόνο τη συλλογή φωτογραφιών του τηλεφώνου. Δες [Συλλογή](#collection).",
   "**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view.":
     "**Η συνομιλία ανοίγει ξανά στο τελευταίο της μήνυμα**: όταν την άνοιγες από την αρχική οθόνη ή από μια ειδοποίηση, μπορούσε να σταματήσει πιο πάνω από τα νεότερα μηνύματα, συχνά πάνω από τα αδιάβαστα. Τώρα πηγαίνει αμέσως στο τέλος της, και ξανά μόλις φανούν τα μηνύματά της.",
   "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":

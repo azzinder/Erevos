@@ -6,6 +6,7 @@
 // send to it) (i18n/pt/index.ts).
 export const collectionText: Record<string, string> = {
   "Save to the Collection": "Salvar na Coleção",
+  "Tap what to send, then Send": "Toque no que quer enviar e depois em Enviar",
   "Saved to the Collection.": "Salvo na Coleção.",
   "Collection": "Coleção",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Um lugar criptografado em cada espaço e em cada lugar oculto para fotos, arquivos e pastas.",
