@@ -1,0 +1,164 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+name: erevosgram
+
+# The ErevosGram build of Erevos for Android (docs/erevosgram.md): the same app, package and
+# release key, with Telegram (app/modules/erevos-telegram: TDLib, built here from source by
+# scripts/build-tdlib.sh, and NTgCalls for calls). Only by hand: Actions, erevosgram, Run workflow,
+# with the version and build number it is to have; a build number above the phone's own installs
+# over it. The APK is kept as the run's artifact for three days; it goes into no release.
+#
+# Its Telegram API id and hash are the secrets EREVOS_TG_API_ID and EREVOS_TG_API_HASH, never in
+# the repository. TDLib's build is kept in the cache by its commit, so only the first run is long.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version it shows, e.g. 7.0.0-rc.6.
+        required: true
+      build:
+        description: Its build number, above the one on the phone.
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: erevosgram
+  cancel-in-progress: false
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    env:
+      EREVOS_VERSION: ${{ inputs.version }}
+      EREVOS_BUILD: ${{ inputs.build }}
+      EREVOS_TELEGRAM: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Check the version, build number and secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          EREVOS_TG_API_ID: ${{ secrets.EREVOS_TG_API_ID }}
+          EREVOS_TG_API_HASH: ${{ secrets.EREVOS_TG_API_HASH }}
+        run: |
+          if [[ ! "$EREVOS_VERSION" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $EREVOS_VERSION"; exit 1
+          fi
+          [[ "$EREVOS_BUILD" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Not a build number: $EREVOS_BUILD"; exit 1; }
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD EREVOS_TG_API_ID EREVOS_TG_API_HASH; do
+            [ -n "${!name}" ] || { echo "::error::The secret $name is missing."; exit 1; }
+          done
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          sudo docker image prune --all --force
+          df -h /
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # TDLib, by the commit scripts/build-tdlib.sh pins.
+      - name: TDLib's commit
+        id: td
+        run: echo "commit=$(sed -n 's/^TD_COMMIT="\([0-9a-f]*\)"$/\1/p' scripts/build-tdlib.sh)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        id: tdcache
+        with:
+          path: tdlib
+          key: tdlib-${{ steps.td.outputs.commit }}-arm64-v8a
+      - name: Build TDLib
+        if: steps.tdcache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q gperf php-cli ninja-build cmake
+          ABIS=arm64-v8a scripts/build-tdlib.sh
+          rm -rf third-party
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: transports/go.mod
+          cache-dependency-path: transports/go.sum
+
+      - name: Generate the Android project
+        working-directory: app
+        run: |
+          npm ci
+          npx expo prebuild --platform android --no-install
+
+      - name: Set up the release signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/android/app/release.keystore
+          keytool -list -v -keystore app/android/app/release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" |
+            sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' > release-fingerprint
+          [ -s release-fingerprint ] || { echo "::error::The release key's fingerprint could not be read"; exit 1; }
+
+      - name: Fetch Gradle
+        working-directory: app/android
+        run: |
+          for wait in 15 30 60 0; do ./gradlew --version --no-daemon && exit 0; [ "$wait" = 0 ] && break; echo "::warning::Gradle's download failed; again in $wait s"; sleep "$wait"; done
+          exit 1
+
+      - name: Build the ErevosGram APK
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          EREVOS_TG_API_ID: ${{ secrets.EREVOS_TG_API_ID }}
+          EREVOS_TG_API_HASH: ${{ secrets.EREVOS_TG_API_HASH }}
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Check the APK
+        run: |
+          cp app/android/app/build/outputs/apk/release/app-release.apk erevosgram-android.apk
+          rm -f app/android/app/release.keystore
+          unzip -l erevosgram-android.apk 'lib/arm64-v8a/*' | grep -q 'erevos' \
+            || { echo "::error::The Erevos core is missing from the APK"; exit 1; }
+          for lib in libtdjsonjava.so libntgcalls.so libjingle_peerconnection_so.so; do
+            unzip -l erevosgram-android.apk "lib/arm64-v8a/$lib" | grep -q "$lib" \
+              || { echo "::error::$lib is missing from the APK"; unzip -l erevosgram-android.apk 'lib/*'; exit 1; }
+          done
+          # NTgCalls and its WebRTC are only in their own room, never in the app's dex.
+          unzip -l erevosgram-android.apk assets/tgcalls.jar | grep -q tgcalls.jar \
+            || { echo "::error::assets/tgcalls.jar is missing"; exit 1; }
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --print-certs erevosgram-android.apk | tee signature
+          grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
+            || { echo "::error::The APK is not signed with the release key"; exit 1; }
+          sha256sum erevosgram-android.apk
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: erevosgram-android
+          path: erevosgram-android.apk
+          retention-days: 3
