@@ -28,7 +28,7 @@ import {
 } from '../lock/config';
 import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, searchOpens, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
-import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
+import { changedRelaySettings, EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, relaySettingsOf, saveHiddenData, saveSpaceData, updateSpaceData, watchSpaceData, type SpaceData } from '../lock/space-data';
 import { POCKETS } from '../lock/sealed-file';
 import { assertNotLockedOut, FREE_TRIES, LockedOutError, recordRightPassword, recordWrongPassword, SEARCH_TRIES, setUptimeForChecks, type Uptime } from '../lock/tries';
 import { store } from './secure-memory';
@@ -378,6 +378,37 @@ t('a space keeps which token it got as its own from which relay, and nothing of 
   await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://relay.example.org', relayKeys: { 'wss://relay.example.org': 'ab' } });
   assert.deepEqual((await loadSpaceData(0, key)).relayKeys, {});
   await saveSpaceData(0, key, EMPTY_SPACE);
+});
+
+t('a chat follows what another screen writes to its relay settings, and writes back only what it changed', async () => {
+  const key = await firstSpaceKey();
+  const queue = { recipientHex: 'a'.repeat(48), senderHex: 'b'.repeat(48) };
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://relay.example.org', token: 'before', ownQueue: queue });
+  // A chat opened before the sign-in: what it read then.
+  const older = relaySettingsOf(await loadSpaceData(0, key));
+  const heard: SpaceData[] = [];
+  const stop = watchSpaceData(0, key, (data) => heard.push(data));
+  const elsewhere = watchSpaceData(0, randomBytes(32), () => assert.fail('told what was written with another key'));
+  // A sign-in on another screen of it: the token, kept at once.
+  await updateSpaceData(0, key, { token: 'signed-in', ownToken: { relay: 'wss://relay.example.org', hash: 'ab'.repeat(32) } });
+  assert.equal(heard.length, 1);
+  assert.equal(heard[0].token, 'signed-in');
+  assert.deepEqual(changedRelaySettings(older, relaySettingsOf(heard[0])), { token: 'signed-in' });
+  // The chat from before changes only its queue: the token it never changed is not written back.
+  const moved = { recipientHex: 'c'.repeat(48), senderHex: 'd'.repeat(48) };
+  const patch = changedRelaySettings(older, { ...older, ownQueue: moved });
+  assert.deepEqual(patch, { ownQueue: moved });
+  await updateSpaceData(0, key, patch);
+  const now = await loadSpaceData(0, key);
+  assert.equal(now.token, 'signed-in');
+  assert.deepEqual(now.ownQueue, moved);
+  assert.equal(heard.length, 2);
+  // A queue alike is no change; nothing told once stopped.
+  assert.deepEqual(changedRelaySettings(relaySettingsOf(now), { ...relaySettingsOf(now), ownQueue: { ...moved } }), {});
+  stop();
+  elsewhere();
+  await updateSpaceData(0, key, { token: 'later' });
+  assert.equal(heard.length, 2);
 });
 
 t('each space sees only its own data, and every entry looks alike', async () => {

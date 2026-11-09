@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":
+    "**Nova prijava na relay se više ne poništava**: nakon što ste se ponovo prijavili na svoj relay, ekran razgovora otvoren od ranije mogao je kasnije da vrati prethodni token, koji relay više ne pušta, i relay je tada odbijao ovaj telefon. Sada se novi token čuva odmah, i svaki otvoreni ekran razgovora ga preuzima. Pogledajte [Razgovor preko relaya](#relay).",
   // 7.0.0-rc.5
   "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
     "**Poruka poslana bez veze više se ne gubi kad napustite razgovor**: ono što ste poslali dok su se razgovori još otvarali, kao što to rade neko vrijeme bez veze, gubilo se ako biste napustili razgovor prije nego što ode. Sada čeka, označena s **Na čekanju**, i odlazi sama čim je relay ili telefon te osobe u blizini može preuzeti, i glasovna poruka. Pogledajte [Razgovor preko relaya](#relay).",

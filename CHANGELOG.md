@@ -16,6 +16,14 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A new sign-in to a relay is no longer undone**: signing in again (with LPHL, or by an invite) gives the phone a
+  new token and the relay takes the old one's line away. The token went into the space's settings only when the chat
+  screen saved all of its relay settings, and a chat screen opened from before, holding the old token, could write all of
+  its own back the next time any of them changed: the relay then refused the phone ("cannot reach the relay…, or the
+  token is wrong") until it signed in once more. Now the new token is written at once with which token it is, a chat
+  screen writes only the relay settings it changed itself, and every chat screen open follows what another writes to
+  them (lock/space-data.ts watchSpaceData, changedRelaySettings).
+
 ## 7.0.0-rc.5 (2026-11-09)
 
 ### Under the hood

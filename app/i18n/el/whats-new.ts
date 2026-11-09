@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":
+    "**Μια νέα σύνδεση στο relay δεν αναιρείται πια**: αφού συνδεόσουν ξανά στο relay σου, μια οθόνη συνομιλίας ανοιχτή από πριν μπορούσε αργότερα να ξαναγράψει το προηγούμενο token, που το relay δεν δέχεται πια, και τότε το relay δεν άφηνε αυτό το τηλέφωνο να μπει. Τώρα το νέο token κρατιέται αμέσως, και κάθε ανοιχτή οθόνη συνομιλίας το παίρνει. Δες [Συνομιλία μέσω relay](#relay).",
   // 7.0.0-rc.5
   "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
     "**Ένα μήνυμα που στέλνεις χωρίς σύνδεση δεν χάνεται πια όταν φεύγεις από τη συνομιλία**: ό,τι έστελνες όσο οι συνομιλίες σου άνοιγαν ακόμη, όπως κάνουν για λίγο χωρίς σύνδεση, χανόταν αν έφευγες από τη συνομιλία πριν φύγει. Τώρα περιμένει, με την ένδειξη **Σε αναμονή**, και φεύγει μόνο του μόλις το πάρει το relay ή το τηλέφωνό τους από κοντά, και ένα φωνητικό το ίδιο. Δες [Συνομιλία μέσω relay](#relay).",

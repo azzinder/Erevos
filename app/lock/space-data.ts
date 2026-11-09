@@ -367,10 +367,64 @@ function write(name: string, key: Uint8Array, change: (data: SpaceData) => Space
       // A relay the space no longer uses keeps no key in it.
       const homes = homesOf(data);
       const relayKeys = Object.fromEntries(Object.entries(data.relayKeys).filter(([home]) => homes.has(home)));
-      await secureSet(name, seal(key, pinned({ ...data, relayKeys })));
+      const kept = pinned({ ...data, relayKeys });
+      await secureSet(name, seal(key, kept));
+      told(name, key, kept);
     });
   writes.set(name, run);
   return run;
+}
+
+// Who follows what is written to an entry, with its key: a chat screen open twice for one space
+// takes what the other wrote, as a token a sign-in there gave, rather than keep an older one and
+// write it back (app/chat.tsx). Only what is written with the same key is told.
+const watchers = new Map<string, Set<{ key: string; listener: (data: SpaceData) => void }>>();
+
+function told(name: string, key: Uint8Array, data: SpaceData): void {
+  const hex = toHex(key);
+  for (const watcher of [...(watchers.get(name) ?? [])]) {
+    if (watcher.key !== hex) continue;
+    try {
+      watcher.listener(data);
+    } catch {
+      // One that fails is no reason not to tell the others.
+    }
+  }
+}
+
+function watch(name: string, key: Uint8Array, listener: (data: SpaceData) => void): () => void {
+  const watcher = { key: toHex(key), listener };
+  const all = watchers.get(name) ?? new Set();
+  all.add(watcher);
+  watchers.set(name, all);
+  return () => {
+    all.delete(watcher);
+    if (!all.size && watchers.get(name) === all) watchers.delete(name);
+  };
+}
+
+/** Calls `listener` with a space's data each time it is written with `key`, until stopped. */
+export const watchSpaceData = (space: number, key: Uint8Array, listener: (data: SpaceData) => void) => watch(entry(space), key, listener);
+
+/** The same for a place of hidden chats. */
+export const watchHiddenData = (space: number, pocket: number, key: Uint8Array, listener: (data: SpaceData) => void) => watch(hiddenEntry(space, pocket), key, listener);
+
+/** What a chat keeps of its relay: the relay, its token, the second relay for two hops, and the queue there. */
+export type RelaySettings = Pick<SpaceData, 'url' | 'token' | 'via' | 'viaToken' | 'ownQueue'>;
+
+export function relaySettingsOf(data: Pick<SpaceData, keyof RelaySettings>): RelaySettings {
+  return { url: data.url, token: data.token, via: data.via, viaToken: data.viaToken, ownQueue: data.ownQueue };
+}
+
+/** What of `now` differs from `was`: only that is written, so what another screen wrote meanwhile stays. */
+export function changedRelaySettings(was: RelaySettings, now: RelaySettings): Partial<RelaySettings> {
+  const changed: Partial<RelaySettings> = {};
+  if (now.url !== was.url) changed.url = now.url;
+  if (now.token !== was.token) changed.token = now.token;
+  if (now.via !== was.via) changed.via = now.via;
+  if (now.viaToken !== was.viaToken) changed.viaToken = now.viaToken;
+  if (now.ownQueue?.recipientHex !== was.ownQueue?.recipientHex || now.ownQueue?.senderHex !== was.ownQueue?.senderHex) changed.ownQueue = now.ownQueue;
+  return changed;
 }
 
 export const loadSpaceData = (space: number, key: Uint8Array) => load(entry(space), key);

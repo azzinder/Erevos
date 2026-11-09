@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  "**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay).":
+    "**Un nuovo accesso al relay non viene più annullato**: dopo un nuovo accesso al tuo relay, una schermata di chat aperta da prima poteva in seguito riscrivere il token precedente, che il relay non accetta più, e allora il relay rifiutava questo telefono. Ora il nuovo token viene salvato subito, e ogni schermata di chat aperta lo prende. Vedi [Chat tramite un relay](#relay).",
   // 7.0.0-rc.5
   "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
     "**Un messaggio inviato senza connessione non va più perso quando esci dalla chat**: quello che inviavi mentre le chat si stavano ancora aprendo, come fanno per un po' senza connessione, andava perso se uscivi dalla chat prima che partisse. Ora aspetta, segnato **In attesa**, e parte da solo appena il relay o il suo telefono vicino può prenderlo, anche un messaggio vocale. Vedi [Chat tramite un relay](#relay).",

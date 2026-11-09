@@ -146,7 +146,7 @@ import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/seal
 import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
 import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, updateSpaceData, type Queue, type SpaceData } from '../lock/space-data';
+import { changedRelaySettings, loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, relaySettingsOf, updateCurrentSpaceData, updateHiddenData, updateSpaceData, watchHiddenData, watchSpaceData, type Queue, type RelaySettings, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
 import { groupCallSignal, onGroupCallChange } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
@@ -884,6 +884,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const callPlace = hiddenKey ? hiddenCalls.current : spaceCalls;
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
+  // The relay settings as kept on the phone, as far as this chat knows: read when it opened, saved
+  // by it since, or written by another screen meanwhile (followRelay). Null until read.
+  const storedRelay = useRef<RelaySettings | null>(null);
+  // Contacts from before messages were encrypted (routes) still kept: the next save clears them.
+  const routesLeft = useRef(false);
+  // What another screen wrote to the relay settings, as the token a sign-in on another screen of
+  // this chat gave: taken here too, so this one goes on with it, and never saves the one from before.
+  function followRelay(data: SpaceData) {
+    setHomeUrl(data.spare.url);
+    setHomeToken(data.spare.token);
+    const was = storedRelay.current;
+    if (!was) return;
+    const now = relaySettingsOf(data);
+    const changed = changedRelaySettings(was, now);
+    storedRelay.current = now;
+    if ('url' in changed) setRelayUrl(now.url);
+    if ('token' in changed) setRelayToken(now.token);
+    if ('via' in changed) setViaUrl(now.via);
+    if ('viaToken' in changed) setViaToken(now.viaToken);
+    if ('ownQueue' in changed) setOwnQueue(now.ownQueue);
+  }
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
   // The chats whose messages show at once while the chat opens, only to read (held): what is read
@@ -1274,7 +1295,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setRelayUrl(url);
       setRelayToken(token);
       setOwnQueue(queue);
-      updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
+      // Kept at once with the relay and the queue, not only once the chat saves its settings.
+      updateCurrentSpaceData({ url, token, ownQueue: queue, ownToken: ownToken(url, token) }).catch(() => {
         // Not kept: signing in there later gives this phone one more line instead of its own again.
       });
       return { url, token, queue };
@@ -1361,10 +1383,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       const { token } = await redeemInvite(url, invite.code);
       const ids = await createQueue({ url, token });
+      const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
       setRelayUrl(url);
       setRelayToken(token);
-      setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
-      updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
+      setOwnQueue(queue);
+      // Kept at once with the relay and the queue, not only once the chat saves its settings.
+      updateCurrentSpaceData({ url, token, ownQueue: queue, ownToken: ownToken(url, token) }).catch(() => {
         // Not kept: signing in there later gives this phone one more line instead of its own again.
       });
       tellJoined.current = true;
@@ -1388,7 +1412,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const same = !!relayUrl.trim() && sameRelay(relayUrl.trim(), url);
     setRelayUrl(url);
     setRelayToken(token);
-    const own = { ownToken: ownToken(url, token) };
+    // The token is kept at once, with which one it is: the relay took the old one's line away, and
+    // the chat saving its settings later is no surety, as when it opens again meanwhile.
+    const own = { url, token, ownToken: ownToken(url, token) };
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, own) : updateCurrentSpaceData(own)).catch(() => {
       // Not kept: signing in again there gives this phone one more line instead of its own again.
     });
@@ -1427,7 +1453,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const own = await takeOwnLine({ url, token }, e2e.invitedAs());
     if (!own || relayNow.current.url !== url || relayNow.current.token !== token) return null;
     setRelayToken(own.token);
-    await updateCurrentSpaceData({ ownToken: ownToken(url, own.token) }).catch(() => {
+    await updateCurrentSpaceData({ token: own.token, ownToken: ownToken(url, own.token) }).catch(() => {
       // Not kept: signing in there later gives this phone one more line instead of its own again.
     });
     setNote(t('This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.', { name: own.name }));
@@ -1605,9 +1631,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const { space, key } = currentSpace();
     const held = hiddenKey ? null : holdReceiver();
     const placeHeld = hiddenKey ? holdPlace(space, pocket) : null;
+    // What is written meanwhile, by this chat or by another screen of it beneath or above, as a
+    // token a sign-in gave: taken in place of what was read before (followRelay).
+    let heard: SpaceData | null = null;
+    const follow = (data: SpaceData) => {
+      if (!active) return;
+      heard = data;
+      followRelay(data);
+    };
+    const unwatch = hiddenKey ? watchHiddenData(space, pocket, hiddenKey, follow) : watchSpaceData(space, key, follow);
     (hiddenKey ? loadHiddenData(space, pocket, hiddenKey) : loadCurrentSpaceData())
-      .then((data) => {
+      .then((read) => {
         if (!active) return;
+        const data = heard ?? read;
+        storedRelay.current = relaySettingsOf(data);
+        routesLeft.current = Object.keys(data.routes).length > 0;
         setRelayUrl(data.url);
         setRelayToken(data.token);
         setViaUrl(data.via);
@@ -1739,6 +1777,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       });
     return () => {
       active = false;
+      unwatch();
       void held?.then((release) => release());
       void placeHeld?.then((release) => release());
     };
@@ -1877,12 +1916,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return () => clearTimeout(timer);
   }, [note]);
 
-  // Saves the relay settings and our queue whenever they change.
+  // Saves the relay settings and our queue whenever they change: only what this chat changed, so
+  // one opened before a sign-in on another screen of it never writes the token from before back,
+  // which the relay no longer lets in. The look kept beside them stays as it is. Contacts from
+  // before messages were encrypted (routes) cannot be written to any more, so they go.
   useEffect(() => {
     if (!loaded) return;
-    // Only what the chat keeps: the look kept beside it stays as it is. Contacts from before
-    // messages were encrypted (routes) cannot be written to any more, so they go.
-    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, via: viaUrl, viaToken, ownQueue, routes: {} };
+    const now: RelaySettings = { url: relayUrl, token: relayToken, via: viaUrl, viaToken, ownQueue };
+    const data: Partial<SpaceData> = storedRelay.current ? changedRelaySettings(storedRelay.current, now) : { ...now };
+    if (routesLeft.current) data.routes = {};
+    if (Object.keys(data).length === 0) return;
+    storedRelay.current = now;
+    routesLeft.current = false;
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
