@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  // 7.0.0-rc.5
   "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
     "**Poruka poslana bez veze više se ne gubi kad napustite razgovor**: ono što ste poslali dok su se razgovori još otvarali, kao što to rade neko vrijeme bez veze, gubilo se ako biste napustili razgovor prije nego što ode. Sada čeka, označena s **Na čekanju**, i odlazi sama čim je relay ili telefon te osobe u blizini može preuzeti, i glasovna poruka. Pogledajte [Razgovor preko relaya](#relay).",
   // 7.0.0-rc.4

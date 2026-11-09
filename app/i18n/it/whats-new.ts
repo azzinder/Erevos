@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  // 7.0.0-rc.5
   "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
     "**Un messaggio inviato senza connessione non va più perso quando esci dalla chat**: quello che inviavi mentre le chat si stavano ancora aprendo, come fanno per un po' senza connessione, andava perso se uscivi dalla chat prima che partisse. Ora aspetta, segnato **In attesa**, e parte da solo appena il relay o il suo telefono vicino può prenderlo, anche un messaggio vocale. Vedi [Chat tramite un relay](#relay).",
   // 7.0.0-rc.4

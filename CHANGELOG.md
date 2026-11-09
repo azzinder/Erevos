@@ -16,6 +16,10 @@ On main, not released yet:
 
 ### Under the hood
 
+## 7.0.0-rc.5 (2026-11-09)
+
+### Under the hood
+
 - **A message sent offline is no longer lost when you leave the chat**: while a chat screen's chats are still opening
   (a look at the relay under way ends first, which with no connection can take a while), what is sent there is held
   by the screen, marked Sending…, and goes once they open. Leaving the chat before then lost it, words and voice
