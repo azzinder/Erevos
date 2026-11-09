@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
+    "**Ένα μήνυμα που στέλνεις χωρίς σύνδεση δεν χάνεται πια όταν φεύγεις από τη συνομιλία**: ό,τι έστελνες όσο οι συνομιλίες σου άνοιγαν ακόμη, όπως κάνουν για λίγο χωρίς σύνδεση, χανόταν αν έφευγες από τη συνομιλία πριν φύγει. Τώρα περιμένει, με την ένδειξη **Σε αναμονή**, και φεύγει μόνο του μόλις το πάρει το relay ή το τηλέφωνό τους από κοντά, και ένα φωνητικό το ίδιο. Δες [Συνομιλία μέσω relay](#relay).",
   // 7.0.0-rc.4
   "**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster.":
     '**Τέρμα το πάγωμα όταν ανοίγει ένας χώρος**: όσο γινόταν ένα αυτόματο αντίγραφο, η οθόνη μπορούσε να μην ανταποκρίνεται για λεπτά. Τώρα τα αρχεία του αντιγράφου γράφονται, διαβάζονται και διαγράφονται στον φάκελό τους μακριά από την οθόνη, και τα κομμάτια του ελέγχονται από το ίδιο το κινητό, πολλές φορές πιο γρήγορα.',

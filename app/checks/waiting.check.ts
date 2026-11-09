@@ -21,8 +21,8 @@ import { nearby, Nearby } from '../lib/nearby';
 import { createQueue, fromHex, receiveMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { cameAt, canPick, firstLater, LATEST, laterTheirs, quickTimes, SENT_WITHIN, showsAt, stepLater } from '../lib/later';
-import { nextDue, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
-import { WAITING } from '../lock/history';
+import { keepUnsent, nextDue, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
+import { isTag, WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -170,6 +170,40 @@ test('one waiting to go without sound still goes without sound', { skip: !coreRe
     assert.deepEqual((await sendWaiting(bob, nowhere)).map((w) => w.tag), ['aaaaaaaaaaaa']);
     const came = (await alice.receive(toAlice[0])) as Extract<Received, { kind: 'message' }>;
     assert.deepEqual([came.text, came.quiet], ['shh', true]);
+  } finally {
+    done();
+  }
+});
+
+test('what a chat screen had not sent yet as it closed waits, a voice message too, and goes once there is a way', { skip: !coreReady }, async () => {
+  const { bob, alice, peer, toAlice, link, done } = await twoPhones();
+  try {
+    const sound = randomBytes(3000);
+    const kept = await keepUnsent(bob.history, [
+      { peer, at: 1, lasts: 0, parts: {}, text: 'sent offline, then the chat closed', quiet: true },
+      { peer, at: 2, lasts: 0, parts: {}, audio: sound, ms: 1500 },
+    ]);
+    assert.equal(kept, 2);
+    const waiting = bob.history.waiting();
+    assert.deepEqual(waiting.map((m) => [m.text, !!m.voice, !!m.quiet]), [['sent offline, then the chat closed', false, true], ['', true, false]]);
+    // Each with a tag of its own, as one that waits from the screen has.
+    assert.ok(waiting.every((m) => isTag(m.tag)));
+    assert.notEqual(waiting[0].tag, waiting[1].tag);
+
+    // Nothing can take them yet: they stay, and nothing is sealed.
+    assert.deepEqual(await sendWaiting(bob, nowhere), []);
+    assert.equal(toAlice.length, 0);
+    assert.equal(bob.history.waiting().length, 2);
+
+    // Their phone near: both go, in order, with their tags, and are marked gone.
+    link(true);
+    const went = await sendWaiting(bob, nowhere);
+    assert.deepEqual(went.map((w) => w.tag), waiting.map((m) => m.tag));
+    assert.deepEqual(bob.history.waiting(), []);
+    const came = [];
+    for (const packet of toAlice) came.push((await alice.receive(packet)) as Extract<Received, { kind: 'message' }>);
+    assert.deepEqual([came[0].text, came[0].tag, came[0].quiet], ['sent offline, then the chat closed', waiting[0].tag, true]);
+    assert.ok(came.slice(1).every((m) => m.tag === waiting[1].tag && !!m.voice));
   } finally {
     done();
   }

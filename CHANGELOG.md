@@ -16,6 +16,14 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A message sent offline is no longer lost when you leave the chat**: while a chat screen's chats are still opening
+  (a look at the relay under way ends first, which with no connection can take a while), what is sent there is held
+  by the screen, marked Sending…, and goes once they open. Leaving the chat before then lost it, words and voice
+  messages alike. Now what the screen still holds as it closes is kept in the chats' history marked waiting
+  (lib/waiting.ts keepUnsent), each with a tag of its own, and goes by itself with the next look that reaches the
+  relay, or to their phone nearby, as any message that waits. A walkie-talkie message is for now only, and is not
+  kept.
+
 ## 7.0.0-rc.4 (2026-11-08)
 
 ### Under the hood

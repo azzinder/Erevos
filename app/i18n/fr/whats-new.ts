@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
+    "**Un message envoyé sans connexion n’est plus perdu quand tu quittes la discussion** : ce que tu envoyais pendant que tes discussions s’ouvraient encore, comme elles le font un moment sans connexion, était perdu si tu quittais la discussion avant son départ. Maintenant il attend, marqué **En attente**, et part tout seul dès que le relais ou son téléphone proche peut le prendre, un message vocal aussi. Voir [Discuter par un relais](#relay).",
   // 7.0.0-rc.4
   "**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster.":
     '**Plus de blocage quand un espace s’ouvre** : pendant qu’une sauvegarde automatique se faisait, l’écran pouvait ne plus répondre pendant des minutes. Désormais les fichiers de la sauvegarde sont écrits, listés et supprimés dans leur dossier, à l’écart de l’écran, et ses parties sont vérifiées nativement, bien des fois plus vite.',

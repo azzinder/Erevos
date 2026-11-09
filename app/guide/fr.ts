@@ -785,7 +785,8 @@ dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous 
 
 - **Envoi… :** au moment où tu appuies sur Envoyer, le téléphone vibre brièvement, le champ se vide et le message
   s’affiche, marqué **Envoi…** jusqu’à ce que le relais ou son téléphone le prenne. S’il ne peut ni partir ni attendre,
-  ses mots retournent dans le champ.
+  ses mots retournent dans le champ. Quitter la discussion pendant qu’il affiche **Envoi…** ne le perd pas : il part,
+  ou attend, marqué **En attente**.
 - **En attente :** un message que rien n’a pu prendre, parce que le relais est injoignable et que son téléphone n’est
   pas proche, reste dans la discussion marqué **En attente**, et part tout seul, dans l’ordre, dès que le relais ou son
   téléphone à proximité peut le prendre, tant qu’un espace est ouvert ; il affiche alors **✓**. Un texte attend

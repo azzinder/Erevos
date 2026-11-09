@@ -735,7 +735,8 @@ este celular mostra as mesmas marcas.
 
 - **Enviando…:** no momento em que você toca em Enviar, o celular dá uma vibração curta, o campo se esvazia e a
   mensagem aparece, marcada **Enviando…** até o relay ou o celular da pessoa pegá-la. Se ela não puder ir nem puder
-  esperar, as palavras dela voltam para o campo.
+  esperar, as palavras dela voltam para o campo. Sair da conversa enquanto ela mostra **Enviando…** não a perde: ela
+  vai, ou fica marcada **Aguardando**.
 - **Aguardando:** uma mensagem que nada pôde pegar, porque o relay não está acessível e o celular da pessoa não está
   perto, fica na conversa marcada **Aguardando**, e vai sozinha, em ordem, assim que o relay ou o celular da pessoa por
   perto puder pegá-la, enquanto um espaço estiver aberto; então ela mostra **✓**. Um texto aguarda na hora. Uma

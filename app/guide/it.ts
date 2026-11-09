@@ -741,7 +741,8 @@ resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a ques
 
 - **Invio…:** nel momento in cui premi Invia, il telefono fa una breve vibrazione, il campo si svuota e il messaggio
   appare, segnato **Invio…** finché il relay o il suo telefono non lo prende. Se non può partire e non può aspettare,
-  le sue parole tornano nel campo.
+  le sue parole tornano nel campo. Se esci dalla chat mentre mostra **Invio…**, non va perso: parte, o aspetta segnato
+  **In attesa**.
 - **In attesa:** un messaggio che niente ha potuto prendere, perché il relay non è raggiungibile e il suo telefono non
   è vicino, resta nella chat segnato **In attesa**, e parte da solo, in ordine, appena il relay o il suo telefono vicino
   può prenderlo, mentre uno spazio è aperto; allora mostra **✓**. Un testo aspetta subito. Un messaggio vocale, una foto

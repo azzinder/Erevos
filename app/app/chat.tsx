@@ -12,7 +12,7 @@ import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
 import { openHeldIn, openPlaceNearby, placeNear, unopenedNearby, type PlaceOpener } from '../lib/place-nearby';
-import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
+import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, keepUnsent, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Unsent, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { inMatrixCall, onMatrixCallChange } from '../lib/matrix-calls';
@@ -176,7 +176,7 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
+import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrReady, readNostr } from '../lib/nostr';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
@@ -2885,21 +2885,54 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // A message send() shows as Sending…, with what it needs to go.
-  type Going = { to: string; text: string; lasts: number; quiet: boolean; content?: Content & { text: string }; answer: Parts; answered: Message | null; shown: () => void };
+  // A message send() shows as Sending…, with what it needs to go: `at`, when Send was pressed.
+  type Going = { to: string; text: string; lasts: number; quiet: boolean; content?: Content & { text: string }; answer: Parts; answered: Message | null; shown: () => void; at: number };
+  // A voice message recorded while the chats were still opening, as sendVoice was given it.
+  type Recorded = { audio: Uint8Array; ms: number; talk: boolean; to: string; forwarded: boolean; lasts: number; answer: Parts; at: number };
 
   // What was sent while the chats were still opening (e2e not there yet): it goes, in turn, once
-  // they are, through the functions of the render that has them (sending).
-  const opening = useRef<((now: { sendShown: typeof sendShown; sendVoice: typeof sendVoice }) => Promise<void>)[]>([]);
+  // they are, through the functions of the render that has them (sending). Should the screen close
+  // first, it waits in the chats' history instead, and goes by itself (lib/waiting.ts keepUnsent).
+  const opening = useRef<({ going: Going } | { recorded: Recorded })[]>([]);
   const sending = useRef({ sendShown, sendVoice });
   sending.current = { sendShown, sendVoice };
   useEffect(() => {
     if (!e2e || opening.current.length === 0) return;
     const waiting = opening.current.splice(0);
     void (async () => {
-      for (const go of waiting) await go(sending.current).catch(() => undefined);
+      for (const queued of waiting) {
+        const now = sending.current;
+        if ('going' in queued) await now.sendShown(queued.going).catch(() => undefined);
+        else {
+          const { audio, ms, talk, to, forwarded, lasts } = queued.recorded;
+          await now.sendVoice(audio, ms, talk, to, forwarded, lasts).catch(() => undefined);
+        }
+      }
     })();
   }, [e2e]);
+  // Closed before the chats opened, it keeps what it had not sent yet (a walkie-talkie message is
+  // for now only), in the history its chats read from, whose look at the relay goes on after it.
+  useEffect(
+    () => () => {
+      const left = opening.current.splice(0);
+      const kept = history.current ?? openingChats.current?.history;
+      if (left.length === 0 || !kept) return;
+      const timer = (peer: string) => openingChats.current?.e2e.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.timer ?? 0;
+      const unsent = left.flatMap((queued): Unsent[] => {
+        if ('going' in queued) {
+          const { to, text, lasts, quiet, content, answer, at } = queued.going;
+          return [{ peer: to, at, lasts: lasts || timer(to), parts: { ...answer, ...(content ? contentOf(content) : {}) }, text, quiet }];
+        }
+        const { audio, ms, talk, to, lasts, answer, at } = queued.recorded;
+        return talk ? [] : [{ peer: to, at, lasts: lasts || timer(to), parts: answer, audio, ms }];
+      });
+      // The home screen shows it waiting.
+      void keepUnsent(kept, unsent).then((count) => {
+        if (count > 0 && !hiddenKey) announceReceived();
+      });
+    },
+    [],
+  );
 
   // What says that something cannot be done while the chats have not opened: they are still opening,
   // unless this build cannot encrypt at all.
@@ -3386,9 +3419,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       draft.set('');
       setReplying(null);
     }
-    const going: Going = { to, text, lasts, quiet, content, answer, answered, shown };
+    const going: Going = { to, text, lasts, quiet, content, answer, answered, shown, at: Date.now() };
     // The chats still opening (a look at the relay under way ends first), it goes once they are.
-    if (!e2e) opening.current.push((now) => now.sendShown(going));
+    if (!e2e) opening.current.push({ going });
     else await sendShown(going);
   }
 
@@ -3972,7 +4005,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e) {
       // Held while the chats open, then sent as it was recorded.
       if (hasCore()) {
-        opening.current.push((now) => now.sendVoice(audio, ms, talk, to, forwarded, lasts));
+        opening.current.push({ recorded: { audio, ms, talk, to: peer, forwarded, lasts, answer: forwarded ? { forwarded } : answering(peer), at: Date.now() } });
         setNote(t('Your chats are still opening. It goes as soon as they are.'));
       } else setNote(t(NO_CORE));
       return;

@@ -22,7 +22,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

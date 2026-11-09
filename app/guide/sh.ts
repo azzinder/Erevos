@@ -723,7 +723,8 @@ ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom 
 
 - **Šalje se…:** u trenutku kad pritisnete Pošalji, telefon kratko zavibrira, polje se isprazni i poruka se prikaže,
   označena sa **Šalje se…** dok je ne preuzme relay ili telefon te osobe. Ako ne može otići i ne može čekati, njene
-  riječi se vraćaju u polje.
+  riječi se vraćaju u polje. Ako napustite razgovor dok prikazuje **Šalje se…**, poruka se ne gubi: ode ili čeka
+  označena s **Na čekanju**.
 - **Na čekanju:** poruka koju ništa nije moglo preuzeti, jer relay nije dostupan, a telefon te osobe nije u blizini,
   ostaje u razgovoru označena s **Na čekanju** i odlazi sama, redom, čim je relay ili telefon te osobe u blizini može
   preuzeti, dok je neki prostor otvoren; tada prikazuje **✓**. Tekst odmah čeka. Glasovna poruka, fotografija ili

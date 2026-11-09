@@ -794,7 +794,8 @@ Markierungen.
 
 - **Wird gesendet…:** In dem Moment, in dem du auf Senden drückst, vibriert das Telefon kurz, das Feld leert sich, und
   die Nachricht erscheint, als **Wird gesendet…** markiert, bis das Relay oder das andere Telefon sie annimmt. Wenn sie
-  weder gehen noch warten kann, kommen ihre Worte zurück ins Feld.
+  weder gehen noch warten kann, kommen ihre Worte zurück ins Feld. Verlässt du den Chat, während sie
+  **Wird gesendet…** zeigt, geht sie nicht verloren: Sie geht, oder sie wartet, als **Wartet** markiert.
 - **Wartet:** Eine Nachricht, die nichts annehmen konnte, weil das Relay nicht erreichbar und das andere Telefon nicht
   in der Nähe ist, bleibt im Chat als **Wartet** markiert und geht von selbst, der Reihe nach, sobald das Relay oder
   das andere Telefon in der Nähe sie annehmen kann, solange ein Bereich offen ist; dann zeigt sie **✓**. Ein Text

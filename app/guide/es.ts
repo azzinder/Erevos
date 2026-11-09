@@ -740,7 +740,8 @@ marcas. Un ordenador vinculado a este teléfono muestra las mismas marcas.
 
 - **Enviando…:** en el momento en que pulsas Enviar, el teléfono da una vibración corta, el campo se vacía y el mensaje
   aparece, marcado como **Enviando…** hasta que el relay o su teléfono lo recogen. Si no puede salir y no puede esperar,
-  sus palabras vuelven al campo.
+  sus palabras vuelven al campo. Si sales del chat mientras muestra **Enviando…**, no se pierde: sale, o espera
+  marcado como **En espera**.
 - **En espera:** un mensaje que nada pudo recoger, porque el relay no está disponible y su teléfono no está cerca, se
   queda en el chat marcado como **En espera**, y sale solo, en orden, en cuanto el relay o su teléfono cercano pueden
   recibirlo, mientras haya un espacio abierto; entonces muestra **✓**. Un texto espera directamente. Un mensaje de voz,

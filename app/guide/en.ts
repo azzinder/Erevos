@@ -690,7 +690,7 @@ message stays at **✓**. Public groups have no marks. A computer linked to this
 
 - **Sending…:** the moment you press Send, the phone gives a short buzz, the field empties and the message shows,
   marked **Sending…** until the relay or their phone takes it. If it cannot go and cannot wait, its words go back in
-  the field.
+  the field. Leaving the chat while it shows **Sending…** does not lose it: it goes, or waits marked **Waiting**.
 - **Waiting:** a message nothing could take, as the relay cannot be reached and their phone is not near, stays in
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it

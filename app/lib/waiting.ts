@@ -3,8 +3,8 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import type { Spare, Undropped } from '../lock/e2e-data';
-import type { History, Message, Resend } from '../lock/history';
-import { loadClip } from '../lock/voice-clips';
+import { newTag, WAITING, type History, type Message, type Parts, type Resend } from '../lock/history';
+import { loadClip, saveClip } from '../lock/voice-clips';
 import { refSource, uploadFile } from './attachments';
 import { offerOnNostr } from './nostr-send-files';
 import { contentOf, withoutPreview } from './chat-parts';
@@ -29,7 +29,9 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // screens), and when a contact is heard nearby. A waiting text goes over LoRa too, once a radio
 // is linked, and by SMS with a try, when that is on for the contact (lib/sms-way.ts); one too much
 // for LoRa or SMS with its link's preview goes there without the preview. Each
-// keeps its tag, so it can still be deleted on both phones once it went.
+// keeps its tag, so it can still be deleted on both phones once it went. What a chat screen showed
+// as sending and had not sent yet when it closed, its chats still opening, waits the same way
+// (keepUnsent), rather than go with the screen.
 //
 // Each try seals the message anew, which moves the conversation on, and a contact's phone can skip
 // only so many it never got. So a message is tried only when there is a way for it, and after a
@@ -76,6 +78,33 @@ const LONGEST_WAIT = 30 * 60_000;
 /** Whether what failed failed only because nothing could take it now, so it can wait and go later. */
 export function canWait(error: unknown): boolean {
   return error instanceof NoWayError || error instanceof TooLargeForSlowWayError || canTryLater(error);
+}
+
+/**
+ * What a chat screen showed as Sending… and had not sent yet when it closed, as its chats were
+ * still opening: words with what they carry (`parts`), or a voice message's sound. `at`: when Send
+ * was pressed; `lasts`: seconds once read, 0 for the chat's own time.
+ */
+export type Unsent = { peer: string; at: number; lasts: number; parts: Parts } & ({ text: string; quiet: boolean } | { audio: Uint8Array; ms: number });
+
+/**
+ * Keeps in `history`, marked waiting, what a chat screen that closed had not sent yet (Unsent), so
+ * it is not lost with the screen: it goes by itself as the others that wait do (sendWaiting), each
+ * with a tag of its own. Says how many it kept.
+ */
+export async function keepUnsent(history: Pick<History, 'add'>, unsent: Unsent[]): Promise<number> {
+  let kept = 0;
+  for (const one of unsent) {
+    const message: Omit<Message, 'text'> = { ...one.parts, peer: one.peer, mine: true, at: one.at, tag: newTag(), lasts: one.lasts, mark: WAITING };
+    try {
+      if ('audio' in one) await history.add({ ...message, text: '', voice: await saveClip(one.audio, one.ms) });
+      else await history.add({ ...message, text: one.text, quiet: one.quiet });
+      kept++;
+    } catch {
+      // Not kept: gone with the screen, as it would have been.
+    }
+  }
+  return kept;
 }
 
 /**

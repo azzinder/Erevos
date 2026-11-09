@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay).":
+    "**Poruka poslana bez veze više se ne gubi kad napustite razgovor**: ono što ste poslali dok su se razgovori još otvarali, kao što to rade neko vrijeme bez veze, gubilo se ako biste napustili razgovor prije nego što ode. Sada čeka, označena s **Na čekanju**, i odlazi sama čim je relay ili telefon te osobe u blizini može preuzeti, i glasovna poruka. Pogledajte [Razgovor preko relaya](#relay).",
   // 7.0.0-rc.4
   "**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster.":
     '**Nema više zamrzavanja kad se otvori prostor**: dok se pravila automatska rezervna kopija, ekran je mogao minutima prestati odgovarati. Sada se datoteke kopije upisuju, ispisuju i brišu u svom folderu, daleko od ekrana, a njeni dijelovi se provjeravaju izvorno, višestruko brže.',
