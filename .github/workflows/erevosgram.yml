@@ -78,7 +78,7 @@ jobs:
       - name: TDLib's commit
         id: td
         run: echo "commit=$(sed -n 's/^TD_COMMIT="\([0-9a-f]*\)"$/\1/p' scripts/build-tdlib.sh)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         id: tdcache
         with:
           path: tdlib
@@ -90,6 +90,12 @@ jobs:
           sudo apt-get install -y -q gperf php-cli ninja-build cmake
           ABIS=arm64-v8a scripts/build-tdlib.sh
           rm -rf third-party
+      # Kept at once, so a later step that fails does not cost TDLib's build again.
+      - if: steps.tdcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: tdlib
+          key: tdlib-${{ steps.td.outputs.commit }}-arm64-v8a
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
