@@ -46,7 +46,7 @@ import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { MAX_NOTE_TEXT } from '../lock/myself-data';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
-import { publicMemberName, spaceGroups } from '../lib/space-groups';
+import { groupMemberSaid, publicMemberName, spaceGroups } from '../lib/space-groups';
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
@@ -342,7 +342,7 @@ function Home() {
           groupsOn ? quiet(spaceGroups().then((g) => g.list().flatMap((group) => groupFindables(group.id, g.messages(group.id)))), []) : Promise.resolve([]),
         ]).then(([[contacts, messages], imported, data, groups, said]) => {
           if (!active) return;
-          const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
+          const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts, groupMemberSaid);
           const phones = contacts.flatMap((c) => (c.phone ? [c.phone] : []));
           // The search finds nothing said in a chat locked with its PIN, only its name.
           const locked = new Set([...contacts.filter((c) => c.locked).map((c) => `contact:${c.identity}`), ...groups.filter((g) => g.locked).map((g) => `group:${g.id}`)]);

@@ -860,6 +860,8 @@ selado com a conversa: o outro celular não o vê. Um nome vazio traz de volta o
 dos seus contatos esteja vinculado a ela: então ela volta a ter o nome dele na próxima vez que o cartão dele abrir,
 enquanto o vínculo durar (veja [Contatos](#contacts)).
 
+**O meu nome:** em Configurações → Privacidade e segurança → **O meu nome** podes escolher o nome que os teus contactos veem em vez de um código. É dito cifrado, só aos contactos que aceitaste, e os teus grupos privados também o ficam a saber: aí, quem não é teu contacto aparece como «Nome · 1a2b», com o início da sua chave. Se deste a um contacto um nome só teu (**Renomear**), continuas a ver o teu; o que ele escolheu aparece nos seus **Detalhes** como «Chama-se a si mesmo» e como sugestão no campo de renomear. Cada espaço tem o seu nome, e cada lugar de conversas ocultas também (nas suas configurações, junto a **Receber quando fechadas**): um lugar oculto nunca toma o nome do espaço e começa vazio, e o mesmo nome em dois deles diz a quem vê ambos que são teus. Um nome tem no máximo 40 caracteres.
+
 Toque no nome dela e depois em **Imagem** para dar à pessoa uma imagem da sua escolha, um sinal sobre uma cor, em vez
 da desenhada a partir da chave dela. Ou toque em **Foto** (ou **Tirar foto**) para uma foto: cortada em quadrado,
 reduzida e redesenhada, para que nada do que ela dizia além da imagem (um lugar, um celular) fique guardado, e depois

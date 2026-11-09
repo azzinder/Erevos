@@ -915,6 +915,8 @@ scellé avec la discussion : l’autre téléphone ne le voit pas. Un nom vide r
 contacts lui est associé : la discussion reprend alors son nom la prochaine fois que sa fiche s’ouvre, tant que
 l’association reste (voir [Contacts](#contacts)).
 
+**Mon nom :** dans Réglages → Confidentialité et sécurité → **Mon nom**, vous choisissez le nom que vos contacts voient à la place d’un code. Il est dit chiffré, seulement aux contacts que vous avez acceptés, et vos groupes privés l’apprennent aussi : là, ceux qui ne sont pas vos contacts apparaissent comme « Nom · 1a2b », avec le début de leur clé. Si vous avez donné à un contact un nom bien à vous (**Renommer**), vous continuez à voir le vôtre ; celui qu’il a choisi figure dans ses **Détails** sous « Se fait appeler » et en indice dans le champ de renommage. Chaque espace a son propre nom, et chaque lieu de discussions masquées aussi (dans ses réglages, près de **Recevoir une fois fermées**) : un lieu masqué ne prend jamais le nom de l’espace et commence vide, et le même nom dans deux d’entre eux indique à qui voit les deux qu’ils sont à vous. Un nom compte 40 caractères au plus.
+
 Appuie sur son nom puis sur **Image** pour lui donner une image de ton choix, un signe sur une couleur, au lieu de celle
 dessinée à partir de sa clé. Ou appuie sur **Photo** (ou **Prendre une photo**) pour une photo : recadrée en carré,
 réduite et redessinée, si bien que rien de ce qu’elle disait en plus de son image (un lieu, un téléphone) n’est gardé,

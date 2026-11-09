@@ -84,7 +84,7 @@ export async function takeInviteAnswer(e2e: E2E, bytes: Uint8Array, ownSender: s
   }
   await e2e.linkPhone(identity, plainNumber(answer.number));
   // An invite by plain SMS went to one of the phone's contacts: the new contact takes their name.
-  if (answer.name && !e2e.contacts().find((c) => c.identity === identity)?.name) await e2e.rename(identity, answer.name).catch(() => undefined);
+  if (answer.name && !e2e.contacts().find((c) => c.identity === identity)?.ownName) await e2e.rename(identity, answer.name).catch(() => undefined);
   return { number: answer.number, identity };
 }
 
@@ -98,7 +98,7 @@ export async function linkInviter(e2e: E2E, identity: string): Promise<{ number:
   if (!got) return null;
   await e2e.acceptRequest(identity);
   if (got.number) await e2e.linkPhone(identity, got.number);
-  if (got.name && !e2e.contacts().find((c) => c.identity === identity)?.name) await e2e.rename(identity, got.name).catch(() => undefined);
+  if (got.name && !e2e.contacts().find((c) => c.identity === identity)?.ownName) await e2e.rename(identity, got.name).catch(() => undefined);
   return { number: got.number, name: e2e.contacts().find((c) => c.identity === identity)?.name ?? '' };
 }
 

@@ -14,8 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Choose the name others see**: under Settings → Privacy and security → **My name**, a space can go by a name you
+  choose, which your accepted contacts and your private groups see, encrypted, in place of a code (up to 40
+  characters, none at first). A contact you gave a name of your own keeps showing under yours; their chosen name shows
+  in their details as "Calls themselves". In a private group, members who are not your contacts show as "Name · 1a2b".
+  Each space and each place of hidden chats has its own name, in its settings, and a hidden place never takes the
+  space's: the same name in two of them tells whoever sees both that they are yours.
+
 ### Under the hood
 
+- Messages say the sender's chosen name (`nm`), only when it changes; group members say it in their keys (About.name).
 - **A chat opens at its last message again**: a chat opened as a screen of its own (from the home screen or a
   notification) first shows its empty thread while its history is read, and that empty thread used up the jump to the
   end made at once; when the messages came, the thread went to its end animated from the top, which on Android can

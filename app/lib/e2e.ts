@@ -256,6 +256,9 @@ type Message = {
    *  heard from, set it (ms): each phone takes the later setting, as the timer (Contact.shots).
    *  Absent says nothing of it: an Erevos before, or a chat where neither ever set it. */
   sh?: Shots;
+  /** The name the sender goes by (E2EData.myName), or '' to say it has none any more. Absent says
+   *  nothing of it: an Erevos before, which ignores it, or one that told it already. */
+  nm?: string;
 };
 
 /** A chat's screenshot setting as a message says it (Message.sh). */
@@ -336,7 +339,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh, nm }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -377,6 +380,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(fa ? { fa } : {}),
       ...(tag && st ? { st } : {}),
       ...(sh ? { sh } : {}),
+      ...(nm !== undefined ? { nm } : {}),
       ...more,
     }),
   );
@@ -414,6 +418,13 @@ function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'
  *  ''), or what was kept when it says nothing of one (`rf` absent). */
 function ringSenderOf(message: Message, known: Contact | undefined): string | undefined {
   return message.rf === undefined ? known?.ringSender : message.rf || undefined;
+}
+
+/** A contact once their message came, as it says the name they go by: a name, '' for none any more; absent keeps it. */
+function namedIn(contact: Contact, message: Message): Contact {
+  if (message.nm === undefined || message.nm === (contact.said ?? '')) return contact;
+  const { said: _said, ...rest } = contact;
+  return message.nm ? { ...rest, said: message.nm } : rest;
 }
 
 // A contact once their message came: the texts that went through Nostr it says came, or were
@@ -505,6 +516,8 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(isTime(value.fa) && value.fa > 0 ? { fa: value.fa } : {}),
       ...(isTime(value.st) && value.st > 0 ? { st: value.st } : {}),
       ...(checkedShots(value.sh) ? { sh: checkedShots(value.sh)! } : {}),
+      // Said: a name, cleaned as names are kept, or '' for none; anything else says none.
+      ...('nm' in value ? { nm: typeof value.nm === 'string' ? cleanName(value.nm) : '' } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -554,7 +567,12 @@ export function fromBase64Url(text: string): Uint8Array {
 export type ContactInfo = {
   identity: string;
   sender: string;
+  /** The name shown for them: the one this chat gives them (`ownName`), or else the one they go by (`said`), or ''. */
   name: string;
+  /** The name this chat gives them, '' for none. */
+  ownName: string;
+  /** The name they go by, as they told this chat (Contact.said), '' for none. */
+  said: string;
   timer: number;
   /** Screenshots of this chat are kept out on both phones (Contact.shots). */
   shots: boolean;
@@ -910,6 +928,8 @@ export class E2E {
   private readonly listSealed = new Map<string, { at: number; n: number; rAt: number }>();
   // What `seal` sealed with `keys` said of Nostr (nostrSaid), by contact, until `keysGiven`.
   private readonly nostrSealed = new Map<string, string>();
+  // The name `seal` sealed with `keys` said (nameDue), by contact, until `keysGiven`.
+  private readonly nameSealed = new Map<string, string>();
   // Whether contacts are asked for a bell on the relay with each text through Nostr: hidden chats,
   // which hear of what came only so while closed (lib/nostr.ts).
   private bells = false;
@@ -1570,10 +1590,13 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, shots, request, look, avatar, hide, pin, notify }) => ({
+    return this.data.contacts.map(({ identity, sender, name, said, timer, shots, request, look, avatar, hide, pin, notify }) => ({
       identity,
       sender,
-      name,
+      // The name this chat gives them, or else the one they go by.
+      name: name || said || '',
+      ownName: name,
+      said: said ?? '',
       timer,
       shots: shots === true,
       request,
@@ -2363,7 +2386,7 @@ export class E2E {
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
       const signal = text ? null : call;
-      const { ns: tellsNostr = false, ...keyed } = (!text && keys ? this.keysFor(contact) : null) ?? {};
+      const { ns: tellsNostr = false, nm: tellsName = false, ...keyed } = (!text && keys ? this.keysFor(contact) : null) ?? {};
       // The key this chat reads their texts on Nostr with, made the first time it is told them.
       if (tellsNostr && nostrRelays() && !contact.nostr) {
         contact = { ...contact, nostr: await newNostrKey() };
@@ -2398,12 +2421,14 @@ export class E2E {
         ...keyed,
         ...(ns !== undefined ? { ns } : {}),
         ...shotsSaid(contact),
+        ...(tellsName ? { nm: this.myName() } : {}),
         rf,
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
       const sealed = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer', leaving);
       if (list) this.listSealed.set(identity, { ...list, at: Date.now() });
       if (tellsNostr) this.nostrSealed.set(identity, this.nostrSaid(contact));
+      if (tellsName) this.nameSealed.set(identity, this.myName());
       const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = sealed;
       // Words go through Nostr when they said they read there, and this chat does too (lib/nostr.ts):
       // not after a first packet the relay has still to take, nor what is sent for later, which the
@@ -3017,10 +3042,34 @@ export class E2E {
   // What of this account a contact is still to be given, in a message of its own: its newest
   // prekeys, and its device list with its bundle, whose key signed it (`ak`, `dl`); and where this
   // chat reads on Nostr, should that have changed since it last told them (`ns`, made in `seal`).
-  private keysFor(contact: Contact): { ak?: string; dl?: DeviceList; ns?: true } | null {
+  // And the name this chat goes by, should it have changed since it last told them (`nm`).
+  private keysFor(contact: Contact): { ak?: string; dl?: DeviceList; ns?: true; nm?: true } | null {
     const keys = this.prekeysFor(contact);
     const ns = this.nostrDue(contact);
-    return keys || ns ? { ...keys, ...(ns ? { ns: true as const } : {}) } : null;
+    const nm = this.nameDue(contact);
+    return keys || ns || nm ? { ...keys, ...(ns ? { ns: true as const } : {}), ...(nm ? { nm: true as const } : {}) } : null;
+  }
+
+  // Whether a contact is to be told the name this chat goes by, or that it has none any more: once
+  // it changed since it last told them (nothing while it never had one). Never from a linked
+  // device, whose phone tells them, nor to a request not accepted, which hears nothing back.
+  private nameDue(contact: Contact): boolean {
+    if (this.data.own || this.link?.through || contact.request || !contact.conversations[0]) return false;
+    return (contact.nameSaid ?? '') !== this.myName();
+  }
+
+  /** The name this chat goes by (E2EData.myName), or '' for none. */
+  myName(): string {
+    return this.data.myName ?? '';
+  }
+
+  /** Sets the name this chat goes by, '' for none: each contact it accepted is told with the next look (keysDue). */
+  setMyName(name: string): Promise<void> {
+    return this.run(async () => {
+      const named = cleanName(name);
+      const { myName: _name, ...rest } = this.data;
+      await this.save({ ...rest, ...(named ? { myName: named } : {}) });
+    });
   }
 
   // Its newest prekeys and its device list. Not from a linked device, nor to one who knows this
@@ -3094,7 +3143,10 @@ export class E2E {
       this.nostrSealed.delete(identity);
       const list = sealed ? { listSent: sealed.at, listGiven: { n: sealed.n, rAt: sealed.rAt } } : {};
       const nostr = said !== undefined ? { nostrSaid: said } : {};
-      if (contact && (newest || sealed || said !== undefined)) await this.save(this.withContact({ ...contact, ...(newest ? { bundleSent: newest.at } : {}), ...list, ...nostr }));
+      const named = this.nameSealed.get(identity);
+      this.nameSealed.delete(identity);
+      const name = named !== undefined ? { nameSaid: named } : {};
+      if (contact && (newest || sealed || said !== undefined || named !== undefined)) await this.save(this.withContact({ ...contact, ...(newest ? { bundleSent: newest.at } : {}), ...list, ...nostr, ...name }));
     });
   }
 
@@ -3444,9 +3496,13 @@ export class E2E {
       ...(known?.pin ? { pin: known.pin } : {}),
       ...(known?.notify ? { notify: known.notify } : {}),
       ...(known?.verified ? { verified: known.verified } : {}),
+      // The name they go by stays, unless they say otherwise now. A conversation they start anew
+      // may come from a phone that lost the one this chat goes by: it is told again.
+      ...(known?.said ? { said: known.said } : {}),
+      ...(known?.nameSaid !== undefined && stale ? { nameSaid: known.nameSaid } : {}),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
-    const { contact: next, twice } = tookIn(this.seenIn({ ...contact, ...learned }, message), message, this.link?.through === true);
+    const { contact: next, twice } = tookIn(this.seenIn(namedIn({ ...contact, ...learned }, message), message), message, this.link?.through === true);
     const kept = { ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN) };
     if (welcomed) {
       const invited = (kept.invited ?? []).filter((i) => i.hi !== welcomed.hi);
@@ -3816,7 +3872,7 @@ export class E2E {
     const account = !given && (!way || direct);
     const renewed = account && !way ? await this.startedAgain(updated, message) : null;
     const learned = account && this.partOf(updated) ? await this.heardOf(updated, message) : null;
-    const { contact: took, twice } = tookIn(this.seenIn({ ...updated, ...renewed, ...learned }, message), message, this.link?.through === true);
+    const { contact: took, twice } = tookIn(this.seenIn(namedIn({ ...updated, ...renewed, ...learned }, message), message), message, this.link?.through === true);
     const next = withShots(cameThrough(took, message), timing.shots);
     await this.save(this.withContact(next));
     if (next.list && next.list.n !== contact.list?.n) await this.retryUnverified(contact.identity);

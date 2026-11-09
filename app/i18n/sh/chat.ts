@@ -398,4 +398,9 @@ export const chat: Record<string, string> = {
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "Ili prislonite poleđinu njegovog telefona uz poleđinu vašeg: njegov telefon otvara pozivnicu.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "Ili prislonite poleđinu njegovog telefona uz poleđinu vašeg: njegov telefon otvara vaš link za kontakt.",
   "Turn on NFC in Android's settings to give it by touching phones too.": "Uključite NFC u postavkama Androida da biste ga davali i prislanjanjem telefona.",
+  'My name': 'Moje ime',
+  'The name your contacts see in place of a code': 'Ime koje tvoji kontakti vide umjesto koda',
+  'Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.': 'Kontakti i privatne grupe vide ga, šifrirano, umjesto koda. Svaki prostor i njegovi skriveni razgovori imaju svoje: isto ime u dva od njih govori svakome tko vidi oba da su tvoji.',
+  "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Počinje prazno i nikad ne preuzima ime prostora. Isto ime kao ime tvog prostora govori svakome tko vidi oba da si to ti.',
+  'Calls themselves: {name}': 'Naziva se: {name}',
 };

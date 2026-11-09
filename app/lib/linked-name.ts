@@ -20,7 +20,7 @@ export function linkedName(own: string, contact: { name: string }): string {
 
 /** What giveLinkedName needs of a chat (lib/e2e.ts, E2E): its contacts, and naming one. */
 export type Namer = {
-  contacts(): { identity: string; name: string }[];
+  contacts(): { identity: string; name: string; ownName?: string }[];
   rename(identity: string, name: string): Promise<void>;
 };
 
@@ -30,7 +30,8 @@ export type Namer = {
  */
 export async function giveLinkedName(chats: Namer, identity: string, contact: { name: string }): Promise<string> {
   const kept = chats.contacts().find((c) => c.identity === identity);
-  const name = kept ? linkedName(kept.name, contact) : '';
+  // Only a name this chat gave them is its own: the one they go by gives way to the linked contact's.
+  const name = kept ? linkedName(kept.ownName ?? kept.name, contact) : '';
   if (name) await chats.rename(identity, name);
   return name;
 }

@@ -184,6 +184,12 @@ export type Contact = {
    *  (lib/verify-code.ts), ms. Missing while it has not. Only this phone knows it: theirs marks
    *  this one on its own, by the code this one shows. */
   verified?: number;
+  /** The name they gave themselves (`nm`, lib/e2e.ts), cleaned as names are kept: shown while this
+   *  chat gives them none of its own (`name`). Missing while they said none, or said they have none. */
+  said?: string;
+  /** The name this chat last told them it goes by (E2EData.myName), '' for none. Missing until it
+   *  told them anything: then it says one only once it has one. */
+  nameSaid?: string;
 };
 
 /**
@@ -606,6 +612,11 @@ export type E2EData = {
   invited?: Invited[];
   /** The name this phone gave itself in its last invite, offered again for the next. */
   invitedAs?: string;
+  /** The name this chat goes by (Settings, My name): told, encrypted, to each contact it accepted
+   *  (`nm`, lib/e2e.ts), and said in its groups (lock/group-data.ts About.name). Each space and each
+   *  hidden place has its own, none at first, so a name never ties one of them to another. Missing
+   *  while it has none. */
+  myName?: string;
   /** Who each invite to the relay made from here is for, by the name of random letters the relay has for it (lib/e2e.ts lineFor), the latest last. Missing when none. */
   lines?: InviteLine[];
   /** Introductions made here, or asked of this chat (lib/intros.ts). Missing when none. */
@@ -729,6 +740,8 @@ function checkedContact(value: unknown): Contact | null {
     ...(checkedMine(v.mine) ? { mine: checkedMine(v.mine)! } : {}),
     ...(isTime(v.knows) ? { knows: v.knows } : {}),
     ...(isTime(v.verified) && v.verified > 0 ? { verified: v.verified } : {}),
+    ...(isText(v.said) && cleanName(v.said) ? { said: cleanName(v.said) } : {}),
+    ...(isText(v.nameSaid) ? { nameSaid: cleanName(v.nameSaid) } : {}),
   };
 }
 
@@ -946,6 +959,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.heldCopies) && v.heldCopies.length > 0 ? { heldCopies: v.heldCopies.map(checkedHeldCopy).filter((u): u is HeldCopy => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
+    ...(isText(v.myName) && cleanName(v.myName) ? { myName: cleanName(v.myName) } : {}),
     ...(Array.isArray(v.lines) && v.lines.length > 0 ? { lines: v.lines.map(checkedLine).filter((l): l is InviteLine => l !== null).slice(-MAX_LINES) } : {}),
     ...(Array.isArray(v.intros) ? { intros: v.intros.map(checkedIntroKept).filter((i): i is IntroKept => i !== null).slice(-MAX_INTROS) } : {}),
     ...(checkedPieces(v.pieces) ? { pieces: checkedPieces(v.pieces)! } : {}),

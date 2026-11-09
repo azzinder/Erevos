@@ -19,7 +19,7 @@ import { accountBundle, accountIdentity, newAccount, setCore, type Core } from '
 import { randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
-import { ASK_AGAIN, ASK_KEPT, Groups, isGroupPacket, MAX_ASKS, noteText, RENEW_EVERY, WANT_KEPT, type GroupMember, type GroupTransport } from '../lib/groups';
+import { ASK_AGAIN, ASK_KEPT, Groups, isGroupPacket, MAX_ASKS, memberName, noteText, RENEW_EVERY, WANT_KEPT, type GroupMember, type GroupTransport } from '../lib/groups';
 import type { Mark } from '../lib/relay';
 import { checkedGroup, EMPTY_GROUPS, MAX_CONTACT_KEY, type About, type GroupData } from '../lock/group-data';
 
@@ -38,6 +38,8 @@ type Phone = {
   identity: string;
   /** The id it says of itself in its groups: its own, but on a phone made to claim another's. */
   says: string;
+  /** The name it goes by in its groups (About.name), '' for none. */
+  myName?: string;
   sender: string;
   groups: Groups;
   queue: Uint8Array[];
@@ -77,7 +79,7 @@ function network() {
   const phone = (name: string, made?: Account, { old = false, claims }: { old?: boolean; claims?: string } = {}): Phone => {
     const identity = made?.identity ?? toHex(randomBytes(32));
     const sender = toHex(randomBytes(24));
-    const me = async () => ({ id: claims ?? identity, sender, relay: 'wss://relay.example.org', relayKey: '' });
+    const me = async () => ({ id: claims ?? identity, sender, relay: 'wss://relay.example.org', relayKey: '', ...(it.myName ? { name: it.myName } : {}) });
     const store = async (data: GroupData) => void (it.kept = data);
     const groups = new Groups(EMPTY_GROUPS, store, me);
     const transport: GroupTransport = {
@@ -870,4 +872,32 @@ test('what a group keeps of contact asks is read back checked', () => {
   assert.deepEqual([capped.wants?.length, capped.asks?.length, capped.asks?.[0].at], [100, 100, 50]);
   // The limits hold together: an ask lives longer than the wait to ask again, an ask from here longer than one there.
   assert.ok(ASK_AGAIN < ASK_KEPT && ASK_KEPT < WANT_KEPT && MAX_ASKS <= 100);
+});
+
+test('members learn the name each goes by in the group, kept, and shown with the start of its key', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  alice.myName = 'Αλίκη';
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  await bob.groups.members(id);
+  assert.equal(bob.groups.saidName(alice.identity), 'Αλίκη');
+  assert.equal(bob.groups.saidName(carol.identity), '');
+  // Kept with the groups.
+  await net.settle();
+  assert.equal(bob.kept.names?.[alice.identity], 'Αλίκη');
+  const said = (i: string) => bob.groups.saidName(i);
+  assert.equal(memberName(alice.identity, [], said), `Αλίκη · ${alice.identity.slice(0, 4)}`);
+  // A name given to her as a contact wins; one who said none shows by her key.
+  assert.equal(memberName(alice.identity, [{ identity: alice.identity, name: 'Alice' }], said), 'Alice');
+  assert.match(memberName(carol.identity, [], said), new RegExp(carol.identity.slice(0, 8)));
+  // A new name reaches the others with her next new keys.
+  alice.myName = 'Alice B';
+  await alice.groups.renewAgain('group');
+  await alice.groups.renewKeys(alice.transport);
+  await net.settle();
+  await carol.groups.members(id);
+  assert.equal(carol.groups.saidName(alice.identity), 'Alice B');
 });

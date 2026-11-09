@@ -863,6 +863,8 @@ sellado con el chat: el otro teléfono no lo ve. Un nombre vacío devuelve el pr
 contactos esté vinculado a él: entonces vuelve a tomar su nombre la próxima vez que se abra su ficha, mientras el
 vínculo siga (ver [Contactos](#contacts)).
 
+**Mi nombre:** en Ajustes → Privacidad y seguridad → **Mi nombre** puedes elegir el nombre que tus contactos ven en lugar de un código. Se dice cifrado, solo a los contactos que aceptaste, y tus grupos privados también lo conocen: allí, quienes no son tus contactos aparecen como «Nombre · 1a2b», con el comienzo de su clave. Si diste a un contacto un nombre propio (**Cambiar nombre**), sigues viendo el tuyo; el que eligió él aparece en sus **Detalles** como «Se hace llamar» y como pista en el campo de renombrar. Cada espacio tiene su propio nombre, y también cada lugar de chats ocultos (en sus ajustes, junto a **Recibir estando cerrados**): un lugar oculto nunca toma el nombre del espacio y empieza vacío, y el mismo nombre en dos de ellos le dice a quien vea ambos que son tuyos. Un nombre tiene 40 caracteres como máximo.
+
 Toca su nombre y luego **Imagen** para darle una imagen que elijas tú, un símbolo sobre un color, en lugar de la
 dibujada a partir de su clave. O toca **Foto** (o **Hacer foto**) para una foto: recortada en cuadrado, reducida y
 redibujada, para que no quede nada más que su imagen (ni un lugar ni un teléfono), y luego sellada en un archivo propio.

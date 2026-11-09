@@ -144,7 +144,7 @@ export async function addIntroduced(e2e: E2E, add: Extract<IntroCame, { kind: 'a
   const code = parseContact(add.link);
   if (!code?.key) throw new Error(t('That introduction gave no contact link.'));
   const { identity, added } = await e2e.addContact(code, sender, at, add.hi);
-  if (added && !contactOf(e2e, identity)?.name) await e2e.rename(identity, add.name);
+  if (added && !contactOf(e2e, identity)?.ownName) await e2e.rename(identity, add.name);
   return identity;
 }
 

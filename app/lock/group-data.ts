@@ -7,7 +7,7 @@ import type { Mark } from '../lib/relay';
 import { isFileRef, type FileRef } from './attachment-files';
 import { checkedChatNotify, type ChatNotify } from './chat-notify';
 import { checkedChatPin, type ChatPin } from './chat-pin';
-import { isRelay, isRelayKey } from './e2e-data';
+import { cleanName, isRelay, isRelayKey } from './e2e-data';
 import { isReactionEmoji, isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
 import { checkedLook, type Look } from '../theme/look';
@@ -29,6 +29,9 @@ export type About = {
   relayKey: string;
   /** The public key group messages to it are sealed to, base64url. */
   seal: string;
+  /** The name it goes by in its groups (lock/e2e-data.ts E2EData.myName), cleaned as names are
+   *  kept. Missing while it has none, and from an Erevos before, which leaves it out. */
+  name?: string;
 };
 
 /** A message in a group: `from` is the sender's identity, empty for this phone's own. A `note`
@@ -129,11 +132,16 @@ export type GroupData = {
   /** The queues this phone said its group messages come to, as they were when the groups were handed
    *  on: their members write to them till their keys are made new, so they are kept a while (S6). */
   left?: { sender: string; at: number }[];
+  /** The names members of the private groups go by (About.name), by identity (hex), as their keys
+   *  last said: so a member who is no contact shows by it. Missing while none said one. */
+  names?: Record<string, string>;
 };
 
 /** The largest MLS state handed between devices, as JSON (S6). */
 export const MAX_HELD_GROUPS = 64 * 1024 * 1024;
 const MAX_LEFT_SENDERS = 50;
+/** The most member names kept (GroupData.names): past it, the earliest learned are forgotten. */
+export const MAX_MEMBER_NAMES = 1000;
 
 export const EMPTY_GROUPS: GroupData = { state: '', seal: '', groups: [], orphans: [], given: [] };
 
@@ -162,7 +170,8 @@ const isContactKey = (v: unknown): v is string => isText(v) && v.length <= MAX_C
 export function checkedAbout(value: unknown): About | null {
   const v = (value ?? {}) as Partial<Record<keyof About, unknown>>;
   if (!isHex(v.id, 64) || !isHex(v.sender, 48) || !isRelay(v.relay) || !isRelayKey(v.seal)) return null;
-  return { id: v.id, sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '', seal: v.seal };
+  const name = typeof v.name === 'string' ? cleanName(v.name) : '';
+  return { id: v.id, sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '', seal: v.seal, ...(name ? { name } : {}) };
 }
 
 function checkedMessage(value: unknown): GroupMessage | null {
@@ -296,7 +305,17 @@ export function checkedGroupData(value: unknown): GroupData {
     given: Array.isArray(v.given) ? v.given.filter(isText).slice(-MAX_GIVEN) : [],
     ...(checkedHanded(v.handed) ? { handed: checkedHanded(v.handed)! } : {}),
     ...(checkedLeft(v.left).length > 0 ? { left: checkedLeft(v.left) } : {}),
+    ...(Object.keys(checkedNames(v.names)).length > 0 ? { names: checkedNames(v.names) } : {}),
   };
+}
+
+function checkedNames(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const kept = Object.entries(value as Record<string, unknown>)
+    .filter((e): e is [string, string] => /^[0-9a-f]{64}$/.test(e[0]) && typeof e[1] === 'string' && !!cleanName(e[1]))
+    .map(([id, name]) => [id, cleanName(name)] as const)
+    .slice(-MAX_MEMBER_NAMES);
+  return Object.fromEntries(kept);
 }
 
 function checkedHanded(value: unknown): GroupData['handed'] | null {

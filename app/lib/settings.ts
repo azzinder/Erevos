@@ -149,6 +149,8 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Privacy and security'),
     icon: 'lock',
     items: [
+      // The name the space's contacts and private groups see in place of a code (lib/my-name.ts).
+      { id: 'my-name', title: mark('My name'), detail: mark('The name your contacts see in place of a code'), href: '/security?part=myname', when: uses('erevos') },
       { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
       { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden', when: uses('erevos') },
       { id: 'last-seen', title: mark('Last seen'), detail: mark('Who sees when you last had Erevos open: on, unless changed'), href: '/security?part=lastseen', when: uses('erevos') },

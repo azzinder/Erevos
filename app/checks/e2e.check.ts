@@ -99,7 +99,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, shots: false, request: true, look: null, avatar: null, hide: false, locked: false }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', ownName: '', said: '', timer: 0, shots: false, request: true, look: null, avatar: null, hide: false, locked: false }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -1713,4 +1713,50 @@ t('a contact is heard on the own queue only from the one it is now, not from one
   alice.e2e.setQueueAge(20 * HOUR, sender());
   assert.equal(message(await alice.e2e.receive(await fromBob('before'), { onOwn: first })).text, 'before');
   assert.equal(alice.e2e.record(bobId)!.onNew, undefined);
+});
+
+t('the name a chat goes by reaches its accepted contacts once, encrypted, and shows while they gave it none', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  const aliceId = hello.identity;
+  // A request not accepted is told nothing.
+  await bob.e2e.setMyName('  Bob‮ ');
+  assert.equal(bob.e2e.myName(), 'Bob');
+  assert.equal(bob.e2e.keysDue().includes(aliceId), false);
+  // Bob accepts by writing; then his name is due, once.
+  message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'hi', bob.from)).packet));
+  assert.equal(bob.e2e.keysDue().includes(aliceId), true);
+  const told = await bob.e2e.seal(aliceId, '', bob.from, { keys: true });
+  await bob.e2e.keysGiven(aliceId);
+  assert.equal(bob.e2e.keysDue().includes(aliceId), false);
+  await alice.e2e.receive(told.packet);
+  const kept = () => alice.e2e.contacts().find((c) => c.identity === bobId)!;
+  assert.deepEqual([kept().name, kept().ownName, kept().said], ['Bob', '', 'Bob']);
+  // A name Alice gives him wins, and stays when he changes his.
+  await alice.e2e.rename(bobId, 'Μπάμπης');
+  assert.deepEqual([kept().name, kept().said], ['Μπάμπης', 'Bob']);
+  await bob.e2e.setMyName('Robert');
+  const again = await bob.e2e.seal(aliceId, '', bob.from, { keys: true });
+  await bob.e2e.keysGiven(aliceId);
+  await alice.e2e.receive(again.packet);
+  assert.deepEqual([kept().name, kept().said], ['Μπάμπης', 'Robert']);
+  // Taking his name away says so too.
+  await alice.e2e.rename(bobId, '');
+  await bob.e2e.setMyName('');
+  assert.equal(bob.e2e.keysDue().includes(aliceId), true);
+  const none = await bob.e2e.seal(aliceId, '', bob.from, { keys: true });
+  await bob.e2e.keysGiven(aliceId);
+  await alice.e2e.receive(none.packet);
+  assert.deepEqual([kept().name, kept().said], ['', '']);
+  // An ordinary message says nothing of it.
+  await bob.e2e.setMyName('Bob');
+  const plain = await bob.e2e.seal(aliceId, 'still me', bob.from);
+  await alice.e2e.receive(plain.packet);
+  assert.equal(kept().said, '');
+  // Kept as the chat is.
+  const reopened = await E2E.open('space', 1, bob.key);
+  assert.equal(reopened.myName(), 'Bob');
 });

@@ -862,6 +862,8 @@ la chat: l’altro telefono non lo vede. Un nome vuoto riporta l’inizio della 
 contatti non sia collegato a lui: allora riprende il suo nome la prossima volta che si apre la sua scheda, finché il
 collegamento resta (vedi [Contatti](#contacts)).
 
+**Il mio nome:** in Impostazioni → Privacy e sicurezza → **Il mio nome** puoi scegliere il nome che i tuoi contatti vedono al posto di un codice. Viene detto cifrato, solo ai contatti che hai accettato, e lo imparano anche i tuoi gruppi privati: lì, chi non è tuo contatto appare come «Nome · 1a2b», con l’inizio della sua chiave. Se hai dato a un contatto un nome tutto tuo (**Rinomina**), continui a vedere il tuo; quello che ha scelto lui compare nei suoi **Dettagli** come «Si fa chiamare» e come suggerimento nel campo per rinominare. Ogni spazio ha il suo nome, e così ogni luogo di chat nascoste (nelle sue impostazioni, accanto a **Ricevere da chiuse**): un luogo nascosto non prende mai il nome dello spazio e parte vuoto, e lo stesso nome in due di essi dice a chi li vede entrambi che sono tuoi. Un nome può avere al massimo 40 caratteri.
+
 Tocca il suo nome e poi **Immagine** per dargli un’immagine scelta da te, un segno su un colore, invece di quella
 disegnata dalla sua chiave. Oppure tocca **Foto** (o **Scatta foto**) per una foto: tagliata quadrata, rimpicciolita e
 ridisegnata, così non resta niente di quello che diceva oltre all’immagine (un luogo, un telefono), poi sigillata in un

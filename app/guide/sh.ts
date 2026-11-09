@@ -843,6 +843,8 @@ zapečaćeno s razgovorom: drugi telefon ga ne vidi. Prazno ime vraća početak 
 povezan neki od vaših kontakata: tada ona ponovo preuzima njegovo ime sljedeći put kad se njegova kartica otvori, dok
 veza ostaje (pogledajte [Kontakti](#contacts)).
 
+**Moje ime:** u Postavke → Privatnost i sigurnost → **Moje ime** možeš odabrati ime koje tvoji kontakti vide umjesto koda. Kaže se šifrirano, samo kontaktima koje si prihvatio, a uče ga i tvoje privatne grupe: tamo se oni koji nisu tvoji kontakti prikazuju kao „Ime · 1a2b“, s početkom njihova ključa. Ako si kontaktu dao vlastito ime (**Preimenuj**), i dalje vidiš svoje; ono koje je on odabrao piše u njegovim **Detaljima** kao „Naziva se“ i kao natuknica u polju za preimenovanje. Svaki prostor ima svoje ime, kao i svako mjesto skrivenih razgovora (u njegovim postavkama, uz **Primanje dok su zatvoreni**): skriveno mjesto nikad ne preuzima ime prostora i počinje prazno, a isto ime u dva od njih govori svakome tko vidi oba da su tvoji. Ime ima najviše 40 znakova.
+
 Dodirnite njegovo ime, a zatim **Slika** da toj osobi date sliku po vlastitom izboru, znak na boji, umjesto one
 iscrtane iz njenog ključa. Ili dodirnite **Fotografija** (ili **Snimi fotografiju**) za fotografiju: izrezanu u
 kvadrat, smanjenu i ponovo iscrtanu, pa se ne čuva ništa što je govorila osim same slike (mjesto, telefon), a zatim

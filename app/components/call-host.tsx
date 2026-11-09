@@ -151,7 +151,7 @@ export function CallHost() {
   const [speaker, setSpeaker] = useState(false);
   const known = useRef<Call | null>(null);
   const knownGroup = useRef<GroupCall | null>(null);
-  const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[] }>({ group: '', contacts: [] });
+  const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[]; said?: Readonly<Record<string, string>> }>({ group: '', contacts: [] });
 
   // A hidden place's Matrix call that rang with no name while it was closed, and rings in it now
   // that the PIN on the ring screen opened it (lib/matrix-calls.ts): answered at once, as below.
@@ -189,7 +189,7 @@ export function CallHost() {
         // Named as its group is: the space's, or a hidden place's while its chats are open (lib/place-groups.ts).
         void shown.place
           .names?.(call.group)
-          .then((named) => setNames({ group: named.group || t('Group'), contacts: named.contacts }))
+          .then((named) => setNames({ group: named.group || t('Group'), contacts: named.contacts, said: named.said }))
           .catch(() => undefined);
       }
       setShown((n) => n + 1);
@@ -242,7 +242,7 @@ export function CallHost() {
         <GroupCallScreen
           call={call}
           groupName={names.group || t('Group')}
-          name={(identity) => group.place.name?.(identity) ?? memberName(identity, names.contacts)}
+          name={(identity) => group.place.name?.(identity) ?? memberName(identity, names.contacts, (i) => names.said?.[i] ?? '')}
           speaker={speaker}
           onSpeaker={(on) => {
             setSpeaker(on);

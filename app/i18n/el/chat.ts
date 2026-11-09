@@ -398,4 +398,9 @@ export const chat: Record<string, string> = {
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "Ή ακούμπησε την πλάτη του τηλεφώνου του στην πλάτη του δικού σου: το τηλέφωνό του ανοίγει την πρόσκληση.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "Ή ακούμπησε την πλάτη του τηλεφώνου του στην πλάτη του δικού σου: το τηλέφωνό του ανοίγει τον σύνδεσμο επαφής σου.",
   "Turn on NFC in Android's settings to give it by touching phones too.": "Άνοιξε το NFC στις ρυθμίσεις του Android για να το δίνεις και ακουμπώντας τα τηλέφωνα.",
+  'My name': 'Το όνομά μου',
+  'The name your contacts see in place of a code': 'Το όνομα που βλέπουν οι επαφές σου αντί για κωδικό',
+  'Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.': 'Οι επαφές και οι ιδιωτικές ομάδες το βλέπουν, κρυπτογραφημένο, αντί για έναν κωδικό. Κάθε χώρος και οι κρυφές συνομιλίες του έχουν το δικό τους: το ίδιο όνομα σε δύο από αυτά δείχνει σε όποιον βλέπει και τα δύο ότι είναι δικά σου.',
+  "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Ξεκινά κενό και δεν παίρνει ποτέ το όνομα του χώρου. Το ίδιο όνομα με του χώρου σου δείχνει σε όποιον βλέπει και τα δύο ότι είσαι εσύ.',
+  'Calls themselves: {name}': 'Όνομα που διάλεξε: {name}',
 };

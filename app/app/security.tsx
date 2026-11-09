@@ -9,16 +9,19 @@ import { AppState, View } from 'react-native';
 import { DesktopBackground } from '../components/desktop-background';
 import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
-import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { loadBatteryMode, saveBatteryMode, type BatteryMode } from '../lib/battery-mode';
 import { doorIsOpen, followDoor, setDoorOpen } from '../lib/closed-notices';
 import { DESKTOP } from '../lib/desktop';
 import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
+import { myNameAt, setMyNameAt } from '../lib/my-name';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
 import { PUSH_AVAILABLE } from '../lib/web-push';
 import { setLastSeen, setTellOpen } from '../lib/space-chats';
+import { spaceGroupsAt } from '../lib/space-groups';
+import { MAX_NAME } from '../lock/e2e-data';
 import {
   askBattery,
   askFullScreen,
@@ -49,6 +52,7 @@ type Editing = 'own' | 'second' | 'hidden' | 'biometric' | null;
 
 // The parts of this screen that open alone from Settings (lib/settings.ts), by their titles.
 const PARTS = {
+  myname: mark('My name'),
   lock: mark('Lock and second password'),
   hidden: mark('Hidden chats'),
   screen: mark('Screenshots'),
@@ -83,6 +87,8 @@ export default function Security() {
   // Whether the space's contacts see when it was last open, and it sees theirs (lib/last-seen.ts).
   const [lastSeen, setLastSeenShown] = useState<boolean | null>(null);
   const [tellOpen, setTellOpenShown] = useState(true);
+  // The name this space goes by (lib/my-name.ts): null until read.
+  const [myName, setMyName] = useState<string | null>(null);
 
   const reload = async () => {
     setConfig(await loadLockConfig());
@@ -91,7 +97,18 @@ export default function Security() {
     const data = await loadCurrentSpaceData().catch(() => null);
     setLastSeenShown(data?.lastSeen ?? null);
     setTellOpenShown(data?.tellOpen ?? true);
+    if (part === 'myname') setMyName(await myNameAt(spaceGroupsAt).catch(() => ''));
   };
+
+  async function saveMyName() {
+    if (myName === null) return;
+    try {
+      await setMyNameAt(spaceGroupsAt, myName);
+      setMyName(await myNameAt(spaceGroupsAt));
+    } catch (error) {
+      setNote(String((error as Error)?.message ?? error));
+    }
+  }
 
   async function changeLastSeen(on: boolean) {
     await setLastSeen(on);
@@ -202,6 +219,20 @@ export default function Security() {
   return (
     <Page>
       <Text variant="title">{part ? t(PARTS[part]) : t('Lock')}</Text>
+
+      {part === 'myname' && myName !== null ? (
+        <Field label={t('My name')} hint={t('Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.')}>
+          <Input
+            value={myName}
+            onChangeText={setMyName}
+            onEndEditing={() => void saveMyName()}
+            onSubmitEditing={() => void saveMyName()}
+            placeholder={t('Name')}
+            maxLength={MAX_NAME}
+            autoCorrect={false}
+          />
+        </Field>
+      ) : null}
 
       {shows('lock') ? (
         <>

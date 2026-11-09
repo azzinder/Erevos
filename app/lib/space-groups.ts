@@ -125,7 +125,10 @@ export function openGroups({ data, save, pub, savePub, settings, chats }: {
   const meAt = (kind: 'groupHex' | 'publicHex') => async () => {
     const [{ e2e }, place] = await Promise.all([chats(), settings()]);
     // On a linked device that holds the groups (lib/devices.ts), the account's, as on the phone.
-    return { id: e2e.own()?.identity || toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
+    // In private groups, the name these chats go by (Settings, My name), when they have one; a
+    // public group says the name chosen for it alone (lib/public-groups.ts aboutAs).
+    const name = kind === 'groupHex' ? e2e.myName() : '';
+    return { id: e2e.own()?.identity || toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey, ...(name ? { name } : {}) };
   };
   return new PublicGroups(data, save, meAt('groupHex'), pub, savePub, relayDoors(settings), meAt('publicHex'));
 }
@@ -191,6 +194,11 @@ export function spaceGroupsNow(): PublicGroups | null {
 /** A member of one of the open space's public groups, by its key there, once the groups are open; null for anyone else. */
 export function publicMemberName(key: string): string | null {
   return shown?.nameOf(key) ?? null;
+}
+
+/** The name a member of the open space's private groups goes by, as its keys last said, or '' (Groups.saidName). */
+export function groupMemberSaid(identity: string): string {
+  return shown?.saidName(identity) ?? '';
 }
 
 /**
@@ -287,6 +295,7 @@ export function groupCalls(groups: () => Promise<PublicGroups>, transport: Group
       return {
         group: made.list().find((g) => g.id === group)?.name ?? '',
         contacts: e2e.contacts().map((c) => ({ identity: c.identity, name: c.name })),
+        said: made.saidNames(),
       };
     },
   };

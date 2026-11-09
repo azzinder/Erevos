@@ -131,7 +131,9 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
   const left = useRef<string | null | undefined>(undefined);
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
   const pub = usePublicGroup(id);
-  const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
+  // The names members go by, as their keys last said (lib/groups.ts saidName): shown for those who are no named contact.
+  const [said, setSaid] = useState<Readonly<Record<string, string>>>({});
+  const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts, (i) => said[i] ?? ''));
   // The name a member's picture takes its letter from: none for one who is not a named contact, as
   // "member 1a2b…" would give each the same letter.
   const faceName = (identity: string) => (pub.isPublic ? pub.name(identity) : (contacts.find((c) => c.identity === identity)?.name ?? ''));
@@ -303,9 +305,13 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
       .then((groups) => {
         if (!active) return;
         void load();
+        setSaid(groups.saidNames());
+        // Reading the members learns the names they go by now.
+        void groups.members(id).catch(() => undefined);
         // Marking it read changes it too: only what came reloads it.
         let seen = groups.messages(id).length;
         stop = groups.onChange(() => {
+          setSaid(groups.saidNames());
           const now = groups.messages(id).length;
           const listed = groups.list().find((g) => g.id === id) ?? null;
           setInfo(listed);

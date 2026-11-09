@@ -15,6 +15,7 @@ import {
   MAX_GROUP_MESSAGES,
   MAX_HELD_GROUPS,
   MAX_LATER,
+  MAX_MEMBER_NAMES,
   MAX_ORPHANS,
   MAX_OUTBOX,
   type About,
@@ -618,7 +619,40 @@ export class Groups {
       own: number;
       members: { leaf: number; about: string }[];
     };
-    return json.members.map((m) => ({ leaf: m.leaf, about: aboutOf(m.about), me: m.leaf === json.own }));
+    const members = json.members.map((m) => ({ leaf: m.leaf, about: aboutOf(m.about), me: m.leaf === json.own }));
+    if (!this.isPublic(id)) this.learnNames(members);
+    return members;
+  }
+
+  // Keeps the names the members of a private group go by (GroupData.names), as their keys say now.
+  private learnNames(members: GroupMember[]): void {
+    const names = { ...(this.data.names ?? {}) };
+    let changed = false;
+    for (const m of members) {
+      if (m.me || !m.about) continue;
+      const name = m.about.name ?? '';
+      if ((names[m.about.id] ?? '') === name) continue;
+      // Learned again, it goes last, so the earliest learned are the first forgotten.
+      delete names[m.about.id];
+      if (name) names[m.about.id] = name;
+      changed = true;
+    }
+    if (!changed) return;
+    const kept = Object.entries(names).slice(-MAX_MEMBER_NAMES);
+    const { names: _names, ...rest } = this.data;
+    this.data = kept.length > 0 ? { ...rest, names: Object.fromEntries(kept) } : rest;
+    void this.run(() => this.save({ ...this.data })).catch(() => undefined);
+    this.changed();
+  }
+
+  /** The name a member of a private group goes by, as its keys last said, or ''. */
+  saidName(identity: string): string {
+    return this.data.names?.[identity] ?? '';
+  }
+
+  /** The names members of the private groups go by, by identity (GroupData.names). */
+  saidNames(): Readonly<Record<string, string>> {
+    return this.data.names ?? {};
   }
 
   /** Locks a group with a PIN of its own here, as kept (lock/chat-pin.ts); null takes it off. */
@@ -1658,10 +1692,17 @@ export class Groups {
 // Every photo, file and voice message the groups keep.
 const filesIn = (data: GroupData): FileRef[] => data.groups.flatMap((g) => g.messages.flatMap((m) => (m.file ? [m.file] : [])));
 
-/** A member's name: the one its chat has here, or the start of its key, as a contact's or a member's. */
-export function memberName(identity: string, contacts: { identity: string; name: string }[]): string {
+/**
+ * A member's name: the one its chat has here (the name given to the contact, or the one they go
+ * by), or else the name it goes by in the group (`said`, Groups.saidName) with the start of its key,
+ * so two who chose the same are told apart and none passes for another; or the start of its key.
+ */
+export function memberName(identity: string, contacts: { identity: string; name: string }[], said: (identity: string) => string = () => ''): string {
   const contact = contacts.find((c) => c.identity === identity);
-  return contact?.name || (contact ? t('contact {id}', { id: identity.slice(0, 8) }) : t('member {id}', { id: identity.slice(0, 8) }));
+  if (contact?.name) return contact.name;
+  const name = said(identity);
+  if (name) return `${name} · ${identity.slice(0, 4)}`;
+  return contact ? t('contact {id}', { id: identity.slice(0, 8) }) : t('member {id}', { id: identity.slice(0, 8) });
 }
 
 /** A note's text as the group shows it, with `name` giving each identity's name. */

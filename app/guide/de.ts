@@ -925,6 +925,8 @@ diesem Telefon, versiegelt mit dem Chat: Das andere Telefon sieht ihn nicht. Ein
 Schlüssels zurück, außer einer deiner Kontakte ist mit dem Chat verknüpft: Dann übernimmt er dessen Namen wieder, wenn
 sich seine Karte das nächste Mal öffnet, während die Verknüpfung bleibt (siehe [Kontakte](#contacts)).
 
+**Mein Name:** Unter Einstellungen → Datenschutz und Sicherheit → **Mein Name** wählst du den Namen, den deine Kontakte statt eines Codes sehen. Er wird verschlüsselt gesagt, nur den Kontakten, die du angenommen hast, und deine privaten Gruppen erfahren ihn auch: Dort erscheinen alle, die nicht deine Kontakte sind, als „Name · 1a2b“, mit dem Anfang ihres Schlüssels. Hast du einem Kontakt einen eigenen Namen gegeben (**Umbenennen**), siehst du weiter deinen; der, den er gewählt hat, steht in seinen **Details** als „Nennt sich selbst“ und als Hinweis im Feld zum Umbenennen. Jeder Space hat seinen eigenen Namen, ebenso jeder Ort versteckter Chats (in seinen Einstellungen, neben **Empfangen, wenn geschlossen**): Ein versteckter Ort übernimmt nie den Namen des Spaces und beginnt leer, und derselbe Name in zweien davon zeigt jedem, der beide sieht, dass sie dir gehören. Ein Name hat höchstens 40 Zeichen.
+
 Tippe auf seinen Namen und dann auf **Bild**, um ihm ein Bild deiner eigenen Wahl zu geben, ein Zeichen auf einer
 Farbe, statt des aus seinem Schlüssel gezeichneten. Oder tippe auf **Foto** (oder **Foto aufnehmen**) für ein Foto:
 quadratisch zugeschnitten, verkleinert und neu gezeichnet, sodass nichts, was es außer seinem Bild sagte (ein Ort, ein

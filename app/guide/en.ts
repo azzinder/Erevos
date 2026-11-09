@@ -797,6 +797,8 @@ Open a chat, tap its name and then **Rename** to give it a name. The name stays 
 does not see it. An empty name brings back the start of their key, unless one of your contacts is linked to them: then they take its
 name again the next time its card opens, while the link stays (see [Contacts](#contacts)).
 
+**My name:** under Settings → Privacy and security → **My name** you can choose the name your contacts see in place of a code. It is told encrypted, only to the contacts you accepted, and your private groups learn it too: there, those who are not your contacts show as "Name · 1a2b", with the start of their key. If you gave a contact a name of your own (**Rename**), you keep seeing yours; the one they chose shows in their **Details** as "Calls themselves" and as the hint in the rename field. Each space has its own name, and so has each place of hidden chats (in its settings, beside **Receive while closed**): a hidden place never takes the space's name and starts empty, and the same name in two of them tells whoever sees both that they are yours. A name can have 40 characters at most.
+
 Tap its name and then **Picture** to give them a picture of your own choosing, a sign on a colour, instead of the one drawn
 from their key. Or tap **Photo** (or **Take photo**) for a photo: cut square, made small and drawn anew, so nothing it said besides its
 picture (a place, a phone) is kept, then sealed in a file of its own. It too stays on this phone, and goes into backups;

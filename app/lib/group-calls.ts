@@ -24,7 +24,7 @@ export type GroupCallPlace = {
   /** Keeps a line in the group. */
   line(group: string, text: string): void;
   /** The group's name, and the contacts its members are named by, for the call screen. */
-  names?(group: string): Promise<{ group: string; contacts: { identity: string; name: string }[] }>;
+  names?(group: string): Promise<{ group: string; contacts: { identity: string; name: string }[]; said?: Readonly<Record<string, string>> }>;
   /** A member's name by their identity, when the place names them itself (XMPP: by address). */
   name?(identity: string): string;
   /** Answers through the call relay whatever the offer has (GroupCallOptions.relayAlways). */

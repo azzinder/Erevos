@@ -397,4 +397,9 @@ export const chat: Record<string, string> = {
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "Oppure appoggia il retro del suo telefono al retro del tuo: il suo telefono apre l’invito.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "Oppure appoggia il retro del suo telefono al retro del tuo: il suo telefono apre il tuo link di contatto.",
   "Turn on NFC in Android's settings to give it by touching phones too.": "Attiva l’NFC nelle impostazioni di Android per darlo anche avvicinando i telefoni.",
+  'My name': 'Il mio nome',
+  'The name your contacts see in place of a code': 'Il nome che i tuoi contatti vedono al posto di un codice',
+  'Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.': 'I contatti e i gruppi privati lo vedono, cifrato, al posto di un codice. Ogni spazio e le sue chat nascoste hanno il proprio: lo stesso nome in due di essi dice a chi li vede entrambi che sono tuoi.',
+  "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Parte vuoto e non prende mai il nome dello spazio. Lo stesso nome di quello del tuo spazio dice a chi vede entrambi che sei tu.',
+  'Calls themselves: {name}': 'Si fa chiamare: {name}',
 };

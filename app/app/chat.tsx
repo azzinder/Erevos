@@ -185,6 +185,7 @@ import { answerInvites, answerTextInvite, cardShown, contactCard, expireTextInvi
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, setTellOpen, spaceChats, type SpaceChats } from '../lib/space-chats';
 import { placeChats, setPlaceLastSeen, setPlaceTellOpen } from '../lib/place-chats';
+import { myNameAt, setMyNameAt } from '../lib/my-name';
 import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
@@ -585,6 +586,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [watched, setWatched] = useState(false);
   // Whether these hidden chats receive while closed, as the space's chats do (lock/hidden-keep.ts).
   const [receiving, setReceiving] = useState(false);
+  // The name these hidden chats go by (lib/my-name.ts): null until read.
+  const [placeName, setPlaceName] = useState<string | null>(null);
   // Whether a dot on the search of the space's chats says these hidden chats have a message unread (SpaceData.sign, lib/unread-signs.ts).
   const [placeSign, setPlaceSign] = useState(false);
   // Whether the Collection is on, for its way in at the top of hidden chats (lib/modules.ts).
@@ -3790,7 +3793,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setRenaming(null);
       return;
     }
-    setNameDraft(contactName(peer, contacts) ?? '');
+    // The name this phone gives them; the one they go by shows as the field's hint.
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    setNameDraft(contacts.find((c) => c.identity === identity)?.ownName ?? '');
     setRenaming(peer);
   }
 
@@ -5066,6 +5071,32 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  useEffect(() => {
+    if (!placeGroups) {
+      setPlaceName(null);
+      return;
+    }
+    let active = true;
+    myNameAt(placeGroups).then(
+      (name) => active && setPlaceName(name),
+      () => active && setPlaceName(''),
+    );
+    return () => {
+      active = false;
+    };
+  }, [placeGroups]);
+
+  // Saves the name these hidden chats go by, and has their private groups say it.
+  async function savePlaceName() {
+    if (!placeGroups || placeName === null) return;
+    try {
+      await setMyNameAt(placeGroups, placeName);
+      setPlaceName(await myNameAt(placeGroups));
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   // Has these hidden chats receive while closed, their key kept with the space (lock/hidden-keep.ts), or no longer.
   async function changeReceiving(on: boolean) {
     if (!hiddenKey) return;
@@ -5846,6 +5877,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return () => keepPrivate('shots', false);
   }, [shotsBlocked]);
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
+  const said = contacts.find((c) => c.identity === selectedIdentity)?.said ?? '';
+  const ownName = contacts.find((c) => c.identity === selectedIdentity)?.ownName ?? '';
   const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
   // A group or Chat with myself shown here tells its own look itself, and once it closes the chat
   // tells this one's again.
@@ -6108,7 +6141,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                               value={nameDraft}
                               onChangeText={setNameDraft}
                               onSubmitEditing={() => void rename(selectedContact)}
-                              placeholder={t('Name')}
+                              placeholder={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === selectedContact)?.said || t('Name')}
                               maxLength={MAX_NAME}
                               autoFocus
                               style={styles.grow}
@@ -6116,6 +6149,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             <Button title={t('Save')} compact onPress={() => void rename(selectedContact)} />
                           </Row>
                         </View>
+                      ) : null}
+                      {said && said !== ownName ? (
+                        <Text variant="caption" tone="muted">
+                          {t('Calls themselves: {name}', { name: said })}
+                        </Text>
                       ) : null}
                       {opened === 'picture' ? (
                         <View style={styles.group}>
@@ -6872,6 +6910,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : null}
             {hiddenKey ? (
               <View style={styles.panel}>
+                {placeName !== null ? (
+                  <Field label={t('My name')} hint={t("Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.")}>
+                    <Input
+                      value={placeName}
+                      onChangeText={setPlaceName}
+                      onEndEditing={() => void savePlaceName()}
+                      onSubmitEditing={() => void savePlaceName()}
+                      placeholder={t('Name')}
+                      maxLength={MAX_NAME}
+                      autoCorrect={false}
+                    />
+                  </Field>
+                ) : null}
                 <DetailRow title={t('Receive while closed')} checked={receiving} onPress={() => void changeReceiving(!receiving)} />
                 <Text variant="caption" tone="muted">
                   {receiving
