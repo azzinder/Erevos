@@ -1,0 +1,248 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+name: release-android
+
+# Adds the Android APK to a release that went out without it, as its apk job failed (7.0.0-rc.5:
+# Gradle's own download answered HTTP 504): on this repository and on the public download
+# repository, with the release's SHA256SUMS, version.json (which Updates → Check for updates reads
+# for the APK's address, size and SHA-256) and notes made to list it. Built from the release's own
+# commit, version and build number, the way the release workflow's apk job builds it (release.yml),
+# signed with the same release key, so it is the same Erevos as the release's other packages and
+# the phones take it as that build. Only by hand: Actions, release-android, Run workflow.
+#
+# Its add job waits for a release-macos run under way (the same concurrency group), as both rewrite
+# the release's SHA256SUMS and notes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release that has no APK, e.g. 7.0.0-rc.5.
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-android
+  cancel-in-progress: false
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  # The release's commit and build number.
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      build: ${{ steps.check.outputs.build }}
+      commit: ${{ steps.check.outputs.commit }}
+    steps:
+      - name: Check the release is there and has no APK
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WANTED: ${{ inputs.version }}
+        run: |
+          version=${WANTED#v}
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $version. It looks like 3.0.0, or 4.0.0-rc.1."; exit 1
+          fi
+          assets=$(gh release view "v$version" --json assets --jq '.assets[].name') || {
+            echo "::error::There is no release v$version"; exit 1; }
+          # An APK its SHA256SUMS does not list came from a run cut short: it is made again.
+          if grep -qx erevos-android.apk <<< "$assets" && grep -qx SHA256SUMS <<< "$assets" &&
+            gh release download "v$version" -p SHA256SUMS -O - | grep -q '  erevos-android.apk$'; then
+            echo "::error::v$version already has erevos-android.apk"; exit 1
+          fi
+          build=$(gh release download "v$version" -p version.json -O - | jq -er .build)
+          commit=$(gh api "repos/$GH_REPO/commits/v$version" --jq .sha)
+          echo "v$version: build $build, commit ${commit::7}."
+          { echo "version=$version"; echo "build=$build"; echo "commit=$commit"; } >> "$GITHUB_OUTPUT"
+
+  # The same steps as the release workflow's apk job, with the release's build number, and the APK
+  # handed on as an artifact kept one day.
+  apk:
+    needs: release
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      EREVOS_BUILD: ${{ needs.release.outputs.build }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.release.outputs.commit }}
+
+      - name: Check the release signing key is there
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!name}" ] || { echo "::error::The secret $name is missing."; exit 1; }
+          done
+
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          sudo docker image prune --all --force
+          df -h /
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: transports/go.mod
+          cache-dependency-path: transports/go.sum
+
+      - name: Generate the Android project
+        working-directory: app
+        run: |
+          npm ci
+          npx expo prebuild --platform android --no-install
+
+      - name: Set up the release signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/android/app/release.keystore
+          keytool -list -v -keystore app/android/app/release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" |
+            sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' > release-fingerprint
+          [ -s release-fingerprint ] || { echo "::error::The release key's fingerprint could not be read"; exit 1; }
+          echo "Release key SHA-256: $(cat release-fingerprint)"
+
+      # Gradle's own download fails now and then (HTTP 504): fetched first, tried four times.
+      - name: Fetch Gradle
+        working-directory: app/android
+        run: |
+          for wait in 15 30 60 0; do ./gradlew --version --no-daemon && exit 0; [ "$wait" = 0 ] && break; echo "::warning::Gradle's download failed; again in $wait s"; sleep "$wait"; done
+          exit 1
+
+      - name: Build the release APK
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Check the APK
+        run: |
+          cp app/android/app/build/outputs/apk/release/app-release.apk erevos-android.apk
+          rm -f app/android/app/release.keystore
+          unzip -l erevos-android.apk 'lib/arm64-v8a/*' | grep -q 'erevos' \
+            || { echo "::error::The Erevos core is missing from the APK"; unzip -l erevos-android.apk 'lib/*'; exit 1; }
+          unzip -v erevos-android.apk 'lib/arm64-v8a/liblyrebird.so' | grep -q 'Defl.*liblyrebird' \
+            || { echo "::error::lyrebird (Tor bridges) is missing from the APK, or Android would not unpack it"; unzip -v erevos-android.apk 'lib/*'; exit 1; }
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --print-certs erevos-android.apk | tee signature
+          if grep -i 'certificate SHA-1 digest' signature | tr -d ':' | grep -qi 5e8f16062ea3cd2c4a0d547876baa6f38cabf625; then
+            echo "::error::The APK is signed with the debug key"; exit 1
+          fi
+          grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
+            || { echo "::error::The APK is not signed with the release key"; exit 1; }
+          # The build number the release has, which phones compare.
+          aapt2="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt2"
+          "$aapt2" dump badging erevos-android.apk | head -1 | tee badging
+          grep -q "versionCode='$EREVOS_BUILD'" badging || { echo "::error::The APK is not build $EREVOS_BUILD"; exit 1; }
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: erevos-android
+          path: erevos-android.apk
+          retention-days: 1
+
+  add:
+    needs: [release, apk]
+    runs-on: ubuntu-latest
+    # Not at the same time as release-macos's run, which rewrites the same files.
+    concurrency:
+      group: release-macos
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: azzinder/erevos-releases
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: erevos-android
+          path: files
+
+      - name: Add the APK to the release, its SHA256SUMS, version.json and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release download "v$EREVOS_VERSION" -D files -p SHA256SUMS --clobber ||
+            again gh release download "v$EREVOS_VERSION" --repo "$RELEASES_REPO" -D files -p SHA256SUMS --clobber
+          again gh release download "v$EREVOS_VERSION" -D before -p version.json --clobber
+          (cd files && { grep -v '  erevos-android.apk$' SHA256SUMS || true; } > sums && sha256sum erevos-android.apk >> sums &&
+            sort -k2,2 sums > SHA256SUMS && rm sums && cat SHA256SUMS)
+          jq --arg url "https://github.com/$RELEASES_REPO/releases/download/v$EREVOS_VERSION/erevos-android.apk" \
+            --argjson size "$(stat -c %s files/erevos-android.apk)" --arg sha256 "$(sha256sum files/erevos-android.apk | cut -d' ' -f1)" \
+            '.apk = {url: $url, size: $size, sha256: $sha256}' before/version.json > files/version.json
+          cat files/version.json
+          gh release view "v$EREVOS_VERSION" --json body --jq .body > notes-before.md
+          # The Android line first, where the release workflow puts it; and Android out of "Not in
+          # this release", or that line out when nothing else is missing.
+          python3 - notes-before.md notes.md <<'PY'
+          import re, sys
+          line = ("- **Android** 7 or newer (64-bit): in Erevos, Updates → Check for updates → Install. "
+                  "Or open this page on the phone and tap erevos-android.apk.")
+          rows = open(sys.argv[1]).read().split('\n')
+          if not any(r.startswith('- **Android**') for r in rows):
+              before = [i for i, r in enumerate(rows) if r.startswith('- **')]
+              rows.insert(before[0] if before else 2, line)
+          out = []
+          for r in rows:
+              m = re.match(r'Not in this release: (.*?) \((.*)$', r)
+              if m:
+                  rest = [p.strip() for p in m.group(1).split(',') if p.strip() != 'Android']
+                  if not rest:
+                      continue
+                  r = f"Not in this release: {', '.join(rest)} ({m.group(2)}"
+              out.append(r)
+          open(sys.argv[2], 'w').write('\n'.join(out))
+          PY
+          diff notes-before.md notes.md || true
+          again gh release upload "v$EREVOS_VERSION" files/erevos-android.apk files/SHA256SUMS files/version.json --clobber
+          again gh release edit "v$EREVOS_VERSION" --notes-file notes.md
+
+      - name: Add it to the public download repository
+        if: ${{ env.RELEASES_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release upload "v$EREVOS_VERSION" files/erevos-android.apk files/SHA256SUMS files/version.json --repo "$RELEASES_REPO" --clobber
+          again gh release edit "v$EREVOS_VERSION" --repo "$RELEASES_REPO" --notes-file notes.md
