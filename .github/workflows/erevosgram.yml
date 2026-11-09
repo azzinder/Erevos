@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: The version it shows, e.g. 7.0.0-rc.6.
+        description: The version it shows, e.g. 7.1.0-EGram-beta1.
         required: true
       build:
         description: Its build number, above the one on the phone.
@@ -54,7 +54,8 @@ jobs:
           EREVOS_TG_API_ID: ${{ secrets.EREVOS_TG_API_ID }}
           EREVOS_TG_API_HASH: ${{ secrets.EREVOS_TG_API_HASH }}
         run: |
-          if [[ ! "$EREVOS_VERSION" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+          # A release's name, or an ErevosGram test's own: 7.1.0-EGram-beta1.
+          if [[ ! "$EREVOS_VERSION" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*|-EGram-(alpha|beta|rc)[1-9][0-9]*)?$ ]]; then
             echo "::error::Not a version: $EREVOS_VERSION"; exit 1
           fi
           [[ "$EREVOS_BUILD" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Not a build number: $EREVOS_BUILD"; exit 1; }
