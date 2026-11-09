@@ -48,7 +48,7 @@
       "executableName": "erevos",
       "artifactName": "erevos-${arch}.${ext}",
       "category": "Network;InstantMessaging",
-      "synopsis": "Private messenger",
+      "synopsis": "Private chats and encrypted files",
       "description": "End-to-end encrypted chats through relays you choose, with no account, phone number or email.",
       "maintainer": "azzinder",
       "vendor": "azzinder"

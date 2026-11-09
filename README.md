@@ -1,6 +1,8 @@
 # Erevos
 
-A private messenger with no phone number, no email and no account.
+One private place for your conversations and your files: chats and calls with no phone number, no email and no
+account, over the internet or without it, with Matrix, XMPP and Nostr too, and an encrypted Collection for your
+photos, videos, music and documents.
 
 **Not audited.** This is early work. No one outside the project has reviewed the code or the
 cryptography. Do not rely on it to protect anyone yet.

@@ -3,7 +3,7 @@
 # Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 Name:       erevos
-Summary:    Private messenger
+Summary:    Private chats and encrypted files
 Version:    0.0.1
 Release:    1
 License:    AGPLv3+

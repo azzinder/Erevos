@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Erevos
-Comment=Private messenger
+Comment=Private chats and encrypted files
 Icon=erevos
 Exec=erevos
 X-Nemo-Application-Type=silica-qt5
