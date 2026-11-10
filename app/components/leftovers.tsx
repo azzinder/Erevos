@@ -67,49 +67,79 @@ export function LeftoversCard({ onDeleted }: { onDeleted?: () => void }) {
     return true;
   }
 
+  // What `text` opens: hidden chats of the open space, another space, or hidden chats of a space
+  // opened here before. Null when nothing.
+  async function openOne(text: string): Promise<Place | null> {
+    const open = currentSpace();
+    const opened = await searchOpens(open.space, text);
+    if (opened && "place" in opened)
+      return {
+        holder: hiddenHolder(opened.place.pocket),
+        space: open.space,
+        key: opened.place.key,
+      };
+    if (opened)
+      return {
+        holder: "space",
+        space: opened.space.space,
+        key: opened.space.key,
+      };
+    for (const other of new Set(
+      places.current
+        .filter((p) => p.holder === "space" && p.space !== open.space)
+        .map((p) => p.space),
+    )) {
+      const hidden = await searchHidden(other, text);
+      if (hidden)
+        return {
+          holder: hiddenHolder(hidden.pocket),
+          space: other,
+          key: hidden.key,
+        };
+    }
+    return null;
+  }
+
   async function add() {
     const text = secret;
     setSecret("");
     if (!text) return;
     setBusy(true);
     try {
-      const open = currentSpace();
-      const opened = await searchOpens(open.space, text);
-      let place: Place | null = null;
-      if (opened && "place" in opened)
-        place = {
-          holder: hiddenHolder(opened.place.pocket),
-          space: open.space,
-          key: opened.place.key,
-        };
-      else if (opened)
-        place = {
-          holder: "space",
-          space: opened.space.space,
-          key: opened.space.key,
-        };
-      else {
-        // Hidden chats of another space opened here before.
-        for (const other of new Set(
-          places.current
-            .filter((p) => p.holder === "space" && p.space !== open.space)
-            .map((p) => p.space),
-        )) {
-          const hidden = await searchHidden(other, text);
-          if (hidden) {
-            place = {
-              holder: hiddenHolder(hidden.pocket),
-              space: other,
-              key: hidden.key,
-            };
-            break;
+      const whole = await openOne(text);
+      const parts = text.split(/[\s,;]+/).filter(Boolean);
+      if (whole || parts.length < 2) {
+        if (!whole)
+          say(t("Nothing opens with that. Check it and type it again."), true);
+        else if (keep(whole)) say(t("Opened, and it is read with the rest."));
+        else say(t("That one is read already."));
+        return;
+      }
+      // Several at once: each in turn, and those that opened nothing again once a space opened,
+      // since a hidden space's own hidden chats open only after it.
+      let left = parts;
+      let opened = 0;
+      for (;;) {
+        const still: string[] = [];
+        let spaceOpened = false;
+        for (const part of left) {
+          const place = await openOne(part);
+          if (!place) still.push(part);
+          else {
+            if (keep(place) && place.holder === "space") spaceOpened = true;
+            opened++;
           }
         }
+        left = still;
+        if (!spaceOpened || left.length === 0) break;
       }
-      if (!place)
-        say(t("Nothing opens with that. Check it and type it again."), true);
-      else if (keep(place)) say(t("Opened, and it is read with the rest."));
-      else say(t("That one is read already."));
+      say(
+        t("Opened {opened} of {count}; they are read with the rest.", {
+          opened,
+          count: parts.length,
+        }),
+        opened < parts.length,
+      );
     } catch (error) {
       say(error instanceof Error ? error.message : String(error), true);
     } finally {
@@ -162,7 +192,7 @@ export function LeftoversCard({ onDeleted }: { onDeleted?: () => void }) {
     <>
       <Text variant="caption" tone="muted" style={hint}>
         {t(
-          "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.",
+          "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time or several at once separated by commas or spaces, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.",
         )}
       </Text>
       <Field label={t("PIN or password")}>

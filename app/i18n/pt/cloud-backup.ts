@@ -151,6 +151,8 @@ export const cloudBackup: Record<string, string> = {
     "Parte do que um lugar guarda não pôde ser lida, por isso nada é tomado por resto. Tenta mais tarde.",
   "Nothing opens with that. Check it and type it again.":
     "Nada abre com isso. Verifica e escreve de novo.",
+  "Opened {opened} of {count}; they are read with the rest.":
+    "Abertos {opened} de {count}; são lidos com o resto.",
   "Opened, and it is read with the rest.":
     "Aberto, e é lido com o resto.",
   "That one is read already.":
@@ -161,8 +163,8 @@ export const cloudBackup: Record<string, string> = {
     "{size} de fotos e ficheiros que nenhum dos lugares lidos aqui nomeia (lugares lidos: {n}). Um lugar que não abriste aqui perde as suas fotos e ficheiros para sempre: abre todos primeiro. As cópias de segurança já feitas guardam-nos.",
   "{size} freed.":
     "{size} libertados.",
-  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
-    "As fotos e ficheiros que já nada no telefone nomeia, como os de uma importação que parou a meio, ficam nele e em cada cópia de segurança. Só um lugar aberto com a sua chave pode dizer quais são seus: por isso escreve aqui primeiro, um de cada vez, o PIN de cada uma das tuas conversas ocultas e a palavra-passe de qualquer outro espaço que tenhas. Este espaço é lido por si. Nada é apagado antes de veres quanto é e dizeres que sim; um ficheiro escrito no último dia nunca é tomado.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time or several at once separated by commas or spaces, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "As fotos e ficheiros que já nada no telefone nomeia, como os de uma importação que parou a meio, ficam nele e em cada cópia de segurança. Só um lugar aberto com a sua chave pode dizer quais são seus: por isso escreve aqui primeiro, um de cada vez ou vários de uma vez separados por vírgulas ou espaços, o PIN de cada uma das tuas conversas ocultas e a palavra-passe de qualquer outro espaço que tenhas. Este espaço é lido por si. Nada é apagado antes de veres quanto é e dizeres que sim; um ficheiro escrito no último dia nunca é tomado.",
   "PIN or password":
     "PIN ou palavra-passe",
   "Read with this space: {n}":

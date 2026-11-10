@@ -151,6 +151,8 @@ export const cloudBackup: Record<string, string> = {
     "Dio onoga što neko mjesto čuva nije se mogao pročitati, pa se ništa ne smatra ostatkom. Pokušaj kasnije.",
   "Nothing opens with that. Check it and type it again.":
     "S tim se ništa ne otvara. Provjeri i upiši ponovo.",
+  "Opened {opened} of {count}; they are read with the rest.":
+    "Otvoreno {opened} od {count}; čitaju se s ostalima.",
   "Opened, and it is read with the rest.":
     "Otvoreno, i čita se s ostalim.",
   "That one is read already.":
@@ -161,8 +163,8 @@ export const cloudBackup: Record<string, string> = {
     "{size} fotografija i datoteka koje ne navodi nijedno od ovdje pročitanih mjesta (pročitana mjesta: {n}). Mjesto koje ovdje nisi otvorio zauvijek gubi svoje fotografije i datoteke: prvo otvori sva. Već napravljene rezervne kopije ih čuvaju.",
   "{size} freed.":
     "Oslobođeno {size}.",
-  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
-    "Fotografije i datoteke koje više ništa na telefonu ne navodi, poput onih iz uvoza prekinutog na pola, ostaju na njemu i u svakoj rezervnoj kopiji. Samo mjesto otvoreno svojim ključem može reći koje su njegove: zato ovdje prvo upiši, jedan po jedan, PIN svakog svog skrivenog razgovora i lozinku svakog drugog prostora koji imaš. Ovaj prostor se čita sam. Ništa se ne briše prije nego vidiš koliko je i kažeš da; datoteka upisana u posljednjem danu nikad se ne uzima.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time or several at once separated by commas or spaces, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Fotografije i datoteke koje više ništa na telefonu ne navodi, poput onih iz uvoza prekinutog na pola, ostaju na njemu i u svakoj rezervnoj kopiji. Samo mjesto otvoreno svojim ključem može reći koje su njegove: zato ovdje prvo upiši, jedan po jedan ili više odjednom odvojenih zarezom ili razmakom, PIN svakog svog skrivenog razgovora i lozinku svakog drugog prostora koji imaš. Ovaj prostor se čita sam. Ništa se ne briše prije nego vidiš koliko je i kažeš da; datoteka upisana u posljednjem danu nikad se ne uzima.",
   "PIN or password":
     "PIN ili lozinka",
   "Read with this space: {n}":
