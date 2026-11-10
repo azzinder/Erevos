@@ -15,7 +15,7 @@ import { useColors } from '../theme/context';
 import { Button, Card, Row, Text } from './ui';
 
 // Erevos as the phone app and as the SMS app, for the Phone and the SMS among `modules`
-// (lib/modules.ts): what Android asks first, at the first start's setup (components/setup.tsx)
+// (lib/modules.ts): what Android asks first, in the first start's steps (app/first-steps.tsx)
 // and when either is turned on again (app/permissions.tsx). Whether it is, read again on coming
 // back from Android's question. Their own settings (app/phone-settings.tsx, app/sms-settings.tsx)
 // say the rest.

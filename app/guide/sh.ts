@@ -285,11 +285,24 @@ s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora 
 aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu, u aplikaciji za računar, u web aplikaciji i na Sailfish OS-u. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
-Pri sasvim prvom pokretanju, prije nego se otvori njegov prvi prostor, Erevos se postavlja kao instalater, u nekoliko
-koraka: šta je Erevos i njegov jezik; koje module koristiti, svaki s onim što radi; zatim, na Android telefonu, ono što
-Android treba dozvoliti za njih, među tim Erevos kao aplikacija za telefon i kao aplikacija za SMS, svaki sa svojim
-dugmetom. **Pokreni Erevos** čuva izbor i otvara prvi prostor. Nakon ažuriranja svaki modul ostaje uključen, kao
-prije, dok ih ne promijenite.
+Pri sasvim prvom pokretanju Erevos se postavlja kao instalater. Prije nego se otvori njegov prvi prostor: što ne dajete
+(ni broj telefona, ni e-poštu, ni korisničko ime, ni račun: ljude dodajete QR kodom ili linkom, ili vas oni pozovu), ime
+za vaše kontakte ako ga želite, i jezik; zatim koje module koristiti, svaki s onim što radi. Zatim, u prostoru: ekran za
+svaki izabrani modul, s onim kako početi s njim (za Erevos, kako ulazite; za Telefon i SMS, Erevos kao aplikacija za
+telefon i kao aplikacija za SMS; za Nostr, Matrix i XMPP, vaš račun tamo) i što Android, ili preglednik, treba dozvoliti
+za njega. Svaka dozvola je na prvom ekranu koji je treba, a **Dozvoli sve, jedno po jedno** postavlja pitanja koja
+Android postavlja u samom Erevosu, jedno za drugim. Zatim zaključavanje lozinkom i automatske rezervne kopije, pa što je
+spremno i što nedostaje, uz **Pozovite nekoga**. **Ostalo kasnije** ostavlja ostalo za Postavke; dok ne završite ili
+odgodite, koraci se opet prikazuju kad se Erevos pokrene. Otvoren s pozivom, Erevos ga prikazuje kad se koraci završe.
+Nakon ažuriranja svaki modul ostaje uključen, kao prije, dok ih ne promijenite.
+
+- **Ime:** nije korisničko ime: nitko ga ne traži i ne mora biti jedinstveno. Ide, šifrirano, samo onima koje dodate, a
+  mijenja ga **Moje ime** pod Postavke → Privatnost i sigurnost.
+- **Prelazak s drugog telefona:** na Androidu **Već imam Erevos na drugom telefonu** preskače ime i module, koji dolaze
+  s rezervnom kopijom. Prostor se otvara, **Otvori rezervne kopije** je vraća (vidi [Prelazak na novi
+  telefon](#new-phone)), i slijede ekrani modula koje donosi, zatim otisak prsta i mapa automatskih rezervnih kopija,
+  koji ostaju uz svaki telefon. **Još nemam rezervnu kopiju** kaže kako je napraviti.
+- **Na računaru ili u pregledniku:** **Poveži s mojim telefonom** preskače korake i otvara **Povezani uređaji**.
 
 - **Isključen:** isključen modul se ne pokreće: ništa od njega ne radi, ne čeka na serveru niti zvoni, pa je Erevos
   lakši, brže se otvara i troši manje baterije. Nigdje se ne prikazuje: ni na početnom ekranu, ni u svom meniju, ni u
@@ -2967,10 +2980,11 @@ svojom lozinkom.
    prelaska, i od tada ne otvarajte Erevos na starom telefonu: ono što stigne poslije čeka na relayima novi.
 4. **Prenesite je:** kopirajte rezervnu kopiju i svaku datoteku čije ime počinje kao njeno, sve u jednom folderu, na
    novi telefon, kablom, memorijskom karticom ili aplikacijom za oblak. Kopija na vašem serveru ne treba kopiranje.
-5. **Na novom telefonu vratite:** prođite prvo pokretanje. Na Androidu, zbog SMS poruka, neka Erevos i tamo bude SMS
-   aplikacija. Zatim pod **Postavke** → **Podaci i uređaji** → **Rezervne kopije** dodirnite **Vrati rezervnu kopiju**
-   i izaberite datoteku, ili **Vrati sa servera** i dajte adresu servera, korisničko ime i lozinku; upišite lozinku
-   rezervne kopije i recite da. Erevos se otvara kakav je bio stari telefon, s istim lozinkama.
+5. **Na novom telefonu vratite:** pri prvom pokretanju dodirnite **Već imam Erevos na drugom telefonu** (ili prođite
+   prvo pokretanje). Na Androidu, zbog SMS poruka, neka Erevos i tamo bude SMS aplikacija. Zatim pod **Postavke** →
+   **Podaci i uređaji** → **Rezervne kopije** dodirnite **Vrati rezervnu kopiju** i izaberite datoteku, ili **Vrati sa
+   servera** i dajte adresu servera, korisničko ime i lozinku; upišite lozinku rezervne kopije i recite da. Erevos se
+   otvara kakav je bio stari telefon, s istim lozinkama.
 6. **Na novom telefonu ponovo podesite ono što pripada telefonu:** **Dozvole** se otvaraju za ono što Android treba
    dozvoliti. Zatim ponovo uključite otisak prsta ili lice (pogledajte [Zaključavanje lozinkom](#lock)), ponovo
    izaberite folder automatskih kopija pod **Rezervne kopije**, i SIM za svaki broj, i prijavite se u Matrix njegovim

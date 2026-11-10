@@ -115,6 +115,25 @@ async function ask(wanted: readonly string[]): Promise<void> {
   if (!answers || permissions.some((p) => answers[p] === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN)) open('app');
 }
 
+/** The checks whose question Android asks in Erevos itself, which Allow all asks one after another (askAll). */
+export const ASKS_ALL: ReadonlySet<CheckId> = new Set<CheckId>(['notices', 'microphone', 'camera', 'nearby', 'contacts', 'battery']);
+
+/** Asks Android's own questions for the checks `ids` that have one (ASKS_ALL), one after another:
+ *  the permissions together, as Android asks them in turn, then running on battery. */
+export async function askAll(ids: readonly CheckId[]): Promise<void> {
+  const wanted: string[] = [];
+  for (const id of ids) {
+    if (id === 'notices' && SDK >= 33) wanted.push('android.permission.POST_NOTIFICATIONS');
+    else if (id === 'microphone') wanted.push('android.permission.RECORD_AUDIO');
+    else if (id === 'camera') wanted.push('android.permission.CAMERA');
+    else if (id === 'nearby') wanted.push(...nearbyPermissions());
+    else if (id === 'contacts') wanted.push('android.permission.READ_CONTACTS');
+  }
+  const permissions = known(wanted, SDK) as Permission[];
+  if (permissions.length) await PermissionsAndroid.requestMultiple(permissions).catch(() => null);
+  if (ids.includes('battery')) askBattery();
+}
+
 /** Asks for what the check `id` needs: Android's own question where it has one, else its screen for it. */
 export async function fix(id: CheckId): Promise<void> {
   switch (id) {

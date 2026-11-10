@@ -274,11 +274,24 @@ Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups a
 the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android, in the desktop app, in the web app and on Sailfish OS. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
 **General** → **Modules** turns each on or off at any time.
 
-The very first time Erevos starts, before its first space opens, it sets itself up as an installer does, in a few
-steps: what Erevos is, and its language; which modules to use, each with what it does; then, on an Android phone, what
-Android should allow for them, Erevos as the phone app and as the SMS app among it, each with its own button.
-**Start Erevos** keeps the choice and opens the first space. After an update every module stays on, as before, until
-you change them.
+The very first time Erevos starts, it sets itself up as an installer does. Before its first space opens: what you
+do not give (no phone number, email, user name or account: you add people with a QR code or a link, or they invite
+you), a name for your contacts if you want one, and the language; then which modules to use, each with what it does.
+Then, in the space: a screen for each module chosen, with how to begin with it (for Erevos, how you join; for the Phone
+and the SMS, Erevos as the phone app and as the SMS app; for Nostr, Matrix and XMPP, your account there) and what
+Android, or the browser, should allow for it. Each permission is on the first screen that needs it, and **Allow all,
+one by one** asks the questions Android asks in Erevos itself one after another. Then the password lock and automatic
+backups, then what is ready and what is missing, with **Invite someone**. **Do the rest later** leaves the rest for
+Settings; until you finish or put it off, the steps show again when Erevos starts. Opened with an invite, Erevos shows
+it once the steps are done. After an update every module stays on, as before, until you change them.
+
+- **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
+  those you add, and **My name** under Settings → Privacy and security changes it.
+- **Moving from another phone:** on Android, **I already have Erevos on another phone** skips the name and the
+  modules, which come with the backup. The space opens, **Open Backups** restores it (see
+  [Moving to a new phone](#new-phone)), and the screens of the modules it brings follow, then the fingerprint and the
+  folder of automatic backups, which stay with each phone. **I have no backup yet** says how to make one.
+- **On a computer or in a browser:** **Link to my phone** skips the steps and opens **Linked devices**.
 
 - **Off:** a module that is off does not start: nothing of it runs, waits at a server or rings, so Erevos is lighter,
   opens faster and uses less battery. It shows nowhere: not on the home screen, in its menu or in Settings, and the
@@ -2831,8 +2844,8 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
    open Erevos on the old phone: what comes after waits on the relays for the new one.
 4. **Bring it over:** copy the backup and every file whose name starts as its name, all in one folder, to the new
    phone, by cable, a memory card or a cloud app. A backup on your server needs no copying.
-5. **On the new phone, restore:** go through the first start. On Android, for the SMS, let Erevos be the SMS app
-   there too. Then under **Settings** → **Data and devices** → **Backups** tap **Restore a backup** and choose the
+5. **On the new phone, restore:** at the first start, tap **I already have Erevos on another phone** (or go through
+   the first start). On Android, for the SMS, let Erevos be the SMS app there too. Then under **Settings** → **Data and devices** → **Backups** tap **Restore a backup** and choose the
    file, or **Restore from a server** and give the server's address, user name and password; type the backup's
    password and say yes. Erevos opens as the old phone was, with the same passwords.
 6. **On the new phone, set again what is the phone's:** **Permissions** opens for what Android should allow. Then

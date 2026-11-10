@@ -42,6 +42,7 @@ import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
 import { isPublicItem, isPublicRoom, type PublicItem } from '../lib/public-feed';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
+import { loadSetupAfter } from '../lib/setup-after';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { MAX_NOTE_TEXT } from '../lock/myself-data';
 import { onReceived } from '../lib/receiver';
@@ -150,7 +151,16 @@ function Home() {
   useEffect(() => {
     let active = true;
     const wait = setTimeout(() => {
-      void offerChecks().then((offer) => {
+      // The first start's steps not done yet, or going on after a backup was restored
+      // (lib/setup-after.ts), come first: they ask for what the modules need, as the check would.
+      void loadSetupAfter().then(async (after) => {
+        if (after) {
+          if (!active || !navigation.isFocused()) return;
+          void checksOffered();
+          router.push('/first-steps');
+          return;
+        }
+        const offer = await offerChecks();
         if (!offer || !active || !navigation.isFocused()) return;
         void checksOffered();
         router.push(`/permissions?after=${offer}`);

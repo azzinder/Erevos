@@ -14,6 +14,14 @@ On main, not released yet:
 
 ### For you
 
+- **A new first start**: the first screen now says what you do not give, no phone number, email, user name or
+  account (you add people with a QR code or a link, or they invite you), and asks for a name for your contacts, if
+  you want one. After the modules comes a short screen for each module chosen, with how to begin with it and what
+  Android, or the browser, should allow for it, each permission on the first screen that needs it, with **Allow all,
+  one by one**; then the password lock and automatic backups, then what is ready and what is missing, with **Invite
+  someone**. **Do the rest later** leaves it all for Settings. **I already have Erevos on another phone** skips the
+  name and the modules, which come with the backup, and goes straight to restoring it; on a computer or in a browser,
+  **Link to my phone** opens Linked devices. An invite Erevos was opened with shows once the steps are done.
 - **Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can
   now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password
   of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it

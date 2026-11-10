@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { rowOn } from '../lib/inbox';
+import { afterSteps, checkOwner, checksAt, parseSetupAfter } from '../lib/setup-after';
 import {
   checkWanted,
   keptModules,
@@ -171,4 +172,48 @@ test('the home screen lists only the rows of modules on', () => {
   // A contact's chat, a group or one brought in from another app: Erevos's own.
   assert.equal(rowOn({ sms: '', network: undefined }, on), false);
   assert.equal(rowOn({ sms: '', network: undefined }, new Set<Module>(['erevos'])), true);
+});
+
+test('the first start leaves its steps for once the space is open: kept as given, or nothing', () => {
+  const kept = parseSetupAfter(JSON.stringify({ name: 'Anna', modules: ['xmpp', 'erevos', 'fax'], restore: 'wanted', invite: '/welcome?hi=00' }));
+  // The modules in their order, only those there are; the invite only as a screen.
+  assert.deepEqual(kept, { name: 'Anna', modules: ['erevos', 'xmpp'], restore: 'wanted', invite: '/welcome?hi=00' });
+  assert.deepEqual(parseSetupAfter(JSON.stringify({ modules: ['sms'], restore: 'maybe', linkPhone: 'yes', invite: 'https://example.org' })), { name: '', modules: ['sms'] });
+  assert.equal(parseSetupAfter(JSON.stringify({ name: '', modules: [], linkPhone: true }))?.linkPhone, true);
+  for (const raw of [null, '', 'nope', '[]', '3', 'null']) assert.equal(parseSetupAfter(raw), null, String(raw));
+});
+
+test('a screen for each module chosen, in their order, then the lock and the backups, then what is done', () => {
+  assert.deepEqual(afterSteps(['collection', 'erevos', 'sms']), [
+    { kind: 'module', module: 'erevos' },
+    { kind: 'module', module: 'sms' },
+    { kind: 'module', module: 'collection' },
+    { kind: 'lock' },
+    { kind: 'done' },
+  ]);
+  assert.deepEqual(afterSteps([]), [{ kind: 'lock' }, { kind: 'done' }]);
+});
+
+test('each permission is asked on the first screen whose module needs it; later ones show it as given', () => {
+  const chosen: Module[] = ['erevos', 'phone', 'matrix', 'collection'];
+  // Every module's (notices): on the first. The calls' on Erevos's, not again on Matrix's.
+  assert.equal(checkOwner('notices', chosen), 'erevos');
+  assert.equal(checkOwner('calls', chosen), 'erevos');
+  assert.equal(checkOwner('calls', ['phone', 'matrix']), 'matrix');
+  assert.equal(checkOwner('fullScreen', ['phone', 'matrix']), 'phone');
+  assert.equal(checkOwner('camera', ['sms', 'collection']), 'collection');
+  assert.equal(checkOwner('nearby', ['phone', 'matrix']), null);
+  const checks = (['notices', 'calls', 'fullScreen', 'camera', 'contacts', 'nearby'] as const).map((id) => ({ id }));
+  const ids = (list: { id: string }[]) => list.map((check) => check.id);
+  const erevos = checksAt('erevos', chosen, checks);
+  assert.deepEqual(ids(erevos.own), ['notices', 'calls', 'fullScreen', 'camera', 'contacts', 'nearby']);
+  assert.deepEqual(erevos.earlier, []);
+  const matrix = checksAt('matrix', chosen, checks);
+  assert.deepEqual(matrix.own, []);
+  // What Matrix needs too, asked before; not Erevos's alone (nearby, contacts).
+  assert.deepEqual(ids(matrix.earlier), ['notices', 'calls', 'fullScreen', 'camera']);
+  const phone = checksAt('phone', ['phone', 'collection'], checks);
+  assert.deepEqual(ids(phone.own), ['notices', 'fullScreen', 'contacts']);
+  assert.deepEqual(ids(checksAt('collection', ['phone', 'collection'], checks).own), ['camera']);
+  assert.deepEqual(ids(checksAt('collection', ['phone', 'collection'], checks).earlier), ['notices']);
 });

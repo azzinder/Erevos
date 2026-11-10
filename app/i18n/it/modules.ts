@@ -32,14 +32,7 @@ export const modulesText: Record<string, string> = {
   "Its chats leave the list, and their messages do not come while it is off. Nothing is deleted: the account and the chats are there again when you turn it on.": "Le sue chat escono dalla lista e i suoi messaggi non arrivano finché è disattivata. Non si cancella nulla: l’account e le chat tornano quando la attivi.",
   "Setting up Erevos · step {n} of {m}": "Configurazione di Erevos · passo {n} di {m}",
   "Welcome to Erevos": "Benvenuto in Erevos",
-  "Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos's own chats, the Phone, the SMS, chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files.": "Erevos riunisce le tue chat e le tue chiamate in un’unica app, crittografata end-to-end dove può. È fatta di parti: le chat di Erevos, il Telefono, gli SMS, le chat con app Nostr, Matrix e XMPP e la Raccolta di foto e file.",
-  "Choose only the parts you use. The others do not start at all, so Erevos is lighter, opens faster and uses less battery. You can change them any time in Settings → General → Modules, and nothing of a part is deleted while it is off.": "Scegli solo le parti che usi. Le altre non si avviano affatto, quindi Erevos è più leggero, si apre più in fretta e consuma meno batteria. Puoi cambiarle quando vuoi in Impostazioni → Generali → Moduli, e di una parte non si cancella nulla finché è disattivata.",
-  "Choose the parts you use": "Scegli le parti che usi",
-  "Any of them, one or more. Contacts, the password, the spaces and the backups are always there.": "Una qualsiasi, una o più. I contatti, la password, gli spazi e i backup ci sono sempre.",
-  "Choose at least one.": "Scegline almeno una.",
-  "Start Erevos": "Avvia Erevos",
   "What Android should allow": "Che cosa deve consentire Android",
-  "For the parts you chose to work while Erevos is closed, Android should allow these. Each button opens Android's own question or setting, and nothing is sent anywhere. You can also do it later, in Settings → General → Permissions.": "Perché le parti che hai scelto funzionino mentre Erevos è chiuso, Android deve consentire queste cose. Ogni pulsante apre la domanda o l’impostazione di Android stesso, e non viene inviato nulla da nessuna parte. Puoi farlo anche più tardi, in Impostazioni → Generali → Autorizzazioni.",
   "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
     "È appena stato ripristinato un backup. Quello che Android consente a Erevos, e quali app fanno le chiamate e mandano gli SMS, restano a ogni telefono e non arrivano con nessun backup: ecco che cosa serve su questo telefono ai moduli attivi.",
 };

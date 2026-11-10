@@ -32,14 +32,7 @@ export const modulesText: Record<string, string> = {
   "Its chats leave the list, and their messages do not come while it is off. Nothing is deleted: the account and the chats are there again when you turn it on.": "Njegovi razgovori napuštaju popis, a poruke ne stižu dok je isključen. Ništa se ne briše: račun i razgovori vraćaju se kad ga uključite.",
   "Setting up Erevos · step {n} of {m}": "Postavljanje Erevosa · korak {n} od {m}",
   "Welcome to Erevos": "Dobro došli u Erevos",
-  "Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos's own chats, the Phone, the SMS, chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files.": "Erevos spaja vaše razgovore i pozive u jednu aplikaciju, šifriranu s kraja na kraj gdje god može. Sastoji se od dijelova: vlastitih razgovora Erevosa, Telefona, SMS-a, razgovora s Nostr, Matrix i XMPP aplikacijama te Zbirke fotografija i datoteka.",
-  "Choose only the parts you use. The others do not start at all, so Erevos is lighter, opens faster and uses less battery. You can change them any time in Settings → General → Modules, and nothing of a part is deleted while it is off.": "Izaberite samo dijelove koje koristite. Ostali se uopće ne pokreću, pa je Erevos lakši, brže se otvara i troši manje baterije. Možete ih promijeniti bilo kada u Postavke → Općenito → Moduli, a ništa od dijela se ne briše dok je isključen.",
-  "Choose the parts you use": "Izaberite dijelove koje koristite",
-  "Any of them, one or more. Contacts, the password, the spaces and the backups are always there.": "Bilo koje, jedan ili više. Kontakti, lozinka, prostori i rezervne kopije uvijek su tu.",
-  "Choose at least one.": "Izaberite barem jedan.",
-  "Start Erevos": "Pokreni Erevos",
   "What Android should allow": "Što Android treba dozvoliti",
-  "For the parts you chose to work while Erevos is closed, Android should allow these. Each button opens Android's own question or setting, and nothing is sent anywhere. You can also do it later, in Settings → General → Permissions.": "Da bi dijelovi koje ste izabrali radili dok je Erevos zatvoren, Android treba dozvoliti ovo. Svako dugme otvara Androidovo vlastito pitanje ili postavku, a ništa se nigdje ne šalje. Možete to učiniti i kasnije, u Postavke → Općenito → Dozvole.",
   "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
     "Upravo je vraćena rezervna kopija. Ono što Android dozvoljava Erevosu i koje aplikacije obavljaju pozive i šalju SMS ostaju uz svaki telefon i ne dolaze ni s jednom rezervnom kopijom: ovo trebaju uključeni moduli na ovom telefonu.",
 };

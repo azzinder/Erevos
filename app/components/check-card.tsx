@@ -13,12 +13,13 @@ import { useColors } from '../theme/context';
 
 import { Button, Card, Row, Text } from './ui';
 
-// One item of the permissions check (app/permissions.tsx, and the first start's setup,
-// components/setup.tsx): what it is, why it matters, how it is now, and the button that asks for it.
+// One item of the permissions check (app/permissions.tsx, and the first start's steps,
+// app/first-steps.tsx): what it is, why it matters, how it is now, and the button that asks for it.
 
 const WEB = Platform.OS === 'web';
 
-function title(id: CheckId): string {
+/** What the check `id` is called. */
+export function checkTitle(id: CheckId): string {
   switch (id) {
     case 'notices':
       return t('Notices');
@@ -253,7 +254,7 @@ export function CheckCard({ check, maker, onChanged }: { check: Check; maker: Ma
     <Card>
       <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
         <Text variant="bodyStrong" style={{ flexShrink: 1 }}>
-          {title(check.id)}
+          {checkTitle(check.id)}
         </Text>
         <Text variant="label" color={state.color}>
           {state.label}

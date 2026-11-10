@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**A new first start**: the first screen now says what you do not give, no phone number, email, user name or account, and asks for a name for your contacts, if you want one. After the modules comes a short screen for each, with how to begin with it and what Android should allow for it, **Allow all, one by one** among it; then the password lock and backups, then what is ready and what is missing. **I already have Erevos on another phone** goes straight to restoring a backup. See [Modules](#modules)."),
     mark("**Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it once you say so. See [Backups](#backup)."),
   ],
   underTheHood: [

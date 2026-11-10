@@ -66,7 +66,8 @@ import { startLinkedAccounts } from '../lib/linked-accounts';
 import '../lib/sms-share';
 import { startChunkChannel } from '../lib/chunk-channel';
 import { followModuleIcons } from '../lib/module-icons';
-import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules, type Module } from '../lib/modules';
+import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules } from '../lib/modules';
+import { keepSetupAfter } from '../lib/setup-after';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
@@ -78,7 +79,7 @@ import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
 import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 import { ModuleOff } from '../components/module-off';
-import { Setup } from '../components/setup';
+import { Setup, type SetupChoice } from '../components/setup';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
 import { ensureStyleFonts } from '../theme/fonts';
@@ -108,7 +109,7 @@ let pendingSwept = false;
 
 type Phase =
   | { kind: 'loading' }
-  // Erevos's very first start: which modules to use, and what Android should allow them (components/setup.tsx).
+  // Erevos's very first start: a name, and which modules to use (components/setup.tsx); the rest once the space is open (app/first-steps.tsx).
   | { kind: 'setup' }
   // `behind`: the space that goes on behind the password screen, until its password opens it again.
   | { kind: 'locked'; config: LockConfig; behind?: number }
@@ -251,12 +252,21 @@ export default function RootLayout() {
     }
   }, [openSpace, show]);
 
-  // The first start's modules were chosen: kept, then Erevos opens with them.
+  // The first start's modules were chosen: kept, then Erevos opens with them, and the setup goes
+  // on in the space (app/first-steps.tsx). An invite that opened Erevos for the first time opens
+  // once that is done, however long it took (lib/setup-after.ts).
   const setupDone = useCallback(
-    async (chosen: Module[]) => {
-      await setModules(chosen);
-      // An invite that opened Erevos for the first time opens now, however long the setup took.
-      setupKeepsLink();
+    async ({ modules, name, restore, linkPhone }: SetupChoice) => {
+      await setModules(modules);
+      const invite = peekLink() ?? undefined;
+      const kept = await keepSetupAfter({ name, modules, ...(restore ? { restore: 'wanted' as const } : {}), ...(linkPhone ? { linkPhone } : {}), ...(invite ? { invite } : {}) }).then(
+        () => true,
+        () => false,
+      );
+      if (kept) {
+        dropLink();
+        keepLink('erevos://first-steps');
+      } else setupKeepsLink();
       await start();
     },
     [start],
@@ -537,7 +547,7 @@ export default function RootLayout() {
       <ThemeProvider look={look} onChange={keepLook}>
         {/* A touch anywhere says the owner is there, for safety messages (lib/safety.ts). */}
         <View style={{ flex: 1 }} onTouchStart={() => ownerTouched()}>
-          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} onRetry={retry} onSetup={(chosen) => setupDone(chosen).catch(fail)} />
+          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} onRetry={retry} onSetup={(choice) => setupDone(choice).catch(fail)} />
         </View>
       </ThemeProvider>
     </KeyboardProvider>
@@ -552,8 +562,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
   onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void>;
   /** Starts again after Erevos could not open: from the password, as when it starts. */
   onRetry: () => void;
-  /** The first start's setup chose these modules. */
-  onSetup: (chosen: Module[]) => void;
+  /** What the first start's setup chose. */
+  onSetup: (choice: SetupChoice) => void;
 }) {
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();
@@ -656,6 +666,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
         <Stack.Screen name="myself" options={{ headerShown: false }} />
         {/* The Collection draws its own bar too, with its back arrow and search. */}
         <Stack.Screen name="collection" options={{ headerShown: false }} />
+        {/* The first start's steps in the space draw their own, with no way back past them but their own. */}
+        <Stack.Screen name="first-steps" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
       <OpenLink key={`link-${phase.space}-${lang}`} />
       <Receiver space={phase.space} />
@@ -668,7 +680,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
 }
 
 // The screens that draw their own bar, so have no header (below).
-const HEADERLESS = new Set(['index', 'chat', 'group', 'myself', 'collection']);
+const HEADERLESS = new Set(['index', 'chat', 'group', 'myself', 'collection', 'first-steps']);
 
 // The chats' screens, which each draw their backdrop in the chat's own look (above).
 const OWN_LOOK = new Set(['chat', 'group', 'myself', 'matrix-chat', 'xmpp-chat', 'nostr-chat']);

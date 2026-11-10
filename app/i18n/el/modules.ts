@@ -44,18 +44,7 @@ export const modulesText: Record<string, string> = {
     'Οι συνομιλίες του φεύγουν από τη λίστα, και τα μηνύματά τους δεν έρχονται όσο είναι ανενεργό. Τίποτα δεν σβήνεται: ο λογαριασμός και οι συνομιλίες είναι πάλι εκεί όταν το ενεργοποιήσεις.',
   'Setting up Erevos · step {n} of {m}': 'Ρύθμιση του Erevos · βήμα {n} από {m}',
   'Welcome to Erevos': 'Καλώς ήρθες στο Erevos',
-  "Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos's own chats, the Phone, the SMS, chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files.":
-    'Το Erevos φέρνει τις συνομιλίες και τις κλήσεις σου σε μία εφαρμογή, κρυπτογραφημένες από άκρο σε άκρο όπου γίνεται. Αποτελείται από ενότητες: τις δικές του συνομιλίες του Erevos, το Τηλέφωνο, τα SMS, τις συνομιλίες με εφαρμογές Nostr, Matrix και XMPP, και τη Συλλογή φωτογραφιών και αρχείων.',
-  'Choose only the parts you use. The others do not start at all, so Erevos is lighter, opens faster and uses less battery. You can change them any time in Settings → General → Modules, and nothing of a part is deleted while it is off.':
-    'Διάλεξε μόνο τις ενότητες που χρησιμοποιείς. Οι άλλες δεν ξεκινούν καθόλου, έτσι το Erevos γίνεται πιο ελαφρύ, ανοίγει πιο γρήγορα και καταναλώνει λιγότερη μπαταρία. Μπορείς να τις αλλάξεις όποτε θέλεις στις Ρυθμίσεις → Γενικά → Ενότητες, και τίποτα από μια ενότητα δεν σβήνεται όσο είναι ανενεργή.',
-  'Choose the parts you use': 'Διάλεξε τις ενότητες που χρησιμοποιείς',
-  'Any of them, one or more. Contacts, the password, the spaces and the backups are always there.':
-    'Όποιες θέλεις, μία ή περισσότερες. Οι επαφές, ο κωδικός, οι χώροι και τα αντίγραφα ασφαλείας υπάρχουν πάντα.',
-  'Choose at least one.': 'Διάλεξε τουλάχιστον μία.',
-  'Start Erevos': 'Ξεκίνα το Erevos',
   'What Android should allow': 'Τι πρέπει να επιτρέψει το Android',
-  "For the parts you chose to work while Erevos is closed, Android should allow these. Each button opens Android's own question or setting, and nothing is sent anywhere. You can also do it later, in Settings → General → Permissions.":
-    'Για να δουλεύουν οι ενότητες που διάλεξες όσο το Erevos είναι κλειστό, το Android πρέπει να επιτρέψει αυτά. Κάθε κουμπί ανοίγει την ερώτηση ή τη ρύθμιση του ίδιου του Android, και τίποτα δεν στέλνεται πουθενά. Μπορείς να το κάνεις και αργότερα, στις Ρυθμίσεις → Γενικά → Άδειες.',
   "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
     "Μόλις έγινε επαναφορά αντιγράφου. Ό,τι επιτρέπει το Android στο Erevos, και ποιες εφαρμογές κάνουν τις κλήσεις και στέλνουν τα SMS, μένουν σε κάθε τηλέφωνο και δεν έρχονται με κανένα αντίγραφο: αυτά χρειάζονται σε αυτό το τηλέφωνο οι ενότητες που είναι ενεργές.",
 };

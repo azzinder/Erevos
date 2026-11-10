@@ -133,6 +133,12 @@ export async function checksOffered(): Promise<void> {
 /** The phone maker's setting is Android's only. */
 export async function makerDone(_done: boolean): Promise<void> {}
 
+/** None here: a browser asks each of its questions only from a tap of its own. */
+export const ASKS_ALL: ReadonlySet<CheckId> = new Set<CheckId>();
+
+/** Nothing to ask all at once in a browser (ASKS_ALL). */
+export async function askAll(_ids: readonly CheckId[]): Promise<void> {}
+
 /** Asks the browser's own question for what the check `id` needs. Called straight from a tap,
  *  before anything else is awaited: Safari asks only then. */
 export async function fix(id: CheckId): Promise<void> {

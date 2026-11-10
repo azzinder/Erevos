@@ -8,9 +8,10 @@ import { reloadBatteryMode } from './battery-mode';
 import { reloadHaptics } from './haptics';
 import { reloadLang } from './i18n';
 import { iconNumberChanged } from './icon-number';
-import { reloadModules } from './modules';
+import { modulesOn, reloadModules } from './modules';
 import { panicFolderChanged } from './panic';
 import { offerChecksAfterRestore } from './permissions';
+import { setupRestored } from './setup-after';
 import { putBack, type SavedRadio } from './lora';
 import { canLora, lora, resumeLora, savedRadio } from './radio';
 
@@ -71,5 +72,7 @@ export async function afterRestore(native: Uint8Array | null, before: BeforeRest
       if (radio) resumeLora();
     },
     offerChecksAfterRestore,
+    // Moving from another phone at the first start: its steps go on, for the modules restored.
+    () => setupRestored(modulesOn()),
   ]);
 }

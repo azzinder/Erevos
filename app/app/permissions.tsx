@@ -22,7 +22,7 @@ import { space } from '../theme/colors';
 // why it matters and the button that asks for it. In the web app, what the browser lets it do
 // (lib/permissions.web.ts), with the browser's own question, or where its setting is. Only what
 // the modules on use (lib/modules.ts); or, with `for`, what the modules just turned on use
-// (app/modules.tsx), as the first start's setup asked for it (components/setup.tsx). After a
+// (app/modules.tsx), as the first start's steps asked for it (app/first-steps.tsx). After a
 // backup was restored on Android (`after` restore), all of it for the modules on, with which app
 // is the phone's for calls and SMS: they stay with each phone, and no backup holds them.
 

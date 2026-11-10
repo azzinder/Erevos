@@ -303,11 +303,28 @@ bout en bout, avec les discussions masquées), le **Téléphone**, les **SMS**, 
 Erevos lui-même aussi, un ou plusieurs, au moins un : **Réglages** → **Général** → **Modules** active ou désactive
 chacun à tout moment.
 
-Au tout premier démarrage, avant l’ouverture de son premier espace, Erevos se configure comme le fait un installateur,
-en quelques étapes : ce qu’est Erevos, et sa langue ; quels modules utiliser, chacun avec ce qu’il fait ; puis, sur un
-téléphone Android, ce qu’Android doit autoriser pour eux, avec Erevos comme app Téléphone et comme app SMS, chacun avec
-son propre bouton. **Démarrer Erevos** garde le choix et ouvre le premier espace. Après une mise à jour, chaque module
-reste activé, comme avant, jusqu’à ce que tu les changes.
+Au tout premier démarrage, Erevos se configure comme le fait un installateur. Avant l’ouverture de son premier espace :
+ce que tu ne donnes pas (ni numéro de téléphone, ni e-mail, ni nom d’utilisateur, ni compte : tu ajoutes des gens avec
+un code QR ou un lien, ou ce sont eux qui t’invitent), un nom pour tes contacts si tu en veux un, et la langue ; puis
+quels modules utiliser, chacun avec ce qu’il fait. Ensuite, dans l’espace : un écran pour chaque module choisi, avec la
+façon de commencer (pour Erevos, comment tu entres ; pour le Téléphone et les SMS, Erevos comme app Téléphone et comme
+app SMS ; pour Nostr, Matrix et XMPP, ton compte là-bas) et ce qu’Android, ou le navigateur, doit autoriser pour lui.
+Chaque autorisation est sur le premier écran qui en a besoin, et **Tout autoriser, un par un** pose les questions
+qu’Android pose, dans Erevos même, l’une après l’autre. Puis le verrouillage par mot de passe et les sauvegardes
+automatiques, puis ce qui est prêt et ce qui manque, avec **Inviter quelqu’un**. **Le reste plus tard** laisse le reste
+aux Réglages ; tant que tu n’as pas fini ou remis à plus tard, les étapes réapparaissent au démarrage d’Erevos. Ouvert
+avec une invitation, Erevos la montre une fois les étapes terminées. Après une mise à jour, chaque module reste activé,
+comme avant, jusqu’à ce que tu les changes.
+
+- **Le nom :** ce n’est pas un nom d’utilisateur : personne ne le cherche, et il n’a pas besoin d’être unique. Il part,
+  chiffré, seulement vers ceux que tu ajoutes, et **Mon nom**, sous Réglages → Confidentialité et sécurité, le change.
+- **Venir d’un autre téléphone :** sur Android, **J’ai déjà Erevos sur un autre téléphone** saute le nom et les modules,
+  qui viennent avec la sauvegarde. L’espace s’ouvre, **Ouvrir les sauvegardes** la restaure (voir [Passer à un nouveau
+  téléphone](#new-phone)), puis suivent les écrans des modules qu’elle apporte, puis l’empreinte et le dossier des
+  sauvegardes automatiques, qui restent propres à chaque téléphone. **Je n’ai pas encore de sauvegarde** dit comment en
+  faire une.
+- **Sur un ordinateur ou dans un navigateur :** **Associer à mon téléphone** saute les étapes et ouvre **Appareils
+  associés**.
 
 - **Désactivé :** un module désactivé ne démarre pas : rien de lui ne tourne, n’attend sur un serveur ni ne sonne, donc
   Erevos est plus léger, s’ouvre plus vite et consomme moins de batterie. Il n’apparaît nulle part : ni sur l’écran
@@ -3262,11 +3279,12 @@ porte, scellée avec son mot de passe.
 4. **Apporte-la :** copie la sauvegarde et chaque fichier dont le nom commence comme le sien, tous dans un dossier, sur
    le nouveau téléphone, par câble, carte mémoire ou app cloud. Une sauvegarde sur ton serveur n’a pas besoin d’être
    copiée.
-5. **Sur le nouveau téléphone, restaure :** passe le premier démarrage. Sur Android, pour les SMS, laisse Erevos être
-   aussi l’app SMS là-bas. Puis, sous **Réglages** → **Données et appareils** → **Sauvegardes**, appuie sur **Restaurer
-   une sauvegarde** et choisis le fichier, ou sur **Restaurer depuis un serveur** et donne l’adresse, le nom
-   d’utilisateur et le mot de passe du serveur ; tape le mot de passe de la sauvegarde et dis oui. Erevos s’ouvre comme
-   l’ancien téléphone était, avec les mêmes mots de passe.
+5. **Sur le nouveau téléphone, restaure :** au premier démarrage, appuie sur **J’ai déjà Erevos sur un autre téléphone**
+   (ou passe le premier démarrage). Sur Android, pour les SMS, laisse Erevos être aussi l’app SMS là-bas. Puis, sous
+   **Réglages** → **Données et appareils** → **Sauvegardes**, appuie sur **Restaurer une sauvegarde** et choisis le
+   fichier, ou sur **Restaurer depuis un serveur** et donne l’adresse, le nom d’utilisateur et le mot de passe du
+   serveur ; tape le mot de passe de la sauvegarde et dis oui. Erevos s’ouvre comme l’ancien téléphone était, avec les
+   mêmes mots de passe.
 6. **Sur le nouveau téléphone, remets ce qui est propre au téléphone :** **Autorisations** s’ouvre pour ce qu’Android
    doit permettre. Puis réactive l’empreinte ou le visage (voir [Verrou par mot de passe](#lock)), choisis de nouveau le
    dossier des sauvegardes automatiques sous **Sauvegardes**, et la SIM de chaque numéro, et connecte-toi à Matrix avec

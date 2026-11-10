@@ -303,11 +303,27 @@ Ende-zu-Ende-verschlüsselt, mit den versteckten Chats), das **Telefon**, die **
 selbst, eines oder mehrere, mindestens eines: **Einstellungen** → **Allgemein** → **Module** schaltet jedes jederzeit
 ein oder aus.
 
-Beim allerersten Start richtet Erevos sich, bevor sein erster Bereich öffnet, in wenigen Schritten selbst ein wie ein
-Installer: was Erevos ist, und seine Sprache; welche Module du nutzen willst, jedes mit dem, was es tut; dann, auf
-einem Android-Telefon, was Android dafür erlauben soll, darunter Erevos als Telefon-App und als SMS-App, jedes mit
-einer eigenen Taste. **Erevos starten** behält die Wahl und öffnet den ersten Bereich. Nach einem Update bleibt jedes
-Modul an, wie bisher, bis du sie änderst.
+Beim allerersten Start richtet Erevos sich wie ein Installer selbst ein. Bevor sein erster Bereich öffnet: was du nicht
+hergibst (keine Telefonnummer, E-Mail, kein Benutzername und kein Konto: du fügst Leute per QR-Code oder Link hinzu,
+oder sie laden dich ein), ein Name für deine Kontakte, wenn du einen möchtest, und die Sprache; dann welche Module du
+nutzen willst, jedes mit dem, was es tut. Dann, im Bereich: ein Bildschirm für jedes gewählte Modul, mit dem, wie du
+damit anfängst (für Erevos, wie du dazukommst; für das Telefon und die SMS Erevos als Telefon-App und als SMS-App; für
+Nostr, Matrix und XMPP dein Konto dort) und was Android oder der Browser dafür erlauben soll. Jede Berechtigung steht
+auf dem ersten Bildschirm, der sie braucht, und **Alle erlauben, nacheinander** stellt die Fragen, die Android stellt,
+in Erevos selbst, eine nach der anderen. Dann die Passwortsperre und die automatischen Backups, dann was fertig ist und
+was fehlt, mit **Jemanden einladen**. **Den Rest später** überlässt den Rest den Einstellungen; bis du fertig bist oder
+es aufschiebst, erscheinen die Schritte beim Start von Erevos wieder. Wird Erevos mit einer Einladung geöffnet, zeigt es
+sie, sobald die Schritte durch sind. Nach einem Update bleibt jedes Modul an, wie bisher, bis du sie änderst.
+
+- **Der Name:** er ist kein Benutzername: niemand sucht danach, und er muss nicht eindeutig sein. Er geht verschlüsselt
+  nur an die, die du hinzufügst, und **Mein Name** unter Einstellungen → Datenschutz und Sicherheit ändert ihn.
+- **Von einem anderen Telefon umziehen:** auf Android überspringt **Ich habe Erevos schon auf einem anderen Telefon**
+  den Namen und die Module, die mit dem Backup kommen. Der Bereich öffnet sich, **Backups öffnen** stellt es wieder her
+  (siehe [Auf ein neues Telefon umziehen](#new-phone)), und es folgen die Bildschirme der Module, die es mitbringt, dann
+  Fingerabdruck und der Ordner der automatischen Backups, die bei jedem Telefon bleiben. **Ich habe noch kein Backup**
+  sagt, wie man eines macht.
+- **Auf einem Computer oder in einem Browser:** **Mit meinem Telefon verknüpfen** überspringt die Schritte und öffnet
+  **Verknüpfte Geräte**.
 
 - **Aus:** Ein Modul, das aus ist, startet nicht: Nichts davon läuft, wartet an einem Server oder klingelt, darum ist
   Erevos leichter, öffnet schneller und braucht weniger Akku. Es erscheint nirgends: nicht auf dem Startbildschirm, in
@@ -3287,11 +3303,12 @@ trägt es, versiegelt mit seinem Passwort.
    und öffne Erevos auf dem alten Telefon danach nicht mehr: Was danach kommt, wartet auf den Relays auf das neue.
 4. **Hinüberbringen:** Kopiere das Backup und jede Datei, deren Name wie seiner beginnt, alle in einem Ordner, per
    Kabel, Speicherkarte oder Cloud-App auf das neue Telefon. Ein Backup auf deinem Server muss nicht kopiert werden.
-5. **Auf dem neuen Telefon wiederherstellen:** Geh durch den ersten Start. Auf Android lass Erevos auch dort die
-   SMS-App sein, wenn du die SMS willst. Tippe dann unter **Einstellungen** → **Daten und Geräte** → **Backups** auf
-   **Backup wiederherstellen** und wähle die Datei, oder auf **Von einem Server wiederherstellen** und gib Adresse,
-   Benutzernamen und Passwort des Servers ein; tippe das Passwort des Backups ein und sag Ja. Erevos öffnet sich, wie
-   das alte Telefon war, mit denselben Passwörtern.
+5. **Auf dem neuen Telefon wiederherstellen:** Tippe beim ersten Start auf **Ich habe Erevos schon auf einem anderen
+   Telefon** (oder geh durch den ersten Start). Auf Android lass Erevos auch dort die SMS-App sein, wenn du die SMS
+   willst. Tippe dann unter **Einstellungen** → **Daten und Geräte** → **Backups** auf **Backup wiederherstellen** und
+   wähle die Datei, oder auf **Von einem Server wiederherstellen** und gib Adresse, Benutzernamen und Passwort des
+   Servers ein; tippe das Passwort des Backups ein und sag Ja. Erevos öffnet sich, wie das alte Telefon war, mit
+   denselben Passwörtern.
 6. **Auf dem neuen Telefon neu einstellen, was zum Telefon gehört:** **Berechtigungen** öffnet sich für das, was
    Android erlauben soll. Schalte dann Fingerabdruck oder Gesicht wieder ein (siehe [Passwortsperre](#lock)), wähle den
    Ordner der automatischen Backups unter **Backups** neu, dazu die SIM für jede Nummer, und melde dich mit seinem
