@@ -44,6 +44,7 @@ import { cameAt } from './later';
 import { linkOf, spaceMover, tookOf, type Took } from './queue-move';
 import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
+import { briefLook, joinSleepLooks } from './sleep-look';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { setShownCheck } from './safety';
@@ -88,7 +89,8 @@ const CONTACT_PREFIX = 'contact:';
 
 type Receipts = Record<string, string[]>;
 // `near`: in a hidden place's run (lib/place-receiver.ts), where its contacts were heard nearby.
-type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string>; waited: Waited; failures: number; near?: NearHeard };
+// `took`: how many packets the look under way took from the relay, for the look of the battery mode Sleep (lib/sleep-look.ts).
+type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string>; waited: Waited; failures: number; took?: number; near?: NearHeard };
 
 // Where this space's messages come and go: our relay, the relay that sends (through the second
 // one when set), our queue, and where contacts reach us, said in every message.
@@ -198,7 +200,8 @@ export type Waited = false | 'came' | 'empty';
 /**
  * While Erevos is in the background, waits at the relay until something comes for the queue, or
  * for one of `others` (awayQueues), or a while: then a look takes it. Says how it ended; false at
- * once while the app shows, at a relay that cannot wait, or once the wait was ended. Throws when
+ * once while the app shows, during the look of the battery mode Sleep (lib/sleep-look.ts), at a
+ * relay that cannot wait, or once the wait was ended. Throws when
  * the relay cannot be reached, or no longer has the queue: only the queue's own wait throws. One
  * of `others` the relay lost ends the wait, so the look finds it gone and makes it anew; one that
  * fails otherwise drops out, and the others wait on. On a relay that reads many queues at once,
@@ -206,7 +209,7 @@ export type Waited = false | 'came' | 'empty';
  */
 export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<Waited> {
   // What came to a contact's own queue, not taken yet, is taken first (lib/contact-queues.ts).
-  if (shows || !canWaitAt(relay) || cameUnread()) return false;
+  if (shows || briefLook() || !canWaitAt(relay) || cameUnread()) return false;
   const wait = new AbortController();
   waits.add(wait);
   let came = false;
@@ -375,13 +378,21 @@ export function startReceiver(every?: number): () => void {
     timer = null;
     if (stopped) return;
     openChats();
-    if (holds > 0) return next();
+    const began = part.begin();
+    if (holds > 0) {
+      // The chat screen looks itself: the phone stays awake for it as long as the alarm holds it.
+      part.ended(began, 'came');
+      return next();
+    }
+    state.took = 0;
     look = lookOnce(state, () => stopped || holds > 0)
       .then((changed) => {
         if (changed && !stopped) listeners.forEach((listener) => listener());
+        part.ended(began, changed || state.took ? 'came' : state.failures > 0 ? 'failed' : 'quiet');
       })
       .catch(() => {
         // The relay could not be reached: tried again with the next look.
+        part.ended(began, 'failed');
       })
       .finally(next);
   };
@@ -396,8 +407,14 @@ export function startReceiver(every?: number): () => void {
     timer = setTimeout(tick, 0);
   };
   hurry = now;
+  // The alarm of the battery mode Sleep woke the phone: a wait from before it slept ends, and a look goes at once.
+  const part = joinSleepLooks(() => {
+    endWaits();
+    now();
+  });
   return () => {
     stopped = true;
+    part.leave();
     stopNostr();
     stopWent();
     if (timer) clearTimeout(timer);
@@ -515,6 +532,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   // One message from our queue (`own`), from one of the others (`old`, lib/queue-move.ts), or from
   // the backup queue: what it was to the junk meter.
   const take = async (bytes: Uint8Array, kind?: QueueKind | 'old', mine = ''): Promise<Took> => {
+    state.took = (state.took ?? 0) + 1;
     // A group's message (lib/groups.ts): the group screens hear of it themselves.
     if (isGroupPacket(bytes)) return { junk: !(await takeGroupPacket(bytes).catch(() => true)) };
     // Taken from the relay, so kept whatever happens meanwhile.

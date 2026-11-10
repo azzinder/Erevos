@@ -2351,7 +2351,7 @@ t('every 6 hours: Erevos looks every 15 minutes while a space is open and as it 
   // The app looks while a space is open, every CHECK_MS, and as it goes to the background, while
   // the space is still open; never in a task in the background.
   const layout = readFileSync(join(import.meta.dirname, '../app/_layout.tsx'), 'utf8');
-  assert.match(layout, /if \(!spaceOpen\) return;\n\s+const timer = setInterval\(\(\) => void checkAutoBackup\(\)\.catch\(\(\) => undefined\), BACKUP_CHECK_MS\);/);
+  assert.match(layout, /if \(!spaceOpen\) return;\n\s+const timer = setInterval\(\(\) => void awakeWhile\(checkAutoBackup\(\)\)\.catch\(\(\) => undefined\), BACKUP_CHECK_MS\);/);
   assert.match(layout, /backgroundAt\.current = Date\.now\(\);[\s\S]{0,300}if \(current\.kind === 'open'\) void checkAutoBackup\(\)/);
   assert.doesNotMatch(readFileSync(join(import.meta.dirname, '../lib/background.ts'), 'utf8'), /backup/i);
 });

@@ -39,6 +39,7 @@ import {
   type ReceivePlace,
   type ReceiveState,
 } from './receiver';
+import { joinSleepLooks, type LookPart } from './sleep-look';
 import { onNetworkChange } from './network-change';
 import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
 import { relayFor, type SpaceChats } from './space-chats';
@@ -78,6 +79,8 @@ type Run = {
   // Asked to look at once while a look was under way: the next one starts as soon as it ends.
   again: boolean;
   wake: () => void;
+  // Its part in the look of the battery mode Sleep (lib/sleep-look.ts), while it runs.
+  part: LookPart | null;
   // The place's chats once a look opened them, for what comes on Nostr; reading there while
   // nothing holds the place (how to stop), and what came there, opened in turn.
   chats: SpaceChats | null;
@@ -247,6 +250,8 @@ export function startPlaceReceiver(every?: number): () => void {
 
 function stopRun(run: Run) {
   run.stopped = true;
+  run.part?.leave();
+  run.part = null;
   run.release();
   if (run.timer) clearTimeout(run.timer);
   run.timer = null;
@@ -337,6 +342,7 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     stopped: false,
     again: false,
     wake: () => undefined,
+    part: null,
     chats: null,
     unlisten: null,
     nostrTurn: Promise.resolve(),
@@ -365,10 +371,18 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
   const tick = () => {
     run.timer = null;
     if (run.stopped) return;
-    if (held()) return next();
+    const began = run.part?.begin() ?? 0;
+    if (held()) {
+      // Its chat screen looks itself: the phone stays awake for it as long as the alarm holds it.
+      run.part?.ended(began, 'came');
+      return next();
+    }
+    run.state.took = 0;
     run.looking = lookPlace(run, () => run.stopped || held())
+      .then(() => run.part?.ended(began, run.state.took ? 'came' : run.state.failures > 0 ? 'failed' : 'quiet'))
       .catch(() => {
         // The relay could not be reached: tried again with the next look.
+        run.part?.ended(began, 'failed');
       })
       .finally(next);
   };
@@ -381,6 +395,8 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     clearTimeout(run.timer);
     run.timer = setTimeout(tick, 0);
   };
+  // The alarm of the battery mode Sleep woke the phone: it looks at once (the waits were ended, lib/receiver.ts).
+  run.part = joinSleepLooks(() => run.wake());
   next();
   listen(run);
   void openHeldIn(open);
@@ -463,6 +479,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   const here = place;
   const groups = placeGroupsAt(space, pocket, key);
   const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
+    state.took = (state.took ?? 0) + 1;
     // A group's message (lib/place-groups.ts): its screens, and its notice, hear of it themselves.
     if (isGroupPacket(bytes)) return { junk: !(await groups.take(bytes).catch(() => true)) };
     // Taken from the relay, so kept whatever happens meanwhile.

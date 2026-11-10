@@ -39,6 +39,7 @@ import { setAppShown, startReceiver } from '../lib/receiver';
 import { placeShown, spaceShown } from '../lib/last-seen';
 import { onHiddenPlaceChange, openHiddenPlace } from '../lib/hidden-contacts';
 import { ownerTouched } from '../lib/safety';
+import { awakeWhile } from '../lib/sleep-look';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
@@ -409,8 +410,9 @@ export default function RootLayout() {
   // While a space is open, Erevos looks now and then whether an automatic backup is due.
   const spaceOpen = phase.kind === 'open';
   useEffect(() => {
+    // In the battery mode Sleep the phone is not let sleep early while one is made (lib/sleep-look.ts).
     if (!spaceOpen) return;
-    const timer = setInterval(() => void checkAutoBackup().catch(() => undefined), BACKUP_CHECK_MS);
+    const timer = setInterval(() => void awakeWhile(checkAutoBackup()).catch(() => undefined), BACKUP_CHECK_MS);
     return () => clearInterval(timer);
   }, [spaceOpen]);
 

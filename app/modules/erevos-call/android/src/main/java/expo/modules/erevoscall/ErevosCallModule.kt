@@ -120,7 +120,7 @@ class ErevosCallModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ErevosCall")
 
-    Events("onNetwork")
+    Events("onNetwork", "onSleepLook")
 
     OnCreate {
       (context?.applicationContext as? Application)?.registerActivityLifecycleCallbacks(created)
@@ -216,7 +216,13 @@ class ErevosCallModule : Module() {
     }
 
     // Battery mode Sleep: the service lets the phone sleep, and an alarm wakes it to look.
+    Function("lookDone") {
+      SleepWake.lookDone()
+    }
+
     Function("setSleepy") { on: Boolean ->
+      // The alarm of the battery mode Sleep tells the app each time it wakes the phone.
+      SleepWake.tell = if (on) ({ runCatching { sendEvent("onSleepLook", mapOf()) } }) else null
       context?.let { ReceiveService.setSleepy(it, on) }
       null
     }

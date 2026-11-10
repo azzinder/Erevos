@@ -19,6 +19,10 @@ On main, not released yet:
   Holding a note offers **Move to a folder**; holding a folder's tab renames or deletes it, its notes staying, in no
   folder. A note is in one folder at most, and goes to your linked devices with its folder; one renamed or deleted on
   one device is so on the others too. An empty folder stays on the device it was made on.
+- **The battery mode Sleep spares more**: each time its alarm wakes the phone, about once a minute, Erevos asks the
+  relay once and lets the phone sleep again as soon as nothing came, in a second or two. Before, the phone stayed
+  awake 25 seconds of every minute. When something came, while an automatic backup is made, or while Nostr is read,
+  it stays awake as before.
 
 ### Under the hood
 

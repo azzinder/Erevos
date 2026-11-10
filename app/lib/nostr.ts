@@ -34,6 +34,7 @@ import { t } from './i18n';
 import { isPiece, keepPiece, type PiecePlace } from './nostr-pieces';
 import { openNostrStraight, type NostrLink } from './nostr-dm-net';
 import { onTorReady, onTorWay, relayStopped, torFor, torOff } from './relay';
+import { stayAwakeWhen } from './sleep-look';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
 export const NOSTR_BACKUP_MS = 5 * 60_000;
@@ -381,6 +382,10 @@ const readers = new Set<NostrReader>();
 const readings = new Map<string, Reading>();
 // The wraps taken this run, by id, as each comes from every relay it went to.
 const seen = new Set<string>();
+
+// The look of the battery mode Sleep (lib/sleep-look.ts) cannot tell when Nostr's relays have said
+// all they have: while something is read there, the phone stays awake as long as the alarm holds it.
+stayAwakeWhen(() => readers.size > 0 && relays !== null && nostrNow() && wanted().of.length > 0);
 
 /** Reads for `reader` on the space's relays until the function it gives is called. */
 export function readNostr(reader: NostrReader): () => void {

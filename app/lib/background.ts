@@ -31,6 +31,7 @@ import { isPicking } from './picking';
 import { onPlaceMessage, onPlaceRing, receivesPocket } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
+import { sleepLook } from './sleep-look';
 import { secureGet, secureSet } from './secure';
 import { spaceChats } from './space-chats';
 import { onSpaceGroupGone, onSpaceGroupMessage } from './space-groups';
@@ -202,6 +203,18 @@ if (Platform.OS === 'android') {
     callAudio?.addListener?.('onNetwork', networkChanged);
   } catch {
     // A build from before it: the waits run out on their own.
+  }
+  // The alarm of the battery mode Sleep woke the phone (SleepWake.kt): everything looks at once,
+  // and when nothing came the phone is let sleep again, not held for the alarm's whole time.
+  try {
+    callAudio?.addListener?.('onSleepLook', () => {
+      if (appShown()) return;
+      void sleepLook().then((quiet) => {
+        if (quiet) callAudio?.lookDone?.();
+      });
+    });
+  } catch {
+    // A build from before it: the phone is held for the alarm's whole time.
   }
   onAppShown(tellSmsShown);
   // Spam that Spam's built-in rule caught (SmsStore.kt) plays nothing, on the screen too.

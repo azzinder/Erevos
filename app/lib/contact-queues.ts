@@ -25,6 +25,7 @@
 import type { Mine } from '../lock/e2e-data';
 import { onNetworkChange } from './network-change';
 import { fromHex, MAX_ANY, sameRelay, throughTor, waitForAny, type AnyFound, type Relay } from './relay';
+import { joinSleepLooks, type LookPart } from './sleep-look';
 
 /** How many contacts' queues are read together, on one way through Tor. */
 export const CONTACT_GROUP = 8;
@@ -126,11 +127,18 @@ export class ContactWatch {
   private stopped = false;
   // The queues waited on, to tell when they change; null before the first use.
   private named: string | null = null;
+  // Its part in the look of the battery mode Sleep (lib/sleep-look.ts): the bunches that have not
+  // asked the relay yet since the alarm, the look it began with, and whether one could not ask.
+  private part: LookPart | null = null;
+  private owes = new Set<Loop>();
+  private began = 0;
+  private failed = false;
 
   /** Waits on `list` at `relay` from now on; bunches no longer in it stop waiting. */
   use(relay: Relay, list: Bunch[]): void {
     if (this.stopped) return;
     watches.add(this);
+    this.part ??= joinSleepLooks(() => this.kicked());
     if (this.relay && (this.relay.url !== relay.url || this.relay.key !== relay.key)) this.stopLoops();
     this.relay = relay;
     const wanted = new Map(list.map((b) => [b.way, b]));
@@ -139,6 +147,7 @@ export class ContactWatch {
       if (b && idsOf(b) === loop.ids) continue;
       loop.stop.abort();
       this.loops.delete(way);
+      this.asked(loop, 'quiet');
     }
     for (const b of list) if (!this.loops.has(b.way)) this.start(relay, b);
     const named = `${relay.url} ${list.map(idsOf).join(';')}`;
@@ -172,12 +181,36 @@ export class ContactWatch {
     this.stopped = true;
     watches.delete(this);
     this.stopLoops();
+    this.part?.leave();
+    this.part = null;
+  }
+
+  // The alarm woke the phone: each bunch asks the relay again at once, without waiting there.
+  private kicked() {
+    this.began = this.part?.begin() ?? 0;
+    this.owes = new Set(this.loops.values());
+    this.failed = false;
+    if (this.owes.size === 0) return this.part?.ended(this.began, 'quiet');
+    this.renew();
+  }
+
+  // A bunch asked the relay since the alarm, or waits no more: once each has, the watch has looked.
+  private asked(loop: Loop, how: 'quiet' | 'came' | 'failed') {
+    if (!this.owes.delete(loop)) return;
+    if (how === 'came') {
+      this.owes.clear();
+      return this.part?.ended(this.began, 'came');
+    }
+    if (how === 'failed') this.failed = true;
+    if (this.owes.size === 0) this.part?.ended(this.began, this.failed ? 'failed' : 'quiet');
   }
 
   private stopLoops() {
     for (const loop of this.loops.values()) loop.stop.abort();
     this.loops.clear();
     this.found.clear();
+    const owes = [...this.owes];
+    for (const loop of owes) this.asked(loop, 'quiet');
   }
 
   private start(relay: Relay, b: Bunch) {
@@ -194,11 +227,14 @@ export class ContactWatch {
         const end = () => round.abort();
         signal.addEventListener('abort', end);
         loop.round = round;
+        // Whether this asking began after the alarm of the battery mode Sleep: then it does not wait there.
+        const owed = this.owes.has(loop);
         try {
-          found = await waitForAny(relay, recipients, WATCH_FOR, b.way, round.signal);
+          found = await waitForAny(relay, recipients, owed ? 0 : WATCH_FOR, b.way, round.signal);
           failures = 0;
         } catch {
           failures++;
+          if (owed) this.asked(loop, 'failed');
           await pause(Math.min(WATCH_RETRY_MOST, WATCH_RETRY * 2 ** (failures - 1)), signal, loop);
           continue;
         } finally {
@@ -209,10 +245,13 @@ export class ContactWatch {
         // A relay that cannot, or seemed not to as the wait died on the way (lib/relay.ts canReadManyAt):
         // the looks read the queues as they can, and it is asked to wait again after a while.
         if (!found) {
+          if (owed) this.asked(loop, 'quiet');
           await pause(CANNOT_RETRY, signal, loop);
           continue;
         }
         const came = b.queues.filter((_, i) => found[i] !== 'none');
+        // One ended by the alarm itself found nothing only because it was ended: the next one counts.
+        if (owed && !round.signal.aborted) this.asked(loop, came.length > 0 ? 'came' : 'quiet');
         if (came.length === 0) continue;
         for (const q of came) this.found.add(q.r);
         cameListeners.forEach((listener) => listener());

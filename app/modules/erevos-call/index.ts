@@ -67,6 +67,8 @@ type CallAudio = {
   setBootStart?(on: boolean): void;
   /** While `on`, the service holds no wake lock: an alarm wakes the phone about once a minute to look (battery mode Sleep). */
   setSleepy?(on: boolean): void;
+  /** The look the alarm of the battery mode Sleep woke the phone for found nothing: the phone may sleep again at once. Missing in a build before it. */
+  lookDone?(): void;
   /** While `on`, a quiet notice says Erevos is locked and receives nothing until it is open again. */
   setLocked?(on: boolean): void;
   /** Plays the phone's ringtone, or `tone` (a sound's address; '' for none); with `notice`, also
@@ -103,6 +105,8 @@ type CallAudio = {
   openMaker?(): boolean;
   /** "onNetwork": the phone's network changed (lib/network-change.ts). */
   addListener?(name: 'onNetwork', listener: () => void): EventSubscription;
+  /** "onSleepLook": the alarm of the battery mode Sleep woke the phone, and holds it awake for a look (lib/sleep-look.ts). */
+  addListener?(name: 'onSleepLook', listener: () => void): EventSubscription;
 };
 
 // The phone's side of a call on Android (sound route, screen, ringing in the background). In a page
