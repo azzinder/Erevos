@@ -23,6 +23,7 @@
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
+import { lookNow } from '../lib/look-now';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -525,6 +526,9 @@ test('in the background a wait ends with what comes to the public groups’ queu
   await sendMessage(relay, fromHex(q.public!.queue.senderHex), randomBytes(60));
   setAppShown(false);
   try {
+    // A look was asked for meanwhile (lib/look-now.ts): the wait that follows is left out once.
+    lookNow();
+    assert.equal(await waitWhileAway(relay, fromHex(space.first.recipientHex), others.map(fromHex)), false);
     const started = Date.now();
     assert.equal(await waitWhileAway(relay, fromHex(space.first.recipientHex), others.map(fromHex)), 'came');
     assert.ok(Date.now() - started < 10_000);
@@ -548,6 +552,8 @@ test('in the background a wait at the relay ends a moment after the phone’s ne
   await space.look();
   setAppShown(false);
   try {
+    lookNow();
+    assert.equal(await waitWhileAway(relay, fromHex(space.first.recipientHex)), false);
     const started = Date.now();
     const waited = waitWhileAway(relay, fromHex(space.first.recipientHex));
     await new Promise((done) => setTimeout(done, 300));
