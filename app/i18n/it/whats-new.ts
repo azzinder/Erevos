@@ -12,6 +12,9 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  // 7.0.0-rc.7
+  "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
+    '**I backup su un server arrivano di nuovo**: un backup sul tuo server, come un Nextcloud, non si ferma più quando il server non accetta per un momento uno dei suoi pezzi, come quando chiude per qualche minuto di notte. Quel pezzo riparte poco dopo e il backup continua; prima ricominciava la volta dopo, e un backup grande poteva fallire giorno dopo giorno. Vedi [Backup](#backup).',
   // 7.0.0-rc.6
   "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
     "**Foto e file dalla Raccolta, direttamente da una chat**: **+** in una chat ora ha **Raccolta**, che apre la Raccolta del luogo di quella chat, con le sue foto e gli altri file. Tocca ciò che vuoi inviare, poi **Invia**, e va nella chat. Prima, **Foto** apriva solo la galleria del telefono. Vedi [Raccolta](#collection).",

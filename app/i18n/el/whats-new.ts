@@ -12,6 +12,9 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 7.0.0-rc.7
+  "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
+    '**Τα αντίγραφα σε server φτάνουν ξανά**: ένα αντίγραφο στον δικό σου server, όπως ένα Nextcloud, δεν σταματά πια όταν ο server δεν δέχεται για λίγο ένα από τα κομμάτια του, όπως όταν κλείνει για λίγα λεπτά τη νύχτα. Εκείνο το κομμάτι ξαναστέλνεται λίγο αργότερα και το αντίγραφο συνεχίζει· πριν, ξεκινούσε από την αρχή την επόμενη φορά, και ένα μεγάλο αντίγραφο μπορούσε να αποτυγχάνει μέρα με τη μέρα. Δες [Αντίγραφα ασφαλείας](#backup).',
   // 7.0.0-rc.6
   "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
     "**Φωτογραφίες και αρχεία από τη Συλλογή, κατευθείαν από μια συνομιλία**: το **+** σε μια συνομιλία έχει τώρα **Συλλογή**, που ανοίγει τη Συλλογή του μέρους εκείνης της συνομιλίας, με τις φωτογραφίες και τα άλλα αρχεία της. Πάτα ό,τι θα στείλεις και μετά **Αποστολή**, και πηγαίνει στη συνομιλία. Πριν, η **Φωτογραφία** άνοιγε μόνο τη συλλογή φωτογραφιών του τηλεφώνου. Δες [Συλλογή](#collection).",

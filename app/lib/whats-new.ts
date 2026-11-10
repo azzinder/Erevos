@@ -27,6 +27,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '7.0.0-rc.7',
+    forYou: [],
+    underTheHood: [
+      mark("**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup)."),
+    ],
+  },
+  {
     version: '7.0.0-rc.6',
     forYou: [
       mark("**Choose the name others see**: under Settings → Privacy and security → **My name**, give this space a name that your contacts and your private groups see instead of a code, always encrypted. Hidden chats have a name of their own, in their settings, empty at first. See [Chat through a relay](#relay)."),

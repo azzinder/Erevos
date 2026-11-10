@@ -12,6 +12,9 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  // 7.0.0-rc.7
+  "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
+    '**Rezervne kopije na server ponovo stižu**: kopija na vaš vlastiti server, poput Nextclouda, više ne staje kad server na trenutak ne primi jedan od njenih dijelova, kao kad se noću zatvori na nekoliko minuta. Taj dio ide ponovo malo kasnije i kopija nastavlja; prije je sljedeći put počinjala ispočetka, a velika kopija je mogla propadati dan za danom. Vidi [Rezervne kopije](#backup).',
   // 7.0.0-rc.6
   "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
     "**Fotografije i datoteke iz Zbirke, ravno iz razgovora**: **+** u razgovoru sada ima **Zbirka**, koja otvara Zbirku mjesta tog razgovora, s njenim fotografijama i drugim datotekama. Dodirni ono što šalješ, pa **Pošalji**, i ide u razgovor. Prije je **Fotografija** otvarala samo galeriju telefona. Vidi [Zbirka](#collection).",
