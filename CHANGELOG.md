@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.6 (2026-11-10)
+
+### For you
+
 - **Choose the name others see**: under Settings → Privacy and security → **My name**, a space can go by a name you
   choose, which your accepted contacts and your private groups see, encrypted, in place of a code (up to 40
   characters, none at first). A contact you gave a name of your own keeps showing under yours; their chosen name shows

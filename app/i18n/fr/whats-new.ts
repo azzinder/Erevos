@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  // 7.0.0-rc.6
   "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
     "**Photos et fichiers de la Collection, directement depuis une discussion** : **+** dans une discussion a maintenant **Collection**, qui ouvre la Collection du lieu de cette discussion, avec ses photos et ses autres fichiers. Touche ce que tu veux envoyer, puis **Envoyer**, et ça part dans la discussion. Avant, **Photo** n’ouvrait que la galerie du téléphone. Voir [Collection](#collection).",
   "**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view.":

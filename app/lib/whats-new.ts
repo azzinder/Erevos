@@ -21,17 +21,22 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**Choose the name others see**: under Settings → Privacy and security → **My name**, give this space a name that your contacts and your private groups see instead of a code, always encrypted. Hidden chats have a name of their own, in their settings, empty at first. See [Chat through a relay](#relay)."),
-    mark("**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection)."),
-  ],
-  underTheHood: [
-    mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),
-    mark("**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay)."),
-  ],
+  forYou: [],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.0.0-rc.6',
+    forYou: [
+      mark("**Choose the name others see**: under Settings → Privacy and security → **My name**, give this space a name that your contacts and your private groups see instead of a code, always encrypted. Hidden chats have a name of their own, in their settings, empty at first. See [Chat through a relay](#relay)."),
+      mark("**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection)."),
+    ],
+    underTheHood: [
+      mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),
+      mark("**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay)."),
+    ],
+  },
   {
     version: '7.0.0-rc.5',
     forYou: [],

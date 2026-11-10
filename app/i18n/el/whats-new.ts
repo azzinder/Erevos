@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 7.0.0-rc.6
   "**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection).":
     "**Φωτογραφίες και αρχεία από τη Συλλογή, κατευθείαν από μια συνομιλία**: το **+** σε μια συνομιλία έχει τώρα **Συλλογή**, που ανοίγει τη Συλλογή του μέρους εκείνης της συνομιλίας, με τις φωτογραφίες και τα άλλα αρχεία της. Πάτα ό,τι θα στείλεις και μετά **Αποστολή**, και πηγαίνει στη συνομιλία. Πριν, η **Φωτογραφία** άνοιγε μόνο τη συλλογή φωτογραφιών του τηλεφώνου. Δες [Συλλογή](#collection).",
   "**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view.":
