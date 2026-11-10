@@ -45,6 +45,9 @@ On main, not released yet:
 - **An open chat is drawn again only when something is due**: the chat screen drew itself again every five seconds,
   and the home screen asked who is online as often. Each now waits for the next moment something changes: a message
   that disappears, one sent for later that goes, a contact who is no longer online.
+- **The chat screen's file is smaller**: the lines of a thread, the rows of a chat's details and the screen's styles
+  moved to a file of their own (`components/chat-thread-lines.tsx`), and what they share with the screen to
+  `lib/chat-screen.ts`. Nothing changes in what the screen does.
 
 ## 7.0.0-rc.8 (2026-11-10)
 
