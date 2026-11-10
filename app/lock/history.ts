@@ -297,12 +297,28 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
   return Object.keys(more).length > 0 ? more : undefined;
 }
 
-const voiceIds = (data: HistoryData) =>
-  new Set(Object.values(data.chats).flatMap((list) => list.flatMap((m) => (m[7] ? [m[7].id] : []))));
+// The chats whose list of messages is not the one it was: a change makes a new list for its chat
+// and leaves the others' as they are, so only these are looked at when a change is saved.
+function changedChats(before: Record<string, Kept[]>, after: Record<string, Kept[]>): string[] {
+  const changed: string[] = [];
+  for (const [peer, list] of Object.entries(after)) if (before[peer] !== list) changed.push(peer);
+  for (const peer of Object.keys(before)) if (after[peer] === undefined) changed.push(peer);
+  return changed;
+}
 
-// Each file's chunks, by id, and how many there are.
-const fileChunks = (data: HistoryData) =>
-  new Map(Object.values(data.chats).flatMap((list) => list.flatMap((m): [string, number][] => (m[8] ? [[m[8].id, m[8].count]] : []))));
+// The voice messages' sounds, and each file's chunks by id with how many there are, that the
+// messages of `peers` name (of every chat, without `peers`).
+function soundsAndFiles(chats: Record<string, Kept[]>, peers: string[] = Object.keys(chats)): { voices: Set<string>; files: Map<string, number> } {
+  const voices = new Set<string>();
+  const files = new Map<string, number>();
+  for (const peer of peers) {
+    for (const m of chats[peer] ?? []) {
+      if (m[7]) voices.add(m[7].id);
+      if (m[8]) files.set(m[8].id, m[8].count);
+    }
+  }
+  return { voices, files };
+}
 
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
@@ -385,7 +401,52 @@ function checkedPage(value: unknown): Entry[] {
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: SIZE, fixed: true });
 
-const pageSize = (entries: Entry[]) => sealedSize({ m: entries });
+// The bytes a page with `entries` takes once sealed, before padding, as sealedSize({ m: entries })
+// says, but from each message's own size, measured once: a page is not written out whole to
+// measure it each time a message is put in it.
+const keptSizes = new WeakMap<Kept, number>();
+const peerSizes = new Map<string, number>();
+const PAGE_EMPTY = sealedSize({ m: [] });
+
+function entrySize([peer, kept]: Entry): number {
+  let k = keptSizes.get(kept);
+  if (k === undefined) {
+    k = sealedSize(kept);
+    keptSizes.set(kept, k);
+  }
+  let p = peerSizes.get(peer);
+  if (p === undefined) {
+    p = sealedSize(peer);
+    if (peerSizes.size > 4096) peerSizes.clear();
+    peerSizes.set(peer, p);
+  }
+  // The two in brackets, with a comma between.
+  return p + k + 3;
+}
+
+/** The bytes a page with `entries` takes once sealed, before padding. */
+export function pageSize(entries: Entry[]): number {
+  let size = PAGE_EMPTY + Math.max(0, entries.length - 1);
+  for (const entry of entries) size += entrySize(entry);
+  return size;
+}
+
+// The chats a page holds messages of, found once for each page as it is.
+const pagePeers = new WeakMap<Entry[], Set<string>>();
+
+function holdsAny(entries: Entry[], peers: Set<string>): boolean {
+  let held = pagePeers.get(entries);
+  if (!held) {
+    held = new Set();
+    for (const [peer] of entries) held.add(peer);
+    pagePeers.set(entries, held);
+  }
+  for (const peer of peers) if (held.has(peer)) return true;
+  return false;
+}
+
+// Each message unpacked once, for as long as it is kept as it is.
+const unpacked = new WeakMap<Kept, Message>();
 
 function sealPage(key: Uint8Array, entries: Entry[]): Uint8Array {
   const json = JSON.stringify({ m: entries });
@@ -450,30 +511,49 @@ export class History {
    * ones go after the last. Only the pages that changed are written, and FILE when the pages did.
    */
   private persist(data: HistoryData, indexChanged = false): Promise<void> {
+    // Only the chats whose messages changed are looked at, and only the pages that hold some of
+    // theirs: every other message stays in its page as it is.
+    const changed = new Set(changedChats(this.data.chats, data.chats));
     this.data = data;
+    if (changed.size === 0 && !indexChanged) return this.writes.catch(() => undefined);
     this.all = null;
     const wanted = new Map<string, Kept[]>();
     const order: Entry[] = [];
-    for (const [peer, list] of Object.entries(data.chats)) {
-      for (const kept of list) {
+    for (const peer of changed) {
+      for (const kept of data.chats[peer] ?? []) {
         const k = entryKey(peer, kept);
-        wanted.set(k, [...(wanted.get(k) ?? []), kept]);
+        const same = wanted.get(k);
+        if (same) same.push(kept);
+        else wanted.set(k, [kept]);
         order.push([peer, kept]);
       }
     }
     const placed = new Set<Kept>();
     const dirty = new Set<string>();
     const pages = this.pages.map((page) => {
+      if (!holdsAny(page.entries, changed)) return page;
       const entries: Entry[] = [];
-      for (const [peer, kept] of page.entries) {
-        const now = wanted.get(entryKey(peer, kept));
-        const next = now?.shift();
-        if (next === undefined) continue;
-        entries.push([peer, next]);
+      let same = true;
+      for (const entry of page.entries) {
+        const [peer, kept] = entry;
+        if (!changed.has(peer)) {
+          entries.push(entry);
+          continue;
+        }
+        const next = wanted.get(entryKey(peer, kept))?.shift();
+        if (next === undefined) {
+          same = false;
+          continue;
+        }
+        if (next === kept) entries.push(entry);
+        else {
+          entries.push([peer, next]);
+          same = false;
+        }
         placed.add(next);
       }
-      const changed = entries.length !== page.entries.length || entries.some((e, i) => e[1] !== page.entries[i][1]);
-      if (changed) dirty.add(page.id);
+      if (same) return page;
+      dirty.add(page.id);
       return { id: page.id, entries };
     });
     // A page a change made too large gives its last messages to the end.
@@ -481,20 +561,39 @@ export class History {
     for (const page of pages) {
       if (!dirty.has(page.id)) continue;
       const moved: Entry[] = [];
-      while (page.entries.length > 1 && pageSize(page.entries) > PAGE) moved.unshift(page.entries.pop()!);
-      fresh.push(...moved);
+      let size = pageSize(page.entries);
+      while (page.entries.length > 1 && size > PAGE) {
+        const last = page.entries.pop()!;
+        size -= entrySize(last) + 1;
+        moved.unshift(last);
+      }
+      for (const entry of moved) fresh.push(entry);
     }
-    fresh.push(...order.filter(([, kept]) => !placed.has(kept)).sort((a, b) => a[1][0] - b[1][0]));
+    const added = order.filter(([, kept]) => !placed.has(kept)).sort((a, b) => a[1][0] - b[1][0]);
+    for (const entry of added) fresh.push(entry);
     const kept = pages.filter((page) => page.entries.length > 0);
     const gone = pages.filter((page) => page.entries.length === 0).map((page) => page.id);
+    // The last page as it fills, and its size, measured once and added to with each message.
+    let filling: { id: string; entries: Entry[] } | null = null;
+    let size = 0;
     for (const entry of fresh) {
       const last = kept[kept.length - 1];
-      if (last && pageSize([...last.entries, entry]) <= PAGE) {
-        last.entries.push(entry);
-        dirty.add(last.id);
+      if (last && filling !== last) {
+        // One of the pages as they were is not changed in place: a write asked for before sealed it as it was.
+        if (!dirty.has(last.id)) kept[kept.length - 1] = { id: last.id, entries: [...last.entries] };
+        filling = kept[kept.length - 1];
+        size = pageSize(filling.entries);
+      }
+      const more = entrySize(entry) + (filling && filling.entries.length > 0 ? 1 : 0);
+      if (filling && size + more <= PAGE) {
+        filling.entries.push(entry);
+        size += more;
+        dirty.add(filling.id);
       } else {
         const id = toHex(randomBytes(12));
-        kept.push({ id, entries: [entry] });
+        filling = { id, entries: [entry] };
+        size = pageSize(filling.entries);
+        kept.push(filling);
         dirty.add(id);
       }
     }
@@ -520,9 +619,20 @@ export class History {
 
   /** Every message, oldest first. The list is shared: not to be changed. */
   messages(): Message[] {
-    this.all ??= Object.entries(this.data.chats)
-      .flatMap(([peer, list]) => list.map((m) => ({ peer, ...unpack(m) })))
-      .sort((a, b) => a.at - b.at);
+    if (this.all) return this.all;
+    // A message kept as it was is the one unpacked before, not unpacked again after each change.
+    const all: Message[] = [];
+    for (const [peer, list] of Object.entries(this.data.chats)) {
+      for (const kept of list) {
+        let m = unpacked.get(kept);
+        if (!m || m.peer !== peer) {
+          m = { peer, ...unpack(kept) };
+          unpacked.set(kept, m);
+        }
+        all.push(m);
+      }
+    }
+    this.all = all.sort((a, b) => a.at - b.at);
     return this.all;
   }
 
@@ -530,10 +640,19 @@ export class History {
   // another), so changes made close together all land, in order. The sound of a voice message
   // that left, or the chunks of a file, go once the history without it is saved.
   private async save(data: HistoryData): Promise<void> {
-    const kept = voiceIds(data);
-    const gone = [...voiceIds(this.data)].filter((id) => !kept.has(id));
-    const keptFiles = fileChunks(data);
-    const goneFiles = [...fileChunks(this.data)].filter(([id]) => !keptFiles.has(id));
+    // What the chats that changed named before and name no more; the others are looked through
+    // only when there is such a thing, as another chat may name it too (a chat moved, say).
+    const changed = changedChats(this.data.chats, data.chats);
+    const was = soundsAndFiles(this.data.chats, changed);
+    const now = soundsAndFiles(data.chats, changed);
+    let gone = [...was.voices].filter((id) => !now.voices.has(id));
+    let goneFiles = [...was.files].filter(([id]) => !now.files.has(id));
+    if (gone.length > 0 || goneFiles.length > 0) {
+      const moved = new Set(changed);
+      const others = soundsAndFiles(data.chats, Object.keys(data.chats).filter((peer) => !moved.has(peer)));
+      gone = gone.filter((id) => !others.voices.has(id));
+      goneFiles = goneFiles.filter(([id]) => !others.files.has(id));
+    }
     await this.persist(data);
     await Promise.all(gone.map((id) => deleteClip(id).catch(() => undefined)));
     for (const [id, count] of goneFiles) await deleteChunks(id, count).catch(() => undefined);
@@ -706,7 +825,8 @@ export class History {
     for (const [peer, list] of Object.entries(this.data.chats)) {
       const kept = list.filter((m) => !(m[4] && m[4] <= now));
       gone ||= kept.length < list.length;
-      if (kept.length > 0) chats[peer] = kept;
+      // A chat that lost none keeps its list, so it is not looked at when this is saved.
+      if (kept.length > 0) chats[peer] = kept.length < list.length ? kept : list;
     }
     if (gone) await this.save({ chats });
     return gone;

@@ -9,8 +9,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { FILE, History, newTag, PAGE, PAGE_PREFIX, SIZE, WAITING } from '../lock/history';
-import { sealedFile } from '../lock/sealed-file';
+import { FILE, History, newTag, PAGE, PAGE_PREFIX, pageSize, SIZE, WAITING } from '../lock/history';
+import { sealedFile, sealedSize } from '../lock/sealed-file';
 import { splitVoice, VoiceAssembler, PART_SIZE, MAX_PARTS } from '../lib/voice';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { blobs, files } from './files-memory';
@@ -101,6 +101,45 @@ t('a change rewrites only its page, and a page left empty is deleted', async () 
   const again = await History.open('space', 0, key);
   assert.equal(again.messages().length, 8);
   assert.equal(again.messages()[0].at, 4);
+});
+
+t('a change in one chat leaves the pages and the messages of the others as they are', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const text = 'x'.repeat(4000);
+  const tags: string[] = [];
+  // Each chat's messages fill pages of their own: twelve of one, then twelve of the other.
+  for (let at = 0; at < 24; at++) {
+    tags.push(newTag());
+    await history.add({ peer: at < 12 ? 'contact:aa' : 'contact:bb', text, mine: false, at, tag: tags[at] });
+  }
+  const pages = () => [...blobs.keys()].filter((name) => name.startsWith(PAGE_PREFIX)).sort();
+  const before = new Map(pages().map((name) => [name, blobs.get(name)]));
+  const were = history.messages();
+  await history.mark('contact:bb', false, 2, 100, [tags[13]]);
+  await history.react('contact:bb', tags[20], true, '👍');
+  await history.remove('contact:bb', tags[23]);
+  const changed = pages().filter((name) => blobs.get(name) !== before.get(name));
+  assert.ok(changed.length >= 1 && changed.length <= 3, `${changed.length}`);
+  const now = history.messages();
+  assert.equal(now.length, 23);
+  // Those kept as they were are the same ones, not unpacked again; the changed ones are new.
+  for (let i = 0; i < 12; i++) assert.equal(now[i], were[i]);
+  assert.notEqual(now[13], were[13]);
+  assert.equal(now[13].mark, 2);
+  assert.equal(now[20].myReaction, '👍');
+  // And it all reads the same from the phone.
+  assert.deepEqual((await History.open('space', 0, key)).messages(), now);
+});
+
+test('a page is measured from its messages as it is when written out whole', () => {
+  const kept = (text: string, at: number) => [at, 1, text, newTag(), 0, 0, 0] as never;
+  const entries = [
+    ['contact:aa', kept('κείμενο 😀 "x"\n', 1)],
+    ['contact:ββ', kept('', 2)],
+    ['contact:aa', kept('\ud83d lone', 3)],
+  ] as never[];
+  for (let n = 0; n <= entries.length; n++) assert.equal(pageSize(entries.slice(0, n)), sealedSize({ m: entries.slice(0, n) }));
 });
 
 t('a message too long for one page gets a page of its own, whole', async () => {

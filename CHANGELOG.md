@@ -26,6 +26,11 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A change in a chat is saved faster**: only the chat that changed, and the pages that hold its messages, are looked
+  at when a message comes, is read or is deleted, each message is unpacked once, and a page is no longer written out
+  whole to measure it for every message put in it. With many chats, or after a large import, each change took
+  longer the more there was.
+
 ## 7.0.0-rc.8 (2026-11-10)
 
 ### For you
