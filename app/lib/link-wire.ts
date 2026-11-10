@@ -158,8 +158,9 @@ function checkedNoteSaid(value: unknown): NoteSaid | null {
     ...(isTime(v.due) ? { due: v.due } : {}),
     ...(isTime(v.due) && isEvery(v.every) ? { every: { u: v.every.u, n: v.every.n } } : {}),
     ...(v.told === true ? { told: true as const } : {}),
-    // The folder in Chat with myself (lock/myself-data.ts); a device from before folders leaves it out.
-    ...(isText(v.folder) && v.folder.length > 0 && v.folder.length <= NOTE_FOLDER ? { folder: v.folder } : {}),
+    // The folder in Chat with myself (lock/myself-data.ts), '' for a note in none. A device from
+    // before folders leaves it out: what it says of a note then leaves the note in its folder.
+    ...(isText(v.folder) && v.folder.length <= NOTE_FOLDER ? { folder: v.folder } : {}),
     ...(file ? { file } : voice ? { voice } : {}),
   };
 }

@@ -48,6 +48,12 @@ On main, not released yet:
 - **The chat screen's file is smaller**: the lines of a thread, the rows of a chat's details and the screen's styles
   moved to a file of their own (`components/chat-thread-lines.tsx`), and what they share with the screen to
   `lib/chat-screen.ts`. Nothing changes in what the screen does.
+- **A note keeps its folder when an older Erevos changes it**: a linked device with a version from before the folders
+  of Chat with myself said nothing of a note's folder, and a note changed there left its folder on the others. A
+  device now says so when a note is in no folder, and one that says nothing leaves the note where it is.
+- **Leftovers say when wrong tries make it wait**: several PINs or passwords typed together that open nothing count
+  as wrong tries of a search, and after five nothing opens for a while, a right one neither. The screen now says
+  so, with how long.
 
 ## 7.0.0-rc.8 (2026-11-10)
 

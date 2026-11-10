@@ -14,6 +14,12 @@ import {
   type Place,
 } from "../lib/leftovers";
 import { searchHidden, searchOpens } from "../lock/hidden";
+import {
+  assertNotLockedOut,
+  LockedOutError,
+  lockedOutMessage,
+  SEARCH_TRIES,
+} from "../lock/tries";
 import { currentSpace } from "../lock/keys";
 import { hiddenHolder } from "../lock/sealed-file";
 import { useColors } from "../theme/context";
@@ -100,6 +106,18 @@ export function LeftoversCard({ onDeleted }: { onDeleted?: () => void }) {
     return null;
   }
 
+  // Wrong tries here count as a search's (lock/hidden.ts): after several, nothing opens for a
+  // while, a right one neither, and the search says nothing of it. Here it is said, with how long.
+  async function waitNote(): Promise<string> {
+    try {
+      await assertNotLockedOut(Date.now(), SEARCH_TRIES);
+      return "";
+    } catch (error) {
+      if (error instanceof LockedOutError) return lockedOutMessage(error.until);
+      throw error;
+    }
+  }
+
   async function add() {
     const text = secret;
     setSecret("");
@@ -110,7 +128,11 @@ export function LeftoversCard({ onDeleted }: { onDeleted?: () => void }) {
       const parts = text.split(/[\s,;]+/).filter(Boolean);
       if (whole || parts.length < 2) {
         if (!whole)
-          say(t("Nothing opens with that. Check it and type it again."), true);
+          say(
+            (await waitNote()) ||
+              t("Nothing opens with that. Check it and type it again."),
+            true,
+          );
         else if (keep(whole)) say(t("Opened, and it is read with the rest."));
         else say(t("That one is read already."));
         return;
@@ -133,11 +155,17 @@ export function LeftoversCard({ onDeleted }: { onDeleted?: () => void }) {
         left = still;
         if (!spaceOpened || left.length === 0) break;
       }
+      const wait = opened < parts.length ? await waitNote() : "";
       say(
-        t("Opened {opened} of {count}; they are read with the rest.", {
-          opened,
-          count: parts.length,
-        }),
+        [
+          t("Opened {opened} of {count}; they are read with the rest.", {
+            opened,
+            count: parts.length,
+          }),
+          wait,
+        ]
+          .filter(Boolean)
+          .join(" "),
         opened < parts.length,
       );
     } catch (error) {

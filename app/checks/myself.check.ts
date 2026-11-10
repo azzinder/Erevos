@@ -387,15 +387,19 @@ test("folders from another device: a note's folder comes with it, and one rename
   await addFolder(mine, 'Trips');
   await addFolder(mine, 'Empty');
   const id = newNoteId();
-  const from = (folder: string | undefined, v: number): NoteCame => ({ note: { id, at: 500, text: 'tickets', v, ...(folder ? { folder } : {}) }, make: async () => ({}) });
+  const from = (folder: string | undefined, v: number): NoteCame => ({ note: { id, at: 500, text: 'tickets', v, ...(folder !== undefined ? { folder } : {}) }, make: async () => ({}) });
   await mergeNotes(mine, [from('Trips', 10)], []);
   assert.equal((await loadNotes(mine))[0].folder, 'Trips');
   // Renamed there: the new name takes the old one's place here; an empty one made here stays.
   await mergeNotes(mine, [from('Travel', 20)], []);
   assert.equal((await loadNotes(mine))[0].folder, 'Travel');
   assert.deepEqual(await loadFolders(mine), ['Travel', 'Empty']);
-  // Deleted there: the note stays, in none, and the folder goes.
-  await mergeNotes(mine, [from(undefined, 30)], []);
+  // Changed on a device from before folders, which says no folder at all: the note stays in its folder.
+  await mergeNotes(mine, [from(undefined, 25)], []);
+  assert.equal((await loadNotes(mine))[0].folder, 'Travel');
+  assert.deepEqual(await loadFolders(mine), ['Travel', 'Empty']);
+  // Deleted there ('' is no folder): the note stays, in none, and the folder goes.
+  await mergeNotes(mine, [from('', 30)], []);
   assert.equal((await loadNotes(mine))[0].folder, undefined);
   assert.deepEqual(await loadFolders(mine), ['Empty']);
   // A folder that still holds notes here stays, whatever left it.
@@ -412,7 +416,9 @@ test("a note's folder goes to the account's other devices on the wire; a device 
     return said?.k === 'notes' ? said.list[0] : null;
   };
   assert.equal(read('Work')?.folder, 'Work');
-  assert.equal(read('')?.folder, undefined);
+  // '' says the note is in no folder; nothing said (a device from before folders) leaves it where it is.
+  assert.equal(read('')?.folder, '');
+  assert.equal('folder' in (read(undefined) ?? {}), false);
   assert.equal(read('x'.repeat(81))?.folder, undefined);
   assert.equal(read(7)?.folder, undefined);
   assert.equal(read(undefined)?.text, 'hi');

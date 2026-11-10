@@ -445,7 +445,9 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
       const at = notes.findIndex((n) => n.id === note.id);
       const kept = at >= 0 ? notes[at] : null;
       if (kept && stampOf(kept) >= note.v) continue;
-      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, every: note.every, told: note.told, folder: folderName(note.folder) || undefined, v: note.v };
+      // No folder said at all: a device from before folders, which leaves the note where it is; '' is none.
+      const folder = note.folder === undefined ? kept?.folder : folderName(note.folder) || undefined;
+      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, every: note.every, told: note.told, folder, v: note.v };
       if (kept) {
         if (kept.folder && kept.folder !== words.folder) left.set(kept.folder, (left.get(kept.folder) ?? new Set()).add(words.folder ?? ''));
         const { o: _o, ...rest } = kept;
