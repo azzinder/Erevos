@@ -13,6 +13,8 @@ export const whatsNew: Record<string, string> = {
   'Under the hood': 'Ispod haube',
   // Not out yet.
   // 7.0.0-rc.7
+  "**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup).":
+    "**Šta zauzima prostor**: rezervne kopije sada imaju **Šta zauzima prostor**, koje na Androidu pokazuje koliko prostora Erevos zauzima na telefonu, po vrsti: Zbirka s fotografijama i datotekama iz razgovora, glasovne poruke, historija, Tor i ostaci nedovršenih upisa. Svaka automatska rezervna kopija sadrži sve to, pa se vidi zašto je velika. Vidi [Rezervne kopije](#backup).",
   "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
     '**Rezervne kopije na server ponovo stižu**: kopija na vaš vlastiti server, poput Nextclouda, više ne staje kad server na trenutak ne primi jedan od njenih dijelova, kao kad se noću zatvori na nekoliko minuta. Taj dio ide ponovo malo kasnije i kopija nastavlja; prije je sljedeći put počinjala ispočetka, a velika kopija je mogla propadati dan za danom. Vidi [Rezervne kopije](#backup).',
   // 7.0.0-rc.6

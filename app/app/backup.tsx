@@ -65,6 +65,8 @@ import { phoneStatus } from '../modules/erevos-phone';
 import { lostAt, markLost, restoredFromOther } from '../lock/restored';
 import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
+import { measureAppSpace, spaceText, type SpaceRow } from '../lib/app-space';
+import { device as phoneDevice } from '../modules/erevos-device';
 
 // Backups of everything Erevos keeps on the phone or computer (lock/backup.ts): made by hand into a folder the
 // owner picks, made by themselves every 6 hours, day or week (lib/backup-folder.ts), and put back. Every
@@ -135,6 +137,8 @@ export default function Backups() {
   const [note, setNote] = useState('');
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [space, setSpace] = useState<SpaceRow[] | null>(null);
+  const [measuring, setMeasuring] = useState(false);
   // A folder or file picker is open: a second tap opens no second one.
   const picking = useRef(false);
   // Whether backups hold the phone's SMS and MMS, and its calls and blocked numbers.
@@ -800,6 +804,43 @@ export default function Backups() {
                 </Row>
               </>
             )}
+          </Card>
+        </>
+      ) : null}
+
+      {phoneDevice?.appSpace ? (
+        <>
+          <SectionTitle title={t('What takes room')} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('How much room Erevos takes on {device}, by kind: each automatic backup holds it all. Only the files’ names and sizes are looked at, here, and nothing is sent.', { device: t(THIS_DEVICE) })}
+            </Text>
+            {space ? (
+              <>
+                <Text variant="bodyStrong" style={hint}>
+                  {t('In all: {size}', { size: spaceText(space.reduce((sum, row) => sum + row.bytes, 0)) })}
+                </Text>
+                {space.map((row) => (
+                  <Text key={row.label} variant="caption" style={hint}>
+                    {`${row.label}: ${spaceText(row.bytes)} (${row.files})`}
+                  </Text>
+                ))}
+              </>
+            ) : null}
+            <Row wrap>
+              <Button
+                title={measuring ? t('One moment…') : space ? t('Measure again') : t('Measure')}
+                kind="secondary"
+                compact
+                disabled={measuring}
+                onPress={() => {
+                  setMeasuring(true);
+                  void measureAppSpace()
+                    .then(setSpace, (error) => say(errorText(error), true))
+                    .finally(() => setMeasuring(false));
+                }}
+              />
+            </Row>
           </Card>
         </>
       ) : null}

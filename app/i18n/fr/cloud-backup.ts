@@ -124,4 +124,28 @@ export const cloudBackup: Record<string, string> = {
     "Restaurée sans {n} fichier de la sauvegarde, {name} : les photos, les fichiers et les messages vocaux qu’il contenait ne sont pas revenus.",
   "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
     "Restaurée sans {n} fichiers de la sauvegarde, dont {name} : les photos, les fichiers et les messages vocaux qu’ils contenaient ne sont pas revenus.",
+  "What takes room":
+    "Ce qui prend de la place",
+  "How much room Erevos takes on {device}, by kind: each automatic backup holds it all. Only the files’ names and sizes are looked at, here, and nothing is sent.":
+    "La place qu’Erevos prend sur {device}, par type : chaque sauvegarde automatique contient tout cela. Seuls les noms et tailles des fichiers sont regardés, ici, et rien n’est envoyé.",
+  "In all: {size}":
+    "En tout : {size}",
+  "Measure":
+    "Mesurer",
+  "Measure again":
+    "Mesurer à nouveau",
+  "The Collection, and photos and files in chats":
+    "La Collection, et les photos et fichiers des discussions",
+  "Contact pictures":
+    "Photos des contacts",
+  "Chat history":
+    "Historique des discussions",
+  "Backups kept inside Erevos":
+    "Sauvegardes gardées dans Erevos",
+  "Left over from writes that did not end":
+    "Restes d’écritures inachevées",
+  "Cache":
+    "Cache",
+  "Other: {name}":
+    "Autres : {name}",
 };

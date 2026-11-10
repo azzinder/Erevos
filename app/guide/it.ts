@@ -2933,6 +2933,7 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   accetta sotto i 12 caratteri.
 - **I backup automatici conservano la loro password sul telefono,** così non serve una password ogni volta. Chi apre la
   loro cartella ha comunque bisogno delle password degli spazi per leggere le chat.
+- **Cosa occupa spazio:** su Android, **Misura** in **Cosa occupa spazio** mostra quanto spazio occupa Erevos sul telefono, per tipo: la Raccolta con le foto e i file delle chat, i messaggi vocali, la cronologia delle chat, Tor e i resti di scritture non concluse. Ogni backup automatico contiene tutto questo, così si vede perché è grande. Si guardano solo i nomi e le dimensioni dei file, sul telefono, e non si invia nulla.
 - **Su un server:** il backup che va lì è sigillato con la sua password come gli altri, e quella password non lascia
   mai il telefono, quindi il server non può aprirlo. Il suo nome è casuale e il file sembra fatto di byte casuali, di
   una tra poche dimensioni, quindi né l’uno né l’altro dice che è di Erevos né quanto contiene esattamente. Le sue

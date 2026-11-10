@@ -2800,6 +2800,7 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   prihvata nijednu kraću od 12 znakova.
 - **Automatske rezervne kopije čuvaju svoju lozinku na telefonu,** pa im lozinka ne treba svaki put. Onome ko otvori
   njihov folder i dalje trebaju lozinke prostora da bi čitao razgovore.
+- **Šta zauzima prostor:** na Androidu, **Izmjeri** pod **Šta zauzima prostor** pokazuje koliko prostora Erevos zauzima na telefonu, po vrsti: Zbirka s fotografijama i datotekama iz razgovora, glasovne poruke, historija razgovora, Tor i ostaci nedovršenih upisa. Svaka automatska rezervna kopija sadrži sve to, pa se tako vidi zašto je velika. Gledaju se samo imena i veličine datoteka, na telefonu, i ništa se ne šalje.
 - **Na serveru:** rezervna kopija koja ide tamo zapečaćena je svojom lozinkom kao i ostale, a ta lozinka nikad ne
   napušta telefon, pa je server ne može otvoriti. Ime joj je nasumično, a datoteka izgleda kao nasumični bajtovi,
   jedne od nekoliko veličina, pa ni jedno ni drugo ne kaže da je Erevosova niti koliko tačno sadrži. Njene

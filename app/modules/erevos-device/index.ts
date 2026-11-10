@@ -33,6 +33,9 @@ export type PanicState = {
   pendingLabel: string;
 };
 
+/** One kind of Erevos's own files: the start of their names (erevos-file-), or a folder (files/tor/), its bytes and how many files. */
+export type AppSpaceRow = { kind: string; bytes: number; files: number };
+
 /** A file of a folder picked with Android's folder picker (Folders.kt). */
 export type FolderFile = { name: string; size: number; uri: string };
 
@@ -106,6 +109,8 @@ type Device = {
   folderWrite?(folder: string, name: string, bytes: Uint8Array): Promise<{ name: string; uri: string }>;
   /** Deletes the files of these uris; how many went. */
   folderDelete?(uris: string[]): Promise<number>;
+  /** How much room Erevos takes on the phone, by the kind its files' names say (AppSpace.kt), the largest first. Missing in a build before it. */
+  appSpace?(): Promise<AppSpaceRow[] | null>;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

@@ -3072,6 +3072,7 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   court ne tient pas : Erevos n’en accepte aucun de moins de 12 caractères.
 - **Les sauvegardes automatiques gardent leur mot de passe sur le téléphone,** pour ne pas demander de mot de passe à
   chaque fois. Celui qui ouvre leur dossier a quand même besoin des mots de passe des espaces pour lire les discussions.
+- **Ce qui prend de la place :** sur Android, **Mesurer** sous **Ce qui prend de la place** montre la place qu’Erevos prend sur le téléphone, par type : la Collection avec les photos et fichiers des discussions, les messages vocaux, l’historique des discussions, Tor et les restes d’écritures inachevées. Chaque sauvegarde automatique contient tout cela, on voit ainsi pourquoi elle est grosse. Seuls les noms et tailles des fichiers sont regardés, sur le téléphone, et rien n’est envoyé.
 - **Sur un serveur :** la sauvegarde envoyée là-bas est scellée avec son mot de passe comme les autres, et ce mot de
   passe ne quitte jamais le téléphone, donc le serveur ne peut pas l’ouvrir. Son nom est aléatoire et le fichier
   ressemble à des octets aléatoires, d’une taille parmi quelques-unes, donc ni l’un ni l’autre ne dit qu’il est

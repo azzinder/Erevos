@@ -13,6 +13,8 @@ export const whatsNew: Record<string, string> = {
   'Under the hood': 'Sous le capot',
   // Not out yet.
   // 7.0.0-rc.7
+  "**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup).":
+    "**Ce qui prend de la place** : les sauvegardes ont maintenant **Ce qui prend de la place**, qui montre sur Android la place qu’Erevos prend sur le téléphone, par type : la Collection avec les photos et fichiers des discussions, les messages vocaux, l’historique, Tor et les restes d’écritures inachevées. Chaque sauvegarde automatique contient tout cela, on voit ainsi pourquoi elle est grosse. Voir [Sauvegardes](#backup).",
   "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
     '**Les sauvegardes vers un serveur arrivent de nouveau** : une sauvegarde vers ton propre serveur, comme un Nextcloud, ne s’arrête plus quand le serveur refuse un moment l’une de ses parties, comme quand il ferme quelques minutes la nuit. Cette partie repart un peu plus tard et la sauvegarde continue ; avant, elle recommençait la fois suivante, et une grosse sauvegarde pouvait échouer jour après jour. Voir [Sauvegardes](#backup).',
   // 7.0.0-rc.6

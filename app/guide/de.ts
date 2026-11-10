@@ -3104,6 +3104,7 @@ ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen 
   nimmt keines unter 12 Zeichen.
 - **Automatische Backups bewahren ihr Passwort auf dem Telefon auf,** sodass sie nicht jedes Mal ein Passwort
   brauchen. Wer ihren Ordner öffnet, braucht trotzdem die Passwörter der Bereiche, um die Chats zu lesen.
+- **Was Platz belegt:** Unter Android zeigt **Messen** bei **Was Platz belegt**, wie viel Platz Erevos auf dem Telefon belegt, nach Art: die Sammlung mit den Fotos und Dateien der Chats, Sprachnachrichten, Chatverlauf, Tor und Reste unvollendeter Schreibvorgänge. Jedes automatische Backup enthält all das, so sieht man, warum eines groß ist. Nur Namen und Größen der Dateien werden angesehen, auf dem Telefon, und nichts wird gesendet.
 - **Auf einem Server:** Das Backup, das dorthin geht, ist wie die anderen mit seinem Passwort versiegelt, und dieses
   Passwort verlässt nie das Telefon, also kann der Server es nicht öffnen. Sein Name ist zufällig und die Datei sieht
   aus wie zufällige Bytes, in einer von wenigen Größen, also sagt keines von beiden, dass es von Erevos ist, oder

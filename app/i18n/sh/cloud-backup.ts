@@ -123,4 +123,28 @@ export const cloudBackup: Record<string, string> = {
     "Vraćeno bez {n} datoteke rezervne kopije, {name}: fotografije, datoteke i glasovne poruke u njoj nisu se vratile.",
   "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
     "Vraćeno bez {n} datoteke rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile. | Vraćeno bez {n} datoteke rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile. | Vraćeno bez {n} datoteka rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile.",
+  "What takes room":
+    "Šta zauzima prostor",
+  "How much room Erevos takes on {device}, by kind: each automatic backup holds it all. Only the files’ names and sizes are looked at, here, and nothing is sent.":
+    "Koliko prostora Erevos zauzima na {device}, po vrsti: svaka automatska rezervna kopija sadrži sve to. Gledaju se samo imena i veličine datoteka, ovdje, i ništa se ne šalje.",
+  "In all: {size}":
+    "Ukupno: {size}",
+  "Measure":
+    "Izmjeri",
+  "Measure again":
+    "Izmjeri ponovo",
+  "The Collection, and photos and files in chats":
+    "Zbirka, te fotografije i datoteke u razgovorima",
+  "Contact pictures":
+    "Slike kontakata",
+  "Chat history":
+    "Historija razgovora",
+  "Backups kept inside Erevos":
+    "Rezervne kopije unutar Erevosa",
+  "Left over from writes that did not end":
+    "Ostaci nedovršenih upisa",
+  "Cache":
+    "Keš",
+  "Other: {name}":
+    "Ostalo: {name}",
 };

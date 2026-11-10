@@ -2920,6 +2920,7 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
   ninguna de menos de 12 caracteres.
 - **Las copias automáticas guardan su contraseña en el teléfono,** así que no necesitan contraseña cada vez. Quien abra
   su carpeta sigue necesitando las contraseñas de los espacios para leer los chats.
+- **Qué ocupa espacio:** en Android, **Medir** en **Qué ocupa espacio** muestra cuánto espacio ocupa Erevos en el teléfono, por tipo: la Colección con las fotos y archivos de los chats, los mensajes de voz, el historial de chats, Tor y los restos de escrituras que no terminaron. Cada copia automática lo contiene todo, así se ve por qué una es grande. Solo se miran los nombres y tamaños de los archivos, en el teléfono, y no se envía nada.
 - **En un servidor:** la copia que va allí está sellada con su contraseña como las demás, y esa contraseña nunca sale
   del teléfono, así que el servidor no puede abrirla. Su nombre es aleatorio y el archivo parece bytes aleatorios, de
   uno de pocos tamaños, así que ninguno dice que es de Erevos ni cuánto guarda exactamente. Sus fotos, archivos y

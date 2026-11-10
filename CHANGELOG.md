@@ -18,6 +18,13 @@ On main, not released yet:
 
 ## 7.0.0-rc.7 (2026-11-10)
 
+### For you
+
+- **What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the
+  phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes
+  that did not end left over. Each automatic backup holds it all, so it tells why one is large. Only the files' names
+  and sizes are looked at, on the phone, and nothing is sent.
+
 ### Under the hood
 
 - **Backups to a server get there again**: a backup sent to a server, such as a Nextcloud, no longer stops when the

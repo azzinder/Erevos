@@ -28,7 +28,9 @@ export const NEXT: Changes = {
 export const VERSIONS: WhatsNew[] = [
   {
     version: '7.0.0-rc.7',
-    forYou: [],
+    forYou: [
+      mark("**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup)."),
+    ],
     underTheHood: [
       mark("**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup)."),
     ],

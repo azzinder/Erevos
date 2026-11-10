@@ -13,6 +13,8 @@ export const whatsNew: Record<string, string> = {
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
   // 7.0.0-rc.7
+  "**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup).":
+    "**Τι πιάνει χώρο**: τα Αντίγραφα ασφαλείας έχουν τώρα **Τι πιάνει χώρο**, που δείχνει στο Android πόσο χώρο πιάνει το Erevos στο τηλέφωνο, ανά είδος: τη Συλλογή μαζί με τις φωτογραφίες και τα αρχεία των συνομιλιών, τα φωνητικά μηνύματα, το ιστορικό, τον Tor, και ό,τι άφησαν πίσω εγγραφές που δεν ολοκληρώθηκαν. Κάθε αυτόματο αντίγραφο τα περιέχει όλα, οπότε έτσι φαίνεται γιατί είναι μεγάλο. Δες [Αντίγραφα ασφαλείας](#backup).",
   "**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup).":
     '**Τα αντίγραφα σε server φτάνουν ξανά**: ένα αντίγραφο στον δικό σου server, όπως ένα Nextcloud, δεν σταματά πια όταν ο server δεν δέχεται για λίγο ένα από τα κομμάτια του, όπως όταν κλείνει για λίγα λεπτά τη νύχτα. Εκείνο το κομμάτι ξαναστέλνεται λίγο αργότερα και το αντίγραφο συνεχίζει· πριν, ξεκινούσε από την αρχή την επόμενη φορά, και ένα μεγάλο αντίγραφο μπορούσε να αποτυγχάνει μέρα με τη μέρα. Δες [Αντίγραφα ασφαλείας](#backup).',
   // 7.0.0-rc.6

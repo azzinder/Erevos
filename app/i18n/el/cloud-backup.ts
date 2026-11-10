@@ -125,4 +125,28 @@ export const cloudBackup: Record<string, string> = {
     "Επανήλθε χωρίς {n} αρχείο του αντιγράφου, το {name}: οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα που είχε δεν επέστρεψαν.",
   "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
     "Επανήλθε χωρίς {n} αρχεία του αντιγράφου, ανάμεσά τους το {name}: οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα που είχαν δεν επέστρεψαν.",
+  "What takes room":
+    "Τι πιάνει χώρο",
+  "How much room Erevos takes on {device}, by kind: each automatic backup holds it all. Only the files’ names and sizes are looked at, here, and nothing is sent.":
+    "Πόσο χώρο πιάνει το Erevos σε {device}, ανά είδος: κάθε αυτόματο αντίγραφο τα περιέχει όλα. Κοιτάζονται μόνο τα ονόματα και τα μεγέθη των αρχείων, εδώ, και δεν στέλνεται τίποτα.",
+  "In all: {size}":
+    "Συνολικά: {size}",
+  "Measure":
+    "Μέτρηση",
+  "Measure again":
+    "Νέα μέτρηση",
+  "The Collection, and photos and files in chats":
+    "Η Συλλογή, και φωτογραφίες και αρχεία στις συνομιλίες",
+  "Contact pictures":
+    "Φωτογραφίες επαφών",
+  "Chat history":
+    "Ιστορικό συνομιλιών",
+  "Backups kept inside Erevos":
+    "Αντίγραφα ασφαλείας μέσα στο Erevos",
+  "Left over from writes that did not end":
+    "Υπολείμματα από εγγραφές που δεν ολοκληρώθηκαν",
+  "Cache":
+    "Κρυφή μνήμη",
+  "Other: {name}":
+    "Άλλα: {name}",
 };

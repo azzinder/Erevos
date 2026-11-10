@@ -2676,6 +2676,7 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   computer goes, with no phone to slow them down, so a short one does not hold: Erevos takes none under 12 characters.
 - **Automatic backups keep their password on the phone,** so they need no password each time. Whoever opens their
   folder still needs the spaces' passwords to read the chats.
+- **What takes room:** on Android, **Measure** under **What takes room** shows how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so this tells why one is large. Only the files' names and sizes are looked at, on the phone, and nothing is sent.
 - **On a server:** the backup sent there is sealed with its password like the others, and that password never leaves
   the phone, so the server cannot open it. Its name is random and the file looks like random bytes, of one of a few
   sizes, so neither says it is Erevos's nor tells exactly how much it holds. Its photos, files and voice messages go

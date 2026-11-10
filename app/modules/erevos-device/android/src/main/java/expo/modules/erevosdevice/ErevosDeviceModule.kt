@@ -106,6 +106,12 @@ class ErevosDeviceModule : Module() {
       Folders.delete(app, uris)
     }
 
+    // How much room Erevos takes, by the kind of its files (AppSpace.kt).
+    AsyncFunction("appSpace") {
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      AppSpace.measure(app)
+    }
+
     // The phone's own clock that the owner cannot set (lock/tries.ts): how long since it started, in
     // ms, sleep included, and which start that is, so a wait for wrong passwords ends only when that
     // long has really passed, whatever the date and time are moved to. The start is Android's count
