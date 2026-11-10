@@ -44,7 +44,8 @@ import { cameAt } from './later';
 import { linkOf, spaceMover, tookOf, type Took } from './queue-move';
 import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
-import { briefLook, joinSleepLooks } from './sleep-look';
+import { lookNow, looksAsked, onLookNow } from './look-now';
+import { briefLook, joinSleepLooks, lightSleep, lookBegan, lookEnded, waitBegan, waitEnded } from './sleep-look';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { setShownCheck } from './safety';
@@ -69,17 +70,22 @@ import { t } from './i18n';
 // takes it itself (takeNearby). The marks go back to the contact's phone nearby when it is, as
 // with no internet, and through the relay too.
 //
-// While Erevos is in the background (lib/background.ts) it does not ask every few seconds: it
-// waits at the relay until something comes for the queue (waitForMessage), or for the groups',
-// the contact link's or the public groups' queue there (awayQueues), so the phone's radio rests
-// in between, and what comes is still taken at once. A wait that ran out with nothing come asks
-// none of them again: only the others are read. At a relay that cannot wait, it asks every
-// AWAY_EVERY; after a look that failed, it waits longer each time, AWAY_RETRY_MOST at most.
+// It does not ask every few seconds: it waits at the relay until something comes for the queue
+// (waitForMessage), or for the groups', the contact link's or the public groups' queue there
+// (awayQueues), so the phone's radio rests in between, and what comes is taken at once. A wait
+// that ran out with nothing come asks none of them again: only the others are read. While Erevos
+// is in the background (lib/background.ts) one wait lasts WAIT_FOR; while it shows, FRONT_WAIT, as
+// each look also sends what is due, and it is ended at once when something is to be said
+// (lookNow). At a relay that cannot wait, it asks every EVERY while it shows, every AWAY_EVERY in
+// the background; after a look that failed there, it waits longer each time, AWAY_RETRY_MOST at
+// most. In a call the looks go fast, with no wait (setReceiverPace).
 
 const EVERY = 3000;
 // In the background: how long one wait at the relay lasts, seconds; how often a relay that cannot
 // wait is asked; and the first and longest wait after a look that failed, milliseconds.
 const WAIT_FOR = 60;
+// While Erevos shows: how long one wait at the relay lasts, seconds.
+const FRONT_WAIT = 15;
 const AWAY_EVERY = 20_000;
 const AWAY_RETRY = 5000;
 const AWAY_RETRY_MOST = 120_000;
@@ -123,6 +129,13 @@ const waits = new Set<AbortController>();
 let hurry: (() => void) | null = null;
 
 const shownListeners = new Set<(shown: boolean) => void>();
+
+// Which of the looks asked for at once (lib/look-now.ts) each queue's waits have heard: a look that
+// was past its wait when asked does not wait at its next one. The chat screen's and the hidden
+// places' looks hear it too, which lookSoon does not hurry.
+const heard = new Map<string, number>();
+onLookNow(() => lookSoon());
+export { lookNow };
 
 /** Ends the wait at the relay and looks at once: something new waits to go (app/backup-pieces.tsx). */
 export function lookSoon(): void {
@@ -170,7 +183,6 @@ onContactsCame(() => {
 
 // The phone's network changed: a wait at the relay on the network gone ends, and a look goes at once.
 onNetworkChange(() => {
-  if (shows) return;
   endWaits();
   hurry?.();
 });
@@ -198,9 +210,9 @@ function lookWhenDue(at: number) {
 export type Waited = false | 'came' | 'empty';
 
 /**
- * While Erevos is in the background, waits at the relay until something comes for the queue, or
- * for one of `others` (awayQueues), or a while: then a look takes it. Says how it ended; false at
- * once while the app shows, during the look of the battery mode Sleep (lib/sleep-look.ts), at a
+ * Waits at the relay until something comes for the queue, or for one of `others` (awayQueues), or
+ * a while (longer in the background): then a look takes it. Says how it ended; false at once in a
+ * call, after lookNow, during the look of the battery mode Sleep (lib/sleep-look.ts), at a
  * relay that cannot wait, or once the wait was ended. Throws when
  * the relay cannot be reached, or no longer has the queue: only the queue's own wait throws. One
  * of `others` the relay lost ends the wait, so the look finds it gone and makes it anew; one that
@@ -209,26 +221,43 @@ export type Waited = false | 'came' | 'empty';
  */
 export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<Waited> {
   // What came to a contact's own queue, not taken yet, is taken first (lib/contact-queues.ts).
-  if (shows || briefLook() || !canWaitAt(relay) || cameUnread()) return false;
+  if (briefLook() || !canWaitAt(relay) || cameUnread()) return false;
+  // In a call the looks go fast (setReceiverPace): none waits.
+  if (shows && pace() < EVERY) return false;
+  const id = toHex(recipient);
+  const asked = looksAsked();
+  // A queue not waited on before, as one just moved to, has heard of nothing asked so far.
+  if ((heard.get(id) ?? 0) !== asked) {
+    heard.set(id, asked);
+    return false;
+  }
+  heard.set(id, asked);
+  const seconds = shows ? FRONT_WAIT : WAIT_FOR;
   const wait = new AbortController();
   waits.add(wait);
   let came = false;
+  // What came, for the battery mode Light sleep (lib/sleep-look.ts): the wait's answer woke the phone.
+  let some = false;
+  let answered = false;
+  waitBegan(true);
   try {
     if (canReadManyAt(relay) && others.length < MAX_ANY) {
       // Their own way through Tor, named for the queue: none other goes on it.
-      const found = await waitForAny(relay, [recipient, ...others], WAIT_FOR, `read-${toHex(recipient).slice(0, 16)}`, wait.signal);
+      const found = await waitForAny(relay, [recipient, ...others], seconds, `read-${id.slice(0, 16)}`, wait.signal);
       if (found) {
+        answered = true;
         if (found[0] === 'gone') throw queueNotFound('wait');
         if (!canWaitAt(relay) || ended.has(wait)) return false;
-        return found.some((f) => f !== 'none') ? 'came' : 'empty';
+        some = found.some((f) => f !== 'none');
+        return some ? 'came' : 'empty';
       }
     }
     // The first that answers ends the others.
-    const mine = waitForMessage(relay, recipient, WAIT_FOR, wait.signal)
+    const mine = waitForMessage(relay, recipient, seconds, wait.signal)
       .then((got) => void (came ||= got))
       .finally(() => wait.abort());
     const theirs = others.map((r) =>
-      waitForMessage(relay, r, WAIT_FOR, wait.signal).then(
+      waitForMessage(relay, r, seconds, wait.signal).then(
         (got) => {
           came ||= got;
           wait.abort();
@@ -241,9 +270,14 @@ export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others:
       ),
     );
     await Promise.race([mine, ...theirs]);
+    answered = true;
     if (!canWaitAt(relay) || ended.has(wait)) return false;
+    some = came;
     return came ? 'came' : 'empty';
   } finally {
+    // Ended from outside: the look that follows says what was asked of it until now.
+    if (ended.has(wait)) heard.set(id, looksAsked());
+    waitEnded(true, some, !answered);
     waits.delete(wait);
     ended.delete(wait);
   }
@@ -264,6 +298,11 @@ export function awayQueues(queues: QueuesData | null, url: string): string[] {
 export function awayPace(waited: Waited | boolean, failures: number): number {
   if (failures > 0) return Math.min(AWAY_RETRY_MOST, AWAY_RETRY * 2 ** (failures - 1));
   return waited ? 500 : AWAY_EVERY;
+}
+
+/** How long to wait before the next look while Erevos shows: a moment after a wait at the relay, else `every`. */
+export function shownPace(waited: Waited | boolean, every: number): number {
+  return waited ? Math.min(500, every) : every;
 }
 
 /** Whether the app shows on the screen, as last said. */
@@ -371,7 +410,7 @@ export function startReceiver(every?: number): () => void {
   openChats();
   const next = () => {
     if (stopped) return;
-    timer = setTimeout(tick, again ? 0 : (every ?? (shows ? pace() : awayPace(state.waited, state.failures))));
+    timer = setTimeout(tick, again ? 0 : (every ?? (shows ? shownPace(state.waited, pace()) : awayPace(state.waited, state.failures))));
     again = false;
   };
   const tick = () => {
@@ -385,16 +424,23 @@ export function startReceiver(every?: number): () => void {
       return next();
     }
     state.took = 0;
+    lookBegan();
     look = lookOnce(state, () => stopped || holds > 0)
       .then((changed) => {
         if (changed && !stopped) listeners.forEach((listener) => listener());
         part.ended(began, changed || state.took ? 'came' : state.failures > 0 ? 'failed' : 'quiet');
+        // In Light sleep the alarm's look is followed at once by one that waits at the relay, for
+        // the network to wake the phone on.
+        if (began && lightSleep() && state.failures === 0) again = true;
       })
       .catch(() => {
         // The relay could not be reached: tried again with the next look.
         part.ended(began, 'failed');
       })
-      .finally(next);
+      .finally(() => {
+        lookEnded();
+        next();
+      });
   };
   next();
   const now = () => {
@@ -634,7 +680,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   if (!failed && !stop()) {
     const moved = await mover
-      .look({ own: place.own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: (identity) => tell(chats, here, identity, {}), shows, stop, empty: state.waited === 'empty' ? others : [] })
+      .look({ own: place.own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: (identity) => tell(chats, here, identity, {}), shows, waited: state.waited !== false, stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     if (moved?.queue) {
       place = { ...place, queue: moved.queue };

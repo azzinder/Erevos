@@ -25,7 +25,7 @@
 import type { Mine } from '../lock/e2e-data';
 import { onNetworkChange } from './network-change';
 import { fromHex, MAX_ANY, sameRelay, throughTor, waitForAny, type AnyFound, type Relay } from './relay';
-import { joinSleepLooks, type LookPart } from './sleep-look';
+import { joinSleepLooks, waitBegan, waitEnded, type LookPart } from './sleep-look';
 
 /** How many contacts' queues are read together, on one way through Tor. */
 export const CONTACT_GROUP = 8;
@@ -229,10 +229,15 @@ export class ContactWatch {
         loop.round = round;
         // Whether this asking began after the alarm of the battery mode Sleep: then it does not wait there.
         const owed = this.owes.has(loop);
+        // For the battery mode Light sleep (lib/sleep-look.ts): this wait's answer wakes the phone.
+        waitBegan(false);
+        let some = false;
         try {
           found = await waitForAny(relay, recipients, owed ? 0 : WATCH_FOR, b.way, round.signal);
+          some = !!found && !round.signal.aborted && found.some((f) => f !== 'none');
           failures = 0;
         } catch {
+          waitEnded(false, false, true);
           failures++;
           if (owed) this.asked(loop, 'failed');
           await pause(Math.min(WATCH_RETRY_MOST, WATCH_RETRY * 2 ** (failures - 1)), signal, loop);
@@ -241,6 +246,7 @@ export class ContactWatch {
           signal.removeEventListener('abort', end);
           if (loop.round === round) loop.round = null;
         }
+        waitEnded(false, some);
         if (signal.aborted) return;
         // A relay that cannot, or seemed not to as the wait died on the way (lib/relay.ts canReadManyAt):
         // the looks read the queues as they can, and it is asked to wait again after a while.

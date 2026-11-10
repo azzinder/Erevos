@@ -1258,6 +1258,7 @@ computer non ce l’hanno.
   nuovi messaggi** (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì,
   se Android li chiede, **Continua anche col risparmio batteria** e **Mostra le chiamate sulla schermata di
   blocco**. Sotto, **Solo lo spreco** (predefinito), **E i telefoni vicini** e **E il sonno** stabiliscono quanta batteria risparmia in secondo piano: la seconda spegne anche le radio per i telefoni vicini finché Erevos è in secondo piano, la terza lascia dormire anche il telefono, così Erevos guarda il relay circa una volta al minuto e un messaggio o una chiamata può arrivare con uno o due minuti di ritardo.
+- **E il sonno leggero:** una quarta scelta lì, tra **E i telefoni vicini** ed **E il sonno**. Il telefono può dormire, ma Erevos lascia aperta la sua attesa al relay, così ciò che arriva sveglia il telefono e un messaggio o una chiamata arriva ancora subito dove la rete e Android lo consentono; Erevos guarda anche da solo ogni pochi minuti. È nuova e non ancora provata su molti telefoni: se con essa i messaggi arrivano in ritardo, scegline un’altra.
 - **Il numero sull’icona:** con **Avvisa dei nuovi messaggi** attivo, quando esci da Erevos con messaggi non letti
   nelle chat e nei gruppi dello spazio aperto, la notifica resta, senza suono, e dice quanti sono, con quelli che
   segnala dopo; se ne va mentre Erevos è visibile, e torna quando lo lasci, finché non li hai letti. Non conta i

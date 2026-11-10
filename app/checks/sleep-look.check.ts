@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { awakeWhile, briefLook, joinSleepLooks, sleepLook, stayAwakeWhen, type LookEnd } from '../lib/sleep-look';
+import { awakeWhile, briefLook, forgetSleepLooks, joinSleepLooks, lookBegan, lookEnded, setLightSleep, sleepLook, stayAwakeWhen, waitBegan, waitEnded, type LookEnd } from '../lib/sleep-look';
 
 /** A part that ends each look it is kicked for with the next of `ends`, a moment later. */
 function part(...ends: LookEnd[]) {
@@ -84,4 +84,51 @@ test('a part that leaves is waited for no more; work under way and Nostr keep th
   assert.equal(await sleepLook(), false);
   stop();
   assert.equal(await sleepLook(), true);
+});
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('light sleep: an answer from the relay holds the phone awake, and it is let go once every look waits there again', async () => {
+  const log: string[] = [];
+  setLightSleep({ hold: () => log.push('hold'), release: () => log.push('release') });
+  try {
+    // A look goes on, not waiting yet: the phone is not let go.
+    lookBegan();
+    await sleep(1700);
+    assert.deepEqual([...log], []);
+    // It waits at the relay: let go, a moment later.
+    waitBegan(true);
+    await sleep(1700);
+    assert.deepEqual([...log], ['release']);
+    // The wait ran out with nothing come: held while the look goes on, let go once it waits again.
+    waitEnded(true, false);
+    await sleep(1700);
+    assert.deepEqual([...log], ['release', 'hold']);
+    lookEnded();
+    lookBegan();
+    waitBegan(true);
+    await sleep(1700);
+    assert.deepEqual([...log], ['release', 'hold', 'release']);
+    // A wait that failed takes no hold: with no network there is nothing to stay awake for.
+    waitEnded(true, false, true);
+    waitBegan(true);
+    await sleep(100);
+    assert.deepEqual([...log], ['release', 'hold', 'release']);
+    // Something came: held, and not let go early though the look waits again.
+    waitEnded(true, true);
+    waitBegan(true);
+    await sleep(1700);
+    assert.deepEqual([...log], ['release', 'hold', 'release', 'hold']);
+    // The waits on the contacts' queues alone, with no look under way, are enough to sleep on; none is not.
+    forgetSleepLooks();
+    setLightSleep({ hold: () => log.push('hold'), release: () => log.push('release') });
+    log.length = 0;
+    await sleep(1700);
+    assert.deepEqual([...log], []);
+    waitBegan(false);
+    await sleep(1700);
+    assert.deepEqual([...log], ['release']);
+  } finally {
+    forgetSleepLooks();
+  }
 });

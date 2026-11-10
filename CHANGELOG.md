@@ -23,6 +23,15 @@ On main, not released yet:
   relay once and lets the phone sleep again as soon as nothing came, in a second or two. Before, the phone stayed
   awake 25 seconds of every minute. When something came, while an automatic backup is made, or while Nostr is read,
   it stays awake as before.
+- **A new battery mode, And light sleep** (Settings → Notifications → In the background, between **And nearby phones** and **And sleep**): like And sleep, the phone itself sleeps while
+  Erevos is in the background, but Erevos leaves its question open at the relay, so a message or a call wakes the
+  phone through the network when it comes, without waiting for the next look. A look is still made every four
+  minutes, for what the network did not wake the phone for. Whether the phone wakes for the network while it sleeps
+  depends on the phone and on its battery settings for Erevos: where it does not, messages come at the next look.
+  **Only the waste** stays as it was, and is still what the app starts with.
+- **With Erevos open, messages come at once**: the app now waits at the relay for what comes, as it does in the
+  background, and no longer asks it every three seconds. A message shows the moment the relay has it, and the phone's
+  radio is used less while a chat is open.
 
 ### Under the hood
 
@@ -33,6 +42,9 @@ On main, not released yet:
 - **A large import notes its files in small parts**: the list of files an import is still writing, which the next
   start deletes if it stopped, was written whole for every file, and for an export of thousands of files grew past
   what one keystore entry holds well. It is kept in parts of 40 now, and only the last part is written.
+- **An open chat is drawn again only when something is due**: the chat screen drew itself again every five seconds,
+  and the home screen asked who is online as often. Each now waits for the next moment something changes: a message
+  that disappears, one sent for later that goes, a contact who is no longer online.
 
 ## 7.0.0-rc.8 (2026-11-10)
 

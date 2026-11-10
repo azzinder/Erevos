@@ -383,16 +383,31 @@ function Home() {
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
       };
-      // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
-      // offline does not see it.
-      const lookOnline = () =>
+      // Who shows online, again when the first of them is due to show no more, as it lasts only a
+      // while, and as something comes; every half minute at least. A chat that appears offline does
+      // not see it.
+      let onlineTimer: ReturnType<typeof setTimeout> | null = null;
+      const lookOnline = () => {
+        if (onlineTimer) clearTimeout(onlineTimer);
+        onlineTimer = null;
+        let next = 30_000;
         void (hasCore() && moduleOn('erevos') ? spaceChats() : Promise.reject())
           .then(({ e2e }) => {
             const at = Date.now();
-            const ids = e2e.contacts().filter((c) => !c.hide && e2e.onlineUntil(c.identity, at) > 0).map((c) => c.identity);
+            const ids: string[] = [];
+            for (const c of e2e.contacts()) {
+              const until = c.hide ? 0 : e2e.onlineUntil(c.identity, at);
+              if (until <= 0) continue;
+              ids.push(c.identity);
+              next = Math.min(next, until - at + 50);
+            }
             if (active) setOnline((before) => (before.size === ids.length && ids.every((id) => before.has(id)) ? before : new Set(ids)));
           })
-          .catch(() => undefined);
+          .catch(() => undefined)
+          .finally(() => {
+            if (active && !onlineTimer) onlineTimer = setTimeout(lookOnline, Math.max(250, next));
+          });
+      };
       // The list as it showed last time, at once, until the one read now replaces it.
       if (!readShown.current) {
         void loadInboxCache(current, key)
@@ -417,7 +432,6 @@ function Home() {
         const again = await againNote();
         if (again && active) ask(t('Linked devices'), again, [{ text: t('Not now'), style: 'cancel' }, { text: t('Open'), onPress: () => router.push('/devices') }]);
       });
-      const every = setInterval(lookOnline, 5000);
       // What comes while this screen shows moves its chat to the top.
       const stop = onReceived(() => {
         load();
@@ -437,7 +451,7 @@ function Home() {
       }
       return () => {
         active = false;
-        clearInterval(every);
+        if (onlineTimer) clearTimeout(onlineTimer);
         stop();
         sms?.remove();
         stopOrder();

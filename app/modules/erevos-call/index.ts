@@ -69,6 +69,10 @@ type CallAudio = {
   setSleepy?(on: boolean): void;
   /** The look the alarm of the battery mode Sleep woke the phone for found nothing: the phone may sleep again at once. Missing in a build before it. */
   lookDone?(): void;
+  /** Holds the phone awake as the alarm's look does, until lookDone or the hold's own time: an answer from the relay woke it (battery mode Light sleep). Missing in a build before it. */
+  holdAwake?(): void;
+  /** How often the alarm of the battery modes that let the phone sleep goes, seconds (60 to 900). Missing in a build before it. */
+  setLookEvery?(seconds: number): void;
   /** While `on`, a quiet notice says Erevos is locked and receives nothing until it is open again. */
   setLocked?(on: boolean): void;
   /** Plays the phone's ringtone, or `tone` (a sound's address; '' for none); with `notice`, also

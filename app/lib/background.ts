@@ -31,7 +31,7 @@ import { isPicking } from './picking';
 import { onPlaceMessage, onPlaceRing, receivesPocket } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
-import { sleepLook } from './sleep-look';
+import { setLightSleep, sleepLook } from './sleep-look';
 import { secureGet, secureSet } from './secure';
 import { spaceChats } from './space-chats';
 import { onSpaceGroupGone, onSpaceGroupMessage } from './space-groups';
@@ -68,6 +68,15 @@ export const canRingInBackground = Platform.OS === 'android' && !!callAudio?.sta
 // until the receiving stops, so the receiver goes on looking at the relay.
 const KEEP_TASK = 'ErevosReceive';
 const keeping = new Set<() => void>();
+// Battery mode Light sleep (lib/battery-mode.ts): whether it is on and the receiving runs, and how
+// often its alarm goes, seconds. Its holds are on only while Erevos is in the background.
+let lightOn = false;
+const LIGHT_LOOK_EVERY = 240;
+function lightHolds() {
+  const on = lightOn && !appShown() && !!callAudio?.holdAwake && !!callAudio.lookDone;
+  setLightSleep(on ? { hold: () => callAudio?.holdAwake?.(), release: () => callAudio?.lookDone?.() } : null);
+}
+
 if (canRingInBackground) {
   AppRegistry.registerHeadlessTask(KEEP_TASK, () => () => new Promise<void>((done) => keeping.add(done)));
 }
@@ -205,14 +214,16 @@ if (Platform.OS === 'android') {
     // A build from before it: the waits run out on their own.
   }
   // The alarm of the battery mode Sleep woke the phone (SleepWake.kt): everything looks at once,
-  // and when nothing came the phone is let sleep again, not held for the alarm's whole time.
+  // and when nothing came the phone is let sleep again, not held for the alarm's whole time. In
+  // Light sleep it is let go once the looks wait at the relay again (lib/sleep-look.ts).
   try {
     callAudio?.addListener?.('onSleepLook', () => {
       if (appShown()) return;
       void sleepLook().then((quiet) => {
-        if (quiet) callAudio?.lookDone?.();
+        if (quiet && !lightOn) callAudio?.lookDone?.();
       });
     });
+    onAppShown(lightHolds);
   } catch {
     // A build from before it: the phone is held for the alarm's whole time.
   }
@@ -550,6 +561,8 @@ export function startBackground(): () => void {
   };
   const stop = () => {
     running = false;
+    lightOn = false;
+    lightHolds();
     tellHidden(false);
     ringHidden(false);
     callAudio!.stopReceiving!();
@@ -591,9 +604,15 @@ export function startBackground(): () => void {
     }
   };
   // The battery mode Sleep lets the phone sleep between looks at the relay (ReceiveService.kt).
+  // Light sleep does too, with the waits at the relay left open to wake it, and a slower alarm
+  // (lib/sleep-look.ts); a build without what that needs keeps the phone awake, as before it.
   const sleepy = (mode: BatteryMode) => {
     try {
-      callAudio?.setSleepy?.(mode === 'sleep');
+      const light = mode === 'light' && !!callAudio?.holdAwake && !!callAudio.lookDone && !!callAudio.setLookEvery;
+      callAudio?.setLookEvery?.(light ? LIGHT_LOOK_EVERY : 60);
+      callAudio?.setSleepy?.(mode === 'sleep' || light);
+      lightOn = light;
+      lightHolds();
     } catch {
       // A build from before it: the phone stays awake.
     }

@@ -8,16 +8,18 @@ import { secureGet, secureSet } from './secure';
 // background), for the whole phone. 'normal': it spares only what is wasted: the relay is waited
 // at once for all the queues, nothing is asked again after an empty wait, the links to phones
 // nearby are quieter. 'nearby': also, the radios for phones nearby (lib/nearby-links.ts) are off
-// while Erevos is in the background. 'sleep': also, the phone may sleep: Erevos holds no wake lock
-// and an alarm wakes it about once a minute to look (modules/erevos-call, ReceiveService.kt).
-export type BatteryMode = 'normal' | 'nearby' | 'sleep';
+// while Erevos is in the background. 'light': also, the phone may sleep, with the waits at the
+// relay left open: what comes there wakes the phone through the network, and an alarm wakes it
+// every few minutes besides (lib/sleep-look.ts). 'sleep': the phone sleeps and only an alarm wakes
+// it, about once a minute, to look: Erevos holds no wake lock (modules/erevos-call, ReceiveService.kt).
+export type BatteryMode = 'normal' | 'nearby' | 'light' | 'sleep';
 
 const KEY = 'erevos.battery';
 
 let current: BatteryMode = 'normal';
 const listeners = new Set<(mode: BatteryMode) => void>();
 
-const isMode = (v: unknown): v is BatteryMode => v === 'normal' || v === 'nearby' || v === 'sleep';
+const isMode = (v: unknown): v is BatteryMode => v === 'normal' || v === 'nearby' || v === 'light' || v === 'sleep';
 
 /** The mode as last set, and the one `batteryMode` answers from now on. */
 export async function loadBatteryMode(): Promise<BatteryMode> {

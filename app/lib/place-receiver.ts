@@ -35,11 +35,12 @@ import {
   sendPending,
   sendReceipts,
   tell,
+  shownPace,
   waitWhileAway,
   type ReceivePlace,
   type ReceiveState,
 } from './receiver';
-import { joinSleepLooks, type LookPart } from './sleep-look';
+import { joinSleepLooks, lightSleep, lookBegan, lookEnded, type LookPart } from './sleep-look';
 import { onNetworkChange } from './network-change';
 import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
 import { relayFor, type SpaceChats } from './space-chats';
@@ -365,7 +366,7 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
   };
   const next = () => {
     if (run.stopped) return;
-    run.timer = setTimeout(tick, run.again ? 0 : (every ?? (appShown() ? EVERY : awayPace(run.state.waited, run.state.failures))));
+    run.timer = setTimeout(tick, run.again ? 0 : (every ?? (appShown() ? shownPace(run.state.waited, EVERY) : awayPace(run.state.waited, run.state.failures))));
     run.again = false;
   };
   const tick = () => {
@@ -378,13 +379,21 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
       return next();
     }
     run.state.took = 0;
+    lookBegan();
     run.looking = lookPlace(run, () => run.stopped || held())
-      .then(() => run.part?.ended(began, run.state.took ? 'came' : run.state.failures > 0 ? 'failed' : 'quiet'))
+      .then(() => {
+        run.part?.ended(began, run.state.took ? 'came' : run.state.failures > 0 ? 'failed' : 'quiet');
+        // In Light sleep the alarm's look is followed at once by one that waits at the relay (lib/receiver.ts).
+        if (began && lightSleep() && run.state.failures === 0) run.again = true;
+      })
       .catch(() => {
         // The relay could not be reached: tried again with the next look.
         run.part?.ended(began, 'failed');
       })
-      .finally(next);
+      .finally(() => {
+        lookEnded();
+        next();
+      });
   };
   run.wake = () => {
     if (run.stopped) return;
@@ -523,7 +532,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   }
   if (!failed && !stop()) {
     await mover
-      .look({ own, found, take: (bytes, kind) => take(bytes, kind), tell: (identity) => tell(chats, here, identity, {}), shows: appShown(), stop, empty: state.waited === 'empty' ? others : [] })
+      .look({ own, found, take: (bytes, kind) => take(bytes, kind), tell: (identity) => tell(chats, here, identity, {}), shows: appShown(), waited: state.waited !== false, stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     // What waited to go, now that the relay answers (lib/waiting.ts).
     await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true, hidden: true, near: state.near }).catch(() => []);

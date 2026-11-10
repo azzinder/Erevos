@@ -28,6 +28,7 @@ import { CONTACT_GROUP } from './contact-queues';
 import { GRACE, takesPlace, tellDue, toldOnce } from './moves';
 import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_KEEP_MOST, nostrKeysChanged, nostrRelays, nostrWraps } from './nostr';
 import { t } from './i18n';
+import { lookNow } from './look-now';
 import { checkVerifyCode, verifyCode, type VerifyResult } from './verify-code';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -1273,6 +1274,8 @@ export class E2E {
   moveSoon(): Promise<void> {
     return this.run(async () => {
       if (!this.data.moveDue) await this.save({ ...this.data, moveDue: Date.now() });
+      // The move is made by the next look, which does not wait at the relay first.
+      lookNow();
     });
   }
 
@@ -1819,6 +1822,8 @@ export class E2E {
         ...(gone ? { gone } : {}),
       });
       if (blocked) this.link?.blockedChanged?.(blocked);
+      // A move due now is made by the next look, which does not wait at the relay first.
+      if (this.data.moveDue) lookNow();
       if (contact) this.contactRemoved(identity);
       if (contact?.avatar?.kind === 'photo') await deletePhoto(contact.avatar.id);
     });

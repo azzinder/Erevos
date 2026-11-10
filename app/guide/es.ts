@@ -1255,6 +1255,7 @@ que un SMS normal. Los chats ocultos y los ordenadores no la tienen.
   segundo plano: la segunda apaga también las radios para teléfonos cercanos mientras Erevos está en segundo plano, la
   tercera deja dormir también al teléfono, así que Erevos mira el relay una vez por minuto y un mensaje o una llamada
   puede llegar uno o dos minutos tarde.
+- **Y el sueño ligero:** una cuarta opción allí, entre **Y los teléfonos cercanos** e **Y el sueño**. El teléfono puede dormir, pero Erevos deja abierta su espera en el relay, así que lo que llega despierta al teléfono y un mensaje o una llamada sigue llegando al instante donde la red y Android lo permiten; Erevos también mira por sí mismo cada pocos minutos. Es nueva y aún no se ha probado en muchos teléfonos: si con ella los mensajes llegan tarde, elige otra.
 - **El número en el icono:** con **Avisar de mensajes nuevos** activado, cuando sales de Erevos con mensajes sin leer
   en los chats y grupos del espacio abierto, el aviso se queda, sin sonido, y dice cuántos son, con los que avise
   después; se va mientras Erevos está a la vista, y vuelve al salir, hasta que los hayas leído. No cuenta los mensajes

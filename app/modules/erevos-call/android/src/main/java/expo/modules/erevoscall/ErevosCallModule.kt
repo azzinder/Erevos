@@ -220,6 +220,18 @@ class ErevosCallModule : Module() {
       SleepWake.lookDone()
     }
 
+    // Battery mode Light sleep: an answer from the relay woke the phone, which stays awake to take
+    // what came, until lookDone or the hold's own time; and how often the alarm goes, seconds.
+    Function("holdAwake") {
+      context?.let { SleepWake.hold(it) }
+      null
+    }
+
+    Function("setLookEvery") { seconds: Int ->
+      SleepWake.everyMs = seconds.coerceIn(60, 900) * 1000L
+      null
+    }
+
     Function("setSleepy") { on: Boolean ->
       // The alarm of the battery mode Sleep tells the app each time it wakes the phone.
       SleepWake.tell = if (on) ({ runCatching { sendEvent("onSleepLook", mapOf()) } }) else null

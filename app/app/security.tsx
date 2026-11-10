@@ -492,6 +492,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
           <Row wrap>
             <Chip label={t('Only the waste')} selected={battery === 'normal'} onPress={() => chooseBattery('normal')} />
             <Chip label={t('And nearby phones')} selected={battery === 'nearby'} onPress={() => chooseBattery('nearby')} />
+            <Chip label={t('And light sleep')} selected={battery === 'light'} onPress={() => chooseBattery('light')} />
             <Chip label={t('And sleep')} selected={battery === 'sleep'} onPress={() => chooseBattery('sleep')} />
           </Row>
           <Text variant="caption" tone="muted" style={hint}>
@@ -499,7 +500,9 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
               ? t('Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.')
               : battery === 'nearby'
                 ? t('Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.')
-                : t('And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.')}
+                : battery === 'light'
+                  ? t('And the phone may sleep while Erevos is in the background, with its wait at your relay left open: what comes there wakes the phone, so a message or a call still comes at once where the network and Android allow it, and Erevos looks by itself every few minutes besides. New, and not tried on many phones yet: if messages come late, choose another. The radios for phones nearby are off, as with the one before.')
+                  : t('And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.')}
           </Text>
         </>
       ) : null}

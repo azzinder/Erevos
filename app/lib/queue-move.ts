@@ -14,6 +14,7 @@ import { isGroupPacket } from './groups';
 import { locale, t } from './i18n';
 import { FIRST_QA, GRACE, HEAL_EVERY, JUNK_AGAIN, JUNK_BATCH, JunkMeter, QUEUE_JITTER, QUEUE_OFFSET, graceOver, junkStep, newOffset, queueAge, randomHours, withOld, type Look } from './moves';
 import { createQueue, deleteQueue, fromHex, isQueueNotFound, readsManyAt, receiveMessage, receiveOnRead, sameRelay, toHex, waitForAny, type Relay } from './relay';
+import { lookNow } from './look-now';
 import { isSealedPacket } from './sealed-packet';
 import { joinSpaceChats, type SpaceChats } from './space-chats';
 import { forgetSpare, homeRelays, readySpare, spareSaid, spaceSpare, type SpareStore } from './spare';
@@ -121,8 +122,10 @@ export type MoveLook = {
   take: Take;
   /** Tells a kept contact where this chat reads now: a quiet message with nothing in it. Throws when it did not go. */
   tell: (identity: string) => Promise<void>;
-  /** Whether the app shows: the other queues are read less often then. */
+  /** Whether the app shows: the other queues are read less often then, unless the look waited at the relay on them (`waited`). */
   shows: boolean;
+  /** The look waited at the relay, on the other queues too (lib/receiver.ts waitWhileAway): those not in `empty` are read. */
+  waited?: boolean;
   stop?: () => boolean;
   /** The other queues a wait at the relay found nothing come to, by recipient id in hex (lib/receiver.ts awayQueues): not read. */
   empty?: string[];
@@ -430,7 +433,7 @@ export class QueueMove {
     await this.tellAll(q, look);
     // The other queues: the groups' with every look, the rest less often while the app shows.
     this.looks++;
-    const all = !look.shows || this.looks % READ_EVERY === 1;
+    const all = !look.shows || !!look.waited || this.looks % READ_EVERY === 1;
     let lost = false;
     for (const kind of all ? (['group', 'link', 'public'] as const) : (['group'] as const)) {
       const kept = q[kind];
@@ -547,6 +550,8 @@ export class QueueMove {
     await this.after(next, old, here, own, why);
     // Once all that moves with it moved: a move cut short before is made again.
     if (why === 'phone') await this.at.queues.update((d) => stepDone(d, 'own'));
+    // Kept contacts are told where this chat reads now with the next look, which does not wait at the relay first.
+    lookNow();
     return next;
   }
 

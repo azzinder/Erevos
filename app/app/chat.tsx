@@ -176,7 +176,7 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
+import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, lookNow, openNearby, shownPace, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrReady, readNostr } from '../lib/nostr';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
@@ -1057,6 +1057,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // A message read needs no word that it came.
     const got = kind === 'got' ? [...now.got, ...tags] : now.got.filter((tag) => !tags.includes(tag));
     receipts.current[peer] = { got, read: kind === 'read' ? [...now.read, ...tags] : now.read };
+    // Said with the next look, which does not wait at the relay first.
+    lookNow();
   }
 
   // Hands the relay the first packets of conversations started here that it has not taken yet:
@@ -1899,17 +1901,35 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [lit]);
 
   // Disappearing messages go from the screen and the phone once their time has come.
+  // The screen is not drawn again every few seconds for it: the clock goes when the next thing is
+  // due, a message that disappears, one of theirs that shows at its time, or a contact no longer
+  // known to be here; and once a minute at least, for what is shown by the day.
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      setNow(now);
-      setMessages((list) => (list.some((m) => m.until && m.until <= now) ? list.filter((m) => !(m.until && m.until <= now)) : list));
-      history.current?.expire(now).catch(() => {
-        // Tried again on the next round.
-      });
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+    const from = Date.now();
+    let next = from + 60_000;
+    for (const m of messages) {
+      if (m.until && m.until < next) next = m.until;
+      if (!m.mine && m.at > from && m.at < next) next = m.at;
+    }
+    if (e2e) {
+      for (const c of contacts) {
+        const until = e2e.onlineUntil(c.identity, from);
+        if (until > 0 && until < next) next = until;
+      }
+    }
+    const timer = setTimeout(
+      () => {
+        const now = Date.now();
+        setNow(now);
+        setMessages((list) => (list.some((m) => m.until && m.until <= now) ? list.filter((m) => !(m.until && m.until <= now)) : list));
+        history.current?.expire(now).catch(() => {
+          // Tried again on the next round.
+        });
+      },
+      Math.max(250, next - from + 50),
+    );
+    return () => clearTimeout(timer);
+  }, [messages, contacts, e2e, now]);
 
   // A note goes after a while. One that is still true, like a relay that cannot be reached, comes
   // back with the next try.
@@ -2170,7 +2190,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
         await early();
-        // In the background, out of a call: waits at the relay until something comes, to the other queues there too.
+        // Out of a call: waits at the relay until something comes, to the other queues there too, or something is to be said (lookNow).
         const others = awayQueues((await mover.current?.queues().catch(() => null)) ?? null, url);
         const answers = () => {
           if (failed === null || !active) return;
@@ -2191,7 +2211,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         await spare();
         // A move due, kept contacts told, the other queues read (lib/queue-move.ts). Moved, the look
         // starts again on the new queue.
-        const moved = active && mover.current ? await mover.current.look({ own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: tellNow, shows: appShown(), stop: () => !active, empty: waited === 'empty' ? others : [] }).catch(() => null) : null;
+        const moved = active && mover.current ? await mover.current.look({ own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: tellNow, shows: appShown(), waited: waited !== false, stop: () => !active, empty: waited === 'empty' ? others : [] }).catch(() => null) : null;
         if (moved && active) {
           if (moved.notes.length > 0) setNote(moved.notes.join(' '));
           const after = await mover.current!.queues().catch(() => null);
@@ -2252,7 +2272,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           await look();
           if (active) next();
         },
-        again ? 0 : inCall ? LOOK_IN_CALL : appShown() ? LOOK_EVERY : awayPace(waited, failures),
+        again ? 0 : inCall ? LOOK_IN_CALL : appShown() ? shownPace(waited, LOOK_EVERY) : awayPace(waited, failures),
       );
       again = false;
     }
@@ -2398,7 +2418,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (received.group) void (placeGroups ? placeGroups.signal(received.identity, received.group, received.request) : takeGroupSignal(received.identity, received.group, received.request)).catch(() => undefined);
     if (received.online || received.seen) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
-    if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
+    if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) {
+      answers.current.add(peer);
+      lookNow();
+    }
     // What else it is: an answer to one of the chat's messages, a sticker.
     // One sent without sound that waits for its time keeps it, for its notice then (lib/background.ts).
     const parts: { quiet?: boolean } & Parts = { ...(received.quiet && shows > Date.now() ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : route ? { route } : {}) };

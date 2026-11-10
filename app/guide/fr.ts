@@ -1329,6 +1329,7 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   téléphones proches tant qu’Erevos est en arrière-plan, le troisième laisse aussi dormir le téléphone, si bien
   qu’Erevos regarde le relais environ une fois par minute et qu’un message ou un appel peut avoir une ou deux minutes de
   retard.
+- **Et le sommeil léger :** un quatrième choix à cet endroit, entre **Et les téléphones proches** et **Et le sommeil**. Le téléphone peut dormir, mais Erevos laisse ouverte son attente au relais, si bien que ce qui arrive réveille le téléphone et qu’un message ou un appel arrive toujours aussitôt là où le réseau et Android le permettent ; Erevos regarde aussi de lui-même toutes les quelques minutes. Il est nouveau et pas encore essayé sur beaucoup de téléphones : si les messages arrivent en retard avec lui, choisis-en un autre.
 - **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des messages
   non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit combien, avec ceux
   qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes, jusqu’à ce que tu les

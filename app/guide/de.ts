@@ -1346,6 +1346,7 @@ Versteckte Chats und Computer haben das nicht.
   Schlaf** fest, wie viel Akku es im Hintergrund spart: Die zweite schaltet auch die Funkverbindungen zu Telefonen in
   der Nähe aus, solange Erevos im Hintergrund ist, die dritte lässt auch das Telefon schlafen, sodass Erevos etwa einmal
   pro Minute am Relay nachschaut und eine Nachricht oder ein Anruf ein bis zwei Minuten zu spät kommen kann.
+- **Und leichter Schlaf:** eine vierte Stufe dort, zwischen **Und Telefone in der Nähe** und **Und Schlaf**. Das Telefon darf schlafen, aber Erevos lässt sein Warten am Relay offen, sodass das, was ankommt, das Telefon weckt und eine Nachricht oder ein Anruf weiterhin sofort kommt, wo Netz und Android es zulassen; Erevos schaut außerdem alle paar Minuten von selbst nach. Sie ist neu und noch nicht auf vielen Telefonen erprobt: Kommen Nachrichten damit verspätet, wähle eine andere.
 - **Die Zahl auf dem Symbol:** Mit **Neue Nachrichten melden** bleibt die Meldung, wenn du Erevos mit ungelesenen
   Nachrichten in den Chats und Gruppen des offenen Bereichs verlässt, ohne Ton stehen und sagt, wie viele es sind, mit
   denen, die sie danach meldet; sie geht, solange Erevos sichtbar ist, und kommt wieder, wenn du es verlässt, bis du

@@ -23,8 +23,14 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**Folders in Chat with myself**: notes, photos, files and voice messages can now go in folders. The folder button at the top makes one; its tab above the notes then shows only what is in it, and what you write while it is chosen goes into it. Holding a note offers **Move to a folder**; holding a folder's tab renames or deletes it, its notes staying. The folders go to your linked devices with the notes. See [Getting started](#start)."),
+    mark("**Messages come at once while Erevos shows**: Erevos now waits at your relay with the connection open also while it is on the screen, so a message or a call comes the moment it is sent, not at the next look every 3 seconds, and the phone's radio rests in between."),
+    mark("**The battery mode And sleep spares more**: each time it wakes the phone to look, about once a minute, the phone now sleeps again within a second or two when nothing came, not after 25 seconds."),
+    mark("**A new battery mode, And light sleep**: under Settings → Notifications → In the background. The phone may sleep, and what comes to your relay wakes it, so messages and calls still come at once where the network and Android allow it. It is new: if messages come late with it, choose another."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Chats are saved faster**: a message that comes, is read or is deleted is saved by looking only at its own chat, which shows most with many chats or after a large import. The chat screen is no longer drawn again every 5 seconds."),
+    mark("**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

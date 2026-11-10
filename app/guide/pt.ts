@@ -1248,6 +1248,7 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   bateria ele poupa em segundo plano: a segunda desliga também os rádios para celulares por perto enquanto o Erevos está
   em segundo plano, a terceira deixa também o celular dormir, de modo que o Erevos olha o relay cerca de uma vez por
   minuto e uma mensagem ou uma chamada pode chegar um ou dois minutos atrasada.
+- **E o sono leve:** uma quarta opção ali, entre **E os celulares por perto** e **E o sono**. O celular pode dormir, mas o Erevos deixa aberta a sua espera no relay, de modo que o que chega acorda o celular e uma mensagem ou uma chamada continua a chegar de imediato onde a rede e o Android o permitem; o Erevos também olha por si mesmo a cada poucos minutos. É nova e ainda não foi experimentada em muitos celulares: se com ela as mensagens chegarem tarde, escolhe outra.
 - **O número no ícone:** com **Avisar quando chega mensagem** ligado, quando você sai do Erevos com mensagens não
   lidas nas conversas e grupos do espaço aberto, a notificação fica, sem som, e diz quantas são, com as que avisar
   depois; ela some enquanto o Erevos está na tela, e volta quando você sai dele, até você lê-las. Não conta as

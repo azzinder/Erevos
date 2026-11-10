@@ -18,6 +18,10 @@ import android.os.SystemClock
 // Erevos is not left out of battery saving. The app is told (ErevosCallModule "onSleepLook"), and
 // says when its look found nothing (lookDone): the processor sleeps again at once then, not after
 // LOOK_MS. An app from before that, or one that found something, is held for LOOK_MS as before.
+//
+// The battery mode Light sleep uses the same hold and a slower alarm: the app's waits at the relay
+// stay open while the phone sleeps, an answer there wakes it through the network, and the app
+// takes the hold as it hears the answer (holdAwake), letting go once it waits again.
 class SleepWake : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent?) {
     if (!ReceiveService.looks()) return
@@ -27,7 +31,9 @@ class SleepWake : BroadcastReceiver() {
   }
 
   companion object {
-    private const val EVERY_MS = 60_000L
+    // How often the alarm goes: once a minute in Sleep, less often in Light sleep, where what comes
+    // wakes the phone through the network (ErevosCallModule setLookEvery).
+    @Volatile var everyMs = 60_000L
     private const val LOOK_MS = 25_000L
 
     // The one hold for the look, taken again for LOOK_MS by each alarm and let go by lookDone.
@@ -37,7 +43,7 @@ class SleepWake : BroadcastReceiver() {
     @Volatile var tell: (() -> Unit)? = null
 
     @Synchronized
-    private fun hold(context: Context) {
+    fun hold(context: Context) {
       val lock = look ?: (context.applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
         .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "erevos:look")
         .also {
@@ -63,7 +69,7 @@ class SleepWake : BroadcastReceiver() {
 
     fun arm(context: Context) {
       val alarms = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-      alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + EVERY_MS, pending(context))
+      alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + everyMs, pending(context))
     }
 
     fun cancel(context: Context) {
