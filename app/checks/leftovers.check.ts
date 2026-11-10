@@ -17,19 +17,25 @@ import { PAGE_PREFIX, sealedFile } from "../lock/sealed-file";
 
 const id = () => toHex(randomBytes(16));
 
-test("ids are every run of 32 hex digits, and each 32 of a longer run cut in 32s", () => {
+test("ids are every run of 32 hex digits, each 32 of a longer run cut in 32s, and the first and last 32 of any longer run", () => {
   const a = id();
   const b = id();
+  const [after, before] = [id(), id()];
   const found = idsIn(
     JSON.stringify({
       file: { id: a, key: "ff".repeat(32) },
       joined: a + b,
       short: "abc123",
       odd: `${a}0`,
+      // An id written right after, or right before, other hex digits.
+      named: `thumb${after}`,
+      numbered: `${before}00c`,
     }),
   );
   assert.ok(found.has(a));
   assert.ok(found.has(b));
+  assert.ok(found.has(after));
+  assert.ok(found.has(before));
   assert.ok(found.has("ff".repeat(16)));
   assert.equal(
     [...found].every((x) => x.length === 32),

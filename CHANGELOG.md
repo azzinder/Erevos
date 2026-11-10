@@ -38,6 +38,9 @@ On main, not released yet:
 - **An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a
   Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is
   deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good.
+- **The clearing of leftovers is more careful**: a file is kept when its name carries an identifier that is in use
+  with something written before or after it, and nothing is taken for a leftover while a part of what Erevos keeps
+  cannot be read. SMS that could not be read for a linked device are looked at again on the next pass.
 
 ## 7.0.0-rc.7 (2026-11-10)
 

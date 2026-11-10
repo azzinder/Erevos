@@ -113,7 +113,11 @@ async function shared(space: number, key: Uint8Array, known: readonly string[]):
     let messages = was?.messages ?? [];
     if (!fresh) {
       const read = await smsMessages(row.address, SHARED_MESSAGES).catch(() => null);
-      if (read === null) return undefined;
+      if (read === null) {
+        // Not read this time: what was to be read again still is, the next time.
+        allDirty ||= again;
+        return undefined;
+      }
       messages = shownMessages(read, trashOf(row.address, order)).flatMap((m) => sharedOf(m) ?? []);
       kept.set(id, { sig, at: now, messages });
       dirty.delete(row.address);

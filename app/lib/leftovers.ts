@@ -18,8 +18,9 @@ import { t } from "./i18n";
 //
 // What is read, for each place, is every sealed value it has in every file of sealed values,
 // whatever the file, and the pages they name: every run of 32 hex digits in them is taken as a
-// file's id. That names more than the files really kept, never fewer, so nothing a place keeps is
-// taken for a leftover, whatever kind of value keeps it. A file written in the last day is never
+// file's id, and so are the first and the last 32 of a longer run. That names more than the files
+// really kept, never fewer, so nothing a place keeps is taken for a leftover, whatever kind of value
+// keeps it; and a file of sealed values that cannot be read stops the search. A file written in the last day is never
 // one, as one an import, a download or a share is writing now. What is found is shown first, and
 // deleted only when the owner says so. Nothing leaves the phone.
 
@@ -39,12 +40,18 @@ const PAGE_ID = /^[0-9a-f]{24}$/;
 export const canFindLeftovers = (): boolean =>
   !!(device?.chunkFiles && device.storeNames && device.deleteChunkFiles);
 
-/** Every id a text may name: each run of exactly 32 hex digits, and each 32 of a longer run cut in 32s. */
+/**
+ * Every id a text may name: each run of exactly 32 hex digits; of a longer run, its first 32 and
+ * its last 32, as an id written right after or right before other hex digits, and each 32 of one
+ * cut in 32s.
+ */
 export function idsIn(text: string, into = new Set<string>()): Set<string> {
   for (const [run] of text.matchAll(HEX)) {
-    if (run.length === 32) into.add(run);
-    else if (run.length % 32 === 0)
-      for (let at = 0; at < run.length; at += 32)
+    into.add(run.slice(0, 32));
+    if (run.length === 32) continue;
+    into.add(run.slice(-32));
+    if (run.length % 32 === 0)
+      for (let at = 32; at < run.length - 32; at += 32)
         into.add(run.slice(at, at + 32));
   }
   return into;
@@ -111,8 +118,20 @@ export async function idsOfPlace(
 export async function storeFiles(): Promise<string[]> {
   const names = (await device?.storeNames?.()) ?? [];
   const stores: string[] = [];
-  for (const name of names)
-    if (isStore(await readFile(name).catch(() => null))) stores.push(name);
+  for (const name of names) {
+    let text: string | null;
+    try {
+      text = await readFile(name);
+    } catch {
+      // A file that cannot be read may be one of sealed values, which may name any file.
+      throw new Error(
+        t(
+          "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.",
+        ),
+      );
+    }
+    if (isStore(text)) stores.push(name);
+  }
   return stores;
 }
 
