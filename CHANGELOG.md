@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.8 (2026-11-10)
+
+### For you
+
 - **A new first start**: the first screen now says what you do not give, no phone number, email, user name or
   account (you add people with a QR code or a link, or they invite you), and asks for a name for your contacts, if
   you want one. After the modules comes a short screen for each module chosen, with how to begin with it and what
