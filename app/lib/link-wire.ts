@@ -132,7 +132,7 @@ export type Envelope =
  * waits on the relay, or its voice message's sound, base64. With `keep` on the envelope, the photos
  * and files stay on the relay for the other devices that take them too, until they expire there.
  */
-export type NoteSaid = { id: string; at: number; v: number; text: string; due?: number; every?: Every; told?: true; file?: FileOffer; voice?: { ms: number; data: string } };
+export type NoteSaid = { id: string; at: number; v: number; text: string; due?: number; every?: Every; told?: true; folder?: string; file?: FileOffer; voice?: { ms: number; data: string } };
 
 /** The most notes, and deletions, one envelope says. */
 export const MAX_NOTES_SAID = 5000;
@@ -140,6 +140,8 @@ const NOTE_ID = /^[0-9a-f]{16}$/;
 // The longest a note's words are (lock/myself-data.ts MAX_NOTE_TEXT), and a voice message's sound
 // (lib/voice.ts MAX_VOICE_MS: a minute, at most 64 kbit/s), base64.
 const NOTE_TEXT = 8000;
+// The longest a note's folder's name is (lock/myself-data.ts MAX_FOLDER_NAME), in UTF-16 units.
+const NOTE_FOLDER = 80;
 export const MAX_NOTE_VOICE = 1_000_000;
 
 function checkedNoteSaid(value: unknown): NoteSaid | null {
@@ -156,6 +158,8 @@ function checkedNoteSaid(value: unknown): NoteSaid | null {
     ...(isTime(v.due) ? { due: v.due } : {}),
     ...(isTime(v.due) && isEvery(v.every) ? { every: { u: v.every.u, n: v.every.n } } : {}),
     ...(v.told === true ? { told: true as const } : {}),
+    // The folder in Chat with myself (lock/myself-data.ts); a device from before folders leaves it out.
+    ...(isText(v.folder) && v.folder.length > 0 && v.folder.length <= NOTE_FOLDER ? { folder: v.folder } : {}),
     ...(file ? { file } : voice ? { voice } : {}),
   };
 }

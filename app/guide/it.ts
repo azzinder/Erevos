@@ -204,7 +204,14 @@ foto, file e messaggi vocali, come per le chat.
   app, o con le notifiche disattivate, è lì che lo vedi. Se **Orari esatti** non è consentito (**Impostazioni** →
   **Generali** → **Autorizzazioni**), Android può mostrarlo con qualche minuto di ritardo.
 - **Tenendo premuta una nota** hai **Copia**, **Apri** (una foto o un file), **Ricordamelo**, oppure **Cambia il
-  promemoria** e **Nessun promemoria**, ed **Elimina**.
+  promemoria** e **Nessun promemoria**, **Sposta in una cartella** ed **Elimina**.
+- **Cartelle:** il pulsante cartella in alto, accanto a **Aspetto della chat**, ne crea una. Sopra le note compaiono
+  allora delle schede: **Tutte**, e una per ogni cartella, che mostra solo ciò che contiene; ciò che scrivi, invii o
+  registri mentre una cartella è scelta ci finisce dentro. Una nota sta al massimo in una cartella: **Sposta in una
+  cartella** la mette in un’altra, in una nuova o in **Senza cartella**. Tenendo premuta la scheda di una cartella, o
+  toccandola di nuovo, hai **Rinomina la cartella** e **Elimina la cartella**; le sue note restano, senza cartella.
+  Una nota va ai tuoi dispositivi collegati con la sua cartella, e una cartella rinominata o eliminata su uno lo è
+  anche sugli altri; una vuota resta sul dispositivo dove è stata creata.
 - Ogni spazio ha una sua Chat con me stesso, e così anche ogni posto di chat nascoste, in cima al loro elenco (vedi
   [Chat nascoste](#hidden)). I promemoria di un posto nascosto appaiono lì quando il suo PIN lo apre; il telefono li
   annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica. Un nuovo

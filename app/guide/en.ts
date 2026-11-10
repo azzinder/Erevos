@@ -192,7 +192,13 @@ with chats.
   turned off, that is where you see it. If **Exact times** is not allowed (**Settings** → **General** →
   **Permissions**), Android may show it a few minutes late.
 - **Holding a note** offers **Copy**, **Open** (a photo or a file), **Remind me**, or **Change the reminder** and **No
-  reminder**, and **Delete**.
+  reminder**, **Move to a folder**, and **Delete**.
+- **Folders:** the folder button at the top, beside **Chat look**, makes one. Then tabs show above the notes: **All
+  notes**, and one for each folder, which shows only what is in it; what you write, send or record while a folder is
+  chosen goes into it. A note is in one folder at most: **Move to a folder** puts it in another, a new one, or **No
+  folder**. Holding a folder's tab, or tapping it again, offers **Rename the folder** and **Delete the folder**; its
+  notes stay, in no folder. A note goes to your linked devices with its folder, and a folder renamed or deleted on one
+  is so on the others too; an empty one stays on the device it was made on.
 - Each space has a Chat with myself of its own, and so does each place of hidden chats, at the top of their list (see
   [Hidden chats](#hidden)). A hidden place's reminders show there once its PIN opens it; the phone tells them at their
   time only while **Receive while closed** is on for that place, in the same notice. A new PIN for the place, which

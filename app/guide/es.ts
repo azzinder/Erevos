@@ -204,7 +204,14 @@ todo, notas, fotos, archivos y mensajes de voz, como con los chats.
   desactivados, es ahí donde lo ves. Si **Horas exactas** no está permitido (**Ajustes** → **General** →
   **Permisos**), Android puede mostrarlo unos minutos tarde.
 - **Mantener pulsada una nota** ofrece **Copiar**, **Abrir** (una foto o un archivo), **Recordarme**, o **Cambiar el
-  recordatorio** y **Sin recordatorio**, y **Eliminar**.
+  recordatorio** y **Sin recordatorio**, **Mover a una carpeta** y **Eliminar**.
+- **Carpetas:** el botón de carpeta de arriba, junto a **Apariencia del chat**, crea una. Entonces aparecen pestañas
+  sobre las notas: **Todas**, y una por cada carpeta, que muestra solo lo que hay en ella; lo que escribes, envías o
+  grabas mientras hay una carpeta elegida entra en ella. Una nota está como mucho en una carpeta: **Mover a una
+  carpeta** la pone en otra, en una nueva o en **Sin carpeta**. Mantener pulsada la pestaña de una carpeta, o tocarla
+  otra vez, ofrece **Renombrar la carpeta** y **Borrar la carpeta**; sus notas se quedan, sin carpeta. Una nota va a
+  tus dispositivos vinculados con su carpeta, y una carpeta renombrada o borrada en uno lo está también en los demás;
+  una vacía se queda en el dispositivo donde se creó.
 - Cada espacio tiene su propio Chat conmigo, y también cada lugar de chats ocultos, arriba de su lista (ver [Chats
   ocultos](#hidden)). Los recordatorios de un lugar oculto aparecen ahí en cuanto su PIN lo abre; el teléfono los
   avisa a su hora solo mientras **Recibir estando cerrados** está activado para ese lugar, con el mismo aviso. Un PIN

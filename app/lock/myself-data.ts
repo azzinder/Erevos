@@ -38,6 +38,8 @@ export type Note = {
   due?: number;
   every?: Every;
   told?: true;
+  /** The folder it is in (Chat with myself's folders), by its name; none: only under All. */
+  folder?: string;
   /** When it was last changed, by this device's count (`last`); one from before has none, and counts as written (`at`). */
   v?: number;
   /** It was last changed here, not by another of the account's devices: so it goes to them. */
@@ -52,7 +54,9 @@ type Gone = { v: number; o?: true };
 
 /** `last`: the latest stamp known here, kept so each change here is stamped after all of them. */
 // `look`: the chat's own look here (theme/look.ts), on this device only; missing while it takes the space's.
-type NotesData = { notes: Note[]; gone?: Record<string, Gone>; last?: number; look?: Look };
+// `folders`: the folders made here, in their order, empty ones too; a note's folder that is not
+// among them (one that came from another device) shows after them.
+type NotesData = { notes: Note[]; gone?: Record<string, Gone>; last?: number; look?: Look; folders?: string[] };
 
 export const FILE = 'erevos-myself';
 const BLOCK = 16 * 1024;
@@ -62,6 +66,24 @@ export const MAX_NOTES = 5000;
 export const MAX_NOTE_TEXT = 8000;
 /** The most notes remembered as deleted, the latest. */
 export const MAX_GONE = 2000;
+/** The most folders, and the longest a folder's name is. */
+export const MAX_FOLDERS = 50;
+export const MAX_FOLDER_NAME = 40;
+
+/** A folder's name as kept: one line, trimmed, at most MAX_FOLDER_NAME characters; '' for none. */
+export function folderName(name: unknown): string {
+  if (typeof name !== 'string') return '';
+  // Control and direction marks out, as in a contact's name.
+  const line = name.replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, ' ');
+  return [...line.replace(/\s+/g, ' ').trim()].slice(0, MAX_FOLDER_NAME).join('').trim();
+}
+
+/** The folders of `notes` with those kept (`kept`): the kept in their order, then the others, by name. */
+export function foldersOf(notes: readonly Note[], kept: readonly string[] = []): string[] {
+  const out = [...new Set(kept.map(folderName).filter(Boolean))];
+  const others = [...new Set(notes.map((note) => note.folder ?? '').filter((name) => name && !out.includes(name)))].sort((a, b) => a.localeCompare(b));
+  return [...out, ...others].slice(0, MAX_FOLDERS);
+}
 
 const ID = /^[0-9a-f]{16}$/;
 export const newNoteId = () => toHex(randomBytes(8));
@@ -87,13 +109,14 @@ function isNote(value: unknown): value is Note {
     (v.due === undefined || time(v.due)) &&
     (v.every === undefined || isEvery(v.every)) &&
     (v.told === undefined || v.told === true) &&
+    (v.folder === undefined || (typeof v.folder === 'string' && folderName(v.folder) === v.folder && v.folder !== '')) &&
     (v.v === undefined || time(v.v)) &&
     (v.o === undefined || v.o === true)
   );
 }
 
 /** Only a note's own fields, those it has. */
-function clean({ id, at, text, file, voice, due, every, told, v, o }: Note): Note {
+function clean({ id, at, text, file, voice, due, every, told, folder, v, o }: Note): Note {
   return {
     id,
     at,
@@ -103,6 +126,7 @@ function clean({ id, at, text, file, voice, due, every, told, v, o }: Note): Not
     ...(due !== undefined ? { due } : {}),
     ...(due !== undefined && every ? { every: { u: every.u, n: every.n } } : {}),
     ...(told ? { told } : {}),
+    ...(folder ? { folder } : {}),
     ...(v !== undefined ? { v } : {}),
     ...(o ? { o } : {}),
   };
@@ -124,11 +148,18 @@ function latestGone(gone: Record<string, Gone>): Record<string, Gone> {
 }
 
 function checked(value: unknown): NotesData {
-  const v = value as { notes?: unknown; gone?: unknown; last?: unknown; look?: unknown } | null;
+  const v = value as { notes?: unknown; gone?: unknown; last?: unknown; look?: unknown; folders?: unknown } | null;
   const notes = Array.isArray(v?.notes) ? v.notes.filter(isNote) : [];
   const gone = checkedGone(v?.gone);
   const look = v?.look && typeof v.look === 'object' && !Array.isArray(v.look) ? checkedLook(v.look) : null;
-  return { notes: notes.slice(-MAX_NOTES).map(clean), ...(gone ? { gone } : {}), ...(time(v?.last) ? { last: v.last } : {}), ...(look ? { look } : {}) };
+  const folders = Array.isArray(v?.folders) ? [...new Set(v.folders.map(folderName).filter(Boolean))].slice(0, MAX_FOLDERS) : [];
+  return {
+    notes: notes.slice(-MAX_NOTES).map(clean),
+    ...(gone ? { gone } : {}),
+    ...(time(v?.last) ? { last: v.last } : {}),
+    ...(look ? { look } : {}),
+    ...(folders.length > 0 ? { folders } : {}),
+  };
 }
 
 /** When a note was last changed: its stamp, or, one from before stamps, when it was written. */
@@ -189,15 +220,16 @@ export function addNote(place: NotesPlace, note: Note): Promise<Note> {
     const { notes } = data;
     if (notes.length >= MAX_NOTES) throw new TooManyNotesError();
     const v = stampNow(data);
-    const kept = clean({ ...note, text: note.text.slice(0, MAX_NOTE_TEXT), v, o: true });
+    const kept = clean({ ...note, text: note.text.slice(0, MAX_NOTE_TEXT), folder: folderName(note.folder) || undefined, v, o: true });
     await store.save(holder, space, key, { ...data, notes: [...notes, kept], last: v });
     written(place);
     return kept;
   });
 }
 
-/** Changes what a note reminds at (null: no longer), or marks it told. The note, or null when it is gone. */
-export function changeNote(place: NotesPlace, id: string, { due, told }: { due?: number | null; told?: boolean }): Promise<Note | null> {
+/** Changes what a note reminds at (null: no longer), marks it told, or puts it in a folder (null: in
+ *  none). The note, or null when it is gone. */
+export function changeNote(place: NotesPlace, id: string, { due, told, folder }: { due?: number | null; told?: boolean; folder?: string | null }): Promise<Note | null> {
   return change(place, async () => {
     const { holder, space, key } = place;
     const data = await store.load(holder, space, key);
@@ -214,6 +246,11 @@ export function changeNote(place: NotesPlace, id: string, { due, told }: { due?:
     if (due !== undefined) delete note.told;
     if (told === true) note.told = true;
     else if (told === false) delete note.told;
+    if (folder !== undefined) {
+      const name = folderName(folder);
+      if (name) note.folder = name;
+      else delete note.folder;
+    }
     const next = [...notes];
     next[at] = clean(note);
     await store.save(holder, space, key, { ...data, notes: next, last: v });
@@ -259,6 +296,54 @@ export function removeNote(place: NotesPlace, id: string): Promise<Note | null> 
     if (gone.file) await deleteChunks(gone.file.id, gone.file.count).catch(() => undefined);
     if (gone.voice) await deleteClip(gone.voice.id).catch(() => undefined);
     return gone;
+  });
+}
+
+/** A place's folders: those made here, in their order, then those only its notes name. */
+export async function loadFolders({ holder, space, key }: NotesPlace): Promise<string[]> {
+  const data = await store.load(holder, space, key);
+  return foldersOf(data.notes, data.folders);
+}
+
+/** Makes a folder, last; its name as kept, or '' when it has none. Throws when there are MAX_FOLDERS. */
+export function addFolder(place: NotesPlace, name: string): Promise<string> {
+  return change(place, async () => {
+    const { holder, space, key } = place;
+    const data = await store.load(holder, space, key);
+    const kept = folderName(name);
+    if (!kept) return '';
+    const all = foldersOf(data.notes, data.folders);
+    if (all.includes(kept)) return kept;
+    if (all.length >= MAX_FOLDERS) throw new Error(t('You have {n} folders, the most there can be.', { n: MAX_FOLDERS }));
+    // Not a change for the other devices: a folder goes to them with the first note in it.
+    await store.save(holder, space, key, { ...data, folders: [...all, kept] });
+    return kept;
+  });
+}
+
+/**
+ * Renames the folder `from` (`to`), or, with `to` null, removes it: its notes stay, in no folder.
+ * Each note it held changes, for the account's other devices too. Renamed onto another folder's
+ * name, the two are one.
+ */
+export function changeFolder(place: NotesPlace, from: string, to: string | null): Promise<void> {
+  return change(place, async () => {
+    const { holder, space, key } = place;
+    const data = await store.load(holder, space, key);
+    const name = to === null ? '' : folderName(to);
+    if (to !== null && (!name || name === from)) return;
+    const all = foldersOf(data.notes, data.folders);
+    const folders = name ? [...new Set(all.map((f) => (f === from ? name : f)))] : all.filter((f) => f !== from);
+    let v = stampNow(data) - 1;
+    let moved = false;
+    const notes = data.notes.map((note): Note => {
+      if (note.folder !== from) return note;
+      moved = true;
+      const { folder: _folder, ...rest } = note;
+      return clean({ ...rest, ...(name ? { folder: name } : {}), v: ++v, o: true });
+    });
+    await store.save(holder, space, key, { ...data, notes, folders, ...(moved ? { last: v } : {}) });
+    if (moved) written(place);
   });
 }
 
@@ -315,6 +400,24 @@ export type NoteCame = { note: Omit<Note, 'file' | 'voice' | 'o'> & { v: number 
  * message staying as kept; one not kept is made here, unless deleted here since. Returns what came
  * or changed, and the ids of those deleted here now.
  */
+/**
+ * The folders made here (`kept`) once another device's changes moved notes out of some (`left`: each
+ * with the folders they went to, '' for none): one emptied so goes, renamed on that device or deleted
+ * there; when all its notes went to one folder not made here, that one takes its place.
+ */
+export function leftFolders(kept: readonly string[], notes: readonly Note[], left: ReadonlyMap<string, ReadonlySet<string>>): string[] {
+  const out: string[] = [];
+  for (const name of kept) {
+    const went = left.get(name);
+    if (!went || notes.some((note) => note.folder === name)) out.push(name);
+    else if (went.size === 1) {
+      const [to] = went;
+      if (to && !kept.includes(to)) out.push(to);
+    }
+  }
+  return [...new Set(out)];
+}
+
 export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: string; v: number }[]): Promise<{ changed: Note[]; gone: string[] }> {
   return change(place, async () => {
     const { holder, space, key } = place;
@@ -324,6 +427,8 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
     let last = data.last ?? 0;
     const changed: Note[] = [];
     const removed: Note[] = [];
+    // The folders notes left, by another device's change, and where they went.
+    const left = new Map<string, Set<string>>();
     for (const { id, v } of deleted) {
       last = Math.max(last, v);
       if ((gone[id]?.v ?? -1) >= v) continue;
@@ -340,8 +445,9 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
       const at = notes.findIndex((n) => n.id === note.id);
       const kept = at >= 0 ? notes[at] : null;
       if (kept && stampOf(kept) >= note.v) continue;
-      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, every: note.every, told: note.told, v: note.v };
+      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, every: note.every, told: note.told, folder: folderName(note.folder) || undefined, v: note.v };
       if (kept) {
+        if (kept.folder && kept.folder !== words.folder) left.set(kept.folder, (left.get(kept.folder) ?? new Set()).add(words.folder ?? ''));
         const { o: _o, ...rest } = kept;
         const next = clean({ ...rest, ...words });
         notes[at] = next;
@@ -357,7 +463,14 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
     }
     if (changed.length === 0 && removed.length === 0 && last === (data.last ?? 0) && JSON.stringify(gone) === JSON.stringify(data.gone ?? {})) return { changed, gone: [] };
     const kept = latestGone(gone);
-    await store.save(holder, space, key, { notes, ...(Object.keys(kept).length > 0 ? { gone: kept } : {}), last, ...(data.look ? { look: data.look } : {}) });
+    const folders = leftFolders(data.folders ?? [], notes, left);
+    await store.save(holder, space, key, {
+      notes,
+      ...(Object.keys(kept).length > 0 ? { gone: kept } : {}),
+      last,
+      ...(data.look ? { look: data.look } : {}),
+      ...(folders.length > 0 ? { folders } : {}),
+    });
     for (const note of removed) {
       if (note.file && !note.file.from) await deleteChunks(note.file.id, note.file.count).catch(() => undefined);
       if (note.voice) await deleteClip(note.voice.id).catch(() => undefined);

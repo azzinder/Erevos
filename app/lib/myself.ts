@@ -6,7 +6,7 @@ import { device } from '../modules/erevos-device';
 import { currentSpace } from '../lock/keys';
 import { plural } from './i18n';
 import { type Every } from './note-repeat';
-import { addNote, changeNote, isDue, isWaiting, loadNotes, loadNotesLook, markTold, newNoteId, onNotesCame, removeNote, saveNotesLook, type Note, type NotesPlace } from '../lock/myself-data';
+import { addFolder, addNote, changeFolder, changeNote, isDue, isWaiting, loadFolders, loadNotes, loadNotesLook, markTold, newNoteId, onNotesCame, removeNote, saveNotesLook, type Note, type NotesPlace } from '../lock/myself-data';
 import type { Look } from '../theme/look';
 
 // Chat with myself and its reminders (app/myself.tsx, and Remind me on the home screen): the open
@@ -104,6 +104,32 @@ export async function seenReminders(notes: Note[], now = Date.now(), at = spaceN
 export async function deleteNote(id: string, at = spaceNotes()): Promise<void> {
   device?.forgetReminder?.(id);
   await removeNote(at.place, id);
+  changed();
+}
+
+// Folders (lock/myself-data.ts): each note in one or in none; the chat shows them all, or one folder's.
+
+/** The folders, in their order. */
+export function noteFolders(at = spaceNotes()): Promise<string[]> {
+  return loadFolders(at.place);
+}
+
+/** Makes a folder; its name as kept, or '' for an empty name. */
+export async function makeFolder(name: string, at = spaceNotes()): Promise<string> {
+  const kept = await addFolder(at.place, name);
+  changed();
+  return kept;
+}
+
+/** Puts a note in a folder, or with null in none. */
+export async function moveNote(id: string, folder: string | null, at = spaceNotes()): Promise<void> {
+  await changeNote(at.place, id, { folder });
+  changed();
+}
+
+/** Renames a folder, or with null removes it, its notes staying, in no folder. */
+export async function renameFolder(from: string, to: string | null, at = spaceNotes()): Promise<void> {
+  await changeFolder(at.place, from, to);
   changed();
 }
 

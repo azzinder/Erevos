@@ -21,7 +21,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Folders in Chat with myself**: notes, photos, files and voice messages can now go in folders. The folder button at the top makes one; its tab above the notes then shows only what is in it, and what you write while it is chosen goes into it. Holding a note offers **Move to a folder**; holding a folder's tab renames or deletes it, its notes staying. The folders go to your linked devices with the notes. See [Getting started](#start)."),
+  ],
   underTheHood: [],
 };
 

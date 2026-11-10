@@ -13,7 +13,7 @@ import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
-import { armReminders, deleteNote, everyLabel, isDue, isWaiting, myNotes, notesLook, onNotesChanged, remindAt, seenReminders, setNotesLook, writeNote, type Note, type NotesAt } from '../lib/myself';
+import { armReminders, deleteNote, everyLabel, isDue, isWaiting, makeFolder, moveNote, myNotes, noteFolders, notesLook, onNotesChanged, remindAt, renameFolder, seenReminders, setNotesLook, writeNote, type Note, type NotesAt } from '../lib/myself';
 import { appShown, onAppShown } from '../lib/receiver';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -21,7 +21,7 @@ import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile } from '../lib/save-file';
 import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
-import { MAX_NOTE_TEXT } from '../lock/myself-data';
+import { folderName, MAX_FOLDER_NAME, MAX_NOTE_TEXT } from '../lock/myself-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -33,20 +33,23 @@ import { ChatLookSheet } from './chat-look';
 import { Attachment, FileViewer, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type SendWay, type VoiceControl } from './composer';
 import { useGlassBlur } from './glass';
-import { BackIcon, BellIcon, ContrastIcon } from './icons';
+import { BackIcon, BellIcon, ContrastIcon, FolderIcon } from './icons';
 import { KeyboardPaddedView } from './keyboard';
 import { LaterPicker } from './later-picker';
 import { LinkedText } from './linked-text';
 import { MessageMenu, type MenuAction } from './message-menu';
 import { MyselfFace } from './myself-face';
 import { ThreadArrows, useThreadAway } from './thread-arrows';
-import { Sheet, Text } from './ui';
+import { Button, Chip, Input, Row, Sheet, Text } from './ui';
 
 // Chat with myself: notes, photos, files and voice messages that go to no one, kept encrypted in
 // the space, or in a hidden place, on this phone only (lib/myself.ts, lock/myself-data.ts), and
 // reminders. A note can remind at a time: chosen under "+", or by holding the send arrow, before it
 // is written, or from its menu after. Its row is always at the top of the chats (app/index.tsx, and
 // a hidden place's in app/chat.tsx), and Remind me beside New chat writes a reminder without opening it.
+// Notes can go in folders, one each at most: above the notes, All and a tab for each folder; what is
+// written while a folder is chosen goes into it, and a note's menu moves it. Held, a folder's tab
+// renames or deletes it, its notes staying, in no folder.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -107,6 +110,16 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
   // A kept note whose reminder is being chosen, in a sheet.
   const [remindFor, setRemindFor] = useState<Note | null>(null);
   const [menuFor, setMenuFor] = useState<Note | null>(null);
+  // The folders, and the one shown (null: all the notes); a note written goes into the one shown.
+  const [folders, setFolders] = useState<string[]>([]);
+  const [folder, setFolder] = useState<string | null>(null);
+  const folderNow = useRef<string | null>(null);
+  folderNow.current = folder;
+  // Naming a folder: a new one (`from` null), for a note to go into (`note`), or one renamed.
+  const [naming, setNaming] = useState<{ from: string | null; name: string; note?: Note } | null>(null);
+  // A note whose folder is being chosen, and a folder whose choices show.
+  const [moving, setMoving] = useState<Note | null>(null);
+  const [folderMenu, setFolderMenu] = useState<string | null>(null);
   const [viewing, setViewing] = useState<FileRef | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>(90);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -136,11 +149,23 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
         (error) => live && say(t('Cannot read your notes. {error}', { error: errorText(error) }), true),
       );
     const loadLook = () => notesLook(where.current).then((look) => live && setOwnLook(look), () => undefined);
+    // A folder no longer there (deleted, or renamed on another device) leaves All shown.
+    const loadFolders = () =>
+      noteFolders(where.current).then(
+        (list) => {
+          if (!live) return;
+          setFolders(list);
+          setFolder((shown) => (shown !== null && !list.includes(shown) ? null : shown));
+        },
+        () => undefined,
+      );
     void load();
     void loadLook();
+    void loadFolders();
     const off = onNotesChanged(() => {
       void load();
       void loadLook();
+      void loadFolders();
     });
     return () => {
       live = false;
@@ -172,13 +197,16 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
 
   useEffect(() => () => stopPlaying.current?.(), []);
 
+  // A note written goes into the folder shown.
+  const inFolder = () => (folderNow.current ? { folder: folderNow.current } : {});
+
   async function send() {
     const text = draft.text().trim();
     if (!text) return;
     // Emptied at once, so a second press keeps nothing twice; not kept, the words go back.
     draft.set('');
     try {
-      await writeNote({ text: text.slice(0, MAX_NOTE_TEXT), ...(nextDue !== null ? { due: nextDue } : {}) }, where.current);
+      await writeNote({ text: text.slice(0, MAX_NOTE_TEXT), ...(nextDue !== null ? { due: nextDue } : {}), ...inFolder() }, where.current);
       setNextDue(null);
       say(nextDue !== null ? t('Reminds you on {when}.', { when: laterLabel(nextDue) }) : '');
     } catch (error) {
@@ -214,7 +242,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
         }
       });
       const text = draft.text().trim().slice(0, MAX_NOTE_TEXT);
-      await writeNote({ text, file, ...(nextDue !== null ? { due: nextDue } : {}) }, where.current);
+      await writeNote({ text, file, ...(nextDue !== null ? { due: nextDue } : {}), ...inFolder() }, where.current);
       draft.set('');
       setNextDue(null);
       say('');
@@ -303,7 +331,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
         return;
       }
       const voice = await saveClip(recorded.audio, recorded.ms);
-      await writeNote({ text: '', voice, ...(nextDue !== null ? { due: nextDue } : {}) }, where.current);
+      await writeNote({ text: '', voice, ...(nextDue !== null ? { due: nextDue } : {}), ...inFolder() }, where.current);
       setNextDue(null);
       say('');
     } catch (error) {
@@ -371,6 +399,53 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
     }
   }
 
+  async function moveTo(note: Note, name: string | null) {
+    setMoving(null);
+    if ((note.folder ?? null) === name) return;
+    try {
+      await moveNote(note.id, name, where.current);
+      say(name ? t('In “{folder}” now.', { folder: name }) : t('In no folder now.'));
+    } catch (error) {
+      say(t('Not saved. {error}', { error: errorText(error) }), true);
+    }
+  }
+
+  // A new folder, shown at once, or with the note it was made for in it; or a folder renamed.
+  async function saveFolder() {
+    const what = naming;
+    if (!what || !folderName(what.name)) return;
+    setNaming(null);
+    try {
+      if (what.from !== null) {
+        const from = what.from;
+        const name = folderName(what.name);
+        await renameFolder(from, name, where.current);
+        setFolders((was) => [...new Set(was.map((f) => (f === from ? name : f)))]);
+        setFolder((shown) => (shown === from ? name : shown));
+        return;
+      }
+      const made = await makeFolder(what.name, where.current);
+      if (!made) return;
+      setFolders((was) => (was.includes(made) ? was : [...was, made]));
+      if (what.note) await moveTo(what.note, made);
+      else setFolder(made);
+    } catch (error) {
+      say(t('Not saved. {error}', { error: errorText(error) }), true);
+    }
+  }
+
+  async function deleteFolder(name: string) {
+    setFolderMenu(null);
+    if (!(await confirm(t('Delete the folder “{name}”?', { name }), t('Its notes stay in Chat with myself, in no folder.'), t('Delete')))) return;
+    try {
+      await renameFolder(name, null, where.current);
+      setFolders((was) => was.filter((f) => f !== name));
+      setFolder((shown) => (shown === name ? null : shown));
+    } catch (error) {
+      say(t('Not deleted. {reason}', { reason: errorText(error) }), true);
+    }
+  }
+
   function actionsOf(note: Note): MenuAction[] {
     const actions: MenuAction[] = [];
     if (CAN_COPY && note.text) {
@@ -386,6 +461,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
     } else {
       actions.push({ title: t('Remind me'), onPress: () => setRemindFor(note) });
     }
+    actions.push({ title: t('Move to a folder'), onPress: () => setMoving(note) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(note) });
     return actions;
   }
@@ -447,7 +523,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
     },
   ];
 
-  const list = notes ?? [];
+  const list = folder === null ? (notes ?? []) : (notes ?? []).filter((note) => note.folder === folder);
   return (
     <Screen padded={!onBack} bottom={insets.bottom} style={styles.screen}>
       <View style={[styles.topBar, { marginTop: -insets.top, paddingTop: insets.top + 2 }, barBlur]}>
@@ -466,10 +542,21 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
               </Text>
             </View>
           </View>
+          <IconButton label={t('New folder')} onPress={() => setNaming({ from: null, name: '' })}>
+            <FolderIcon color={colors.text} size={22} />
+          </IconButton>
           <IconButton label={t('Chat look')} onPress={() => setStyling(true)}>
             <ContrastIcon color={colors.text} size={22} />
           </IconButton>
         </View>
+        {folders.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.strip} contentContainerStyle={styles.folders}>
+            <Chip label={t('All notes')} selected={folder === null} onPress={() => setFolder(null)} />
+            {folders.map((name) => (
+              <Chip key={name} label={name} selected={folder === name} onPress={() => (folder === name ? setFolderMenu(name) : setFolder(name))} onLongPress={() => setFolderMenu(name)} />
+            ))}
+          </ScrollView>
+        ) : null}
       </View>
       <View style={{ flex: 1 }}>
         <ScrollView
@@ -485,7 +572,15 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
           }}
           scrollEventThrottle={100}
         >
-          {notes !== null && list.length === 0 ? (
+          {notes !== null && list.length === 0 && folder !== null ? (
+            <View style={styles.empty}>
+              <FolderIcon color={colors.textMuted} size={48} />
+              <Text tone="muted" style={styles.emptyText}>
+                {t('Nothing in “{folder}” yet. What you write while it is chosen goes into it.', { folder })}
+              </Text>
+            </View>
+          ) : null}
+          {notes !== null && list.length === 0 && folder === null ? (
             <View style={styles.empty}>
               <MyselfFace size={64} />
               <Text tone="muted" style={styles.emptyText}>
@@ -534,7 +629,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
                       </Text>
                     </View>
                   ) : null}
-                  <Text style={[ink, styles.time]}>{clock(note.at)}</Text>
+                  <Text style={[ink, styles.time]}>{folder === null && note.folder ? `${note.folder} · ${clock(note.at)}` : clock(note.at)}</Text>
                 </Pressable>
               </View>
             );
@@ -557,7 +652,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
       ) : null}
       <DraftComposer
         draft={draft}
-        placeholder={t('Write a note to yourself')}
+        placeholder={folder !== null ? t('A note in “{folder}”', { folder }) : t('Write a note to yourself')}
         maxLength={MAX_NOTE_TEXT}
         onSend={() => void send()}
         sendWays={sendWays}
@@ -574,6 +669,48 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={t('Chat with myself')} chat={lookChat} />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
       <RemindSheet note={remindFor} onPick={(note, at) => void setReminder(note, at)} onClose={() => setRemindFor(null)} />
+      <Sheet visible={moving !== null} onClose={() => setMoving(null)} title={t('Which folder?')}>
+        {moving ? (
+          <Row wrap>
+            <Chip label={t('No folder')} selected={!moving.folder} onPress={() => void moveTo(moving, null)} />
+            {folders.map((name) => (
+              <Chip key={name} label={name} selected={moving.folder === name} onPress={() => void moveTo(moving, name)} />
+            ))}
+            <Chip
+              label={`+ ${t('New folder')}`}
+              onPress={() => {
+                const note = moving;
+                setMoving(null);
+                setNaming({ from: null, name: '', note });
+              }}
+            />
+          </Row>
+        ) : null}
+      </Sheet>
+      <Sheet visible={folderMenu !== null} onClose={() => setFolderMenu(null)} title={folderMenu ?? undefined}>
+        <Button
+          title={t('Rename the folder')}
+          kind="secondary"
+          onPress={() => {
+            const name = folderMenu;
+            setFolderMenu(null);
+            if (name) setNaming({ from: name, name });
+          }}
+        />
+        <Button title={t('Delete the folder')} kind="danger" onPress={() => folderMenu && void deleteFolder(folderMenu)} />
+      </Sheet>
+      <Sheet visible={naming !== null} onClose={() => setNaming(null)} title={naming?.from ? t('Rename the folder') : t('New folder')}>
+        <Input
+          value={naming?.name ?? ''}
+          onChangeText={(name) => setNaming((was) => (was ? { ...was, name } : was))}
+          placeholder={t('Folder name')}
+          accessibilityLabel={t('Folder name')}
+          autoFocus
+          maxLength={MAX_FOLDER_NAME}
+          onSubmitEditing={() => void saveFolder()}
+        />
+        <Button title={t('Save')} disabled={!folderName(naming?.name)} onPress={() => void saveFolder()} />
+      </Sheet>
     </Screen>
   );
 }
@@ -629,6 +766,17 @@ const makeStyles = (colors: Colors) =>
     name: {
       fontSize: 17,
       lineHeight: 22,
+    },
+    // The folders' tabs, under the header, on one line that scrolls to the side.
+    strip: {
+      flexGrow: 0,
+    },
+    folders: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      paddingHorizontal: space.lg,
+      paddingBottom: space.sm,
     },
     list: {
       gap: 3,

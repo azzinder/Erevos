@@ -212,7 +212,14 @@ Ein Backup nimmt alles davon mit, Notizen, Fotos, Dateien und Sprachnachrichten,
   du sie dort. Sind **Genaue Uhrzeiten** nicht erlaubt (**Einstellungen** → **Allgemein** → **Berechtigungen**), zeigt
   Android sie vielleicht ein paar Minuten zu spät.
 - **Eine Notiz gedrückt halten** bietet **Kopieren**, **Öffnen** (ein Foto oder eine Datei), **Erinnern** oder
-  **Erinnerung ändern** und **Keine Erinnerung**, sowie **Löschen**.
+  **Erinnerung ändern** und **Keine Erinnerung**, **In einen Ordner verschieben** sowie **Löschen**.
+- **Ordner:** Die Ordner-Taste oben, neben **Chat-Aussehen**, legt einen an. Dann erscheinen über den Notizen Tabs:
+  **Alle**, und einer für jeden Ordner, der nur zeigt, was darin liegt; was du schreibst, sendest oder aufnimmst,
+  während ein Ordner gewählt ist, kommt hinein. Eine Notiz liegt in höchstens einem Ordner: **In einen Ordner
+  verschieben** legt sie in einen anderen, in einen neuen oder in **Ohne Ordner**. Wer den Tab eines Ordners gedrückt
+  hält oder ihn noch einmal antippt, bekommt **Ordner umbenennen** und **Ordner löschen**; seine Notizen bleiben, ohne
+  Ordner. Eine Notiz geht mit ihrem Ordner an deine verknüpften Geräte, und ein Ordner, der auf einem umbenannt oder
+  gelöscht wird, wird es auch auf den anderen; ein leerer bleibt auf dem Gerät, auf dem er angelegt wurde.
 - Jeder Bereich hat seinen eigenen „Chat mit mir selbst“, und ebenso jeder Platz versteckter Chats, oben in ihrer
   Liste (siehe [Versteckte Chats](#hidden)). Die Erinnerungen eines versteckten Platzes erscheinen dort, sobald seine
   PIN ihn öffnet; das Telefon meldet sie zu ihrer Zeit nur, solange **Empfangen, wenn geschlossen** für diesen Platz

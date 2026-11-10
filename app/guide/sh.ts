@@ -200,7 +200,14 @@ bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
   web-aplikaciji ili s isključenim obavijestima, tamo ga vidite. Ako **Precizno vrijeme** nije dozvoljeno
   (**Postavke** → **Općenito** → **Dozvole**), Android ga može prikazati nekoliko minuta kasnije.
 - **Zadržavanje prsta na bilješci** nudi **Kopiraj**, **Otvori** (fotografiju ili datoteku), **Podsjeti me**, ili
-  **Promijeni podsjetnik** i **Bez podsjetnika**, te **Obriši**.
+  **Promijeni podsjetnik** i **Bez podsjetnika**, **Premjesti u folder** te **Obriši**.
+- **Folderi:** dugme foldera na vrhu, pored **Izgled razgovora**, pravi jedan. Tada se iznad bilješki prikazuju
+  kartice: **Sve**, i po jedna za svaki folder, koja prikazuje samo ono što je u njemu; ono što napišete, pošaljete
+  ili snimite dok je folder izabran ide u njega. Bilješka je u najviše jednom folderu: **Premjesti u folder** je
+  stavlja u drugi, u novi ili **Bez foldera**. Zadržavanje prsta na kartici foldera, ili ponovni dodir, nudi
+  **Preimenuj folder** i **Izbriši folder**; njegove bilješke ostaju, bez foldera. Bilješka ide na vaše povezane
+  uređaje sa svojim folderom, a folder preimenovan ili izbrisan na jednom takav je i na ostalima; prazan ostaje na
+  uređaju na kojem je napravljen.
 - Svaki prostor ima vlastiti Razgovor sa sobom, kao i svako mjesto skrivenih razgovora, na vrhu njihovog popisa
   (pogledajte [Skriveni razgovori](#hidden)). Podsjetnici skrivenog mjesta prikazuju se tamo kad ga njegov PIN otvori;
   telefon ih javlja u njihovo vrijeme samo dok je za to mjesto uključeno **Primanje dok su zatvoreni**, u istoj

@@ -5,7 +5,8 @@
 // Chat with myself (lock/myself-data.ts): each space's and each hidden place's notes apart, sealed
 // so no other key reads them; a note's reminder set, changed, taken away and seen; what the home
 // screen's row shows of them; a note deleted with its photo's chunks and its voice message; and a
-// hidden place's reminders told by the phone only while that place receives closed.
+// hidden place's reminders told by the phone only while that place receives closed; and the folders,
+// made, renamed and deleted, here and on the account's other devices.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -17,7 +18,35 @@ import { bytesSource, keepFile } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
 import { armPlaceReminders, deleteNote, myNotes, remindAt, seenReminders, writeNote } from '../lib/myself';
 import { setCurrentSpace } from '../lock/keys';
-import { addNote, changeNote, FILE, isDue, isWaiting, loadNotes, markTold, mergeNotes, newNoteId, notesSince, notesSummary, onNotesCame, onNotesWritten, removeNote, setNoteFile, stampOf, type NoteCame, type NotesPlace } from '../lock/myself-data';
+import { encodeOne, Parts } from '../lib/link-wire';
+import {
+  addFolder,
+  addNote,
+  changeFolder,
+  changeNote,
+  FILE,
+  folderName,
+  foldersOf,
+  isDue,
+  isWaiting,
+  leftFolders,
+  loadFolders,
+  loadNotes,
+  markTold,
+  MAX_FOLDER_NAME,
+  MAX_FOLDERS,
+  mergeNotes,
+  newNoteId,
+  notesSince,
+  notesSummary,
+  onNotesCame,
+  onNotesWritten,
+  removeNote,
+  setNoteFile,
+  stampOf,
+  type NoteCame,
+  type NotesPlace,
+} from '../lock/myself-data';
 import { saveClip } from '../lock/voice-clips';
 
 const place = (holder: NotesPlace['holder'] = 'space', space = 0, key = randomBytes(32)): NotesPlace => ({ holder, space, key });
@@ -296,4 +325,95 @@ test('a reminder that comes again moves to its next time once seen, and a link c
   // Taking the reminder away takes the repeating away too.
   await changeNote(mine, rent.id, { due: null });
   assert.equal((await loadNotes(mine))[0].every, undefined);
+});
+
+test("a folder's name: one line, trimmed, its longest; the folders made here first, then those only notes name", () => {
+  assert.equal(folderName('  Work\n  ideas \u202e '), 'Work ideas');
+  assert.equal(folderName(42), '');
+  assert.equal(folderName(' \t '), '');
+  assert.equal([...folderName('Φ'.repeat(MAX_FOLDER_NAME + 5))].length, MAX_FOLDER_NAME);
+  const notes = [note('a', 1, { folder: 'Zeta' }), note('b', 2, { folder: 'Alpha' }), note('c', 3), note('d', 4, { folder: 'Home' })];
+  assert.deepEqual(foldersOf(notes, ['Home', 'Empty', 'Home']), ['Home', 'Empty', 'Alpha', 'Zeta']);
+});
+
+test('folders: made, a note put in one and taken out, renamed and deleted, the notes staying', async () => {
+  files.clear();
+  const mine = place();
+  const written: number[] = [];
+  const stop = onNotesWritten((p) => p === mine && written.push(1));
+  try {
+    assert.equal(await addFolder(mine, '  Shopping '), 'Shopping');
+    assert.equal(await addFolder(mine, 'Shopping'), 'Shopping');
+    assert.equal(await addFolder(mine, '   '), '');
+    await addFolder(mine, 'Work');
+    // An empty folder is this device's alone: nothing goes to the others.
+    assert.deepEqual(written, []);
+    assert.deepEqual(await loadFolders(mine), ['Shopping', 'Work']);
+    const milk = await addNote(mine, note('milk', 1000, { folder: 'Shopping' }));
+    const bread = await addNote(mine, note('bread', 2000));
+    assert.equal(milk.folder, 'Shopping');
+    const moved = await changeNote(mine, bread.id, { folder: ' Shopping ' });
+    assert.equal(moved?.folder, 'Shopping');
+    assert.ok(stampOf(moved!) > stampOf(milk));
+    // Renamed: its notes go with it, each changed, for the other devices too, and it keeps its place.
+    const before = stampOf(moved!);
+    await changeFolder(mine, 'Shopping', 'Groceries');
+    let notes = await loadNotes(mine);
+    assert.deepEqual(notes.map((n) => n.folder), ['Groceries', 'Groceries']);
+    assert.deepEqual(await loadFolders(mine), ['Groceries', 'Work']);
+    assert.deepEqual((await notesSince(mine, before, false)).notes.map((n) => [n.text, n.folder]), [['milk', 'Groceries'], ['bread', 'Groceries']]);
+    // Taken out of it, and the folder deleted: the notes stay, in none.
+    await changeNote(mine, milk.id, { folder: null });
+    await changeFolder(mine, 'Groceries', null);
+    notes = await loadNotes(mine);
+    assert.deepEqual(notes.map((n) => [n.text, n.folder]), [['milk', undefined], ['bread', undefined]]);
+    assert.deepEqual(await loadFolders(mine), ['Work']);
+    // Renamed onto another's name, the two are one.
+    await addFolder(mine, 'Ideas');
+    await changeFolder(mine, 'Ideas', 'Work');
+    assert.deepEqual(await loadFolders(mine), ['Work']);
+  } finally {
+    stop();
+  }
+  // At their most, no more is made.
+  const full = place();
+  for (let i = 0; i < MAX_FOLDERS; i++) await addFolder(full, `F${i}`);
+  await assert.rejects(addFolder(full, 'one more'));
+});
+
+test("folders from another device: a note's folder comes with it, and one renamed or deleted there goes here too", async () => {
+  files.clear();
+  const mine = place();
+  await addFolder(mine, 'Trips');
+  await addFolder(mine, 'Empty');
+  const id = newNoteId();
+  const from = (folder: string | undefined, v: number): NoteCame => ({ note: { id, at: 500, text: 'tickets', v, ...(folder ? { folder } : {}) }, make: async () => ({}) });
+  await mergeNotes(mine, [from('Trips', 10)], []);
+  assert.equal((await loadNotes(mine))[0].folder, 'Trips');
+  // Renamed there: the new name takes the old one's place here; an empty one made here stays.
+  await mergeNotes(mine, [from('Travel', 20)], []);
+  assert.equal((await loadNotes(mine))[0].folder, 'Travel');
+  assert.deepEqual(await loadFolders(mine), ['Travel', 'Empty']);
+  // Deleted there: the note stays, in none, and the folder goes.
+  await mergeNotes(mine, [from(undefined, 30)], []);
+  assert.equal((await loadNotes(mine))[0].folder, undefined);
+  assert.deepEqual(await loadFolders(mine), ['Empty']);
+  // A folder that still holds notes here stays, whatever left it.
+  const kept = [note('x', 1, { folder: 'A' })];
+  assert.deepEqual(leftFolders(['A', 'B'], kept, new Map([['A', new Set([''])], ['B', new Set(['C', 'D'])]])), ['A']);
+});
+
+test("a note's folder goes to the account's other devices on the wire; a device from before leaves it out", () => {
+  const id = newNoteId();
+  const read = (folder: unknown) => {
+    const bytes = encodeOne({ k: 'notes', list: [{ id, at: 1, v: 2, text: 'hi', folder } as never], gone: [] }, null)!;
+    const said = new Parts().take('x', bytes);
+    assert.equal(said?.k, 'notes');
+    return said?.k === 'notes' ? said.list[0] : null;
+  };
+  assert.equal(read('Work')?.folder, 'Work');
+  assert.equal(read('')?.folder, undefined);
+  assert.equal(read('x'.repeat(81))?.folder, undefined);
+  assert.equal(read(7)?.folder, undefined);
+  assert.equal(read(undefined)?.text, 'hi');
 });

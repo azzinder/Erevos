@@ -204,7 +204,14 @@ conversas.
   com os avisos desativados, é ali que você o vê. Se **Horários exatos** não estiver permitido (**Configurações** →
   **Geral** → **Permissões**), o Android pode mostrá-lo alguns minutos atrasado.
 - **Segurar uma nota** oferece **Copiar**, **Abrir** (uma foto ou um arquivo), **Lembrar-me**, ou **Mudar o lembrete**
-  e **Sem lembrete**, e **Apagar**.
+  e **Sem lembrete**, **Mover para uma pasta** e **Apagar**.
+- **Pastas:** o botão de pasta no topo, ao lado de **Aparência da conversa**, cria uma. Aparecem então abas acima das
+  notas: **Todas**, e uma para cada pasta, que mostra só o que há nela; o que você escreve, envia ou grava enquanto
+  uma pasta está escolhida vai para dentro dela. Uma nota fica no máximo em uma pasta: **Mover para uma pasta** a põe
+  em outra, em uma nova ou em **Sem pasta**. Segurar a aba de uma pasta, ou tocar nela de novo, oferece **Renomear a
+  pasta** e **Apagar a pasta**; as notas dela ficam, sem pasta. Uma nota vai para os seus dispositivos conectados com
+  a sua pasta, e uma pasta renomeada ou apagada em um deles fica assim nos outros também; uma vazia fica no
+  dispositivo onde foi criada.
 - Cada espaço tem a sua própria Conversa comigo, e também cada posição de conversas ocultas, no topo da lista delas
   (veja [Conversas ocultas](#hidden)). Os lembretes de uma posição oculta aparecem ali assim que o PIN dela a abre; o
   celular os avisa no horário só enquanto **Receber quando fechadas** está ativado para aquela posição, no mesmo

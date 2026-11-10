@@ -29,6 +29,7 @@ import { unreadSigns } from './unread-signs';
 import { lastSeen } from './last-seen';
 import { payText } from './pay';
 import { nextcloudText } from './nextcloud';
+import { myselfFolders } from './myself-folders';
 import { publicFeed } from './public-feed';
 import { relayInvites } from './relay-invites';
 import { moves } from './moves';
@@ -62,4 +63,4 @@ import { giveApp } from './give-app';
 import { matrixMore } from './matrix-more';
 import { forgetMe } from './forget-me';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe, ...modulesText, ...setupText, ...collectionText, ...collectionMedia, ...collectionTv, ...unreadSigns, ...lastSeen, ...publicFeed, ...payText, ...nextcloudText };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe, ...modulesText, ...setupText, ...collectionText, ...collectionMedia, ...collectionTv, ...unreadSigns, ...lastSeen, ...publicFeed, ...payText, ...nextcloudText, ...myselfFolders };

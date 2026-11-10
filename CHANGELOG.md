@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Folders in Chat with myself**: notes, photos, files and voice messages can go in folders. The folder button at the
+  top makes one; its tab above the notes shows only what is in it, and what you write while it is chosen goes into it.
+  Holding a note offers **Move to a folder**; holding a folder's tab renames or deletes it, its notes staying, in no
+  folder. A note is in one folder at most, and goes to your linked devices with its folder; one renamed or deleted on
+  one device is so on the others too. An empty folder stays on the device it was made on.
+
 ### Under the hood
 
 ## 7.0.0-rc.8 (2026-11-10)

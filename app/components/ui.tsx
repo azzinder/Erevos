@@ -289,10 +289,12 @@ export function TextButton({ title, onPress, hitSlop = 8 }: { title: string; onP
   );
 }
 
-export function Chip({ label, selected, onPress, disabled, mono, fit, count }: {
+export function Chip({ label, selected, onPress, onLongPress, disabled, mono, fit, count }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
+  /** Held down: more to do with it (a folder: rename, delete). */
+  onLongPress?: () => void;
   /** Shown but not choosable (no option of a disabled row is shown as chosen). */
   disabled?: boolean;
   /** An id rather than a word. */
@@ -316,6 +318,7 @@ export function Chip({ label, selected, onPress, disabled, mono, fit, count }: {
             }
           : undefined
       }
+      onLongPress={onLongPress}
       disabled={disabled}
       accessibilityRole="radio"
       accessibilityLabel={count ? `${label}, ${plural(count, '{n} unread message', '{n} unread messages')}` : undefined}

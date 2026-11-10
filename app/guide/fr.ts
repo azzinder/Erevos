@@ -214,8 +214,15 @@ fichiers et messages vocaux, comme pour les discussions.
   vu là, il quitte aussi la notification. Sur un ordinateur, dans l’app web, ou avec les notifications désactivées,
   c’est là que tu le vois. Si **Heures exactes** n’est pas autorisé (**Réglages** → **Général** → **Autorisations**),
   Android peut l’afficher avec quelques minutes de retard.
-- **Un appui long sur une note** propose **Copier**, **Ouvrir** (une photo ou un fichier), **Me rappeler**, ou **Changer
-  le rappel** et **Sans rappel**, et **Supprimer**.
+- **Un appui long sur une note** propose **Copier**, **Ouvrir** (une photo ou un fichier), **Me rappeler**, ou
+  **Changer le rappel** et **Sans rappel**, **Déplacer dans un dossier**, et **Supprimer**.
+- **Dossiers :** le bouton de dossier en haut, à côté de **Apparence de la discussion**, en crée un. Des onglets
+  s’affichent alors au-dessus des notes : **Toutes**, et un par dossier, qui n’affiche que ce qu’il contient ; ce que
+  tu écris, envoies ou enregistres pendant qu’un dossier est choisi y va. Une note est dans un dossier au plus :
+  **Déplacer dans un dossier** la met dans un autre, dans un nouveau, ou **Sans dossier**. Un appui long sur l’onglet
+  d’un dossier, ou un nouvel appui dessus, propose **Renommer le dossier** et **Supprimer le dossier** ; ses notes
+  restent, sans dossier. Une note va sur tes appareils associés avec son dossier, et un dossier renommé ou supprimé
+  sur l’un l’est aussi sur les autres ; un dossier vide reste sur l’appareil où il a été créé.
 - Chaque espace a sa propre Discussion avec moi-même, et chaque emplacement de discussions masquées aussi, en haut de
   leur liste (voir [Discussions masquées](#hidden)). Les rappels d’un emplacement masqué s’y affichent une fois que
   son code PIN l’ouvre ; le téléphone les signale à leur heure seulement tant que **Recevoir une fois fermées** est
