@@ -147,4 +147,34 @@ export const cloudBackup: Record<string, string> = {
     "Cache",
   "Other: {name}":
     "Sonstiges: {name}",
+  "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.":
+    "Einiges, was ein Ort aufbewahrt, ließ sich nicht lesen, daher gilt nichts als Rest. Versuche es später noch einmal.",
+  "Nothing opens with that. Check it and type it again.":
+    "Damit öffnet sich nichts. Prüfe es und gib es erneut ein.",
+  "Opened, and it is read with the rest.":
+    "Geöffnet, und es wird mit dem Rest gelesen.",
+  "That one is read already.":
+    "Das wird schon gelesen.",
+  "Delete the leftovers?":
+    "Die Reste löschen?",
+  "{size} of photos and files that none of the places read here names (places read: {n}). A place you did not open here loses its photos and files for good: open every one first. Backups already made keep them.":
+    "{size} an Fotos und Dateien, die keiner der hier gelesenen Orte nennt (gelesene Orte: {n}). Ein Ort, den du hier nicht geöffnet hast, verliert seine Fotos und Dateien für immer: Öffne zuerst alle. Bereits erstellte Backups behalten sie.",
+  "{size} freed.":
+    "{size} freigegeben.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Fotos und Dateien, die nichts auf dem Telefon mehr nennt, etwa die eines Imports, der mittendrin abbrach, bleiben darauf und in jedem Backup. Nur ein mit seinem Schlüssel geöffneter Ort kann sagen, welche ihm gehören: Gib deshalb hier zuerst, einzeln, die PIN jedes deiner versteckten Chats und das Passwort jedes anderen Bereichs ein, den du hast. Dieser Bereich wird von selbst gelesen. Nichts wird gelöscht, bevor du siehst, wie viel es ist, und zustimmst; eine Datei, die am letzten Tag geschrieben wurde, wird nie erfasst.",
+  "PIN or password":
+    "PIN oder Passwort",
+  "Read with this space: {n}":
+    "Mit diesem Bereich gelesen: {n}",
+  "Leftovers: {size} in {n} chunks.":
+    "Reste: {size} in {n} Teilen.",
+  "No leftovers.":
+    "Keine Reste.",
+  "Find leftovers":
+    "Reste suchen",
+  "Delete them":
+    "Sie löschen",
+  "Leftovers":
+    "Reste",
 };

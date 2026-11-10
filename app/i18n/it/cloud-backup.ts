@@ -147,4 +147,34 @@ export const cloudBackup: Record<string, string> = {
     "Cache",
   "Other: {name}":
     "Altro: {name}",
+  "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.":
+    "Parte di ciò che un luogo conserva non si è potuta leggere, quindi nulla viene preso per un avanzo. Riprova più tardi.",
+  "Nothing opens with that. Check it and type it again.":
+    "Con questo non si apre nulla. Controllalo e scrivilo di nuovo.",
+  "Opened, and it is read with the rest.":
+    "Aperto, e viene letto con il resto.",
+  "That one is read already.":
+    "Questo è già letto.",
+  "Delete the leftovers?":
+    "Eliminare gli avanzi?",
+  "{size} of photos and files that none of the places read here names (places read: {n}). A place you did not open here loses its photos and files for good: open every one first. Backups already made keep them.":
+    "{size} di foto e file che nessuno dei luoghi letti qui nomina (luoghi letti: {n}). Un luogo che non hai aperto qui perde le sue foto e i suoi file per sempre: aprili tutti prima. I backup già fatti li conservano.",
+  "{size} freed.":
+    "{size} liberati.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Le foto e i file che più nulla sul telefono nomina, come quelli di un'importazione interrotta a metà, restano su di esso e in ogni backup. Solo un luogo aperto con la sua chiave può dire quali sono suoi: quindi scrivi prima qui, uno alla volta, il PIN di ciascuna delle tue chat nascoste e la password di ogni altro spazio che hai. Questo spazio viene letto da sé. Nulla viene eliminato prima che tu veda quanto è e dica di sì; un file scritto nell'ultimo giorno non viene mai preso.",
+  "PIN or password":
+    "PIN o password",
+  "Read with this space: {n}":
+    "Letti con questo spazio: {n}",
+  "Leftovers: {size} in {n} chunks.":
+    "Avanzi: {size} in {n} pezzi.",
+  "No leftovers.":
+    "Nessun avanzo.",
+  "Find leftovers":
+    "Cerca avanzi",
+  "Delete them":
+    "Eliminali",
+  "Leftovers":
+    "Avanzi",
 };

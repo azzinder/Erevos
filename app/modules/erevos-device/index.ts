@@ -111,6 +111,12 @@ type Device = {
   folderDelete?(uris: string[]): Promise<number>;
   /** How much room Erevos takes on the phone, by the kind its files' names say (AppSpace.kt), the largest first. Missing in a build before it. */
   appSpace?(): Promise<AppSpaceRow[] | null>;
+  /** The chunks of photos and files, by the file they belong to: its id, their bytes and number, and when the newest was written (ms). Missing in a build before it. */
+  chunkFiles?(): Promise<{ id: string; bytes: number; files: number; at: number }[] | null>;
+  /** The names of the other files in the app's own folder, where sealed values may be. */
+  storeNames?(): Promise<string[] | null>;
+  /** Deletes every chunk of these files: the bytes that went. */
+  deleteChunkFiles?(ids: string[]): Promise<number>;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

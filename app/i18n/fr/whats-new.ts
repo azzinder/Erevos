@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it once you say so. See [Backups](#backup).":
+    "**Restes** : les photos et fichiers que plus rien ne nomme, comme ceux d’une importation interrompue, peuvent maintenant être trouvés et supprimés, sous Sauvegardes → **Restes**. Tape le PIN de chacune de tes discussions cachées et le mot de passe de tout autre espace, touche **Chercher les restes**, et Erevos montre combien aucun d’eux ne nomme ; **Les supprimer** le supprime dès que tu confirmes. Voir [Sauvegardes](#backup).",
   "**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import).":
     "**Une importation interrompue ne laisse rien derrière elle** : quand Erevos s’arrête pendant qu’il apporte les photos et fichiers d’un export Telegram, WhatsApp ou Viber, par exemple quand Android le ferme ou que la batterie est vide, ce qu’il en avait déjà écrit est effacé au démarrage suivant. Avant, cela restait sur le téléphone, et dans chaque sauvegarde, pour toujours. Voir [Discussions importées](#import).",
   // 7.0.0-rc.7

@@ -147,4 +147,34 @@ export const cloudBackup: Record<string, string> = {
     "Keš",
   "Other: {name}":
     "Ostalo: {name}",
+  "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.":
+    "Dio onoga što neko mjesto čuva nije se mogao pročitati, pa se ništa ne smatra ostatkom. Pokušaj kasnije.",
+  "Nothing opens with that. Check it and type it again.":
+    "S tim se ništa ne otvara. Provjeri i upiši ponovo.",
+  "Opened, and it is read with the rest.":
+    "Otvoreno, i čita se s ostalim.",
+  "That one is read already.":
+    "To se već čita.",
+  "Delete the leftovers?":
+    "Obrisati ostatke?",
+  "{size} of photos and files that none of the places read here names (places read: {n}). A place you did not open here loses its photos and files for good: open every one first. Backups already made keep them.":
+    "{size} fotografija i datoteka koje ne navodi nijedno od ovdje pročitanih mjesta (pročitana mjesta: {n}). Mjesto koje ovdje nisi otvorio zauvijek gubi svoje fotografije i datoteke: prvo otvori sva. Već napravljene rezervne kopije ih čuvaju.",
+  "{size} freed.":
+    "Oslobođeno {size}.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Fotografije i datoteke koje više ništa na telefonu ne navodi, poput onih iz uvoza prekinutog na pola, ostaju na njemu i u svakoj rezervnoj kopiji. Samo mjesto otvoreno svojim ključem može reći koje su njegove: zato ovdje prvo upiši, jedan po jedan, PIN svakog svog skrivenog razgovora i lozinku svakog drugog prostora koji imaš. Ovaj prostor se čita sam. Ništa se ne briše prije nego vidiš koliko je i kažeš da; datoteka upisana u posljednjem danu nikad se ne uzima.",
+  "PIN or password":
+    "PIN ili lozinka",
+  "Read with this space: {n}":
+    "Čita se s ovim prostorom: {n}",
+  "Leftovers: {size} in {n} chunks.":
+    "Ostaci: {size} u {n} dijelova.",
+  "No leftovers.":
+    "Nema ostataka.",
+  "Find leftovers":
+    "Pronađi ostatke",
+  "Delete them":
+    "Obriši ih",
+  "Leftovers":
+    "Ostaci",
 };

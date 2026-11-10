@@ -148,4 +148,34 @@ export const cloudBackup: Record<string, string> = {
     "Caché",
   "Other: {name}":
     "Otros: {name}",
+  "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.":
+    "Parte de lo que guarda un lugar no se pudo leer, así que nada se toma por un resto. Inténtalo más tarde.",
+  "Nothing opens with that. Check it and type it again.":
+    "Con eso no se abre nada. Revísalo y escríbelo de nuevo.",
+  "Opened, and it is read with the rest.":
+    "Abierto, y se lee con lo demás.",
+  "That one is read already.":
+    "Ese ya se lee.",
+  "Delete the leftovers?":
+    "¿Borrar los restos?",
+  "{size} of photos and files that none of the places read here names (places read: {n}). A place you did not open here loses its photos and files for good: open every one first. Backups already made keep them.":
+    "{size} de fotos y archivos que ninguno de los lugares leídos aquí nombra (lugares leídos: {n}). Un lugar que no abriste aquí pierde sus fotos y archivos para siempre: abre todos primero. Las copias de seguridad ya hechas los conservan.",
+  "{size} freed.":
+    "{size} liberados.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Las fotos y archivos que ya nada en el teléfono nombra, como los de una importación que se cortó a medias, se quedan en él y en cada copia de seguridad. Solo un lugar abierto con su clave puede decir cuáles son suyos: por eso escribe aquí primero, uno a uno, el PIN de cada uno de tus chats ocultos y la contraseña de cualquier otro espacio que tengas. Este espacio se lee solo. No se borra nada antes de que veas cuánto es y digas que sí; un archivo escrito en el último día nunca se toma.",
+  "PIN or password":
+    "PIN o contraseña",
+  "Read with this space: {n}":
+    "Leídos con este espacio: {n}",
+  "Leftovers: {size} in {n} chunks.":
+    "Restos: {size} en {n} trozos.",
+  "No leftovers.":
+    "No hay restos.",
+  "Find leftovers":
+    "Buscar restos",
+  "Delete them":
+    "Borrarlos",
+  "Leftovers":
+    "Restos",
 };

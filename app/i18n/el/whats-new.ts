@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it once you say so. See [Backups](#backup).":
+    "**Υπολείμματα**: φωτογραφίες και αρχεία που δεν τα αναφέρει πια τίποτα, όπως όσα έμειναν από μια εισαγωγή που κόπηκε στη μέση, μπορούν τώρα να βρεθούν και να σβηστούν, στα Αντίγραφα ασφαλείας → **Υπολείμματα**. Γράψε το PIN καθεμιάς από τις κρυφές σου συνομιλίες και τον κωδικό κάθε άλλου χώρου, πάτα **Εύρεση υπολειμμάτων**, και το Erevos δείχνει πόσα δεν αναφέρει κανένα· η **Διαγραφή τους** τα σβήνει μόλις πεις ναι. Δες [Αντίγραφα ασφαλείας](#backup).",
   "**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import).":
     "**Μια εισαγωγή που κόβεται δεν αφήνει τίποτα πίσω**: όταν το Erevos σταματά ενώ φέρνει τις φωτογραφίες και τα αρχεία μιας εξαγωγής από Telegram, WhatsApp ή Viber, όπως όταν το κλείνει το Android ή τελειώνει η μπαταρία, ό,τι είχε γράψει από αυτά σβήνεται την επόμενη φορά που ξεκινά. Πριν, έμενε στο τηλέφωνο, και σε κάθε αντίγραφο ασφαλείας, για πάντα. Δες [Εισαγμένες συνομιλίες](#import).",
   // 7.0.0-rc.7

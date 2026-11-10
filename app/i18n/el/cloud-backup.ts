@@ -149,4 +149,34 @@ export const cloudBackup: Record<string, string> = {
     "Κρυφή μνήμη",
   "Other: {name}":
     "Άλλα: {name}",
+  "Some of what a place keeps could not be read, so nothing is taken for a leftover. Try again later.":
+    "Κάποια από όσα κρατά ένα μέρος δεν διαβάστηκαν, οπότε τίποτα δεν θεωρείται υπόλειμμα. Δοκίμασε ξανά αργότερα.",
+  "Nothing opens with that. Check it and type it again.":
+    "Δεν ανοίγει τίποτα με αυτό. Έλεγξέ το και γράψ' το ξανά.",
+  "Opened, and it is read with the rest.":
+    "Άνοιξε, και διαβάζεται μαζί με τα υπόλοιπα.",
+  "That one is read already.":
+    "Αυτό διαβάζεται ήδη.",
+  "Delete the leftovers?":
+    "Διαγραφή των υπολειμμάτων;",
+  "{size} of photos and files that none of the places read here names (places read: {n}). A place you did not open here loses its photos and files for good: open every one first. Backups already made keep them.":
+    "{size} φωτογραφιών και αρχείων που δεν τα αναφέρει κανένα από τα μέρη που διαβάστηκαν εδώ (μέρη: {n}). Ένα μέρος που δεν άνοιξες εδώ χάνει τις φωτογραφίες και τα αρχεία του για πάντα: άνοιξε πρώτα όλα. Τα αντίγραφα ασφαλείας που έχουν ήδη γίνει τα κρατούν.",
+  "{size} freed.":
+    "Ελευθερώθηκαν {size}.",
+  "Photos and files that nothing on the phone names any more, as those of an import that stopped in its middle, stay on it and in every backup. Only a place opened with its key can say which are its own: so first type here, one at a time, the PIN of each of your hidden chats and the password of any other space you have. This space is read by itself. Nothing is deleted before you see how much and say so; a file written in the last day is never taken.":
+    "Φωτογραφίες και αρχεία που δεν τα αναφέρει πια τίποτα στο τηλέφωνο, όπως όσα έμειναν από μια εισαγωγή που κόπηκε στη μέση, μένουν σε αυτό και σε κάθε αντίγραφο ασφαλείας. Μόνο ένα μέρος ανοιγμένο με το κλειδί του μπορεί να πει ποια είναι δικά του: γι' αυτό γράψε πρώτα εδώ, ένα τη φορά, το PIN καθεμιάς από τις κρυφές σου συνομιλίες και τον κωδικό κάθε άλλου χώρου που έχεις. Αυτός ο χώρος διαβάζεται μόνος του. Τίποτα δεν σβήνεται πριν δεις πόσα είναι και πεις ναι· ένα αρχείο που γράφτηκε την τελευταία μέρα δεν πιάνεται ποτέ.",
+  "PIN or password":
+    "PIN ή κωδικός",
+  "Read with this space: {n}":
+    "Διαβάζονται μαζί με αυτόν τον χώρο: {n}",
+  "Leftovers: {size} in {n} chunks.":
+    "Υπολείμματα: {size} σε {n} κομμάτια.",
+  "No leftovers.":
+    "Δεν υπάρχουν υπολείμματα.",
+  "Find leftovers":
+    "Εύρεση υπολειμμάτων",
+  "Delete them":
+    "Διαγραφή τους",
+  "Leftovers":
+    "Υπολείμματα",
 };

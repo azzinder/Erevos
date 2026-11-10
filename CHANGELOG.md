@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can
+  now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password
+  of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it
+  once you say so. A file written in the last day is never taken, and nothing leaves the phone.
+
 ### Under the hood
 
 - **An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a

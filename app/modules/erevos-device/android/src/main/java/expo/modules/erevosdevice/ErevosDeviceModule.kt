@@ -112,6 +112,23 @@ class ErevosDeviceModule : Module() {
       AppSpace.measure(app)
     }
 
+    // The chunks of photos and files by file, the names of the files the sealed values may be in,
+    // and deleting the files no place names (AppSpace.kt, lib/leftovers.ts).
+    AsyncFunction("chunkFiles") {
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      AppSpace.chunkFiles(app)
+    }
+
+    AsyncFunction("storeNames") {
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      AppSpace.storeNames(app)
+    }
+
+    AsyncFunction("deleteChunkFiles") { ids: List<String> ->
+      val app = context?.applicationContext ?: return@AsyncFunction 0.0
+      AppSpace.deleteChunkFiles(app, ids)
+    }
+
     // The phone's own clock that the owner cannot set (lock/tries.ts): how long since it started, in
     // ms, sleep included, and which start that is, so a wait for wrong passwords ends only when that
     // long has really passed, whatever the date and time are moved to. The start is Android's count

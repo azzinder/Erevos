@@ -74,4 +74,45 @@ object AppSpace {
       .sortedByDescending { it.value[0] }
       .map { (kind, row) -> mapOf("kind" to kind, "bytes" to row[0].toDouble(), "files" to row[1].toDouble()) }
   }
+
+  private val CHUNK = Regex("^erevos-file-([0-9a-f]{32})-([0-9]+)$")
+
+  // The kinds of files in the app's own folder that hold no sealed values of the spaces.
+  private val NOT_STORES = listOf("erevos-file-", "erevos-page-", "erevos-voice-", "erevos-avatar-", "erevos-backup-")
+
+  /**
+   * The files of photos and files, by the file they are chunks of (lib/leftovers.ts): its id, the
+   * bytes and number of its chunks, and when the newest of them was written, in milliseconds.
+   */
+  fun chunkFiles(context: Context): List<Map<String, Any>> {
+    val files = linkedMapOf<String, LongArray>()
+    for (file in context.filesDir.listFiles() ?: emptyArray()) {
+      val id = CHUNK.matchEntire(file.name)?.groupValues?.get(1) ?: continue
+      val row = files.getOrPut(id) { longArrayOf(0, 0, 0) }
+      row[0] += file.length()
+      row[1]++
+      row[2] = maxOf(row[2], file.lastModified())
+    }
+    return files.map { (id, row) -> mapOf("id" to id, "bytes" to row[0].toDouble(), "files" to row[1].toDouble(), "at" to row[2].toDouble()) }
+  }
+
+  /** The names of the other files in the app's own folder, where the spaces' sealed values may be. */
+  fun storeNames(context: Context): List<String> =
+    (context.filesDir.listFiles() ?: emptyArray())
+      .filter { it.isFile && NOT_STORES.none { kind -> it.name.startsWith(kind) } && !it.name.endsWith(".new") && !it.name.endsWith(".part") }
+      .map { it.name }
+
+  /** Deletes every chunk of the files `ids`: the bytes that went. */
+  fun deleteChunkFiles(context: Context, ids: List<String>): Double {
+    val gone = ids.filter { Regex("^[0-9a-f]{32}$").matches(it) }.toHashSet()
+    var bytes = 0L
+    for (file in context.filesDir.listFiles() ?: emptyArray()) {
+      val id = CHUNK.matchEntire(file.name)?.groupValues?.get(1) ?: continue
+      if (id !in gone) continue
+      val size = file.length()
+      if (file.delete()) bytes += size
+    }
+    return bytes.toDouble()
+  }
 }
+
