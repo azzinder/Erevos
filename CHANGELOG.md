@@ -20,6 +20,9 @@ On main, not released yet:
   in their details as "Calls themselves". In a private group, members who are not your contacts show as "Name · 1a2b".
   Each space and each place of hidden chats has its own name, in its settings, and a hidden place never takes the
   space's: the same name in two of them tells whoever sees both that they are yours.
+- **Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens
+  the Collection of that chat's place (the space's, or the hidden chats' own). Tap what to send, then **Send**, and it
+  goes in the chat. Before, **Photo** opened only the phone's own gallery.
 
 ### Under the hood
 
