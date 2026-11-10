@@ -30,6 +30,9 @@ On main, not released yet:
   at when a message comes, is read or is deleted, each message is unpacked once, and a page is no longer written out
   whole to measure it for every message put in it. With many chats, or after a large import, each change took
   longer the more there was.
+- **A large import notes its files in small parts**: the list of files an import is still writing, which the next
+  start deletes if it stopped, was written whole for every file, and for an export of thousands of files grew past
+  what one keystore entry holds well. It is kept in parts of 40 now, and only the last part is written.
 
 ## 7.0.0-rc.8 (2026-11-10)
 
