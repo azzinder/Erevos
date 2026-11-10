@@ -24,7 +24,6 @@ On main, not released yet:
   server misses one of its pieces for a moment, as when it closes for a few minutes at night (503) or is slow to take
   one (408). That piece goes again, after a few seconds and then up to a few minutes, and the backup carries on; before,
   it deleted all it had sent and started over the next time, and a large backup could fail day after day.
-
 - A text that is not proper UTF-8, such as the name in a damaged invite by SMS, is read without failing: bytes that
   start no character read as �, as the phone's own decoder reads them, instead of stopping the reading with an error.
 
