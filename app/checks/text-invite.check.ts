@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { fromHex, randomBytes, sha256Bytes, toHex } from '../lib/crypto';
+import { fromHex, randomBytes, sha256Bytes, toHex, utf8Decode } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { linkHref, linkParts } from '../lib/open-link';
 import { SmsLink } from '../lib/sms-link';
@@ -79,6 +79,18 @@ test('the name comes as one short line, without control or direction marks', () 
   assert.ok(invite.name.startsWith('Ma ria'));
   assert.ok(!/[\u0000-\u001f\u202e]/.test(invite.name));
   assert.ok(new TextEncoder().encode(invite.name).length <= 120);
+});
+
+test('a name that is not UTF-8 is read without failing', () => {
+  // F5 to FF start no UTF-8; read as four bytes they named a code point past U+10FFFF.
+  assert.equal(utf8Decode(Uint8Array.from([0x61, 0xff, 0xbf, 0xbf, 0xbf, 0x62])), 'a\ufffdb');
+  const bytes = Buffer.from(data(textInviteLink(made())), 'base64url');
+  for (let lead = 0xf5; lead <= 0xff; lead++) {
+    const copy = Uint8Array.from(bytes);
+    copy[126] = 120;
+    copy.fill(lead, 127, 135);
+    assert.doesNotThrow(() => parseTextInvite(`${TEXT_INVITE_PAGE}#${Buffer.from(copy).toString('base64url')}`));
+  }
 });
 
 test('what is not an invite by SMS is not taken for one', () => {

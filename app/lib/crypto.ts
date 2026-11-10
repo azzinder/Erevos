@@ -94,6 +94,9 @@ export function utf8Decode(bytes: Uint8Array): string {
     } else {
       c = ((b & 7) << 18) | ((bytes[i + 1] & 63) << 12) | ((bytes[i + 2] & 63) << 6) | (bytes[i + 3] & 63);
       i += 4;
+      // Past the last code point (bytes that are not UTF-8, as F5 to FF): U+FFFD, as TextDecoder reads them,
+      // instead of the RangeError String.fromCodePoint would throw.
+      if (c > 0x10ffff) c = 0xfffd;
     }
     chunk.push(c);
     if (chunk.length >= 4096) flush();
