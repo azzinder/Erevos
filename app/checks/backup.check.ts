@@ -69,6 +69,7 @@ import {
   runsText,
   sendToCloud,
   setCloudHttp,
+  setCloudRetry,
   setCloudTorWait,
   startCloudBackup,
   stopCloudBackup,
@@ -682,6 +683,53 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     await stopCloudBackup();
   }
   assert.equal(await loadCloudBackup(), null);
+});
+
+t('a part the server misses for a moment, busy (503), slow (408), locked (423) or out of reach, goes again, and only one it keeps missing ends the backup', async () => {
+  const there = new Map<string, Uint8Array>();
+  const server = davServer(there, () => 'app-pass');
+  // The PUTs the server misses next, each as it says: a status, or no answer at all.
+  let misses: (number | 'unreached')[] = [];
+  const asked: string[] = [];
+  setCloudHttp(async (method, url, headers, body) => {
+    asked.push(method);
+    if (method === 'PUT' && misses.length) {
+      const miss = misses.shift()!;
+      if (miss === 'unreached') throw new Error('timeout');
+      return { status: miss, bytes: new Uint8Array(0) };
+    }
+    return server(method, url, headers, body);
+  });
+  setCloudRetry([1, 1, 1, 1]);
+  try {
+    let cloud = await startCloudBackup('https://cloud.example/dav/Backups', 'me', 'app-pass');
+    await phone();
+    const key = await backupKey('backup-pass');
+    misses = [503, 'unreached', 408, 423];
+    cloud = await sendToCloud(cloud, toServer(key), 3, 1);
+    assert.equal(cloud.error, '');
+    assert.equal(cloud.last, 1);
+    assert.equal(asked.filter((method) => method === 'PUT').length, 2 + 4);
+    assert.equal(there.size, 2);
+    assert.deepEqual(cloud.unfinished, []);
+
+    // One the server keeps missing ends it, after the tries, and what went of it is deleted.
+    misses = [503, 503, 503, 503, 503];
+    const failed = await sendToCloud(cloud, toServer(key), 3, 2);
+    assert.match(failed.error, /503/);
+    assert.equal(failed.last, 1);
+    assert.equal(there.size, 2);
+
+    // A clear no is not asked again.
+    asked.length = 0;
+    misses = [401];
+    assert.match((await sendToCloud(cloud, toServer(key), 3, 3)).error, /did not take/);
+    assert.equal(asked.filter((method) => method === 'PUT').length, 1);
+  } finally {
+    setCloudRetry([2_000, 10_000, 30_000, 60_000, 120_000, 300_000]);
+    setCloudHttp(null);
+    await stopCloudBackup();
+  }
 });
 
 test('reads the backups out of WebDAV listings, whatever the prefix of their namespace', () => {

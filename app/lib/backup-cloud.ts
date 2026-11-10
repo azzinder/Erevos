@@ -190,6 +190,9 @@ export function cloudThroughTor(): boolean {
 
 export class CloudError extends Error {}
 
+// The server could not be reached for this request: it may be, a moment later.
+class Unreached extends CloudError {}
+
 /** The folder's address as Erevos uses it: https, ending in /. Throws CloudError with why not. */
 export function cloudFolder(address: string): string {
   // Without what follows ? or #, which a folder's address has no use for.
@@ -228,7 +231,7 @@ async function ask(method: HttpMethod, url: string, headers: Record<string, stri
     return await http(method, url, headers, body, most);
   } catch (error) {
     if (error instanceof HttpTooLargeError) throw new CloudError(tooLargeText(error.most));
-    throw new CloudError(
+    throw new Unreached(
       t('Could not reach the server. {error}', {
         error: error instanceof Error ? error.message : String(error),
       }),
@@ -317,10 +320,41 @@ export async function stopCloudBackup(): Promise<void> {
   await secureDelete(CLOUD);
 }
 
-// Sends `bytes` to the server as `name`. Throws CloudError with why not.
+// How long a PUT that failed for a while waits before it is tried again, each time, milliseconds.
+// A backup sends thousands of parts, and one the server misses for a moment, as while it is under
+// maintenance for a few minutes at night (503), or slow to take one (408), must not end it: the
+// backup would then delete all that went and send it all again the next time, and fail again.
+let retryMs = [2_000, 10_000, 30_000, 60_000, 120_000, 300_000];
+
+/** For the checks: how long a failed PUT waits before each new try. */
+export function setCloudRetry(ms: number[]): void {
+  retryMs = ms;
+}
+
+// Whether a status says the server may take it if asked again: busy, locked or slow, not a clear no.
+const passing = (status: number) => status === 408 || status === 423 || status === 425 || status === 429 || (status >= 500 && status !== 507);
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Sends `bytes` to the server as `name`, again after a while when the server is busy or cannot be
+// reached for a moment. Throws CloudError with why not.
 async function put(cloud: CloudBackup, name: string, bytes: Uint8Array): Promise<void> {
-  const said = cloudStatusText((await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes)).status);
-  if (said) throw new CloudError(said);
+  for (let attempt = 0; ; attempt++) {
+    let said: string | null;
+    let again: boolean;
+    try {
+      const { status } = await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes);
+      said = cloudStatusText(status);
+      again = passing(status);
+    } catch (error) {
+      if (!(error instanceof Unreached)) throw error;
+      said = error.message;
+      again = true;
+    }
+    if (!said) return;
+    if (!again || attempt >= retryMs.length) throw new CloudError(said);
+    await pause(retryMs[attempt]);
+  }
 }
 
 // Deletes `name` on the server: whether it is gone now, as one already gone is.

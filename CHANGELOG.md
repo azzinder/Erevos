@@ -16,6 +16,11 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Backups to a server get there again**: a backup sent to a server, such as a Nextcloud, no longer stops when the
+  server misses one of its pieces for a moment, as when it closes for a few minutes at night (503) or is slow to take
+  one (408). That piece goes again, after a few seconds and then up to a few minutes, and the backup carries on; before,
+  it deleted all it had sent and started over the next time, and a large backup could fail day after day.
+
 ## 7.0.0-rc.6 (2026-11-10)
 
 ### For you
