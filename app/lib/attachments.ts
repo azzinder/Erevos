@@ -247,12 +247,14 @@ export async function sendFile(
  * or file that waits (lib/waiting.ts), or one brought in with an imported chat, which may be
  * larger (`most`). If any of it cannot be kept, nothing is.
  */
-export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, progress?: Progress, most = MAX_FILE): Promise<FileRef> {
+export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, progress?: Progress, most = MAX_FILE, hold?: (id: string, count: number) => Promise<void>): Promise<FileRef> {
   const size = source.size;
   if (size > most) throw new FileTooLargeError();
   const { chunk, count } = chunkPlan(size);
   const key = randomBytes(32);
   const id = newFileId();
+  // Noted before its first chunk, when the caller wants it (lib/pending-chunks.ts).
+  await hold?.(id, count);
   try {
     for (let n = 0; n < count; n++) {
       const at = n * room(chunk);

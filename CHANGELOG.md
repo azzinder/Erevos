@@ -16,6 +16,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- **An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a
+  Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is
+  deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good.
+
 ## 7.0.0-rc.7 (2026-11-10)
 
 ### For you

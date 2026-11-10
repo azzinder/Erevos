@@ -87,6 +87,7 @@ import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from 
 import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { collectionLockAfter, collectionLocked } from '../lib/collection-play';
 import { collectionServerOpened, stopCollectionServers } from '../lib/collection-webdav';
+import { sweepPendingChunks } from '../lib/pending-chunks';
 import { PhoneView } from './phone';
 
 setupCrypto();
@@ -103,6 +104,7 @@ const BACKUP_AFTER_MS = 10_000;
 
 // Whether this start made sure every space has its hidden chats slot and entry (lock/hidden.ts).
 let hiddenPrepared = false;
+let pendingSwept = false;
 
 type Phase =
   | { kind: 'loading' }
@@ -217,6 +219,12 @@ export default function RootLayout() {
     if (!hiddenPrepared) {
       hiddenPrepared = true;
       void cryptoReady().then(() => prepareHidden()).catch(() => undefined);
+    }
+    // What an import was still writing when Erevos stopped last time (lib/pending-chunks.ts): once
+    // per start, before any import can begin.
+    if (!pendingSwept) {
+      pendingSwept = true;
+      void sweepPendingChunks().catch(() => undefined);
     }
     // On a computer the core loads beside the app, and nothing that needs it opens before it.
     await cryptoReady();

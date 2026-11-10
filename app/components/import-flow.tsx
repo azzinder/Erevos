@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FileTooLargeError, fileSize } from '../lib/attachments';
 import { canImport } from '../lib/core';
 import { plural, t } from '../lib/i18n';
-import { exportFiles, ImportStoppedError, keepExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, viberOwner, type OpenedExport } from '../lib/imports';
+import { dropExportFiles, exportFiles, ImportStoppedError, keepExportFiles, keptExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, viberOwner, type OpenedExport } from '../lib/imports';
 import { pickSource, TooLargeError, type PickedSource } from '../lib/pick-file';
 import type { Archive } from '../lock/archive';
 import { Button, Card, Chip, Field, Input, Row, Text } from './ui';
@@ -104,7 +104,15 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
         () => stop.current,
       );
       const named = withFiles.length === 1 ? [{ ...withFiles[0], title: title.trim() || withFiles[0].title }] : withFiles;
-      const ids = await archive.add(toArchived(named, me));
+      // No longer pending once they are about to be kept; deleted if they are not after all.
+      await keptExportFiles(named);
+      let ids: Awaited<ReturnType<typeof archive.add>>;
+      try {
+        ids = await archive.add(toArchived(named, me));
+      } catch (error) {
+        await dropExportFiles(named);
+        throw error;
+      }
       await onKept(ids);
       const count = named.reduce((sum, chat) => sum + chat.messages.length, 0);
       say(

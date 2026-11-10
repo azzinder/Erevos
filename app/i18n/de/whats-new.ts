@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import).":
+    "**Ein abgebrochener Import hinterlässt nichts**: Hält Erevos an, während es die Fotos und Dateien eines Telegram-, WhatsApp- oder Viber-Exports übernimmt, etwa weil Android es schließt oder der Akku leer ist, wird beim nächsten Start gelöscht, was es davon schon geschrieben hatte. Vorher blieb es für immer auf dem Telefon und in jedem Backup. Siehe [Importierte Chats](#import).",
   // 7.0.0-rc.7
   "**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup).":
     "**Was Platz belegt**: Backups haben jetzt **Was Platz belegt**, das unter Android zeigt, wie viel Platz Erevos auf dem Telefon belegt, nach Art: die Sammlung mit den Fotos und Dateien der Chats, Sprachnachrichten, Chatverlauf, Tor und Reste unvollendeter Schreibvorgänge. Jedes automatische Backup enthält all das, so sieht man, warum eines groß ist. Siehe [Backups](#backup).",

@@ -6,6 +6,7 @@ import type { ArchivedChat, ArchivedMessage, Source } from '../lock/archive';
 import { deleteChunks, mimeOf, type FileRef } from '../lock/attachment-files';
 
 import { FileTooLargeError, keepFile, type Source as FileSource } from './attachments';
+import { holdChunks, releaseChunks } from './pending-chunks';
 import * as core from './core';
 import { utf8Decode, utf8Encode } from './crypto';
 import { t, mark } from './i18n';
@@ -154,7 +155,9 @@ export type FilesKept = { done: number; count: number; percent: number };
  * Keeps the files the chats name that the export holds, each sealed in chunks of its own as a
  * message's file is, and gives each message its files (`kept`). One file the export names many
  * times is kept once. `progress` hears how far it is, chunk by chunk, and once `stopped` says so,
- * it stops. If any cannot be kept, or it stopped, none are.
+ * it stops. If any cannot be kept, or it stopped, none are. Each is noted as pending
+ * (lib/pending-chunks.ts) until the caller keeps the chats (keptExportFiles) or drops them
+ * (dropExportFiles), so an Erevos that stops in the middle deletes them at its next start.
  */
 export async function keepExportFiles(opened: OpenedExport, progress?: (kept: FilesKept) => void, stopped?: () => boolean): Promise<ImportedChat[]> {
   const { zip } = opened;
@@ -172,18 +175,39 @@ export async function keepExportFiles(opened: OpenedExport, progress?: (kept: Fi
         progress?.({ done: kept.size, count: wanted.length, percent: Math.floor(((before + part * entry.size) / total) * 100) });
       };
       told(0);
-      kept.set(path, await keepFile(await entrySource(zip, entry), { name, mime, kind: IMAGES.has(mime) ? 'photo' : 'file' }, (done, count) => told(done / count), MAX_IMPORTED_FILE));
+      kept.set(path, await keepFile(await entrySource(zip, entry), { name, mime, kind: IMAGES.has(mime) ? 'photo' : 'file' }, (done, count) => told(done / count), MAX_IMPORTED_FILE, holdChunks));
       before += entry.size;
       progress?.({ done: kept.size, count: wanted.length, percent: Math.floor((before / total) * 100) });
     }
   } catch (error) {
     for (const ref of kept.values()) await deleteChunks(ref.id, ref.count).catch(() => undefined);
+    // keepFile deleted the one it was keeping itself.
+    await releaseChunks([...kept.values()].map((ref) => ref.id)).catch(() => undefined);
     throw error;
   }
   return opened.chats.map((chat) => ({
     ...chat,
     messages: chat.messages.map((m) => ({ ...m, kept: m.attachments.map((_, i) => kept.get(m.paths[i] ?? '') ?? null) })),
   }));
+}
+
+// The files an import kept (keepExportFiles), each once.
+function refsOf(chats: ImportedChat[]): FileRef[] {
+  const refs = new Map<string, FileRef>();
+  for (const chat of chats) for (const m of chat.messages) for (const ref of m.kept ?? []) if (ref) refs.set(ref.id, ref);
+  return [...refs.values()];
+}
+
+/** The chats keepExportFiles gave are about to be kept: their files are no longer pending. Called
+ *  just before they are written, so a stop between the two leaves files no chat names, never a
+ *  chat whose files went. */
+export function keptExportFiles(chats: ImportedChat[]): Promise<void> {
+  return releaseChunks(refsOf(chats).map((ref) => ref.id));
+}
+
+/** The chats keepExportFiles gave were not kept after all: their files are deleted. */
+export async function dropExportFiles(chats: ImportedChat[]): Promise<void> {
+  for (const ref of refsOf(chats)) await deleteChunks(ref.id, ref.count).catch(() => undefined);
 }
 
 /** The file's own name from a picked file's address, which on Android may be a content URI. */

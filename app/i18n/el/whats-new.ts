@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import).":
+    "**Μια εισαγωγή που κόβεται δεν αφήνει τίποτα πίσω**: όταν το Erevos σταματά ενώ φέρνει τις φωτογραφίες και τα αρχεία μιας εξαγωγής από Telegram, WhatsApp ή Viber, όπως όταν το κλείνει το Android ή τελειώνει η μπαταρία, ό,τι είχε γράψει από αυτά σβήνεται την επόμενη φορά που ξεκινά. Πριν, έμενε στο τηλέφωνο, και σε κάθε αντίγραφο ασφαλείας, για πάντα. Δες [Εισαγμένες συνομιλίες](#import).",
   // 7.0.0-rc.7
   "**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup).":
     "**Τι πιάνει χώρο**: τα Αντίγραφα ασφαλείας έχουν τώρα **Τι πιάνει χώρο**, που δείχνει στο Android πόσο χώρο πιάνει το Erevos στο τηλέφωνο, ανά είδος: τη Συλλογή μαζί με τις φωτογραφίες και τα αρχεία των συνομιλιών, τα φωνητικά μηνύματα, το ιστορικό, τον Tor, και ό,τι άφησαν πίσω εγγραφές που δεν ολοκληρώθηκαν. Κάθε αυτόματο αντίγραφο τα περιέχει όλα, οπότε έτσι φαίνεται γιατί είναι μεγάλο. Δες [Αντίγραφα ασφαλείας](#backup).",
