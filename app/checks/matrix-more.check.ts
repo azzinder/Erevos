@@ -10,7 +10,9 @@
 // steps a homeserver asks for, and the account's devices, named and signed out. A room message
 // opens only under a key its sender gave, from a device of theirs (one not known yet opens it as
 // not verified until it is); a device that comes back with other keys gets no room key, and one
-// new in a list gets them; the room says each once.
+// new in a list gets them; the room says each once. Stickers, Element's and our own; who may do
+// what in a room (its power levels, and its makers in rooms of version 12), its members, name and
+// topic, admins made and unmade, someone taken out or barred; and people found in the directory.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -19,8 +21,11 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { createGroup, joinRoom, sendContent, sendStateEvent, sendInThread, sendLocation, sendPoll, sendPollEnd, sendText, sendVote, setMatrixHttp, signIn, sync, type MatrixState } from '../lib/matrix';
+import { call, createGroup, deleteMessage, inviteToRoom, joinRoom, sendContent, sendStateEvent, sendInThread, sendLocation, sendPoll, sendPollEnd, sendText, sendVote, setMatrixHttp, signIn, STICKER, stickerShown, sync, type MatrixState } from '../lib/matrix';
 import { authFor, isAccountName, listDevices, nameFree, register, renameDevice, signOutDevices } from '../lib/matrix-account';
+import { fetchFile, sendSticker } from '../lib/matrix-media';
+import { learnRule, removeMember, renameRoom, roomMembers, searchPeople, setAdmin, setTopic } from '../lib/matrix-members';
+import { adminContent, creatorsOf, levelOf, mayMakeAdmin, mayRedactOthers, mayRemove, maySetState, powerOfContent, roleOf } from '../lib/matrix-power';
 import { geoUri, placeOfGeo, pollOfContent, pollShown, previewContent, previewOfContent, threadOf } from '../lib/matrix-parts';
 import { findMessages, leaveAndForget, pinMessage, publicRooms, sortedRooms, spaceRooms, tagRoom } from '../lib/matrix-rooms';
 import { Homeserver, HS, PASSWORD, type Json } from './matrix-server';
@@ -318,4 +323,170 @@ test('a room message opens only under its sender’s key; a changed device gets 
   await sync(jon2, 0);
   assert.deepEqual(jon2.rooms[roomId].messages.filter((m) => !m.locked).map((m) => m.text).slice(-2), ['και στο νέο', 'ξανά']);
   assert.equal(shown(ivy).filter((m) => m.call && m.text === `🔑 New device of ${jon.userId}: your messages go to it too.`).length, 1);
+});
+
+test('a sticker is read as Element, FluffyChat and Element X send it, its picture as a photo’s', () => {
+  // Element's, from a sticker pack: in the clear, its words its name.
+  const plain = stickerShown({ body: 'Χαρούμενη γάτα', url: 'mxc://example.org/cat', info: { mimetype: 'image/png', w: 256, h: 200, size: 3 } });
+  assert.deepEqual(plain, { text: '', sticker: true, file: { kind: 'image', name: 'Χαρούμενη γάτα', mime: 'image/png', size: 3, w: 256, h: 200, url: 'mxc://example.org/cat' } });
+  // One with no words is named so; one with no picture shows only its words, and is not a sticker.
+  assert.equal(stickerShown({ url: 'mxc://example.org/x', info: { mimetype: 'image/webp' } }).file?.name, 'Sticker');
+  assert.deepEqual(stickerShown({ body: 'μόνο λόγια', url: 'https://example.org/x.png' }), { text: 'μόνο λόγια' });
+  // An answer, and one in a thread, as messages are.
+  assert.equal(stickerShown({ body: 'x', url: 'mxc://a/b', 'm.relates_to': { 'm.in_reply_to': { event_id: '$q' } } }).replyTo, '$q');
+  assert.equal(stickerShown({ body: 'x', url: 'mxc://a/b', 'm.relates_to': { rel_type: 'm.thread', event_id: '$root', is_falling_back: true, 'm.in_reply_to': { event_id: '$root' } } }).thread, '$root');
+});
+
+test('a sticker of ours goes encrypted, its picture too, and one from Element shows; one taken back is gone', { skip: !coreReady }, async () => {
+  const { alice, bob, roomId } = await group('alice-sticker', 'bob-sticker');
+  // Bob's Element sends one from its packs, in the clear (the room's encryption hides the event).
+  const theirs = await sendContent(bob, roomId, { body: 'Γεια', url: 'mxc://example.org/hello', info: { mimetype: 'image/png', w: 128, h: 128 } }, STICKER);
+  assert.equal(theirs.sticker, true);
+  // Alice's own, made from a photo: no one but the room reads it.
+  const picture = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 7, 7, 7, 7, 0xff, 0xd9]);
+  const ours = await sendSticker(alice, roomId, { bytes: picture, mime: 'image/jpeg', w: 512, h: 512 });
+  assert.equal(ours.sticker, true);
+  const wire = server.log.find((l) => l.event.event_id === ours.id)!.event;
+  assert.equal(wire.type, 'm.room.encrypted');
+  assert.ok(![...server.media.values()].some((bytes) => bytes.length === picture.length && bytes.every((b, i) => b === picture[i])), 'its picture went encrypted');
+  await sync(bob, 0);
+  await sync(alice, 0);
+  const got = bob.rooms[roomId].messages.find((m) => m.id === ours.id)!;
+  assert.deepEqual([got.sticker, got.text, got.file?.kind, got.file?.w, !!got.file?.encrypted], [true, '', 'image', 512, true]);
+  assert.deepEqual(await fetchFile(bob, got.file!), picture);
+  const elements = alice.rooms[roomId].messages.find((m) => m.id === theirs.id)!;
+  assert.deepEqual([elements.sticker, elements.file?.url, elements.file?.name], [true, 'mxc://example.org/hello', 'Γεια']);
+
+  // Taken back: nothing of it stays.
+  await deleteMessage(alice, roomId, ours.id);
+  await sync(bob, 0);
+  const gone = bob.rooms[roomId].messages.find((m) => m.id === ours.id)!;
+  assert.deepEqual([gone.deleted, gone.sticker, gone.file], [true, undefined, undefined]);
+
+  // In a room that is not encrypted, as it is.
+  const open = String((await call(alice, 'POST', '/createRoom', { preset: 'private_chat', name: 'Ανοιχτή' })).room_id);
+  await sync(alice, 0);
+  const clear = await sendSticker(alice, open, { bytes: picture, mime: 'image/jpeg' });
+  const sent = server.log.find((l) => l.event.event_id === clear.id)!.event;
+  assert.equal(sent.type, 'm.sticker');
+  assert.deepEqual(server.media.get(sent.content.url), picture);
+  // Named, its name its words, for apps that cannot show it; with none, it is called a sticker.
+  assert.equal(sent.content.body, 'Sticker');
+  const named = await sendSticker(alice, open, { bytes: picture, mime: 'image/png', w: 512, h: 512, label: ' Χαρούμενη γάτα ' });
+  const said = server.log.find((l) => l.event.event_id === named.id)!.event;
+  assert.deepEqual([said.content.body, said.content.info.w, said.content.info.mimetype], ['Χαρούμενη γάτα', 512, 'image/png']);
+  assert.equal(named.file?.name, 'Χαρούμενη γάτα');
+});
+
+test('who may do what in a room, as its power levels say', () => {
+  const power = powerOfContent({ users: { '@a:x': 100, '@m:x': '50', '@n:x': 'many', 'not an id': 100 }, events: { 'm.room.name': 75 } });
+  assert.deepEqual(power, { users: { '@a:x': 100, '@m:x': 50 }, usersDefault: 0, events: { 'm.room.name': 75 }, eventsDefault: 0, stateDefault: 50, kick: 50, ban: 50, redact: 50, invite: 0 });
+  const room = { power };
+  assert.deepEqual(['@a:x', '@m:x', '@u:x'].map((who) => roleOf(room, who)), ['admin', 'moderator', null]);
+  // A moderator sets the topic (50), not the name (75); takes out and bars those below, never those above.
+  assert.deepEqual([maySetState(room, '@m:x', 'm.room.topic'), maySetState(room, '@m:x', 'm.room.name'), maySetState(room, '@a:x', 'm.room.name')], [true, false, true]);
+  assert.deepEqual([mayRemove(room, '@m:x', '@u:x', 'kick'), mayRemove(room, '@m:x', '@a:x', 'ban'), mayRemove(room, '@u:x', '@m:x', 'kick'), mayRemove(room, '@a:x', '@a:x', 'kick')], [true, false, false, false]);
+  assert.deepEqual([mayRedactOthers(room, '@m:x'), mayRedactOthers(room, '@u:x')], [true, false]);
+  // An admin makes admins, and cannot take it from another admin; one with no say makes none.
+  assert.deepEqual([mayMakeAdmin(room, '@a:x', '@m:x', true), mayMakeAdmin(room, '@a:x', '@a:x', false), mayMakeAdmin(room, '@m:x', '@u:x', true)], [true, false, false]);
+  // Not known yet: nothing is offered.
+  assert.deepEqual([roleOf({}, '@a:x'), maySetState({}, '@a:x', 'm.room.name'), mayRemove({}, '@a:x', '@u:x', 'kick'), mayRedactOthers({}, '@a:x')], [null, false, false, false]);
+
+  // Version 12: those who made it stand above all, own it, and are never in its levels.
+  assert.equal(creatorsOf('@o:x', { room_version: '11' }), undefined);
+  const made = { power: powerOfContent({ users: { '@a:x': 100 } }), creators: creatorsOf('@o:x', { room_version: '12', additional_creators: ['@p:x', 'bad'] }) };
+  assert.deepEqual(made.creators, ['@o:x', '@p:x']);
+  assert.deepEqual([roleOf(made, '@o:x'), levelOf(made, '@p:x')], ['owner', Infinity]);
+  assert.deepEqual([mayMakeAdmin(made, '@o:x', '@a:x', false), mayMakeAdmin(made, '@a:x', '@o:x', false), mayRemove(made, '@a:x', '@p:x', 'ban')], [true, false, false]);
+  // Made an admin, or no more one, the rest of the levels as they were.
+  assert.deepEqual(adminContent({ users: { '@a:x': 100 }, notifications: { room: 50 } }, '@b:x', true), { users: { '@a:x': 100, '@b:x': 100 }, notifications: { room: 50 } });
+  assert.deepEqual(adminContent({ users: { '@a:x': 100, '@b:x': 100 } }, '@b:x', false), { users: { '@a:x': 100 } });
+});
+
+test('running a group: members and their roles, its name and topic, an admin made, someone taken out and barred', { skip: !coreReady }, async () => {
+  const { alice, bob, roomId } = await group('alice-run', 'bob-run');
+  const carol = await signIn(HS, 'carol-run', PASSWORD);
+  await inviteToRoom(alice, roomId, carol.userId);
+  await sync(carol, 0);
+  await joinRoom(carol, roomId);
+  await sync(bob, 0);
+
+  const members = await roomMembers(alice, roomId);
+  assert.deepEqual(members.map((m) => m.id).sort(), [alice.userId, bob.userId, carol.userId].sort());
+  const room = alice.rooms[roomId];
+  assert.deepEqual([roleOf(room, alice.userId), roleOf(room, bob.userId)], ['admin', null]);
+
+  // Bob may do none of it: he is not asked to, and the homeserver would refuse.
+  const bobs = bob.rooms[roomId];
+  assert.equal(bobs.power?.users[alice.userId], 100);
+  assert.equal(mayRemove(bobs, bob.userId, carol.userId, 'kick'), false);
+  await assert.rejects(removeMember(bob, roomId, carol.userId, false), /admins/);
+  await assert.rejects(renameRoom(bob, roomId, 'Δική μου'), /admins/);
+
+  await renameRoom(alice, roomId, 'Νέο όνομα');
+  await setTopic(alice, roomId, 'Για τον κήπο');
+  await sync(bob, 0);
+  assert.deepEqual([bobs.name, bobs.topic], ['Νέο όνομα', 'Για τον κήπο']);
+  await setTopic(alice, roomId, '');
+  await sync(bob, 0);
+  assert.equal(bobs.topic, undefined);
+
+  // Bob made an admin: he may now take back others' messages; Alice cannot take it back from him.
+  const said = await sendText(carol, roomId, 'κάτι κακό');
+  await setAdmin(alice, roomId, bob.userId, true);
+  await sync(bob, 0);
+  assert.deepEqual([roleOf(bobs, bob.userId), mayRedactOthers(bobs, bob.userId)], ['admin', true]);
+  assert.equal(mayMakeAdmin(room, alice.userId, bob.userId, false), false);
+  await assert.rejects(setAdmin(alice, roomId, bob.userId, false), /admins/);
+  await deleteMessage(bob, roomId, said.id);
+  await sync(alice, 0);
+  assert.equal(room.messages.find((m) => m.id === said.id)?.deleted, true);
+
+  // Carol taken out, then barred: she cannot come back.
+  await removeMember(alice, roomId, carol.userId, false);
+  assert.equal(room.members[carol.userId], undefined);
+  await inviteToRoom(alice, roomId, carol.userId);
+  await sync(carol, 0);
+  await joinRoom(carol, roomId);
+  await sync(alice, 0);
+  await removeMember(alice, roomId, carol.userId, true);
+  await assert.rejects(joinRoom(carol, roomId));
+  assert.ok(!(await roomMembers(alice, roomId)).some((m) => m.id === carol.userId));
+});
+
+test('in a room of version 12 its maker owns it, learned again for a room kept from before', { skip: !coreReady }, async () => {
+  server.roomVersion = '12';
+  try {
+    const { alice, bob, roomId } = await group('alice-v12', 'bob-v12');
+    const room = alice.rooms[roomId];
+    assert.deepEqual(room.creators, [alice.userId]);
+    assert.deepEqual([roleOf(room, alice.userId), room.power?.users[alice.userId]], ['owner', undefined]);
+    // The owner makes an admin, and takes it back.
+    await setAdmin(alice, roomId, bob.userId, true);
+    assert.equal(mayMakeAdmin(room, alice.userId, bob.userId, false), true);
+    await setAdmin(alice, roomId, bob.userId, false);
+    assert.equal(roleOf(room, bob.userId), null);
+    // Kept before Erevos kept who may do what: learned again, as the whole event, or by its ID.
+    for (const asEvent of [true, false]) {
+      server.stateAsEvent = asEvent;
+      delete room.creators;
+      delete room.power;
+      await learnRule(alice, roomId);
+      const learned = alice.rooms[roomId];
+      assert.deepEqual([learned.creators, learned.power?.ban], [[alice.userId], 50]);
+    }
+  } finally {
+    server.roomVersion = null;
+    server.stateAsEvent = true;
+  }
+});
+
+test('people are found in the homeserver’s directory by name or ID, but us', { skip: !coreReady }, async () => {
+  const dana = await signIn(HS, 'dana-dir', PASSWORD);
+  await signIn(HS, 'eli-dir', PASSWORD);
+  server.displayNames.set('@eli-dir:example.org', 'Ηλίας');
+  assert.deepEqual((await searchPeople(dana, 'ηλί')).people, [{ id: '@eli-dir:example.org', name: 'Ηλίας' }]);
+  assert.deepEqual((await searchPeople(dana, '-dir')).people.map((p) => p.id), ['@eli-dir:example.org']);
+  assert.deepEqual(await searchPeople(dana, '   '), { people: [], more: false });
+  assert.equal(server.asked.filter((a) => a === 'POST /user_directory/search').length, 2);
 });

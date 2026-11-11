@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { MatrixDevices } from '../components/matrix-devices';
-import { MatrixFind } from '../components/matrix-find';
+import { MatrixFind, MatrixNewChat } from '../components/matrix-find';
 import { lineOf } from '../components/matrix-message';
 import { MatrixRegister } from '../components/matrix-register';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
@@ -53,7 +53,8 @@ import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // The space's Matrix account (lib/matrix-store.ts, docs/matrix.md), under Settings → Relay and
-// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, a new
+// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID or
+// someone found by name in the Matrix server's user directory (components/matrix-find.tsx), a new
 // group with a name and the Matrix IDs asked to join it, joining a group by its address, on
 // Android whether it tells of messages while the space is closed (lib/matrix-push.ts), and signing
 // out. Each chat opens in app/matrix-chat.tsx. Every view says these chats are not anonymous.
@@ -71,7 +72,6 @@ export default function MatrixScreen() {
   const [server, setServer] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
-  const [newId, setNewId] = useState('');
   const [groupName, setGroupName] = useState('');
   const [groupPeople, setGroupPeople] = useState('');
   const [address, setAddress] = useState('');
@@ -236,32 +236,14 @@ export default function MatrixScreen() {
         <Button title={t('Check this device with another of yours')} kind="secondary" disabled={busy} onPress={() => void run(() => matrixVerify(state.userId))} />
       ) : null}
 
-      <SectionTitle title={t('New chat')} />
-      <Card>
-        <Row>
-          <Input
-            style={{ flex: 1 }}
-            value={newId}
-            onChangeText={setNewId}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="@name:matrix.org"
-            accessibilityLabel={t('Matrix ID')}
-          />
-          <Button
-            title={t('Start')}
-            compact
-            disabled={busy || !isMatrixId(newId)}
-            onPress={() =>
-              void run(async () => {
-                const room = await matrixStartChat(newId);
-                setNewId('');
-                router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } });
-              })
-            }
-          />
-        </Row>
-      </Card>
+      <MatrixNewChat
+        busy={busy}
+        run={run}
+        start={async (userId) => {
+          const room = await matrixStartChat(userId);
+          router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } });
+        }}
+      />
 
       <SectionTitle title={t('New group')} />
       <Card>
