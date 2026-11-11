@@ -106,6 +106,12 @@ class ErevosDeviceModule : Module() {
       Folders.delete(app, uris)
     }
 
+    // Each file's size and SHA-256, read through off the screen's thread: a backup's parts, checked (Folders.kt).
+    AsyncFunction("folderSha256") { uris: List<String> ->
+      val app = context?.applicationContext ?: throw IllegalStateException("No app context.")
+      Folders.sha256(app, uris)
+    }
+
     // How much room Erevos takes, by the kind of its files (AppSpace.kt).
     AsyncFunction("appSpace") {
       val app = context?.applicationContext ?: return@AsyncFunction null

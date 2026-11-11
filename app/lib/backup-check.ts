@@ -99,7 +99,22 @@ export async function saveCheck(
 }
 
 /** A place's backup files: their sizes (-1 where not said) and each one's bytes, read as asked. */
-export type BackupFiles = { sizes: Map<string, number>; read: PartReader };
+export type BackupFiles = {
+  sizes: Map<string, number>;
+  read: PartReader;
+  /** Each file's size and SHA-256 (hex), read through where it is, without bringing it here: null
+   *  for one that cannot be read. Where there is no such way, each part is read here instead. */
+  sha?: (names: string[]) => Promise<({ size: number; sha: string } | null)[]>;
+};
+
+/** How a check goes: told how many parts are checked, of how many, and asked whether to stop. */
+export type CheckProgress = {
+  progress?: (done: number, all: number) => void;
+  stopped?: () => boolean;
+};
+
+// How many parts' SHA-256 are asked for at once, between looks at Cancel and the progress.
+const SHA_BATCH = 8;
 
 const errorText = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -115,15 +130,17 @@ function pick<T>(items: T[], count: number, random: () => number): T[] {
 
 /**
  * Checks the backup `name` among `files`: read back and opened with `key`, every part it names
- * there, of its size, and `sample` of them read whole and opened.
+ * there, of its size, and `sample` of them read whole and opened. With "all", every part there is
+ * checked: by its SHA-256 where the backup says it and the place can tell it, else read and opened.
  */
 export async function checkBackup(
   files: BackupFiles,
   name: string,
   key: Pick<BackupKey, "key" | "salt">,
-  sample: number,
+  sample: number | "all",
   now = Date.now(),
   random: () => number = Math.random,
+  { progress, stopped }: CheckProgress = {},
 ): Promise<Checked> {
   const checked: Checked = {
     at: now,
@@ -169,7 +186,47 @@ export async function checkBackup(
     else if (size >= 0 && record && size !== record.size) checked.damaged++;
     else there.push(n);
   });
-  for (const n of pick(there, sample, random)) {
+  const chosen = sample === "all" ? there : pick(there, sample, random);
+  let done = 0;
+  const stop = () =>
+    stopped?.()
+      ? {
+          ...checked,
+          error: t("Stopped after {done} of {count} parts.", {
+            done,
+            count: chosen.length,
+          }),
+        }
+      : null;
+  progress?.(0, chosen.length);
+  const sha = files.sha;
+  const bySha =
+    sample === "all" && sha ? chosen.filter((n) => parts.made?.[n]) : [];
+  for (let i = 0; i < bySha.length; i += SHA_BATCH) {
+    const stoppedHere = stop();
+    if (stoppedHere) return stoppedHere;
+    const batch = bySha.slice(i, i + SHA_BATCH);
+    let sums;
+    try {
+      sums = await sha!(batch.map((n) => parts.names[n]));
+    } catch (error) {
+      return { ...checked, error: errorText(error) };
+    }
+    batch.forEach((n, j) => {
+      const sum = sums[j];
+      const record = parts.made![n];
+      if (!sum) checked.missing++;
+      else if (sum.size !== record.size || sum.sha !== record.sha)
+        checked.damaged++;
+      else checked.read++;
+    });
+    done += batch.length;
+    progress?.(done, chosen.length);
+  }
+  const summed = new Set(bySha);
+  for (const n of chosen.filter((n) => !summed.has(n))) {
+    const stoppedHere = stop();
+    if (stoppedHere) return stoppedHere;
     try {
       const part = await files.read(parts.names[n]);
       if (!part) checked.missing++;
@@ -181,6 +238,7 @@ export async function checkBackup(
       if (error instanceof DamagedPartError) checked.damaged++;
       else return { ...checked, error: errorText(error) };
     }
+    progress?.(++done, chosen.length);
   }
   return checked;
 }

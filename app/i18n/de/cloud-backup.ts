@@ -205,4 +205,12 @@ export const cloudBackup: Record<string, string> = {
     "{place}, {when}: vollständig. Es öffnet sich, alle {parts} Teile sind da, und die {read} ganz gelesenen öffnen sich auch.",
   "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
     "{place}, {when}: Das Backup und alle {parts} Teile sind da, jeder in seiner Größe.",
+  "Stopped after {done} of {count} parts.":
+    "Nach {done} von {count} Teilen angehalten.",
+  "Checking the parts: {done} of {count}":
+    "Teile werden geprüft: {done} von {count}",
+  "Full check of the folder":
+    "Ordner vollständig prüfen",
+  "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.":
+    "Die vollständige Prüfung liest jeden Teil im Ordner ganz und vergleicht ihn mit dem SHA-256, den das Backup für ihn festgehalten hat. Bei vielen GB dauert sie einige Minuten, und nichts verlässt das Telefon.",
 };

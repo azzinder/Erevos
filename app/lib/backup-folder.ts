@@ -8,7 +8,7 @@ import { cloudFiles, loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBa
 import { phoneCallsForBackup } from './backup-calls';
 import { folderPlace, loadLedger, saveLedger, serverPlace, type Book, type Ledger } from './backup-ledger';
 import { phoneSettingsForBackup } from './backup-native';
-import { AUTO_SAMPLE, checkBackup, checkListed, checkServer, HAND_SAMPLE, loadChecks, newestIn, saveCheck, type Checks } from './backup-check';
+import { AUTO_SAMPLE, checkBackup, checkListed, checkServer, HAND_SAMPLE, loadChecks, newestIn, saveCheck, type CheckProgress, type Checks } from './backup-check';
 import { backupFilesIn, deleteBackupFiles, listBackupFiles, writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
 import { t } from './i18n';
@@ -251,12 +251,12 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
 
 // Checks the newest backup in the folder (lib/backup-check.ts), reading `sample` of its parts
 // whole, and keeps what it found. A check that fails says so there, not as the backup's error.
-async function checkFolder(folder: string, key: BackupKey, book: Book | undefined, sample: number, now: number): Promise<void> {
+async function checkFolder(folder: string, key: BackupKey, book: Book | undefined, sample: number | 'all', now: number, how: CheckProgress = {}): Promise<void> {
   try {
     const files = await backupFilesIn(folder);
     if (!files) return;
     const name = newestIn(files.sizes.keys(), book);
-    await saveCheck('folder', name ? await checkBackup(files, name, key, sample, now) : { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: t('There is no backup there.') });
+    await saveCheck('folder', name ? await checkBackup(files, name, key, sample, now, Math.random, how) : { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: t('There is no backup there.') });
   } catch (error) {
     await saveCheck('folder', { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) });
   }
@@ -279,6 +279,22 @@ export async function checkBackupsNow(now = Date.now()): Promise<Checks> {
       const checked = await checkServer(cloud, key, HAND_SAMPLE, now);
       if (checked) await saveCheck('server', checked);
     }
+  }
+  return loadChecks();
+}
+
+/**
+ * Checks every part of the newest automatic backup in the folder, each by its SHA-256, read through
+ * on the phone (lib/backup-check.ts): told how many are done, and stopped when `how` says so.
+ * Returns what was found.
+ */
+export async function checkFolderFully(how: CheckProgress = {}, now = Date.now()): Promise<Checks> {
+  if (running) await running.catch(() => undefined);
+  const auto = await loadAutoBackup();
+  if (auto?.hard && auto.folder) {
+    const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...auto.hard, salt: fromBase64(auto.hard.salt) } };
+    const ledger = await loadLedger(key.key);
+    await checkFolder(auto.folder, key, ledger.get(folderPlace(auto.folder)), 'all', now, how);
   }
   return loadChecks();
 }

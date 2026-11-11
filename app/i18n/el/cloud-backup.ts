@@ -207,4 +207,12 @@ export const cloudBackup: Record<string, string> = {
     "{place}, {when}: ακέραιο. Ανοίγει, και τα {parts} κομμάτια είναι εκεί, και τα {read} που διαβάστηκαν ολόκληρα ανοίγουν κι αυτά.",
   "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
     "{place}, {when}: το αντίγραφο και όλα τα {parts} κομμάτια είναι εκεί, το καθένα στο μέγεθός του.",
+  "Stopped after {done} of {count} parts.":
+    "Σταμάτησε μετά από {done} από {count} κομμάτια.",
+  "Checking the parts: {done} of {count}":
+    "Έλεγχος κομματιών: {done} από {count}",
+  "Full check of the folder":
+    "Πλήρης έλεγχος φακέλου",
+  "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.":
+    "Ο πλήρης έλεγχος διαβάζει ολόκληρο κάθε κομμάτι στον φάκελο και το συγκρίνει με το SHA-256 που κράτησε γι' αυτό το αντίγραφο. Για πολλά GB θέλει λίγα λεπτά, και τίποτα δεν φεύγει από το κινητό.",
 };

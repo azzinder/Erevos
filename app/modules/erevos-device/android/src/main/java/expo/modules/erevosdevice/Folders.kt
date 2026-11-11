@@ -8,6 +8,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
+import java.security.MessageDigest
 
 // The folder automatic backups go to, one the owner picked with Android's folder picker
 // (lib/backup-place.ts): its files listed with their names and sizes in one look, a file written
@@ -67,6 +68,30 @@ object Folders {
   /** Deletes the files of these uris; says how many went. One that does not go is left. */
   fun delete(context: Context, uris: List<String>): Int =
     uris.count { uri -> runCatching { DocumentsContract.deleteDocument(context.contentResolver, Uri.parse(uri)) }.getOrDefault(false) }
+
+  /**
+   * Each file's size and SHA-256 (hex), read through in pieces, so no file is in memory whole: to
+   * check a backup's parts against what the backup says of them (lib/backup-check.ts). Size -1 and
+   * no SHA-256 for one that cannot be read.
+   */
+  fun sha256(context: Context, uris: List<String>): List<Map<String, Any>> =
+    uris.map { uri ->
+      runCatching {
+        val digest = MessageDigest.getInstance("SHA-256")
+        var size = 0L
+        val input = context.contentResolver.openInputStream(Uri.parse(uri)) ?: throw IllegalStateException("Not readable.")
+        input.use {
+          val buffer = ByteArray(1 shl 16)
+          while (true) {
+            val n = it.read(buffer)
+            if (n < 0) break
+            digest.update(buffer, 0, n)
+            size += n
+          }
+        }
+        mapOf("size" to size.toDouble(), "sha" to digest.digest().joinToString("") { b -> "%02x".format(b) })
+      }.getOrElse { mapOf("size" to -1.0, "sha" to "") }
+    }
 
   private fun nameOf(context: Context, document: Uri): String? =
     runCatching {

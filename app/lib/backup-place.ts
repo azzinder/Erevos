@@ -6,6 +6,7 @@ import { Directory, File } from 'expo-file-system';
 
 import { backupFileName, backupFileOf, backupStem, freeStem, partFileName, staleBackups, type PartReader, type PartSink } from '../lock/backup';
 import { device } from '../modules/erevos-device';
+import type { BackupFiles } from './backup-check';
 import { t } from './i18n';
 import { whilePicking } from './picking';
 
@@ -146,9 +147,10 @@ export async function listBackupFiles(folder: string): Promise<Map<string, numbe
 
 /** The backups' files in a folder, with their sizes (-1 where the folder does not say them), and
  *  each one's bytes, read as asked: to check that a backup there is whole (lib/backup-check.ts). */
-export async function backupFilesIn(folder: string): Promise<{ sizes: Map<string, number>; read: PartReader } | null> {
+export async function backupFilesIn(folder: string): Promise<BackupFiles | null> {
   const entries = (await entriesOf(folder, true)).filter((entry) => backupFileOf(entry.name) !== null);
   const byName = new Map(entries.map((entry) => [entry.name, entry]));
+  const folderSha256 = device?.folderSha256;
   return {
     sizes: new Map(entries.map((entry) => [entry.name, entry.size])),
     read: async (name) => {
@@ -156,6 +158,21 @@ export async function backupFilesIn(folder: string): Promise<{ sizes: Map<string
       const file = entry?.file ?? (entry?.uri ? new File(entry.uri) : null);
       return file?.exists ? file.bytes() : null;
     },
+    // Read through on Android's side (Folders.kt), off the screen's thread, a part at a time in
+    // pieces: the many GB of a backup never come here.
+    sha:
+      folderSha256 && entries.every((entry) => entry.uri)
+        ? async (names) => {
+            const uris = names.map((name) => byName.get(name)?.uri ?? '');
+            const sums = await folderSha256(uris.filter(Boolean));
+            let at = 0;
+            return uris.map((uri) => {
+              if (!uri) return null;
+              const sum = sums[at++];
+              return sum && sum.size >= 0 ? sum : null;
+            });
+          }
+        : undefined,
   };
 }
 

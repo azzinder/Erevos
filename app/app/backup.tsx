@@ -57,6 +57,7 @@ import {
   pickParts,
   PICKS_PART_FILES,
   checkBackupsNow,
+  checkFolderFully,
   runAutoBackup,
   startAutoBackup,
   stopAutoBackup,
@@ -216,6 +217,8 @@ export default function Backups() {
   const [cloud, setCloud] = useState<CloudBackup | null>(null);
   const [checks, setChecks] = useState<Checks>({ folder: null, server: null });
   const [checking, setChecking] = useState(false);
+  const [fully, setFully] = useState("");
+  const stopFull = useRef(false);
   const [form, setForm] = useState<"add" | "restore" | null>(null);
   const adding = form === "add";
   // The backups on a server to restore from, newest first, once listed.
@@ -320,6 +323,27 @@ export default function Backups() {
     } catch (error) {
       say(errorText(error), true);
     } finally {
+      setChecking(false);
+    }
+  }
+
+  async function checkFully() {
+    say("");
+    stopFull.current = false;
+    setChecking(true);
+    setFully(t("Checking the parts: {done} of {count}", { done: 0, count: 0 }));
+    try {
+      setChecks(
+        await checkFolderFully({
+          progress: (done, count) =>
+            setFully(t("Checking the parts: {done} of {count}", { done, count })),
+          stopped: () => stopFull.current,
+        }),
+      );
+    } catch (error) {
+      say(errorText(error), true);
+    } finally {
+      setFully("");
       setChecking(false);
     }
   }
@@ -1284,7 +1308,35 @@ export default function Backups() {
                 onPress={() => void checkNow()}
                 disabled={busy || checking}
               />
+              {auto.folder ? (
+                <Button
+                  title={t("Full check of the folder")}
+                  kind="secondary"
+                  compact
+                  onPress={() => void checkFully()}
+                  disabled={busy || checking}
+                />
+              ) : null}
+              {fully ? (
+                <Button
+                  title={t("Cancel")}
+                  kind="secondary"
+                  compact
+                  onPress={() => (stopFull.current = true)}
+                />
+              ) : null}
             </Row>
+            {fully ? (
+              <Text variant="caption" style={hint}>
+                {fully}
+              </Text>
+            ) : (
+              <Text variant="caption" tone="muted" style={hint}>
+                {t(
+                  "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.",
+                )}
+              </Text>
+            )}
           </Card>
         </>
       ) : null}

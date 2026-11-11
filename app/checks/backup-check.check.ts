@@ -22,6 +22,7 @@ import {
   setGcm,
   setHardCost,
   setPbkdf2,
+  sha256Bytes,
   toHex,
   webCryptoPbkdf2,
 } from "../lib/crypto";
@@ -156,4 +157,30 @@ test("the newest backup is the newest this phone made there, else the newest the
     "erevos-backup-2026-11-10-0700.erevos",
   );
   assert.equal(newestIn([], undefined), null);
+});
+
+// The place's own SHA-256 of each file, as Android's side tells it (Folders.kt).
+const withSha = (place: Map<string, Uint8Array>): BackupFiles => ({
+  ...filesOf(place),
+  sha: async (names) => names.map((name) => (place.has(name) ? { size: place.get(name)!.length, sha: toHex(sha256Bytes(place.get(name)!)) } : null)),
+});
+
+test('the full check compares every part with its SHA-256, and can be stopped', async () => {
+  const { key, place } = await backedUp();
+  const told: number[] = [];
+  const whole = await checkBackup(withSha(place), NAME, key, 'all', 1, Math.random, { progress: (done) => told.push(done) });
+  assert.ok(checkedWhole(whole));
+  assert.equal(whole.read, 3);
+  assert.equal(told[told.length - 1], 3);
+  const parts = [...place.keys()].filter((name) => name !== NAME);
+  const changed = place.get(parts[1])!.slice();
+  changed[100] ^= 1;
+  place.set(parts[1], changed);
+  const found = await checkBackup(withSha(place), NAME, key, 'all');
+  assert.deepEqual([found.read, found.damaged], [2, 1]);
+  // Without the place's SHA-256, each part is read here and opened.
+  const read = await checkBackup(filesOf(place), NAME, key, 'all');
+  assert.deepEqual([read.read, read.damaged], [2, 1]);
+  const stopped = await checkBackup(withSha(place), NAME, key, 'all', 1, Math.random, { stopped: () => true });
+  assert.match(stopped.error, /0 of 3/);
 });

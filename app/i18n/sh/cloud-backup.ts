@@ -205,4 +205,12 @@ export const cloudBackup: Record<string, string> = {
     "{place}, {when}: cijela. Otvara se, svih {parts} dijelova je tu, a i {read} pročitanih u cijelosti se otvaraju.",
   "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
     "{place}, {when}: kopija i svih {parts} dijelova su tu, svaki svoje veličine.",
+  "Stopped after {done} of {count} parts.":
+    "Zaustavljeno nakon {done} od {count} dijelova.",
+  "Checking the parts: {done} of {count}":
+    "Provjera dijelova: {done} od {count}",
+  "Full check of the folder":
+    "Potpuna provjera mape",
+  "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.":
+    "Potpuna provjera čita cijeli svaki dio u mapi i uspoređuje ga sa SHA-256 koji je kopija za njega zapisala. Za mnogo GB traje nekoliko minuta, i ništa ne napušta telefon.",
 };

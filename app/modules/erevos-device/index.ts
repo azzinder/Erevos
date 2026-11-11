@@ -115,6 +115,8 @@ type Device = {
   folderWrite?(folder: string, name: string, bytes: Uint8Array): Promise<{ name: string; uri: string }>;
   /** Deletes the files of these uris; how many went. */
   folderDelete?(uris: string[]): Promise<number>;
+  /** Each file's size and SHA-256 (hex), read through, by its uri (Folders.kt): size -1 and sha '' for one that cannot be read. Missing in a build before it. */
+  folderSha256?(uris: string[]): Promise<{ size: number; sha: string }[]>;
   /** How much room Erevos takes on the phone, by the kind its files' names say (AppSpace.kt), the largest first. Missing in a build before it. */
   appSpace?(): Promise<AppSpaceRow[] | null>;
   /** The chunks of photos and files, by the file they belong to: its id, their bytes and number, and when the newest was written (ms). Missing in a build before it. */
