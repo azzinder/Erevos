@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Share an imported chat with the other person**: a Telegram, WhatsApp or Viber chat that goes on with an Erevos contact can now go to them too, from the chat's **Details** or **Settings** → **Data and devices** → **Imported chats**: every message, photo, video, voice message and file, end-to-end encrypted, to them alone. Their Erevos keeps it at once and shows it ahead of the new messages, the sides swapped. See [Imported chats](#import)."),
     mark("**Stickers on other networks**: a built-in sticker sent on Matrix, XMPP, Nostr or by MMS arrives as its picture, made on your device, its words in your language. See [Chat through a relay](#relay)."),
     mark("**Voice messages in Opus**: on Android 10 and later, in the web app and on a computer, voice messages are recorded as Ogg/Opus, as Telegram and Element send them: as clear as before at half the size, about 240 KB a minute. Every Erevos plays them, Safari on an older iPhone too. See [Chat through a relay](#relay)."),
     mark("**Mark all as read**: the ⋮ menu of the chats has it for the part of the list you are on, all messages, SMS, Erevos, Matrix, XMPP or Nostr, and the Matrix, XMPP and Nostr screens have it for their chats. It asks first, then reads each chat as opening it would: those who wrote are told as then. See [Getting started](#start)."),

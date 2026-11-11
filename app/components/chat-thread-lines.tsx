@@ -23,6 +23,7 @@ import { smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
 import { SmsExtras } from './sms-parts';
 import { messageLine } from '../lib/message-line';
 import { mediaText } from '../lib/imports';
+import { sharedLine } from '../lib/chat-share';
 import { isImportedSticker, isSound, isVoice } from '../lib/chat-media';
 import { type LinkedMessage } from '../lock/archive';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -226,6 +227,34 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
   // A sticker, built in or made from a photo, shows on its own, with no bubble.
   const stuck = !!message.sticker || !!message.file?.sticker;
+  // Imported chats shared (lib/chat-share.ts): a line where they went or came, and how far they
+  // came while they do. Their messages show ahead of the new ones, as what was imported does.
+  if (message.file?.history) {
+    const status = message.mine ? null : comingText(message.file, taking);
+    return (
+      <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
+        {newDay && message.at ? (
+          <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+            {dayLabel(message.at)}
+          </Text>
+        ) : null}
+        <Pressable
+          onPress={() => (choosing ? acts.choose(message) : acts.open(message))}
+          onLongPress={() => {
+            press();
+            if (choosing) acts.choose(message);
+            else acts.menu(message);
+          }}
+          accessibilityHint={t('Hold for more')}
+          style={[chosen ? chosenStyle(colors) : undefined, lit && styles.lit]}
+        >
+          <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+            {[sharedLine(message.file.history, message.mine, name), status].filter(Boolean).join('  ·  ')}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
   return (
     <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
       {newDay && message.at ? (

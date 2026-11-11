@@ -14,15 +14,30 @@ import { deleteFile, listFiles, readBytes, writeBytes } from '../lib/files';
 // A photo can be a sticker made from a photo (lib/own-stickers.ts): small, and marked so in what it
 // says of itself, which travels with it. An Erevos from before reads a file's fields one by one and
 // leaves the mark out, so to it the sticker is a photo like any other. So is a photo hidden till
-// tapped (`hidden`), which an Erevos from before shows as it is.
+// tapped (`hidden`), which an Erevos from before shows as it is. A file can be the imported chats
+// a contact shared (`history`, lib/chat-share.ts): to an Erevos from before, a .json file like any other.
 
 export type FileKind = 'photo' | 'file';
 
+/** Where the chats a shared file holds were imported from, and how many messages they have together (lib/chat-share.ts). */
+export type SharedMark = { from: ('telegram' | 'whatsapp' | 'viber')[]; count: number };
+
+const SHARED_FROM: SharedMark['from'] = ['telegram', 'whatsapp', 'viber'];
+
+/** The SharedMark a file says it has, or null when it says none that reads. */
+export function readSharedMark(value: unknown): SharedMark | null {
+  const v = value as { from?: unknown; count?: unknown } | null;
+  if (!v || typeof v !== 'object' || !Array.isArray(v.from) || !Number.isSafeInteger(v.count) || (v.count as number) < 0) return null;
+  const from = SHARED_FROM.filter((source) => (v.from as unknown[]).includes(source));
+  return from.length > 0 ? { from, count: v.count as number } : null;
+}
+
 /**
  * What a file is: its name, type and size, for a photo how wide and high it is, whether it is a
- * sticker, and whether it is hidden till tapped (`hidden`: blurred in the chat, whole once opened).
+ * sticker, whether it is hidden till tapped (`hidden`: blurred in the chat, whole once opened), and
+ * for a file, whether it is imported chats a contact shared (`history`).
  */
-export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true; hidden?: true };
+export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true; hidden?: true; history?: SharedMark };
 
 /** The largest photo that goes as a sticker. */
 export const MAX_STICKER = 100 * 1000;
@@ -120,7 +135,8 @@ export function isFileMeta(value: unknown): value is FileMeta {
     (v.w === undefined || whole(v.w, 100_000)) &&
     (v.h === undefined || whole(v.h, 100_000)) &&
     (v.sticker === undefined || (v.sticker === true && fitsSticker(v as FileMeta))) &&
-    (v.hidden === undefined || (v.hidden === true && v.kind === 'photo' && !v.sticker))
+    (v.hidden === undefined || (v.hidden === true && v.kind === 'photo' && !v.sticker)) &&
+    (v.history === undefined || (v.kind === 'file' && readSharedMark(v.history) !== null))
   );
 }
 

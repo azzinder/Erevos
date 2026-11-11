@@ -76,7 +76,8 @@ export function takeForward(to: string, now = Date.now()): Forwardable | null {
  * here, not still on the relay. A call's line is the chat's own, not a message: the chat leaves it out.
  */
 export function canForward(message: Forwardable): boolean {
-  if (message.file) return !message.file.from;
+  // Chats a contact shared go to no one else (lib/chat-share.ts).
+  if (message.file) return !message.file.from && !message.file.history;
   return !!message.voice || !!message.text;
 }
 

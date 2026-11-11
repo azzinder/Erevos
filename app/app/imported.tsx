@@ -11,6 +11,7 @@ import { Attachment, FileViewer, SHOWN_PHOTOS, useShownPhotos } from '../compone
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Button, Card, Chip, Page, Row, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
+import { askToShare } from '../lib/chat-share';
 import { plural, t } from '../lib/i18n';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { saveFile } from '../lib/save-file';
@@ -23,8 +24,9 @@ import { useStyles } from '../theme/context';
 
 // Chats brought in from Telegram, WhatsApp and Viber exports (lib/imports.ts), kept sealed in this space
 // (lock/archive.ts). They are only to read: Erevos cannot show who really wrote them, and they
-// are never sent anywhere. One can go on in Erevos: linked to one of the space's contacts, it shows
-// in the chat with them, ahead of the new messages.
+// are sent nowhere on their own. One can go on in Erevos: linked to one of the space's contacts, it
+// shows in the chat with them, ahead of the new messages, and can be shared with them alone (their
+// chat asks first and sends it, lib/chat-share.ts).
 
 type Contact = { identity: string; name: string; locked?: boolean };
 
@@ -121,7 +123,7 @@ export default function ImportedScreen() {
       <Text variant="title">{t('Imported chats')}</Text>
       <Text tone="muted">
         {t(
-          'Chats brought in from Telegram, WhatsApp or Viber, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, and are never sent anywhere.',
+          'Chats brought in from Telegram, WhatsApp or Viber, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, unless you share one with the contact it goes on with: then it goes to them alone, end-to-end encrypted.',
         )}
       </Text>
 
@@ -158,6 +160,16 @@ export default function ImportedScreen() {
           <Row wrap>
             <TextButton title={t('Read')} onPress={() => setOpen(chat.id)} />
             {chat.contact && isContact(chat.contact) ? <TextButton title={t('Keep only in the chat')} onPress={() => void link(chat, chat.contact, true)} /> : null}
+            {/* Shared with them alone, from their chat, which asks first; not one a contact shared here. */}
+            {chat.contact && isContact(chat.contact) && !chat.shared ? (
+              <TextButton
+                title={t('Share with {name}', { name: contactLabel(chat.contact, contacts) })}
+                onPress={() => {
+                  askToShare(chat.contact);
+                  router.push({ pathname: '/chat', params: { contact: chat.contact } });
+                }}
+              />
+            ) : null}
             <TextButton title={t('Delete')} onPress={() => remove(chat)} />
           </Row>
         </Card>

@@ -24,7 +24,7 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, takesItself, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
+import { AUTO_TAKE, FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, takeOffRelay, takesItself, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
 import { canRingInBackground, loadMessageNotices, loadRingInBackground, messageCameAt, messageGone, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
@@ -101,6 +101,7 @@ import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
+import { keepShared, packMeta, sharable, shareChats, shareSize, takeAskToShare, unshare } from '../lib/chat-share';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
 import { ChatRow, MyselfRow } from '../components/chat-row';
@@ -2820,7 +2821,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.mine && pollOpen(message) && theyHave(message)) actions.push({ title: t('End poll'), onPress: () => void endPoll(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     // A photo or file that is here goes into this chat's own Collection too: the space's, or these hidden chats'.
-    if (message.file && !message.file.sticker && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
+    if (message.file && !message.file.sticker && !message.file.history && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
     if (!message.sending) actions.push(selectAction(() => selection.start(message.id)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -4227,13 +4228,61 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const own = ownRelay();
     if (!loaded) return;
     for (const m of messages) {
-      if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (!m.file?.from || m.file.history || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
       // Only a file on a relay needs ours. One from where its sender chose, which would be fetched
       // straight, waits for a tap, as larger ones do, unless Tor takes it now.
       if (!takesItself(own, m.file.from)) continue;
       void take(own, m.peer, m.tag, m.file, true);
     }
   }, [loaded, relayUrl, relayToken, messages, pieceTick]);
+
+  // Chats a contact shared (lib/chat-share.ts) are kept at once, whatever their size, with all their
+  // files, among this place's imported chats: from a contact taken, not a message request. Only where
+  // the sharer chose straight waits for a tap, as any file does (takesItself).
+  useEffect(() => {
+    const own = ownRelay();
+    if (!loaded || !archive) return;
+    const accepted = new Set(contacts.filter((c) => !c.request).map((c) => `${CONTACT_PREFIX}${c.identity}`));
+    for (const m of messages) {
+      if (!m.file?.history || !m.file.from || m.mine || !accepted.has(m.peer) || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (!takesItself(own, m.file.from)) continue;
+      void keepSharedChats(own, m, true);
+    }
+  }, [loaded, archive, relayUrl, relayToken, messages, contacts]);
+
+  // Keeps the chats a contact shared, from the file their message brought: taken as a file is, then
+  // their files, all into this place's imported chats (lib/chat-share.ts). The file itself is not
+  // kept: its chats are, in the imported chats, whence they can be deleted. Tried again with a tap.
+  async function keepSharedChats(own: Relay | null, message: Message, itself = false) {
+    const { peer, tag, file } = message;
+    const key = `${peer}|${tag}`;
+    if (!file?.from || !archive || takingNow.current.has(key)) return;
+    takingNow.current.add(key);
+    tried.current.add(key);
+    setTaking((now) => ({ ...now, [key]: '0%' }));
+    // As a message's file: what hidden chats take stays on the relay while their own devices still take it.
+    const leave = hiddenKey ? (placeLinked() ?? false) : undefined;
+    try {
+      const pack = await takeFile(own, file, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), leave, contactsPlace, itself);
+      const bytes = await readFile(pack);
+      if (!bytes) throw new FileGoneError();
+      await keepShared(own, bytes, archive, { by: peer.slice(CONTACT_PREFIX.length), name: label(peer, contacts) }, {
+        leave,
+        itself,
+        progress: (percent) => setTaking((now) => ({ ...now, [key]: `${percent}%` })),
+      });
+      await deleteChunks(pack.id, pack.count).catch(() => undefined);
+      setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: pack } : m)));
+      await history.current?.setFile(peer, tag, pack);
+      setArchiveTick((n) => n + 1);
+      setTaking(({ [key]: _done, ...rest }) => rest);
+    } catch (error) {
+      setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
+      setNote(t('A file did not come. {error}', { error: errorText(error) }));
+    } finally {
+      takingNow.current.delete(key);
+    }
+  }
 
   // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
   // messages brought over or written on another of them, marks raised there, messages deleted there.
@@ -4477,6 +4526,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function openFile(message: Message) {
     const file = message.file;
     if (!file) return;
+    // Chats shared: theirs are kept, tried again with a tap; the file itself is not one to open.
+    if (file.history) {
+      if (file.from && !message.mine) void keepSharedChats(ownRelay(), message);
+      return;
+    }
     if (file.from) {
       const own = ownRelay();
       if (own || !onRelay(file.from)) void take(own, message.peer, message.tag, file);
@@ -5380,6 +5434,76 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       { text: t('Cancel'), style: 'cancel' },
       { text: t('Delete'), style: 'destructive', onPress: () => void changeImported(() => archive?.remove(id)) },
     ]);
+  // What was imported here that can be shared with this contact: only with a contact taken.
+  const sharing = useMemo(() => (archive && selectedIdentity && selectedAccepted ? sharable(archive, selectedIdentity) : []), [archive, selectedIdentity, selectedAccepted, archiveTick]);
+  // Asked from Settings → Imported chats, once this chat shows.
+  useEffect(() => {
+    if (archive && !gated && takeAskToShare(selectedIdentity) && sharing.length > 0) void shareImported();
+  }, [archive, sharing, gated, selectedIdentity]);
+
+  // Shares the chats imported here that go on with this contact with them alone (lib/chat-share.ts),
+  // once the owner says so: all of them together, every message and every file they kept, through
+  // our relay, end-to-end encrypted. Their Erevos keeps them at once. Never to a group.
+  async function shareImported() {
+    const peer = selected;
+    const identity = selectedIdentity;
+    const chats = sharing;
+    if (!peer || !identity || chats.length === 0) return;
+    if (!e2e) {
+      setNote(notOpen());
+      return;
+    }
+    const own = ownRelay();
+    if (!own) {
+      setImportSaid(t('Type the relay address in Relay first.'));
+      setNote(t('Type the relay address in Relay first.'));
+      return;
+    }
+    const name = label(peer, shownContacts);
+    const { count, bytes } = shareSize(chats);
+    const told = plural(
+      count,
+      '{n} message, {size} in all, goes to {name} alone, end-to-end encrypted. Their Erevos keeps it at once in your chat, ahead of the new messages, only to read.',
+      '{n} messages, {size} in all, with their photos and files, go to {name} alone, end-to-end encrypted. Their Erevos keeps them at once in your chat, ahead of the new messages, only to read.',
+      { name, size: fileSize(bytes) },
+    );
+    if (!(await choose(t('Share with {name}', { name }), told, t('Cancel'), t('Share')))) return;
+    setDetails(false);
+    const chatsHere = e2e;
+    const target = relayTarget();
+    const sealedAs = newTag();
+    let put: FileOffer[] = [];
+    let packed: { ref: FileRef; offer: FileOffer } | null = null;
+    try {
+      setNote(t('Sharing, {percent}%', { percent: 0 }));
+      const shared = await shareChats(own, chats, (percent) => setNote(t('Sharing, {percent}%', { percent })));
+      put = shared.offers;
+      packed = await sendFile(own, bytesSource(shared.bytes), packMeta(shared.mark));
+      const sealed = await chatsHere.sealFile(identity, packed.offer, ownQueue?.senderHex ?? '', { at: here(), tag: sealedAs });
+      const way = await handOver(chatsHere, target, identity, sealed, [sealed.packet], 'message', false, !!hiddenKey);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, packed.ref, 0, Date.now(), wayParts(way));
+      setContacts(chatsHere.contacts());
+      setNote(t('Shared with {name}, end-to-end encrypted.', { name }));
+    } catch (error) {
+      if (error instanceof OwedError && packed) {
+        // In hidden chats, owed to their phone should it take it only later.
+        const given = packed.offer;
+        addMessage(peer, '', true, sealedAs, timerOf(peer), undefined, packed.ref, 0, Date.now());
+        owed.current.add(identity, sealedAs, async () => {
+          const sealed = await chatsHere.sealFile(identity, given, ownQueue?.senderHex ?? '', { at: here(), tag: sealedAs });
+          return { sealed, packets: [sealed.packet] };
+        });
+        setNote(owedNote(peer, error));
+      } else {
+        if (packed) await takeOffRelay(own, packed.offer.ids).catch(() => undefined);
+        await unshare(own, put);
+        setNote(notSent(error));
+      }
+    } finally {
+      // Its file is not kept here: the chats are, as they were.
+      if (packed) await deleteChunks(packed.ref.id, packed.ref.count).catch(() => undefined);
+    }
+  }
   // Sorted out only while the details or the lists show.
   const media = useMemo(() => (details || mediaOpen ? chatMedia(visible, imported) : []), [details, mediaOpen, visible, imported]);
   const chatDays = useMemo(() => (dayPicking ? daysOf([...imported, ...visible]) : new Set<string>()), [dayPicking, imported, visible]);
@@ -6471,6 +6595,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                 </View>
                               );
                             })}
+                            {sharing.length > 0 && !importFlow.found ? (
+                              <DetailRow title={t('Share with {name}', { name: selectedName })} onPress={() => void shareImported()} />
+                            ) : null}
                             {importFlow.found ? (
                               <FoundExport flow={importFlow} />
                             ) : (
@@ -6478,7 +6605,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             )}
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
                               {importSaid ||
-                                t('A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.')}
+                                t('A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone, unless you share it with them: then it goes to them alone, end-to-end encrypted.')}
                             </Text>
                           </View>
                         </>

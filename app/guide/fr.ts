@@ -3542,7 +3542,8 @@ sans effacer le téléphone, pour quand vous quittez un relais ou fermez un chap
 
 Tes anciennes discussions de Telegram et de WhatsApp peuvent entrer dans Erevos, pour être lues, avec leurs photos,
 vidéos, messages vocaux et fichiers, et celles de Viber avec leurs mots. Elles restent sur ce téléphone, scellées dans
-l’espace où tu les fais entrer, et ne sont jamais envoyées nulle part.
+l’espace où tu les fais entrer, et ne vont à personne, sauf si tu en partages une avec la personne avec qui elle a eu
+lieu (plus bas).
 
 Exporte d’abord la discussion depuis l’autre appli :
 
@@ -3592,7 +3593,7 @@ listée avec trois boutons :
 
 **Pourquoi :** une ancienne discussion va avec la personne avec qui elle a eu lieu, alors elle est amenée, gardée et
 supprimée là où tu lui parles, et la liste dans **Réglages** ne garde que ce qui n’a nulle part ailleurs où aller. Rien
-n’en quitte le téléphone, dans un cas comme dans l’autre.
+n’en quitte le téléphone, sauf si tu la partages.
 
 - Les **photos, vidéos, messages vocaux et fichiers** entrent depuis un .zip, chacun scellé dans cet espace comme l’est
   un fichier dans une discussion. Les photos s’affichent dans la discussion à mesure que tu fais défiler jusqu’à elles,
@@ -3604,8 +3605,8 @@ n’en quitte le téléphone, dans un cas comme dans l’autre.
 - **De la place sur le téléphone :** pendant qu’un .zip entre, le téléphone a besoin d’environ deux fois sa taille
   d’espace libre, car Erevos en lit une copie et garde les fichiers scellés. Les fichiers importés sont aussi
   dans les sauvegardes, comme les autres fichiers.
-- **Seulement sur ce téléphone, seulement pour les lire :** les messages importés ne sont jamais envoyés, donc l’autre
-  téléphone ne les reçoit pas. Erevos ne peut pas montrer qui les a vraiment écrits.
+- **Seulement pour les lire :** les messages importés ne sont pas envoyés comme messages, donc l’autre téléphone ne les
+  a que si tu partages la discussion avec lui. Erevos ne peut pas montrer qui les a vraiment écrits.
 - Les **notifications et appels** de l’autre appli sont laissés de côté, et la discussion dit combien.
 - **Dans les discussions masquées** aussi : dans les **Détails** d’une discussion masquée, **Importer une discussion
   ici** garde la discussion avec cet emplacement, chiffrée avec sa clé, et ne l’affiche que dans cette discussion,
@@ -3615,6 +3616,30 @@ n’en quitte le téléphone, dans un cas comme dans l’autre.
 - **Supprimer les messages** dans une discussion laisse les messages importés : supprime-les dans les **Détails** de la
   discussion, sous **Discussions importées**, ou dans **Réglages** → **Données et appareils** → **Discussions
   importées**.
+
+**Partage-la avec cette personne :** la personne avec qui continue une discussion importée peut l’avoir aussi. Dans les
+**Détails** de sa discussion, sous **Discussions importées**, touche **Partager avec** et son nom ; dans **Réglages** →
+**Données et appareils** → **Discussions importées**, une discussion qui continue avec quelqu’un a le même bouton, qui
+ouvre sa discussion. Erevos dit combien de messages partent et quelle taille, et demande d’abord. Ensuite toutes les
+discussions importées avec cette personne partent ensemble, chaque message avec chaque photo, vidéo, message vocal et
+fichier gardé, à elle seule, chiffrés de bout en bout par ton relais, et la discussion dit que tu l’as partagée.
+
+- **De son côté**, il n’y a rien à faire : son Erevos la garde aussitôt, avec ses fichiers, dit dans la discussion qui
+  l’a partagée, d’où et combien de messages, et les montre avant les nouveaux, en lecture seule, comme une discussion
+  importée. Les côtés sont inversés : ce que tu as écrit apparaît comme venant de toi, à sa gauche, et dans une
+  discussion à deux ce que cette personne a écrit apparaît comme le sien, à droite ; dans un groupe, chacun garde son
+  nom. Elle n’est gardée que dans votre discussion là-bas, et peut être supprimée dans ses **Détails**.
+- **Partagée à nouveau**, elle prend la place de la copie qu’il y avait, donc elle n’y est jamais deux fois. Une
+  discussion que quelqu’un a partagée avec toi n’est pas partagée plus loin.
+- **Seulement avec elle :** seulement avec un contact Erevos avec qui la discussion continue, jamais avec un groupe, et
+  elle ne peut pas être transférée. Dans les discussions masquées, c’est pareil, et de son côté elle reste là où est
+  votre discussion, masquée aussi.
+- **Place :** les photos et fichiers attendent sur ton relais d’être pris, 14 jours au plus, et un relais a de la place
+  pour 1 Go de fichiers en tout s’il n’est pas réglé autrement, donc une très grande discussion peut ne pas tenir :
+  alors rien ne part, et Erevos dit pourquoi. Un fichier supprimé de ce téléphone depuis est nommé comme resté en
+  arrière.
+- **Un Erevos plus ancien** reçoit à la place un fichier, **Discussion depuis Telegram.json**, avec les messages dedans
+  en texte.
 
 > Le fichier des discussions importées grandit avec ce que tu y fais entrer, donc sa taille dit à peu près combien a été
 > importé, mais pas dans quel espace.

@@ -14,6 +14,13 @@ On main, not released yet:
 
 ### For you
 
+- **Share an imported chat with the other person**: the Telegram, WhatsApp and Viber chats that go on with an Erevos
+  contact can go to that contact alone, from the chat's Details or Settings → Data and devices → Imported chats, after
+  one question that says how many messages and MB go. All of them go together, every message and every photo, video,
+  voice message and file kept, end-to-end encrypted through your relay, as one file whose photos and files go as they
+  are kept. Their Erevos keeps it at once in their imported chats, in the same space or hidden chats, linked to you,
+  the sides swapped (in a group export everyone keeps their name), in place of a copy shared before. Never to a group,
+  never forwarded. An Erevos from before shows it as a file, "Chat from Telegram.json".
 - **Stickers on other networks**: built-in stickers can go to other apps as a picture (PNG, 512 by 512, clear
   background), drawn on your phone or computer from the sticker's own shapes; nothing is downloaded. In a Matrix, XMPP
   or Nostr chat **Sticker** now offers the built-in sets beside **Mine**, and in an SMS conversation **+** →

@@ -3366,7 +3366,7 @@ cancellare il telefono, per quando lasci un relay o chiudi un capitolo della tua
 
 Le tue vecchie chat da Telegram e WhatsApp possono entrare in Erevos, da leggere, con le loro foto, video, messaggi
 vocali e file, e quelle da Viber con le loro parole. Restano su questo telefono, sigillate nello spazio in cui le porti,
-e non vengono mai inviate da nessuna parte.
+e non vanno a nessuno, a meno che tu non ne condivida una con la persona con cui era (sotto).
 
 Prima esporta la chat dall’altra app:
 
@@ -3412,8 +3412,8 @@ lunga. Ogni chat importata che continua lì è elencata con tre pulsanti:
 - **Elimina** la elimina dal telefono, con le sue foto e i suoi file, dopo averlo chiesto.
 
 **Perché:** una vecchia chat appartiene alla persona con cui era, quindi viene portata, conservata ed eliminata dove le
-parli, e l’elenco in **Impostazioni** tiene solo quello che non ha nessun altro posto dove andare. In entrambi i casi
-niente lascia il telefono.
+parli, e l’elenco in **Impostazioni** tiene solo quello che non ha nessun altro posto dove andare. Niente lascia il
+telefono, a meno che tu non la condivida.
 
 - **Foto, video, messaggi vocali e file** entrano da uno .zip, ognuno sigillato in questo spazio come un file in una
   chat. Le foto appaiono nella chat man mano che ci arrivi scorrendo, e gli sticker come sticker; tocca una foto o un
@@ -3424,8 +3424,8 @@ niente lascia il telefono.
 - **Spazio sul telefono:** mentre entra uno .zip, al telefono serve libero circa il doppio della sua dimensione, perché
   Erevos ne legge una copia e conserva i file sigillati. Anche i file importati sono nei backup, come
   gli altri file.
-- **Solo su questo telefono, solo da leggere:** i messaggi importati non vengono mai inviati, quindi l’altro telefono
-  non li riceve. Erevos non può mostrare chi li ha scritti davvero.
+- **Solo da leggere:** i messaggi importati non vengono inviati come messaggi, quindi l’altro telefono li ha solo se
+  condividi la chat con lui. Erevos non può mostrare chi li ha scritti davvero.
 - **Notifiche e chiamate** dell’altra app vengono escluse, e la chat dice quante sono.
 - **Anche nelle chat nascoste:** nei **Dettagli** di una chat nascosta, **Importa una chat qui** tiene la chat con
   quel posto, crittografata con la sua chiave, e la mostra solo in quella chat, mai in **Impostazioni** → **Dati e
@@ -3433,6 +3433,29 @@ niente lascia il telefono.
   chat importate in essa, tenute solo lì, e le riporta indietro se torna indietro.
 - **Elimina messaggi** in una chat lascia quelli importati: eliminali nei **Dettagli** della chat, sotto **Chat
   importate**, o in **Impostazioni** → **Dati e dispositivi** → **Chat importate**.
+
+**Condividila con quella persona:** la persona con cui continua una chat importata può averla anche lei. Nei
+**Dettagli** della sua chat, sotto **Chat importate**, tocca **Condividi con** e il suo nome; in **Impostazioni** →
+**Dati e dispositivi** → **Chat importate** una chat che continua con qualcuno ha lo stesso pulsante, che apre la sua
+chat. Erevos dice quanti messaggi e quanti MB partono, e chiede prima. Poi tutte le chat importate con quella persona
+partono insieme, ogni messaggio con ogni foto, video, messaggio vocale e file conservato, solo a lei, crittografati
+end-to-end tramite il tuo relay, e la chat dice che l’hai condivisa.
+
+- **Dalla sua parte** non c’è niente da fare: il suo Erevos la tiene subito, con i suoi file, dice nella chat chi l’ha
+  condivisa, da dove e quanti messaggi, e li mostra prima dei nuovi, solo da leggere, come una chat importata. I lati
+  sono scambiati: quello che hai scritto tu appare come tuo, alla sua sinistra, e in una chat a due quello che ha
+  scritto quella persona appare come suo, a destra; in un gruppo, ognuno tiene il suo nome. Resta solo nella vostra chat
+  lì, e può eliminarla nei suoi **Dettagli**.
+- **Condivisa di nuovo**, prende il posto della copia che aveva, quindi non c’è mai due volte. Una chat che qualcuno ha
+  condiviso con te non si condivide oltre.
+- **Solo con lei:** solo con un contatto Erevos con cui la chat continua, mai con un gruppo, e non si può inoltrare.
+  Nelle chat nascoste funziona allo stesso modo, e dalla sua parte resta nel posto in cui è la vostra chat, anche tra
+  quelle nascoste.
+- **Spazio:** le foto e i file aspettano sul tuo relay finché non vengono presi, al massimo 14 giorni, e un relay ha
+  posto per 1 GB di file in tutto se non è impostato diversamente, quindi una chat molto grande può non starci: allora
+  non parte niente, ed Erevos dice perché. Un file eliminato da questo telefono nel frattempo è nominato come rimasto
+  indietro.
+- **Un Erevos precedente** riceve invece un file, **Chat da Telegram.json**, con dentro i messaggi come testo.
 
 > Il file delle chat importate cresce con quello che porti dentro, quindi la sua dimensione dice più o meno quanto è
 > stato importato, ma non in quale spazio.
