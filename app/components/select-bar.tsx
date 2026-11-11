@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 
 import { tap } from '../lib/haptics';
@@ -10,7 +10,7 @@ import { t } from '../lib/i18n';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-import { CloseIcon } from './icons';
+import { AllIcon, CloseIcon, CopyIcon, ForwardIcon, TrashIcon } from './icons';
 import type { MenuAction } from './message-menu';
 import { Text } from './ui';
 
@@ -66,7 +66,9 @@ export function chosenStyle(colors: Colors): ViewStyle {
 
 /**
  * The bar shown while messages are chosen, in place of the chat's header or over its thread: ✕,
- * how many, and what can be done to them all. An action left out is not offered there.
+ * how many, and what can be done to them all. An action left out is not offered there. The actions
+ * are signs, each named for those who cannot see it, so that how many stays readable on a small
+ * phone in every language (their words did not fit 360 points in Greek or German).
  */
 export function SelectBar({ count, onCancel, onAll, onCopy, onForward, onDelete }: {
   count: number;
@@ -83,7 +85,7 @@ export function SelectBar({ count, onCancel, onAll, onCopy, onForward, onDelete 
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: space.sm,
+        gap: space.xs,
         minHeight: 56,
         paddingHorizontal: space.sm,
         backgroundColor: colors.sheet,
@@ -94,23 +96,28 @@ export function SelectBar({ count, onCancel, onAll, onCopy, onForward, onDelete 
       <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel={t('Cancel')} hitSlop={8} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
         <CloseIcon color={colors.text} size={22} />
       </Pressable>
-      <Text variant="heading" style={{ flex: 1 }} numberOfLines={1} accessibilityLiveRegion="polite">
+      <Text variant="heading" style={{ flex: 1, minWidth: 0 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} accessibilityLiveRegion="polite">
         {t('{n} selected', { n: count })}
       </Text>
-      {onAll ? <BarAction title={t('All')} onPress={onAll} color={colors.text} /> : null}
-      {onCopy ? <BarAction title={t('Copy')} onPress={onCopy} color={colors.primary} /> : null}
-      {onForward ? <BarAction title={t('Forward')} onPress={onForward} color={colors.primary} /> : null}
-      {onDelete ? <BarAction title={t('Delete')} onPress={onDelete} color={colors.danger} /> : null}
+      {onAll ? <BarAction title={t('All')} onPress={onAll} icon={<AllIcon color={colors.text} size={22} />} /> : null}
+      {onCopy ? <BarAction title={t('Copy')} onPress={onCopy} icon={<CopyIcon color={colors.primary} size={22} />} /> : null}
+      {onForward ? <BarAction title={t('Forward')} onPress={onForward} icon={<ForwardIcon color={colors.primary} size={22} />} /> : null}
+      {onDelete ? <BarAction title={t('Delete')} onPress={onDelete} icon={<TrashIcon color={colors.danger} size={22} />} /> : null}
     </View>
   );
 }
 
-function BarAction({ title, onPress, color }: { title: string; onPress: () => void; color: string }) {
+// A sign 40 points across, named by its word for a screen reader.
+function BarAction({ title, onPress, icon }: { title: string; onPress: () => void; icon: ReactNode }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ paddingHorizontal: space.sm, paddingVertical: space.sm, opacity: pressed ? 0.6 : 1 })}>
-      <Text variant="label" color={color}>
-        {title}
-      </Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      hitSlop={4}
+      style={({ pressed }) => ({ width: 40, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+    >
+      {icon}
     </Pressable>
   );
 }

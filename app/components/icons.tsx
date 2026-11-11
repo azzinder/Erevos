@@ -704,3 +704,36 @@ export function CheckIcon({ color, size = 24 }: Props) {
     </Grid>
   );
 }
+
+/** Two sheets, one over the other: copy. */
+export function CopyIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 3, y: 3, w: 12, h: 14 }), { borderTopWidth: 2 * k, borderLeftWidth: 2 * k, borderColor: color, borderTopLeftRadius: 2.5 * k }]} />
+      <View style={[box(k, { x: 8, y: 7.5, w: 13, h: 14 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 2.5 * k }]} />
+    </Grid>
+  );
+}
+
+/** An arrow to the right: forward. */
+export function ForwardIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={3} y={11} w={17} h={2} />
+      <View style={[box(k, { x: 11, y: 7.5, w: 9, h: 9 }), { borderTopWidth: 2 * k, borderRightWidth: 2 * k, borderColor: color, transform: [{ rotate: '45deg' }] }]} />
+    </Grid>
+  );
+}
+
+/** A box with a tick: choose them all. */
+export function AllIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 3, y: 3, w: 18, h: 18 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 4 * k }]} />
+      <View style={[box(k, { x: 9.3, y: 6, w: 4.6, h: 9.2 }), { borderRightWidth: 2.2 * k, borderBottomWidth: 2.2 * k, borderColor: color, transform: [{ rotate: '40deg' }] }]} />
+    </Grid>
+  );
+}
