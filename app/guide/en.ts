@@ -174,6 +174,16 @@ does the same for the chat itself: it goes to that day's first message.
 **Why:** the lists are made on this phone from what it already keeps, so no server learns what a chat holds; and only
 the photos on the screen are read, as in the chat, so a chat with thousands of them opens as fast as one with none.
 
+**On Matrix, XMPP, Nostr and SMS too:** a chat on Matrix, XMPP or Nostr has **Search in this chat**, **Media, links
+and files**, **Go to a day** and **Export chat** at its foot, beside **Notifications**, and an SMS conversation has
+them first under its **⋮**. They look only at what this phone keeps of the chat: the messages a Matrix chat keeps
+(under the search, **Load earlier messages** fetches older ones from its server, as the top of the chat does), those
+of an XMPP or Nostr chat, and every SMS and MMS of the conversation on the phone; going to an older SMS loads the
+conversation back to it. Nothing you type in the search leaves the phone. Photos and files are listed, and a tap goes
+to each in the chat, where a tap fetches it from its server as before, so no server learns which ones you looked at;
+an MMS's pictures show in the list itself. **Export chat** writes the chat out as for a contact, after the same
+question; a hidden place's chats are not exported.
+
 A good first hour:
 
 1. Open **Settings** → **Privacy and security** → **Lock and second password** and set a password, so nobody who
@@ -2186,9 +2196,10 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
 ### Keeping the SMS in order
 
 - **Hold down:** in the list, hold an SMS conversation down for what it can do: **Pin to the top**, **Archive**,
-  **Mark as spam**, **Block** and **Delete**, and **Add to contacts** for a number that is none of your contacts. In
-  a conversation, **⋮** at the top shows the same, and such a number has **Add to contacts** under its name too: a
-  new contact with the number in it.
+  **Mark as spam**, **Block** and **Delete**, and **Add to contacts** for a number that is none of your contacts. In a
+  conversation, **⋮** at the top shows the same, and first **Search in this chat**, **Media, links and files**, **Go
+  to a day** and **Export chat** (see [Getting started](#start)), and such a number has **Add to contacts** under its
+  name too: a new contact with the number in it.
 - **Pinned:** up to 10 SMS conversations stay at the top of the list, with a pin. **Unpin** lets one go back to its
   place.
 - **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to

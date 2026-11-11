@@ -194,6 +194,17 @@ darunter in den Details, macht dasselbe für den Chat selbst: Es springt zur ers
 ein Chat enthält; und nur die Fotos auf dem Bildschirm werden gelesen, wie im Chat, sodass ein Chat mit Tausenden davon
 so schnell aufgeht wie einer ohne.
 
+**Auch bei Matrix, XMPP, Nostr und SMS:** Ein Chat bei Matrix, XMPP oder Nostr hat unten **In diesem Chat suchen**,
+**Medien, Links und Dateien**, **Zu einem Tag** und **Chat exportieren**, neben **Benachrichtigungen**, und eine
+SMS-Unterhaltung hat sie als Erstes unter ihrem **⋮**. Sie sehen nur, was dieses Telefon von dem Chat behält: die
+Nachrichten, die ein Matrix-Chat behält (unter der Suche holt **Frühere Nachrichten laden** ältere von seinem Server,
+wie oben im Chat), die eines XMPP- oder Nostr-Chats und jede SMS und MMS der Unterhaltung auf dem Telefon; der Sprung
+zu einer älteren SMS lädt die Unterhaltung bis dorthin. Nichts, was du in die Suche tippst, verlässt das Telefon.
+Fotos und Dateien werden aufgelistet, und ein Tippen führt zu jeder im Chat, wo ein Tippen sie wie bisher von ihrem
+Server holt, sodass kein Server erfährt, welche du dir angesehen hast; die Bilder einer MMS zeigen sich direkt in der
+Liste. **Chat exportieren** schreibt den Chat wie bei einem Kontakt heraus, nach derselben Frage; die Chats eines
+versteckten Ortes werden nicht exportiert.
+
 Eine gute erste Stunde:
 
 1. Öffne **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zweites Passwort** und lege ein Passwort
@@ -2532,10 +2543,12 @@ wenn du ihn wählst.
 
 ### Die SMS in Ordnung halten
 
-- **Gedrückt halten:** Halte in der Liste eine SMS-Unterhaltung gedrückt, um zu sehen, was sie kann: **Oben anheften**,
-  **Archivieren**, **Als Spam markieren**, **Blockieren** und **Löschen**, und **Zu Kontakten hinzufügen** für eine
-  Nummer, die keiner deiner Kontakte ist. In einer Unterhaltung zeigt **⋮** oben dasselbe, und eine solche Nummer hat
-  **Zu Kontakten hinzufügen** auch unter ihrem Namen: ein neuer Kontakt mit der Nummer darin.
+- **Gedrückt halten:** Halte in der Liste eine SMS-Unterhaltung gedrückt, um zu sehen, was sie kann: **Oben
+  anheften**, **Archivieren**, **Als Spam markieren**, **Blockieren** und **Löschen**, und **Zu Kontakten hinzufügen**
+  für eine Nummer, die keiner deiner Kontakte ist. In einer Unterhaltung zeigt **⋮** oben dasselbe, dazu als Erstes
+  **In diesem Chat suchen**, **Medien, Links und Dateien**, **Zu einem Tag** und **Chat exportieren** (siehe [Erste
+  Schritte](#start)), und eine solche Nummer hat **Zu Kontakten hinzufügen** auch unter ihrem Namen: ein neuer Kontakt
+  mit der Nummer darin.
 - **Angeheftet:** Bis zu 10 SMS-Unterhaltungen bleiben oben in der Liste, mit einer Nadel. **Loslösen** lässt eine an
   ihren Platz zurück.
 - **Archivierte Unterhaltungen:** aus der Liste heraus, unter **Archiviert** oben auf dem Startbildschirm. Eine kommt

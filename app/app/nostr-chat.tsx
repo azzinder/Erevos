@@ -13,6 +13,7 @@ import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../compone
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote, Reactions } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -20,6 +21,7 @@ import { NostrStickers } from '../components/nostr-stickers';
 import { chosenStyle, SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { Button, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { nostrHistory } from '../lib/chat-history-adapters';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
@@ -146,6 +148,8 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [stickering, setStickering] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const selection = useSelection<string>();
+  // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
+  const history = useHistoryTools();
 
   useEffect(() => {
     runNostrDm();
@@ -446,6 +450,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <NetworkChatNotify notify={checkedChatNotify(chat.notify)} hidden={where !== 'space'} calls={false} onChange={(next) => nostrDmSetNotify(key, next)} />
         <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
       </Row>
+      <HistoryButtons tools={history} exportable={where === 'space'} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
       {self ? null : naming === null ? (
@@ -530,6 +535,18 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   return (
     <View style={{ flex: 1 }}>
       {bar}
+      <ChatHistory
+        tools={history}
+        name={name}
+        messages={() => nostrHistory(chat.messages, (person) => personName(state, person), group)}
+        goTo={(id) => {
+          goTo(id);
+          return true;
+        }}
+        exportable={where === 'space'}
+        shown={shown}
+        say={setNote}
+      />
       {thread}
     </View>
   );

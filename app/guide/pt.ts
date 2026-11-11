@@ -186,6 +186,16 @@ para a primeira mensagem daquele dia.
 uma conversa contém; e só as fotos que estão na tela são lidas, como na conversa, então uma conversa com milhares delas
 abre tão rápido quanto uma sem nenhuma.
 
+**Também no Matrix, XMPP, Nostr e SMS:** uma conversa no Matrix, XMPP ou Nostr tem embaixo **Buscar nesta conversa**,
+**Mídia, links e arquivos**, **Ir para um dia** e **Exportar conversa**, ao lado de **Notificações**, e uma conversa
+de SMS os tem primeiro no seu **⋮**. Eles olham só o que este celular guarda da conversa: as mensagens que uma
+conversa do Matrix guarda (abaixo da busca, **Carregar mensagens anteriores** traz mais antigas do servidor dela, como
+o topo da conversa faz), as de uma conversa do XMPP ou do Nostr, e cada SMS e MMS da conversa no celular; ir para um
+SMS mais antigo carrega a conversa até ele. Nada do que você digita na busca sai do celular. Fotos e arquivos aparecem
+na lista, e um toque leva a cada um na conversa, onde um toque o traz do servidor dele como antes, então nenhum
+servidor sabe quais você olhou; as imagens de um MMS aparecem na própria lista. **Exportar conversa** escreve a
+conversa como para um contato, depois da mesma pergunta; as conversas de um lugar oculto não são exportadas.
+
 Uma boa primeira hora:
 
 1. Abra **Configurações** → **Privacidade e segurança** → **Bloqueio e segunda senha** e defina uma senha, para que
@@ -2366,8 +2376,9 @@ escolhe.
 
 - **Segurar:** na lista, segure uma conversa de SMS para ver o que ela pode fazer: **Fixar no topo**, **Arquivar**,
   **Marcar como spam**, **Bloquear** e **Apagar**, e **Adicionar aos contatos** para um número que não é de nenhum dos
-  seus contatos. Numa conversa, **⋮** no topo mostra o mesmo, e um número assim também tem **Adicionar aos contatos**
-  abaixo do nome: um novo contato com o número dentro.
+  seus contatos. Numa conversa, **⋮** no topo mostra o mesmo, e primeiro **Buscar nesta conversa**, **Mídia, links e
+  arquivos**, **Ir para um dia** e **Exportar conversa** (veja [Primeiros passos](#start)), e um número assim também
+  tem **Adicionar aos contatos** abaixo do nome: um novo contato com o número dentro.
 - **Fixadas:** até 10 conversas de SMS ficam no topo da lista, com um alfinete. **Desafixar** deixa uma voltar ao seu
   lugar.
 - **Conversas arquivadas:** fora da lista, em **Arquivadas** no topo da tela inicial. Uma volta à lista sozinha quando

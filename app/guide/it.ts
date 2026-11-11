@@ -188,6 +188,16 @@ giorno.
 contiene una chat; e vengono lette solo le foto sullo schermo, come nella chat, così una chat con migliaia di foto si
 apre veloce come una che non ne ha.
 
+**Anche su Matrix, XMPP, Nostr e negli SMS:** una chat su Matrix, XMPP o Nostr ha in fondo **Cerca in questa chat**,
+**Media, link e file**, **Vai a un giorno** ed **Esporta chat**, accanto a **Notifiche**, e una conversazione SMS li
+ha per primi nel suo **⋮**. Guardano solo ciò che questo telefono conserva della chat: i messaggi che una chat Matrix
+conserva (sotto la ricerca, **Carica i messaggi precedenti** ne prende di più vecchi dal suo server, come fa la cima
+della chat), quelli di una chat XMPP o Nostr, e ogni SMS e MMS della conversazione sul telefono; andare a un SMS più
+vecchio carica la conversazione fino a lì. Niente di ciò che scrivi nella ricerca lascia il telefono. Foto e file sono
+elencati, e un tocco porta a ciascuno nella chat, dove un tocco lo prende dal suo server come prima, così nessun
+server sa quali hai guardato; le immagini di un MMS si vedono nell’elenco stesso. **Esporta chat** scrive la chat come
+per un contatto, dopo la stessa domanda; le chat di un luogo nascosto non si esportano.
+
 Una buona prima ora:
 
 1. Apri **Impostazioni** → **Privacy e sicurezza** → **Blocco e seconda password** e imposta una password, così nessuno
@@ -2390,8 +2400,9 @@ la scegli tu.
 
 - **Tieni premuto:** nell’elenco, tieni premuta una conversazione SMS per quello che puoi fare: **Fissa in alto**,
   **Archivia**, **Segna come spam**, **Blocca** ed **Elimina**, e **Aggiungi ai contatti** per un numero che non è tra
-  i tuoi contatti. In una conversazione, **⋮** in alto mostra le stesse cose, e un numero del genere ha **Aggiungi ai
-  contatti** anche sotto il suo nome: un nuovo contatto con dentro quel numero.
+  i tuoi contatti. In una conversazione, **⋮** in alto mostra le stesse cose, e per primi **Cerca in questa chat**,
+  **Media, link e file**, **Vai a un giorno** ed **Esporta chat** (vedi [Per iniziare](#start)), e un numero del
+  genere ha **Aggiungi ai contatti** anche sotto il suo nome: un nuovo contatto con dentro quel numero.
 - **Fissate:** fino a 10 conversazioni SMS restano in cima all’elenco, con una puntina. **Non fissare più** ne
   rimanda una al suo posto.
 - **Conversazioni archiviate:** fuori dall’elenco, sotto **Archiviate** in cima alla schermata principale. Una torna

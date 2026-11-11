@@ -28,6 +28,15 @@ On main, not released yet:
   **Send to** for another pick). A photo or file shared while Erevos was in the background no longer goes missing:
   Erevos locked as **Send to** opened, **Send to** deleted the file as it closed, and after the password it said
   nothing came to send. Now the file waits for **Send to**, which opens again after the password.
+- **Search, media, days and export in Matrix, XMPP, Nostr and SMS**: a chat on Matrix, XMPP or Nostr has **Search in
+  this chat**, **Media, links and files**, **Go to a day** and **Export chat** at its foot, and an SMS conversation has
+  them first under **⋮**, as Erevos chats do. They look only at what the phone keeps: a Matrix chat's kept messages,
+  where the search can also **Load earlier messages** from the server; an XMPP or Nostr chat's kept messages; every
+  SMS and MMS of the conversation on the phone (going to an older SMS loads the conversation back to it). Nothing typed
+  in the search leaves the phone. Photos and files on a network's server are listed and open at their message, where a
+  tap fetches them as before, so no server learns which were looked at; MMS pictures show in the grid. **Export chat**
+  writes the chat out as for an Erevos contact, after the same warning; a hidden place's chats are not exported. Not
+  yet: going to a Matrix day older than what the phone keeps.
 
 ### Under the hood
 

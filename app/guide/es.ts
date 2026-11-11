@@ -187,6 +187,17 @@ ese tipo. **Ir a un día**, debajo en los detalles, hace lo mismo con el propio 
 contiene un chat; y solo se leen las fotos que están en pantalla, como en el chat, así que un chat con miles de ellas se
 abre tan rápido como uno sin ninguna.
 
+**También en Matrix, XMPP, Nostr y SMS:** un chat de Matrix, XMPP o Nostr tiene abajo **Buscar en este chat**,
+**Multimedia, enlaces y archivos**, **Ir a un día** y **Exportar chat**, junto a **Notificaciones**, y una
+conversación SMS los tiene primero en su **⋮**. Solo miran lo que este teléfono guarda del chat: los mensajes que
+guarda un chat de Matrix (bajo la búsqueda, **Cargar mensajes anteriores** trae otros más antiguos de su servidor,
+como hace el principio del chat), los de un chat de XMPP o Nostr, y cada SMS y MMS de la conversación en el teléfono;
+ir a un SMS más antiguo carga la conversación hasta él. Nada de lo que escribes en la búsqueda sale del teléfono. Las
+fotos y los archivos aparecen en la lista, y un toque lleva a cada uno en el chat, donde un toque lo trae de su
+servidor como antes, así ningún servidor sabe cuáles miraste; las imágenes de un MMS se ven en la propia lista.
+**Exportar chat** escribe el chat como para un contacto, tras la misma pregunta; los chats de un lugar oculto no se
+exportan.
+
 Una buena primera hora:
 
 1. Abre **Ajustes** → **Privacidad y seguridad** → **Bloqueo y segunda contraseña** y pon una contraseña, para que nadie
@@ -2382,8 +2393,9 @@ cuando tú lo eliges.
 
 - **Mantener pulsado:** en la lista, mantén pulsada una conversación SMS para lo que puede hacer: **Fijar arriba**,
   **Archivar**, **Marcar como spam**, **Bloquear** y **Eliminar**, y **Añadir a contactos** para un número que no es
-  ninguno de tus contactos. En una conversación, **⋮** arriba muestra lo mismo, y un número así también tiene **Añadir
-  a contactos** bajo su nombre: un contacto nuevo con el número dentro.
+  ninguno de tus contactos. En una conversación, **⋮** arriba muestra lo mismo, y primero **Buscar en este chat**,
+  **Multimedia, enlaces y archivos**, **Ir a un día** y **Exportar chat** (ver [Primeros pasos](#start)), y un número
+  así también tiene **Añadir a contactos** bajo su nombre: un contacto nuevo con el número dentro.
 - **Fijadas:** hasta 10 conversaciones SMS se quedan arriba de la lista, con una chincheta. **Dejar de fijar** devuelve
   una a su sitio.
 - **Conversaciones archivadas:** fuera de la lista, en **Archivadas** arriba de la pantalla de inicio. Una vuelve sola

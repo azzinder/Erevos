@@ -196,6 +196,17 @@ détails, fait de même pour la discussion elle-même : il va au premier message
 n’apprend ce que contient une discussion ; et seules les photos à l’écran sont lues, comme dans la discussion, si bien
 qu’une discussion qui en a des milliers s’ouvre aussi vite qu’une qui n’en a aucune.
 
+**Aussi sur Matrix, XMPP, Nostr et en SMS :** une discussion Matrix, XMPP ou Nostr a en bas **Rechercher dans cette
+discussion**, **Médias, liens et fichiers**, **Aller à un jour** et **Exporter la discussion**, à côté de
+**Notifications**, et une conversation SMS les a en premier sous son **⋮**. Ils ne regardent que ce que ce téléphone
+garde de la discussion : les messages qu’une discussion Matrix garde (sous la recherche, **Charger les messages
+précédents** en récupère de plus anciens sur son serveur, comme le haut de la discussion), ceux d’une discussion XMPP
+ou Nostr, et chaque SMS et MMS de la conversation sur le téléphone ; aller à un SMS plus ancien charge la conversation
+jusqu’à lui. Rien de ce que tu tapes dans la recherche ne quitte le téléphone. Les photos et les fichiers sont listés,
+et un appui mène à chacun dans la discussion, où un appui le récupère sur son serveur comme avant, donc aucun serveur
+n’apprend lesquels tu as regardés ; les images d’un MMS s’affichent dans la liste même. **Exporter la discussion**
+l’écrit comme pour un contact, après la même question ; les discussions d’un emplacement masqué ne sont pas exportées.
+
 Une bonne première heure :
 
 1. Ouvre **Réglages** → **Confidentialité et sécurité** → **Verrou et second mot de passe** et définis un mot de passe,
@@ -2506,10 +2517,12 @@ dernier chemin, et seulement quand tu le choisis.
 
 ### Garder les SMS en ordre
 
-- **Appui long :** dans la liste, appuie longuement sur une conversation SMS pour ce qu’elle peut faire : **Épingler en
-  haut**, **Archiver**, **Marquer comme spam**, **Bloquer** et **Supprimer**, et **Ajouter aux contacts** pour un numéro
-  qui n’est aucun de tes contacts. Dans une conversation, **⋮** en haut montre la même chose, et un tel numéro a aussi
-  **Ajouter aux contacts** sous son nom : un nouveau contact avec le numéro dedans.
+- **Appui long :** dans la liste, appuie longuement sur une conversation SMS pour ce qu’elle peut faire : **Épingler
+  en haut**, **Archiver**, **Marquer comme spam**, **Bloquer** et **Supprimer**, et **Ajouter aux contacts** pour un
+  numéro qui n’est aucun de tes contacts. Dans une conversation, **⋮** en haut montre la même chose, et d’abord
+  **Rechercher dans cette discussion**, **Médias, liens et fichiers**, **Aller à un jour** et **Exporter la
+  discussion** (voir [Premiers pas](#start)), et un tel numéro a aussi **Ajouter aux contacts** sous son nom : un
+  nouveau contact avec le numéro dedans.
 - **Épinglées :** jusqu’à 10 conversations SMS restent en haut de la liste, avec une épingle. **Désépingler** en laisse
   une retourner à sa place.
 - **Conversations archivées :** hors de la liste, sous **Archivées** en haut de l’écran d’accueil. Une conversation

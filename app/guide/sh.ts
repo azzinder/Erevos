@@ -182,6 +182,16 @@ imaju nešto te vrste. **Idi na dan**, ispod njega u detaljima, isto radi za sam
 sadrži; i čitaju se samo fotografije koje su na ekranu, kao u razgovoru, pa se razgovor s hiljadama fotografija
 otvara jednako brzo kao razgovor bez ijedne.
 
+**I na Matrixu, XMPP-u, Nostru i u SMS-u:** razgovor na Matrixu, XMPP-u ili Nostru ima na dnu **Traži u ovom
+razgovoru**, **Mediji, linkovi i fajlovi**, **Idi na dan** i **Izvezi razgovor**, pored **Obavijesti**, a SMS razgovor
+ih ima prve u svom **⋮**. Gledaju samo ono što ovaj telefon čuva od razgovora: poruke koje čuva razgovor na Matrixu
+(ispod pretrage, **Učitaj ranije poruke** donosi starije s njegovog servera, kao vrh razgovora), poruke razgovora na
+XMPP-u ili Nostru, i svaki SMS i MMS razgovora na telefonu; odlazak na stariji SMS učitava razgovor do njega. Ništa
+što upišete u pretragu ne napušta telefon. Fotografije i fajlovi su na popisu, a dodir vodi do svakog u razgovoru,
+gdje ga dodir donosi s njegovog servera kao i prije, pa nijedan server ne saznaje koje ste pogledali; slike MMS-a vide
+se na samom popisu. **Izvezi razgovor** ispisuje razgovor kao za kontakt, nakon istog pitanja; razgovori skrivenog
+mjesta se ne izvoze.
+
 Dobar prvi sat:
 
 1. Otvorite **Postavke** → **Privatnost i sigurnost** → **Zaključavanje i druga lozinka** i postavite lozinku, kako
@@ -2283,8 +2293,9 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
 
 - **Zadržavanje prsta:** na popisu zadržite prst na SMS razgovoru za ono što s njim možete: **Prikvači na vrh**,
   **Arhiviraj**, **Označi kao spam**, **Blokiraj** i **Obriši**, te **Dodaj u kontakte** za broj koji nije nijedan od
-  vaših kontakata. U razgovoru **⋮** na vrhu prikazuje isto, a takav broj ima **Dodaj u kontakte** i ispod svog imena:
-  novi kontakt s tim brojem.
+  vaših kontakata. U razgovoru **⋮** na vrhu prikazuje isto, a prvo **Traži u ovom razgovoru**, **Mediji, linkovi i
+  fajlovi**, **Idi na dan** i **Izvezi razgovor** (pogledajte [Prvi koraci](#start)), a takav broj ima **Dodaj u
+  kontakte** i ispod svog imena: novi kontakt s tim brojem.
 - **Prikvačeno:** do 10 SMS razgovora ostaje na vrhu popisa, prikvačeno. **Otkvači** vraća jedan na njegovo mjesto.
 - **Arhivirani razgovori:** izvan popisa, pod **Arhivirano** na vrhu početnog ekrana. Razgovor se sam vraća na popis
   kad od te osobe stigne novi SMS, ili s **Vrati iz arhive**.

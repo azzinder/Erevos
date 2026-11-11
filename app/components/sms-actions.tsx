@@ -90,11 +90,13 @@ export function trashConversation(address: string, at: number, link?: SmsLink): 
   );
 }
 
-export function SmsActions({ target, onClose, onTrashed }: {
+export function SmsActions({ target, onClose, onTrashed, more }: {
   target: SmsTarget | null;
   onClose: () => void;
   /** It was put in the Trash. */
   onTrashed?: () => void;
+  /** What the conversation itself offers first (app/sms.tsx: its search, media, days and export). */
+  more?: { label: string; run: () => void }[];
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -172,7 +174,13 @@ export function SmsActions({ target, onClose, onTrashed }: {
     if (one) router.push(newContactHref(one));
   }
 
-  const rows: { label: string; run: () => void; danger?: boolean }[] = [];
+  const rows: { label: string; run: () => void; danger?: boolean }[] = (more ?? []).map((row) => ({
+    label: row.label,
+    run: () => {
+      onClose();
+      row.run();
+    },
+  }));
   if (one && state?.known === false) rows.push({ label: t('Add to contacts'), run: addContact });
   if (target.folder === 'list') rows.push({ label: pinned ? t('Unpin') : t('Pin to the top'), run: pin });
   if (target.folder !== 'spam') rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });

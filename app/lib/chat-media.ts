@@ -41,6 +41,10 @@ export type MediaItem = {
   /** A link: where it opens, and its preview's title when the message has one for it. */
   url?: string;
   title?: string;
+  /** A file of a chat on another network (lib/chat-history.ts): its name and size, and where the
+   *  phone shows it when it is on the phone (an MMS's part). It opens in the chat, where one on its
+   *  network's server is fetched when tapped. */
+  outside?: { name: string; size?: number; uri?: string };
 };
 
 // What an imported file is: a sound to play where it is (a voice message, a song), a sticker of

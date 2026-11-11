@@ -25,6 +25,7 @@ export const NEXT: Changes = {
     mark("**The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found, or they were found but no relay sent their posts, or their posts came but could not be shown, and how each relay answered. Before, it said only that no public posts were found. See [Chats with other Nostr apps](#nostr-chats)."),
     mark("**A new computer links to the end**: a computer with no relay before linking now takes the phone's answer at once, so linking with the small code finishes by itself, and with the full code **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more until Erevos started again. See [Linked devices](#devices)."),
     mark("**Sharing into Erevos reaches every service**: **Send to** now lists the chats of your Matrix, XMPP and Nostr accounts too, beside Erevos chats, groups and SMS conversations. A photo or file shared from another app no longer goes missing when Erevos locks as it opens: after the password, **Send to** shows it again, where before it said that nothing came to send. See [Chat through a relay](#relay)."),
+    mark("**Search, media, days and export in Matrix, XMPP, Nostr and SMS**: these chats now have **Search in this chat**, **Media, links and files**, **Go to a day** and **Export chat**, as Erevos chats do, over what your phone keeps of them; an SMS conversation has them under **⋮**. Nothing you search for leaves your phone. See [Getting started](#start)."),
   ],
   underTheHood: [],
 };
