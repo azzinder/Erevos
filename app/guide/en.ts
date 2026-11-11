@@ -110,6 +110,10 @@ same whether a space has any or not: their messages can be read only while their
 - **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
   chip shows only them, with how many are not read, and there **New chat** opens the Nostr chats screen: see
   [Chats with other Nostr apps](#nostr-chats).
+- **Mark all as read**, in the ⋮ menu, reads at once every chat of the part of the list you are on (all messages, SMS,
+  Erevos, Matrix, XMPP or Nostr), muted and PIN-locked ones too, after asking. Each is read as if you opened it, so
+  those who wrote are told as then; invitations and people asking to add you stay until you answer them. The Matrix,
+  XMPP and Nostr screens have it under **Chats** for their own chats. Hidden chats are never read by it.
 - **The Public feed**, once the space has a Nostr key or is in a public Matrix room, is one more chip, **Public**: one
   feed, as in Amethyst, of the public posts of the people your Nostr key follows and the messages of the public Matrix
   rooms you are in, newest first. Each shows who wrote it (a small N or M says the network), when, its words, its
@@ -696,7 +700,8 @@ introduces could pass someone else off, compare the safety number with the new c
 
 Under each of your messages to a contact, **✓** says the relay or a phone nearby took it, **✓✓** that it came to
 their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
-at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen.
+at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen. **Mark all as
+read** in the ⋮ menu counts the same: their phones are told with the next look at the relay.
 
 In a group that is not public, your messages have the same marks, for all the other members together: **✓** once sent,
 **✓✓** once the message reached the phone of every member who was in the group when you sent it, and **✓✓✓** once
@@ -924,6 +929,9 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   the latest shows; tap it to go to it, and the next one shows.
 - **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the
   phone's notice of it does not show the words, but any app that reads the clipboard can read them.
+- **Select:** chooses this message, and a tap on others adds them; a bar then offers **Copy**, which puts all their
+  words in one text with each one's time and writer, **Forward**, which sends them to one chat, and **Delete**, which
+  asks once before it deletes them. **Back** stops choosing.
 - **Edit:** for a message of yours, up to a day after you sent it. Its words go in the field under **Edit message**:
   change them and send, or **✕** to leave it as it was. Both phones show the new words, with **Edited** beside the
   time. Only words are edited, not a sticker, a place, a poll, a voice message, a photo or a file, nor words you
@@ -932,6 +940,8 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   this keeps the old words.
   **Why:** a day is time enough to put a mistake right, and no one can change what they said days ago. The mark
   shows the words are not the first ones.
+- **End poll:** for a poll of yours: no more votes count, and the final results show. An Erevos from before this still
+  sees it open, and a vote sent at that moment may count on some phones only.
 - **Delete:** on this phone, or on both, as above.
 
 Reactions, replies, pins and edits travel inside the encryption, like the messages.
@@ -1006,8 +1016,11 @@ microphone: it records only while you hold it. With TalkBack, tap it once to sta
 message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
 disappearing setting.
 
-**Why:** on a phone a voice message is AAC at 64 kbit/s, about 480 KB a minute: as clear as speech gets. More would
-not be heard in a voice, but would be slower to send, over Bluetooth most of all.
+**Why:** on Android 10 and later, in the web app and on a computer, a voice message is Opus at 32 kbit/s, about 240 KB a
+minute, as Telegram, Element and Conversations send them: as clear as speech gets. On Android 9 and older, and in Safari
+before iOS 18.4 and macOS 15.4, it is AAC at 64 kbit/s, about 480 KB a minute. More would not be heard in a voice, but
+would be slower to send, over Bluetooth most of all. Every Erevos plays both: Safari before 18.4 plays Opus once Erevos
+repacks it for it, and where a browser cannot play one, Erevos says so.
 
 - **Through the relay, or nearby,** end-to-end encrypted like the words, in several pieces. No one in between can
   hear them, but from the pieces the relay, or whoever listens nearby, can tell that something long was sent, and
@@ -1079,6 +1092,9 @@ stickers too):
   does not follow you after. The message holds only the coordinates, end-to-end encrypted; no map is loaded in Erevos.
   **Open in maps** hands the place to your maps app, which may load its map from the internet. An Erevos from before this
   shows the coordinates as words.
+- **Contact card:** sends a contact from your phone's contacts as a card, with its name, numbers and email addresses,
+  end-to-end encrypted. The other person sees the card with **Add to contacts**; an Erevos from before this shows it as
+  words. In hidden chats you choose only among the contacts kept in the hidden place, never the phone's.
 - **Poll:** a question with two options or more, up to 12, and, with **More than one answer**, more than one to choose.
   Tap an option to choose it, again to take it back; each option shows how many chose it, and who. Votes travel inside
   the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
@@ -1118,6 +1134,15 @@ Erevos may use the microphone, and the camera for video. Their phone rings while
 the space: they tap **Answer** or **Decline**. During the call you can mute, switch the loudspeaker, turn your camera off, flip
 between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
 a missed call.
+
+- **Answer with video or voice only:** a call that rings offers **Answer**, for voice only, and **Answer with video**,
+  in Erevos's calls and in XMPP and Matrix calls; in a group call they are **Join** and **Join with video**. A video
+  call answered with voice only starts with your camera off.
+- **Turn your camera on later:** **Camera on**, on the call screen, works when the other side's app can change a call
+  while it goes on; a group call stays as you joined it.
+- **Add video to a voice call:** in an Erevos voice call, **Add video** turns your camera on once the other person says
+  yes; if they say no, the call stays voice.
+- **Switch camera:** **Flip** moves to the next camera. On a computer it shows only when there is more than one camera.
 
 **A call to a phone that is slow to take it:** when their phone takes your call late, for example because it reads
 through Tor, **Calling…** shows for up to a minute and a quarter, and once it rings there it rings for 45 seconds from
@@ -1275,8 +1300,15 @@ out members.
 - **Members:** tap the group's name at the top, or **⋯** beside it. The admin adds contacts, takes members out and renames the group. A
   member taken out reads nothing the group says from then on, and the group stays on their phone, read only, until
   they delete it.
+- **Threads:** hold a message and choose **Reply in thread** to answer it in a thread, or tap **n answers in the
+  thread** under a message to open it. The thread shows alone, and what you send there answers it.
+- **Description:** the group's admin writes it in the members sheet, under **Description**, and taps **Save**. Every
+  member reads it, also those who join later. A change from anyone else is ignored.
 - **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
   admin's own button is **Close the group**: it takes every member out.
+- **One admin:** a private group has one admin, the one who made it. **Why:** the group's changes must come in one
+  order, and with MLS no server puts them in order, so two admins could change the group at once and split it in two. An
+  Erevos from before this accepts changes only from the one who made the group.
 - **Group calls:** the green handset at the top of the group starts a voice call in it, and the blue camera beside it
   a video call (also **Video call** under **⋯**). While one is going on, only its own button shows, to join it. It
   rings on the members' phones where Erevos is open, and whoever answers is in it. A call going on shows at the top of
@@ -1284,7 +1316,7 @@ out members.
   no phone sees another's IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each
   two phones, their keys sent in the group's encryption. In a video call each phone sends its picture to each other
   one, so pictures show for up to four people; with more, they pause and the sound goes on, until a server for bigger
-  video calls is set up.
+  video calls is set up. A call that rings offers **Join** and **Join with video**.
 - **Photos, files and voice messages:** **+** beside the field sends a photo or a file, as in a contact's chat,
   with the same **Photo quality**; hold the microphone while you talk, and let go to send. Each is encrypted with a key of
   its own and put on your relay once, and only where it is and its key go to the group, in its encryption. Each
@@ -1304,7 +1336,9 @@ out members.
   they open, and **Link previews**, when on, go with yours. In the members sheet, or a public group's own screen, **Search in this chat** goes through the group's messages and **Export chat**
   writes them out, and **Media, links and files** lists the group's photos, videos, voice messages, music, files and links, each kind apart, as in a contact's chat (see above), each going to its message; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
-  nothing of reactions, pins, edits and deleting.
+  nothing of reactions, pins, edits and deleting. **Select** chooses several messages to copy, forward or delete
+  together, a poll of yours has **End poll**, and **+** has **Contact card** too. **Everyone** is offered when deleting
+  only if all you chose are yours.
 - **Naming a member:** type **@** in the message box, and the members whose names start with what follows show above
   it: tap one to put in their whole name. A member named so is told of the message even if they muted the group. Only
   whole names count, so **@Anna** does not name Anna Maria. An Erevos from before shows the words only, and tells as
@@ -1321,6 +1355,8 @@ and go to each member as in any group, and no relay learns who is in it.
 - **The link:** tap the group's name at the top for its link and QR code, and **Share the link**. Whoever opens it, or
   scans the code with the phone's camera, chooses the name the group sees and taps **Ask to join**. A link can also be
   pasted under **Join by a link**. Every member has the link, and can pass it on.
+- **Description:** the owner or an admin writes it in the group's own screen, under **Description**, and taps **Save**;
+  everyone in the group reads it.
 - **Joining while you are away:** the request waits on your relay, sealed so that only your phone opens it, until
   Erevos is open on your phone: it looks every few seconds while Erevos shows, and about every minute in the
   background. Then it lets them in, and the group shows on their phone.
@@ -1609,11 +1645,17 @@ between.
   server takes them without asking again; otherwise check this device by emoji or QR code from another of yours, or
   enter the Security Key.
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
+  Write a name instead of a Matrix ID to look for people in your Matrix server's user directory, which learns who you
+  looked for; **Start** begins the chat with the one you tap.
 - **Groups:** **New group**, on the Matrix screen, makes an encrypted group from a name and the Matrix IDs you write,
   each asked to join, as Element makes one; everyone in it sees who the others are. **Join a group** joins one by its
   address, such as #name:matrix.org. A public group may not be encrypted, and its screen then says so. In a group,
   **Invite** asks someone else to join, if the group lets you.
   Typing **@** in a group offers its members; a message names those written whole, so their apps tell them of it.
+- **Members:** in a group, **Members** lists its people and shows who is the **owner**, an **admin** or a **moderator**,
+  as their power levels say. Where your level allows, you rename the group, set its **Subject**, **Make admin** or
+  **Remove as admin**, **Take out** someone (the group's messages no longer reach them) or **Bar** them (they cannot
+  join again until an admin lets them).
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
 - **Not anonymous:** the Matrix server sees your account, who talks with whom and when, and, without Tor, from where.
@@ -1628,6 +1670,9 @@ between.
   **Save** keeps any file on the phone.
   Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
   it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
+- **Stickers:** a sticker that Element, FluffyChat or Element X send shows in the chat; **Show sticker** fetches it
+  through your Matrix server. **Sticker** sends your own stickers made from photos (**Mine**) as pictures, encrypted
+  where the chat is.
 - **Reactions, answers, changes and deleting:** hold a message to open its menu: pick a reaction at the top, **Reply**
   to answer it, **Copy** its words, and for a message of yours **Edit** or **Delete** it. An answer shows the message it
   is to above its words, and a tap on that goes to the message. Reactions show under a message; tap one to react the
@@ -1635,6 +1680,9 @@ between.
   Matrix server sees which message got which reaction, and from whom. Only you can change your own messages, and a
   changed one says **Edited**. **Delete** takes a message of yours back for everyone in the chat, once you confirm; it
   cannot be undone, and the chat keeps a line saying it was deleted.
+- **Several messages:** **Select**, in a message's menu, chooses it, and a tap adds others; then **Copy**, **Forward**
+  or **Delete**. **Delete** takes them back for everyone in the chat, after you confirm: yours and, where your level
+  allows, those of others. It cannot be undone.
 - **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
   it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
   the Matrix server not encrypted, so the server learns each time you write.
@@ -1768,7 +1816,10 @@ bridge sits in between.
   Gajim, Monal and Kaidan do; other apps show a reply with a quote of what it answers, and a change as a new message.
   The words of a reply and of a change are encrypted as the chat is, but which message a reply, change, reaction or
   deletion is about, and a reaction's emoji, go as those apps send them, not encrypted, so the XMPP servers see them. In
-  a group, a message can be answered, reacted to or deleted once the group has passed it back.
+  a group, a message can be answered, reacted to or deleted once the group has passed it back. Tapping the quote of a
+  reply goes to the message it answers. **Forward** sends one or several messages to another XMPP chat. **Pin for me**
+  keeps a message at the top of the chat, on this phone only. **Select** chooses several messages to copy, forward or
+  delete; the **Delete** there takes back only your own.
 - **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos says it of
   you only if you turn on **Say when I am writing** on the XMPP screen, and only to a contact who sees your presence,
   never in a group; it is off at first, as it goes through the XMPP server not encrypted, so the server learns each
@@ -1793,8 +1844,13 @@ bridge sits in between.
   files go through Tor as the chat does.
   Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
   it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
+- **Stickers:** **Sticker** sends your own stickers made from photos (**Mine**) as photos, encrypted as the chat is;
+  other XMPP apps show them as photos. A sticker pack that another app sends (XEP-0449) is not fetched: it shows its
+  words.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send, as in a
-  Matrix chat. It goes as a sound file, encrypted as the chat is, as Conversations sends one, and plays with **Play**.
+  Matrix chat. It goes as a sound file, encrypted as the chat is, as Conversations sends one, and plays with **Play**. A
+  voice message from Conversations or another XMPP app (a .m4a or .ogg file) shows as a voice message too, with **Play**
+  and how long it lasts.
 - **Groups:** a **private group** is for its members only, and each of them sees who the others are. Every message in it
   is encrypted with OMEMO for each member's devices, as Conversations' private groups do it, so the XMPP servers cannot
   read it; what was written before you joined shows as locked. A **channel** is any other group: it is not encrypted,
@@ -1805,12 +1861,14 @@ bridge sits in between.
   read what is encrypted; its admin can **Add people**. A contact who invites you to a group shows under **Invitations
   to groups**, with **Join** and **Decline**; an invitation from anyone else is not shown. Your groups follow your
   account's other XMPP apps through its bookmarks: a group joined there is joined here, and **Leave the group** leaves it
-  there too. A channel tells only of messages that name you.
+  there too. A channel tells only of messages that name you. In a group, **owner** and **admin** show beside the members
+  who are, and the group's **Description** shows under its subject.
 - **Running a group:** the admins of a group see **Run the group** in its screen. They set its **Subject**; its owner
   can also **Rename** it. In a private group, each member has **Take out** (the group's messages no longer go to them,
   and an admin can add them again) and **Bar** (they cannot join again until an admin lets them); the owner can **Make
   admin** a member, or **Remove as admin**. In a channel, **Run the group** lists who is in it, each with **Take
-  out**. Admins cannot take out other admins; only the owner can.
+  out**. Admins cannot take out other admins; only the owner can. The owner also sets the group's **Description**; some
+  servers do not allow one, and Erevos says so.
 - **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
   Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
   contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The
@@ -1905,7 +1963,8 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
   it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Reactions:** hold a message to open its menu and react with 👍, ❤️, 😂, 😮, 😢 or 🙏, or with one of more behind **+**;
-  under it show the reactions, the last one of each person, as other Nostr apps send them (NIP-25).
+  under it show the reactions, the last one of each person, as other Nostr apps send them (NIP-25). Tap a reaction under
+  a message to add the same, or tap yours to take it back; the others' apps are asked to remove it.
 - **Answers:** **Reply**, in the menu of a held message, answers it. The message shows over the message box, with a ✕ to
   let it go, and then above your answer in the chat, where a tap goes to it. Other Nostr apps show it as an answer too
   (NIP-17 marks it as a reply). A photo, file or voice message sent while it shows answers it too. **Copy**, in the same
@@ -1915,6 +1974,12 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   a file does, encrypted on this phone and put on a file server, with how long it lasts in the message; whether another
   app plays it as a voice message or as a sound file is up to that app. One that comes with its length plays with
   **Play**, and is fetched only when you play it.
+- **Pin for me:** keeps a message at the top of the chat, on this phone only; no one else sees it.
+- **Select:** chooses several messages to **Copy**, to **Forward** to another Nostr chat (photos and files are sent
+  again) or to **Delete**. Delete takes them from this phone and asks the others' apps to delete your own too: their
+  apps may or may not do so.
+- **Stickers:** **Sticker** sends your own stickers made from photos (**Mine**) as photos, encrypted: other Nostr apps
+  show them as photos.
 - **Encryption:** each message is encrypted for them and signed by you, then wrapped again by a key made for that
   message alone, its time set back by up to two days (NIP-17, with NIP-44 and NIP-59). The relays see whom it is for,
   not who wrote it, when, or what it says. A copy goes to your own relays, so your other Nostr apps with this key read
@@ -1962,6 +2027,11 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   they are yours; a photo you add is put on the space's file server unencrypted, as a public post's must be. Under a
   Matrix message: **Answer**, **React** (a choice of six) and share (a matrix.to link), and in its three dots **Copy
   text** and **Open the room**. It is always this space's key and account, never the hidden chats' own.
+- **Polls:** in the Public feed a poll shows with its answers, to **Vote** on and, while it is open, with **Results**.
+  **New post** and then **Poll** makes one: up to 10 answers, one or more to choose, open for 1, 3 or 7 days. Votes are
+  public: anyone can see what you chose. A reaction of yours under a post can be taken back by tapping it again.
+- **Custom emoji:** in the Public feed, the emoji that other apps make load like post photos do, as **Photos** and Tor
+  say above. In private chats they show as :name: and are never loaded.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The
@@ -2033,9 +2103,21 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
   their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say
   whether it was read.
-- **Photos (MMS):** the picture before the message field (**Photo**) adds a photo, made smaller to fit one MMS (about 280 KB),
-  with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
-  SMS: the phone company can see it.
+- **Photos, voice messages and contact cards (MMS):** **+** → **Photo** adds a photo, made smaller to fit one MMS (about
+  280 KB), with nothing in it besides the picture. Hold the microphone, with nothing typed, to record a voice message of
+  up to a minute, sent as an MMS in AMR, the format phones' messaging apps play. **+** → **Contact card** sends a
+  contact from the phone's contacts as a vCard, without your notes on it or its groups, and with its picture only if
+  that still fits. Photos, voice messages and contact cards that come show in the conversation, to play or to save
+  (**Save** opens a new contact with the card's details). An MMS is as plain as an SMS: the phone company can see it.
+- **Where you are:** **+** → **Location** sends where you are as an SMS with a geo: address and an OpenStreetMap link,
+  which any phone opens. A geo: address, or a link of OpenStreetMap, Google Maps, Apple Maps or Waze, in an SMS that
+  comes shows as a place, to open in the maps app; a short link stays a link, as it would have to be fetched to tell the
+  place.
+- **Pinned for you:** hold a message and choose **Pin for me** to pin it over the conversation. SMS have no pins: it is
+  kept only on this phone, encrypted with the space's SMS data, and the other person never knows.
+- **Several messages:** hold a message and choose **Select**, then tap others: **Copy** puts them in one text,
+  **Forward** sends them as one into another conversation's draft, and **Delete** deletes them from the phone, with
+  **Undo** for a few seconds.
 - **Choosing a recipient:** under **New SMS**, tap **Contacts** to pick from your contacts, with a search, or just type: contacts
   that match the name or number you type show under the field, and a tap fills it in. A contact with several numbers
   shows one line for each. For a group, each one you pick is added to the numbers there. They are the Phone's contacts

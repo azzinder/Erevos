@@ -120,6 +120,11 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
 - **Nostr-Chats** stehen, sobald der Bereich einen Nostr-Schlüssel hat, genauso in der Liste, jeder mit **Nostr**
   markiert. Der Chip **Nostr** zeigt nur sie, mit der Zahl der ungelesenen Nachrichten, und dort öffnet **Neuer Chat**
   den Bildschirm der Nostr-Chats: siehe [Chats mit anderen Nostr-Apps](#nostr-chats).
+- **Alle als gelesen markieren**, im ⋮-Menü, liest auf einmal jeden Chat des Teils der Liste, in dem du bist (alle
+  Nachrichten, SMS, Erevos, Matrix, XMPP oder Nostr), auch stummgeschaltete und mit PIN gesperrte, nachdem es gefragt
+  hat. Jeder wird gelesen, als hättest du ihn geöffnet, also erfahren die, die geschrieben haben, davon wie dann;
+  Einladungen und Leute, die dich hinzufügen wollen, bleiben, bis du ihnen antwortest. Die Matrix-, XMPP- und
+  Nostr-Bildschirme haben es unter **Chats** für ihre eigenen Chats. Versteckte Chats liest es nie.
 - **Der öffentliche Feed** ist, sobald der Bereich einen Nostr-Schlüssel hat oder in einem öffentlichen Matrix-Raum
   ist, ein weiterer Chip, **Öffentlich**: ein Feed wie in Amethyst, mit den öffentlichen Beiträgen der Menschen, denen
   dein Nostr-Schlüssel folgt, und den Nachrichten der öffentlichen Matrix-Räume, in denen du bist, das Neueste zuerst.
@@ -801,7 +806,8 @@ vorstellt, jemand anderen unterschieben könnte, vergleiche mit dem neuen Kontak
 Unter jeder deiner Nachrichten an einen Kontakt sagt **✓**, dass das Relay oder ein Telefon in der Nähe sie angenommen
 hat, **✓✓**, dass sie auf seinem Telefon angekommen ist, und **✓✓✓**, dass er sie gelesen hat. Sein Telefon sagt es
 deinem, innerhalb der Verschlüsselung, wenn jedes das nächste Mal beim Relay nachsieht, oder sofort, wenn ihr in der
-Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm erscheint.
+Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm erscheint. **Alle als gelesen markieren**
+im ⋮-Menü zählt genauso: Ihre Telefone erfahren es beim nächsten Blick ins Relay.
 
 In einer Gruppe, die nicht öffentlich ist, haben deine Nachrichten dieselben Markierungen, für alle anderen Mitglieder
 zusammen: **✓**, sobald sie gesendet sind, **✓✓**, sobald die Nachricht auf dem Telefon jedes Mitglieds angekommen
@@ -1075,6 +1081,9 @@ Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: die Reaktionen oben, da
 - **Kopieren:** legt ihre Worte in die Zwischenablage, um sie in einer anderen App einzufügen. Auf Android ist die
   Kopie als privat markiert, damit die Benachrichtigung des Telefons darüber die Worte nicht zeigt, aber jede App, die
   die Zwischenablage liest, kann sie lesen.
+- **Auswählen:** wählt diese Nachricht aus, und ein Tippen auf andere fügt sie hinzu; eine Leiste bietet dann
+  **Kopieren**, das alle Worte in einen Text mit Zeit und Verfasser jeder Nachricht legt, **Weiterleiten**, das sie in
+  einen Chat sendet, und **Löschen**, das einmal fragt, bevor es sie löscht. **Zurück** beendet das Auswählen.
 - **Bearbeiten:** für eine deiner Nachrichten, bis zu einem Tag nach dem Senden. Ihre Worte kommen ins Feld unter
   **Nachricht bearbeiten**: Ändere sie und sende, oder **✕**, um sie zu lassen, wie sie war. Beide Telefone zeigen die
   neuen Worte, mit **Bearbeitet** neben der Uhrzeit. Nur Worte werden bearbeitet, kein Sticker, kein Ort, keine
@@ -1084,6 +1093,9 @@ Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: die Reaktionen oben, da
   auch. Ein Erevos von vor dieser Funktion behält die alten Worte.
   **Warum:** Ein Tag ist Zeit genug, um einen Fehler zu berichtigen, und niemand kann ändern, was er vor Tagen gesagt
   hat. Die Markierung zeigt, dass die Worte nicht die ersten sind.
+- **Umfrage beenden:** für eine Umfrage von dir: Keine Stimmen zählen mehr, und die Endergebnisse erscheinen. Ein Erevos
+  von vor dieser Funktion sieht sie weiter offen, und eine Stimme, die in diesem Moment gesendet wurde, zählt vielleicht
+  nur auf manchen Telefonen.
 - **Löschen:** auf diesem Telefon oder auf beiden, wie oben.
 
 Reaktionen, Antworten, Anheftungen und Bearbeitungen reisen innerhalb der Verschlüsselung, wie die Nachrichten.
@@ -1169,8 +1181,12 @@ tippst du einmal, um zu beginnen, und noch einmal, um zu senden. Tippe auf eine 
 und noch einmal, um sie anzuhalten. Sprachnachrichten haben dieselben Zeichen wie der Rest und folgen der
 Verschwinden-Einstellung des Chats.
 
-**Warum:** Auf einem Telefon ist eine Sprachnachricht AAC mit 64 kbit/s, etwa 480 KB pro Minute: so klar, wie Sprache
-nur sein kann. Mehr wäre in einer Stimme nicht zu hören, würde aber langsamer gesendet, vor allem über Bluetooth.
+**Warum:** Auf Android 10 und neuer, in der Web-App und auf einem Computer ist eine Sprachnachricht Opus mit 32 kbit/s,
+etwa 240 KB pro Minute, wie Telegram, Element und Conversations sie senden: so klar, wie Sprache nur sein kann. Auf
+Android 9 und älter und in Safari vor iOS 18.4 und macOS 15.4 ist sie AAC mit 64 kbit/s, etwa 480 KB pro Minute. Mehr
+wäre in einer Stimme nicht zu hören, würde aber langsamer gesendet, vor allem über Bluetooth. Jedes Erevos spielt beide
+ab: Safari vor 18.4 spielt Opus ab, sobald Erevos es für ihn neu verpackt, und wo ein Browser eines nicht abspielen
+kann, sagt Erevos das.
 
 - **Über das Relay oder in der Nähe,** Ende-zu-Ende-verschlüsselt wie die Worte, in mehreren Stücken. Niemand
   dazwischen kann sie hören, aber an den Stücken kann das Relay, oder wer in der Nähe mithört, erkennen, dass etwas
@@ -1253,6 +1269,10 @@ Sticker):
   folgt dir danach nicht. Die Nachricht enthält nur die Koordinaten, Ende-zu-Ende-verschlüsselt; in Erevos wird keine
   Karte geladen. **In Karten öffnen** übergibt den Ort an deine Karten-App, die ihre Karte aus dem Internet laden kann.
   Ein Erevos von vor dieser Funktion zeigt die Koordinaten als Worte.
+- **Kontaktkarte:** sendet einen Kontakt aus den Kontakten deines Telefons als Karte, mit Name, Nummern und
+  E-Mail-Adressen, Ende-zu-Ende-verschlüsselt. Die andere Person sieht die Karte mit **Zu Kontakten hinzufügen**; ein
+  Erevos von vor dieser Funktion zeigt sie als Worte. In versteckten Chats wählst du nur unter den Kontakten, die im
+  versteckten Bereich gespeichert sind, nie unter denen des Telefons.
 - **Umfrage:** eine Frage mit zwei oder mehr Optionen, bis zu 12, und, mit **Mehrere Antworten**, mehr als einer zur
   Wahl. Tippe auf eine Option, um sie zu wählen, noch einmal, um sie zurückzunehmen; jede Option zeigt, wie viele sie
   gewählt haben, und wer. Stimmen reisen innerhalb der Verschlüsselung, wie Reaktionen. Ein Erevos von vor dieser
@@ -1297,6 +1317,16 @@ Erevos das Mikrofon nutzen darf, und für Video die Kamera. Das andere Telefon k
 auf jedem Bildschirm des Bereichs: Dort tippt man auf **Annehmen** oder **Ablehnen**. Während des Anrufs kannst du das
 Mikrofon stummschalten, den Lautsprecher umschalten, deine Kamera ausschalten, zwischen Front- und Rückkamera wechseln
 und **Auflegen**. Jeder Anruf hinterlässt eine Zeile im Chat, etwa wie lange er dauerte, oder einen verpassten Anruf.
+
+- **Mit Video oder nur mit Stimme annehmen:** Ein Anruf, der klingelt, bietet **Annehmen**, nur mit Stimme, und **Mit
+  Video annehmen**, bei Erevos-Anrufen und bei XMPP- und Matrix-Anrufen; in einem Gruppenanruf heißen sie **Beitreten**
+  und **Mit Video beitreten**. Ein Videoanruf, den du nur mit Stimme annimmst, beginnt mit ausgeschalteter Kamera.
+- **Die Kamera später einschalten:** **Kamera an** auf dem Anrufbildschirm geht, wenn die App der anderen Seite einen
+  Anruf während des Gesprächs ändern kann; ein Gruppenanruf bleibt, wie du beigetreten bist.
+- **Video zu einem Sprachanruf hinzufügen:** In einem Erevos-Sprachanruf schaltet **Video dazu** deine Kamera ein,
+  sobald die andere Person Ja sagt; sagt sie Nein, bleibt der Anruf ein Sprachanruf.
+- **Kamera wechseln:** **Wechseln** geht zur nächsten Kamera. Auf einem Computer erscheint es nur, wenn es mehr als eine
+  Kamera gibt.
 
 **Ein Anruf bei einem Telefon, das ihn langsam annimmt:** Nimmt ihr Telefon deinen Anruf spät entgegen, zum Beispiel
 weil es über Tor liest, steht **Ruft an…** bis zu eineinviertel Minuten da, und sobald es dort klingelt, klingelt es
@@ -1488,8 +1518,17 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
 - **Mitglieder:** Tippe oben auf den Namen der Gruppe oder auf **⋯** daneben. Der Admin fügt Kontakte hinzu, nimmt
   Mitglieder heraus und benennt die Gruppe um. Ein herausgenommenes Mitglied liest ab dann nichts mehr, was die Gruppe
   sagt, und die Gruppe bleibt auf seinem Telefon, nur lesbar, bis es sie löscht.
+- **Threads:** Halte eine Nachricht gedrückt und wähle **Im Thread antworten**, um ihr in einem Thread zu antworten,
+  oder tippe unter einer Nachricht auf **n Antworten im Thread**, um ihn zu öffnen. Der Thread erscheint allein, und was
+  du dort sendest, antwortet darauf.
+- **Beschreibung:** Der Admin der Gruppe schreibt sie im Mitgliederblatt unter **Beschreibung** und tippt auf
+  **Speichern**. Jedes Mitglied liest sie, auch wer später beitritt. Eine Änderung von jemand anderem wird ignoriert.
 - **Verlassen:** **Gruppe verlassen** bittet den Admin, dessen Telefon dich herausnimmt, wenn Erevos dort das nächste
   Mal offen ist. Die eigene Taste des Admins ist **Gruppe schließen**: Sie nimmt jedes Mitglied heraus.
+- **Ein Admin:** Eine private Gruppe hat einen Admin, den, der sie gemacht hat. **Warum:** Die Änderungen der Gruppe
+  müssen in einer Reihenfolge kommen, und bei MLS bringt kein Server sie in eine Reihenfolge, sodass zwei Admins die
+  Gruppe gleichzeitig ändern und in zwei teilen könnten. Ein Erevos von vor dieser Funktion nimmt Änderungen nur von dem
+  an, der die Gruppe gemacht hat.
 - **Gruppenanrufe:** Der grüne Hörer oben in der Gruppe startet darin einen Sprachanruf und die blaue Kamera daneben
   einen Videoanruf (auch **Videoanruf** unter **⋯**). Während einer läuft, erscheint nur seine eigene Taste, um
   beizutreten. Er klingelt auf den Telefonen der Mitglieder, auf denen Erevos offen ist, und wer annimmt, ist dabei.
@@ -1498,7 +1537,7 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
   Anruf-Relay nur im selben WLAN. Ende-zu-Ende-verschlüsselt zwischen je zwei Telefonen, ihre Schlüssel in der
   Verschlüsselung der Gruppe gesendet. In einem Videoanruf sendet jedes Telefon sein Bild an jedes andere, sodass Bilder
   für bis zu vier Personen erscheinen; bei mehr pausieren sie und der Ton läuft weiter, bis ein Server für größere
-  Videoanrufe eingerichtet ist.
+  Videoanrufe eingerichtet ist. Ein Anruf, der klingelt, bietet **Beitreten** und **Mit Video beitreten**.
 - **Fotos, Dateien und Sprachnachrichten:** **+** neben dem Feld sendet ein Foto oder eine Datei, wie im Chat eines
   Kontakts, mit derselben **Fotoqualität**; halte das Mikrofon gedrückt, während du sprichst, und lass los, um zu
   senden. Jedes wird mit einem eigenen Schlüssel verschlüsselt und einmal auf dein Relay gelegt, und nur wo es liegt und
@@ -1523,7 +1562,10 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
   öffentlichen Gruppe, durchsucht **In diesem Chat suchen** die Nachrichten der Gruppe, und **Chat exportieren**
   schreibt sie heraus, und **Medien, Links und Dateien** listet die Fotos, Videos, Sprachnachrichten, Musik, Dateien und Links der Gruppe auf, jede Art für sich, wie im Chat eines Kontakts (siehe oben), jedes mit Sprung zu seiner Nachricht; **Markierte Nachrichten** und die Suche des Startbildschirms schließen die Gruppen mit ein. Ein
   Mitglied, dessen Erevos von vor dieser Version ist, sieht die Worte, das Emoji eines Stickers, die Koordinaten eines
-  Orts und die Frage einer Umfrage, und nichts von Reaktionen, Anheftungen, Bearbeitungen und Löschen.
+  Orts und die Frage einer Umfrage, und nichts von Reaktionen, Anheftungen, Bearbeitungen und Löschen. **Auswählen**
+  wählt mehrere Nachrichten, um sie zusammen zu kopieren, weiterzuleiten oder zu löschen, eine Umfrage von dir hat
+  **Umfrage beenden**, und **+** hat auch **Kontaktkarte**. **Für alle** wird beim Löschen nur angeboten, wenn alles,
+  was du gewählt hast, von dir ist.
 - **Ein Mitglied nennen:** Tippe **@** ins Nachrichtenfeld, und die Mitglieder, deren Namen mit dem Folgenden beginnen,
   erscheinen darüber: Tippe auf eines, um den ganzen Namen einzusetzen. Ein so genanntes Mitglied erfährt von der
   Nachricht, auch wenn es die Gruppe stummgeschaltet hat. Nur ganze Namen zählen, daher nennt **@Anna** nicht Anna
@@ -1542,6 +1584,8 @@ und gehen an jedes Mitglied wie in jeder Gruppe, und kein Relay erfährt, wer da
   öffnet oder den Code mit der Kamera des Telefons scannt, wählt den Namen, den die Gruppe sieht, und tippt auf
   **Beitritt anfragen**. Ein Link lässt sich auch unter **Per Link beitreten** einfügen. Jedes Mitglied hat den Link
   und kann ihn weitergeben.
+- **Beschreibung:** Der Inhaber oder ein Admin schreibt sie auf dem eigenen Bildschirm der Gruppe unter **Beschreibung**
+  und tippt auf **Speichern**; alle in der Gruppe lesen sie.
 - **Beitreten, während du weg bist:** Die Anfrage wartet auf deinem Relay, so versiegelt, dass nur dein Telefon sie
   öffnet, bis Erevos auf deinem Telefon offen ist: Es schaut alle paar Sekunden nach, solange Erevos sichtbar ist, und
   etwa jede Minute im Hintergrund. Dann lässt es die Person herein, und die Gruppe erscheint auf ihrem Telefon.
@@ -1862,7 +1906,9 @@ Element: Keine Brücke sitzt dazwischen.
   Cross-Signing-Schlüssel des Kontos nur, wenn der Server sie ohne erneute Frage annimmt; sonst prüfe dieses Gerät per
   Emoji oder QR-Code von einem anderen deiner Geräte, oder gib den Sicherheitsschlüssel ein.
 - **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
-  **Beitreten** und **Ablehnen**.
+  **Beitreten** und **Ablehnen**. Schreibe einen Namen statt einer Matrix-ID, um im Benutzerverzeichnis deines
+  Matrix-Servers nach Leuten zu suchen; der Server erfährt, nach wem du gesucht hast; **Starten** beginnt den Chat mit
+  dem, auf den du tippst.
 - **Gruppen:** **Neue Gruppe**, auf dem Matrix-Bildschirm, erstellt eine verschlüsselte Gruppe aus einem Namen und den
   Matrix-IDs, die du schreibst, jede eingeladen, wie Element eine erstellt; alle darin sehen, wer die anderen sind.
   **Einer Gruppe beitreten** tritt einer Gruppe über ihre Adresse bei, etwa #name:matrix.org. Eine öffentliche Gruppe
@@ -1870,6 +1916,11 @@ Element: Keine Brücke sitzt dazwischen.
   ein, wenn die Gruppe es dir erlaubt.
   Wer in einer Gruppe **@** tippt, bekommt ihre Mitglieder angeboten; eine Nachricht nennt die ganz Geschriebenen, und
   deren Apps sagen es ihnen.
+- **Mitglieder:** In einer Gruppe listet **Mitglieder** ihre Leute auf und zeigt, wer **Inhaber**, **Admin** oder
+  **Moderator** ist, wie ihre Rechtestufen es sagen. Wo deine Stufe es erlaubt, benennst du die Gruppe um, setzt ihren
+  **Betreff**, machst jemanden mit **Zum Admin machen** zum Admin oder nimmst es mit **Als Admin entfernen** zurück,
+  **Entfernen** jemanden (die Nachrichten der Gruppe erreichen ihn nicht mehr) oder **Sperren** ihn (er kann nicht
+  wieder beitreten, bis ein Admin ihn lässt).
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
   Megolm, über vodozemac). Ein nicht verschlüsselter Chat sagt es.
 - **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht und wann, und ohne Tor auch, von wo. In
@@ -1886,6 +1937,9 @@ Element: Keine Brücke sitzt dazwischen.
   Tippe auf ein gezeigtes Foto, um es wie im Chat eines Kontakts auf dem ganzen Bildschirm zu sehen: Zwei Finger oder
   zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
   unter [Chat über ein Relay](#relay)).
+- **Sticker:** Ein Sticker, den Element, FluffyChat oder Element X senden, erscheint im Chat; **Sticker anzeigen** holt
+  ihn über deinen Matrix-Server. **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Bilder,
+  verschlüsselt, wo der Chat es ist.
 - **Reaktionen, Antworten, Änderungen und Löschen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: Wähle oben
   eine Reaktion, **Antworten**, um ihr zu antworten, **Kopieren** für ihren Text, und bei einer Nachricht von dir
   **Bearbeiten** oder **Löschen**. Eine Antwort zeigt über ihrem Text die Nachricht, auf die sie antwortet, und ein
@@ -1895,6 +1949,9 @@ Element: Keine Brücke sitzt dazwischen.
   eigenen Nachrichten ändern, und eine geänderte trägt **Bearbeitet**. **Löschen** nimmt eine Nachricht von dir für alle
   im Chat zurück, wenn du es bestätigst; es lässt sich nicht rückgängig machen, und der Chat behält eine Zeile, die
   sagt, dass sie gelöscht wurde.
+- **Mehrere Nachrichten:** **Auswählen** im Menü einer Nachricht wählt sie aus, und ein Tippen fügt weitere hinzu; dann
+  **Kopieren**, **Weiterleiten** oder **Löschen**. **Löschen** nimmt sie nach deiner Bestätigung für alle im Chat
+  zurück: deine und, wo deine Stufe es erlaubt, die anderer. Es lässt sich nicht rückgängig machen.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
   sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
   aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
@@ -2049,7 +2106,10 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   einer Antwort und einer Änderung ist verschlüsselt wie der Chat, aber welche Nachricht eine Antwort, Änderung,
   Reaktion oder Löschung betrifft, und das Emoji einer Reaktion, gehen so, wie diese Apps sie senden, unverschlüsselt,
   sodass die XMPP-Server sie sehen. In einer Gruppe kann eine Nachricht beantwortet, mit einer Reaktion versehen oder
-  gelöscht werden, sobald die Gruppe sie zurückgegeben hat.
+  gelöscht werden, sobald die Gruppe sie zurückgegeben hat. Ein Tippen auf das Zitat einer Antwort geht zur Nachricht,
+  auf die sie antwortet. **Weiterleiten** sendet eine oder mehrere Nachrichten in einen anderen XMPP-Chat. **Für mich
+  anheften** hält eine Nachricht oben im Chat, nur auf diesem Telefon. **Auswählen** wählt mehrere Nachrichten zum
+  Kopieren, Weiterleiten oder Löschen; **Löschen** nimmt dort nur deine eigenen zurück.
 - **Schreiben:** wenn die App der anderen Person meldet, dass sie schreibt, erscheint **schreibt…** unter dem Chat.
   Erevos meldet es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem XMPP-Bildschirm einschaltest, und nur
   einem Kontakt, der deine Anwesenheit sieht, nie in einer Gruppe; anfangs ist es aus, da es unverschlüsselt über den
@@ -2079,8 +2139,13 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Tippe auf ein gezeigtes Foto, um es wie im Chat eines Kontakts auf dem ganzen Bildschirm zu sehen: Zwei Finger oder
   zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
   unter [Chat über ein Relay](#relay)).
+- **Sticker:** **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Fotos, verschlüsselt wie der
+  Chat; andere XMPP-Apps zeigen sie als Fotos. Ein Sticker-Paket, das eine andere App sendet (XEP-0449), wird nicht
+  geholt: Es zeigt seine Worte.
 - **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
   senden, wie in einem Matrix-Chat. Sie geht als Tondatei, verschlüsselt wie der Chat, so wie Conversations sie sendet.
+  Eine Sprachnachricht von Conversations oder einer anderen XMPP-App (eine .m4a- oder .ogg-Datei) erscheint ebenfalls
+  als Sprachnachricht, mit **Abspielen** und ihrer Dauer.
 - **Gruppen:** Eine **private Gruppe** ist nur für ihre Mitglieder, und jedes sieht, wer die anderen sind. Jede Nachricht
   darin wird mit OMEMO für die Geräte jedes Mitglieds verschlüsselt, wie bei den privaten Gruppen von Conversations,
   sodass die XMPP-Server sie nicht lesen können; was vor deinem Beitritt geschrieben wurde, erscheint gesperrt. Ein
@@ -2093,13 +2158,15 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   dich in eine Gruppe einlädt, steht unter **Einladungen in Gruppen**, mit **Beitreten** und **Ablehnen**; die Einladung
   von jemand anderem wird nicht gezeigt. Deine Gruppen folgen den anderen XMPP-Apps deines Kontos über seine
   Lesezeichen: Eine Gruppe, der du dort beitrittst, erscheint auch hier, und **Gruppe verlassen** verlässt sie dort
-  ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen.
+  ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen. In einer Gruppe stehen **Inhaber** und **Admin**
+  bei den Mitgliedern, die es sind, und die **Beschreibung** der Gruppe steht unter ihrem Betreff.
 - **Eine Gruppe leiten:** Die Admins einer Gruppe sehen auf ihrem Bildschirm **Die Gruppe leiten**. Sie setzen den
   **Betreff**; der Besitzer kann sie auch **umbenennen**. In einer privaten Gruppe hat jedes Mitglied **Entfernen**
   (die Nachrichten der Gruppe gehen nicht mehr an die Person, ein Admin kann sie wieder hinzufügen) und **Sperren**
   (sie kann nicht wieder beitreten, bis ein Admin es erlaubt); der Besitzer kann ein Mitglied **zum Admin machen**
   oder **als Admin entfernen**. In einem Kanal listet **Die Gruppe leiten** auf, wer drin ist, jeweils mit
-  **Entfernen**. Admins können keine anderen Admins entfernen; nur der Besitzer.
+  **Entfernen**. Admins können keine anderen Admins entfernen; nur der Besitzer. Der Inhaber setzt auch die
+  **Beschreibung** der Gruppe; manche Server erlauben keine, und Erevos sagt das.
 - **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
   Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
   ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so
@@ -2206,7 +2273,8 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   unter [Chat über ein Relay](#relay)).
 - **Reaktionen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen und mit 👍, ❤️, 😂, 😮, 😢 oder 🙏 zu reagieren, oder
   mit einer der weiteren hinter **+**; darunter stehen die Reaktionen, die letzte jeder Person, wie andere Nostr-Apps
-  sie senden (NIP-25).
+  sie senden (NIP-25). Tippe unter einer Nachricht auf eine Reaktion, um dieselbe hinzuzufügen, oder auf deine, um sie
+  zurückzunehmen; die Apps der anderen werden gebeten, sie zu entfernen.
 - **Antworten:** Wähle im Menü einer gehaltenen Nachricht **Antworten**, um sie zu beantworten. Die Nachricht steht über
   dem Nachrichtenfeld, mit einem ✕, um sie loszulassen, und danach im Chat über deiner Antwort, wo ein Tippen zu ihr
   springt. Auch andere Nostr-Apps zeigen sie als Antwort (NIP-17 kennzeichnet sie als Antwort). Auch ein Foto, eine
@@ -2218,6 +2286,12 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Dateiserver gelegt, mit ihrer Dauer in der Nachricht; ob eine andere App sie als Sprachnachricht oder als Tondatei
   abspielt, entscheidet diese App. Eine, die mit ihrer Dauer ankommt, spielst du mit **Abspielen** ab; sie wird erst
   geholt, wenn du sie abspielst.
+- **Für mich anheften:** hält eine Nachricht oben im Chat, nur auf diesem Telefon; niemand sonst sieht es.
+- **Auswählen:** wählt mehrere Nachrichten zum **Kopieren**, zum **Weiterleiten** in einen anderen Nostr-Chat (Fotos und
+  Dateien werden neu gesendet) oder zum **Löschen**. Löschen nimmt sie von diesem Telefon und bittet die Apps der
+  anderen, auch deine eigenen zu löschen: Ihre Apps tun das vielleicht oder nicht.
+- **Sticker:** **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Fotos, verschlüsselt: Andere
+  Nostr-Apps zeigen sie als Fotos.
 - **Verschlüsselung:** Jede Nachricht wird für sie verschlüsselt und von dir signiert, dann von einem Schlüssel, der nur
   für diese Nachricht erstellt wird, noch einmal verpackt, ihre Zeit um bis zu zwei Tage zurückgesetzt (NIP-17, mit
   NIP-44 und NIP-59). Die Relays sehen, für wen sie ist, nicht wer sie schrieb, wann oder was darin steht. Eine Kopie
@@ -2276,6 +2350,12 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   einem öffentlichen Beitrag sein muss. Unter einer Matrix-Nachricht: **Antworten**, **Reagieren** (eine Auswahl von
   sechs) und Teilen (ein matrix.to-Link), und in ihren drei Punkten **Text kopieren** und **Den Raum öffnen**. Es ist
   immer der Schlüssel und das Konto dieses Bereichs, nie die eigenen der versteckten Chats.
+- **Umfragen:** Im öffentlichen Feed erscheint eine Umfrage mit ihren Antworten, zum **Abstimmen** und, solange sie
+  offen ist, mit **Ergebnisse**. **Neuer Beitrag** und dann **Umfrage** macht eine: bis zu 10 Antworten, eine oder
+  mehrere zur Wahl, offen für 1, 3 oder 7 Tage. Stimmen sind öffentlich: Jeder kann sehen, was du gewählt hast. Eine
+  Reaktion von dir unter einem Beitrag nimmst du zurück, indem du erneut darauf tippst.
+- **Eigene Emoji:** Im öffentlichen Feed werden die Emoji, die andere Apps machen, geladen wie die Fotos der Beiträge,
+  wie **Fotos** und Tor oben sagen. In privaten Chats erscheinen sie als :name: und werden nie geladen.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.
@@ -2358,9 +2438,24 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
 - **✓ und ✓✓✓:** Eine SMS von dir zeigt ✓, sobald sie gegangen ist, und ✓✓✓, sobald der Zustellbericht des Netzes
   sagt, dass sie auf dem anderen Telefon angekommen ist, oder „nicht zugestellt“. Manche Telefongesellschaften senden
   keine Zustellberichte; dann bleibt sie bei ✓. SMS können nicht sagen, ob sie gelesen wurden.
-- **Fotos (MMS):** Das Bild vor dem Nachrichtenfeld (**Foto**) fügt ein Foto hinzu, verkleinert, damit es in eine MMS
-  passt (etwa 280 KB), mit nichts darin außer dem Bild. Fotos, die per MMS kommen, erscheinen in der Unterhaltung. Eine
-  MMS ist so offen wie eine SMS: Die Telefongesellschaft kann sie sehen.
+- **Fotos, Sprachnachrichten und Kontaktkarten (MMS):** **+** → **Foto** fügt ein Foto hinzu, verkleinert, damit es in
+  eine MMS passt (etwa 280 KB), mit nichts darin außer dem Bild. Halte das Mikrofon, wenn nichts getippt ist, um eine
+  Sprachnachricht von bis zu einer Minute aufzunehmen, gesendet als MMS in AMR, dem Format, das die Nachrichten-Apps der
+  Telefone abspielen. **+** → **Kontaktkarte** sendet einen Kontakt aus den Kontakten des Telefons als vCard, ohne deine
+  Notizen dazu oder seine Gruppen, und mit seinem Bild nur, wenn es noch passt. Fotos, Sprachnachrichten und
+  Kontaktkarten, die ankommen, erscheinen in der Unterhaltung, zum Abspielen oder Speichern (**Speichern** öffnet einen
+  neuen Kontakt mit den Angaben der Karte). Eine MMS ist so unverschlüsselt wie eine SMS: Der Mobilfunkanbieter kann sie
+  sehen.
+- **Wo du bist:** **+** → **Standort** sendet, wo du bist, als SMS mit einer geo:-Adresse und einem OpenStreetMap-Link,
+  den jedes Telefon öffnet. Eine geo:-Adresse oder ein Link von OpenStreetMap, Google Maps, Apple Maps oder Waze in
+  einer SMS, die ankommt, erscheint als Ort, zum Öffnen in der Karten-App; ein Kurzlink bleibt ein Link, da er geholt
+  werden müsste, um den Ort zu kennen.
+- **Für dich angeheftet:** Halte eine Nachricht gedrückt und wähle **Für mich anheften**, um sie über der Unterhaltung
+  anzuheften. SMS haben keine Anheftungen: Sie wird nur auf diesem Telefon gespeichert, verschlüsselt mit den SMS-Daten
+  des Bereichs, und die andere Person erfährt nie davon.
+- **Mehrere Nachrichten:** Halte eine Nachricht gedrückt und wähle **Auswählen**, dann tippe auf weitere: **Kopieren**
+  legt sie in einen Text, **Weiterleiten** sendet sie als eine in den Entwurf einer anderen Unterhaltung, und
+  **Löschen** löscht sie vom Telefon, mit **Rückgängig** für einige Sekunden.
 - **Empfänger wählen:** Tippe unter **Neue SMS** auf **Kontakte**, um aus deinen Kontakten zu wählen, mit Suche, oder
   tippe einfach: Kontakte, die zu Name oder Nummer passen, erscheinen unter dem Feld, und ein Tippen füllt es aus. Ein
   Kontakt mit mehreren Nummern zeigt für jede eine Zeile. Bei einer Gruppe wird jede Wahl zu den vorhandenen Nummern

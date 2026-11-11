@@ -14,6 +14,43 @@ On main, not released yet:
 
 ### For you
 
+- **Voice messages in Opus**: voice messages are recorded as Ogg/Opus on Android 10 and later and in the web and desktop
+  apps, at half the size (about 240 KB a minute) and as clear. Older phones and Safari before 18.4 keep AAC. Every
+  Erevos plays both, an iPhone before iOS 18.4 too, and they go to Matrix, XMPP and Nostr as voice.ogg.
+- **Mark all as read**: in the ⋮ menu of the home screen, for the part of the list shown (all messages, SMS, Erevos,
+  Matrix, XMPP or Nostr), and under Chats on the Matrix, XMPP and Nostr screens. It asks first. Each chat is read as if
+  opened: Erevos contacts hear of it with the next look at the relay (an "appear offline" chat with what it next writes,
+  a message request never), groups' members as usual, Matrix gets a read receipt and XMPP a chat marker. Invitations
+  stay until answered. Your linked devices see the chats read too.
+- **Answer any call with video or with voice only**: Erevos calls, group calls, XMPP and Matrix (Element Call too) offer
+  Answer and Answer with video, in a group call Join and Join with video. Turn your camera on later where the other app
+  allows it, add video to an Erevos voice call, and switch cameras on web and desktop (Flip shows only when there is
+  more than one camera).
+- **More in SMS conversations**: hold the microphone to send a voice message by MMS (AMR, up to a minute, the format
+  phones' messaging apps play). **+** → **Location** sends where you are as an SMS with its geo: address and an
+  OpenStreetMap link. **+** → **Contact card** sends a contact from the phone as a vCard in an MMS. Voice messages and
+  contact cards you receive show ready to play or save (**Save** opens a new contact with the card's details), and map
+  links in SMS show as places to open in the maps app. Hold a message down for **Pin for me**, pinned over the
+  conversation only for you, or **Select** to copy, forward or delete several at once.
+- **More in XMPP chats**: voice messages from Conversations and other apps play with their length; **Sticker** sends
+  your own photo stickers as photos (encrypted as the chat is); group members show owner and admin badges and the owner
+  can edit the group's description; **Forward** sends one or several messages to another XMPP chat (marked as forwarded
+  with XEP-0297 where the chat is not encrypted); tapping a quoted reply jumps to it; **Pin for me** pins messages on
+  this phone only; and **Select** copies, forwards or deletes several messages.
+- **More in Nostr chats**: tap a reaction to add the same or take yours back; **Pin for me** keeps pins on this phone;
+  **Select** several messages to copy, forward to another Nostr chat (photos and files sent again) or delete, which asks
+  the others' apps to delete your own too; send your own photo stickers. In the Public feed: polls you can see, vote on
+  and make, reactions you can take back, and custom emoji, loaded as post photos are.
+- **Matrix: groups, stickers, finding people, choosing several messages**: **Members** shows who is owner, admin or
+  moderator from the group's power levels, and where your level allows you rename the group, set its subject, make or
+  remove admins, take people out and bar them. Stickers from Element, FluffyChat and Element X show, and **Sticker**
+  sends your own photo stickers, encrypted where the chat is. **New chat** searches the server's user directory besides
+  taking a Matrix ID (the server learns who you looked for). **Select** copies, forwards or deletes several messages,
+  for everyone in the chat where your level allows.
+- **More in your chats and groups**: choose several messages to copy, forward or delete together, end a poll you made,
+  send a contact card that can be added to contacts, follow and answer threads in groups, and read a group's
+  description, which its admin sets (the owner or an admin of a public group). A private group has one admin: the order
+  of its changes cannot be kept with two.
 - **Folders in Chat with myself**: notes, photos, files and voice messages can go in folders. The folder button at the
   top makes one; its tab above the notes shows only what is in it, and what you write while it is chosen goes into it.
   Holding a note offers **Move to a folder**; holding a folder's tab renames or deletes it, its notes staying, in no
@@ -39,6 +76,8 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Ticks**: a text the other phone had, and read, before it showed as sent here (through a slow Nostr relay) no longer
+  stays at one tick.
 - **A text no longer waits for slow Nostr relays**: with Nostr on, a text to a contact waited for one of the Nostr
   relays to say it took it, up to 20 seconds when none answered, before it went through their relay. Now, when none
   says so within 4 seconds, it goes through the relay as well at once; their phone shows it once.
