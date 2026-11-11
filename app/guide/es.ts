@@ -1022,7 +1022,13 @@ Mantén pulsado un mensaje para su menú: las reacciones arriba, y luego lo que 
   desaparece no se reenvía, y desde los chats ocultos un mensaje solo va a esos mismos chats ocultos.
 - **Destacar:** lo destaca, solo en este teléfono, para encontrarlo otra vez: **Mensajes destacados** en el menú de la
   pantalla de inicio los lista de todos tus chats, y los detalles de un chat listan los suyos. Un toque va al mensaje.
-  Los mensajes destacados de los chats ocultos solo aparecen en los detalles de sus chats.
+  Los mensajes destacados de los chats ocultos solo aparecen en los detalles de sus chats. Los chats de Matrix, XMPP y
+  Nostr, y las conversaciones SMS, también tienen **Destacar**, guardado cifrado solo en este teléfono: los **Mensajes
+  destacados** propios de un chat listan los suyos, y los de la pantalla de inicio los listan con todos los demás,
+  cada uno abriendo su chat en el mensaje. En esos chats, al mantener pulsada una foto, un vídeo, un mensaje de voz,
+  un archivo o la imagen de un MMS también ves **Guardar en la Colección**, y al mantener pulsado un sticker o una
+  foto que llegó ves **Añadir a mis stickers**; el selector de stickers de SMS también ofrece los tuyos, para
+  enviarlos como MMS.
 - **Fijar:** lo fija arriba del chat, en los dos teléfonos; cualquiera de los dos puede **Dejar de fijar**. Con más de
   uno fijado, se ve el último; tócalo para ir a él, y se ve el siguiente.
 - **Copiar:** pone sus palabras en el portapapeles, para pegarlas en otra app. En Android la copia se marca como

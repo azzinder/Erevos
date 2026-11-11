@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
 import { LinkedText } from '../components/linked-text';
+import { keptName, StarredHere, useKeep } from '../components/keep-actions';
 import { Missing, type Answered } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -100,7 +101,10 @@ import { checkedLook } from '../theme/look';
 // (components/network-chat-notify.tsx). Opened from a hidden place's hidden chats (`hidden=1`) it is
 // the chat of that place's own key (lib/network-place.ts), which has no notification settings.
 // **Public posts**, in a chat with one person, opens what they post for everyone, read only
-// (app/nostr-posts.tsx).
+// (app/nostr-posts.tsx). A message held down can be starred too, on this device only, a photo
+// that came kept as one of the owner's stickers, and a photo, sound or file saved into the
+// Collection (components/keep-actions.tsx); Starred messages lists the chat's, and the chat opened
+// at one (`at`) goes to it.
 // Words show with their marks (*bold*, _italic_…) and tappable web addresses; a place goes as its
 // geo: address and a map's link, and one that comes so shows as a place; Camera, Video and Contact
 // card (a .vcf file) send as a photo does, and in a group, @ offers its members and names them as
@@ -139,7 +143,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { key: given, hidden } = useLocalSearchParams<{ key?: string; hidden?: string }>();
+  const { key: given, hidden, at } = useLocalSearchParams<{ key?: string; hidden?: string; at?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const key = given && /^[0-9a-f]{64}$/.test(given) ? given : undefined;
   const [now, setNow] = useState(nostrDmNow(where));
@@ -199,7 +203,12 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     idOf: (message) => message.id,
     mine: (message) => message.mine,
     unread: chat?.unread ?? 0,
+    // Opened at a starred message: there.
+    at,
+    onAt: (found) => found || setNote(t('That message is not on this phone.')),
   });
+  // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
+  const keep = useKeep({ service: 'nostr', place: nostrDmStickerPlace(where), account: state?.public ?? '', chat: key ?? '', group: !!chat?.members, messages: chat?.messages, say: setNote });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!key ? undefined : where === 'space' ? `nostr:${key}` : hiddenOnScreen());
   useEffect(() => {
@@ -360,6 +369,15 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     if (canForwardNostr(message)) actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
     const pinned = pins.includes(message.id);
     actions.push({ title: pinned ? t('Unpin') : t('Pin for me'), onPress: () => void nostrDmPin(key!, message.id, !pinned).then(() => setPinShown(0), fail) });
+    const file = typeof message.file === 'object' ? message.file : undefined;
+    actions.push(
+      ...keep.actions({
+        star: message.state !== 'failed' ? { id: message.id, at: message.at, mine: message.mine, line: lineOf(message) } : null,
+        sticker: file && file.type.startsWith('image/') ? () => nostrDmFile(file) : null,
+        file: file ? { name: keptName(file.name, file.type), mime: file.type, fetch: () => nostrDmFile(file) } : null,
+        remote: true,
+      }),
+    );
     actions.push(selectAction(() => selection.start(message.id)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove([message.id]) });
     return actions;
@@ -456,6 +474,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             chosen={selection.chosen.has(message.id)}
             onChoose={selection.on ? () => selection.toggle(message.id) : undefined}
             onLayout={place(message.id)}
+            starred={keep.starred.has(message.id)}
           />
         ))}
       </View>
@@ -497,6 +516,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       <Row wrap>
         <NetworkChatNotify notify={checkedChatNotify(chat.notify)} hidden={where !== 'space'} calls={false} onChange={(next) => nostrDmSetNotify(key, next)} />
         <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+        <StarredHere stars={keep.stars} who={name} onGo={(id) => (byId.has(id) ? goTo(id) : setNote(t('That message is not on this phone.')))} />
       </Row>
       <HistoryButtons tools={history} exportable={where === 'space'} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
@@ -601,7 +621,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   );
 }
 
-function Bubble({ state, message, group, people, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout }: {
+function Bubble({ state, message, group, people, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout, starred }: {
   state: NostrDmState;
   message: NostrDmMessage;
   group: boolean;
@@ -618,12 +638,14 @@ function Bubble({ state, message, group, people, answered, onRetry, onMenu, onSi
   chosen: boolean;
   onChoose?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
+  /** Starred on this device (components/keep-actions.tsx). */
+  starred?: boolean;
 }) {
   const { colors, look } = useTheme();
   const mine = message.mine;
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // NIP-17 says nothing back: one tick once a relay of theirs took it, no more.
-  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : `${when}${mine ? ' ✓' : ''}`;
+  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : `${when}${mine ? ' ✓' : ''}${starred ? '  ·  ★' : ''}`;
   const file = typeof message.file === 'object' ? message.file : undefined;
   // Its words as they show: those named by their names, a place as a place (lib/message-carry.ts).
   const words = useMemo(() => (message.file ? '' : namesShown(message.text, people)), [message.file, message.text, people]);

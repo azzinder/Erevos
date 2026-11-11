@@ -89,6 +89,7 @@ import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenDa
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-data';
+import { loadStars, starMessage } from '../lock/stars-data';
 import { prepareQueueEntries } from '../lock/queues-data';
 import { lastRestore, lostAt, lostMark, markLost, phoneId, restoredAt, restoredFromOther } from '../lock/restored';
 import { sealedFile } from '../lock/sealed-file';
@@ -219,6 +220,10 @@ t('holds the accounts on Matrix, XMPP and Nostr, the space\'s and a hidden place
   await saveXmpp(0, key, xmpp);
   const matrix = { homeserver: 'https://matrix.example.org', userId: '@dan:example.org', deviceId: 'D', accessToken: 'tok', account: {}, rooms: {}, devices: {}, outdated: [], olm: {}, inbound: {}, outbound: {}, seen: {}, restored: '' } as unknown as MatrixState;
   await saveMatrix(0, placeKey, matrix, 'hidden2');
+  // And their messages starred, the space's and the hidden place's (lock/stars-data.ts).
+  const starred = { service: 'xmpp' as const, account: 'ben@example.org', chat: 'ann@example.org', id: 'x1', at: 5, mine: false, line: 'καλημέρα' };
+  await starMessage({ holder: 'space', space: 0, key }, starred, true);
+  await starMessage({ holder: 'hidden2', space: 0, key: placeKey }, { ...starred, service: 'matrix', account: '@dan:example.org', chat: '!r:example.org' }, true);
   assert.ok([...blobs.keys()].some((name) => name.startsWith('erevos-page-')), 'the Nostr chats went to pages');
   const file = await backUp(await backupKey('backup-pass'));
 
@@ -232,6 +237,8 @@ t('holds the accounts on Matrix, XMPP and Nostr, the space\'s and a hidden place
   assert.equal((await loadXmpp(0, key))?.jid, 'ben@example.org');
   assert.equal((await loadMatrix(0, placeKey, 'hidden2'))?.userId, '@dan:example.org');
   assert.equal(await loadMatrix(0, key), null);
+  assert.deepEqual(await loadStars({ holder: 'space', space: 0, key }), [starred]);
+  assert.deepEqual((await loadStars({ holder: 'hidden2', space: 0, key: placeKey })).map((s) => s.chat), ['!r:example.org']);
 });
 
 t('a backup from before the queues entries leaves none missing: each space and pocket has one again, all one size', async () => {

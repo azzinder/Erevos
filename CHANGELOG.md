@@ -44,6 +44,12 @@ On main, not released yet:
   goes as a .vcf any app opens; a video goes with its udta and meta boxes emptied, so not where it was filmed nor on
   which phone; a photo from the camera goes at the quality chosen. Nostr chats send a location as a geo: address and a
   map link. A forwarded message is marked as forwarded on the phone only, in Matrix and Nostr.
+- **Starred messages in every chat**: **Star** works in Matrix, XMPP and Nostr chats and in SMS too, as in an Erevos
+  chat. Stars are kept encrypted with the space on this device only (not synced to linked devices), a hidden place
+  keeping its own apart; **Starred messages** lists those of every chat, the latest first, each opening its chat at
+  the message, and a chat's own lists its stars. A held photo, video, voice message or file, or an MMS's picture, has
+  **Save to the Collection**, and a sticker or photo that came has **Add to my stickers**; the SMS sticker picker
+  offers your own stickers to send as MMS. Stars are in backups. Not yet: stars in an Erevos contact's SMS.
 
 ### Under the hood
 

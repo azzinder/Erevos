@@ -29,7 +29,8 @@ type Place = { y: number; height: number };
  * view (`scrollProps`) that `withArrows` draws the arrows over. `list` is the thread, the oldest
  * first, and `unread` how many of the newest, not `mine`, were not read when the chat opened. `held`
  * says when something else keeps the place (older messages coming in above): the thread then
- * follows nothing.
+ * follows nothing. Opened at a message (`at`, a starred one), the thread opens there instead, once
+ * it is laid out, and `onAt` is told whether it was here.
  */
 export function useNetworkThread<T>({
   list,
@@ -37,12 +38,16 @@ export function useNetworkThread<T>({
   mine,
   unread,
   held,
+  at: openAt,
+  onAt,
 }: {
   list: readonly T[];
   idOf: (message: T) => string;
   mine: (message: T) => boolean;
   unread: number;
   held?: () => boolean;
+  at?: string;
+  onAt?: (found: boolean) => void;
 }) {
   const scroll = useRef<ElementRef<typeof KeyboardAwareScrollView>>(null);
   const view = useRef({ y: 0, height: 0 });
@@ -105,8 +110,39 @@ export function useNetworkThread<T>({
 
   // Opened, or grown: at the message field once, and after that while it is read there.
   const opened = useRef(false);
+
+  // The message the chat was opened at, until it is gone to, or found not to be here.
+  const goal = useRef<string | null>(openAt || null);
+
+  // Goes to the message the chat was opened at, once it and the thread are laid out. True while
+  // that keeps the thread from opening at its end.
+  function toGoal(): boolean {
+    const id = goal.current;
+    if (!id) return false;
+    if (list.length === 0) return true;
+    if (!list.some((message) => idOf(message) === id)) {
+      goal.current = null;
+      onAt?.(false);
+      return false;
+    }
+    if (placed.current[id] === undefined || !view.current.height || !thread.current.height) return true;
+    goal.current = null;
+    opened.current = true;
+    following.current = false;
+    const go = (animated: boolean) => scroll.current?.scrollTo({ y: Math.max(0, thread.current.y + (placed.current[id] ?? 0) - BELOW_TOP), animated });
+    go(false);
+    // Once more when what is above it has its height (a photo), so it is not left short of it.
+    setTimeout(() => go(true), 250);
+    onAt?.(true);
+    return true;
+  }
+
   function onContentSizeChange() {
     if (held?.()) return;
+    if (toGoal()) {
+      arrowsAt();
+      return;
+    }
     if (!opened.current || following.current) {
       if (view.current.height && end.current.height && list.length > 0) {
         opened.current = true;
@@ -130,6 +166,7 @@ export function useNetworkThread<T>({
     onLayout: (event: LayoutChangeEvent) => {
       thread.current = { y: event.nativeEvent.layout.y, height: event.nativeEvent.layout.height };
       sayFoot();
+      toGoal();
       arrowsAt();
     },
   };
@@ -147,6 +184,7 @@ export function useNetworkThread<T>({
   // Where a message begins in the thread.
   const place = (id: string) => (event: LayoutChangeEvent) => {
     placed.current[id] = event.nativeEvent.layout.y;
+    if (id === goal.current) toGoal();
   };
 
   // Scrolls the thread to a message, a little below the top.

@@ -183,9 +183,10 @@ export function moduleList(text: string | undefined, here: readonly Module[] = m
 
 // The screens of each module but Erevos's (app/), by their route's name: one of a module that is
 // off shows that it is off instead (app/_layout.tsx), as a link, the widget or a notice may still
-// lead there. Contacts, Settings, the password, the backups and the guide belong to none.
+// lead there. Contacts, Settings, the password, the backups, the guide and the starred messages
+// (those of every network's chats) belong to none.
 const SCREENS: Record<Module, readonly string[]> = {
-  erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'starred', 'nostr'],
+  erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'nostr'],
   phone: ['phone', 'phone-settings'],
   sms: ['sms', 'sms-folder', 'sms-settings'],
   nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts', 'public-post'],

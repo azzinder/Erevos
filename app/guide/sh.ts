@@ -993,6 +993,11 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
 - **Označi zvjezdicom:** označava je zvjezdicom, samo na ovom telefonu, da je ponovo pronađete: **Poruke sa
   zvjezdicom** u meniju početnog ekrana navodi ih iz svih vaših razgovora, a detalji razgovora navode njegove. Dodir
   vodi na poruku. Poruke sa zvjezdicom iz skrivenih razgovora prikazuju se samo u detaljima njihovih razgovora.
+  Razgovori na Matrixu, XMPP-u i Nostru, i SMS razgovori, takođe imaju **Označi zvjezdicom**, šifrovano samo na ovom
+  telefonu: **Poruke sa zvjezdicom** jednog razgovora navode njegove, a one s početnog ekrana navode ih sa svim
+  ostalima, svaku otvarajući njen razgovor na poruci. U tim razgovorima, kad zadržite fotografiju, video, glasovnu
+  poruku, datoteku ili sliku MMS-a, nudi se i **Spremi u Zbirku**, a kad zadržite naljepnicu ili fotografiju koja je
+  stigla, **Dodaj u moje naljepnice**; birač naljepnica u SMS-u nudi i vaše, da ih pošaljete kao MMS.
 - **Prikvači:** prikvačuje je na vrh razgovora, na oba telefona; svako od vas može je otkvačiti dugmetom **Otkvači**.
   Kad ih je prikvačeno više, prikazuje se posljednja; dodirnite je da odete na nju, i prikaže se sljedeća.
 - **Kopiraj:** stavlja njene riječi u međuspremnik, da ih zalijepite u drugu aplikaciju. Na Androidu je kopija

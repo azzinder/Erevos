@@ -87,7 +87,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 const MENU: { title: string; detail: string; href: Href; links?: boolean; erevos?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group', erevos: true },
   { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups', erevos: true },
-  { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred', erevos: true },
+  { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
   {
     title: mark('Nearby phones'),
     detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),
@@ -957,7 +957,7 @@ function Home() {
       </Sheet>
       <Sheet visible={menu} onClose={closeMenu}>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {MENU.filter((item) => (!item.erevos || erevosOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {MENU.filter((item) => (!item.erevos || erevosOn) && (item.href !== '/starred' || messagesOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

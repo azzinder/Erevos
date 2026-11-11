@@ -1018,7 +1018,12 @@ Toque e segure uma mensagem para abrir o menu dela: as reações no topo, depois
   conversas ocultas.
 - **Favoritar:** marca-a como favorita, só neste celular, para encontrá-la de novo: **Mensagens favoritas** no menu da
   tela inicial as lista de todas as suas conversas, e os detalhes de uma conversa listam as dela. Um toque vai para a
-  mensagem. As mensagens favoritas das conversas ocultas só aparecem nos detalhes das conversas delas.
+  mensagem. As mensagens favoritas das conversas ocultas só aparecem nos detalhes das conversas delas. As conversas do
+  Matrix, XMPP e Nostr, e as conversas por SMS, também têm **Favoritar**, guardado criptografado só neste celular: as
+  **Mensagens favoritas** de uma conversa listam as dela, e as da tela inicial as listam com todas as outras, cada uma
+  abrindo sua conversa na mensagem. Nessas conversas, segurar uma foto, um vídeo, uma mensagem de voz, um arquivo ou a
+  imagem de um MMS também oferece **Salvar na Coleção**, e segurar uma figurinha ou foto que chegou oferece
+  **Adicionar às minhas figurinhas**; o seletor de figurinhas do SMS também oferece as suas, para enviar como MMS.
 - **Fixar:** fixa-a no topo da conversa, nos dois celulares; qualquer um de vocês pode **Desafixar**. Com mais de uma
   fixada, aparece a mais recente; toque nela para ir até ela, e a seguinte aparece.
 - **Copiar:** põe as palavras dela na área de transferência, para colar em outro app. No Android a cópia é marcada

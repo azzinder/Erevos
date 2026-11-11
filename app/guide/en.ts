@@ -941,7 +941,11 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   is not forwarded, and from hidden chats a message goes only to the same hidden chats.
 - **Star:** stars it, on this phone only, to find it again: **Starred messages** in the home screen's menu lists them
   from all your chats, and a chat's details list its own. A tap goes to the message. Hidden chats' starred messages
-  show only in their chats' details.
+  show only in their chats' details. Chats on Matrix, XMPP and Nostr, and SMS conversations, have **Star** too, kept
+  encrypted on this phone only: a chat's own **Starred messages** lists its stars, and the home screen's lists them
+  with all the rest, each opening its chat at the message. In those chats, holding a photo, video, voice message or
+  file, or an MMS's picture, also offers **Save to the Collection**, and holding a sticker or photo that came offers
+  **Add to my stickers**; the SMS sticker picker offers your own stickers too, to send as MMS.
 - **Pin:** pins it to the top of the chat, on both phones; either of you can **Unpin** it. With more than one pinned,
   the latest shows; tap it to go to it, and the next one shows.
 - **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the

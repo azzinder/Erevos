@@ -1085,7 +1085,12 @@ Appuie longuement sur un message pour ouvrir son menu : les réactions en haut, 
 - **Ajouter une étoile :** lui ajoute une étoile, sur ce téléphone seulement, pour le retrouver : **Messages avec
   étoile** dans le menu de l’écran d’accueil les liste depuis toutes tes discussions, et les détails d’une discussion
   listent les siens. Un appui va au message. Les messages avec étoile des discussions masquées ne s’affichent que dans
-  les détails de leurs discussions.
+  les détails de leurs discussions. Les discussions Matrix, XMPP et Nostr, et les conversations SMS, ont aussi
+  **Ajouter une étoile**, gardé chiffré sur ce téléphone seulement : les **Messages avec étoile** d’une discussion
+  listent les siens, et ceux de l’écran d’accueil les listent avec tous les autres, chacun ouvrant sa discussion au
+  message. Dans ces discussions, garder le doigt sur une photo, une vidéo, un message vocal, un fichier ou l’image
+  d’un MMS propose aussi **Enregistrer dans la Collection**, et sur un sticker ou une photo reçus, **Ajouter à mes
+  stickers** ; le choix de stickers des SMS propose aussi les tiens, à envoyer en MMS.
 - **Épingler :** l’épingle en haut de la discussion, sur les deux téléphones ; chacun de vous peut le **Désépingler**.
   Avec plus d’un message épinglé, le dernier s’affiche ; appuie dessus pour y aller, et le suivant s’affiche.
 - **Copier :** met ses mots dans le presse-papiers, pour les coller dans une autre app. Sur Android, la copie est

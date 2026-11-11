@@ -1021,7 +1021,13 @@ Tieni premuto un messaggio per il suo menu: le reazioni in alto, poi quello che 
   non viene inoltrato, e dalle chat nascoste un messaggio va solo alle stesse chat nascoste.
 - **Importante:** lo segna come importante, solo su questo telefono, per ritrovarlo: **Messaggi importanti** nel menu
   della schermata principale li elenca da tutte le tue chat, e i dettagli di una chat elencano i suoi. Un tocco va al
-  messaggio. I messaggi importanti delle chat nascoste appaiono solo nei dettagli delle loro chat.
+  messaggio. I messaggi importanti delle chat nascoste appaiono solo nei dettagli delle loro chat. Le chat su Matrix,
+  XMPP e Nostr, e le conversazioni SMS, hanno anch’esse **Importante**, conservato cifrato solo su questo telefono: i
+  **Messaggi importanti** di una chat elencano i suoi, e quelli della schermata principale li elencano con tutti gli
+  altri, ognuno aprendo la sua chat al messaggio. In quelle chat, tenendo premuti una foto, un video, un messaggio
+  vocale, un file o l’immagine di un MMS trovi anche **Salva nella Raccolta**, e tenendo premuti uno sticker o una
+  foto arrivati trovi **Aggiungi ai miei sticker**; la scelta degli sticker negli SMS offre anche i tuoi, da inviare
+  come MMS.
 - **Fissa:** lo fissa in cima alla chat, su entrambi i telefoni; ognuno di voi può usare **Non fissare più**. Con più di
   uno fissato, si vede l’ultimo; toccalo per andarci, e appare il successivo.
 - **Copia:** mette le sue parole negli appunti, da incollare in un’altra app. Su Android la copia è segnata come

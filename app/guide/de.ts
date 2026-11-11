@@ -1097,6 +1097,12 @@ Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: die Reaktionen oben, da
 - **Mit Stern markieren:** markiert sie, nur auf diesem Telefon, um sie wiederzufinden: **Markierte Nachrichten** im
   Menü des Startbildschirms listet sie aus all deinen Chats, und die Details eines Chats listen seine eigenen. Ein
   Tippen geht zur Nachricht. Die markierten Nachrichten versteckter Chats erscheinen nur in den Details ihrer Chats.
+  Chats bei Matrix, XMPP und Nostr und SMS-Unterhaltungen haben **Mit Stern markieren** auch, verschlüsselt nur auf
+  diesem Telefon: Die eigenen **Markierte Nachrichten** eines Chats listen seine Sterne, und die des Startbildschirms
+  listen sie mit allen anderen, jede öffnet ihren Chat bei der Nachricht. In diesen Chats bietet ein gehaltenes Foto,
+  Video, eine Sprachnachricht, Datei oder das Bild einer MMS außerdem **In der Sammlung speichern**, und ein
+  gehaltener Sticker oder ein Foto, das kam, bietet **Zu meinen Stickern hinzufügen**; die Stickerauswahl bei SMS
+  bietet auch deine eigenen Sticker, um sie als MMS zu senden.
 - **Anheften:** heftet sie oben im Chat an, auf beiden Telefonen; jeder von euch kann sie mit **Loslösen** lösen. Sind mehrere
   angeheftet, erscheint die neueste; tippe darauf, um zu ihr zu gehen, und die nächste erscheint.
 - **Kopieren:** legt ihre Worte in die Zwischenablage, um sie in einer anderen App einzufügen. Auf Android ist die

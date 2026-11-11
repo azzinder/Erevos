@@ -8,6 +8,7 @@ import { BackHandler, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
+import { StarredHere, useKeep } from '../components/keep-actions';
 import { MatrixRoomInfo } from '../components/matrix-members';
 import { MatrixBubble, lineOf, type Answered } from '../components/matrix-message';
 import { MatrixStickers } from '../components/matrix-stickers';
@@ -49,6 +50,7 @@ import {
   matrixChange,
   matrixDelete,
   matrixDeleteMany,
+  matrixFile,
   matrixEndPoll,
   matrixForward,
   matrixInvite,
@@ -138,6 +140,10 @@ import { checkedLook } from '../theme/look';
 // Words go as typed, and beside them, when their marks change their look (*bold*, _italic_…),
 // their HTML (lib/matrix-html.ts), as Element sends it; what comes shows so too. Camera, Video,
 // Contact card (a .vcf file) and how photos go sit by Location (components/network-carry.tsx).
+// A message held down can be starred too, on this device only, a sticker or a photo that came
+// kept as one of the owner's stickers, and a photo, video, sound or file saved into the Collection
+// (components/keep-actions.tsx); Starred messages lists the room's, and the chat opened at one
+// (`at`) goes to it.
 
 // The most members Who read it names as not having read one of ours yet.
 const MOST_SHOWN = 100;
@@ -171,7 +177,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { room: roomId, hidden, thread } = useLocalSearchParams<{ room?: string; hidden?: string; thread?: string }>();
+  const { room: roomId, hidden, thread, at } = useLocalSearchParams<{ room?: string; hidden?: string; thread?: string; at?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const [now, setNow] = useState(matrixNow(where));
   const [note, setNote] = useState('');
@@ -268,7 +274,12 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     // A thread's own screen has no place where it was left: the room's count is of the room.
     unread: thread ? 0 : (room?.unread ?? 0),
     held: () => keepAt.current !== null,
+    // Opened at a starred message: there, lit a moment.
+    at,
+    onAt: (found) => (found ? setLit(at ?? null) : setNote(t('That message is not on this phone.'))),
   });
+  // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
+  const keep = useKeep({ service: 'matrix', place: matrixStickerPlace(where), account: state?.userId ?? '', chat: roomId ?? '', group: !room?.direct, messages: room?.messages.map((m) => ({ id: m.id, at: m.ts, deleted: m.deleted })), say: setNote });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!roomId ? undefined : where === 'space' ? `matrix:${roomId}` : hiddenOnScreen());
   useEffect(() => {
@@ -527,6 +538,15 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       });
     }
     if (ours && !message.call) actions.push({ title: t('Who read it'), onPress: () => setReadersFor(message.id) });
+    const file = message.file && (message.file.encrypted || message.file.url) && !message.locked ? message.file : undefined;
+    actions.push(
+      ...keep.actions({
+        star: !message.state && !message.locked ? { id: message.id, at: message.ts, mine: message.sender === me, line: lineOf(message), thread: message.thread } : null,
+        sticker: file && (message.sticker || file.kind === 'image') ? () => matrixFile(file) : null,
+        file: file && !message.sticker ? { name: file.name, mime: file.mime, fetch: () => matrixFile(file) } : null,
+        remote: true,
+      }),
+    );
     if (choosable(message)) actions.push(selectAction(() => selection.start(message.id)));
     if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
     return actions;
@@ -683,6 +703,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             onChoose={selection.on && choosable(message) ? () => selection.toggle(message.id) : undefined}
             onLayout={place(message.id)}
             mark={message.sender === me && !message.state && !message.call && !message.deleted ? (readByAll(room, message, me) ? '✓✓✓' : '✓') : undefined}
+            starred={keep.starred.has(message.id)}
           />
         ))}
       </View>
@@ -741,6 +762,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
           <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
           {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
+          <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} />
         </Row>
       ) : null}
       {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} /> : null}
