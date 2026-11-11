@@ -10,6 +10,12 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same branch stops the check still running on an older one, so only the newest
+# commit is checked and the minutes go to it alone.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
