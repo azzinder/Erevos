@@ -3,7 +3,8 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // SMS invites (lib/sms-invite.ts, lib/sms-link.ts) and SMS rows in the home screen's list
-// (lib/inbox.ts). The invite answer runs with the real core built to WebAssembly by
+// (lib/inbox.ts). What an SMS or MMS carries besides its words (lib/sms-parts.ts): places in its
+// words, sent and read; voice messages and contact cards by their type; a contact sent as a vCard. The invite answer runs with the real core built to WebAssembly by
 // checks/build-core.mjs, and is skipped, with a note, without it.
 // Run with: npm run check
 /// <reference types="node" />
@@ -22,6 +23,10 @@ import { cancelLater, sendDue } from '../lib/sms-later';
 import type { LaterSmsHolder, LaterSmsState } from '../modules/erevos-sms';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { MAX_LATER } from '../lock/sms-data';
+import { EMPTY_FIELDS } from '../lib/contacts';
+import { setLang } from '../lib/i18n';
+import { contactVCard, listWords, partKind, partsOf, partWord, placesIn, placeSms } from '../lib/sms-parts';
+import { parseVCards } from '../lib/vcard';
 import { files } from './files-memory';
 
 const invite = (relay: string): SmsInvite => ({
@@ -339,4 +344,81 @@ test('an invite answered through the relay gives the inviter the link, once', { 
   await other.answered('+30 690 000 0002', own.senderHex);
   assert.deepEqual((await SmsLink.open(0, key)).answeredFor(own.senderHex), { number: '+306900000002', name: '' });
   assert.equal((await SmsLink.open(0, key)).answeredFor('ab'.repeat(24)), null);
+});
+
+test('a place goes as an SMS of plain ASCII, its geo: address and a map link, and comes back as one place', () => {
+  const text = placeSms({ lat: 37.97536, lon: 23.73495, acc: 12 });
+  assert.equal(text, 'geo:37.97536,23.73495;u=12\nhttps://www.openstreetmap.org/?mlat=37.97536&mlon=23.73495#map=17/37.97536/23.73495');
+  // GSM's own letters, so one SMS of 160 holds it.
+  assert.ok(/^[\x20-\x7e\n]+$/.test(text) && text.length <= 160);
+  assert.deepEqual(placesIn(text), [{ lat: 37.97536, lon: 23.73495, acc: 12 }]);
+  assert.deepEqual(placesIn(placeSms({ lat: -33.8688, lon: 151.2093 })), [{ lat: -33.8688, lon: 151.2093 }]);
+});
+
+test('places in the words of an SMS: geo: addresses and the links of maps sites, each once, in order', () => {
+  const at = (lat: number, lon: number) => ({ lat, lon });
+  assert.deepEqual(placesIn('Here: geo:0,0?q=37.9715,23.7257(Acropolis) see you'), [at(37.9715, 23.7257)]);
+  assert.deepEqual(placesIn('geo:0,0'), []);
+  assert.deepEqual(placesIn('https://maps.google.com/?q=40.6892,-74.0445'), [at(40.6892, -74.0445)]);
+  assert.deepEqual(placesIn('https://www.google.com/maps/search/?api=1&query=48.8584%2C2.2945.'), [at(48.8584, 2.2945)]);
+  assert.deepEqual(placesIn('https://www.google.com/maps/@51.5007,-0.1246,17z'), [at(51.5007, -0.1246)]);
+  assert.deepEqual(placesIn('https://www.google.gr/maps/place/38.2466,21.7346'), [at(38.2466, 21.7346)]);
+  assert.deepEqual(placesIn('Apple: https://maps.apple.com/?ll=35.6586,139.7454&q=Tower'), [at(35.6586, 139.7454)]);
+  assert.deepEqual(placesIn('https://www.openstreetmap.org/#map=16/41.0082/28.9784'), [at(41.0082, 28.9784)]);
+  assert.deepEqual(placesIn('https://osm.org/?mlat=59.3293&mlon=18.0686'), [at(59.3293, 18.0686)]);
+  assert.deepEqual(placesIn('https://waze.com/ul?ll=45.4642,9.19&navigate=yes'), [at(45.4642, 9.19)]);
+  // Two places, in the order written, and the same one twice once.
+  assert.deepEqual(placesIn('geo:1.5,2.5 then https://maps.google.com/?q=3.5,4.5 and geo:1.5,2.5'), [at(1.5, 2.5), at(3.5, 4.5)]);
+  // What says no place: a short link (only its site knows), a search by name, another site, a place off the earth.
+  assert.deepEqual(placesIn('https://maps.app.goo.gl/AbCdEf123'), []);
+  assert.deepEqual(placesIn('https://maps.google.com/?q=Athens'), []);
+  assert.deepEqual(placesIn('https://example.com/?q=37.9,23.7 and geo:91,10'), []);
+  assert.deepEqual(placesIn('no place 37.9,23.7'), []);
+});
+
+test('the parts of an MMS by their type, and the words the list says of one without text', async () => {
+  assert.equal(partKind('image/jpeg'), 'picture');
+  assert.equal(partKind('audio/amr'), 'voice');
+  assert.equal(partKind('Audio/3GPP; codecs=samr'), 'voice');
+  assert.equal(partKind('application/ogg'), 'voice');
+  assert.equal(partKind('text/x-vcard'), 'card');
+  assert.equal(partKind('text/vcard; charset=utf-8'), 'card');
+  assert.equal(partKind('application/smil'), null);
+  assert.deepEqual(
+    partsOf({ pictures: [{ uri: 'a', type: 'image/png' }], voices: [{ uri: 'b', type: 'audio/amr' }], cards: [{ uri: 'c', type: 'text/x-vcard' }] }).map((p) => p.uri),
+    ['a', 'b', 'c'],
+  );
+  // A build before them says none.
+  assert.deepEqual(partsOf({}), []);
+  await setLang('el');
+  assert.equal(partWord('audio/amr'), 'Φωνητικό μήνυμα');
+  assert.equal(partWord('text/x-vcard'), 'Κάρτα επαφής');
+  assert.equal(listWords('Voice message'), 'Φωνητικό μήνυμα');
+  assert.equal(listWords('Picture'), 'Εικόνα');
+  assert.equal(listWords('Hello'), 'Hello');
+  await setLang('en');
+});
+
+test('a contact goes as a vCard without the owner\'s note and groups, and without its photo when too large', () => {
+  const card = {
+    ...EMPTY_FIELDS,
+    given: 'Μαρία',
+    family: 'Παπά',
+    name: 'Μαρία Παπά',
+    phones: [{ value: '+30 691 000 0001', kind: 'mobile' as const, label: '' }],
+    note: 'owes me 20',
+    groups: [3, 4],
+  };
+  const small = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3]);
+  const text = new TextDecoder().decode(contactVCard(card, small, 280 * 1024));
+  assert.ok(!/NOTE|CATEGORIES|owes/.test(text));
+  assert.match(text, /PHOTO;ENCODING=b;TYPE=JPEG:/);
+  const [back] = parseVCards(contactVCard(card, small, 280 * 1024));
+  assert.equal(back.name, 'Μαρία Παπά');
+  assert.deepEqual(back.phones.map((p) => p.value), ['+30 691 000 0001']);
+  // A photo that would make it too large for an MMS stays out.
+  const large = new Uint8Array(4000).fill(7);
+  const bytes = contactVCard(card, large, 2000);
+  assert.ok(bytes.length <= 2000);
+  assert.ok(!new TextDecoder().decode(bytes).includes('PHOTO'));
 });

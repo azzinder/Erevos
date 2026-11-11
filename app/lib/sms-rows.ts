@@ -9,6 +9,7 @@ import type { InboxSms } from './inbox';
 import { groupName, smsNumbers } from './sms-group';
 import { SmsLink } from './sms-link';
 import { mirroredNames } from './sms-mirror';
+import { listWords } from './sms-parts';
 
 // The phone's SMS conversations as the home screen lists them (app/index.tsx), and the SMS alone
 // do, when only they are open (components/sms-home.tsx).
@@ -39,7 +40,7 @@ export async function smsRows(space: number, key: Uint8Array): Promise<SmsList> 
     const numbers = smsNumbers(t.address);
     const one = numbers[0] ?? t.address;
     const card = numbers.length > 1 ? undefined : cards[one];
-    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[one], photo: card?.photo || undefined };
+    return { ...t, text: listWords(t.text), name: numbers.length > 1 ? groupName(numbers, names) : names[one], photo: card?.photo || undefined };
   });
   return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers(), names: naming };
 }

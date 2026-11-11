@@ -8,7 +8,8 @@
 // conversation (lib/forward.ts), the phone's SMS a backup holds (lib/backup-sms.ts), and the
 // one-time code an SMS holds, for Copy code (lib/one-time-code.ts). Spam's rules on who sends, and
 // why each SMS in Spam is there. The phone's copy of Spam's built-in rule (BuiltInSpam.kt), by which
-// such spam comes with no notice, kept the same as the app's.
+// such spam comes with no notice, kept the same as the app's. Messages pinned for the owner alone,
+// and several chosen together, to copy or forward (lib/sms-parts.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -47,9 +48,11 @@ import {
   trashGoesAt,
 } from '../lib/sms-folders';
 import { SmsLink } from '../lib/sms-link';
+import { chosenText, forwardOf, isPinned, pinnedShown } from '../lib/sms-parts';
+import type { SmsMessage } from '../modules/erevos-sms';
 import { kept } from '../lock/inbox-cache';
 import { sealedFile } from '../lock/sealed-file';
-import { EMPTY_SMS, MAX_PINS, MAX_TRASH, MAX_WORDS, TRASH_DAYS, type SmsData } from '../lock/sms-data';
+import { EMPTY_SMS, loadSmsData, MAX_MESSAGE_PINS, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, TRASH_DAYS, type SmsData } from '../lock/sms-data';
 import { files } from './files-memory';
 
 const DAY = 24 * 3600 * 1000;
@@ -461,4 +464,80 @@ test('an SMS that says it holds a code gives its digits, and no number of anothe
     ['Your code is 123456789', null],
   ];
   for (const [text, code] of cases) assert.equal(oneTimeCode(text), code, text);
+});
+
+const line = (id: number, at: number, text: string, more: Partial<SmsMessage> = {}): SmsMessage => ({ id, kind: 'sms', text, at, mine: false, state: 'done', read: true, ...more });
+
+test('a message is pinned for the owner alone, sealed in the space, and found again by its time when its row changed', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  assert.deepEqual(link.messagePins('+306911111111'), []);
+  await link.pinMessage('+30 691 111 1111', { id: 'sms:12', at: 1000 }, true);
+  await link.pinMessage('+306911111111', { id: 'mms:3', at: 2000 }, true);
+  await link.pinMessage('+306922222222', { id: 'sms:40', at: 3000 }, true);
+  const again = await SmsLink.open(0, key);
+  assert.deepEqual(
+    again.messagePins('6911111111').map((p) => p.id),
+    ['sms:12', 'mms:3'],
+  );
+  const shown = [line(12, 1000, 'first'), line(3, 2000, 'second', { kind: 'mms' }), line(13, 2500, 'third')];
+  // The latest pinned first; the other conversation's pin shows none here.
+  assert.deepEqual(
+    pinnedShown(again.messagePins('+306911111111'), shown).map((m) => m.text),
+    ['second', 'first'],
+  );
+  assert.equal(isPinned(again.messagePins('+306911111111'), shown[2]), false);
+  // A backup put back gives the rows new numbers: the same time and kind find it.
+  const restored = [line(77, 1000, 'first'), line(78, 2000, 'second', { kind: 'mms' })];
+  assert.deepEqual(
+    pinnedShown(again.messagePins('+306911111111'), restored).map((m) => m.id),
+    [78, 77],
+  );
+  // Another SMS that took its row, at another time, is not it.
+  assert.equal(isPinned(again.messagePins('+306911111111'), line(12, 9999, 'other')), false);
+  await again.pinMessage('+306911111111', { id: 'sms:12', at: 1000 }, false);
+  assert.deepEqual(
+    (await SmsLink.open(0, key)).messagePins('+306911111111').map((p) => p.id),
+    ['mms:3'],
+  );
+});
+
+test('the pins are kept with the order of the SMS, and past the most the one pinned first goes', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const many = Array.from({ length: MAX_MESSAGE_PINS + 2 }, (_, i) => ({ address: '+306911111111', id: `sms:${i}`, at: i }));
+  await saveSmsData('space', 0, key, { ...EMPTY_SMS, messagePins: [...many, { address: '+306911111111', id: 'not a row', at: 1 }] });
+  const loaded = await loadSmsData('space', 0, key);
+  assert.equal(loaded.messagePins.length, MAX_MESSAGE_PINS);
+  assert.equal(loaded.messagePins[0].id, 'sms:2');
+  const link = await SmsLink.open(0, key);
+  await link.pinMessage('+306911111111', { id: 'sms:999', at: 999 }, true);
+  const pins = (await SmsLink.open(0, key)).messagePins('+306911111111');
+  assert.equal(pins.length, MAX_MESSAGE_PINS);
+  assert.equal(pins[pins.length - 1].id, 'sms:999');
+  assert.equal(pins[0].id, 'sms:3');
+});
+
+test('messages chosen together are copied in the order written, and forwarded as one', () => {
+  const shown = [
+    line(1, 100, 'one'),
+    line(2, 200, '', { kind: 'mms', voices: [{ uri: 'content://mms/part/9', type: 'audio/amr' }] }),
+    line(3, 300, 'three'),
+    line(4, 400, 'four'),
+  ];
+  const chosen = new Set(['sms:4', 'sms:1', 'mms:2']);
+  assert.equal(chosenText(shown, chosen), 'one\n\nfour');
+  const one = forwardOf(shown, chosen)!;
+  assert.equal(one.text, 'one\n\nfour');
+  // The only one with a part brings it along.
+  assert.deepEqual(one.voices, [{ uri: 'content://mms/part/9', type: 'audio/amr' }]);
+  assert.deepEqual(one.pictures, []);
+  // Two with parts: words only.
+  const two = forwardOf([...shown, line(5, 500, 'pic', { kind: 'mms', pictures: [{ uri: 'content://mms/part/10', type: 'image/jpeg' }] })], new Set(['mms:2', 'mms:5']))!;
+  assert.equal(two.text, 'pic');
+  assert.deepEqual([two.pictures, two.voices, two.cards], [[], [], []]);
+  // One chosen is forwarded as it is; none, nothing.
+  assert.equal(forwardOf(shown, new Set(['sms:3'])), shown[2]);
+  assert.equal(forwardOf(shown, new Set()), null);
 });

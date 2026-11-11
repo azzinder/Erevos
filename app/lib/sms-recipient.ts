@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { kindLabel, toDial, type DialRow, type Findable } from './contacts';
+import { findable, found, kindLabel, searchWords, toDial, type DialRow, type Findable } from './contacts';
 import { smsNumbers } from './sms-group';
 import { sameNumber } from './sms-invite';
 
 // The recipient of a new SMS (components/sms-recipient.tsx): the numbers typed, separated by commas,
 // and the contacts that can fill them in, from the same cards the Phone's search looks in
-// (lib/contact-book.ts dialCards).
+// (lib/contact-book.ts dialCards); and the contacts one can be sent of, as a contact card.
 
 type Card = Parameters<typeof toDial>[0][number];
 
@@ -45,6 +45,28 @@ export function recipientRows(cards: Card[], query: string, findables = new Map<
       rows.push({ key: `${card.key}:${seen.length}`, name: card.name, kind: kindLabel(phone), number: phone.value });
       if (rows.length >= most) return rows;
     }
+  }
+  return rows;
+}
+
+/**
+ * The contacts that every word of `query` finds, as recipientRows does, one row each, for sending
+ * one as a contact card (lib/sms-parts.ts): with its first number, or its email, said; one with
+ * neither is left out. With no query, all of them, in order.
+ */
+export function contactRows<C extends Card>(cards: C[], query: string, findables = new Map<string, Findable>(), most = 200): { key: string; name: string; detail: string; card: C }[] {
+  const words = searchWords(query);
+  const rows: { key: string; name: string; detail: string; card: C }[] = [];
+  for (const card of cards) {
+    const detail = card.phones.find((p) => /\d/.test(p.value))?.value ?? card.emails[0]?.value ?? '';
+    if (!detail || !card.name.trim()) continue;
+    if (words.length > 0) {
+      const look = findables.get(card.key) ?? findable(card);
+      findables.set(card.key, look);
+      if (!found(look, words)) continue;
+    }
+    rows.push({ key: card.key, name: card.name, detail, card });
+    if (rows.length >= most) break;
   }
   return rows;
 }

@@ -4,26 +4,33 @@
 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { canDial, DialTile } from '../components/dial-tile';
 import { IconButton, SendDisc } from '../components/composer';
-import { MoreIcon, PhotoIcon } from '../components/icons';
+import { MoreIcon, PlusIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
+import { MicButton, RecordingLine } from '../components/matrix-voice';
+import { Pinned } from '../components/message-parts';
+import { PlaceSheet } from '../components/place-sheet';
+import { chosenStyle, SelectBar, useSelection } from '../components/select-bar';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
+import { SmsExtras, useSmsVoice } from '../components/sms-parts';
+import { ContactsSheet } from '../components/sms-recipient';
 import { BELOW_TOP, ThreadArrows, useThreadAway } from '../components/thread-arrows';
-import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
+import { deleteSms, deleteSmsMany, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { showOnScreen, showSmsOnScreen } from '../lib/background';
-import { isContactNumber, sealedNamer } from '../lib/contact-book';
+import type { Place } from '../lib/chat-parts';
+import { isContactNumber, sealedNamer, type Card as PhoneCard } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canRelaySeal } from '../lib/core';
-import { randomBytes } from '../lib/crypto';
+import { fromBase64, randomBytes } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { forwardedTo, forwardTo, type Forwarded } from '../lib/forward';
 import { Held } from '../lib/held';
@@ -37,16 +44,20 @@ import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../li
 import { onSmsOrderChanged, shownMessages, smsFolder, spamReason, spamWhy, trashOf } from '../lib/sms-folders';
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
-import { pickMmsPhoto } from '../lib/pick-mms-photo';
+import { MMS_MAX, pickMmsPhoto } from '../lib/pick-mms-photo';
+import { CAN_PLACE } from '../lib/place';
 import { cancelLater as cancelSmsLater, laterChanged, onLaterSent, waitsForOwner } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
+import { CARD_MIME, chosenText, contactVCard, forwardOf, isPinned, partsOf, partWord, pinnedShown, placeSms, VOICE_MIME } from '../lib/sms-parts';
+import { contactRows } from '../lib/sms-recipient';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { useLock } from '../lock/context';
 import { currentSpace } from '../lock/keys';
 import { restoredAt } from '../lock/restored';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
-import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
+import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
+import { phoneContactPhoto } from '../modules/erevos-contacts';
 import {
   blockedNumbers,
   contactCards,
@@ -71,9 +82,11 @@ import { useStyles, useTheme } from '../theme/context';
 // asks for the SMS, as the chat's details and the contact card do to write one. Messages here are
 // plain SMS: the phone company can read them. The first one to a number that is no Erevos contact's
 // also carries a hidden invite (lib/sms-invite.ts), when invites are on. A contact can be linked to
-// the number by hand. A photo
-// goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
-// for the number. The number shows the name and picture the phone's contacts give it, when that is
+// the number by hand. A photo, a voice message (held on the microphone) and a contact from the
+// phone's contacts go as an MMS, as plain as an SMS; where you are goes as an SMS of its geo: address
+// and a map's link (lib/sms-parts.ts). The voice messages, contact cards and places that come show
+// as such, to play, save or open in the maps app. With two SIMs, the one to send on is chosen here,
+// and kept for the number. The number shows the name and picture the phone's contacts give it, when that is
 // turned on. With several numbers (`to` comma-separated) it is a group's conversation: every
 // message goes to all of them as one MMS, text alone too, and each that comes says who wrote it.
 // Ours are marked ✓ once they went and ✓✓✓ once the network's delivery report says they reached
@@ -86,14 +99,21 @@ import { useStyles, useTheme } from '../theme/context';
 // another number or into an Erevos chat, or deleted from the phone, with Undo for a few seconds
 // (components/sms-message.tsx, as in a contact's chat).
 // SMS another app writes, while it is the SMS app, show as Erevos hears of them, or as it comes back.
+// Held down, a message can also be pinned over the conversation for the owner alone (SMS have no
+// pins), kept with the space's SMS data, or chosen with others (Select), to copy, forward or delete
+// them together.
 // ⋮ pins, archives, marks as spam, blocks or deletes the conversation (components/sms-actions.tsx);
 // the part of it in the Trash does not show here. A sender that writes with a name instead of a
 // number (a bank, say) shows its SMS, and cannot be answered.
 
-type Picture = { bytes: Uint8Array; mime: string };
+/** What an MMS carries besides its words: a picture, a voice message or a contact card (`name`, whose). */
+type Part = { bytes: Uint8Array; mime: string; name?: string };
+
+/** A contact of the phone's to send as a contact card, as the contacts sheet lists it. */
+type CardRow = ReturnType<typeof contactRows<PhoneCard>>[number];
 
 /** An SMS waiting its seconds before it goes, in the space it was written in. */
-type Outgoing = { id: string; to: string; text: string; photo: Picture | null; sim: number; group: boolean; space: number };
+type Outgoing = { id: string; to: string; text: string; part: Part | null; sim: number; group: boolean; space: number };
 
 // SMS waiting to go, whatever screen shows (lib/held.ts); when Erevos goes to the background, they
 // go at once, as messages waiting to be deleted do (components/sms-message.tsx).
@@ -115,12 +135,12 @@ async function spaceLink(space: number): Promise<SmsLink | null> {
   return open.space === space ? SmsLink.open(open.space, open.key) : null;
 }
 
-// Sends an SMS whose seconds are up: as one MMS with a photo or to a group, else as an SMS; then,
+// Sends an SMS whose seconds are up: as one MMS with a part or to a group, else as an SMS; then,
 // with the first SMS to a number that is no contact, the hidden invite. One that could not go is kept as the
 // conversation's draft, so it is not lost.
 async function deliver(sms: Outgoing): Promise<void> {
   try {
-    if (sms.photo || sms.group) await sendMms(sms.to, sms.text, sms.photo, sms.sim);
+    if (sms.part || sms.group) await sendMms(sms.to, sms.text, sms.part, sms.sim);
     else await sendSms(sms.to, sms.text, sms.sim);
   } catch (error) {
     const link = await spaceLink(sms.space).catch(() => null);
@@ -179,7 +199,7 @@ export default function Sms() {
   const [choosing, setChoosing] = useState(false);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
-  const [photo, setPhoto] = useState<Picture | null>(forwarded?.photo ?? null);
+  const [part, setPart] = useState<Part | null>(forwarded?.photo ?? null);
   const [sims, setSims] = useState<Sim[]>([]);
   const [sim, setSim] = useState(-1);
   const [names, setNames] = useState<Record<string, string>>({});
@@ -202,6 +222,18 @@ export default function Sms() {
   const [chosen, setChosen] = useState<SmsMessage | null>(null);
   const [forwarding, setForwarding] = useState<SmsMessage | null>(null);
   const [menu, setMenu] = useState<SmsTarget | null>(null);
+  // The sheet of what an MMS can carry, where you are being found, a contact being chosen to send.
+  const [attaching, setAttaching] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [choosingCard, setChoosingCard] = useState(false);
+  // The messages chosen together (Select), those pinned for the owner, and which of them the bar shows.
+  const selection = useSelection<string>();
+  const [pins, setPins] = useState<SmsPin[]>([]);
+  const [pinAt, setPinAt] = useState(0);
+  // Pins change one after the other, so none is lost to another saved at the same time.
+  const pinWork = useRef<Promise<void>>(Promise.resolve());
+  // Held on the microphone, a voice message goes as an MMS on its own.
+  const voice = useSmsVoice({ send: (audio) => go('', { bytes: audio, mime: VOICE_MIME }).then(() => undefined), say: setNote });
   const link = useRef<SmsLink | null>(null);
   // Whether the draft kept for the conversation was read: until then nothing is saved over it.
   const draftRead = useRef(false);
@@ -257,6 +289,7 @@ export default function Sms() {
         .then(() => {
           setLater(sms.later.filter((l) => sameNumber(l.to, to)));
           setOrder(sms.state);
+          setPins(sms.messagePins(to));
         })
         .catch(() => undefined);
     }
@@ -315,6 +348,7 @@ export default function Sms() {
       .then(async (opened) => {
         link.current = opened;
         setOrder(opened.state);
+        setPins(opened.messagePins(to));
         if (!draftRead.current) {
           draftRead.current = true;
           const kept = opened.draftFor(to);
@@ -354,7 +388,7 @@ export default function Sms() {
       if (!error) return;
       setNote(t('Not sent. {error}', { error: errorText(error) }));
       setDraft((typed) => (typed.trim() ? typed : sms.text));
-      if (sms.photo) setPhoto((shown) => shown ?? sms.photo);
+      if (sms.part) setPart((shown) => shown ?? sms.part);
     };
     delivered.add(heard);
     return () => {
@@ -383,6 +417,16 @@ export default function Sms() {
       save();
     };
   }, [to]);
+
+  // Back ends the choosing of several messages, before it leaves the conversation.
+  useEffect(() => {
+    if (!selection.on) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      selection.clear();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [selection.on, selection.clear]);
 
   // The seconds left of what waits to go, counted down.
   const waiting = pending.filter((p) => sameConversation(p.item.to, to));
@@ -444,42 +488,71 @@ export default function Sms() {
     setNote('');
     try {
       const picked = await pickMmsPhoto();
-      if (picked) setPhoto(picked);
+      if (picked) setPart(picked);
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }
   }
 
-  // Sends what is typed, after the seconds chosen to take it back (none: at once).
-  async function send() {
-    const text = draft.trim();
-    if ((!text && !photo) || sending) return;
+  // Sends words and a part, after the seconds chosen to take it back (none: at once); `taken` once
+  // Erevos may send, to empty the field. False when it could not.
+  async function go(text: string, carried: Part | null, taken?: () => void): Promise<boolean> {
     keepsPlace.current = false;
-    setSending(true);
     setNote('');
     try {
       await maySendSms();
       if (group && !mmsReady() && !smsMirrored()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
-      // A group's message goes to everyone as one MMS, even without a photo.
-      const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text, photo, sim, group, space: currentSpace().space };
-      setDraft('');
-      setPhoto(null);
+      // A group's message goes to everyone as one MMS, even without a part.
+      const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text, part: carried, sim, group, space: currentSpace().space };
+      taken?.();
       const seconds = link.current?.undo ?? 0;
       if (seconds > 0) outbox.hold(sms, seconds * 1000, deliver);
       else await deliver(sms);
+      return true;
     } catch (error) {
-      setNote(t('Not sent. {error}', { error: error instanceof Error ? error.message : String(error) }));
+      setNote(t('Not sent. {error}', { error: errorText(error) }));
+      return false;
+    }
+  }
+
+  // Sends what is typed, and the part with it.
+  async function send() {
+    const text = draft.trim();
+    if ((!text && !part) || sending) return;
+    setSending(true);
+    try {
+      await go(text, part, () => {
+        setDraft('');
+        setPart(null);
+      });
     } finally {
       setSending(false);
     }
   }
 
-  // Takes back an SMS before it goes: its words, and its photo, come back into the field.
+  // Where you are, as an SMS of its geo: address and a map's link, which every phone opens.
+  function sendPlace(place: Place) {
+    setPlacing(false);
+    void go(placeSms(place), null);
+  }
+
+  // A contact of the phone's, as a contact card to send with the words typed.
+  async function pickCard(card: PhoneCard) {
+    setNote('');
+    try {
+      const photo = card.phone?.photo ? await phoneContactPhoto(card.phone.id).catch(() => null) : null;
+      setPart({ bytes: contactVCard(card, photo ? fromBase64(photo) : null, MMS_MAX), mime: CARD_MIME, name: card.name });
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Takes back an SMS before it goes: its words, and its part, come back into the field.
   function takeBack(id: string) {
     const sms = outbox.take(id);
     if (!sms) return;
     setDraft((typed) => (typed.trim() ? `${sms.text}\n${typed}` : sms.text));
-    if (sms.photo) setPhoto(sms.photo);
+    if (sms.part) setPart(sms.part);
   }
 
   // Keeps the SMS typed to go at `at`: sealed in the space, and held by Android until then, which
@@ -490,7 +563,7 @@ export default function Sms() {
     const text = draft.trim();
     const sms = link.current;
     setLaterMenu(false);
-    if (!text || !sms || group || photo || at <= Date.now()) return;
+    if (!text || !sms || group || part || at <= Date.now()) return;
     setNote('');
     try {
       if (text.length > LATER_TEXT) throw new Error(t('It is too long to send later.'));
@@ -558,7 +631,7 @@ export default function Sms() {
               load();
               return;
             }
-            await deliver({ id: toBase64Url(randomBytes(9)), to: sms.to, text: sms.text, photo: null, sim: sms.sim, group: false, space: currentSpace().space });
+            await deliver({ id: toBase64Url(randomBytes(9)), to: sms.to, text: sms.text, part: null, sim: sms.sim, group: false, space: currentSpace().space });
           })().catch((error) => setNote(t('Not sent. {error}', { error: errorText(error) })));
         },
       },
@@ -571,16 +644,105 @@ export default function Sms() {
     sendSmsAgain(m, to, sim, { sent: load, note: setNote });
   }
 
+  // Pins a message over the conversation for the owner alone, or takes the pin away.
+  function setPin(m: SmsMessage, on: boolean) {
+    const kept = link.current;
+    if (!kept) return;
+    pinWork.current = pinWork.current
+      .then(() => kept.pinMessage(to, { id: smsLineId(m), at: m.at }, on))
+      .then(() => {
+        setPins(kept.messagePins(to));
+        if (on) setPinAt(0);
+      })
+      .catch((error) => setNote(errorText(error)));
+  }
+
+  // A message gone from the phone is pinned no more.
+  function unpinGone(m: SmsMessage) {
+    if (isPinned(pins, m)) setPin(m, false);
+  }
+
   // Deletes a message from the phone after the seconds Undo shows; until then it only hides.
   function deleteOne(m: SmsMessage) {
     setChosen(null);
-    const why = deleteSms(m, to, load);
+    const why = deleteSms(m, to, () => {
+      unpinGone(m);
+      load();
+    });
     if (why) setNote(why);
   }
 
+  // Goes to a message in the thread, as far as it is drawn.
+  function goTo(id: string) {
+    const y = placed.current.get(id);
+    if (y === undefined) return;
+    keepsPlace.current = true;
+    thread.current?.scrollTo({ y: Math.max(0, y - BELOW_TOP), animated: true });
+  }
+
   const mayAnswer = numbers.length > 0;
+  const pinnedNow = pinnedShown(pins, shown);
+  const pinIndex = Math.min(pinAt, Math.max(0, pinnedNow.length - 1));
+  // The messages chosen, in the order they show.
+  const picked = selection.on ? shown.filter((m) => selection.chosen.has(smsLineId(m))) : [];
+  const lineOf = (m: SmsMessage) => m.text.split('\n')[0].trim() || (partsOf(m)[0] ? partWord(partsOf(m)[0].type) : '');
+  // What an MMS carries can be added: a picture or a contact card where this build sends MMS, where you are where the phone finds it.
+  const canPart = mmsReady();
+  const canAttach = canPart || CAN_PLACE;
+  const partLabel = (p: Part) =>
+    p.mime.startsWith('image/')
+      ? t('Picture · {size} KB · remove', { size: Math.ceil(p.bytes.length / 1024) })
+      : t('{what} · {size} KB · remove', { what: p.name ? `${partWord(p.mime)} · ${p.name}` : partWord(p.mime), size: Math.ceil(p.bytes.length / 1024) });
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
+      {selection.on ? (
+        <SelectBar
+          count={picked.length}
+          onCancel={selection.clear}
+          onAll={() => selection.set(shown.map(smsLineId))}
+          onCopy={
+            CAN_COPY
+              ? () => {
+                  const text = chosenText(shown, selection.chosen);
+                  selection.clear();
+                  if (text) void copyText(text).then((done) => setNote(done ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not done')));
+                }
+              : undefined
+          }
+          onForward={() => {
+            const one = forwardOf(shown, selection.chosen);
+            selection.clear();
+            if (one) setForwarding(one);
+          }}
+          onDelete={
+            smsMirrored()
+              ? undefined
+              : () =>
+                  deleteSmsMany(picked, to, {
+                    gone: (id) => {
+                      const m = picked.find((p) => smsLineId(p) === id);
+                      if (m) unpinGone(m);
+                      load();
+                    },
+                    confirmed: selection.clear,
+                    note: setNote,
+                  })
+          }
+        />
+      ) : null}
+      {!selection.on && pinnedNow.length > 0 ? (
+        <View style={styles.pinned}>
+          <Pinned
+            index={pinIndex}
+            count={pinnedNow.length}
+            line={lineOf(pinnedNow[pinIndex])}
+            onPress={() => {
+              goTo(smsLineId(pinnedNow[pinIndex]));
+              setPinAt((pinIndex + 1) % pinnedNow.length);
+            }}
+          />
+        </View>
+      ) : null}
       <View style={styles.frame}>
         <ScrollView
           ref={thread}
@@ -649,52 +811,60 @@ export default function Sms() {
               {t('The messages before are in the Trash.')}
             </Text>
           ) : null}
-          {shown.map((m) => (
-            <Pressable
-              key={smsLineId(m)}
-              onPress={smsFailed(m) ? () => sendAgain(m) : undefined}
-              onLongPress={() => setChosen(m)}
-              onLayout={(event) => placed.current.set(smsLineId(m), event.nativeEvent.layout.y)}
-              accessibilityRole={smsFailed(m) ? 'button' : undefined}
-              style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
-            >
-              {(m.pictures ?? []).map((p) => (
-                <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
-              ))}
-              {group && !m.mine && m.from ? (
-                <Text variant="caption" tone="muted">
-                  {whose(m.from)}
-                </Text>
-              ) : null}
-              {m.text ? (
-                // Not selectable here, so holding the message down shows what it can do; its words
-                // can be selected and copied there.
-                <Text>
-                  <LinkedText text={m.text} />
-                </Text>
-              ) : null}
-              <Text variant="caption" tone="faint">
-                {new Date(m.at).toLocaleString(locale())}
-                {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
-                {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
-              </Text>
-              {smsFailed(m) ? (
-                <Text variant="caption" color={colors.danger}>
-                  {t('Tap to send it again.')}
-                </Text>
-              ) : null}
-              {CAN_COPY && codes.get(smsLineId(m)) ? (
-                <Row>
-                  <Chip
-                    label={t('Copy code')}
-                    onPress={() => {
-                      void copyText(codes.get(smsLineId(m))!).then((done) => setNote(done ? t('The code is copied: any app that reads the clipboard can read it.') : t('The code could not be copied.')));
-                    }}
-                  />
-                </Row>
-              ) : null}
-            </Pressable>
-          ))}
+          {shown.map((m) => {
+            const id = smsLineId(m);
+            const isChosen = selection.chosen.has(id);
+            return (
+              <View key={id} onLayout={(event) => placed.current.set(id, event.nativeEvent.layout.y)} style={isChosen ? [styles.chosenRow, chosenStyle(colors)] : undefined}>
+                <Pressable
+                  // While messages are chosen, a tap adds this one or takes it out.
+                  onPress={selection.on ? () => selection.toggle(id) : smsFailed(m) ? () => sendAgain(m) : undefined}
+                  onLongPress={() => (selection.on ? selection.toggle(id) : setChosen(m))}
+                  accessibilityRole={selection.on || smsFailed(m) ? 'button' : undefined}
+                  accessibilityState={selection.on ? { selected: isChosen } : undefined}
+                  style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
+                >
+                  {(m.pictures ?? []).map((p) => (
+                    <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
+                  ))}
+                  {group && !m.mine && m.from ? (
+                    <Text variant="caption" tone="muted">
+                      {whose(m.from)}
+                    </Text>
+                  ) : null}
+                  {m.text ? (
+                    // Not selectable here, so holding the message down shows what it can do; its words
+                    // can be selected and copied there.
+                    <Text>
+                      <LinkedText text={m.text} />
+                    </Text>
+                  ) : null}
+                  <SmsExtras m={m} />
+                  <Text variant="caption" tone="faint">
+                    {new Date(m.at).toLocaleString(locale())}
+                    {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
+                    {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
+                    {isPinned(pins, m) ? ` · ${t('Pinned')}` : ''}
+                  </Text>
+                  {smsFailed(m) ? (
+                    <Text variant="caption" color={colors.danger}>
+                      {t('Tap to send it again.')}
+                    </Text>
+                  ) : null}
+                  {CAN_COPY && codes.get(smsLineId(m)) ? (
+                    <Row>
+                      <Chip
+                        label={t('Copy code')}
+                        onPress={() => {
+                          void copyText(codes.get(smsLineId(m))!).then((done) => setNote(done ? t('The code is copied: any app that reads the clipboard can read it.') : t('The code could not be copied.')));
+                        }}
+                      />
+                    </Row>
+                  ) : null}
+                </Pressable>
+              </View>
+            );
+          })}
           {later.map((l) => (
             <Pressable
               key={l.id}
@@ -717,7 +887,7 @@ export default function Sms() {
           ))}
           {waiting.map(({ item, at }) => (
             <Pressable key={item.id} onPress={() => takeBack(item.id)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
-              {item.photo ? <Text variant="caption">{t('Picture')}</Text> : null}
+              {item.part ? <Text variant="caption">{partWord(item.part.mime)}</Text> : null}
               {item.text ? <Text>{item.text}</Text> : null}
               <Text variant="caption" color={colors.accentText}>
                 {t('Goes in {n} s · tap to take it back', { n: Math.max(1, Math.ceil((at - now) / 1000)) })}
@@ -746,30 +916,39 @@ export default function Sms() {
           }}
         />
       </View>
-      {mayAnswer && (sims.length > 1 || (twoSims && sims.length === 0) || photo) ? (
+      {mayAnswer && (sims.length > 1 || (twoSims && sims.length === 0) || part) ? (
         <Row wrap style={styles.options}>
           {sims.length > 1 ? (
             sims.map((s) => <Chip key={s.id} label={`SIM ${s.slot + 1}${s.name ? ` · ${s.name}` : ''}`} selected={sim === s.id} onPress={() => pickSim(s.id)} />)
           ) : twoSims && sims.length === 0 ? (
             <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
           ) : null}
-          {photo ? <Chip label={t('Picture · {size} KB · remove', { size: Math.ceil(photo.bytes.length / 1024) })} selected onPress={() => setPhoto(null)} /> : null}
+          {part ? <Chip label={partLabel(part)} selected onPress={() => setPart(null)} /> : null}
         </Row>
       ) : null}
       {mayAnswer ? (
         <View style={styles.composer}>
-          {mmsReady() ? (
-            <IconButton label={t('Photo')} onPress={() => void addPhoto()}>
-              <PhotoIcon color={colors.text} size={22} />
+          {canAttach && !voice.recording ? (
+            <IconButton label={t('Attach and more')} onPress={() => setAttaching(true)}>
+              <PlusIcon color={colors.text} size={22} />
             </IconButton>
           ) : null}
-          <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
-          <SendDisc
-            busy={sending}
-            disabled={!draft.trim() && !photo}
-            onPress={() => void send()}
-            onLongPress={!group && !photo && draft.trim() && !smsMirrored() ? () => setLaterMenu(true) : undefined}
-          />
+          {voice.recording ? (
+            <RecordingLine />
+          ) : (
+            <Input value={draft} onChangeText={setDraft} placeholder={part || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
+          )}
+          {/* With nothing typed, the microphone: held, it records a voice message for an MMS. */}
+          {canPart && !draft.trim() && !part ? (
+            <MicButton voice={voice} disabled={sending} />
+          ) : (
+            <SendDisc
+              busy={sending}
+              disabled={!draft.trim() && !part}
+              onPress={() => void send()}
+              onLongPress={!group && !part && draft.trim() && !smsMirrored() ? () => setLaterMenu(true) : undefined}
+            />
+          )}
         </View>
       ) : (
         <View style={styles.composer}>
@@ -808,6 +987,28 @@ export default function Sms() {
             >
               <Text variant="bodyStrong">{t('Forward')}</Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                selection.start(smsLineId(chosen));
+                setChosen(null);
+              }}
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            >
+              <Text variant="bodyStrong">{t('Select')}</Text>
+            </Pressable>
+            {chosen.id >= 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setPin(chosen, !isPinned(pins, chosen));
+                  setChosen(null);
+                }}
+                style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              >
+                <Text variant="bodyStrong">{isPinned(pins, chosen) ? t('Unpin') : t('Pin for me')}</Text>
+              </Pressable>
+            ) : null}
             {smsFailed(chosen) ? (
               <Pressable accessibilityRole="button" onPress={() => sendAgain(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
                 <Text variant="bodyStrong">{t('Send again')}</Text>
@@ -824,6 +1025,46 @@ export default function Sms() {
         ) : null}
       </Sheet>
       <SmsForward message={forwarding} contacts={contacts} onClose={() => setForwarding(null)} onNote={setNote} />
+      <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Attach and more')}>
+        {canPart ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              void addPhoto();
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Photo')}</Text>
+          </Pressable>
+        ) : null}
+        {CAN_PLACE ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              setPlacing(true);
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Location')}</Text>
+          </Pressable>
+        ) : null}
+        {canPart ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              setChoosingCard(true);
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Contact card')}</Text>
+          </Pressable>
+        ) : null}
+      </Sheet>
+      <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Plain SMS: not encrypted. The phone company can read these messages.')} />
+      <ContactsSheet<CardRow> visible={choosingCard} onClose={() => setChoosingCard(false)} rows={contactRows} onPick={(row) => void pickCard(row.card)} phoneOnly />
       <SmsActions target={menu} onClose={() => setMenu(null)} onTrashed={() => router.canGoBack() && router.back()} />
     </KeyboardPaddedView>
   );
@@ -848,6 +1089,8 @@ const makeStyles = (colors: Colors) =>
     options: { paddingHorizontal: space.md, paddingTop: space.sm },
     picture: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
     later: { borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border },
+    pinned: { paddingTop: space.sm },
+    chosenRow: { marginHorizontal: -space.sm, paddingHorizontal: space.sm },
     menuRow: { paddingVertical: space.md, paddingHorizontal: space.sm, borderRadius: radius.md },
     chosenText: { flexGrow: 0, maxHeight: 220, padding: space.md, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
   });

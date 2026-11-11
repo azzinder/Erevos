@@ -8,6 +8,7 @@ import { sameNumber } from './sms-invite';
 import { shownMessages, smsFolder, onSmsOrderChanged, trashOf } from './sms-folders';
 import { smsNumbers } from './sms-group';
 import { SmsLink } from './sms-link';
+import { partWord } from './sms-parts';
 import { smsRows } from './sms-rows';
 import { ASK_LASTS, SHARED_CONVERSATIONS, SHARED_MESSAGES, type SharedConversation, type SharedSms, type SharedSmsAll } from './sync/sms';
 
@@ -75,10 +76,12 @@ export function smsDevicesChanged(): void {
 
 function sharedOf(m: SmsMessage): SharedSms | null {
   if (!Number.isSafeInteger(m.id) || m.id < 0) return null;
+  // A voice message or a contact card stays on the phone, as a picture does: one without words says which it is.
+  const stays = m.pictures?.length ? undefined : (m.voices?.[0] ?? m.cards?.[0]);
   return {
     kind: m.kind === 'mms' ? 'mms' : 'sms',
     row: m.id,
-    text: m.text,
+    text: m.text || (stays ? partWord(stays.type) : ''),
     at: m.at,
     mine: m.mine,
     state: m.state,

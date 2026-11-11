@@ -10,7 +10,7 @@ import { ask } from '../lib/alert';
 import { showSmsOnScreen } from '../lib/background';
 import { phoneFields } from '../lib/contacts';
 import { forwardTo } from '../lib/forward';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { loadPlace, spacePlace } from '../lib/sealed-contacts';
 import { chatSmsNumber, contactSmsNumber, deletingSms, findSmsUnread, latestSms, numberOwned, SMS_PAGE, smsLineId } from '../lib/sms-chat';
 import { onSmsOrderChanged, shownMessages, trashOf } from '../lib/sms-folders';
@@ -18,6 +18,7 @@ import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { onLaterSent } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
+import { partsOf } from '../lib/sms-parts';
 import { cleanName, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import type { Trashed } from '../lock/sms-data';
@@ -106,6 +107,30 @@ export function deleteSms(m: SmsMessage, to: string, then: (id: string) => void)
   return '';
 }
 
+/** Deletes several messages from the phone, once the owner says so (`confirmed`), after the seconds
+ *  Undo shows, as deleteSms does one; `gone` hears each id once it went. Only the SMS app can:
+ *  otherwise `note` hears why, and nothing goes. */
+export function deleteSmsMany(ms: SmsMessage[], to: string, { gone, confirmed, note }: { gone: (id: string) => void; confirmed: () => void; note: (why: string) => void }): void {
+  if (ms.length === 0) return;
+  if (!smsStatus()?.isDefault || !smsToolsReady()) {
+    note(smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under Settings → Phone and SMS → SMS.') : t('This build of Erevos cannot delete SMS yet.'));
+    return;
+  }
+  ask(t('Delete messages'), plural(ms.length, '{n} message goes from the phone.', '{n} messages go from the phone.'), [
+    { text: t('Cancel'), style: 'cancel' },
+    {
+      text: t('Delete'),
+      style: 'destructive',
+      onPress: () => {
+        const ids = ms.map(smsLineId);
+        confirmed();
+        for (const id of ids) deletingSms.hold({ id, to }, UNDO_SHOWS * 1000, () => deleteSmsMessages([id]).then(() => gone(id)));
+        offerUndo({ text: plural(ids.length, 'Message deleted.', '{n} messages deleted.'), undo: () => ids.forEach((id) => deletingSms.take(id)) });
+      },
+    },
+  ]);
+}
+
 /** Tells `listener` when the phone's SMS may have changed without Erevos writing them, while
  *  another app is the SMS app: as that app writes them while Erevos shows, and as Erevos comes back. */
 export function onSmsChangedElsewhere(listener: () => void): () => void {
@@ -165,7 +190,8 @@ export function SmsForward({ message, contacts, onClose, onNote, onChat }: {
       intoChat(linked.identity, m.text);
       return;
     }
-    const picture = m.pictures?.[0];
+    // Its picture, voice message or contact card goes along, as the MMS's part.
+    const picture = partsOf(m)[0];
     let bytes: { bytes: Uint8Array; mime: string } | null = null;
     if (picture && mmsReady() && smsToolsReady()) {
       bytes = await smsPictureBytes(picture.uri)
