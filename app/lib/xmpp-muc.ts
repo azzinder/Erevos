@@ -13,7 +13,9 @@ import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 // (non-anonymous), so OMEMO can encrypt each message to every member's devices, as Conversations'
 // private groups do; any other room is a channel, written without encryption. The rooms the
 // account is in are kept as its bookmarks (XEP-0402), so its other apps join them too, and join
-// here those it joins there. Their messages are taken in lib/xmpp.ts with the others'.
+// here those it joins there. Their messages are taken in lib/xmpp.ts with the others'. Who owns a
+// group and who runs it is shown beside them, as the room says it (their affiliation); its
+// description is the one its settings hold (muc#roomconfig_roomdesc), which its owner changes.
 
 export const NS_MUC = 'http://jabber.org/protocol/muc';
 export const NS_MUC_USER = `${NS_MUC}#user`;
@@ -30,6 +32,8 @@ export const NS_DATA = 'jabber:x:data';
 const SERVICE_FRESH_MS = 24 * 3600_000;
 /** How many messages a room without an archive gives when it is first joined. */
 const FIRST_HISTORY = 20;
+/** The longest description of a group kept or set. */
+export const DESCRIPTION_LONGEST = 500;
 
 /** A group the account is in, kept with its chat (XmppChat.room). */
 export type XmppRoom = {
@@ -48,12 +52,16 @@ export type XmppRoom = {
   /** It keeps an archive, as it says. */
   mam?: boolean;
   subject?: string;
+  /** Its description, as the room says it (muc#roominfo_description). */
+  description?: string;
   /** We own or run it, so we may add people, take them out and set its subject. */
   admin?: boolean;
   /** We own it, so we may also rename it and make admins. */
   owner?: boolean;
   /** Its admins and owners, by address, as far as the room lets us see them. */
   admins?: string[];
+  /** Its owners, by address, as far as the room lets us see them. */
+  owners?: string[];
   /** In it now, on this connection. */
   joined?: boolean;
   /** Why we are not in it, as the room said. */
@@ -86,6 +94,20 @@ function roomChat(state: XmppState, jid: string, room: XmppRoom): XmppChat {
 export function groupPeople(state: XmppState, room: XmppRoom): string[] {
   const people = new Set([...room.members, ...Object.values(room.occupants)].filter((jid) => jid && jid !== state.jid));
   return [...people].sort();
+}
+
+/** Whether someone owns the group or runs it, by their address, as far as the room lets us see it. */
+export function rankOf(room: XmppRoom, address: string): 'owner' | 'admin' | null {
+  if (!address) return null;
+  return room.owners?.includes(address) ? 'owner' : room.admins?.includes(address) ? 'admin' : null;
+}
+
+// What the room says of someone's affiliation, as they come or it changes: among its owners and admins, or not.
+function takeRank(room: XmppRoom, address: string, affiliation: string): void {
+  const sorted = (list: string[] | undefined, on: boolean) => (on ? [...new Set([...(list ?? []), address])].sort() : list?.filter((a) => a !== address));
+  const admin = affiliation === 'owner' || affiliation === 'admin';
+  if (admin !== !!room.admins?.includes(address)) room.admins = sorted(room.admins, admin);
+  if ((affiliation === 'owner') !== !!room.owners?.includes(address)) room.owners = sorted(room.owners, affiliation === 'owner');
 }
 
 /** Whether `text` names `nick`, as a word: a channel tells only of those. */
@@ -182,7 +204,7 @@ export async function searchChannels(state: XmppState, connection: XmppConnectio
     });
 }
 
-export type RoomInfo = { private: boolean; mam: boolean; name?: string; password: boolean };
+export type RoomInfo = { private: boolean; mam: boolean; name?: string; description?: string; password: boolean };
 
 /** What a room says of itself (XEP-0045 §6.4). Throws when there is no room at `jid`. */
 export async function roomInfo(connection: XmppConnection, jid: string): Promise<RoomInfo> {
@@ -199,14 +221,17 @@ export async function roomInfo(connection: XmppConnection, jid: string): Promise
   if (!identity) throw new XmppError(t('There is no group at this address.'), 'item-not-found');
   const features = new Set(children(query, 'feature').map((f) => f.attrs.var));
   let name = identity.attrs.name?.trim() || undefined;
+  let description = '';
   for (const form of children(query, 'x', NS_DATA)) {
-    const said = textOf(child(children(form, 'field').find((f) => f.attrs.var === 'muc#roomconfig_roomname'), 'value')).trim();
-    if (said) name = said;
+    const field = (named: string) => textOf(child(children(form, 'field').find((f) => f.attrs.var === named), 'value')).trim();
+    if (field('muc#roomconfig_roomname')) name = field('muc#roomconfig_roomname');
+    description ||= field('muc#roominfo_description');
   }
   return {
     private: features.has('muc_membersonly') && features.has('muc_nonanonymous'),
     mam: features.has(NS.mam),
     name: name?.slice(0, 100),
+    ...(description ? { description: description.slice(0, DESCRIPTION_LONGEST) } : {}),
     password: features.has('muc_passwordprotected'),
   };
 }
@@ -248,6 +273,7 @@ export async function enterRoom(state: XmppState, connection: XmppConnection, ji
   room.private = info.private;
   room.mam = info.mam;
   if (info.name) room.name = info.name;
+  room.description = info.description;
   // With an archive, what came is read from it; without, the room gives what came since the last message.
   const history = info.mam ? { max: 0 } : chat.lastAt ? { since: chat.lastAt + 1 } : { max: FIRST_HISTORY };
   await connection.send(joinElement(jid, room.nick, history, room.password));
@@ -289,6 +315,7 @@ function ownNick(state: XmppState): string {
 async function fetchMembers(connection: XmppConnection, room: XmppRoom, jid: string): Promise<void> {
   const found = new Set<string>();
   const running = new Set<string>();
+  const owning = new Set<string>();
   let any = false;
   for (const affiliation of ['owner', 'admin', 'member']) {
     try {
@@ -297,6 +324,7 @@ async function fetchMembers(connection: XmppConnection, room: XmppRoom, jid: str
         const member = bare(item.attrs.jid ?? '');
         if (member.includes('@')) found.add(member);
         if (member.includes('@') && ['owner', 'admin'].includes(affiliation)) running.add(member);
+        if (member.includes('@') && affiliation === 'owner') owning.add(member);
       }
       any = true;
     } catch {
@@ -306,6 +334,7 @@ async function fetchMembers(connection: XmppConnection, room: XmppRoom, jid: str
   if (any) {
     room.members = [...found].sort();
     room.admins = [...running].sort();
+    room.owners = [...owning].sort();
   }
 }
 
@@ -389,6 +418,7 @@ export async function takeRoomPresence(state: XmppState, connection: XmppConnect
     return true;
   }
   room.occupants[nick] = real.includes('@') ? real : '';
+  if (real.includes('@') && item?.attrs.affiliation) takeRank(room, real, item.attrs.affiliation);
   if (room.private && real.includes('@') && real !== state.jid && ['owner', 'admin', 'member'].includes(item?.attrs.affiliation ?? '') && !room.members.includes(real)) {
     room.members = [...room.members, real].sort();
   }
@@ -543,7 +573,7 @@ export async function joinXmppGroup(state: XmppState, connection: XmppConnection
   if (state.chats[jid]) throw new XmppError(t('This is the address of a person, not of a group.'));
   const invite = state.invites?.find((i) => i.room === jid);
   const info = await roomInfo(connection, jid);
-  const room: XmppRoom = { nick: ownNick(state), name: info.name, private: info.private, occupants: {}, members: [], password: password || invite?.password, readTo: Date.now() };
+  const room: XmppRoom = { nick: ownNick(state), name: info.name, ...(info.description ? { description: info.description } : {}), private: info.private, occupants: {}, members: [], password: password || invite?.password, readTo: Date.now() };
   roomChat(state, jid, room);
   state.invites = state.invites?.filter((i) => i.room !== jid);
   await enterRoom(state, connection, jid);
@@ -589,24 +619,47 @@ export async function setXmppGroupSubject(state: XmppState, connection: XmppConn
   room.subject = text || undefined;
 }
 
-/** Renames the group: its settings, and our bookmark of it. Its owner only. */
-export async function renameXmppGroup(state: XmppState, connection: XmppConnection, jid: string, name: string): Promise<void> {
-  const room = ownedRoom(state, jid, true);
-  const title = name.trim().slice(0, 100);
-  if (!title) throw new XmppError(t('Give the group a name.'));
+/** Sets one of the group's settings to `value`, when its form has it; `missing` is said when it has not. */
+async function setRoomField(connection: XmppConnection, jid: string, field: string, value: string, missing: string): Promise<void> {
   const form = child(child(await connection.iq('get', jid, el('query', { xmlns: NS_MUC_OWNER })), 'query', NS_MUC_OWNER), 'x', NS_DATA);
-  if (!children(form, 'field').some((f) => f.attrs.var === 'muc#roomconfig_roomname')) throw new XmppError(t('This group server does not let a group be renamed.'));
+  if (!children(form, 'field').some((f) => f.attrs.var === field)) throw new XmppError(missing);
   await connection.iq(
     'set',
     jid,
     el(
       'query',
       { xmlns: NS_MUC_OWNER },
-      el('x', { xmlns: NS_DATA, type: 'submit' }, el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roomconfig`)), el('field', { var: 'muc#roomconfig_roomname' }, el('value', {}, title))),
+      el('x', { xmlns: NS_DATA, type: 'submit' }, el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roomconfig`)), el('field', { var: field }, el('value', {}, value))),
     ),
   );
+}
+
+/** Renames the group: its settings, and our bookmark of it. Its owner only. */
+export async function renameXmppGroup(state: XmppState, connection: XmppConnection, jid: string, name: string): Promise<void> {
+  const room = ownedRoom(state, jid, true);
+  const title = name.trim().slice(0, 100);
+  if (!title) throw new XmppError(t('Give the group a name.'));
+  await setRoomField(connection, jid, 'muc#roomconfig_roomname', title, t('This group server does not let a group be renamed.'));
   room.name = title;
   await bookmark(connection, jid, room).catch(() => undefined);
+}
+
+/** Gives the group a new description, in its settings; empty takes it away. Its owner only. */
+export async function describeXmppGroup(state: XmppState, connection: XmppConnection, jid: string, description: string): Promise<void> {
+  const room = ownedRoom(state, jid, true);
+  const text = description.trim().slice(0, DESCRIPTION_LONGEST);
+  await setRoomField(connection, jid, 'muc#roomconfig_roomdesc', text, t('This group server does not let a group have a description.'));
+  room.description = text || undefined;
+}
+
+/**
+ * Reads again the name and description a group says of itself, as its settings changed (status
+ * 104). Whether it is private, and keeps an archive, is read as it is joined.
+ */
+export async function refreshRoom(connection: XmppConnection, room: XmppRoom, jid: string): Promise<void> {
+  const info = await roomInfo(connection, jid);
+  if (info.name) room.name = info.name;
+  room.description = info.description;
 }
 
 /**

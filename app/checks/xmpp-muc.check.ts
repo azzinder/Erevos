@@ -10,7 +10,9 @@
 // was away read from the group's archive, once; a member without OMEMO; a channel, written as it
 // is, whose history counts as read and that tells only of what names you; groups joined and left
 // in another app of the account; invitations only from contacts; photos in a private group; its
-// owner renaming it, setting its subject, making admins and taking people out or barring them.
+// owner renaming it, setting its subject, making admins and taking people out or barring them;
+// who owns it and who runs it, as the room says, and its description, which its owner sets and
+// every member reads, as it joins and as it changes.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -22,7 +24,21 @@ import { setCore, type Core } from '../lib/core';
 import { xmppInboxRows } from '../lib/inbox';
 import { addXmppContact, prepareXmppFile, sendXmppFile, sendXmppText, startSession, XmppConnection, type XmppState } from '../lib/xmpp';
 import { downloadXmppFile, setXmppHttp, uploadXmppFile } from '../lib/xmpp-files';
-import { createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, mentions, removeFromXmppGroup, renameXmppGroup, setXmppGroupAdmin, setXmppGroupSubject } from '../lib/xmpp-muc';
+import {
+  createXmppGroup,
+  declineXmppInvite,
+  describeXmppGroup,
+  enterRoom,
+  groupPeople,
+  joinXmppGroup,
+  leaveXmppGroup,
+  mentions,
+  rankOf,
+  removeFromXmppGroup,
+  renameXmppGroup,
+  setXmppGroupAdmin,
+  setXmppGroupSubject,
+} from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
 import { DOMAIN, MUC, person, Server, settle, type Room } from './xmpp-server';
 
@@ -336,4 +352,54 @@ test('the owner of a private group renames it, sets its subject, makes admins an
   await removeFromXmppGroup(ann.state, ann.connection, room, { address: ben.state.jid }, true);
   assert.equal(made.affiliations.get(ben.state.jid), 'outcast');
   assert.deepEqual(own.admins, []);
+});
+
+test('who owns a group and who runs it shows beside them; its owner sets its description, which every member reads', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const cat = await person(server, 'cat');
+  const people: Person[] = [ann, ben, cat];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  await befriend(people, ann, ben);
+  await befriend(people, ann, cat);
+  const room = await createXmppGroup(ann.state, ann.connection, 'Friends', [ben.state.jid, cat.state.jid]);
+  await settle(people);
+  for (const p of [ben, cat]) {
+    await joinXmppGroup(p.state, p.connection, room);
+    await settle(people);
+  }
+  const roomOf = (p: Person) => p.state.chats[room].room!;
+  // Ben and Cat see Ann as its owner, as the room says; nobody else runs it yet.
+  for (const p of [ben, cat]) {
+    assert.equal(rankOf(roomOf(p), ann.state.jid), 'owner');
+    assert.equal(rankOf(roomOf(p), p === ben ? cat.state.jid : ben.state.jid), null);
+  }
+  // Ben becomes an admin: Ann sees it at once, Cat as she joins again.
+  await setXmppGroupAdmin(ann.state, ann.connection, room, ben.state.jid, true);
+  await settle(people);
+  assert.equal(rankOf(roomOf(ann), ben.state.jid), 'admin');
+  await enterRoom(cat.state, cat.connection, room);
+  await settle(people);
+  assert.equal(rankOf(roomOf(cat), ben.state.jid), 'admin');
+  assert.equal(rankOf(roomOf(cat), ann.state.jid), 'owner');
+  // No longer one: his next presence in the room says so, and Cat sees it.
+  await setXmppGroupAdmin(ann.state, ann.connection, room, ben.state.jid, false);
+  await ben.connection.send(el('presence', { to: `${room}/${roomOf(ben).nick}` }));
+  await settle(people);
+  assert.equal(rankOf(roomOf(cat), ben.state.jid), null);
+  assert.equal(rankOf(roomOf(cat), ann.state.jid), 'owner');
+
+  // Only the owner sets the description; every member reads it as it changes, and one joining reads it too.
+  await assert.rejects(describeXmppGroup(ben.state, ben.connection, room, 'mine'), /owner/);
+  await describeXmppGroup(ann.state, ann.connection, room, '  Για το Σάββατο  ');
+  await settle(people);
+  assert.equal(server.rooms.get(room)?.description, 'Για το Σάββατο');
+  for (const p of people) assert.equal(roomOf(p).description, 'Για το Σάββατο');
+  await enterRoom(ben.state, ben.connection, room);
+  await settle(people);
+  assert.equal(roomOf(ben).description, 'Για το Σάββατο');
+  await describeXmppGroup(ann.state, ann.connection, room, '');
+  await settle(people);
+  for (const p of people) assert.equal(roomOf(p).description, undefined);
 });

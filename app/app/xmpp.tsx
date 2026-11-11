@@ -23,6 +23,7 @@ import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { askReadAll, toRead } from '../lib/read-all';
 import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
+import { isSound } from '../lib/xmpp-files';
 import { xmppThroughTor } from '../lib/xmpp-net';
 import { fingerprint } from '../lib/xmpp-omemo';
 import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppPushOn, xmppSetAvatar, xmppSetPush, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
@@ -430,7 +431,9 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
         : last.file
           ? last.file.type.startsWith('image/')
             ? t('Photo')
-            : t('File: {name}', { name: last.file.name })
+            : isSound(last.file)
+              ? t('Voice message')
+              : t('File: {name}', { name: last.file.name })
           : /^geo:\S+$/i.test(last.text.trim())
             ? `📍 ${t('Location')}`
             : last.text;

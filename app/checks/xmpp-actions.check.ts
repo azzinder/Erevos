@@ -9,7 +9,9 @@
 // message by the room's id; only the writer may change or take back a message; the quote other
 // apps put before an answer is left out; whether someone writes shows a while, and ours is said
 // only with the switch on, to a contact; someone blocked reaches no app of the account, and is let
-// through again.
+// through again. Pins stay on this device, the latest last. Words and files forwarded to another
+// chat go as copies encrypted as that chat is, a file by its link where it fits, marked as
+// forwarded inside a forwarded element (XEP-0297) only where nothing is encrypted.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -19,8 +21,30 @@ import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { avatarOf, fetchXmppAvatar } from '../lib/xmpp-avatar';
-import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, sendXmppTyping, setXmppAvatar, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
-import { NS_FALLBACK, NS_REPLY, reactionsShown, react, replyParts, retract, targetOf, toggled, withoutQuote, wroteIt } from '../lib/xmpp-actions';
+import {
+  addXmppContact,
+  blockXmpp,
+  changeXmppText,
+  forwardable,
+  forwardXmpp,
+  isBlocked,
+  onXmppTyping,
+  pinXmpp,
+  prepareXmppFile,
+  reactXmpp,
+  replyXmppText,
+  retractXmpp,
+  sendXmppFile,
+  sendXmppText,
+  sendXmppTyping,
+  setXmppAvatar,
+  xmppTyping,
+  type XmppConnection,
+  type XmppState,
+} from '../lib/xmpp';
+import { MOST_PINS, NS_FALLBACK, NS_REPLY, pinned, pinsShown, reactionsShown, react, replyParts, retract, targetOf, toggled, withoutQuote, wroteIt } from '../lib/xmpp-actions';
+import { randomBytes } from '../lib/crypto';
+import { downloadXmppFile, linkFits, setXmppHttp, uploadXmppFile } from '../lib/xmpp-files';
 import { joinXmppGroup } from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
 import { DOMAIN, MUC, person, Server, settle } from './xmpp-server';
@@ -72,6 +96,98 @@ test('only the writer changes or takes back a message; reactions replace what th
   const gone = { id: 'c', mine: true, text: 'secret', replyTo: 'b', edited: 1, reacted: { ben: ['👍'] } };
   assert.equal(retract(gone), true);
   assert.deepEqual(gone, { id: 'c', mine: true, text: '', deleted: true });
+});
+
+test('pins stay on this device, the latest last; those of messages gone go', () => {
+  const messages = [
+    { id: 'a', mine: true, text: 'a' },
+    { id: 'b', mine: false, text: 'b' },
+    { id: 'c', mine: false, text: '', deleted: true as const },
+    { id: 'd', mine: false, text: 'Missed call', call: true as const },
+  ];
+  let pins = pinned(undefined, messages, 'a', true);
+  pins = pinned(pins, messages, 'b', true);
+  assert.deepEqual(pins, ['a', 'b']);
+  // Pinned again, it is the latest; unpinned, it goes.
+  assert.deepEqual(pinned(pins, messages, 'a', true), ['b', 'a']);
+  assert.deepEqual(pinned(pins, messages, 'a', false), ['b']);
+  // One taken back, a call's line, or one not here is not pinned.
+  for (const id of ['c', 'd', 'gone']) assert.deepEqual(pinned(pins, messages, id, true), ['a', 'b']);
+  // One taken back after it was pinned shows no more, and goes with the next change.
+  assert.deepEqual(pinsShown(['a', 'c', 'b'], messages), ['a', 'b']);
+  assert.deepEqual(pinned(['a', 'c', 'b'], messages, 'b', false), ['a']);
+  const many = Array.from({ length: MOST_PINS + 5 }, (_, i) => ({ id: `m${i}`, mine: true, text: 'x' }));
+  let lots: string[] = [];
+  for (const m of many) lots = pinned(lots, many, m.id, true);
+  assert.deepEqual([lots.length, lots.at(-1)], [MOST_PINS, `m${MOST_PINS + 4}`]);
+  // Kept with the chat; none left, none kept.
+  const state = { chats: { 'ben@example.org': { jid: 'ben@example.org', unread: 0, lastAt: 0, messages: messages.map((m) => ({ at: 1, encrypted: true, ...m })) } } } as unknown as XmppState;
+  pinXmpp(state, 'ben@example.org', 'b', true);
+  assert.deepEqual(state.chats['ben@example.org'].pins, ['b']);
+  pinXmpp(state, 'ben@example.org', 'b', false);
+  assert.equal('pins' in state.chats['ben@example.org'], false);
+});
+
+test('forwarded: words and files go on as copies, encrypted as the chat they go to is, and marked so', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  server.upload = { most: 1024 * 1024 };
+  setXmppHttp(server.http);
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const cat = await person(server, 'cat');
+  const people: Person[] = [ann, ben, cat];
+  t.after(() => {
+    setXmppHttp(null);
+    people.forEach((p) => p.connection.close());
+  });
+  for (const other of [ben, cat]) {
+    await addXmppContact(ann.state, ann.connection, other.state.jid);
+    await settle(people);
+    await addXmppContact(other.state, other.connection, ann.state.jid);
+    await settle(people);
+  }
+  const [toAnn, toBen, toCat] = [ann.state.jid, ben.state.jid, cat.state.jid];
+
+  // Ben writes to Ann, and sends her a voice message, encrypted.
+  await sendXmppText(ben.state, ben.connection, toAnn, 'Η συνάντηση είναι στις πέντε');
+  const ready = await prepareXmppFile(ben.state, ben.connection, toAnn);
+  const sound = randomBytes(3000);
+  const file = await uploadXmppFile(ben.connection, ready.service, { bytes: sound, name: 'voice.m4a', type: 'audio/mp4' }, ready.encrypt);
+  await sendXmppFile(ben.state, ben.connection, toAnn, file);
+  await settle(people);
+  const [words, voice] = ann.state.chats[toBen].messages.filter((m) => !m.call).slice(-2);
+  assert.ok(forwardable(words) && forwardable(voice) && voice.file);
+
+  // Ann forwards both to Cat, encrypted: the words anew, the file by its link, its key inside the new message.
+  const before = server.seen.length;
+  await forwardXmpp(ann.state, ann.connection, toCat, { text: words.text });
+  assert.ok(linkFits(voice.file!, true));
+  await forwardXmpp(ann.state, ann.connection, toCat, { file: { ...voice.file! } });
+  await settle(people);
+  const [catWords, catVoice] = cat.state.chats[toAnn].messages.filter((m) => !m.call).slice(-2);
+  assert.deepEqual([catWords.text, catWords.encrypted], ['Η συνάντηση είναι στις πέντε', true]);
+  assert.deepEqual([catVoice.file?.url, catVoice.file?.fragment, catVoice.file?.type], [file.url, file.fragment, 'audio/mp4']);
+  assert.deepEqual(await downloadXmppFile(catVoice.file!), sound);
+  // Ann's copies say they were forwarded; outside the encryption nothing says it, nor the words, nor the key.
+  assert.ok(ann.state.chats[toCat].messages.filter((m) => !m.call).slice(-2).every((m) => m.forwarded));
+  assert.ok(server.seen.slice(before).every((s) => !s.includes('urn:xmpp:forward:0') && !s.includes('πέντε') && !s.includes(file.fragment!)));
+  assert.equal(catWords.forwarded, undefined);
+
+  // Written without encryption, the copy goes inside a forwarded element too, its words beside it
+  // for the apps that do not know one; Cat's Erevos marks it. An encrypted file does not go there by its link.
+  ann.state.chats[toCat].plain = true;
+  await forwardXmpp(ann.state, ann.connection, toCat, { text: words.text });
+  await settle(people);
+  const plainCopy = cat.state.chats[toAnn].messages.at(-1)!;
+  assert.deepEqual([plainCopy.text, plainCopy.encrypted, plainCopy.forwarded], ['Η συνάντηση είναι στις πέντε', false, true]);
+  assert.ok(server.seen.some((s) => s.includes('urn:xmpp:forward:0')));
+  assert.ok(!linkFits(voice.file!, false));
+
+  // One taken back, or one that did not go, is not forwarded.
+  const mine = await sendXmppText(ann.state, ann.connection, toBen, 'oops');
+  await retractXmpp(ann.state, ann.connection, toBen, mine.id);
+  assert.equal(forwardable(ann.state.chats[toBen].messages.find((m) => m.id === mine.id)!), false);
+  assert.equal(forwardable({ ...words, state: 'failed' }), false);
 });
 
 test('one-to-one with OMEMO: answer, change, react and take back, the server never seeing the words', { skip: !coreReady }, async (t) => {

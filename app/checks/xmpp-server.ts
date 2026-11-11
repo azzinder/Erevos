@@ -27,6 +27,8 @@ export type Room = {
   nonAnonymous: boolean;
   mam: boolean;
   name: string;
+  /** Its description (muc#roomconfig_roomdesc), said in its disco#info form as Prosody does. */
+  description?: string;
   affiliations: Map<string, Affiliation>;
   occupants: Map<string, string>;
   /** What each one in it said in their presence besides joining (a group call's, XEP-0272), by full address. */
@@ -260,6 +262,14 @@ export class Server {
           { xmlns: NS_INFO },
           el('identity', { category: 'conference', type: 'text', name: room.name || undefined }),
           ...[NS_MUC, room.membersOnly ? 'muc_membersonly' : 'muc_open', room.nonAnonymous ? 'muc_nonanonymous' : 'muc_semianonymous', 'muc_persistent', room.mam ? 'urn:xmpp:mam:2' : ''].filter(Boolean).map((f) => el('feature', { var: f })),
+          room.description
+            ? el(
+                'x',
+                { xmlns: 'jabber:x:data', type: 'result' },
+                el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roominfo`)),
+                el('field', { var: 'muc#roominfo_description' }, el('value', {}, room.description)),
+              )
+            : null,
         ),
       );
     }
@@ -276,6 +286,7 @@ export class Server {
               { xmlns: 'jabber:x:data', type: 'form' },
               el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roomconfig`)),
               field('muc#roomconfig_roomname', room.name),
+              field('muc#roomconfig_roomdesc', room.description ?? ''),
               field('muc#roomconfig_persistentroom', '0'),
               field('muc#roomconfig_membersonly', '0'),
               field('muc#roomconfig_whois', 'moderators'),
@@ -292,8 +303,17 @@ export class Server {
       if (values.has('muc#roomconfig_whois')) room.nonAnonymous = values.get('muc#roomconfig_whois') === 'anyone';
       if (values.has('muc#roomconfig_enablearchiving')) room.mam = ['1', 'true'].includes(values.get('muc#roomconfig_enablearchiving')!);
       if (values.has('muc#roomconfig_persistentroom')) room.passing = !['1', 'true'].includes(values.get('muc#roomconfig_persistentroom')!);
+      if (values.has('muc#roomconfig_roomdesc')) room.description = values.get('muc#roomconfig_roomdesc') || undefined;
+      const was = room.locked;
       room.locked = false;
-      return reply();
+      reply();
+      // Its settings changed: everyone in it is told (status 104), as XEP-0045 §10.2.1 has it.
+      if (!was) {
+        for (const full of room.occupants.keys()) {
+          this.deliver(full, el('message', { from: room.jid, to: full, type: 'groupchat', id: this.id(), xmlns: 'jabber:client' }, el('x', { xmlns: NS_MUC_USER }, el('status', { code: '104' }))));
+        }
+      }
+      return;
     }
     if (query?.ns === `${NS_MUC}#admin`) {
       const asked = children(query, 'item');

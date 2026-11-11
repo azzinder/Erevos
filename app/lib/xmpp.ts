@@ -19,6 +19,7 @@ import {
   NS_FALLBACK,
   NS_REACTIONS,
   NS_RETRACT,
+  pinned,
   react,
   reactionsOf,
   replaceOf,
@@ -36,7 +37,7 @@ import {
 } from './xmpp-actions';
 import { avatarOf, NS_AVATAR_META, publishXmppAvatar, removeXmppAvatar, type XmppAvatar } from './xmpp-avatar';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
-import { enterRooms, groupPeople, mentions, NS_DATA, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
+import { enterRooms, groupPeople, mentions, NS_DATA, NS_MUC_USER, refreshRoom, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
 import type { XmppPushTo } from './xmpp-push';
 import {
   bundleElement,
@@ -171,6 +172,11 @@ export type XmppMessage = {
   reacted?: Record<string, string[]>;
   /** The preview of a link in its words, as its sender's phone made it (lib/xmpp-links.ts); only beside words not encrypted. */
   preview?: Preview;
+  /**
+   * A copy of a message from another chat: one we forwarded, or one that came marked so (XEP-0297),
+   * which only a message not encrypted can be.
+   */
+  forwarded?: true;
 };
 
 export type XmppChat = {
@@ -186,6 +192,8 @@ export type XmppChat = {
   look?: Look;
   /** A group (lib/xmpp-muc.ts), its address the chat's. */
   room?: XmppRoom;
+  /** Messages pinned on this device only, by their ids, the latest last: XMPP has no pins its apps share (lib/xmpp-actions.ts). */
+  pins?: string[];
 };
 
 export type XmppContact = {
@@ -1093,6 +1101,7 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     ...(file ? { file } : {}),
     ...(answers ? { replyTo: targetOf(chat.messages, answers, false)?.id ?? answers } : {}),
     ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
+    ...(!encrypted && child(message, 'forwarded', NS.forward) ? { forwarded: true as const } : {}),
   });
   if (!mine) chat.unread += 1;
   else chat.unread = 0;
@@ -1133,8 +1142,15 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     taken.chats.push(jid);
     return;
   }
-  // The room's own words (as "this room is now archived") have no one who wrote them.
-  if (!nick) return;
+  // The room's own words (as "this room is now archived") have no one who wrote them. One that
+  // says its settings changed (104) has its name and description read again.
+  if (!nick) {
+    if (how.live && children(child(message, 'x', NS_MUC_USER), 'status').some((s) => s.attrs.code === '104')) {
+      await refreshRoom(connection, room, jid).catch(() => undefined);
+      taken.chats.push(jid);
+    }
+    return;
+  }
   const stanzaId = children(message, 'stanza-id', NS.sid).find((s) => bare(s.attrs.by ?? '') === jid)?.attrs.id || how.archiveId;
   const ownId = child(message, 'origin-id', NS.sid)?.attrs.id || message.attrs.id || '';
   // One sent from here, back from the room.
@@ -1197,6 +1213,7 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     ...(file ? { file } : {}),
     ...(answers ? { replyTo: targetOf(chat.messages, answers, true)?.id ?? answers } : {}),
     ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
+    ...(!encrypted && child(message, 'forwarded', NS.forward) ? { forwarded: true as const } : {}),
   });
   if (mine) chat.unread = 0;
   else if (how.at > (room.readTo ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
@@ -1748,8 +1765,8 @@ export function plainIn(chat: XmppChat): boolean {
   return Boolean(chat.plain) || (chat.room !== undefined && !chat.room.private);
 }
 
-/** What a message sent is besides its words: an answer to one here, or new words for one of ours. */
-type Sending = { reply?: XmppMessage; replace?: XmppMessage; preview?: Preview | null };
+/** What a message sent is besides its words: an answer to one here, new words for one of ours, or a copy of one from another chat. */
+type Sending = { reply?: XmppMessage; replace?: XmppMessage; preview?: Preview | null; forward?: boolean };
 
 async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile, how: Sending = {}): Promise<XmppMessage> {
   const chat = chatOf(state, peer);
@@ -1758,7 +1775,19 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
   const plain = plainIn(chat);
   const id = newId();
   const preview = plain && !file && !how.replace && how.preview ? how.preview : null;
-  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !plain, state: 'sending', ...(file ? { file } : {}), ...(room ? { by: room.nick } : {}), ...(preview ? { preview } : {}) };
+  const forward = !!how.forward && !how.reply && !how.replace;
+  const message: XmppMessage = {
+    id,
+    mine: true,
+    text: file ? '' : text,
+    at: Date.now(),
+    encrypted: !plain,
+    state: 'sending',
+    ...(file ? { file } : {}),
+    ...(room ? { by: room.nick } : {}),
+    ...(preview ? { preview } : {}),
+    ...(forward ? { forwarded: true as const } : {}),
+  };
   // An answer goes with the quote other apps show (lib/xmpp-actions.ts), and says what it answers.
   const answered = how.reply;
   const answerId = answered ? nameFor(answered, !!room) : undefined;
@@ -1780,7 +1809,11 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
   ];
   let stanza: XmlElement;
   if (plain) {
-    stanza = el('message', { to: peer, type, id }, el('body', {}, words), file && !file.fragment ? oobOf(file) : null, preview ? previewElement(preview) : null, ...extras);
+    const oob = file && !file.fragment ? oobOf(file) : null;
+    // A copy goes inside a forwarded element too (XEP-0297), for the apps that show one as such;
+    // its words beside it are what the others show. Who wrote it first is not said.
+    const forwarded = forward ? el('forwarded', { xmlns: NS.forward }, el('message', { xmlns: NS.client }, el('body', {}, words), oob)) : null;
+    stanza = el('message', { to: peer, type, id }, el('body', {}, words), oob, preview ? previewElement(preview) : null, forwarded, ...extras);
   } else {
     const encrypted = await encryptFor(state, connection, peopleOf(state, peer), peer, words);
     stanza = el(
@@ -1811,6 +1844,39 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
     throw error;
   }
   return message;
+}
+
+/**
+ * Sends a copy of a message from another chat, marked as forwarded: its words, or its file already
+ * on a server (lib/xmpp-files.ts linkFits), encrypted as this chat is. In a chat written without
+ * encryption the copy goes inside a forwarded element too (XEP-0297); an encrypted one has nothing
+ * outside its encryption to say it, so there it goes as a plain copy, marked as forwarded only here.
+ */
+export async function forwardXmpp(state: XmppState, connection: XmppConnection, peer: string, what: { text: string } | { file: XmppFile }): Promise<XmppMessage> {
+  if ('file' in what) return sendBody(state, connection, peer, textOfFile(what.file), what.file, { forward: true });
+  return sendBody(state, connection, peer, what.text, undefined, { forward: true });
+}
+
+/** Whether a message can go to another chat as a copy: words or a file, opened, sent and not taken back. */
+export function forwardable(message: XmppMessage): boolean {
+  return !message.deleted && !message.locked && !message.call && message.state !== 'sending' && message.state !== 'failed' && (!!message.file || !!message.text.trim());
+}
+
+/** Pins a message of a chat on this device only, or unpins it (lib/xmpp-actions.ts). */
+export function pinXmpp(state: XmppState, peer: string, id: string, on: boolean): void {
+  const chat = state.chats[peer];
+  if (!chat) return;
+  const pins = pinned(chat.pins, chat.messages, id, on);
+  if (pins.length) chat.pins = pins;
+  else delete chat.pins;
+}
+
+/** Keeps how long a sound of a chat lasts, read from it once it was fetched (lib/xmpp-voice.ts); here only. */
+export function heardXmpp(state: XmppState, peer: string, id: string, ms: number): boolean {
+  const file = state.chats[peer]?.messages.find((m) => m.id === id)?.file;
+  if (!file || file.duration || !(ms > 0 && ms <= 24 * 3600_000)) return false;
+  file.duration = Math.round(ms);
+  return true;
 }
 
 /** The message of a chat `id` names, here: a reaction, an answer or a taking back needs one. */
