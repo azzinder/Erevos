@@ -19,6 +19,7 @@ import { chosenStyle, SelectBar, useSelection } from '../components/select-bar';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SmsExtras, useSmsVoice } from '../components/sms-parts';
 import { ContactsSheet } from '../components/sms-recipient';
+import { StickerPicker } from '../components/stickers';
 import { BELOW_TOP, ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { deleteSms, deleteSmsMany, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
@@ -49,6 +50,8 @@ import { CAN_PLACE } from '../lib/place';
 import { cancelLater as cancelSmsLater, laterChanged, onLaterSent, waitsForOwner } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { CARD_MIME, chosenText, contactVCard, forwardOf, isPinned, partsOf, partWord, pinnedShown, placeSms, VOICE_MIME } from '../lib/sms-parts';
+import { stickerImage } from '../lib/sticker-image';
+import { stickerToSend } from '../lib/sticker-send';
 import { contactRows } from '../lib/sms-recipient';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { useLock } from '../lock/context';
@@ -82,8 +85,9 @@ import { useStyles, useTheme } from '../theme/context';
 // asks for the SMS, as the chat's details and the contact card do to write one. Messages here are
 // plain SMS: the phone company can read them. The first one to a number that is no Erevos contact's
 // also carries a hidden invite (lib/sms-invite.ts), when invites are on. A contact can be linked to
-// the number by hand. A photo, a voice message (held on the microphone) and a contact from the
-// phone's contacts go as an MMS, as plain as an SMS; where you are goes as an SMS of its geo: address
+// the number by hand. A photo, a voice message (held on the microphone), a contact from the
+// phone's contacts and a built-in sticker, as its picture made on the phone (lib/sticker-send.ts),
+// go as an MMS, as plain as an SMS; where you are goes as an SMS of its geo: address
 // and a map's link (lib/sms-parts.ts). The voice messages, contact cards and places that come show
 // as such, to play, save or open in the maps app. With two SIMs, the one to send on is chosen here,
 // and kept for the number. The number shows the name and picture the phone's contacts give it, when that is
@@ -226,6 +230,12 @@ export default function Sms() {
   const [attaching, setAttaching] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [choosingCard, setChoosingCard] = useState(false);
+  // The built-in stickers' sheet, what it says, and whether one's picture is being made.
+  const [stickering, setStickering] = useState(false);
+  const [stickerNote, setStickerNote] = useState('');
+  const stickerOpen = useRef(false);
+  stickerOpen.current = stickering;
+  const drawing = useRef(false);
   // The messages chosen together (Select), those pinned for the owner, and which of them the bar shows.
   const selection = useSelection<string>();
   const [pins, setPins] = useState<SmsPin[]>([]);
@@ -534,6 +544,26 @@ export default function Sms() {
   function sendPlace(place: Place) {
     setPlacing(false);
     void go(placeSms(place), null);
+  }
+
+  // A built-in sticker, as its picture made on this phone (lib/sticker-send.ts), small enough for
+  // one MMS, alone in it, as a voice message goes; when none could be made, nothing goes.
+  async function sendSticker(name: string) {
+    if (drawing.current) return;
+    drawing.current = true;
+    setStickerNote('');
+    try {
+      const picture = await stickerToSend(name, stickerImage, MMS_MAX);
+      if (!stickerOpen.current) return;
+      if (!picture) {
+        setStickerNote(t('This sticker could not be made into a picture. Try again.'));
+        return;
+      }
+      setStickering(false);
+      await go('', { bytes: picture.bytes, mime: picture.mime });
+    } finally {
+      drawing.current = false;
+    }
   }
 
   // A contact of the phone's, as a contact card to send with the words typed.
@@ -1061,6 +1091,27 @@ export default function Sms() {
           >
             <Text variant="bodyStrong">{t('Contact card')}</Text>
           </Pressable>
+        ) : null}
+        {canPart ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              setStickerNote('');
+              setStickering(true);
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Sticker')}</Text>
+          </Pressable>
+        ) : null}
+      </Sheet>
+      <Sheet visible={stickering} onClose={() => setStickering(false)} title={t('Send a sticker')}>
+        <StickerPicker onPick={(name) => void sendSticker(name)} />
+        {stickerNote ? (
+          <Text variant="caption" tone="muted">
+            {stickerNote}
+          </Text>
         ) : null}
       </Sheet>
       <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Plain SMS: not encrypted. The phone company can read these messages.')} />

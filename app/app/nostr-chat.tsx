@@ -57,6 +57,7 @@ import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
 import { stickerMeta } from '../lib/own-stickers';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import type { StickerToSend } from '../lib/sticker-send';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { space } from '../theme/colors';
 import { softBubble, textSized } from '../theme/bubbles';
@@ -78,7 +79,8 @@ import { checkedLook } from '../theme/look';
 // forward goes as a new message to another Nostr chat of the same account, a file sent again.
 // Messages chosen together (components/select-bar.tsx) are copied, forwarded or deleted at once;
 // deleting removes them from this device, and of ours asks the others' apps to remove them too
-// (NIP-09). A sticker is one of those made from photos, sent as a photo (components/nostr-stickers.tsx).
+// (NIP-09). A sticker, one of Erevos's own as its picture or one of those made from photos, goes
+// as a photo (components/nostr-stickers.tsx).
 // An answer shows the message it is to above its words, which scrolls to
 // it when tapped, and the message being answered shows over the field until sent or let go. The
 // microphone beside the field records a voice message while it is held (components/matrix-voice.tsx),
@@ -303,6 +305,11 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       return { bytes: picture, mime, w: w ?? 0, h: h ?? 0 };
     }, nostrDmSendSticker);
   }
+  // A built-in sticker, as its picture made on this device (lib/sticker-send.ts): through nostrDmSendSticker too.
+  function sendBuiltIn(sticker: StickerToSend) {
+    setStickering(false);
+    void sendWith(async () => sticker, nostrDmSendSticker);
+  }
 
   // What can be done with a message, held down: answering is for one that went.
   function actionsOf(message: NostrDmMessage): MenuAction[] {
@@ -509,7 +516,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       </Sheet>
       {stickerPlace ? (
         <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
-          <NostrStickers place={stickerPlace} onPick={sendSticker} />
+          <NostrStickers place={stickerPlace} onPick={sendSticker} onBuiltIn={sendBuiltIn} />
         </Sheet>
       ) : null}
     </KeyboardAwareScrollView>,

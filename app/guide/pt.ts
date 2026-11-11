@@ -1160,6 +1160,9 @@ figurinhas):
   nada é baixado nunca. Um Erevos de antes disso mostra o emoji dela no lugar. Todas, menos as frases e as gostosuras,
   se mexem um pouco por alguns segundos quando chegam e quando são tocadas, e depois param; com a configuração de
   reduzir movimento do celular ativada, ficam paradas. As frases aparecem no idioma do app.
+- **Como imagem:** numa conversa de outra rede que só aceita imagens, uma figurinha embutida vai no lugar como a imagem
+  dela: 512 por 512 com fundo transparente, desenhada no seu celular ou computador a partir das mesmas formas, parada,
+  com as palavras dela no idioma do app. Nada é baixado para fazê-la.
 - **Minhas**, entre as figurinhas, guarda as que você faz com fotos. **Nova figurinha a partir de uma foto** corta uma
   em quadrado, a reduz (512 por 512, cerca de 100 KB no máximo) e mantém só a imagem dela, nada de onde nem com o que
   foi tirada. Ela fica selada no espaço, ou nas conversas ocultas onde foi feita, e só aparece ali, até 100 delas;
@@ -1804,7 +1807,8 @@ fica no meio.
   ampliam, ela gira com o celular, e **Salvar** a guarda (veja Fotos e arquivos, em [Conversar por um relay](#relay)).
 - **Figurinhas:** uma figurinha que o Element, o FluffyChat ou o Element X enviam aparece na conversa; **Mostrar
   figurinha** a busca pelo seu servidor Matrix. **Figurinha** envia as suas próprias figurinhas feitas de fotos
-  (**Minhas**) como imagens, criptografadas onde a conversa é.
+  (**Minhas**) como imagens, criptografadas onde a conversa é. Os conjuntos embutidos também estão lá: cada figurinha
+  vai como a imagem dela, feita no seu aparelho, com as palavras dela para os apps que só mostram essas.
 - **Reações, respostas, alterações e apagar:** segure uma mensagem para abrir o menu dela: escolha uma reação no alto,
   **Responder** para respondê-la, **Copiar** para as palavras dela, e numa mensagem sua **Editar** ou **Apagar**. Uma
   resposta mostra a mensagem a que responde acima das palavras dela, e um toque nisso vai até a mensagem. As reações
@@ -1993,8 +1997,9 @@ esses apps: nenhuma ponte fica no meio.
   Toque numa foto mostrada para vê-la na tela inteira, como na conversa de um contato: dois dedos ou um toque duplo a
   ampliam, ela gira com o celular, e **Salvar** a guarda (veja Fotos e arquivos, em [Conversar por um relay](#relay)).
 - **Figurinhas:** **Figurinha** envia as suas próprias figurinhas feitas de fotos (**Minhas**) como fotos,
-  criptografadas como a conversa; outros apps XMPP as mostram como fotos. Um pacote de figurinhas que outro app envia
-  (XEP-0449) não é baixado: ele mostra as suas palavras.
+  criptografadas como a conversa; outros apps XMPP as mostram como fotos. Os conjuntos embutidos também estão lá: cada
+  figurinha vai como a imagem dela, feita no seu aparelho. Um pacote de figurinhas que outro app envia (XEP-0449) não é
+  baixado: ele mostra as suas palavras.
 - **Mensagens de voz:** segure o microfone abaixo da caixa de mensagem para gravar, e solte para enviar, como numa
   conversa do Matrix. Vai como arquivo de som, criptografado como a conversa, do jeito que o Conversations envia. Uma
   mensagem de voz do Conversations ou de outro app XMPP (um arquivo .m4a ou .ogg) também aparece como mensagem de voz,
@@ -2132,7 +2137,8 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   arquivos são enviados de novo) ou **Apagar**. Apagar as tira deste celular e pede aos apps dos outros que apaguem
   também as suas: os apps deles podem fazê-lo ou não.
 - **Figurinhas:** **Figurinha** envia as suas próprias figurinhas feitas de fotos (**Minhas**) como fotos,
-  criptografadas: outros apps do Nostr as mostram como fotos.
+  criptografadas: outros apps do Nostr as mostram como fotos. Os conjuntos embutidos também estão lá: cada figurinha vai
+  como a imagem dela, feita no seu aparelho.
 - **Criptografia:** cada mensagem é criptografada para a outra pessoa e assinada por você, e depois embrulhada de novo
   por uma chave criada só para aquela mensagem, com a hora atrasada em até dois dias (NIP-17, com NIP-44 e NIP-59). Os
   relays veem para quem ela é, não quem a escreveu, quando nem o que diz. Uma cópia vai para os seus relays, para que
@@ -2277,9 +2283,10 @@ mostra nada.
   MMS (cerca de 280 KB), sem nada nela além da imagem. Segure o microfone, sem nada digitado, para gravar uma mensagem
   de voz de até um minuto, enviada como MMS em AMR, o formato que os apps de mensagens dos celulares reproduzem. **+** →
   **Cartão de contato** envia um contato dos contatos do celular como vCard, sem as suas anotações sobre ele nem os
-  grupos dele, e com a imagem dele só se ainda couber. As fotos, mensagens de voz e cartões de contato que chegam
-  aparecem na conversa, para reproduzir ou salvar (**Salvar** abre um novo contato com os dados do cartão). Um MMS é tão
-  aberto quanto um SMS: a operadora pode vê-lo.
+  grupos dele, e com a imagem dele só se ainda couber. **+** → **Figurinha** envia uma das figurinhas embutidas como a
+  imagem dela, sozinha num MMS. As fotos, mensagens de voz e cartões de contato que chegam aparecem na conversa, para
+  reproduzir ou salvar (**Salvar** abre um novo contato com os dados do cartão). Um MMS é tão aberto quanto um SMS: a
+  operadora pode vê-lo.
 - **Onde você está:** **+** → **Localização** envia onde você está como um SMS com um endereço geo: e um link do
   OpenStreetMap, que qualquer celular abre. Um endereço geo:, ou um link do OpenStreetMap, Google Maps, Apple Maps ou
   Waze, num SMS que chega aparece como um lugar, para abrir no app de mapas; um link curto continua sendo um link,

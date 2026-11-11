@@ -413,16 +413,24 @@ const lastTabs = new Map<string, Tab>();
 /**
  * Every sticker, to pick one, in its sets: tapped, a built-in one is `onPick`ed. With `mine`, the
  * stickers made from photos in `mine.place`, in their own set: one tapped is `mine.onPick`ed, one
- * held is deleted, and a new one is made from a photo.
+ * held is deleted, and a new one is made from a photo. With `ownTab` instead, a chat on another
+ * network (components/matrix-stickers.tsx and its kin) shows its own Mine, `ownTab.view`, in that
+ * set, beside the built-in ones.
  */
-export function StickerPicker({ onPick, mine }: {
+export function StickerPicker({ onPick, mine, ownTab }: {
   onPick: (name: string) => void;
   mine?: { place: StickerPlace; onPick: (sticker: OwnSticker) => void };
+  ownTab?: { place: StickerPlace | null; view: ReactNode };
 }) {
   const colors = useColors();
   const place = mine?.place ?? null;
-  const where = place ? `${place.holder}/${place.space}` : '';
-  const [tab, setTab] = useState<Tab>(() => lastTabs.get(where) ?? 'moons');
+  const at = place ?? ownTab?.place ?? null;
+  const where = at ? `${at.holder}/${at.space}` : '';
+  const hasMine = !!mine || !!ownTab;
+  const [tab, setTab] = useState<Tab>(() => {
+    const last = lastTabs.get(where);
+    return last && (last !== 'mine' || hasMine) ? last : 'moons';
+  });
   const [own, setOwn] = useState<OwnSticker[]>([]);
   const [note, setNote] = useState('');
   const [making, setMaking] = useState(false);
@@ -484,7 +492,7 @@ export function StickerPicker({ onPick, mine }: {
     ]);
   }
 
-  const tabs: Tab[] = [...SETS.map(({ set }) => set), ...(mine ? ['mine' as const] : [])];
+  const tabs: Tab[] = [...SETS.map(({ set }) => set), ...(hasMine ? ['mine' as const] : [])];
   const cell = ({ pressed }: { pressed: boolean }) => ({ padding: 6, borderRadius: radius.md, backgroundColor: pressed ? colors.surfacePressed : 'transparent' });
   return (
     <View style={{ gap: space.md }}>
@@ -492,7 +500,7 @@ export function StickerPicker({ onPick, mine }: {
         {SETS.map(({ set, label }) => (
           <Chip key={set} label={t(label)} selected={tab === set} onPress={() => choose(set)} />
         ))}
-        {mine ? <Chip label={t('Mine')} selected={tab === 'mine'} onPress={() => choose('mine')} /> : null}
+        {hasMine ? <Chip label={t('Mine')} selected={tab === 'mine'} onPress={() => choose('mine')} /> : null}
       </ScrollView>
       {/* A swipe to the side goes to the set beside, as its chip does. */}
       <SwipeTabs tabs={tabs} current={tab} onChange={choose} grow={false}>
@@ -504,6 +512,8 @@ export function StickerPicker({ onPick, mine }: {
               </Pressable>
             ))}
           </View>
+        ) : ownTab ? (
+          ownTab.view
         ) : (
           <>
             <Row wrap>

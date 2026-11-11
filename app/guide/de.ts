@@ -1251,6 +1251,9 @@ Sticker):
   den Leckereien bewegen sich ein paar Sekunden lang ein wenig, wenn sie ankommen und wenn man auf sie tippt, dann
   ruhen sie; mit eingeschalteter Bewegungsreduzierung des Telefons bleiben sie still. Die Worte erscheinen in der
   Sprache der App.
+- **Als Bild:** In einem Chat eines anderen Netzes, der nur Bilder nimmt, geht ein eingebauter Sticker stattdessen als
+  sein Bild: 512 mal 512 mit durchsichtigem Hintergrund, auf deinem Telefon oder Computer aus denselben Formen
+  gezeichnet, in Ruhe, seine Worte in der Sprache der App. Dafür wird nichts heruntergeladen.
 - **Meine**, unter den Stickern, enthält die, die du aus Fotos machst. **Neuer Sticker aus einem Foto** schneidet einen
   quadratisch zu, verkleinert ihn (512 mal 512, höchstens etwa 100 KB) und behält nur sein Bild, nichts davon, wo oder
   womit es aufgenommen wurde. Er wird versiegelt im Bereich aufbewahrt, oder in den versteckten Chats, in denen er
@@ -1939,7 +1942,8 @@ Element: Keine Brücke sitzt dazwischen.
   unter [Chat über ein Relay](#relay)).
 - **Sticker:** Ein Sticker, den Element, FluffyChat oder Element X senden, erscheint im Chat; **Sticker anzeigen** holt
   ihn über deinen Matrix-Server. **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Bilder,
-  verschlüsselt, wo der Chat es ist.
+  verschlüsselt, wo der Chat es ist. Die eingebauten Sätze sind auch da: Jeder Sticker geht als sein Bild, auf deinem
+  Gerät gemacht, mit seinen Worten für Apps, die nur diese zeigen.
 - **Reaktionen, Antworten, Änderungen und Löschen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: Wähle oben
   eine Reaktion, **Antworten**, um ihr zu antworten, **Kopieren** für ihren Text, und bei einer Nachricht von dir
   **Bearbeiten** oder **Löschen**. Eine Antwort zeigt über ihrem Text die Nachricht, auf die sie antwortet, und ein
@@ -2140,8 +2144,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
   unter [Chat über ein Relay](#relay)).
 - **Sticker:** **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Fotos, verschlüsselt wie der
-  Chat; andere XMPP-Apps zeigen sie als Fotos. Ein Sticker-Paket, das eine andere App sendet (XEP-0449), wird nicht
-  geholt: Es zeigt seine Worte.
+  Chat; andere XMPP-Apps zeigen sie als Fotos. Die eingebauten Sätze sind auch da: Jeder Sticker geht als sein Bild,
+  auf deinem Gerät gemacht. Ein Sticker-Paket, das eine andere App sendet (XEP-0449), wird nicht geholt: Es zeigt seine
+  Worte.
 - **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
   senden, wie in einem Matrix-Chat. Sie geht als Tondatei, verschlüsselt wie der Chat, so wie Conversations sie sendet.
   Eine Sprachnachricht von Conversations oder einer anderen XMPP-App (eine .m4a- oder .ogg-Datei) erscheint ebenfalls
@@ -2291,7 +2296,8 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Dateien werden neu gesendet) oder zum **Löschen**. Löschen nimmt sie von diesem Telefon und bittet die Apps der
   anderen, auch deine eigenen zu löschen: Ihre Apps tun das vielleicht oder nicht.
 - **Sticker:** **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Fotos, verschlüsselt: Andere
-  Nostr-Apps zeigen sie als Fotos.
+  Nostr-Apps zeigen sie als Fotos. Die eingebauten Sätze sind auch da: Jeder Sticker geht als sein Bild, auf deinem
+  Gerät gemacht.
 - **Verschlüsselung:** Jede Nachricht wird für sie verschlüsselt und von dir signiert, dann von einem Schlüssel, der nur
   für diese Nachricht erstellt wird, noch einmal verpackt, ihre Zeit um bis zu zwei Tage zurückgesetzt (NIP-17, mit
   NIP-44 und NIP-59). Die Relays sehen, für wen sie ist, nicht wer sie schrieb, wann oder was darin steht. Eine Kopie
@@ -2442,10 +2448,10 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   eine MMS passt (etwa 280 KB), mit nichts darin außer dem Bild. Halte das Mikrofon, wenn nichts getippt ist, um eine
   Sprachnachricht von bis zu einer Minute aufzunehmen, gesendet als MMS in AMR, dem Format, das die Nachrichten-Apps der
   Telefone abspielen. **+** → **Kontaktkarte** sendet einen Kontakt aus den Kontakten des Telefons als vCard, ohne deine
-  Notizen dazu oder seine Gruppen, und mit seinem Bild nur, wenn es noch passt. Fotos, Sprachnachrichten und
-  Kontaktkarten, die ankommen, erscheinen in der Unterhaltung, zum Abspielen oder Speichern (**Speichern** öffnet einen
-  neuen Kontakt mit den Angaben der Karte). Eine MMS ist so unverschlüsselt wie eine SMS: Der Mobilfunkanbieter kann sie
-  sehen.
+  Notizen dazu oder seine Gruppen, und mit seinem Bild nur, wenn es noch passt. **+** → **Sticker** sendet einen der
+  eingebauten Sticker als sein Bild, allein in einer MMS. Fotos, Sprachnachrichten und Kontaktkarten, die ankommen,
+  erscheinen in der Unterhaltung, zum Abspielen oder Speichern (**Speichern** öffnet einen neuen Kontakt mit den Angaben
+  der Karte). Eine MMS ist so unverschlüsselt wie eine SMS: Der Mobilfunkanbieter kann sie sehen.
 - **Wo du bist:** **+** → **Standort** sendet, wo du bist, als SMS mit einer geo:-Adresse und einem OpenStreetMap-Link,
   den jedes Telefon öffnet. Eine geo:-Adresse oder ein Link von OpenStreetMap, Google Maps, Apple Maps oder Waze in
   einer SMS, die ankommt, erscheint als Ort, zum Öffnen in der Karten-App; ein Kurzlink bleibt ein Link, da er geholt

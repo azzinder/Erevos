@@ -1167,6 +1167,9 @@ sticker):
   niente. Un Erevos di prima di questa funzione mostra invece la sua emoji. Tutti tranne le parole e le golosità si
   muovono un po’ per qualche secondo quando arrivano e quando li tocchi, poi stanno fermi; con l’impostazione del
   telefono che riduce le animazioni attiva, restano fermi. Le parole appaiono nella lingua dell’app.
+- **Come immagine:** in una chat di un’altra rete che accetta solo immagini, uno sticker integrato parte invece come la
+  sua immagine: 512 per 512 con sfondo trasparente, disegnata sul tuo telefono o computer dalle stesse forme, ferma, con
+  le parole nella lingua dell’app. Non viene scaricato niente per farla.
 - **Miei**, tra gli sticker, contiene quelli che crei dalle foto. **Nuovo sticker da una foto** ne ritaglia uno
   quadrato, lo rimpicciolisce (512 per 512, al massimo circa 100 KB) e tiene solo la sua immagine, niente di dove o con
   che cosa è stata scattata. È conservato sigillato nello spazio, o nelle chat nascoste in cui è stato creato, e appare
@@ -1827,7 +1830,8 @@ sta nel mezzo.
   ingrandiscono, ruota con il telefono, e **Salva** la tiene (vedi Foto e file, in [Chat tramite un relay](#relay)).
 - **Sticker:** uno sticker inviato da Element, FluffyChat o Element X si vede nella chat; **Mostra sticker** lo recupera
   tramite il tuo server Matrix. **Sticker** invia i tuoi sticker fatti da foto (**Miei**) come immagini, crittografate
-  dove lo è la chat.
+  dove lo è la chat. Ci sono anche le serie integrate: ogni sticker parte come la sua immagine, fatta sul tuo
+  dispositivo, con le sue parole per le app che mostrano solo quelle.
 - **Reazioni, risposte, modifiche ed eliminazione:** tieni premuto un messaggio per aprire il suo menu: scegli una
   reazione in alto, **Rispondi** per rispondergli, **Copia** per le sue parole, e su un tuo messaggio **Modifica** o
   **Elimina**. Una risposta mostra il messaggio a cui risponde sopra le sue parole, e un tocco su quello porta al
@@ -2018,8 +2022,8 @@ app: nessun ponte sta nel mezzo.
   Tocca una foto mostrata per vederla a tutto schermo, come nella chat di un contatto: due dita o un doppio tocco la
   ingrandiscono, ruota con il telefono, e **Salva** la tiene (vedi Foto e file, in [Chat tramite un relay](#relay)).
 - **Sticker:** **Sticker** invia i tuoi sticker fatti da foto (**Miei**) come foto, crittografate come la chat; le altre
-  app XMPP li mostrano come foto. Un pacchetto di sticker inviato da un’altra app (XEP-0449) non viene scaricato: mostra
-  le sue parole.
+  app XMPP li mostrano come foto. Ci sono anche le serie integrate: ogni sticker parte come la sua immagine, fatta sul
+  tuo dispositivo. Un pacchetto di sticker inviato da un’altra app (XEP-0449) non viene scaricato: mostra le sue parole.
 - **Messaggi vocali:** tieni premuto il microfono sotto il campo del messaggio per registrare, e rilascia per inviare,
   come in una chat Matrix. Parte come file audio, cifrato come la chat, come lo invia Conversations. Anche un messaggio
   vocale di Conversations o di un’altra app XMPP (un file .m4a o .ogg) si vede come messaggio vocale, con **Riproduci**
@@ -2159,7 +2163,8 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   e file vengono inviati di nuovo) o da eliminare con **Elimina**. Elimina li toglie da questo telefono e chiede alle
   app degli altri di eliminare anche i tuoi: le loro app possono farlo oppure no.
 - **Sticker:** **Sticker** invia i tuoi sticker fatti da foto (**Miei**) come foto, crittografate: le altre app Nostr li
-  mostrano come foto.
+  mostrano come foto. Ci sono anche le serie integrate: ogni sticker parte come la sua immagine, fatta sul tuo
+  dispositivo.
 - **Cifratura:** ogni messaggio è cifrato per l’altra persona e firmato da te, poi avvolto di nuovo da una chiave creata
   solo per quel messaggio, con l’ora spostata indietro fino a due giorni (NIP-17, con NIP-44 e NIP-59). I relay vedono a
   chi è destinato, non chi l’ha scritto, quando né cosa dice. Una copia va ai tuoi relay, così le tue altre app Nostr
@@ -2301,9 +2306,10 @@ nulla.
   MMS (circa 280 KB), senza nulla dentro oltre all’immagine. Tieni premuto il microfono, senza niente digitato, per
   registrare un messaggio vocale fino a un minuto, inviato come MMS in AMR, il formato che le app di messaggi dei
   telefoni riproducono. **+** → **Scheda contatto** invia un contatto tra quelli del telefono come vCard, senza le tue
-  note su di esso né i suoi gruppi, e con la sua immagine solo se ci sta ancora. Le foto, i messaggi vocali e le schede
-  contatto che arrivano si vedono nella conversazione, da riprodurre o salvare (**Salva** apre un nuovo contatto con i
-  dati della scheda). Un MMS è in chiaro come un SMS: l’operatore può vederlo.
+  note su di esso né i suoi gruppi, e con la sua immagine solo se ci sta ancora. **+** → **Sticker** invia uno degli
+  sticker integrati come la sua immagine, da solo in un MMS. Le foto, i messaggi vocali e le schede contatto che
+  arrivano si vedono nella conversazione, da riprodurre o salvare (**Salva** apre un nuovo contatto con i dati della
+  scheda). Un MMS è in chiaro come un SMS: l’operatore può vederlo.
 - **Dove sei:** **+** → **Posizione** invia dove sei come SMS con un indirizzo geo: e un link OpenStreetMap, che ogni
   telefono apre. Un indirizzo geo:, o un link di OpenStreetMap, Google Maps, Apple Maps o Waze, in un SMS che arriva si
   vede come un luogo, da aprire nell’app delle mappe; un link breve resta un link, perché andrebbe scaricato per

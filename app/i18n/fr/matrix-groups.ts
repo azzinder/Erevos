@@ -5,7 +5,6 @@
 // The French of running Matrix groups, their stickers, choosing several messages and finding people (app/matrix-chat.tsx, components/matrix-members.tsx, components/matrix-stickers.tsx) (i18n/fr/index.ts).
 export const matrixGroups: Record<string, string> = {
   "Show sticker": "Afficher le sticker",
-  "Your stickers made from photos go to Matrix as pictures, encrypted where the chat is. Erevos’s own sets are drawn by Erevos itself, so other Matrix apps could not show them.": "Tes stickers faits à partir de photos partent sur Matrix comme des images, chiffrés là où la discussion l’est. Les collections d’Erevos sont dessinées par Erevos lui-même, donc les autres applis Matrix ne pourraient pas les afficher.",
   "moderator": "modérateur",
   "invited": "invité",
   "Make {name} an admin? They may then do all you may in this group, and you cannot undo it.": "Nommer {name} admin ? Cette personne pourra alors faire tout ce que tu peux faire dans ce groupe, et tu ne pourras pas l’annuler.",

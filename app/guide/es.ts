@@ -1162,6 +1162,9 @@ los stickers):
   nada. Un Erevos anterior a esto muestra su emoji en su lugar. Todos menos las frases y los antojos se mueven un poco
   durante unos segundos al llegar y al tocarlos, y luego se quedan quietos; con el ajuste de reducir el movimiento del
   teléfono activado, se quedan quietos. Las frases aparecen en el idioma de la app.
+- **Como imagen:** en un chat de otra red que solo acepta imágenes, un sticker de los que trae Erevos va en su lugar
+  como su imagen: 512 por 512 con fondo transparente, dibujada en tu teléfono o tu ordenador con las mismas formas,
+  quieta, con sus palabras en el idioma de la app. No se descarga nada para hacerla.
 - **Míos**, entre los stickers, contiene los que haces a partir de fotos. **Nuevo sticker a partir de una foto** recorta
   uno en cuadrado, lo reduce (512 por 512, unos 100 KB como mucho) y solo conserva su imagen, nada de dónde ni con qué se
   hizo. Se guarda sellado en el espacio, o en los chats ocultos donde se hizo, y solo aparece ahí, hasta 100; mantén
@@ -1815,7 +1818,8 @@ ningún puente se pone en medio.
   relay](#relay)).
 - **Stickers:** un sticker que envían Element, FluffyChat o Element X se ve en el chat; **Mostrar sticker** lo trae por
   tu servidor Matrix. **Sticker** envía tus propios stickers hechos con fotos (**Míos**) como imágenes, cifradas donde
-  el chat lo está.
+  el chat lo está. Los grupos que trae Erevos también están: cada sticker va como su imagen, hecha en tu dispositivo,
+  con sus palabras para las apps que solo muestran esas.
 - **Reacciones, respuestas, cambios y eliminar:** mantén pulsado un mensaje para abrir su menú: elige una reacción
   arriba, **Responder** para responderle, **Copiar** para sus palabras, y en un mensaje tuyo **Editar** o **Eliminar**.
   Una respuesta muestra el mensaje al que responde encima de sus palabras, y un toque en eso va al mensaje. Las
@@ -2006,8 +2010,8 @@ como esas apps: ningún puente se pone en medio.
   toque la amplían, gira con el teléfono, y **Guardar** la conserva (ver Fotos y archivos, en [Chatear a través de un
   relay](#relay)).
 - **Stickers:** **Sticker** envía tus propios stickers hechos con fotos (**Míos**) como fotos, cifradas como el chat;
-  otras apps XMPP los muestran como fotos. Un paquete de stickers que envía otra app (XEP-0449) no se descarga: muestra
-  sus palabras.
+  otras apps XMPP los muestran como fotos. Los grupos que trae Erevos también están: cada sticker va como su imagen,
+  hecha en tu dispositivo. Un paquete de stickers que envía otra app (XEP-0449) no se descarga: muestra sus palabras.
 - **Mensajes de voz:** mantén pulsado el micrófono bajo el cuadro de mensaje para grabar, y suelta para enviar, como en
   un chat de Matrix. Va como archivo de sonido, cifrado como el chat, igual que lo envía Conversations. Un mensaje de
   voz de Conversations u otra app XMPP (un archivo .m4a o .ogg) también se ve como mensaje de voz, con **Reproducir** y
@@ -2148,7 +2152,8 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   envían otra vez) o **Eliminar**. Eliminar los quita de este teléfono y pide a las apps de los demás que eliminen
   también los tuyos: sus apps pueden hacerlo o no.
 - **Stickers:** **Sticker** envía tus propios stickers hechos con fotos (**Míos**) como fotos, cifradas: otras apps de
-  Nostr los muestran como fotos.
+  Nostr los muestran como fotos. Los grupos que trae Erevos también están: cada sticker va como su imagen, hecha en tu
+  dispositivo.
 - **Cifrado:** cada mensaje se cifra para la otra persona y lo firmas tú, y luego lo envuelve otra vez una clave creada
   solo para ese mensaje, con su hora atrasada hasta dos días (NIP-17, con NIP-44 y NIP-59). Los relays ven para quién
   es, no quién lo escribió, cuándo ni qué dice. Una copia va a tus propios relays, para que tus otras apps de Nostr con
@@ -2293,9 +2298,10 @@ Erevos no muestra nada.
   MMS (unos 280 KB), sin nada en ella aparte de la imagen. Mantén pulsado el micrófono, sin nada escrito, para grabar un
   mensaje de voz de hasta un minuto, enviado como MMS en AMR, el formato que reproducen las apps de mensajes de los
   teléfonos. **+** → **Tarjeta de contacto** envía un contacto de los contactos del teléfono como vCard, sin tus notas
-  sobre él ni sus grupos, y con su imagen solo si aún cabe. Las fotos, mensajes de voz y tarjetas de contacto que llegan
-  se ven en la conversación, para reproducir o guardar (**Guardar** abre un contacto nuevo con los datos de la tarjeta).
-  Un MMS es tan claro como un SMS: la operadora puede verlo.
+  sobre él ni sus grupos, y con su imagen solo si aún cabe. **+** → **Sticker** envía uno de los stickers que trae
+  Erevos como su imagen, solo en un MMS. Las fotos, mensajes de voz y tarjetas de contacto que llegan se ven en la
+  conversación, para reproducir o guardar (**Guardar** abre un contacto nuevo con los datos de la tarjeta). Un MMS es
+  tan claro como un SMS: la operadora puede verlo.
 - **Dónde estás:** **+** → **Ubicación** envía dónde estás como un SMS con una dirección geo: y un enlace de
   OpenStreetMap, que abre cualquier teléfono. Una dirección geo:, o un enlace de OpenStreetMap, Google Maps, Apple Maps
   o Waze, en un SMS que llega se ve como un lugar, para abrir en la app de mapas; un enlace corto sigue siendo un

@@ -5,7 +5,6 @@
 // The Serbo-Croatian of running Matrix groups, their stickers, choosing several messages and finding people (app/matrix-chat.tsx, components/matrix-members.tsx, components/matrix-stickers.tsx) (i18n/sh/index.ts).
 export const matrixGroups: Record<string, string> = {
   "Show sticker": "Prikaži naljepnicu",
-  "Your stickers made from photos go to Matrix as pictures, encrypted where the chat is. Erevos’s own sets are drawn by Erevos itself, so other Matrix apps could not show them.": "Vaše naljepnice napravljene od fotografija idu na Matrix kao slike, šifrovane gdje je razgovor šifrovan. Erevosove setove crta sam Erevos, pa ih druge Matrix aplikacije ne bi mogle prikazati.",
   "moderator": "moderator",
   "invited": "pozvan",
   "Make {name} an admin? They may then do all you may in this group, and you cannot undo it.": "Postaviti {name} za admina? Ta osoba će tada u ovoj grupi moći sve što i vi, a to nećete moći poništiti.",

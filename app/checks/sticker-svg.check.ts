@@ -7,14 +7,17 @@
 // numbers all numbers; a name Erevos does not have, or one of a set gone from the picker, has none;
 // a Words sticker carries its words in the app's language, escaped for XML, in at most two lines
 // as the screen sets them; and the PNGs made of them (lib/sticker-image.ts) are kept in memory by
-// name, language and size, each caller getting bytes of its own.
+// name, language and size, each caller getting bytes of its own. A picked one goes to another
+// network (lib/sticker-send.ts) as its PNG, 512 across or smaller to fit an MMS, with its words in
+// the app's language; nothing goes for one with no picture.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { lang, LANGS, setLang, words, type Lang } from '../lib/i18n';
-import { escapeXml, PNG_SIDES, pngSize, sizedSvg, stickerPng, stickerSvg, wordsLayout, wordsWidth } from '../lib/sticker-svg';
+import { SEND_SIDES, stickerToSend } from '../lib/sticker-send';
+import { escapeXml, PNG_SIDES, pngSize, sizedSvg, stickerPng, stickerSvg, wordsLayout, wordsWidth, type StickerPng } from '../lib/sticker-svg';
 import { GONE_SETS, SETS, STICKERS, stickersIn, WORDS_ROOM, wordsLines, wordsSize } from '../lib/stickers';
 
 /** What is wrong with `xml` as one XML document: tags out of balance, bad attributes, ids and what points to them. */
@@ -239,4 +242,83 @@ test('a sticker\'s PNG is made once for each name, language and size, and each c
     throw new Error('no canvas');
   };
   assert.equal(await stickerPng('coffee', 64, throws), null);
+});
+
+test('a built-in sticker picked for another network goes as its PNG, 512 across, with its words in the app\'s language', async () => {
+  const asked: string[] = [];
+  const draw = async (name: string, size: number): Promise<StickerPng | null> => {
+    asked.push(`${name} ${size}`);
+    return { bytes: pngHeader(size, size), mime: 'image/png', w: size, h: size };
+  };
+  const smile = await inLanguage('en', () => stickerToSend('moon-smile', draw));
+  assert.ok(smile);
+  assert.deepEqual([smile.mime, smile.w, smile.h, smile.label], ['image/png', 512, 512, 'Smiling moon']);
+  assert.deepEqual(pngSize(smile.bytes), { w: 512, h: 512 });
+  assert.deepEqual(asked, ['moon-smile 512']);
+  // A Words sticker says its words, and another its name, as the screen says them, in each language.
+  for (const l of LANGS) {
+    await inLanguage(l, async () => {
+      for (const sticker of [stickersIn('words')[0], stickersIn('moons')[0], stickersIn('tux')[3]]) {
+        const sent = await stickerToSend(sticker.name, draw);
+        assert.equal(sent?.label, words(l)[sticker.label] ?? sticker.label, `${l} ${sticker.name}`);
+      }
+    });
+  }
+  // With the real drawing's memory, as the phone and the computer make it.
+  const drawn = await stickerToSend('thank-you', (name, size) => stickerPng(name, size, async (_, side) => pngHeader(side, side)));
+  assert.deepEqual(drawn && [drawn.w, drawn.h, drawn.mime], [512, 512, 'image/png']);
+  assert.equal(SEND_SIDES[0], 512);
+});
+
+test('nothing goes for a sticker Erevos does not have, one of a set gone, or one whose picture could not be made', async () => {
+  let calls = 0;
+  const draw = async (_: string, size: number): Promise<StickerPng | null> => {
+    calls += 1;
+    return { bytes: pngHeader(size, size), mime: 'image/png', w: size, h: size };
+  };
+  const gone = STICKERS.find((sticker) => GONE_SETS.includes(sticker.set))!;
+  for (const name of ['', 'no-such-sticker', 'MOON-SMILE', '__proto__', 'constructor', gone.name]) assert.equal(await stickerToSend(name, draw), null, JSON.stringify(name));
+  assert.equal(calls, 0, 'nothing is drawn for them');
+  // No picture, one that throws, one that is not a PNG or has no size: nothing, and no smaller one is tried.
+  const bad: ((name: string, size: number) => Promise<StickerPng | null>)[] = [
+    async () => null,
+    async () => {
+      throw new Error('no canvas');
+    },
+    () => {
+      throw new Error('not even a promise');
+    },
+    async () => ({ bytes: new Uint8Array(0), mime: 'image/png', w: 512, h: 512 }),
+    async () => ({ bytes: pngHeader(512, 512), mime: 'image/png', w: 0, h: 512 }),
+    async () => ({ bytes: pngHeader(512, 512), mime: 'image/jpeg' as 'image/png', w: 512, h: 512 }),
+  ];
+  for (const [i, fails] of bad.entries()) {
+    let tries = 0;
+    const counted = (name: string, size: number) => {
+      tries += 1;
+      return fails(name, size);
+    };
+    assert.equal(await stickerToSend('sun', counted), null, String(i));
+    assert.equal(tries, 1, String(i));
+  }
+});
+
+test('for an MMS a sticker\'s picture is made smaller until it fits, or none goes', async () => {
+  const sizes: number[] = [];
+  // As many bytes as a hundred times its side.
+  const draw = async (_: string, size: number): Promise<StickerPng | null> => {
+    sizes.push(size);
+    const bytes = new Uint8Array(size * 100);
+    bytes.set(pngHeader(size, size));
+    return { bytes, mime: 'image/png', w: size, h: size };
+  };
+  const fits = await stickerToSend('heart', draw, 300 * 100);
+  assert.deepEqual(fits && [fits.w, fits.bytes.length], [256, 25_600]);
+  assert.deepEqual(sizes, [512, 384, 256]);
+  sizes.length = 0;
+  assert.equal((await stickerToSend('heart', draw, 51_200))?.w, 512, 'as many bytes as it may have');
+  assert.deepEqual(sizes, [512]);
+  sizes.length = 0;
+  assert.equal(await stickerToSend('heart', draw, 1000), null);
+  assert.deepEqual(sizes, [...SEND_SIDES]);
 });
