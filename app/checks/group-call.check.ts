@@ -4,7 +4,8 @@
 
 // Group voice calls (lib/group-call.ts, lib/group-calls.ts): this phone in a group's call, with
 // the other members' phones played by hand, and a stand-in for WebRTC (checks/fake-rtc.ts). Which
-// member offers to which, who is in the call, what rings and what is missed. The group messages
+// member offers to which, who is in the call, what rings and what is missed, and a video call
+// joined with voice only or with the camera, which switches on each connection. The group messages
 // that carry the signals are in checks/groups.check.ts.
 // Run with: npm run check
 /// <reference types="node" />
@@ -15,7 +16,7 @@ import { RING_MS } from '../lib/call';
 import { currentGroupCall, MAX_GROUP_CALL, MAX_VIDEO } from '../lib/group-call';
 import { decodeGroupCall, type GroupCallSignal } from '../lib/group-call-signal';
 import { closeGroupCall, endGroupCall, groupCallGoingOn, groupCallSignal, joinGroupCall, onGroupCallChange, shownGroupCall, startGroupCall, type GroupCallPlace } from '../lib/group-calls';
-import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
+import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
 
 const GROUP = 'ab'.repeat(16);
 const ME = '11'.repeat(32);
@@ -279,4 +280,49 @@ test('group call signals are checked as they come', () => {
   assert.equal(decodeGroupCall({ id, kind: 'answer', to: BOB, sdp: 'hello' }), null);
   assert.equal(decodeGroupCall({ id, kind: 'start' }), null);
   assert.equal(decodeGroupCall({ id: 'x', kind: 'join' }), null);
+});
+
+const kinds = (connection: FakeConnection) => connection.transceivers.map((t) => [t.receiver.track.kind, t.direction, !!t.sender.track]);
+const PICTURE = 'v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n';
+
+test('a video call is joined with the camera, or with voice only, which opens none and still gets the others’ pictures', async () => {
+  for (const bothWays of [false, true]) {
+    const { calls } = place();
+    // As an XMPP group's call is (lib/xmpp-muji.ts): video both ways in each connection all the same.
+    if (bothWays) calls.bothWays = true;
+    const { rtc, connections, asked } = fakeRtc();
+    const id = bothWays ? '1111111111111111' : '0123456789abcdef';
+    await groupCallSignal(calls, GROUP, BOB, { id, kind: 'start', at: Date.now(), video: true }, rtc);
+    const call = shownGroupCall()!.call;
+    await call.answer(false);
+    assert.deepEqual(asked, [{ audio: true, video: false }]);
+    assert.deepEqual([call.state, call.hasCamera, call.cameraOff], ['in', false, true]);
+    const way = bothWays ? 'sendrecv' : 'recvonly';
+    // Bob, in it already, offers with his picture: it comes, and nothing of ours goes on it.
+    await groupCallSignal(calls, GROUP, BOB, { id, kind: 'offer', to: ME, sdp: PICTURE }, rtc);
+    await settle();
+    assert.deepEqual(kinds(connections[0]), [['audio', 'sendrecv', true], ['video', way, false]]);
+    // Carol joins after: our offer to her takes her picture too.
+    await groupCallSignal(calls, GROUP, CAROL, { id, kind: 'join' }, rtc);
+    await settle();
+    assert.deepEqual(kinds(connections[1]), [['audio', 'sendrecv', true], ['video', way, false]]);
+    call.hangUp();
+    closeGroupCall(call);
+  }
+
+  // Joined with the camera, it opens; Flip knows there is another, and switches on each connection.
+  const { calls } = place();
+  const { rtc, connections, asked, streams } = fakeRtc({ cameras: 2, browser: true });
+  await groupCallSignal(calls, GROUP, BOB, { id: '2222222222222222', kind: 'start', at: Date.now(), video: true }, rtc);
+  const call = shownGroupCall()!.call;
+  await call.answer(true);
+  assert.deepEqual(asked, [{ audio: true, video: true }]);
+  await groupCallSignal(calls, GROUP, BOB, { id: call.id, kind: 'offer', to: ME, sdp: PICTURE }, rtc);
+  await settle();
+  assert.deepEqual([call.hasCamera, call.cameras], [true, 2]);
+  call.switchCamera();
+  await settle();
+  const [now] = streams[0].getVideoTracks();
+  assert.equal((now as FakeTrack).deviceId, 'cam-1');
+  assert.equal(connections[0].getSenders().find((s) => s.track?.kind === 'video')?.track, now);
 });

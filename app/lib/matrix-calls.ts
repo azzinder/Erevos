@@ -94,6 +94,8 @@ export type MatrixCall = {
   place?: true;
   /** It rang with no name while that place was closed, and rings now that its PIN opened it. */
   held?: true;
+  /** Answered with the camera on, or off, whatever the ring said. */
+  camera?: boolean;
 };
 
 /** The rings of a call: the one MatrixRTC sends now, and the older one sent beside it. */
@@ -454,7 +456,7 @@ function open(call: MatrixCall, intent: string): void {
   call.state = 'open';
   opened.open(
     elementCallUrl({ page: space.page, parentUrl: space.parentUrl, widgetId, roomId: call.roomId, userId: state.userId, deviceId: state.deviceId, baseUrl: state.homeserver, intent, hostAudio: space.hostAudio }),
-    call.video,
+    call.camera ?? call.video,
   );
   changed();
 }
@@ -487,13 +489,15 @@ export function startMatrixCall(roomId: string, video: boolean, place = false): 
   return call;
 }
 
-/** Answers the call that rings: Element Call opens into it. */
-export function answerMatrixCall(call: MatrixCall): void {
+/** Answers the call that rings, with the camera on (`video`) or off: Element Call opens into it,
+ *  its camera as its voice or video intent starts it. */
+export function answerMatrixCall(call: MatrixCall, video = call.video): void {
   if (shown !== call || call.state !== 'incoming') return;
   if (ringEnds) clearTimeout(ringEnds);
   ringEnds = null;
   const direct = accountOf(call)?.now()?.rooms[call.roomId]?.direct ?? true;
-  open(call, direct ? (call.video ? 'join_existing_dm' : 'join_existing_dm_voice') : call.video ? 'join_existing' : 'join_existing_voice');
+  if (video !== call.video) call.camera = video;
+  open(call, direct ? (video ? 'join_existing_dm' : 'join_existing_dm_voice') : video ? 'join_existing' : 'join_existing_voice');
 }
 
 /** Turns down the call that rings, and tells the caller. */

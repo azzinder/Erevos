@@ -14,10 +14,11 @@ import { KeyFace } from './key-face';
 import { Text } from './ui';
 
 // A Matrix call that rings (lib/matrix-calls.ts), over whatever screen shows, as Erevos's own calls
-// ring (components/call-screen.tsx): who calls, and Answer or Decline. Answered, the call goes on in
-// Element Call's own window.
+// ring (components/call-screen.tsx): who calls, and Decline, Answer, or Answer with video. Answered,
+// the call goes on in Element Call's own window, which starts with the camera off, or on, as
+// answered (its voice or video intent), whatever the ring said; their picture shows either way.
 
-export function MatrixRingScreen({ call, name, onAnswer, onDecline }: { call: MatrixCall; name: string; onAnswer: () => void; onDecline: () => void }) {
+export function MatrixRingScreen({ call, name, onAnswer, onDecline }: { call: MatrixCall; name: string; onAnswer: (video: boolean) => void; onDecline: () => void }) {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -41,7 +42,8 @@ export function MatrixRingScreen({ call, name, onAnswer, onDecline }: { call: Ma
       </View>
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
         <Round title={t('Decline')} color="#C62828" onPress={onDecline} />
-        <Round title={t('Answer')} color="#2E7D32" onPress={onAnswer} />
+        <Round title={t('Answer')} color="#2E7D32" onPress={() => onAnswer(false)} />
+        <Round title={t('Answer with video')} color="#2E7D32" onPress={() => onAnswer(true)} />
       </View>
     </View>
   );

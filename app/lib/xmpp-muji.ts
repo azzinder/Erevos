@@ -182,6 +182,8 @@ function callsOf(place: boolean): GroupCallPlace {
       return state ? nameOf(state, jid) : jid;
     },
     relayAlways: true,
+    // Joined with voice only, video still goes both ways in each session, as Dino expects.
+    bothWays: true,
   };
 }
 

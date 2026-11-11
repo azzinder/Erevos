@@ -44,7 +44,8 @@ const LOOK_IN_CALL = 700;
 // over the lock screen; tapping it brings Erevos up to answer. A group's call (lib/group-calls.ts)
 // rings the same way, and so does a call on XMPP or Matrix. A chat or group of the space, or its XMPP
 // chat or Matrix room, given a ringtone of its own, or none (lock/chat-notify.ts), rings with it;
-// hidden chats ring with the phone's, which tells no one's.
+// hidden chats ring with the phone's, which tells no one's. Each is answered with the camera or
+// with voice only, and the sound goes to the loudspeaker or the earpiece as answered.
 // Returns how to stop, which ends the call, as the space closes.
 export function watchCalls(): () => void {
   // A ringtone or notice that fails does not stop the call screen, nor the others that hear of the call.
@@ -114,7 +115,7 @@ export function watchCalls(): () => void {
     }
     if (call?.state === 'open' && openMatrix !== call) {
       openMatrix = call;
-      audio(() => callAudio?.start(call.video));
+      audio(() => callAudio?.start(call.camera ?? call.video));
     }
     if (openMatrix && (call !== openMatrix || call.state !== 'open')) {
       openMatrix = null;
@@ -225,16 +226,18 @@ export function CallHost() {
   const group = shownGroupCall();
   if (group) {
     const { call } = group;
-    const joinCall = () => {
-      void callPermissions(call.video).then((granted) => {
+    // With the camera, in a video call, or with voice only.
+    const joinCall = (video: boolean) => {
+      const camera = video && call.video;
+      void callPermissions(camera).then((granted) => {
         if (!granted) {
           call.decline();
           return;
         }
         callAudio?.stopRinging?.();
-        setSpeaker(call.video);
-        callAudio?.start(call.video);
-        void call.answer();
+        setSpeaker(camera);
+        callAudio?.start(camera);
+        void call.answer(camera);
       });
     };
     return (
@@ -259,14 +262,15 @@ export function CallHost() {
   const matrix = shownMatrixCall();
   if (matrix?.state === 'incoming') {
     const room = matrixNow(matrix.place ? 'place' : 'space').state?.rooms[matrix.roomId];
-    const answerMatrix = () => {
-      void callPermissions(matrix.video).then((granted) => {
+    // Element Call starts with the camera on, or off, as answered.
+    const answerMatrix = (video: boolean) => {
+      void callPermissions(video).then((granted) => {
         if (!granted) {
           declineMatrixCall(matrix);
           return;
         }
         try {
-          answerMatrixCall(matrix);
+          answerMatrixCall(matrix, video);
         } catch (error) {
           declineMatrixCall(matrix);
           ask(t('Matrix'), error instanceof Error ? error.message : String(error), [{ text: t('OK') }]);
@@ -284,15 +288,16 @@ export function CallHost() {
   if (!shown) return null;
   const { call, place } = shown;
 
-  function answer() {
-    void callPermissions(call.video).then((granted) => {
+  // With the camera, or voice only: a voice call answered with it asks for video once it connects.
+  function answer(video: boolean) {
+    void callPermissions(video).then((granted) => {
       if (!granted) {
         call.decline();
         return;
       }
-      setSpeaker(call.video);
-      callAudio?.start(call.video);
-      void call.answer();
+      setSpeaker(video);
+      callAudio?.start(video);
+      void call.answer(video);
     });
   }
 

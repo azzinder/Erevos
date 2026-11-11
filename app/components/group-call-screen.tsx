@@ -17,6 +17,8 @@ import { Text } from './ui';
 // A group's call over the whole app, dark as a contact's call is (components/call-screen.tsx): the
 // group's name, who started it while it rings, then who is in it with this phone, each in a tile of
 // their picture in a video call, and its buttons. It closes itself a moment after the call ends.
+// A video call is joined with the camera, or with voice only, which sends no picture for the rest
+// of the call; a member with no picture shows their face drawn from their key.
 
 function status(call: GroupCall, now: number, starter: string | null): string {
   switch (call.state) {
@@ -37,8 +39,8 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
   name: (identity: string) => string;
   speaker: boolean;
   onSpeaker: (on: boolean) => void;
-  /** Joins the call that rings here, once the microphone may be used. */
-  onAnswer: () => void;
+  /** Joins the call that rings here, with the camera or (false) voice only, once they may be used. */
+  onAnswer: (video: boolean) => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -46,6 +48,11 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
   const { state } = call;
   const peers = call.peers();
   const pictures = call.video && !call.videoPaused && state === 'in';
+  const camera = call.local?.getVideoTracks()[0];
+  // A camera facing away is not mirrored.
+  const mirror = camera?.getSettings?.().facingMode !== 'environment';
+  // A member's picture, or none from one who joined with voice only.
+  const picture = (stream: GroupCall['local']) => (stream && stream.getVideoTracks().length > 0 ? stream : null);
 
   useEffect(() => {
     if (state !== 'in') return;
@@ -69,10 +76,14 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
     <View style={styles.screen}>
       {pictures ? (
         <View style={[styles.tiles, { paddingTop: insets.top, paddingBottom: insets.bottom + 200 }]}>
-          {[...peers.map((peer) => ({ key: peer.identity, stream: peer.remote, label: name(peer.identity), own: false })), { key: 'own', stream: call.cameraOff ? null : call.local, label: t('You'), own: true }].map(
+          {[...peers.map((peer) => ({ key: peer.identity, stream: picture(peer.remote), label: name(peer.identity), own: false })), { key: 'own', stream: call.cameraOff ? null : picture(call.local), label: t('You'), own: true }].map(
             (tile, _, all) => (
               <View key={tile.key} style={[styles.tile, { width: all.length > 2 ? '50%' : '100%', height: all.length > 1 ? '50%' : '100%' }]}>
-                {tile.stream ? <CallVideo stream={tile.stream} mirror={tile.own} style={StyleSheet.absoluteFill} /> : <KeyFace identity={tile.own ? '' : tile.key} name={tile.label} size={64} />}
+                {tile.stream ? (
+                  <CallVideo key={tile.own ? `own-${camera?.id ?? 1}` : `${tile.key}-${tile.stream.getVideoTracks().length}`} stream={tile.stream} mirror={tile.own && mirror} style={StyleSheet.absoluteFill} />
+                ) : (
+                  <KeyFace identity={tile.own ? '' : tile.key} name={tile.label} size={64} />
+                )}
                 <Text variant="caption" color="#FFFFFF" style={styles.label} numberOfLines={1}>
                   {tile.label}
                 </Text>
@@ -128,14 +139,16 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
         {state === 'incoming' ? (
           <>
             <Round title={t('Decline')} color="#C62828" onPress={() => call.decline()} />
-            <Round title={t('Join')} color="#2E7D32" onPress={onAnswer} />
+            <Round title={t('Join')} color="#2E7D32" onPress={() => onAnswer(false)} />
+            {/* Joined with voice only, a voice call's connections take no picture later: only a video call has the choice. */}
+            {call.video ? <Round title={t('Join with video')} color="#2E7D32" onPress={() => onAnswer(true)} /> : null}
           </>
         ) : state === 'ended' ? null : (
           <>
             <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
             <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
-            {pictures ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
-            {pictures ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
+            {pictures && camera ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
+            {pictures && camera && !call.cameraOff && call.cameras !== 1 ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
             <Round title={t('Leave')} color="#C62828" onPress={() => call.hangUp()} />
           </>
         )}

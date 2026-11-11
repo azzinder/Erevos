@@ -107,6 +107,10 @@ export class LinkedCalls {
         call.ringing = call.ringing.filter((d) => d !== device);
         return [];
       }
+      case 'reoffer':
+      case 'reanswer':
+        // A change of the call it has, as video is added to it: to the contact, as its other signals.
+        return call?.on === device ? [{ to: 'contact', c, signal }] : [];
       default:
         // Ringing: the phone said so to the contact itself.
         return [];

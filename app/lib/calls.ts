@@ -31,9 +31,13 @@ export type CallPlace = {
   name(peer: string): string;
   /** The offer of their call that rang before it came, once it is answered here (lib/xmpp-calls.ts). */
   offer?(identity: string): Promise<string>;
-  /** Video added to a voice call, both ways (lib/xmpp-calls.ts): as Call's events have them. */
+  /** Video added to a voice call, both ways (lib/xmpp-calls.ts, lib/matrix-voip.ts): as Call's
+   *  events have them. Without them, Erevos's own signals say it (reoffer, reanswer). */
   addMedia?(identity: string, id: string, sdp: string): Promise<string>;
   answerMedia?(identity: string, id: string, sdp: string | null): Promise<void>;
+  /** As Call's events have them (XMPP's). */
+  addsOnly?: boolean;
+  bothWays?: boolean;
   /** Which of the account's devices this is, as contacts know it: its endpoint (hex) on a linked device, '' on the phone. */
   me?(): Promise<string>;
 };
@@ -112,6 +116,8 @@ function events(place: CallPlace, identity: string) {
     offer: place.offer ? () => place.offer!(identity) : undefined,
     addMedia: place.addMedia ? (id: string, sdp: string) => place.addMedia!(identity, id, sdp) : undefined,
     answerMedia: place.answerMedia ? (id: string, sdp: string | null) => place.answerMedia!(identity, id, sdp) : undefined,
+    addsOnly: place.addsOnly,
+    bothWays: place.bothWays,
     onChange: (call: Call) => {
       if (call.state === 'ended' && shown?.call === call) place.line(call.peer, call.outgoing, endedLine(call), call.id);
       changed();

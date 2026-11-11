@@ -18,9 +18,12 @@ import { Text } from './ui';
 
 // A call over the whole chat, in every style: dark, as the picture shows best on it. Shows the other
 // phone's picture or their face drawn from their key, our own camera in a corner, how the call
-// stands, and its buttons. It closes itself a moment after the call ends. Where the call's way can
-// (an XMPP call's), video is added to a voice call from here, and their asking to add it is asked
-// here: a yes turns the camera on, and the sound to the speaker.
+// stands, and its buttons. It closes itself a moment after the call ends. A call that rings is
+// answered with the camera, or with voice only: a video call so answered shows their picture and
+// sends none, until the camera is turned on where the call's way can. Where it can (an Erevos call
+// with a phone that takes it, an XMPP or a Matrix one), video is added to a voice call from here,
+// and their asking to add it is asked here: a yes turns the camera on, and the sound to the
+// speaker. Flip shows with more than one camera, or while it is not known how many there are.
 
 // Long buzz, pause, again, while a call rings here.
 export const RING = [0, 900, 1100];
@@ -69,8 +72,8 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
   encryption?: string;
   speaker: boolean;
   onSpeaker: (on: boolean) => void;
-  /** Answers the call that rings here, once the camera and microphone may be used. */
-  onAnswer: () => void;
+  /** Answers the call that rings here, with the camera or (false) voice only, once they may be used. */
+  onAnswer: (video: boolean) => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -96,11 +99,15 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
     return () => clearTimeout(timer);
   }, [state]);
 
-  const theirs = call.video && call.remote && state === 'connected';
-  const ours = call.video && call.local && !call.cameraOff && state !== 'ended';
-  // Video added to a voice call comes in the same streams: their views are made anew once it has.
+  // Video added to a voice call comes in the same streams: their views are made anew once it has,
+  // and ours as the camera turns to another.
   const theirVideos = call.remote?.getVideoTracks().length ?? 0;
-  const ourVideos = call.local?.getVideoTracks().length ?? 0;
+  const camera = call.local?.getVideoTracks()[0];
+  // Their picture, once one comes: none from a video call they answered with voice only.
+  const theirs = call.video && call.remote && theirVideos > 0 && state === 'connected';
+  const ours = call.video && call.local && camera && !call.cameraOff && state !== 'ended';
+  // A camera facing away is not mirrored.
+  const mirror = camera?.getSettings?.().facingMode !== 'environment';
   const withVideo = (turnOn: () => Promise<void>) =>
     void callPermissions(true).then(async (granted) => {
       if (!granted) {
@@ -108,7 +115,7 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         return;
       }
       await turnOn();
-      if (call.video) onSpeaker(true);
+      if (call.hasCamera) onSpeaker(true);
     });
 
   return (
@@ -116,7 +123,7 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
       {/* Their sound plays through this too in a browser, so it is there in a voice call as well. */}
       {call.remote ? <CallVideo key={`theirs-${theirVideos}`} stream={call.remote} style={theirs ? StyleSheet.absoluteFill : styles.unseen} /> : null}
       {ours ? (
-        <CallVideo key={`ours-${ourVideos}`} stream={call.local!} mirror style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]} />
+        <CallVideo key={`ours-${camera?.id ?? 1}`} stream={call.local!} mirror={mirror} style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]} />
       ) : null}
       <View style={[styles.top, { paddingTop: insets.top + (theirs ? 16 : 72) }]} pointerEvents="none">
         {theirs ? null : <KeyFace identity={identity} name={name} size={112} />}
@@ -147,15 +154,21 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         {state === 'incoming' ? (
           <>
             <Round title={t('Decline')} color="#C62828" onPress={() => call.decline()} />
-            <Round title={t('Answer')} color="#2E7D32" onPress={onAnswer} />
+            <Round title={t('Answer')} color="#2E7D32" onPress={() => onAnswer(false)} />
+            {call.canAnswerWithVideo ? <Round title={t('Answer with video')} color="#2E7D32" onPress={() => onAnswer(true)} /> : null}
           </>
         ) : state === 'ended' ? null : (
           <>
             <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
             <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
-            {call.video ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
-            {call.video ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
-            {call.canAddVideo || call.addingVideo ? (
+            {call.hasCamera ? (
+              <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} />
+            ) : call.video && (call.canTurnCameraOn || call.addingVideo) ? (
+              // A video call answered with voice only: the camera goes on now.
+              <Round title={t('Camera on')} on onPress={() => withVideo(() => call.turnCameraOn())} />
+            ) : null}
+            {call.hasCamera && !call.cameraOff && call.cameras !== 1 ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
+            {!call.video && (call.canAddVideo || call.addingVideo) ? (
               <Round title={call.addingVideo ? t('Asking…') : t('Add video')} on={call.addingVideo} onPress={() => withVideo(() => call.addVideo())} />
             ) : null}
             <Round title={t('End')} color="#C62828" onPress={() => call.hangUp()} />

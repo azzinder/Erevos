@@ -3,17 +3,19 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // Calls (lib/call.ts): how a call goes from ringing to connected to ended, with a stand-in for
-// WebRTC, and which call signals are taken (lib/call-signal.ts). The sound and picture themselves
-// are WebRTC's, tried on phones.
+// WebRTC, and which call signals are taken (lib/call-signal.ts); a call answered with the camera or
+// voice only, video added to it and their asking for it, the camera turned on later and switched,
+// and an Erevos from before sent no new description. The sound and picture themselves are
+// WebRTC's, tried on phones.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { ASK_MS, Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
-import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
+import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
 
 function events() {
   const sent: CallSignal[] = [];
@@ -116,7 +118,7 @@ test('a call that rings here: ringing said, answered, and ended by them', async 
   // No call relay: straight between the phones.
   assert.deepEqual(connection.config, { iceServers: [], iceTransportPolicy: 'all' });
   assert.deepEqual(connection.remote, { type: 'offer', sdp: offer.sdp });
-  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer\r\na=candidate:relay' });
+  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer\r\na=candidate:relay', reoffer: true });
   assert.equal(call.state, 'connecting');
 
   call.receive({ id: offer.id, kind: 'end', reason: 'hangup' });
@@ -435,4 +437,235 @@ test('an end that says which device has the call is read only so', () => {
   assert.equal(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken' }), null);
   assert.equal(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken', by: 'xyz' }), null);
   assert.deepEqual(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'hangup', by: 7 }), { id: '0123456789abcdef', kind: 'end', reason: 'hangup' });
+});
+
+// ---- answered with the camera or voice only, video added, the camera turned on later and switched ----
+
+const VOICE_OFFER = 'v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n';
+const VIDEO_OFFER = 'v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n';
+const kinds = (connection: FakeConnection) => connection.transceivers.map((t) => [t.receiver.track.kind, t.direction, !!t.sender.track]);
+
+test('a video call answered with voice only opens no camera, gets their picture, and turns the camera on later as their phone takes it', async () => {
+  const { rtc, connections, asked } = fakeRtc();
+  const ours = events();
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: true, sdp: VIDEO_OFFER, at: Date.now(), reoffer: true as const };
+  const call = Call.incoming(offer, { peer: 'contact:a', relay: TURN, rtc, events: ours.events })!;
+  assert.equal(call.canAnswerWithVideo, true);
+  await call.answer(false);
+  assert.deepEqual(asked, [{ audio: true, video: false }]);
+  assert.deepEqual([call.video, call.hasCamera, call.cameraOff], [true, false, true]);
+  const [connection] = connections;
+  // Their picture comes; nothing of ours goes on it.
+  assert.deepEqual(kinds(connection), [['audio', 'sendrecv', true], ['video', 'recvonly', false]]);
+  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer\r\na=candidate:relay', reoffer: true });
+  connection.connect(new FakeStream([new FakeTrack('audio'), new FakeTrack('video')]));
+  // No camera to turn on by its button: it is turned on as a change of the call.
+  call.setCameraOff(false);
+  assert.equal(call.cameraOff, true);
+  assert.deepEqual([call.canTurnCameraOn, call.canAddVideo], [true, false]);
+  const turning = call.turnCameraOn();
+  await settle();
+  assert.equal(call.addingVideo, true);
+  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'reoffer', sdp: 'v=0\r\noffer\r\na=candidate:relay' });
+  // Their phone answers it without asking: the camera took the video that only came.
+  call.receive({ id: offer.id, kind: 'reanswer', sdp: 'v=0\r\ntheirs' });
+  await turning;
+  assert.deepEqual(connection.remote, { type: 'answer', sdp: 'v=0\r\ntheirs' });
+  assert.deepEqual([call.video, call.hasCamera, call.cameraOff, call.addingVideo, call.canTurnCameraOn], [true, true, false, false, false]);
+  assert.deepEqual(kinds(connection), [['audio', 'sendrecv', true], ['video', 'sendrecv', true]]);
+  call.hangUp();
+});
+
+test('their camera turned on in a video call is taken without asking, once though it comes twice', async () => {
+  const { rtc, connections } = fakeRtc();
+  const ours = events();
+  const call = Call.start({ peer: 'contact:a', video: true, relay: TURN, rtc, events: ours.events });
+  await settle();
+  assert.equal((ours.sent[0] as Extract<CallSignal, { kind: 'offer' }>).reoffer, true);
+  call.receive({ id: call.id, kind: 'answer', sdp: 'v=0\r\nanswer', reoffer: true });
+  await settle();
+  connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+  call.receive({ id: call.id, kind: 'reoffer', sdp: 'v=0\r\ntheir camera' });
+  await settle();
+  assert.equal(call.askingVideo, false);
+  assert.deepEqual(connections[0].remote, { type: 'offer', sdp: 'v=0\r\ntheir camera' });
+  assert.deepEqual(ours.sent.at(-1), { id: call.id, kind: 'reanswer', sdp: 'v=0\r\nanswer\r\na=candidate:relay' });
+  const said = ours.sent.length;
+  call.receive({ id: call.id, kind: 'reoffer', sdp: 'v=0\r\ntheir camera' });
+  await settle();
+  assert.equal(ours.sent.length, said);
+  call.hangUp();
+});
+
+test('a voice call answered with video asks for it once connected; said no to, it goes on with voice; added later, said yes to', async () => {
+  const { rtc, connections, asked } = fakeRtc();
+  const ours = events();
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: false, sdp: VOICE_OFFER, at: Date.now(), reoffer: true as const };
+  const call = Call.incoming(offer, { peer: 'contact:a', relay: TURN, rtc, events: ours.events })!;
+  assert.equal(call.canAnswerWithVideo, true);
+  await call.answer(true);
+  // The camera opens only once its video can go.
+  assert.deepEqual(asked, [{ audio: true, video: false }]);
+  const [connection] = connections;
+  connection.connect(new FakeStream([new FakeTrack('audio')]));
+  await settle();
+  assert.equal(call.addingVideo, true);
+  assert.equal(ours.sent.at(-1)?.kind, 'reoffer');
+  assert.deepEqual(asked.at(-1), { audio: false, video: true });
+  // Their screen asked, and they said no: the offer is taken back, the camera off.
+  call.receive({ id: offer.id, kind: 'reanswer' });
+  await settle();
+  assert.deepEqual([call.video, call.hasCamera, call.addingVideo, call.canAddVideo], [false, false, false, true]);
+  assert.equal(connection.added.length, 1);
+
+  // Added from here later, and they say yes.
+  const adding = call.addVideo();
+  await settle();
+  assert.equal(ours.sent.at(-1)?.kind, 'reoffer');
+  call.receive({ id: offer.id, kind: 'reanswer', sdp: 'v=0\r\nyes' });
+  await adding;
+  assert.deepEqual([call.video, call.hasCamera, call.cameraOff, call.canAddVideo], [true, true, false, false]);
+  call.hangUp();
+});
+
+test('their asking to add video is asked here: no, yes, and no once it waited too long', async () => {
+  const { rtc, connections, asked } = fakeRtc();
+  const ours = events();
+  const call = Call.start({ peer: 'contact:a', video: false, relay: TURN, rtc, events: ours.events });
+  await settle();
+  call.receive({ id: call.id, kind: 'answer', sdp: 'v=0\r\nanswer', reoffer: true });
+  await settle();
+  const [connection] = connections;
+  connection.connect(new FakeStream([new FakeTrack('audio')]));
+  call.receive({ id: call.id, kind: 'reoffer', sdp: 'v=0\r\nvideo 1' });
+  assert.equal(call.askingVideo, true);
+  call.declineVideo();
+  await settle();
+  assert.deepEqual(ours.sent.at(-1), { id: call.id, kind: 'reanswer' });
+  assert.deepEqual([call.askingVideo, call.video], [false, false]);
+
+  call.receive({ id: call.id, kind: 'reoffer', sdp: 'v=0\r\nvideo 2' });
+  await call.acceptVideo();
+  assert.deepEqual(asked.at(-1), { audio: false, video: true });
+  assert.deepEqual(connection.remote, { type: 'offer', sdp: 'v=0\r\nvideo 2' });
+  assert.deepEqual(ours.sent.at(-1), { id: call.id, kind: 'reanswer', sdp: 'v=0\r\nanswer\r\na=candidate:relay' });
+  assert.deepEqual([call.video, call.hasCamera, call.cameraOff], [true, true, false]);
+  call.hangUp();
+
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    const later = events();
+    const again = Call.start({ peer: 'contact:a', video: false, relay: TURN, rtc, events: later.events });
+    await flush();
+    again.receive({ id: again.id, kind: 'answer', sdp: 'v=0\r\nanswer', reoffer: true });
+    await flush();
+    connections[1].connect(new FakeStream([new FakeTrack('audio')]));
+    again.receive({ id: again.id, kind: 'reoffer', sdp: 'v=0\r\nvideo 3' });
+    mock.timers.tick(ASK_MS - 1);
+    assert.equal(again.askingVideo, true);
+    mock.timers.tick(1);
+    assert.equal(again.askingVideo, false);
+    assert.deepEqual(later.sent.at(-1), { id: again.id, kind: 'reanswer' });
+    again.hangUp();
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('an Erevos from before, which says nothing of new descriptions, is sent none, and its are not taken', async () => {
+  const { rtc, connections } = fakeRtc();
+  const ours = events();
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: false, sdp: VOICE_OFFER, at: Date.now() };
+  const call = Call.incoming(offer, { peer: 'contact:a', relay: TURN, rtc, events: ours.events })!;
+  assert.equal(call.canAnswerWithVideo, false);
+  await call.answer(true);
+  connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+  await settle();
+  assert.deepEqual([call.canAddVideo, call.addingVideo], [false, false]);
+  assert.equal(ours.sent.at(-1)?.kind, 'answer');
+  call.receive({ id: offer.id, kind: 'reoffer', sdp: 'v=0\r\nvideo' });
+  assert.equal(call.askingVideo, false);
+  assert.equal(ours.sent.at(-1)?.kind, 'answer');
+  // A video call from it answered with voice only keeps the camera off: there is no way to turn it on.
+  call.hangUp();
+  const video = Call.incoming({ ...offer, id: '1111111111111111', video: true, sdp: VIDEO_OFFER }, { peer: 'contact:a', relay: TURN, rtc, events: events().events })!;
+  await video.answer(false);
+  connections[1].connect(new FakeStream([new FakeTrack('audio'), new FakeTrack('video')]));
+  assert.deepEqual([video.hasCamera, video.canTurnCameraOn], [false, false]);
+  video.hangUp();
+});
+
+test('where an answer keeps video both ways (XMPP), the camera turned on later goes on it with nothing said', async () => {
+  const { rtc, connections } = fakeRtc();
+  const ours = events();
+  const asked: (string | null)[] = [];
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: true, sdp: VIDEO_OFFER, at: Date.now(), reoffer: true as const };
+  const call = Call.incoming(offer, {
+    peer: 'xmpp:bob@example.org',
+    relay: TURN,
+    rtc,
+    events: { ...ours.events, addMedia: async () => 'v=0\r\nnever', answerMedia: async (_id, sdp) => void asked.push(sdp), addsOnly: true, bothWays: true },
+  })!;
+  await call.answer(false);
+  const [connection] = connections;
+  assert.deepEqual(kinds(connection), [['audio', 'sendrecv', true], ['video', 'sendrecv', false]]);
+  connection.connect(new FakeStream([new FakeTrack('audio'), new FakeTrack('video')]));
+  // More video asked for in a video call, where media can only be added: not taken.
+  call.videoAsked('v=0\r\nmore');
+  assert.deepEqual(asked, [null]);
+  const said = ours.sent.length;
+  assert.equal(call.canTurnCameraOn, true);
+  await call.turnCameraOn();
+  assert.equal(ours.sent.length, said);
+  assert.deepEqual([call.hasCamera, call.cameraOff, call.canTurnCameraOn], [true, false, false]);
+  assert.deepEqual(kinds(connection), [['audio', 'sendrecv', true], ['video', 'sendrecv', true]]);
+  call.hangUp();
+});
+
+test('the camera switches: on the phone by its own switch, in a browser to the next camera, and is known to have where to', async () => {
+  const phone = fakeRtc({ cameras: 2 });
+  const call = Call.start({ peer: 'contact:a', video: true, relay: TURN, rtc: phone.rtc, events: events().events });
+  await settle();
+  assert.equal(call.cameras, 2);
+  call.switchCamera();
+  assert.equal(phone.streams[0].getVideoTracks()[0].switched, 1);
+  call.hangUp();
+
+  const web = fakeRtc({ cameras: 2, browser: true });
+  const there = Call.start({ peer: 'contact:a', video: true, relay: TURN, rtc: web.rtc, events: events().events });
+  await settle();
+  const [first] = web.streams[0].getVideoTracks();
+  const [connection] = web.connections;
+  there.switchCamera();
+  await settle();
+  const [second] = web.streams[0].getVideoTracks();
+  assert.equal(second.deviceId, 'cam-1');
+  assert.ok(first.stopped && !second.stopped);
+  assert.equal(connection.getSenders().find((s) => s.track?.kind === 'video')?.track, second);
+  there.switchCamera();
+  await settle();
+  assert.equal(web.streams[0].getVideoTracks()[0].deviceId, 'cam-0');
+  there.hangUp();
+
+  // One camera: nowhere to switch to.
+  const one = fakeRtc({ cameras: 1, browser: true });
+  const single = Call.start({ peer: 'contact:a', video: true, relay: TURN, rtc: one.rtc, events: events().events });
+  await settle();
+  assert.equal(single.cameras, 1);
+  const [only] = one.streams[0].getVideoTracks();
+  single.switchCamera();
+  await settle();
+  assert.deepEqual([one.streams[0].getVideoTracks()[0], only.stopped], [only, false]);
+  single.hangUp();
+});
+
+test('new descriptions of a call are read only so', () => {
+  const id = '0123456789abcdef';
+  assert.deepEqual(decodeCall({ id, kind: 'offer', video: true, sdp: 'v=0\r\n', at: 3, reoffer: true }), { id, kind: 'offer', video: true, sdp: 'v=0\r\n', at: 3, reoffer: true });
+  assert.deepEqual(decodeCall({ id, kind: 'answer', sdp: 'v=0\r\n', reoffer: 'yes' }), { id, kind: 'answer', sdp: 'v=0\r\n' });
+  assert.deepEqual(decodeCall({ id, kind: 'reoffer', sdp: 'v=0\r\nmore' }), { id, kind: 'reoffer', sdp: 'v=0\r\nmore' });
+  assert.equal(decodeCall({ id, kind: 'reoffer' }), null);
+  assert.deepEqual(decodeCall({ id, kind: 'reanswer', sdp: 'v=0\r\nyes' }), { id, kind: 'reanswer', sdp: 'v=0\r\nyes' });
+  assert.deepEqual(decodeCall({ id, kind: 'reanswer' }), { id, kind: 'reanswer' });
+  assert.equal(decodeCall({ id, kind: 'reanswer', sdp: 'nonsense' }), null);
 });

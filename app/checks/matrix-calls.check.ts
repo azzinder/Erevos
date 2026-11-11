@@ -7,8 +7,9 @@
 // the call app gets only what a call needs, in its own room, as its own member; its member state
 // goes now or delayed (both ways a homeserver may take a delay); what it sends to the room goes
 // encrypted as the room is, and its media keys reach the other side's devices through Olm; it gets
-// who the account is (OpenID) and where the media server is. A ring rings, is answered, declined,
-// missed, answered on another device, and each leaves its line in the chat once.
+// who the account is (OpenID) and where the media server is. A ring rings, is answered (with the
+// camera on or off), declined, missed, answered on another device, and each leaves its line in the
+// chat once.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -502,6 +503,33 @@ test('a ring turned down tells the caller; one not answered, or left by the call
       ['theirs', 'Missed video call'],
     ]);
     assert.equal(w.opened.length, 0);
+  } finally {
+    stop();
+  }
+});
+
+test('a ring is answered with the camera off or on, whatever it said: Element Call starts so', { skip: !coreReady }, async () => {
+  await twoPeople();
+  const w = window_();
+  const stop = watchMatrixCalls(w.shownIn, { now: () => bob, ...accountOf(() => bob), page: 'https://x/index.html', parentUrl: 'https://x/index.html' });
+  try {
+    for (const [video, answered, intent] of [
+      [true, false, 'join_existing_dm_voice'],
+      [false, true, 'join_existing_dm'],
+    ] as const) {
+      await sendEvent(alice, roomId, 'org.matrix.msc4075.rtc.notification', ring(video));
+      await sync(bob, 0);
+      const call = shownMatrixCall()!;
+      assert.equal(call.video, video);
+      answerMatrixCall(call, answered);
+      const opened = w.opened.at(-1)!;
+      assert.equal(new URLSearchParams(opened.url.split('#?')[1]).get('intent'), intent);
+      // Its sound to the loudspeaker with the camera, to the earpiece without.
+      assert.equal(opened.video, answered);
+      assert.equal(call.camera, answered);
+      callWindowClosed();
+      assert.equal(shownMatrixCall(), null);
+    }
   } finally {
     stop();
   }
