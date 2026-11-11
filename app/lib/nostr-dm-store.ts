@@ -8,6 +8,7 @@ import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
 import type { Holder } from '../lock/sealed-file';
 import type { StickerPlace } from '../lock/sticker-data';
 import { checkedLook, type Look } from '../theme/look';
+import { changeGuard, type GuardChange } from './chat-protect';
 import { canNostrChat } from './core';
 import { sha256Bytes, toHex } from './crypto';
 import { fileCache } from './file-cache';
@@ -1666,6 +1667,12 @@ export function nostrDmSetLook(key: string, look: Look | null): Promise<void> {
     if (look) chat.look = checkedLook(look);
     else delete chat.look;
   });
+}
+
+/** A chat's PIN of its own, or its screenshots blocked, on this device only (lib/chat-protect.ts). */
+export function nostrDmSetGuard(key: string, change: GuardChange): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => changeGuard(chatOf(it.state, key), change));
 }
 
 export function nostrDmRead(key: string): Promise<void> {

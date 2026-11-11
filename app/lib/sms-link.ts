@@ -15,6 +15,9 @@ import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAG
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
+import { smsOwnOf, withSmsOwn, type SmsOwnChange } from './chat-protect';
+import { smsNoticesRead } from './sms-notices';
+import type { SmsOwn } from '../lock/sms-own';
 import { TEXT_INVITE_DAYS } from './text-invite';
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -35,6 +38,7 @@ export class SmsLink {
     this.data = data;
     this.seen = seen;
     smsSpamFilter(data.spam);
+    smsNoticesRead(space, data.own);
   }
 
   static async open(space: number, key: Uint8Array): Promise<SmsLink> {
@@ -49,6 +53,7 @@ export class SmsLink {
     this.data = fresh(await loadSmsData('space', this.space, this.key), Date.now());
     this.seen = seen;
     smsSpamFilter(this.data.spam);
+    smsNoticesRead(this.space, this.data.own);
   }
 
   // Changes the data as it is on the phone now: the chat and the SMS screen each keep one.
@@ -236,6 +241,18 @@ export class SmsLink {
     const kept = text.trim() ? text.slice(0, LATER_TEXT) : '';
     if (kept === this.draftFor(address)) return Promise.resolve();
     return this.update((d) => ({ ...d, drafts: [...d.drafts.filter((x) => !sameConversation(x.address, address)), ...(kept ? [{ address, text: kept, at: Date.now() }] : [])] }));
+  }
+
+  /** What a conversation has of its own here (lib/chat-protect.ts): its PIN, its screenshots
+   *  blocked, its look, its notifications; null for none. */
+  own(address: string): SmsOwn | null {
+    return smsOwnOf(this.data.own, address);
+  }
+
+  /** Changes what a conversation has of its own; the phone learns its notifications at once (lib/sms-notices.ts). */
+  async setOwn(address: string, change: SmsOwnChange): Promise<void> {
+    await this.update((d) => ({ ...d, own: withSmsOwn(d.own, address, change) }));
+    smsNoticesRead(this.space, this.data.own);
   }
 
   /** Says a number sends spam (true), or does not (false), whatever the filter thinks; null leaves

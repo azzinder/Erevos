@@ -15,6 +15,7 @@
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
 
+import { LOCKED_ROW, lockedChat } from './chat-protect';
 import { roomAvatar, type MatrixState } from './matrix';
 import type { Module } from './modules';
 import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
@@ -31,8 +32,9 @@ export type InboxContact = { identity: string; name: string; timer: number; avat
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
  *  number, when the owner lets Erevos show it, and `photo` the picture they have for it. `replied`:
- *  any message in it is ours (missing from a build before it). */
-export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; photo?: string; replied?: boolean };
+ *  any message in it is ours (missing from a build before it). `locked`: with a PIN of its own in
+ *  the space (lib/chat-protect.ts), so the list shows nothing of what it says. */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; photo?: string; replied?: boolean; locked?: boolean };
 
 export type InboxMessage = {
   peer: string;
@@ -123,7 +125,8 @@ export function buildInbox(
     // A group's MMS conversation (numbers comma-separated) keeps a row of its own.
     const texts = contact.phone ? sms.filter((t) => !/[,;]/.test(t.address) && sameNumber(t.address, contact.phone!)) : [];
     texts.forEach((t) => used.add(t));
-    const text = texts.reduce<InboxSms | null>((a, t) => (!a || t.at > a.at ? t : a), null);
+    // One locked with its PIN in the SMS (lib/chat-protect.ts) says nothing here either.
+    const text = texts.filter((t) => !t.locked).reduce<InboxSms | null>((a, t) => (!a || t.at > a.at ? t : a), null);
     const row: InboxRow = {
       identity: contact.identity,
       name: contact.name || linked[0]?.title.trim() || '',
@@ -148,7 +151,7 @@ export function buildInbox(
   });
   for (const t of sms) {
     if (used.has(t)) continue;
-    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true, photo: t.photo });
+    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true, photo: t.photo, ...(t.locked ? LOCKED_ROW : {}) });
   }
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }
@@ -254,6 +257,8 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       ...(roomAvatar(state, room) ? { picture: roomAvatar(state, room) } : {}),
       ...(mutedNow(room.notify, now) ? { muted: true } : {}),
       ...(room.invitedBy ? { invited: true } : {}),
+      // Locked with a PIN of its own (lib/chat-protect.ts): it says only that it moved, and how many came.
+      ...(lockedChat(room) ? LOCKED_ROW : {}),
     };
   });
 }
@@ -299,6 +304,7 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
         lastSms: false,
         network: 'xmpp',
         ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
+        ...(lockedChat(chat) ? LOCKED_ROW : {}),
       };
     });
   for (const jid of asked) {
@@ -376,6 +382,7 @@ export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[
       lastSms: false,
       network: 'nostr',
       ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
+      ...(lockedChat(chat) ? LOCKED_ROW : {}),
     };
   });
 }

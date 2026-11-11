@@ -10,6 +10,7 @@ import { emojiUrlOf, isEmojiCode } from './nostr-emoji';
 import { fileOfRumor, type NostrDmFile } from './nostr-files';
 import { isNostrRelay } from '../lock/e2e-data';
 import type { ChatNotify } from '../lock/chat-notify';
+import type { ChatPin } from '../lock/chat-pin';
 import type { Look } from '../theme/look';
 
 // Chats with people on other Nostr apps (docs/nostr-chats.md): 0xchat, Amethyst, Coracle, Primal
@@ -110,6 +111,9 @@ export type NostrDmChat = {
   notify?: ChatNotify;
   /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
   look?: Look;
+  /** The PIN it opens with, as kept, and its screenshots blocked (lib/chat-protect.ts), on this device only. */
+  pin?: ChatPin;
+  shots?: true;
   /** Messages pinned here, by id, the latest first: on this device only, as NIP-17 has no pins. */
   pins?: string[];
 };

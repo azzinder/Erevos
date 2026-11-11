@@ -11,6 +11,7 @@ import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from 
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canNostrChat, canTor } from '../lib/core';
+import { lockedChat } from '../lib/chat-protect';
 import { plural, t } from '../lib/i18n';
 import { nostrInboxRows } from '../lib/inbox';
 import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-place';
@@ -572,7 +573,9 @@ function SecretCard({ state, where }: { state: NostrDmState; where: NetworkWhere
 
 function ChatCard({ state, chat, onOpen }: { state: NostrDmState; chat: NostrDmChat; onOpen: () => void }) {
   const colors = useColors();
-  const last = chat.messages.at(-1);
+  // Locked with a PIN of its own (lib/chat-protect.ts): nothing of its messages shows.
+  const locked = lockedChat(chat);
+  const last = locked ? undefined : chat.messages.at(-1);
   const name = nameOf(state, chat.key) || shortNpub(npubOf(chat.key));
   return (
     <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={name}>
@@ -582,6 +585,11 @@ function ChatCard({ state, chat, onOpen }: { state: NostrDmState; chat: NostrDmC
             <Text variant="bodyStrong" numberOfLines={1}>
               {chat.key === state.public ? t('Chat with myself') : name}
             </Text>
+            {locked ? (
+              <Text tone="muted" numberOfLines={1}>
+                {t('Locked with a PIN')}
+              </Text>
+            ) : null}
             {last ? (
               <Text tone="muted" numberOfLines={1}>
                 {typeof last.file === 'object' ? (last.file.type.startsWith('image/') ? t('Photo') : t('File: {name}', { name: last.file.name ?? last.file.type })) : last.file ? t('A file') : last.text}

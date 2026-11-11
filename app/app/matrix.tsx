@@ -19,6 +19,7 @@ import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Sheet, Text 
 import { ask } from '../lib/alert';
 import { doorIsOpen } from '../lib/closed-notices';
 import { canMatrix, canTor } from '../lib/core';
+import { lockedChat } from '../lib/chat-protect';
 import { t } from '../lib/i18n';
 import { matrixInboxRows } from '../lib/inbox';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
@@ -456,7 +457,9 @@ function ClosedPush({ busy, run }: { busy: boolean; run: (work: () => Promise<un
 
 function RoomRow({ room, onOpen, onMore, onJoin, onDecline }: { room: MatrixRoom; onOpen: () => void; onMore: () => void; onJoin: () => void; onDecline: () => void }) {
   const colors = useColors();
-  const last = room.messages.at(-1);
+  // Locked with a PIN of its own (lib/chat-protect.ts): nothing of its messages shows.
+  const locked = lockedChat(room);
+  const last = locked ? undefined : room.messages.at(-1);
   if (room.invitedBy) {
     return (
       <Card>
@@ -478,6 +481,11 @@ function RoomRow({ room, onOpen, onMore, onJoin, onDecline }: { room: MatrixRoom
               {room.tags?.favourite ? '★ ' : ''}
               {room.name}
             </Text>
+            {locked ? (
+              <Text tone="muted" numberOfLines={1}>
+                {t('Locked with a PIN')}
+              </Text>
+            ) : null}
             {last ? (
               <Text tone="muted" numberOfLines={1}>
                 {last.locked ? t('Locked message') : lineOf(last)}

@@ -96,6 +96,7 @@ type NativeSms = {
   markRead(address: string): Promise<void>;
   showOnScreen?(numbers: string[]): void;
   setSpamFilter?(on: boolean): void;
+  setOwnNotices?(muted: string[], until: number[], sounds: string[]): void;
   /** `sim` only in a build with MMS (an older one takes two arguments). */
   send(address: string, text: string, sim?: number): Promise<number>;
   sendMms?(address: string, text: string, data: Uint8Array, type: string, sim: number): Promise<number>;
@@ -365,6 +366,26 @@ export function smsSpamFilter(on: boolean): void {
     native?.setSpamFilter?.(on);
   } catch {
     // A build from before it: every SMS comes with a notice.
+  }
+}
+
+/** Whether this phone keeps SMS conversations' own notifications (lib/sms-notices.ts): a build with
+ *  them, on the phone whose SMS they are. */
+export function canSmsOwnNotices(): boolean {
+  return typeof own()?.setOwnNotices === 'function';
+}
+
+/** Tells the phone the open space's conversations muted, by their numbers and until when (ms), and
+ *  those with a sound of their own, or none: kept in memory only (SmsStore.kt), none once it closes.
+ *  False in a build without it, or when it could not. */
+export function smsOwnNotices(muted: { number: string; until: number }[], sounds: string[]): boolean {
+  const sms = own();
+  if (!sms?.setOwnNotices) return false;
+  try {
+    sms.setOwnNotices(muted.map((m) => m.number), muted.map((m) => m.until), sounds);
+    return true;
+  } catch {
+    return false;
   }
 }
 

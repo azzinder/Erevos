@@ -9,6 +9,7 @@ import { currentSpace } from '../lock/keys';
 import { lastRestore } from '../lock/restored';
 import type { Holder } from '../lock/sealed-file';
 import { checkedLook, type Look } from '../theme/look';
+import { changeGuard, type GuardChange } from './chat-protect';
 import { canMatrix } from './core';
 import { randomBytes, sha256Bytes, toHex } from './crypto';
 import { pictureCache } from './file-cache';
@@ -991,6 +992,15 @@ export function matrixSetLook(roomId: string, look: Look | null): Promise<void> 
     if (!room) return;
     if (look) room.look = checkedLook(look);
     else delete room.look;
+  });
+}
+
+/** A room's PIN of its own, or its screenshots blocked, on this device only (lib/chat-protect.ts). */
+export function matrixSetGuard(roomId: string, change: GuardChange): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const room = it.state.rooms[roomId];
+    if (room) changeGuard(room, change);
   });
 }
 

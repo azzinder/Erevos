@@ -4,6 +4,7 @@
 
 import { phoneId, simsHere } from './restored';
 import { sealedFile, type Holder } from './sealed-file';
+import { checkedSmsOwn, type SmsOwn } from './sms-own';
 
 // What each space keeps for SMS (lib/sms-invite.ts), sealed like its contacts (sealed-file.ts):
 // whether to send SMS invites, the invites sent and not answered yet with the keys that open
@@ -26,7 +27,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // then, as on the phone it came from. The SIMs chosen, for numbers and for SMS for later, are known
 // by the ids this phone gave them, which on another phone name another SIM or none: they count
 // only on the phone they were chosen on (`simsOn`, lock/restored.ts), and elsewhere SMS go on the
-// phone's default SIM until one is chosen there.
+// phone's default SIM until one is chosen there. What a conversation has of its own, a PIN, its
+// screenshots blocked, a look and notifications, is kept here too (sms-own.ts).
 
 export type { Holder };
 
@@ -110,6 +112,8 @@ export type SmsData = {
   devices: boolean;
   /** What the devices asked to send, those taken in the last DEVICE_ASKS_KEPT. */
   fromDevices: DeviceAsk[];
+  /** The conversations with something of their own here: a PIN, screenshots blocked, a look, notifications (sms-own.ts). */
+  own: SmsOwn[];
 };
 
 export const EMPTY_SMS: SmsData = {
@@ -140,6 +144,7 @@ export const EMPTY_SMS: SmsData = {
   smsWayFor: [],
   devices: false,
   fromDevices: [],
+  own: [],
 };
 
 /** The rest of the space's SMS data. Backups hold it too, from the version that holds photos and
@@ -243,6 +248,7 @@ function checked(value: unknown): SmsData {
       (a) => (isText(a.id) && /^[0-9a-f]{16}$/.test(a.id) && isTime(a.at) && (a.done === 'sending' || a.done === 'sent' || a.done === 'failed') ? { id: a.id, at: a.at, done: a.done } : null),
       MAX_DEVICE_ASKS,
     ),
+    own: checkedSmsOwn(v.own),
   };
 }
 

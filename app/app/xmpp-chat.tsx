@@ -17,6 +17,7 @@ import { chosenStyle, SelectBar, selectAction, useSelection } from '../component
 import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { useChatProtect } from '../components/chat-protect';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -29,6 +30,7 @@ import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import type { Place } from '../lib/chat-parts';
+import { pinOf, shotsBlocked } from '../lib/chat-protect';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { geoUri, placeOfGeo } from '../lib/matrix-parts';
@@ -79,6 +81,7 @@ import {
   xmppSend,
   xmppSendFile,
   xmppSendSticker,
+  xmppSetGuard,
   xmppSetLook,
   xmppSetNotify,
   xmppSetPlain,
@@ -242,6 +245,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (jid && isXmppId(jid) ? { look: ownLook, save: (look) => xmppSetLook(jid, look) } : null), [ownLook, jid]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  // Locked with a PIN of its own, its screenshots blocked (components/chat-protect.tsx): not in a
+  // hidden place's chats, which their own PIN guards. While its PIN asks, nothing of it shows or is read.
+  const guard = useChatProtect({
+    id: `xmpp:${jid ?? ''}`,
+    name: state && jid ? nameOf(state, jid) : (jid ?? ''),
+    pin: pinOf(chat),
+    shots: shotsBlocked(chat),
+    lockable: where === 'space' && !!state && !!jid && isXmppId(jid),
+    save: (change) => (jid ? xmppSetGuard(jid, change) : Promise.resolve()),
+    say: setNote,
+    onBack: () => router.back(),
+  });
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
@@ -252,7 +267,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     unread: chat?.unread ?? 0,
   });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(!jid ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen());
+  const shown = useNetworkChatShown(!jid || guard.gated ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen()) && !guard.gated;
   useEffect(() => {
     if (shown && jid && chat?.unread) xmppRead(jid).catch(() => undefined);
   }, [shown, jid, count, chat?.unread]);
@@ -265,6 +280,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const account = now.state?.jid;
   const stickerPlace = useMemo(() => (account ? xmppStickerPlace(where) : null), [where, account]);
 
+  if (guard.gate) return guard.gate;
   if (!state || !jid || !isXmppId(jid)) {
     return (
       <Page>
@@ -784,6 +800,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <Row wrap>
             <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+            {guard.buttons}
           </Row>
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 

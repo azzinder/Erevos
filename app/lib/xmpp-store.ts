@@ -9,6 +9,7 @@ import type { StickerPlace } from '../lock/sticker-data';
 import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { checkedLook, type Look } from '../theme/look';
+import { changeGuard, type GuardChange } from './chat-protect';
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { canXmpp } from './core';
 import { fileCache, pictureCache } from './file-cache';
@@ -798,6 +799,12 @@ export function xmppSetLook(jid: string, look: Look | null): Promise<void> {
     if (look) chat.look = checkedLook(look);
     else delete chat.look;
   });
+}
+
+/** A chat's PIN of its own, or its screenshots blocked, on this device only (lib/chat-protect.ts). */
+export function xmppSetGuard(jid: string, change: GuardChange): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => changeGuard((it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 }), change));
 }
 
 export function xmppRead(jid: string): Promise<void> {
