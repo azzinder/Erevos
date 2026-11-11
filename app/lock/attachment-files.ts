@@ -143,6 +143,13 @@ export function isFileMeta(value: unknown): value is FileMeta {
 /** The most chunks a file of a message has; the Collection's may have more (lock/collection-data.ts). */
 export const MOST_CHUNKS = 1000;
 
+/**
+ * The most chunks a file of an imported chat has, one brought in here or one a contact shared
+ * (lib/imports.ts MAX_IMPORTED_FILE, lib/chat-share.ts), as many as one of the Collection's: such
+ * a file goes only with its chat, never as a message's.
+ */
+export const HISTORY_CHUNKS = 4096;
+
 /** Whether `value` is a well-formed FileRef of `mostChunks` chunks at most. */
 export function isFileRef(value: unknown, mostChunks = MOST_CHUNKS): value is FileRef {
   const v = value as Partial<FileRef> | null;

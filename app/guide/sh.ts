@@ -3277,7 +3277,7 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ne napu
   dodirnite fotografiju ili datoteku da je vidite samu i **Sačuvaj** je. Glasovne poruke i pjesme puštaju se direktno
   u razgovoru dodirom; videozapis se pušta u vlastitoj aplikaciji telefona kad se sačuva. Zadržite prst na uvezenoj
   poruci da je **Kopiraj** ili **Otvori** njenu datoteku. **Traži u ovom razgovoru** pronalazi i uvezene poruke.
-  Datoteke veće od 1 GB, i one koje izvoz ne sadrži, ostaju izvan, a razgovor kaže gdje je neka bila.
+  Datoteke veće od 4 GB, i one koje izvoz ne sadrži, ostaju izvan, a razgovor kaže gdje je neka bila.
 - **Prostor na telefonu:** dok .zip dolazi, telefonu treba otprilike dvostruko više slobodnog prostora od njegove
   veličine, jer Erevos čita njegovu kopiju i čuva datoteke zapečaćene. I uvezene datoteke su u rezervnim kopijama,
   kao i ostale datoteke.
@@ -3294,23 +3294,31 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ne napu
 **Podijelite ga s tom osobom:** osoba s kojom se uvezeni razgovor nastavlja može ga i sama imati. U **Detalji** njenog
 razgovora, pod **Uvezeni razgovori**, dodirnite **Podijeli s kontaktom** i njeno ime; u **Postavke** → **Podaci i
 uređaji** → **Uvezeni razgovori** razgovor koji se s nekim nastavlja ima isto dugme, koje otvara razgovor s tom osobom.
-Erevos kaže koliko poruka i koliko MB ide, i prvo pita. Zatim svi razgovori uvezeni s njom idu zajedno, svaka poruka sa
-svakom sačuvanom fotografijom, videozapisom, glasovnom porukom i datotekom, samo njoj, šifrirano s kraja na kraj preko
-vašeg relaya, a razgovor kaže da ste ga podijelili.
+Erevos kaže koliko poruka i koliko MB ide, i prvo pita. Zatim svi razgovori uvezeni s njom idu zajedno, ma koliko veliki
+bili, svaka poruka sa svakom sačuvanom fotografijom, videozapisom, glasovnom porukom i datotekom, samo njoj, šifrirano s
+kraja na kraj preko vašeg relaya, a razgovor kaže da ste ga podijelili.
 
-- **Na njenoj strani** ne treba ništa raditi: njen Erevos ga odmah čuva, s datotekama, kaže u razgovoru ko ga je
-  podijelio, odakle i koliko poruka, i prikazuje ih prije novih, samo za čitanje, kao uvezeni razgovor. Strane su
-  zamijenjene: ono što ste vi napisali prikazuje se kao vaše, s njene lijeve strane, a u razgovoru dvoje ono što je ona
-  napisala prikazuje se kao njeno, desno; u grupi svako zadržava svoje ime. Čuva se samo u vašem razgovoru tamo, a može
-  ga obrisati u njegovim **Detalji**.
+- **Na njenoj strani** ne treba ništa raditi: njen Erevos odmah čuva poruke, kaže u razgovoru ko ih je podijelio, odakle
+  i koliko, i prikazuje ih prije novih, samo za čitanje, kao uvezeni razgovor. Fotografije i datoteke stižu postepeno, a
+  ispod tog reda piše koliko ih je stiglo, **Datoteke: 3 od 10**. Strane su zamijenjene: ono što ste vi napisali
+  prikazuje se kao vaše, s njene lijeve strane, a u razgovoru dvoje ono što je ona napisala prikazuje se kao njeno,
+  desno; u grupi svako zadržava svoje ime. Čuva se samo u vašem razgovoru tamo, a može ga obrisati u njegovim
+  **Detalji**. Njeni povezani uređaji čuvaju samo poruke.
 - **Ponovo podijeljen**, zauzima mjesto kopije koju je imala, pa nikad nije tamo dvaput. Razgovor koji je neko podijelio
   s vama ne dijeli se dalje.
 - **Samo s njom:** samo s Erevos kontaktom s kojim se razgovor nastavlja, nikad s grupom, i ne može se proslijediti. U
   skrivenim razgovorima radi isto, a na njenoj strani ostaje na mjestu gdje je vaš razgovor, i u skrivenim.
-- **Prostor:** fotografije i datoteke čekaju na vašem relayu dok se ne preuzmu, najviše 14 dana, a relay ima mjesta za 1
-  GB datoteka ukupno ako nije drugačije podešeno, pa vrlo veliki razgovor možda neće stati: tada ne ide ništa, i Erevos
-  kaže zašto. Datoteka u međuvremenu obrisana s ovog telefona navodi se kao ona koja je ostala.
-- **Stariji Erevos** umjesto toga dobija datoteku, **Razgovor (Telegram).json**, s porukama unutra kao tekst.
+- **U krugovima:** fotografije i datoteke idu poslije poruka, po nekoliko desetina MB odjednom: svaki krug čeka na vašem
+  relayu dok ga njen telefon ne preuzme i ne obriše tamo, i onda ide sljedeći. Tako ide razgovor bilo koje veličine,
+  svaka datoteka do 4 GB, i treba mu malo prostora na relayu, koji dijele i druge datoteke; kad je relay pun, Erevos
+  čeka i pita ponovo, svaki put malo kasnije. Nastavlja se kad god Erevos radi na oba telefona, i nakon što je neki bio
+  ugašen ili van mreže neko vrijeme; krug koji se ne preuzme za 12 dana ponovo se stavlja na relay prije nego istekne.
+  Datoteka u međuvremenu obrisana s ovog telefona navodi se kao ona koja je ostala.
+- **Dokle je stiglo** vidi se ispod vašeg reda u razgovoru, **Dijeljenje, 40%**. Dodirnite ga za **Prekini dijeljenje**:
+  ono što čeka na relayu se uklanja, a njen Erevos briše ono što je stiglo. Ako ona obriše razgovore, zaustavlja se na
+  isti način.
+- **Stariji Erevos** umjesto toga dobija datoteku, **Razgovor (Telegram).json**, s porukama unutra kao tekst, i nijednu
+  fotografiju ni datoteku.
 
 > Datoteka uvezenih razgovora raste s onim što unesete, pa njena veličina otprilike govori koliko je uvezeno, ali ne
 > i u koji prostor.
@@ -3852,7 +3860,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Kontakti telefona** | U Androidovim vlastitim kontaktima, a Erevos ih ne zapečaćuje, kao i kod svake aplikacije za kontakte: vidi ih svaka aplikacija kojoj je dozvoljeno da ih čita, a nalog (Google) ih može sinhronizovati. Erevos ih nikud ne šalje. .vcf datoteka sačuvana od njih je izvan Erevosa, nezapečaćena. Pozivi i SMS poruke kontakta čitaju se iz vlastitog zapisnika poziva i SMS poruka telefona samo da bi se prikazala njegova historija, i nigdje se ne čuvaju. | |
 | **Kontakti koji se čuvaju samo u Erevosu** | Zapečaćeni ključem prostora, ili ključem skrivenih razgovora za njihove, u jednoj datoteci za svaki prostor čija veličina otprilike pokazuje koliko ih ukupno ima, ali ne i čiji su; njihove fotografije svaka u vlastitoj datoteci. Nikad u Androidovim kontaktima. .vcf datoteka sačuvana od njih, i od onih iz skrivenih razgovora, je izvan Erevosa, nešifrirana. Pozivi i SMS poruke prema njima idu preko telefona i prikazuju se u njegovom zapisniku poziva i SMS porukama. | |
 | **Telefonski pozivi** | Obični telefonski pozivi: prenosi ih telefonska kompanija i može ih prisluškivati, kao i kod svake aplikacije za telefon. Android čuva historiju poziva, a Erevos je ne zapečaćuje, kao i za svaku aplikaciju za telefon; Erevos je čita, kao i favorite, da bi ih prikazao, iz nje briše samo pozive koje vi obrišete, i ne čuva nikakvu kopiju. SIM kartica izabrana za svaki broj zapečaćena je u prostoru; brzi odgovori i ono što je blokirano (samo prefiksi, identifikatori grupa i vremena, isto za svaki prostor) čuvaju se na telefonu, nezapečaćeni. | |
-| **Uvezeni razgovori** | Zapečaćeni u prostoru u koji su uneseni, kao i njihove fotografije i datoteke, svaka u svojim dijelovima kao i datoteka razgovora. Veličina datoteke, i broj dijelova, otprilike govore koliko je uvezeno, ali ne i gdje. | Viberove fotografije i datoteke, i datoteke veće od 1 GB. |
+| **Uvezeni razgovori** | Zapečaćeni u prostoru u koji su uneseni, kao i njihove fotografije i datoteke, svaka u svojim dijelovima kao i datoteka razgovora. Veličina datoteke, i broj dijelova, otprilike govore koliko je uvezeno, ali ne i gdje. | Viberove fotografije i datoteke, i datoteke veće od 4 GB. |
 | **Historija poruka** | Čuva se na telefonu, zapečaćena u svom prostoru, bez ograničenja, u stranicama iste veličine pomiješanim za sve prostore. Vidi se samo koliko sve zajedno zauzima, a ne kojem prostoru pripada. Brisanje na oba telefona i poruke koje nestaju oslanjaju se na Erevos drugog telefona. | |
 | **Poruke u blizini** | Otvaraju se samo u prostoru koji ima taj kontakt. Poruka za drugi prostor čeka u memoriji, najviše šest sati, dok se taj prostor ne otvori. Poruka za skrivene razgovore otvara se samo dok su otvoreni, ili primaju i zatvoreni, a prostor nikad ne sazna da je neki njihov kontakt u blizini. | |
 | **Glasovne poruke** | Šifrirane s kraja na kraj preko relaya ili u blizini, u dijelovima: relay, ili onaj ko prisluškuje u blizini, može otprilike saznati koliko je svaka duga. Svaki zvuk zapečaćen je u vlastitoj datoteci; broj datoteka i njihove veličine otprilike pokazuju koliko ih se čuva, ali ne i u kojem prostoru. Otpečaćen u kešu samo dok se pušta. | Zvučne datoteke sve iste veličine. |

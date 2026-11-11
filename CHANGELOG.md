@@ -16,11 +16,17 @@ On main, not released yet:
 
 - **Share an imported chat with the other person**: the Telegram, WhatsApp and Viber chats that go on with an Erevos
   contact can go to that contact alone, from the chat's Details or Settings → Data and devices → Imported chats, after
-  one question that says how many messages and MB go. All of them go together, every message and every photo, video,
-  voice message and file kept, end-to-end encrypted through your relay, as one file whose photos and files go as they
-  are kept. Their Erevos keeps it at once in their imported chats, in the same space or hidden chats, linked to you,
-  the sides swapped (in a group export everyone keeps their name), in place of a copy shared before. Never to a group,
-  never forwarded. An Erevos from before shows it as a file, "Chat from Telegram.json".
+  one question that says how many messages and MB go, whatever their size. All of them go together, every message and
+  every photo, video, voice message and file kept, end-to-end encrypted through your relay. The messages go at once, in
+  one file; their Erevos keeps them at once in their imported chats, in the same space or hidden chats, linked to you,
+  the sides swapped (in a group export everyone keeps their name), in place of a copy shared before. The photos and
+  files follow in rounds, each chunk as it is kept: a few dozen MB on your relay at a time, put there as their phone
+  takes and deletes the ones before, so a share needs little room there, waits and asks again when the relay is full,
+  and goes on after either phone restarts or was offline, while both phones run Erevos. They fill in on their side as
+  they come, "Files: 3 of 10" under its line; yours says "Sharing, 40%", and tapped it can stop the share, its chunks
+  taken off the relay and what came deleted on their phone, as it is when they delete the chats. Each file can be up to
+  4 GB, as an import now keeps them (it kept 1 GB before). Never to a group, never forwarded. An Erevos from before
+  shows it as a file, "Chat from Telegram.json", with the messages in it, and no file goes to it.
 - **Stickers on other networks**: built-in stickers can go to other apps as a picture (PNG, 512 by 512, clear
   background), drawn on your phone or computer from the sticker's own shapes; nothing is downloaded. In a Matrix, XMPP
   or Nostr chat **Sticker** now offers the built-in sets beside **Mine**, and in an SMS conversation **+** →

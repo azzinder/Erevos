@@ -228,9 +228,10 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   // A sticker, built in or made from a photo, shows on its own, with no bubble.
   const stuck = !!message.sticker || !!message.file?.sticker;
   // Imported chats shared (lib/chat-share.ts): a line where they went or came, and how far they
-  // came while they do. Their messages show ahead of the new ones, as what was imported does.
+  // came while they do, then how far their files did (lib/share-rounds.ts). Their messages show
+  // ahead of the new ones, as what was imported does.
   if (message.file?.history) {
-    const status = message.mine ? null : comingText(message.file, taking);
+    const status = !message.mine && message.file.from ? comingText(message.file, taking) : (taking ?? null);
     return (
       <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
         {newDay && message.at ? (

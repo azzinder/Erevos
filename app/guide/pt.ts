@@ -3389,7 +3389,7 @@ celular, a não ser que você a compartilhe.
   foto ou num arquivo para vê-lo sozinho e **Salvar**. Mensagens de voz e músicas tocam ali mesmo na conversa com um
   toque; um vídeo toca no próprio app do celular depois de salvo. Segure uma mensagem importada para **Copiar** ou
   **Abrir** o arquivo dela. **Buscar nesta conversa** também encontra as mensagens importadas. Arquivos com mais de
-  1 GB, e os que a exportação não contém, ficam para trás, e a conversa diz onde havia um.
+  4 GB, e os que a exportação não contém, ficam para trás, e a conversa diz onde havia um.
 - **Espaço no celular:** enquanto um .zip chega, o celular precisa de cerca do dobro do tamanho dele livre, pois o
   Erevos lê uma cópia dele e guarda os arquivos selados. Os arquivos importados também estão nos backups, como os
   outros arquivos.
@@ -3408,23 +3408,31 @@ celular, a não ser que você a compartilhe.
 da conversa com ela, em **Conversas importadas**, toque em **Compartilhar com** e o nome dela; em **Configurações** →
 **Dados e dispositivos** → **Conversas importadas**, uma conversa que continua com alguém tem o mesmo botão, que abre a
 conversa com essa pessoa. O Erevos diz quantas mensagens e quantos MB vão, e pergunta antes. Depois todas as conversas
-importadas com ela vão juntas, cada mensagem com cada foto, vídeo, mensagem de voz e arquivo guardado, só para ela,
-criptografadas de ponta a ponta pelo seu relay, e a conversa diz que você a compartilhou.
+importadas com ela vão juntas, seja qual for o tamanho, cada mensagem com cada foto, vídeo, mensagem de voz e arquivo
+guardado, só para ela, criptografadas de ponta a ponta pelo seu relay, e a conversa diz que você a compartilhou.
 
-- **Do lado dela** não há nada a fazer: o Erevos dela a guarda na hora, com os arquivos, diz na conversa quem a
-  compartilhou, de onde e quantas mensagens, e as mostra antes das novas, só para ler, como uma conversa importada. Os
-  lados se invertem: o que você escreveu aparece como seu, à esquerda dela, e numa conversa a dois o que ela escreveu
-  aparece como dela, à direita; num grupo, cada um mantém o nome. Fica só na conversa de vocês lá, e ela pode apagá-la
-  nos **Detalhes** dela.
+- **Do lado dela** não há nada a fazer: o Erevos dela guarda as mensagens na hora, diz na conversa quem as compartilhou,
+  de onde e quantas, e as mostra antes das novas, só para ler, como uma conversa importada. As fotos e os arquivos vão
+  chegando aos poucos, e embaixo dessa linha diz quantos chegaram, **Arquivos: 3 de 10**. Os lados se invertem: o que
+  você escreveu aparece como seu, à esquerda dela, e numa conversa a dois o que ela escreveu aparece como dela, à
+  direita; num grupo, cada um mantém o nome. Fica só na conversa de vocês lá, e ela pode apagá-la nos **Detalhes** dela.
+  Os dispositivos conectados dela guardam só as mensagens.
 - **Compartilhada de novo**, ela toma o lugar da cópia que havia, então nunca está lá duas vezes. Uma conversa que
   alguém compartilhou com você não é compartilhada adiante.
 - **Só com ela:** só com um contato do Erevos com quem a conversa continua, nunca com um grupo, e não pode ser
   encaminhada. Nas conversas ocultas funciona igual, e do lado dela fica no lugar onde a conversa de vocês está, também
   nas ocultas.
-- **Espaço:** as fotos e os arquivos esperam no seu relay até serem pegos, 14 dias no máximo, e um relay tem espaço para
-  1 GB de arquivos ao todo, se não for configurado de outro jeito, então uma conversa muito grande pode não caber: aí
-  nada vai, e o Erevos diz por quê. Um arquivo apagado deste celular desde então é citado como um que ficou para trás.
-- **Um Erevos anterior** recebe um arquivo no lugar, **Conversa de Telegram.json**, com as mensagens dentro como texto.
+- **Em rodadas:** as fotos e os arquivos vão depois das mensagens, algumas dezenas de MB por vez: cada rodada espera no
+  seu relay até o celular dela pegá-la e apagá-la lá, e então vai a próxima. Assim vai uma conversa de qualquer tamanho,
+  cada arquivo de até 4 GB, e ela precisa de pouco do espaço do relay, que outros arquivos dividem; quando o relay está
+  cheio, o Erevos espera e pede de novo, um pouco mais tarde a cada vez. Continua sempre que os dois celulares estão com
+  o Erevos rodando, também depois de um ficar desligado ou offline por um tempo; uma rodada não pega em 12 dias é posta
+  de novo no relay antes de expirar. Um arquivo apagado deste celular desde então é citado como um que ficou para trás.
+- **Até onde foi** aparece embaixo da sua linha na conversa, **Compartilhando, 40%**. Toque nela para **Parar de
+  compartilhar**: o que espera no relay é tirado, e o Erevos dela apaga o que chegou. Se ela apagar as conversas, para
+  do mesmo jeito.
+- **Um Erevos anterior** recebe um arquivo no lugar, **Conversa de Telegram.json**, com as mensagens dentro como texto,
+  e nenhuma das fotos e dos arquivos.
 
 > O arquivo das conversas importadas cresce com o que você traz, então o tamanho dele diz mais ou menos quanto foi
 > importado, mas não para qual espaço.
@@ -3978,7 +3986,7 @@ O Erevos diz claramente o que protege e o que ainda não protege.
 | **Os contatos do celular** | Nos próprios contatos do Android, não selados pelo Erevos, como em todo app de contatos: todo app com permissão para lê-los os vê, e uma conta (Google) pode sincronizá-los. O Erevos não os envia a lugar nenhum. Um arquivo .vcf salvo a partir deles fica fora do Erevos, sem selo. As chamadas e os SMS de um contato são lidos do próprio registro de chamadas e dos SMS do celular só para mostrar o histórico dele, e não ficam guardados em lugar nenhum. | |
 | **Contatos guardados só no Erevos** | Selados com a chave do espaço, ou com a das conversas ocultas para os delas, num arquivo para todos os espaços cujo tamanho mostra mais ou menos quantos há no total, não de quem são; as fotos deles cada uma num arquivo próprio. Nunca nos contatos do Android. Um arquivo .vcf salvo a partir deles, também os das conversas ocultas, fica fora do Erevos, sem criptografia. As chamadas e os SMS para eles passam pelo celular, e aparecem no registro de chamadas e nos SMS dele. | |
 | **Chamadas telefônicas** | Chamadas telefônicas comuns: a operadora as leva e pode ouvi-las, como em todo app de telefone. O Android guarda o histórico de chamadas, não selado pelo Erevos, como para todo app de telefone; o Erevos o lê, e os favoritos, para mostrá-los, apaga dele só as chamadas que você apaga, e não guarda cópia. O chip escolhido para cada número é selado no espaço; as respostas rápidas, e o que está bloqueado (só prefixos, IDs de grupo e horários, os mesmos para todo espaço), ficam guardados no celular, sem selo. | |
-| **Conversas importadas** | Seladas no espaço para o qual foram trazidas, as fotos e os arquivos delas também, cada um nos seus pedaços, como um arquivo de uma conversa. O tamanho do arquivo, e quantos pedaços há, dizem mais ou menos quanto foi importado, não de onde. | As fotos e os arquivos do Viber, e arquivos acima de 1 GB. |
+| **Conversas importadas** | Seladas no espaço para o qual foram trazidas, as fotos e os arquivos delas também, cada um nos seus pedaços, como um arquivo de uma conversa. O tamanho do arquivo, e quantos pedaços há, dizem mais ou menos quanto foi importado, não de onde. | As fotos e os arquivos do Viber, e arquivos acima de 4 GB. |
 | **Histórico de mensagens** | Guardado no celular, selado no espaço dele, sem limite, em páginas do mesmo tamanho misturadas para todos os espaços. Só o quanto tudo ocupa aparece, não a que espaço pertence. Apagar dos dois celulares, e as mensagens temporárias, dependem do Erevos do outro celular. | |
 | **Mensagens por perto** | Abertas só no espaço que tem o contato. Uma para outro espaço espera na memória, seis horas no máximo, até esse espaço abrir. Uma para conversas ocultas só abre enquanto elas estão abertas, ou recebem fechadas, e o espaço nunca fica sabendo que um contato delas está por perto. | |
 | **Mensagens de voz** | Criptografadas de ponta a ponta pelo relay ou por perto, em pedaços: o relay, ou quem escuta por perto, consegue saber mais ou menos quanto cada uma dura. Cada som é selado num arquivo próprio; quantos arquivos há, e os tamanhos deles, mostram mais ou menos quantas estão guardadas, não em que espaço. Fora do selo no cache só enquanto toca. | Arquivos de som todos de um mesmo tamanho. |

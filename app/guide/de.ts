@@ -3622,7 +3622,7 @@ verlässt das Telefon, außer du teilst ihn.
   auf ein Foto oder eine Datei, um es für sich zu sehen und mit **Speichern** zu speichern. Sprachnachrichten und Lieder
   spielen mit einem Tippen direkt im Chat; ein Video spielt in der eigenen App des Telefons, sobald es gespeichert ist.
   Halte eine importierte Nachricht gedrückt, um sie mit **Kopieren** zu kopieren oder ihre Datei mit **Öffnen** zu
-  öffnen. **In diesem Chat suchen** findet auch die importierten Nachrichten. Dateien über 1 GB, und die, die der
+  öffnen. **In diesem Chat suchen** findet auch die importierten Nachrichten. Dateien über 4 GB, und die, die der
   Export nicht enthält, bleiben zurück, und der Chat sagt, wo eine war.
 - **Platz auf dem Telefon:** Während eine .zip hereinkommt, braucht das Telefon etwa ihre doppelte Größe frei, da
   Erevos eine Kopie davon liest und die Dateien versiegelt aufbewahrt. Backups enthalten auch importierte Dateien,
@@ -3642,24 +3642,32 @@ verlässt das Telefon, außer du teilst ihn.
 ihres Chats, unter **Importierte Chats**, tippe auf **Mit … teilen** mit ihrem Namen; unter **Einstellungen** → **Daten
 und Geräte** → **Importierte Chats** hat ein Chat, der mit jemandem weitergeht, denselben Knopf, der den Chat mit ihr
 öffnet. Erevos sagt, wie viele Nachrichten und wie viele MB gehen, und fragt zuerst. Dann gehen alle mit ihr
-importierten Chats zusammen, jede Nachricht mit jedem behaltenen Foto, Video, jeder Sprachnachricht und Datei, nur an
-sie, Ende-zu-Ende-verschlüsselt über dein Relay, und der Chat sagt, dass du ihn geteilt hast.
+importierten Chats zusammen, ganz gleich, wie groß, jede Nachricht mit jedem behaltenen Foto, Video, jeder
+Sprachnachricht und Datei, nur an sie, Ende-zu-Ende-verschlüsselt über dein Relay, und der Chat sagt, dass du ihn
+geteilt hast.
 
-- **Auf ihrer Seite** ist nichts zu tun: Ihr Erevos behält ihn sofort, mit seinen Dateien, sagt im Chat, wer ihn geteilt
-  hat, woher und wie viele Nachrichten, und zeigt sie vor den neuen, nur zum Lesen, wie einen importierten Chat. Die
-  Seiten sind vertauscht: Was du geschrieben hast, steht als von dir da, links, und in einem Chat zu zweit steht, was
-  sie geschrieben hat, als ihr eigenes rechts; in einer Gruppe behält jeder seinen Namen. Er bleibt dort nur in eurem
-  Chat, und sie kann ihn in seinen **Details** löschen.
+- **Auf ihrer Seite** ist nichts zu tun: Ihr Erevos behält die Nachrichten sofort, sagt im Chat, wer sie geteilt hat,
+  woher und wie viele, und zeigt sie vor den neuen, nur zum Lesen, wie einen importierten Chat. Die Fotos und Dateien
+  kommen nach und nach dazu, und unter dieser Zeile steht, wie viele schon da sind, **Dateien: 3 von 10**. Die Seiten
+  sind vertauscht: Was du geschrieben hast, steht als von dir da, links, und in einem Chat zu zweit steht, was sie
+  geschrieben hat, als ihr eigenes rechts; in einer Gruppe behält jeder seinen Namen. Er bleibt dort nur in eurem Chat,
+  und sie kann ihn in seinen **Details** löschen. Ihre verknüpften Geräte behalten nur die Nachrichten.
 - **Erneut geteilt** tritt er an die Stelle der Kopie, die sie hatte, also ist er nie zweimal da. Ein Chat, den jemand
   mit dir geteilt hat, wird nicht weitergeteilt.
 - **Nur mit ihr:** nur mit einem Erevos-Kontakt, mit dem der Chat weitergeht, nie mit einer Gruppe, und er lässt sich
   nicht weiterleiten. In versteckten Chats geht es genauso, und auf ihrer Seite bleibt er an dem Ort, an dem euer Chat
   ist, auch in versteckten Chats.
-- **Platz:** Die Fotos und Dateien warten auf deinem Relay, bis sie abgeholt werden, höchstens 14 Tage, und ein Relay
-  hat Platz für 1 GB an Dateien insgesamt, wenn nicht anders eingestellt, also passt ein sehr großer Chat vielleicht
-  nicht: Dann geht nichts, und Erevos sagt, warum. Eine seither vom Telefon gelöschte Datei wird als zurückgeblieben
-  genannt.
-- **Ein älteres Erevos** bekommt stattdessen eine Datei, **Chat aus Telegram.json**, mit den Nachrichten darin als Text.
+- **In Runden:** Die Fotos und Dateien gehen nach den Nachrichten, ein paar Dutzend MB auf einmal: Jede Runde wartet auf
+  deinem Relay, bis ihr Telefon sie abholt und dort löscht, dann geht die nächste. So geht ein Chat jeder Größe, jede
+  Datei bis zu 4 GB, und braucht wenig vom Platz des Relays, den sich andere Dateien teilen; ist das Relay voll, wartet
+  Erevos und fragt wieder, jedes Mal etwas später. Es geht weiter, wann immer Erevos auf beiden Telefonen läuft, auch
+  nachdem eines eine Weile aus oder offline war; eine Runde, die 12 Tage nicht abgeholt wurde, kommt wieder aufs Relay,
+  bevor sie abläuft. Eine seither vom Telefon gelöschte Datei wird als zurückgeblieben genannt.
+- **Wie weit es ist**, steht unter deiner Zeile im Chat, **Wird geteilt, 40 %**. Tippe darauf für **Teilen beenden**:
+  Was auf dem Relay wartet, wird entfernt, und ihr Erevos löscht, was davon angekommen ist. Löscht sie die Chats, endet
+  es genauso.
+- **Ein älteres Erevos** bekommt stattdessen eine Datei, **Chat aus Telegram.json**, mit den Nachrichten darin als Text,
+  und keines der Fotos und keine der Dateien.
 
 > Die Datei der importierten Chats wächst mit dem, was du hereinholst, also verrät ihre Größe ungefähr, wie viel
 > importiert wurde, aber nicht in welchen Bereich.
@@ -4251,7 +4259,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Die Kontakte des Telefons** | In den eigenen Kontakten von Android, nicht von Erevos versiegelt, wie bei jeder Kontakte-App: Jede App, die sie lesen darf, sieht sie, und ein Konto (Google) kann sie synchronisieren. Erevos sendet sie nirgendwohin. Eine daraus gespeicherte .vcf-Datei ist außerhalb von Erevos, nicht versiegelt. Die Anrufe und SMS eines Kontakts werden nur aus der eigenen Anrufliste und den SMS des Telefons gelesen, um seinen Verlauf zu zeigen, und nirgends aufbewahrt. | |
 | **Nur in Erevos gespeicherte Kontakte** | Mit dem Schlüssel des Bereichs versiegelt, oder mit dem der versteckten Chats für deren Kontakte, in einer Datei für jeden Bereich, deren Größe ungefähr zeigt, wie viele es insgesamt sind, nicht wem sie gehören; ihre Fotos jeweils in einer eigenen Datei. Nie in den Kontakten von Android. Eine daraus gespeicherte .vcf-Datei, auch aus versteckten Chats, ist außerhalb von Erevos, nicht verschlüsselt. Anrufe und SMS an sie gehen über das Telefon und erscheinen in seiner Anrufliste und seinen SMS. | |
 | **Telefonanrufe** | Normale Telefonanrufe: Die Telefongesellschaft überträgt sie und kann mithören, wie bei jeder Telefon-App. Android führt die Anrufliste, nicht von Erevos versiegelt, wie für jede Telefon-App; Erevos liest sie, und die Favoriten, um sie zu zeigen, löscht daraus nur die Anrufe, die du löschst, und behält keine Kopie. Die für jede Nummer gewählte SIM ist im Bereich versiegelt; die Schnellantworten und was blockiert ist (nur Präfixe, Gruppen-IDs und Zeiten, für jeden Bereich gleich) werden auf dem Telefon aufbewahrt, nicht versiegelt. | |
-| **Importierte Chats** | Versiegelt in dem Bereich, in den sie geholt wurden, auch ihre Fotos und Dateien, jedes in seinen Stücken wie die Datei eines Chats. Die Größe der Datei, und wie viele Stücke es gibt, verraten ungefähr, wie viel importiert wurde, nicht wohin. | Fotos und Dateien aus Viber, und Dateien über 1 GB. |
+| **Importierte Chats** | Versiegelt in dem Bereich, in den sie geholt wurden, auch ihre Fotos und Dateien, jedes in seinen Stücken wie die Datei eines Chats. Die Größe der Datei, und wie viele Stücke es gibt, verraten ungefähr, wie viel importiert wurde, nicht wohin. | Fotos und Dateien aus Viber, und Dateien über 4 GB. |
 | **Nachrichtenverlauf** | Auf dem Telefon aufbewahrt, versiegelt in seinem Bereich, ohne Grenze, in Seiten gleicher Größe, gemischt für alle Bereiche. Nur wie viel alles zusammen belegt, ist sichtbar, nicht zu welchem Bereich es gehört. Löschen auf beiden Telefonen und verschwindende Nachrichten verlassen sich auf das Erevos des anderen Telefons. | |
 | **Nachrichten in der Nähe** | Öffnen sich nur in dem Bereich, der den Kontakt hat. Eine für einen anderen Bereich wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Eine für versteckte Chats öffnet sich nur, solange sie offen sind oder geschlossen empfangen, und der Bereich erfährt nie, dass einer ihrer Kontakte in der Nähe ist. | |
 | **Sprachnachrichten** | Ende-zu-Ende-verschlüsselt über das Relay oder in der Nähe, in Stücken: Das Relay, oder wer in der Nähe mithört, kann ungefähr erkennen, wie lang jede ist. Jeder Ton ist in einer eigenen Datei versiegelt; wie viele Dateien es gibt und wie groß sie sind, zeigt ungefähr, wie viele aufbewahrt werden, nicht in welchem Bereich. Nur während des Abspielens entsiegelt im Cache. | Tondateien alle gleich groß. |

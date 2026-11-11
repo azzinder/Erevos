@@ -3427,7 +3427,7 @@ telefono, a meno che tu non la condivida.
   file per vederlo da solo e **Salva** per salvarlo. Messaggi vocali e canzoni si riproducono direttamente nella chat
   con un tocco; un video si riproduce nell’app del telefono dopo averlo salvato. Tieni premuto un messaggio importato
   per **Copia** o **Apri** il suo file. **Cerca in questa chat** trova anche i messaggi importati. I file più grandi di
-  1 GB, e quelli che l’esportazione non contiene, restano fuori, e la chat dice dove ce n’era uno.
+  4 GB, e quelli che l’esportazione non contiene, restano fuori, e la chat dice dove ce n’era uno.
 - **Spazio sul telefono:** mentre entra uno .zip, al telefono serve libero circa il doppio della sua dimensione, perché
   Erevos ne legge una copia e conserva i file sigillati. Anche i file importati sono nei backup, come
   gli altri file.
@@ -3445,24 +3445,31 @@ telefono, a meno che tu non la condivida.
 **Dettagli** della sua chat, sotto **Chat importate**, tocca **Condividi con** e il suo nome; in **Impostazioni** →
 **Dati e dispositivi** → **Chat importate** una chat che continua con qualcuno ha lo stesso pulsante, che apre la sua
 chat. Erevos dice quanti messaggi e quanti MB partono, e chiede prima. Poi tutte le chat importate con quella persona
-partono insieme, ogni messaggio con ogni foto, video, messaggio vocale e file conservato, solo a lei, crittografati
-end-to-end tramite il tuo relay, e la chat dice che l’hai condivisa.
+partono insieme, di qualunque dimensione, ogni messaggio con ogni foto, video, messaggio vocale e file conservato, solo
+a lei, crittografati end-to-end tramite il tuo relay, e la chat dice che l’hai condivisa.
 
-- **Dalla sua parte** non c’è niente da fare: il suo Erevos la tiene subito, con i suoi file, dice nella chat chi l’ha
-  condivisa, da dove e quanti messaggi, e li mostra prima dei nuovi, solo da leggere, come una chat importata. I lati
-  sono scambiati: quello che hai scritto tu appare come tuo, alla sua sinistra, e in una chat a due quello che ha
-  scritto quella persona appare come suo, a destra; in un gruppo, ognuno tiene il suo nome. Resta solo nella vostra chat
-  lì, e può eliminarla nei suoi **Dettagli**.
+- **Dalla sua parte** non c’è niente da fare: il suo Erevos tiene subito i messaggi, dice nella chat chi li ha
+  condivisi, da dove e quanti, e li mostra prima dei nuovi, solo da leggere, come una chat importata. Le foto e i file
+  si aggiungono man mano che arrivano, e sotto quella riga dice quanti ne sono arrivati, **File: 3 di 10**. I lati sono
+  scambiati: quello che hai scritto tu appare come tuo, alla sua sinistra, e in una chat a due quello che ha scritto
+  quella persona appare come suo, a destra; in un gruppo, ognuno tiene il suo nome. Resta solo nella vostra chat lì, e
+  può eliminarla nei suoi **Dettagli**. I suoi dispositivi collegati tengono solo i messaggi.
 - **Condivisa di nuovo**, prende il posto della copia che aveva, quindi non c’è mai due volte. Una chat che qualcuno ha
   condiviso con te non si condivide oltre.
 - **Solo con lei:** solo con un contatto Erevos con cui la chat continua, mai con un gruppo, e non si può inoltrare.
   Nelle chat nascoste funziona allo stesso modo, e dalla sua parte resta nel posto in cui è la vostra chat, anche tra
   quelle nascoste.
-- **Spazio:** le foto e i file aspettano sul tuo relay finché non vengono presi, al massimo 14 giorni, e un relay ha
-  posto per 1 GB di file in tutto se non è impostato diversamente, quindi una chat molto grande può non starci: allora
-  non parte niente, ed Erevos dice perché. Un file eliminato da questo telefono nel frattempo è nominato come rimasto
-  indietro.
-- **Un Erevos precedente** riceve invece un file, **Chat da Telegram.json**, con dentro i messaggi come testo.
+- **A turni:** le foto e i file partono dopo i messaggi, qualche decina di MB alla volta: ogni turno aspetta sul tuo
+  relay finché il suo telefono non lo prende e lo elimina lì, e allora parte il successivo. Così parte una chat di
+  qualunque dimensione, ogni file fino a 4 GB, e serve poco dello spazio del relay, che altri file condividono; quando
+  il relay è pieno, Erevos aspetta e richiede, un po’ più tardi ogni volta. Va avanti ogni volta che Erevos è attivo su
+  entrambi i telefoni, anche dopo che uno è stato spento o offline per un po’; un turno non preso in 12 giorni torna sul
+  relay prima che scada. Un file eliminato da questo telefono nel frattempo è nominato come rimasto indietro.
+- **A che punto è** si vede sotto la tua riga nella chat, **Condivisione, 40%**. Toccala per **Interrompi la
+  condivisione**: quello che aspetta sul relay viene tolto, e il suo Erevos elimina quello che è arrivato. Se quella
+  persona elimina le chat, si ferma allo stesso modo.
+- **Un Erevos precedente** riceve invece un file, **Chat da Telegram.json**, con dentro i messaggi come testo, e nessuna
+  delle foto e dei file.
 
 > Il file delle chat importate cresce con quello che porti dentro, quindi la sua dimensione dice più o meno quanto è
 > stato importato, ma non in quale spazio.
@@ -4031,7 +4038,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **I contatti del telefono** | Nei contatti di Android stesso, non sigillati da Erevos, come con ogni app per i contatti: ogni app autorizzata a leggerli li vede, e un account (Google) può sincronizzarli. Erevos non li invia da nessuna parte. Un file .vcf salvato da questi è fuori da Erevos, non sigillato. Le chiamate e gli SMS di un contatto vengono letti dal registro chiamate e dagli SMS del telefono solo per mostrare la sua cronologia, e non vengono conservati da nessuna parte. | |
 | **Contatti salvati solo in Erevos** | Sigillati con la chiave dello spazio, o con quella delle chat nascoste per i loro, in un unico file per tutti gli spazi la cui dimensione mostra più o meno quanti sono in tutto, non di chi sono; le loro foto ognuna in un file a sé. Mai nei contatti di Android. Un file .vcf salvato da questi, anche quelli delle chat nascoste, è fuori da Erevos, non crittografato. Le chiamate e gli SMS verso di loro passano dal telefono, e appaiono nel suo registro chiamate e nei suoi SMS. | |
 | **Chiamate telefoniche** | Normali chiamate telefoniche: le trasporta l’operatore telefonico, che può ascoltarle, come con ogni app Telefono. Android conserva la cronologia delle chiamate, non sigillata da Erevos, come per ogni app Telefono; Erevos la legge, insieme ai preferiti, per mostrarli, ne elimina solo le chiamate che elimini tu, e non ne conserva una copia. La SIM scelta per ogni numero è sigillata nello spazio; le risposte rapide, e quello che è bloccato (solo prefissi, id dei gruppi e orari, uguali per ogni spazio), sono conservati sul telefono, non sigillati. | |
-| **Chat importate** | Sigillate nello spazio in cui sono state portate, anche le loro foto e i loro file, ognuno nei suoi pezzi come il file di una chat. La dimensione del file, e quanti pezzi ci sono, dicono più o meno quanto è stato importato, non dove. | Foto e file di Viber, e file oltre 1 GB. |
+| **Chat importate** | Sigillate nello spazio in cui sono state portate, anche le loro foto e i loro file, ognuno nei suoi pezzi come il file di una chat. La dimensione del file, e quanti pezzi ci sono, dicono più o meno quanto è stato importato, non dove. | Foto e file di Viber, e file oltre 4 GB. |
 | **Cronologia dei messaggi** | Conservata sul telefono, sigillata nel suo spazio, senza limiti, in pagine della stessa dimensione mescolate per tutti gli spazi. Si vede solo quanto occupa tutto insieme, non a quale spazio appartiene. L’eliminazione su entrambi i telefoni, e i messaggi effimeri, dipendono dall’Erevos dell’altro telefono. | |
 | **Messaggi da vicino** | Si aprono solo nello spazio che ha il contatto. Uno per un altro spazio aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Uno per le chat nascoste si apre solo mentre sono aperte, o ricevono da chiuse, e lo spazio non sa mai che uno dei loro contatti è vicino. | |
 | **Messaggi vocali** | Crittografati end-to-end tramite il relay o da vicino, in pezzi: il relay, o chi ascolta da vicino, può capire più o meno quanto dura ognuno. Ogni suono è sigillato in un file a sé; quanti file ci sono, e le loro dimensioni, mostrano più o meno quanti ne sono conservati, non in quale spazio. Dissigillati nella cache solo durante la riproduzione. | File audio tutti della stessa dimensione. |

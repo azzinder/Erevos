@@ -89,8 +89,10 @@ export function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: str
 /**
  * The photos shown, by file id, as addresses an Image can show (lib/photo-uri.ts): each of `files`
  * here is read into memory, and let go of once it is no longer one of them, or the screen closes.
+ * One not here yet, as a file of chats shared that still comes (lib/share-rounds.ts), is read again
+ * each time `again` changes.
  */
-export function useShownPhotos(files: FileRef[], onError: (error: unknown) => void): Record<string, string> {
+export function useShownPhotos(files: FileRef[], onError: (error: unknown) => void, again = 0): Record<string, string> {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const photosRef = useRef(photos);
   photosRef.current = photos;
@@ -119,7 +121,7 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
       }
       return kept;
     });
-  }, [shownKey]);
+  }, [shownKey, again]);
   // Photos held in memory go when the screen closes.
   useEffect(
     () => () => {

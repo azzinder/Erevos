@@ -121,7 +121,7 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
           messages: plural(count, '{n} message', '{n} messages'),
         }) +
           (files.count > 0 ? ' ' + plural(files.count, 'One photo or file came with them.', '{n} photos and files came with them.') : '') +
-          (files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 1 GB stayed behind.', '{n} files larger than 1 GB stayed behind.') : '') +
+          (files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 4 GB stayed behind.', '{n} files larger than 4 GB stayed behind.') : '') +
           ' ' +
           t('Delete the export file from the phone yourself: Erevos keeps its own sealed copy.'),
       );
@@ -209,7 +209,7 @@ function FoundFiles({ opened }: { opened: OpenedExport }) {
             size: fileSize(files.bytes),
           })
         : t('The photos and files are not in this file, so only their kind shows. A .zip exported with media brings them too.')}
-      {files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 1 GB stays behind.', '{n} files larger than 1 GB stay behind.') : ''}
+      {files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 4 GB stays behind.', '{n} files larger than 4 GB stay behind.') : ''}
     </Text>
   );
 }

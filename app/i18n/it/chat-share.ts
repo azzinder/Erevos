@@ -16,4 +16,7 @@ export const chatShare: Record<string, string> = {
   '{name} shared a chat from {source}: {n} messages': '{name} ha condiviso una chat da {source}: {n} messaggi',
   'A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone, unless you share it with them: then it goes to them alone, end-to-end encrypted.': 'Una chat esportata da Telegram, WhatsApp o Viber, da leggere qui prima dei nuovi messaggi, con le sue foto, i video e i messaggi vocali. Resta su questo telefono, a meno che tu non la condivida con il contatto: allora va solo a lui, crittografata end-to-end.',
   'Chats brought in from Telegram, WhatsApp or Viber, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, unless you share one with the contact it goes on with: then it goes to them alone, end-to-end encrypted.': 'Chat portate da Telegram, WhatsApp o Viber, da leggere qui, con le loro foto, video, messaggi vocali e file. Restano su questo telefono, sigillate in questo spazio, a meno che tu non ne condivida una con il contatto con cui continua: allora va solo a lui, crittografata end-to-end.',
+  'Files: {done} of {count}': 'File: {done} di {count}',
+  'Stop sharing': 'Interrompi la condivisione',
+  '{name} gets no more of it, and their Erevos deletes what came of it.': '{name} non riceve altro, e il suo Erevos elimina quello che è già arrivato.',
 };

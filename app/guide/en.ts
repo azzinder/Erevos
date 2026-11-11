@@ -3122,7 +3122,7 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
   Photos show in the chat as you scroll to them, and stickers as stickers; tap a photo or file to see it on its own and
   **Save** it. Voice messages and songs play right in the chat with a tap; a video plays in the phone's own app once
   saved. Hold an imported message to **Copy** it or **Open** its file. **Search in this chat** finds the imported
-  messages too. Files larger than 1 GB, and those the export does not hold, stay behind, and the chat says where
+  messages too. Files larger than 4 GB, and those the export does not hold, stay behind, and the chat says where
   one was.
 - **Room on the phone:** while a .zip comes in, the phone needs about twice its size free, as Erevos reads a copy of it
   and keeps the files sealed. Backups hold imported files too, as other files.
@@ -3139,22 +3139,30 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
 **Share it with them:** the person an imported chat goes on with can have it too. In their chat's **Details**, under
 **Imported chats**, tap **Share with** and their name; in **Settings** → **Data and devices** → **Imported chats** a
 chat that goes on with someone has the same button, which opens their chat. Erevos says how many messages and how many
-MB go, and asks first. Then all the chats imported with them go together, every message with every photo, video, voice
-message and file kept, to them alone, end-to-end encrypted through your relay, and the chat says you shared it.
+MB go, and asks first. Then all the chats imported with them go together, whatever their size, every message with
+every photo, video, voice message and file kept, to them alone, end-to-end encrypted through your relay, and the chat
+says you shared it.
 
-- **On their side** there is nothing to do: their Erevos keeps it at once, with its files, says in the chat who shared
-  it, from where and how many messages, and shows them ahead of the new ones, only to read, as an imported chat. The
-  sides are swapped: what you wrote shows as from you, on their left, and in a chat of two what they wrote shows as
-  their own, on the right; in a group, everyone keeps their name. It is kept only in your chat there, and they can
-  delete it in its **Details**.
+- **On their side** there is nothing to do: their Erevos keeps the messages at once, says in the chat who shared them,
+  from where and how many, and shows them ahead of the new ones, only to read, as an imported chat. The photos and
+  files fill in as they come, and under that line it says how many came, **Files: 3 of 10**. The sides are swapped:
+  what you wrote shows as from you, on their left, and in a chat of two what they wrote shows as their own, on the
+  right; in a group, everyone keeps their name. It is kept only in your chat there, and they can delete it in its
+  **Details**. Their linked devices keep the messages only.
 - **Shared again**, it takes the place of the copy they had, so it is never there twice. A chat someone shared with you
   is not shared on.
 - **Only with them:** only with an Erevos contact the chat goes on with, never with a group, and it cannot be forwarded.
   In hidden chats it works the same, and on their side it stays in the place your chat is in, hidden chats too.
-- **Room:** the photos and files wait on your relay until taken, 14 days at most, and a relay has room for 1 GB of files
-  in all unless set otherwise, so a very large chat may not fit: then nothing goes, and Erevos says why. A file deleted
-  from this phone since is named as one that stayed behind.
-- **An Erevos from before** gets a file instead, **Chat from Telegram.json**, with the messages in it as text.
+- **In rounds:** the photos and files go after the messages, a few dozen MB at a time: each round waits on your relay
+  until their phone takes it and deletes it there, and then the next goes. So a chat of any size goes, each file up to
+  4 GB, and needs little of the relay's room, which other files share; when the relay is full, Erevos waits and asks
+  again, a little longer each time. It goes on whenever both phones run Erevos, also after either was off or offline
+  for a while; a round not taken in 12 days is put on the relay again before it expires. A file deleted from this phone
+  since is named as one that stayed behind.
+- **How far it is** shows under your line in the chat, **Sharing, 40%**. Tap it to **Stop sharing**: what waits on the
+  relay is taken off, and their Erevos deletes what came of it. If they delete the chats, it stops the same way.
+- **An Erevos from before** gets a file instead, **Chat from Telegram.json**, with the messages in it as text, and none
+  of the photos and files.
 
 > The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not
 > into which space.
@@ -3680,7 +3688,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. A .vcf file saved from them, hidden chats' too, is outside Erevos, not encrypted. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
 | **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos reads it, and the favourites, to show them, deletes from it only the calls you delete, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
-| **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber's photos and files, and files over 1 GB. |
+| **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber's photos and files, and files over 4 GB. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. One for hidden chats opens only while they are open, or receive while closed, and the space never learns that one of their contacts is near. | |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |

@@ -302,10 +302,12 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
   return { ...shared, relay: own.url, ids: ids.join('') };
 }
 
-// Where a file on the relay at `relay` is taken from: our relay (`own`), and through it the relay
-// the file is on; or, from a place lent on ours, which connects nowhere for us, straight from that
-// relay's /files path.
-function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
+/**
+ * Where a file on the relay at `relay` is taken from: our relay (`own`), and through it the relay
+ * the file is on; or, from a place lent on ours, which connects nowhere for us, straight from that
+ * relay's /files path (only as takesItself says, when taken by itself).
+ */
+export function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
   if (sameRelay(relay, own.url)) return { at: { url: own.url, token: own.token } };
   if (lentAway(own, relay)) return { at: relayPath(relay, '/files') };
   return { at: { url: own.url, token: own.token }, via: relay };

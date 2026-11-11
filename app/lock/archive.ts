@@ -5,7 +5,7 @@
 import { randomBytes, toHex } from '../lib/crypto';
 import { t } from '../lib/i18n';
 
-import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
+import { deleteChunks, HISTORY_CHUNKS, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
 
 // Chats brought in from other messengers (lib/imports.ts): kept on this phone, sealed in the
@@ -65,7 +65,7 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isIdentity = (v: unknown): v is string => isText(v) && /^[0-9a-f]{64}$/.test(v);
 const isMessage = (m: unknown): m is ArchivedMessage =>
   Array.isArray(m) &&
-  (m.length === 4 || (m.length === 5 && Array.isArray(m[4]) && m[4].every((f) => isFileRef(f)))) &&
+  (m.length === 4 || (m.length === 5 && Array.isArray(m[4]) && m[4].every((f) => isFileRef(f, HISTORY_CHUNKS)))) &&
   typeof m[0] === 'number' &&
   isText(m[1]) &&
   isText(m[2]) &&
@@ -109,6 +109,22 @@ function checked(value: unknown): ArchiveData {
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
 
 let changes: Promise<unknown> = Promise.resolve();
+
+// Who hears of chats deleted from an archive with their files, or replaced by a copy shared again:
+// a shared chat whose files still come (lib/share-rounds.ts) stops filling them.
+const goneListeners = new Set<(chats: string[]) => void>();
+
+/** Calls `listener` with the ids of the chats an archive deletes, or replaces, each time. Returns how to stop. */
+export function onChatsGone(listener: (chats: string[]) => void): () => void {
+  goneListeners.add(listener);
+  return () => {
+    goneListeners.delete(listener);
+  };
+}
+
+const told = (chats: string[]) => {
+  if (chats.length > 0) goneListeners.forEach((listener) => listener(chats));
+};
 
 /** A chat as the list shows it, without its messages. */
 export type ChatSummary = Omit<ArchivedChat, 'messages'> & { count: number; first: number; last: number };
@@ -224,11 +240,14 @@ export class Archive {
     const added = chats.map((chat) => ({ ...chat, id: toHex(randomBytes(8)) }));
     const kept = new Set(added.flatMap(({ messages }) => messages.flatMap(([, , , , files = []]) => files.map((ref) => ref.id))));
     const files = new Map<string, number>();
+    const replaced: string[] = [];
     await this.change((data) => {
       const { chats: now, gone } = replaceShared(data.chats, added);
       for (const chat of gone) for (const [, , , , old = []] of chat.messages) for (const ref of old) if (!kept.has(ref.id)) files.set(ref.id, ref.count);
+      replaced.push(...gone.map((chat) => chat.id));
       return { chats: now };
     });
+    told(replaced);
     for (const [file, count] of files) await deleteChunks(file, count).catch(() => undefined);
     return added.map((chat) => chat.id);
   }
@@ -240,6 +259,7 @@ export class Archive {
       for (const [, , , , kept = []] of data.chats.find((chat) => chat.id === id)?.messages ?? []) for (const ref of kept) files.set(ref.id, ref.count);
       return { chats: data.chats.filter((chat) => chat.id !== id) };
     });
+    told([id]);
     for (const [file, count] of files) await deleteChunks(file, count).catch(() => undefined);
   }
 

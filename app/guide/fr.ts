@@ -3606,7 +3606,7 @@ n’en quitte le téléphone, sauf si tu la partages.
   et les stickers comme des stickers ; appuie sur une photo ou un fichier pour le voir seul et l’**Enregistrer**. Les
   messages vocaux et les chansons se lisent directement dans la discussion d’un appui ; une vidéo se lit dans l’appli du
   téléphone une fois enregistrée. Maintiens un message importé pour le **Copier** ou **Ouvrir** son fichier.
-  **Rechercher dans cette discussion** trouve aussi les messages importés. Les fichiers de plus de 1 Go, et ceux que
+  **Rechercher dans cette discussion** trouve aussi les messages importés. Les fichiers de plus de 4 Go, et ceux que
   l’export ne contient pas, restent en arrière, et la discussion dit où il y en avait un.
 - **De la place sur le téléphone :** pendant qu’un .zip entre, le téléphone a besoin d’environ deux fois sa taille
   d’espace libre, car Erevos en lit une copie et garde les fichiers scellés. Les fichiers importés sont aussi
@@ -3627,25 +3627,34 @@ n’en quitte le téléphone, sauf si tu la partages.
 **Détails** de sa discussion, sous **Discussions importées**, touche **Partager avec** et son nom ; dans **Réglages** →
 **Données et appareils** → **Discussions importées**, une discussion qui continue avec quelqu’un a le même bouton, qui
 ouvre sa discussion. Erevos dit combien de messages partent et quelle taille, et demande d’abord. Ensuite toutes les
-discussions importées avec cette personne partent ensemble, chaque message avec chaque photo, vidéo, message vocal et
-fichier gardé, à elle seule, chiffrés de bout en bout par ton relais, et la discussion dit que tu l’as partagée.
+discussions importées avec cette personne partent ensemble, quelle que soit leur taille, chaque message avec chaque
+photo, vidéo, message vocal et fichier gardé, à elle seule, chiffrés de bout en bout par ton relais, et la discussion
+dit que tu l’as partagée.
 
-- **De son côté**, il n’y a rien à faire : son Erevos la garde aussitôt, avec ses fichiers, dit dans la discussion qui
-  l’a partagée, d’où et combien de messages, et les montre avant les nouveaux, en lecture seule, comme une discussion
-  importée. Les côtés sont inversés : ce que tu as écrit apparaît comme venant de toi, à sa gauche, et dans une
-  discussion à deux ce que cette personne a écrit apparaît comme le sien, à droite ; dans un groupe, chacun garde son
-  nom. Elle n’est gardée que dans votre discussion là-bas, et peut être supprimée dans ses **Détails**.
+- **De son côté**, il n’y a rien à faire : son Erevos garde aussitôt les messages, dit dans la discussion qui les a
+  partagés, d’où et combien, et les montre avant les nouveaux, en lecture seule, comme une discussion importée. Les
+  photos et fichiers arrivent ensuite à mesure, et sous cette ligne s’affiche combien sont arrivés, **Fichiers : 3 sur
+  10**. Les côtés sont inversés : ce que tu as écrit apparaît comme venant de toi, à sa gauche, et dans une discussion à
+  deux ce que cette personne a écrit apparaît comme le sien, à droite ; dans un groupe, chacun garde son nom. Elle n’est
+  gardée que dans votre discussion là-bas, et peut être supprimée dans ses **Détails**. Ses appareils associés ne
+  gardent que les messages.
 - **Partagée à nouveau**, elle prend la place de la copie qu’il y avait, donc elle n’y est jamais deux fois. Une
   discussion que quelqu’un a partagée avec toi n’est pas partagée plus loin.
 - **Seulement avec elle :** seulement avec un contact Erevos avec qui la discussion continue, jamais avec un groupe, et
   elle ne peut pas être transférée. Dans les discussions masquées, c’est pareil, et de son côté elle reste là où est
   votre discussion, masquée aussi.
-- **Place :** les photos et fichiers attendent sur ton relais d’être pris, 14 jours au plus, et un relais a de la place
-  pour 1 Go de fichiers en tout s’il n’est pas réglé autrement, donc une très grande discussion peut ne pas tenir :
-  alors rien ne part, et Erevos dit pourquoi. Un fichier supprimé de ce téléphone depuis est nommé comme resté en
-  arrière.
+- **Par tours :** les photos et fichiers partent après les messages, quelques dizaines de Mo à la fois : chaque tour
+  attend sur ton relais que son téléphone le prenne et l’y supprime, puis le suivant part. Ainsi une discussion de
+  n’importe quelle taille part, chaque fichier jusqu’à 4 Go, et prend peu de la place du relais, que d’autres fichiers
+  partagent ; quand le relais est plein, Erevos attend et redemande, un peu plus tard à chaque fois. Ça continue dès
+  qu’Erevos tourne sur les deux téléphones, aussi après que l’un a été éteint ou hors ligne un moment ; un tour pas pris
+  en 12 jours est remis sur le relais avant d’expirer. Un fichier supprimé de ce téléphone depuis est nommé comme resté
+  en arrière.
+- **Où il en est** s’affiche sous ta ligne dans la discussion, **Partage, 40 %**. Touche-la pour **Arrêter le partage**
+  : ce qui attend sur le relais en est retiré, et son Erevos supprime ce qui est arrivé. Si cette personne supprime les
+  discussions, ça s’arrête de la même façon.
 - **Un Erevos plus ancien** reçoit à la place un fichier, **Discussion depuis Telegram.json**, avec les messages dedans
-  en texte.
+  en texte, et aucune des photos ni aucun des fichiers.
 
 > Le fichier des discussions importées grandit avec ce que tu y fais entrer, donc sa taille dit à peu près combien a été
 > importé, mais pas dans quel espace.
@@ -4238,7 +4247,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Les contacts du téléphone** | Dans les contacts propres d’Android, non scellés par Erevos, comme avec toute appli de contacts : chaque appli autorisée à les lire les voit, et un compte (Google) peut les synchroniser. Erevos ne les envoie nulle part. Un fichier .vcf enregistré à partir d’eux est hors d’Erevos, non scellé. Les appels et SMS d’un contact sont lus dans l’historique des appels et les SMS propres du téléphone seulement pour afficher son historique, et ne sont gardés nulle part. | |
 | **Contacts gardés seulement dans Erevos** | Scellés avec la clé de l’espace, ou avec celle des discussions masquées pour les leurs, dans un seul fichier pour tous les espaces dont la taille montre à peu près combien il y en a en tout, pas à qui ils sont ; leurs photos chacune dans un fichier à elle. Jamais dans les contacts d’Android. Un fichier .vcf enregistré à partir d’eux, ceux des discussions masquées aussi, est hors d’Erevos, non chiffré. Les appels et SMS vers eux passent par le téléphone, et s’affichent dans son historique des appels et ses SMS. | |
 | **Appels téléphoniques** | Des appels téléphoniques ordinaires : l’opérateur téléphonique les achemine et peut écouter, comme avec toute appli de téléphone. Android garde l’historique des appels, non scellé par Erevos, comme pour toute appli de téléphone ; Erevos le lit, ainsi que les favoris, pour les afficher, n’en supprime que les appels que tu supprimes, et n’en garde aucune copie. La SIM choisie pour chaque numéro est scellée dans l’espace ; les réponses rapides, et ce qui est bloqué (préfixes, identifiants de groupe et horaires seulement, les mêmes pour tous les espaces), sont gardés sur le téléphone, non scellés. | |
-| **Discussions importées** | Scellées dans l’espace où elles ont été amenées, leurs photos et fichiers aussi, chacun en morceaux comme l’est le fichier d’une discussion. La taille du fichier, et le nombre de morceaux, disent à peu près combien a été importé, pas où. | Les photos et fichiers de Viber, et les fichiers de plus de 1 Go. |
+| **Discussions importées** | Scellées dans l’espace où elles ont été amenées, leurs photos et fichiers aussi, chacun en morceaux comme l’est le fichier d’une discussion. La taille du fichier, et le nombre de morceaux, disent à peu près combien a été importé, pas où. | Les photos et fichiers de Viber, et les fichiers de plus de 4 Go. |
 | **Historique des messages** | Gardé sur le téléphone, scellé dans son espace, sans limite, dans des pages de même taille mêlées pour tous les espaces. Seule la place que tout cela prend se voit, pas l’espace auquel il appartient. La suppression sur les deux téléphones, et les messages éphémères, reposent sur l’Erevos de l’autre téléphone. | |
 | **Messages à proximité** | Ouverts seulement dans l’espace qui a le contact. Un message pour un autre espace attend en mémoire, six heures au plus, jusqu’à ce que cet espace s’ouvre. Un message pour des discussions masquées ne s’ouvre que tant qu’elles sont ouvertes, ou reçoivent fermées, et l’espace n’apprend jamais qu’un de leurs contacts est à proximité. | |
 | **Messages vocaux** | Chiffrés de bout en bout par le relais ou à proximité, en morceaux : le relais, ou qui écoute à proximité, peut savoir à peu près la durée de chacun. Chaque son est scellé dans un fichier à lui ; le nombre de fichiers, et leurs tailles, montrent à peu près combien il y en a de gardés, pas dans quel espace. Déscellé dans le cache seulement pendant sa lecture. | Des fichiers sonores tous de la même taille. |
