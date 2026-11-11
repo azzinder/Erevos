@@ -3565,7 +3565,7 @@ zurücknimmt, ohne das Telefon zu löschen, für den Fall, dass du ein Relay ver
 
 Deine alten Chats aus Telegram und WhatsApp können in Erevos kommen, zum Lesen, mit ihren Fotos, Videos,
 Sprachnachrichten und Dateien, und die aus Viber mit ihren Worten. Sie bleiben auf diesem Telefon, versiegelt in dem
-Bereich, in den du sie holst, und werden nie irgendwohin gesendet.
+Bereich, in den du sie holst, und gehen an niemanden, außer du teilst einen mit der Person, mit der er war (unten).
 
 Exportiere den Chat zuerst aus der anderen App:
 
@@ -3613,9 +3613,9 @@ weitergeht, und bietet den längsten an. Jeder importierte Chat, der dort weiter
   ihn mit jemand anderem fortzusetzen.
 - **Löschen** löscht ihn vom Telefon, mit seinen Fotos und Dateien, nach einer Rückfrage.
 
-**Warum:** Ein alter Chat gehört zu der Person, mit der er war, also wird er dort hereingeholt, aufbewahrt und
-gelöscht, wo du mit ihr redest, und die Liste in **Einstellungen** behält nur, was sonst nirgendwohin gehört. Nichts
-davon verlässt so oder so das Telefon.
+**Warum:** Ein alter Chat gehört zu der Person, mit der er war, also wird er dort hereingeholt, aufbewahrt und gelöscht,
+wo du mit ihr redest, und die Liste in **Einstellungen** behält nur, was sonst nirgendwohin gehört. Nichts davon
+verlässt das Telefon, außer du teilst ihn.
 
 - **Fotos, Videos, Sprachnachrichten und Dateien** kommen aus einer .zip herein, jedes in diesem Bereich versiegelt,
   wie eine Datei in einem Chat. Fotos erscheinen im Chat, wenn du zu ihnen scrollst, und Sticker als Sticker; tippe
@@ -3627,8 +3627,8 @@ davon verlässt so oder so das Telefon.
 - **Platz auf dem Telefon:** Während eine .zip hereinkommt, braucht das Telefon etwa ihre doppelte Größe frei, da
   Erevos eine Kopie davon liest und die Dateien versiegelt aufbewahrt. Backups enthalten auch importierte Dateien,
   wie andere Dateien.
-- **Nur auf diesem Telefon, nur zum Lesen:** Importierte Nachrichten werden nie gesendet, also bekommt das andere
-  Telefon sie nicht. Erevos kann nicht zeigen, wer sie wirklich geschrieben hat.
+- **Nur zum Lesen:** Importierte Nachrichten werden nicht als Nachrichten gesendet, also hat das andere Telefon sie nur,
+  wenn du den Chat mit ihm teilst. Erevos kann nicht zeigen, wer sie wirklich geschrieben hat.
 - **Hinweise und Anrufe** aus der anderen App werden weggelassen, und der Chat sagt, wie viele.
 - **Auch in versteckten Chats:** In den **Details** eines versteckten Chats bewahrt **Chat hierher importieren** den
   Chat bei diesem Platz auf, mit seinem Schlüssel verschlüsselt, und zeigt ihn nur in diesem Chat, nie in
@@ -3637,6 +3637,29 @@ davon verlässt so oder so das Telefon.
   wenn er zurückzieht.
 - **Nachrichten löschen** in einem Chat lässt die importierten stehen: Lösche diese in den **Details** des Chats, unter
   **Importierte Chats**, oder in **Einstellungen** → **Daten und Geräte** → **Importierte Chats**.
+
+**Teile ihn mit ihr:** Die Person, mit der ein importierter Chat weitergeht, kann ihn auch bekommen. In den **Details**
+ihres Chats, unter **Importierte Chats**, tippe auf **Mit … teilen** mit ihrem Namen; unter **Einstellungen** → **Daten
+und Geräte** → **Importierte Chats** hat ein Chat, der mit jemandem weitergeht, denselben Knopf, der den Chat mit ihr
+öffnet. Erevos sagt, wie viele Nachrichten und wie viele MB gehen, und fragt zuerst. Dann gehen alle mit ihr
+importierten Chats zusammen, jede Nachricht mit jedem behaltenen Foto, Video, jeder Sprachnachricht und Datei, nur an
+sie, Ende-zu-Ende-verschlüsselt über dein Relay, und der Chat sagt, dass du ihn geteilt hast.
+
+- **Auf ihrer Seite** ist nichts zu tun: Ihr Erevos behält ihn sofort, mit seinen Dateien, sagt im Chat, wer ihn geteilt
+  hat, woher und wie viele Nachrichten, und zeigt sie vor den neuen, nur zum Lesen, wie einen importierten Chat. Die
+  Seiten sind vertauscht: Was du geschrieben hast, steht als von dir da, links, und in einem Chat zu zweit steht, was
+  sie geschrieben hat, als ihr eigenes rechts; in einer Gruppe behält jeder seinen Namen. Er bleibt dort nur in eurem
+  Chat, und sie kann ihn in seinen **Details** löschen.
+- **Erneut geteilt** tritt er an die Stelle der Kopie, die sie hatte, also ist er nie zweimal da. Ein Chat, den jemand
+  mit dir geteilt hat, wird nicht weitergeteilt.
+- **Nur mit ihr:** nur mit einem Erevos-Kontakt, mit dem der Chat weitergeht, nie mit einer Gruppe, und er lässt sich
+  nicht weiterleiten. In versteckten Chats geht es genauso, und auf ihrer Seite bleibt er an dem Ort, an dem euer Chat
+  ist, auch in versteckten Chats.
+- **Platz:** Die Fotos und Dateien warten auf deinem Relay, bis sie abgeholt werden, höchstens 14 Tage, und ein Relay
+  hat Platz für 1 GB an Dateien insgesamt, wenn nicht anders eingestellt, also passt ein sehr großer Chat vielleicht
+  nicht: Dann geht nichts, und Erevos sagt, warum. Eine seither vom Telefon gelöschte Datei wird als zurückgeblieben
+  genannt.
+- **Ein älteres Erevos** bekommt stattdessen eine Datei, **Chat aus Telegram.json**, mit den Nachrichten darin als Text.
 
 > Die Datei der importierten Chats wächst mit dem, was du hereinholst, also verrät ihre Größe ungefähr, wie viel
 > importiert wurde, aber nicht in welchen Bereich.

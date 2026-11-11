@@ -3071,8 +3071,8 @@ without wiping the phone, for when you leave a relay, or a chapter of your life.
 ## Imported chats {#import}
 
 Your old chats from Telegram and WhatsApp can come into Erevos, to read, with their photos, videos, voice messages and
-files, and those from Viber with their words. They stay on this phone, sealed in the space you bring them into, and are
-never sent anywhere.
+files, and those from Viber with their words. They stay on this phone, sealed in the space you bring them into, and go
+to no one unless you share one with the person it was with (below).
 
 First export the chat from the other app:
 
@@ -3116,7 +3116,7 @@ chat that goes on there is listed with three buttons:
 - **Delete** deletes it from the phone, with its photos and files, after asking.
 
 **Why:** an old chat belongs with the person it was with, so it is brought in, kept and deleted where you talk to them,
-and the list in **Settings** keeps only what has nowhere else to go. Nothing of it leaves the phone either way.
+and the list in **Settings** keeps only what has nowhere else to go. Nothing of it leaves the phone unless you share it.
 
 - **Photos, videos, voice messages and files** come in from a .zip, each sealed in this space as a file in a chat is.
   Photos show in the chat as you scroll to them, and stickers as stickers; tap a photo or file to see it on its own and
@@ -3126,8 +3126,8 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
   one was.
 - **Room on the phone:** while a .zip comes in, the phone needs about twice its size free, as Erevos reads a copy of it
   and keeps the files sealed. Backups hold imported files too, as other files.
-- **Only on this phone, only to read:** imported messages are never sent, so the other phone does not get them. Erevos
-  cannot show who really wrote them.
+- **Only to read:** imported messages are not sent as messages, so the other phone has them only if you share the chat
+  with them. Erevos cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
 - **In hidden chats** too: in a hidden chat's **Details**, **Import a chat here** keeps the chat with that place,
   encrypted with its key, and shows it only in that chat, never in **Settings** → **Data and devices** → **Imported
@@ -3135,6 +3135,26 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
   only in it there, and brings them back if it moves back.
 - **Delete messages** in a chat leaves the imported ones: delete those in the chat's **Details**, under **Imported
   chats**, or in **Settings** → **Data and devices** → **Imported chats**.
+
+**Share it with them:** the person an imported chat goes on with can have it too. In their chat's **Details**, under
+**Imported chats**, tap **Share with** and their name; in **Settings** → **Data and devices** → **Imported chats** a
+chat that goes on with someone has the same button, which opens their chat. Erevos says how many messages and how many
+MB go, and asks first. Then all the chats imported with them go together, every message with every photo, video, voice
+message and file kept, to them alone, end-to-end encrypted through your relay, and the chat says you shared it.
+
+- **On their side** there is nothing to do: their Erevos keeps it at once, with its files, says in the chat who shared
+  it, from where and how many messages, and shows them ahead of the new ones, only to read, as an imported chat. The
+  sides are swapped: what you wrote shows as from you, on their left, and in a chat of two what they wrote shows as
+  their own, on the right; in a group, everyone keeps their name. It is kept only in your chat there, and they can
+  delete it in its **Details**.
+- **Shared again**, it takes the place of the copy they had, so it is never there twice. A chat someone shared with you
+  is not shared on.
+- **Only with them:** only with an Erevos contact the chat goes on with, never with a group, and it cannot be forwarded.
+  In hidden chats it works the same, and on their side it stays in the place your chat is in, hidden chats too.
+- **Room:** the photos and files wait on your relay until taken, 14 days at most, and a relay has room for 1 GB of files
+  in all unless set otherwise, so a very large chat may not fit: then nothing goes, and Erevos says why. A file deleted
+  from this phone since is named as one that stayed behind.
+- **An Erevos from before** gets a file instead, **Chat from Telegram.json**, with the messages in it as text.
 
 > The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not
 > into which space.

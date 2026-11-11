@@ -10,7 +10,6 @@ export const importsHere: Record<string, string> = {
   'One more is kept only in the chat it goes on in: its details there show it.': 'Mais uma está só na conversa em que continua: os detalhes dela lá a mostram.',
   '{n} more are kept only in the chats they go on in: their details there show them.': 'Mais {n} estão só nas conversas em que continuam: os detalhes delas lá as mostram.',
   'Import a chat here': 'Importar uma conversa aqui',
-  'A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.': 'Uma conversa exportada do Telegram, do WhatsApp ou do Viber, para ler aqui antes das mensagens novas, com suas fotos, vídeos e mensagens de voz. Ela fica neste celular e nunca é enviada.',
   'The file has {n} chats. Which one goes on here?': 'O arquivo tem {n} conversas. Qual continua aqui?',
   'Kept only in this chat.': 'Só nesta conversa.',
   'Also in Settings → Data and devices → Imported chats.': 'Também em “Configurações → Dados e dispositivos → Conversas importadas”.',

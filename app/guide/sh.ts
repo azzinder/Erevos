@@ -3224,7 +3224,7 @@ brisanja telefona, za kad napuštaš relej ili zatvaraš poglavlje života.
 
 Vaši stari razgovori iz Telegrama i WhatsAppa mogu doći u Erevos, za čitanje, sa svojim fotografijama, videozapisima,
 glasovnim porukama i datotekama, a oni iz Vibera sa svojim riječima. Ostaju na ovom telefonu, zapečaćeni u prostoru u
-koji ih unesete, i nikad se nigdje ne šalju.
+koji ih unesete, i ne idu nikome, osim ako jedan podijelite s osobom s kojom je vođen (niže).
 
 Prvo izvezite razgovor iz druge aplikacije:
 
@@ -3270,7 +3270,7 @@ uvezeni razgovor koji se tamo nastavlja naveden je s tri dugmeta:
 - **Obriši** ga briše s telefona, s njegovim fotografijama i datotekama, nakon pitanja.
 
 **Zašto:** stari razgovor pripada osobi s kojom je vođen, pa se unosi, čuva i briše tamo gdje s njom razgovarate, a
-popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ionako ne napušta telefon.
+popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ne napušta telefon, osim ako ga podijelite.
 
 - **Fotografije, videozapisi, glasovne poruke i datoteke** dolaze iz .zip datoteke, svaka zapečaćena u ovom prostoru
   kao datoteka u razgovoru. Fotografije se prikazuju u razgovoru kad dođete do njih, a naljepnice kao naljepnice;
@@ -3281,8 +3281,8 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ionako 
 - **Prostor na telefonu:** dok .zip dolazi, telefonu treba otprilike dvostruko više slobodnog prostora od njegove
   veličine, jer Erevos čita njegovu kopiju i čuva datoteke zapečaćene. I uvezene datoteke su u rezervnim kopijama,
   kao i ostale datoteke.
-- **Samo na ovom telefonu, samo za čitanje:** uvezene poruke nikad se ne šalju, pa ih drugi telefon ne dobija. Erevos
-  ne može pokazati ko ih je zaista napisao.
+- **Samo za čitanje:** uvezene poruke ne šalju se kao poruke, pa ih drugi telefon ima samo ako s njim podijelite
+  razgovor. Erevos ne može pokazati ko ih je zaista napisao.
 - **Obavještenja i pozivi** iz druge aplikacije izostavljaju se, a razgovor kaže koliko ih je.
 - **I u skrivenim razgovorima:** u **Detalji** skrivenog razgovora, **Uvezi razgovor ovdje** zadržava razgovor s tim
   mjestom, šifriran njegovim ključem, i prikazuje ga samo u tom razgovoru, nikad u **Postavke** → **Podaci i uređaji**
@@ -3290,6 +3290,27 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ionako 
   razgovore uvezene u njega, koji se tamo čuvaju samo u njemu, i vraća ih ako se vrati.
 - **Obriši poruke** u razgovoru ostavlja uvezene: njih obrišite u **Detalji** razgovora, pod **Uvezeni razgovori**,
   ili u **Postavke** → **Podaci i uređaji** → **Uvezeni razgovori**.
+
+**Podijelite ga s tom osobom:** osoba s kojom se uvezeni razgovor nastavlja može ga i sama imati. U **Detalji** njenog
+razgovora, pod **Uvezeni razgovori**, dodirnite **Podijeli s kontaktom** i njeno ime; u **Postavke** → **Podaci i
+uređaji** → **Uvezeni razgovori** razgovor koji se s nekim nastavlja ima isto dugme, koje otvara razgovor s tom osobom.
+Erevos kaže koliko poruka i koliko MB ide, i prvo pita. Zatim svi razgovori uvezeni s njom idu zajedno, svaka poruka sa
+svakom sačuvanom fotografijom, videozapisom, glasovnom porukom i datotekom, samo njoj, šifrirano s kraja na kraj preko
+vašeg relaya, a razgovor kaže da ste ga podijelili.
+
+- **Na njenoj strani** ne treba ništa raditi: njen Erevos ga odmah čuva, s datotekama, kaže u razgovoru ko ga je
+  podijelio, odakle i koliko poruka, i prikazuje ih prije novih, samo za čitanje, kao uvezeni razgovor. Strane su
+  zamijenjene: ono što ste vi napisali prikazuje se kao vaše, s njene lijeve strane, a u razgovoru dvoje ono što je ona
+  napisala prikazuje se kao njeno, desno; u grupi svako zadržava svoje ime. Čuva se samo u vašem razgovoru tamo, a može
+  ga obrisati u njegovim **Detalji**.
+- **Ponovo podijeljen**, zauzima mjesto kopije koju je imala, pa nikad nije tamo dvaput. Razgovor koji je neko podijelio
+  s vama ne dijeli se dalje.
+- **Samo s njom:** samo s Erevos kontaktom s kojim se razgovor nastavlja, nikad s grupom, i ne može se proslijediti. U
+  skrivenim razgovorima radi isto, a na njenoj strani ostaje na mjestu gdje je vaš razgovor, i u skrivenim.
+- **Prostor:** fotografije i datoteke čekaju na vašem relayu dok se ne preuzmu, najviše 14 dana, a relay ima mjesta za 1
+  GB datoteka ukupno ako nije drugačije podešeno, pa vrlo veliki razgovor možda neće stati: tada ne ide ništa, i Erevos
+  kaže zašto. Datoteka u međuvremenu obrisana s ovog telefona navodi se kao ona koja je ostala.
+- **Stariji Erevos** umjesto toga dobija datoteku, **Razgovor (Telegram).json**, s porukama unutra kao tekst.
 
 > Datoteka uvezenih razgovora raste s onim što unesete, pa njena veličina otprilike govori koliko je uvezeno, ali ne
 > i u koji prostor.

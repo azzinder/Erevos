@@ -9,14 +9,16 @@ import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
 
 // Chats brought in from other messengers (lib/imports.ts): kept on this phone, sealed in the
-// space they were brought into, and never sent anywhere. One sealed value per space in FILE
+// space they were brought into, and sent nowhere but where the owner shares them (below). One sealed value per space in FILE
 // (sealed-file.ts), padded to whole blocks of BLOCK bytes. The file's size tells about how much
 // was brought in, but not into which space. The photos, videos and other files that came with an
 // export are kept as a message's file is, each in chunks of its own (lock/attachment-files.ts),
 // with only where they are and their keys here; those that did not come are named.
 //
 // A chat can go on in Erevos: linked to one of the space's contacts, its messages show in the chat
-// with them, ahead of the new ones. They are still only on this phone, and only to read.
+// with them, ahead of the new ones. They are still only on this phone, and only to read, unless the
+// owner shares them with that contact alone (lib/chat-share.ts): their Erevos keeps them so too,
+// linked to this phone's owner, each in place of a copy it had of the same chat from them.
 //
 // Each change is made on what the phone holds then, after any change asked for before: a screen
 // that opened the chats earlier never puts back one that another took out (a chat moved into hidden
@@ -44,6 +46,8 @@ export type ArchivedChat = {
   contact: string;
   /** Kept only in the chat with that contact: not listed among the Imported chats while the contact is there. */
   inChat?: true;
+  /** Shared by a contact (lib/chat-share.ts): their identity key, hex, and the id the chat has on their phone. */
+  shared?: { by: string; id: string };
   messages: ArchivedMessage[];
 };
 
@@ -79,8 +83,22 @@ function checkedChat(value: unknown): ArchivedChat | null {
     skipped: typeof v.skipped === 'number' ? v.skipped : 0,
     contact: isIdentity(v.contact) ? v.contact : '',
     ...(v.inChat === true && isIdentity(v.contact) ? { inChat: true as const } : {}),
+    ...(isShared(v.shared) ? { shared: { by: v.shared.by, id: v.shared.id } } : {}),
     messages: v.messages.filter(isMessage),
   };
+}
+
+const isShared = (v: unknown): v is { by: string; id: string } =>
+  !!v && typeof v === 'object' && isIdentity((v as { by?: unknown }).by) && isText((v as { id?: unknown }).id) && /^[0-9a-f]{1,64}$/.test((v as { id: string }).id);
+
+/**
+ * The chats with `added`, each in place of the one shared by the same contact under the same id
+ * on their phone, and the chats they replace.
+ */
+export function replaceShared(chats: ArchivedChat[], added: ArchivedChat[]): { chats: ArchivedChat[]; gone: ArchivedChat[] } {
+  const same = (a: ArchivedChat, b: ArchivedChat) => !!a.shared && !!b.shared && a.shared.by === b.shared.by && a.shared.id === b.shared.id;
+  const gone = chats.filter((chat) => added.some((one) => same(chat, one)));
+  return { chats: [...chats.filter((chat) => !gone.includes(chat)), ...added], gone };
 }
 
 function checked(value: unknown): ArchiveData {
@@ -195,6 +213,23 @@ export class Archive {
   async add(chats: Omit<ArchivedChat, 'id'>[]): Promise<string[]> {
     const added = chats.map((chat) => ({ ...chat, id: toHex(randomBytes(8)) }));
     await this.change((data) => ({ chats: [...data.chats, ...added] }));
+    return added.map((chat) => chat.id);
+  }
+
+  /**
+   * Keeps chats a contact shared (lib/chat-share.ts), each under a new id, in place of any copy of
+   * the same one from them, whose files go. Returns the ids.
+   */
+  async keepShared(chats: Omit<ArchivedChat, 'id'>[]): Promise<string[]> {
+    const added = chats.map((chat) => ({ ...chat, id: toHex(randomBytes(8)) }));
+    const kept = new Set(added.flatMap(({ messages }) => messages.flatMap(([, , , , files = []]) => files.map((ref) => ref.id))));
+    const files = new Map<string, number>();
+    await this.change((data) => {
+      const { chats: now, gone } = replaceShared(data.chats, added);
+      for (const chat of gone) for (const [, , , , old = []] of chat.messages) for (const ref of old) if (!kept.has(ref.id)) files.set(ref.id, ref.count);
+      return { chats: now };
+    });
+    for (const [file, count] of files) await deleteChunks(file, count).catch(() => undefined);
     return added.map((chat) => chat.id);
   }
 

@@ -3332,8 +3332,8 @@ apagar o celular, para quando você deixa um relay ou fecha um capítulo da vida
 ## Conversas importadas {#import}
 
 As suas conversas antigas do Telegram e do WhatsApp podem vir para o Erevos, para leitura, com as fotos, vídeos,
-mensagens de voz e arquivos delas, e as do Viber com as palavras. Elas ficam neste celular, seladas no espaço para
-onde você as traz, e nunca são enviadas a lugar nenhum.
+mensagens de voz e arquivos delas, e as do Viber com as palavras. Elas ficam neste celular, seladas no espaço para onde
+você as traz, e não vão para ninguém, a não ser que você compartilhe uma com a pessoa com quem ela foi (abaixo).
 
 Primeiro exporte a conversa do outro app:
 
@@ -3382,7 +3382,7 @@ botões:
 
 **Por quê:** uma conversa antiga pertence à pessoa com quem ela foi, então ela é trazida, guardada e apagada onde você
 fala com essa pessoa, e a lista nas **Configurações** guarda só o que não tem outro lugar para ir. Nada dela sai do
-celular de qualquer jeito.
+celular, a não ser que você a compartilhe.
 
 - **Fotos, vídeos, mensagens de voz e arquivos** vêm de um .zip, cada um selado neste espaço como um arquivo numa
   conversa. As fotos aparecem na conversa conforme você rola até elas, e as figurinhas como figurinhas; toque numa
@@ -3393,8 +3393,8 @@ celular de qualquer jeito.
 - **Espaço no celular:** enquanto um .zip chega, o celular precisa de cerca do dobro do tamanho dele livre, pois o
   Erevos lê uma cópia dele e guarda os arquivos selados. Os arquivos importados também estão nos backups, como os
   outros arquivos.
-- **Só neste celular, só para ler:** as mensagens importadas nunca são enviadas, então o outro celular não as recebe.
-  O Erevos não tem como mostrar quem realmente as escreveu.
+- **Só para ler:** as mensagens importadas não são enviadas como mensagens, então o outro celular só as tem se você
+  compartilhar a conversa com ele. O Erevos não tem como mostrar quem realmente as escreveu.
 - **Avisos e chamadas** do outro app ficam de fora, e a conversa diz quantos.
 - **Nas conversas ocultas** também: nos **Detalhes** de uma conversa oculta, **Importar uma conversa aqui** guarda a
   conversa com aquela posição, criptografada com a chave dela, e a mostra só naquela conversa, nunca em
@@ -3403,6 +3403,28 @@ celular de qualquer jeito.
   se voltar.
 - **Apagar mensagens** numa conversa deixa as importadas: apague-as nos **Detalhes** da conversa, em **Conversas
   importadas**, ou em **Configurações** → **Dados e dispositivos** → **Conversas importadas**.
+
+**Compartilhe com essa pessoa:** a pessoa com quem uma conversa importada continua também pode tê-la. Nos **Detalhes**
+da conversa com ela, em **Conversas importadas**, toque em **Compartilhar com** e o nome dela; em **Configurações** →
+**Dados e dispositivos** → **Conversas importadas**, uma conversa que continua com alguém tem o mesmo botão, que abre a
+conversa com essa pessoa. O Erevos diz quantas mensagens e quantos MB vão, e pergunta antes. Depois todas as conversas
+importadas com ela vão juntas, cada mensagem com cada foto, vídeo, mensagem de voz e arquivo guardado, só para ela,
+criptografadas de ponta a ponta pelo seu relay, e a conversa diz que você a compartilhou.
+
+- **Do lado dela** não há nada a fazer: o Erevos dela a guarda na hora, com os arquivos, diz na conversa quem a
+  compartilhou, de onde e quantas mensagens, e as mostra antes das novas, só para ler, como uma conversa importada. Os
+  lados se invertem: o que você escreveu aparece como seu, à esquerda dela, e numa conversa a dois o que ela escreveu
+  aparece como dela, à direita; num grupo, cada um mantém o nome. Fica só na conversa de vocês lá, e ela pode apagá-la
+  nos **Detalhes** dela.
+- **Compartilhada de novo**, ela toma o lugar da cópia que havia, então nunca está lá duas vezes. Uma conversa que
+  alguém compartilhou com você não é compartilhada adiante.
+- **Só com ela:** só com um contato do Erevos com quem a conversa continua, nunca com um grupo, e não pode ser
+  encaminhada. Nas conversas ocultas funciona igual, e do lado dela fica no lugar onde a conversa de vocês está, também
+  nas ocultas.
+- **Espaço:** as fotos e os arquivos esperam no seu relay até serem pegos, 14 dias no máximo, e um relay tem espaço para
+  1 GB de arquivos ao todo, se não for configurado de outro jeito, então uma conversa muito grande pode não caber: aí
+  nada vai, e o Erevos diz por quê. Um arquivo apagado deste celular desde então é citado como um que ficou para trás.
+- **Um Erevos anterior** recebe um arquivo no lugar, **Conversa de Telegram.json**, com as mensagens dentro como texto.
 
 > O arquivo das conversas importadas cresce com o que você traz, então o tamanho dele diz mais ou menos quanto foi
 > importado, mas não para qual espaço.

@@ -29,6 +29,7 @@ import {
   readChunk,
   saveChunk,
   NOSTR_PIECE,
+  readSharedMark,
   type FileFrom as FromRef,
   type FileMeta,
   type FileRef,
@@ -133,8 +134,11 @@ export function openChunk(key: Uint8Array, index: number, sealed: Uint8Array, ch
 
 const isRelayAddress = (value: unknown): value is string => typeof value === 'string' && /^wss?:\/\/\S+$/.test(value) && value.length <= 512;
 
-/** A FileOffer from a message, or null if it is not a well-formed one. */
-export function readOffer(value: unknown): FileOffer | null {
+/**
+ * A FileOffer from a message, or null if it is not a well-formed one. `most`: the largest file it
+ * may be, larger for one of the files of chats a contact shared (lib/chat-share.ts).
+ */
+export function readOffer(value: unknown, most = MAX_FILE): FileOffer | null {
   const v = value as Partial<FileOffer> | null;
   if (!v || typeof v !== 'object') return null;
   const meta = {
@@ -145,10 +149,12 @@ export function readOffer(value: unknown): FileOffer | null {
     ...(v.w !== undefined ? { w: v.w } : {}),
     ...(v.h !== undefined ? { h: v.h } : {}),
   };
-  if (!isFileMeta(meta) || meta.size > MAX_FILE) return null;
+  if (!isFileMeta(meta) || meta.size > most) return null;
   if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !/^(?:[0-9a-f]{48})+$/.test(v.ids)) return null;
   // A sticker made from a photo, when it is small enough to be one; otherwise a photo, maybe hidden till tapped.
-  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : v.hidden === true && meta.kind === 'photo' ? { hidden: true as const } : {};
+  // Or, a file, the imported chats a contact shared: to an Erevos from before, a file like any other.
+  const history = meta.kind === 'file' ? readSharedMark(v.history) : null;
+  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : v.hidden === true && meta.kind === 'photo' ? { hidden: true as const } : history ? { history } : {};
   if (v.via === 'nostr') {
     // Pieces in wraps: as many as the photo takes, each 32 KB, the last less.
     if (v.relay !== 'nostr' || meta.size > NOSTR_PHOTO_MOST || v.chunk !== NOSTR_PIECE || v.ids.length !== Math.max(1, Math.ceil(meta.size / room(NOSTR_PIECE))) * ID_HEX) return null;
@@ -167,10 +173,11 @@ export function readOffer(value: unknown): FileOffer | null {
 }
 
 // What a file to send says of itself, cleaned: a sticker only while it is small enough to be one,
-// hidden only when a photo and not a sticker.
-function shaped({ sticker, hidden, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
+// hidden only when a photo and not a sticker, shared chats only when a file.
+function shaped({ sticker, hidden, history, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
   const clean: FileMeta = { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size };
   if (sticker && fitsSticker(clean)) return { ...clean, sticker };
+  if (history && clean.kind === 'file') return { ...clean, history };
   return hidden && clean.kind === 'photo' ? { ...clean, hidden } : clean;
 }
 
@@ -467,6 +474,18 @@ export async function dropFile(own: Relay, from: FileFrom): Promise<void> {
   } finally {
     session.close();
   }
+}
+
+/**
+ * Ends taking a file that was taken leaving it on the relay (takeFile with `leave` true) until
+ * what names it was kept, as the files of chats a contact shared (lib/chat-share.ts): now deleted
+ * there, or left for the account's other devices, as takeFile would have with `leave`.
+ */
+export async function doneTaking(own: Relay, from: FileFrom, leave?: boolean | TakenFiles): Promise<void> {
+  const watch = leave === undefined ? takenFiles : typeof leave === 'object' ? leave : null;
+  const left = (typeof leave === 'boolean' ? leave : watch?.leave(from)) ?? false;
+  if (!left) await dropFile(own, from).catch(() => undefined);
+  watch?.taken(from, left);
 }
 
 /** The file is not on this phone: not taken from the relay yet, or its chunks are gone. */
