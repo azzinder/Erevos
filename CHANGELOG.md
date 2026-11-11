@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.9 (2026-11-11)
+
+### For you
+
 - **Share an imported chat with the other person**: the Telegram, WhatsApp and Viber chats that go on with an Erevos
   contact can go to that contact alone, from the chat's Details or Settings → Data and devices → Imported chats, after
   one question that says how many messages and MB go, whatever their size. All of them go together, every message and
