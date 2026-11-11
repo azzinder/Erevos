@@ -269,6 +269,9 @@ rappel reste chiffré dans son espace et Android n’apprend que son heure : la 
 tu voulais te rappeler, ni dans quel espace il se trouve. Et les notes ne vont à personne d’autre qu’à tes propres
 appareils, chiffrées de bout en bout entre eux comme tes discussions : le relais ne les transporte que chiffrées.
 
+- **Depuis d’autres discussions :** un message d’une discussion Matrix, XMPP, Nostr ou SMS peut aussi venir ici, avec
+  un rappel : **Me rappeler** dans son menu.
+
 ### Se déplacer par balayage
 
 - **Retour :** balaie vers la droite n’importe où sur un écran pour revenir en arrière, comme le fait la flèche de
@@ -2096,6 +2099,22 @@ discussions Matrix restent donc à part et marquées, pour les personnes que tu 
   ton dernier message montre ✓✓✓ dès que tout le monde dans le salon l’a lu. **Lui donner un nom ici** (une personne)
   ou **Donner un nom ici** (un groupe), au pied de la discussion, donne à un salon un nom à toi, sur ce téléphone
   seulement ; personne n’est prévenu.
+- **Brouillons :** ce que tu tapes et n’envoies pas reste comme brouillon de la discussion, chiffré sur ce téléphone
+  seulement. Il revient quand tu rouvres la discussion, même après la fermeture d’Erevos, et la liste de l’écran
+  d’accueil le montre sur la ligne de la discussion comme **Brouillon**. Un fil Matrix ne garde pas de brouillon à
+  lui.
+- **Envoyer plus tard :** garde le doigt sur **Envoyer**, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**,
+  **Demain 09:00**, ou n’importe quel jour et heure) et touche **Envoyer plus tard**. Le message attend sur ce
+  téléphone, chiffré, en pointillés après les messages de la discussion avec son heure, et part de ce téléphone à
+  cette heure tant qu’Erevos est déverrouillé, sur Android en arrière-plan aussi ; sinon dès qu’il est de nouveau
+  déverrouillé. Texte seulement. Touche-le pour l’envoyer tout de suite ou le supprimer. Dans les discussions
+  masquées, il part seulement tant qu’elles sont ouvertes, sauf si elles reçoivent aussi fermées. Un message qu’une
+  sauvegarde restaurée a ramené, dont l’heure était passée avant la restauration, ne part pas tout seul : le téléphone
+  d’où vient la sauvegarde l’a peut-être déjà envoyé.
+- **Renvoyer :** un message à toi qui affiche **Non envoyé** a **Renvoyer** et **Supprimer** dans son menu.
+- **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
+  discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
+  [Modules](#modules).
 
 ## XMPP {#xmpp}
 
@@ -2263,6 +2282,21 @@ discussions XMPP restent donc à part et marquées, pour les personnes que tu ne
 - **Un nom à toi :** **Lui donner un nom ici**, au pied de la discussion d’un contact, garde un nom à toi pour lui
   dans tes contacts sur ton serveur XMPP, donc tes autres apps XMPP le montrent aussi. Il n’est pas prévenu. Laisse-le
   vide pour montrer de nouveau son adresse.
+- **Brouillons :** ce que tu tapes et n’envoies pas reste comme brouillon de la discussion, chiffré sur ce téléphone
+  seulement. Il revient quand tu rouvres la discussion, même après la fermeture d’Erevos, et la liste de l’écran
+  d’accueil le montre sur la ligne de la discussion comme **Brouillon**.
+- **Envoyer plus tard :** garde le doigt sur **Envoyer**, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**,
+  **Demain 09:00**, ou n’importe quel jour et heure) et touche **Envoyer plus tard**. Le message attend sur ce
+  téléphone, chiffré, en pointillés après les messages de la discussion avec son heure, et part de ce téléphone à
+  cette heure tant qu’Erevos est déverrouillé, sur Android en arrière-plan aussi ; sinon dès qu’il est de nouveau
+  déverrouillé. Texte seulement. Touche-le pour l’envoyer tout de suite ou le supprimer. Dans les discussions
+  masquées, il part seulement tant qu’elles sont ouvertes, sauf si elles reçoivent aussi fermées. Un message qu’une
+  sauvegarde restaurée a ramené, dont l’heure était passée avant la restauration, ne part pas tout seul : le téléphone
+  d’où vient la sauvegarde l’a peut-être déjà envoyé.
+- **Renvoyer :** un message à toi qui affiche **Non envoyé** a **Renvoyer** et **Supprimer** dans son menu.
+- **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
+  discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
+  [Modules](#modules).
 
 ## Discussions avec d’autres applis Nostr {#nostr-chats}
 
@@ -2414,6 +2448,20 @@ avec qui.
   où tu es comme une adresse geo: et un lien de carte que toute app Nostr peut afficher ; un lieu envoyé ainsi
   s’affiche comme un lieu. Dans un groupe, taper @ propose ses membres, nommés pour que toute app Nostr sache de qui
   il s’agit. Un message que tu transfères est marqué **Transféré** sur ton téléphone seulement.
+- **Brouillons :** ce que tu tapes et n’envoies pas reste comme brouillon de la discussion, chiffré sur ce téléphone
+  seulement. Il revient quand tu rouvres la discussion, même après la fermeture d’Erevos, et la liste de l’écran
+  d’accueil le montre sur la ligne de la discussion comme **Brouillon**.
+- **Envoyer plus tard :** garde le doigt sur **Envoyer**, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**,
+  **Demain 09:00**, ou n’importe quel jour et heure) et touche **Envoyer plus tard**. Le message attend sur ce
+  téléphone, chiffré, en pointillés après les messages de la discussion avec son heure, et part de ce téléphone à
+  cette heure tant qu’Erevos est déverrouillé, sur Android en arrière-plan aussi ; sinon dès qu’il est de nouveau
+  déverrouillé. Texte seulement. Touche-le pour l’envoyer tout de suite ou le supprimer. Dans les discussions
+  masquées, il part seulement tant qu’elles sont ouvertes, sauf si elles reçoivent aussi fermées. Un message qu’une
+  sauvegarde restaurée a ramené, dont l’heure était passée avant la restauration, ne part pas tout seul : le téléphone
+  d’où vient la sauvegarde l’a peut-être déjà envoyé.
+- **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
+  discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
+  [Modules](#modules).
 
 ## SMS {#sms}
 
@@ -2525,6 +2573,8 @@ téléphone sans Erevos n’affiche rien.
   et n’en garde aucune copie.
 - **Expéditeurs avec un nom :** un SMS venant d’un nom au lieu d’un numéro, comme celui d’une banque, s’ouvre pour être
   lu, mais on ne peut pas y répondre.
+- **Me rappeler :** garde le doigt sur un message pour **Me rappeler** : il va dans **Discussion avec moi-même** avec
+  le nom de la conversation, et te le rappelle à l’heure que tu choisis.
 
 ### SMS chiffrés quand rien d’autre ne marche
 

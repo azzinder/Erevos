@@ -238,6 +238,9 @@ space and Android is told only its time: the notice cannot tell anyone what you 
 is in. And the notes go to no one but your own devices, end-to-end encrypted between them as your chats are: the relay
 carries them only sealed.
 
+- **From other chats:** a message of a Matrix, XMPP, Nostr or SMS chat can come here too, with a reminder: **Remind
+  me** in its menu.
+
 ### Moving around with swipes
 
 - **Back:** swipe to the right anywhere on a screen to go back, as the back arrow does. A round arrow comes out at
@@ -1827,6 +1830,18 @@ marked, for the people you would otherwise reach only on Matrix.
   pinned too, and rooms of low priority come last. On the home list your last message shows ✓✓✓ once everyone in the
   room has read it. **Name them here** (a person) or **Name it here** (a group), at the foot of the chat, gives a room
   a name of your own, only on this phone; nobody is told.
+- **Drafts:** what you type and do not send stays as the chat's draft, encrypted on this phone only. It comes back
+  when you open the chat again, also after Erevos closed, and the home list shows it on the chat's row as **Draft**. A
+  Matrix thread keeps no draft of its own.
+- **Send later:** hold **Send** down, choose a time (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day
+  and time) and tap **Send later**. The message waits on this phone, encrypted, shown dashed after the chat's messages
+  with its time, and goes from this phone at that time while Erevos is unlocked, on Android in the background too;
+  otherwise as soon as it is unlocked again. Text only. Tap it to send it now or delete it. In hidden chats one goes
+  only while they are open, unless they receive while closed. One that a restored backup brought back, whose time came
+  before the restore, does not go by itself: the phone the backup came from may have sent it already.
+- **Send again:** a message of yours that shows **Not sent** has **Send again** and **Delete** in its menu.
+- **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
+  **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
 
 ## XMPP {#xmpp}
 
@@ -1976,6 +1991,17 @@ the people you would otherwise reach only on XMPP.
 - **A name of your own:** **Name them here**, at the foot of a contact's chat, keeps a name of your own for them in
   your contacts on your XMPP server, so your other XMPP apps show it too. They are not told. Leave it empty to show
   their address again.
+- **Drafts:** what you type and do not send stays as the chat's draft, encrypted on this phone only. It comes back
+  when you open the chat again, also after Erevos closed, and the home list shows it on the chat's row as **Draft**.
+- **Send later:** hold **Send** down, choose a time (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day
+  and time) and tap **Send later**. The message waits on this phone, encrypted, shown dashed after the chat's messages
+  with its time, and goes from this phone at that time while Erevos is unlocked, on Android in the background too;
+  otherwise as soon as it is unlocked again. Text only. Tap it to send it now or delete it. In hidden chats one goes
+  only while they are open, unless they receive while closed. One that a restored backup brought back, whose time came
+  before the restore, does not go by itself: the phone the backup came from may have sent it already.
+- **Send again:** a message of yours that shows **Not sent** has **Send again** and **Delete** in its menu.
+- **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
+  **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
 
 ## Chats with other Nostr apps {#nostr-chats}
 
@@ -2104,6 +2130,16 @@ because a Nostr key is the same to everyone you write to, while Erevos's own cha
   as a geo: address and a map link that every Nostr app can show; a place sent so shows as a place. In a group, typing
   @ offers its members, named so that every Nostr app knows who is meant. A message you forward is marked
   **Forwarded** on your phone only.
+- **Drafts:** what you type and do not send stays as the chat's draft, encrypted on this phone only. It comes back
+  when you open the chat again, also after Erevos closed, and the home list shows it on the chat's row as **Draft**.
+- **Send later:** hold **Send** down, choose a time (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day
+  and time) and tap **Send later**. The message waits on this phone, encrypted, shown dashed after the chat's messages
+  with its time, and goes from this phone at that time while Erevos is unlocked, on Android in the background too;
+  otherwise as soon as it is unlocked again. Text only. Tap it to send it now or delete it. In hidden chats one goes
+  only while they are open, unless they receive while closed. One that a restored backup brought back, whose time came
+  before the restore, does not go by itself: the phone the backup came from may have sent it already.
+- **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
+  **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
 
 ## SMS {#sms}
 
@@ -2200,6 +2236,8 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   only reads them to show them, and keeps no copy.
 - **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
   answered.
+- **Remind me:** hold a message down for **Remind me**: it goes into **Chat with myself** with the conversation's
+  name, and reminds you at the time you pick.
 
 ### Encrypted SMS when nothing else works
 

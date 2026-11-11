@@ -19,6 +19,7 @@ import { readByAll, roomAvatar, shownRoomName, type MatrixState } from './matrix
 import type { Module } from './modules';
 import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
 import { bare, nameOf, type XmppState } from './xmpp';
+import { draftPart } from './chat-writing';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
@@ -78,7 +79,7 @@ export type InboxRow = {
   pinned?: boolean;
   /** A Matrix room of low priority, at the end of the list (lib/chat-list.ts). */
   low?: true;
-  /** What is typed in an SMS conversation and not sent yet. */
+  /** What is typed in an SMS conversation, or a Matrix, XMPP or Nostr chat, and not sent yet. */
   draft?: string;
   /** The picture the phone's contacts have for an SMS number, as an address the app may show. */
   photo?: string;
@@ -254,6 +255,7 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       sms: '',
       lastSms: false,
       network: 'matrix',
+      ...draftPart(state.writing, room.id),
       ...(roomAvatar(state, room) ? { picture: roomAvatar(state, room) } : {}),
       ...(mutedNow(room.notify, now) ? { muted: true } : {}),
       ...(room.invitedBy ? { invited: true } : {}),
@@ -303,6 +305,7 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
         sms: '',
         lastSms: false,
         network: 'xmpp',
+        ...draftPart(state.writing, chat.jid),
         ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
       };
     });
@@ -380,6 +383,7 @@ export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[
       sms: '',
       lastSms: false,
       network: 'nostr',
+      ...draftPart(state.writing, chat.key),
       ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
     };
   });

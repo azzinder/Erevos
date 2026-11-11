@@ -17,6 +17,8 @@ import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
 import { PlaceLives, type PlaceKey } from './place-lives';
+import { checkedWriting, type WritingAccount } from './chat-writing';
+import { dropUnsent, sendAgain, sendHeld } from './xmpp-writing';
 import {
   acceptXmppDevice,
   addCallLine,
@@ -756,6 +758,55 @@ export function xmppHeard(jid: string, id: string, ms: number): Promise<void> {
 export function xmppStickerPlace(where: NetworkWhere = 'space'): StickerPlace | null {
   const it = where === 'place' ? places.shown() : live;
   return it && !it.stopped ? { holder: it.holder, space: it.space, key: it.key } : null;
+}
+
+/** Sends again one of ours that did not go, in its place (lib/xmpp-writing.ts). */
+export function xmppSendAgain(jid: string, id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => sendAgain(it.state, online(it), jid, id));
+}
+
+/** Forgets one of ours that did not go. */
+export function xmppDropUnsent(jid: string, id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => dropUnsent(it.state, jid, id));
+}
+
+// An account's drafts and messages held for later (lib/chat-writing.ts), changed in turn with the
+// rest of it, telling of nothing. It can send while connected.
+function writingOf(it: Live): WritingAccount {
+  return {
+    now: () => checkedWriting(it.state?.writing),
+    change: (use) =>
+      changeAccount(
+        it,
+        async () => {
+          if (it.state) it.state.writing = use(checkedWriting(it.state.writing));
+        },
+        true,
+      ),
+    keep: async () => {
+      if (it.state) await saveXmpp(it.space, it.key, it.state, it.holder);
+    },
+    ready: () => !it.stopped && !!it.state && !!it.connection?.isOpen,
+    has: (chat) => !!it.state && (!!it.state.chats[chat] || !!it.state.roster[chat]),
+    send: (held) =>
+      changeAccount(it, async () => {
+        if (!it.state) throw new Error(t('There is no XMPP account in this space.'));
+        await sendHeld(it.state, online(it), held);
+      }),
+  };
+}
+
+/** The drafts and messages held of the open space's account, or of the open hidden place's own; null with none. */
+export function xmppWriting(where: NetworkWhere = 'space'): WritingAccount | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped && it.state ? writingOf(it) : null;
+}
+
+/** Those of every account that runs: the space's, and its hidden places' (lib/chat-later.ts). */
+export function xmppWritings(): WritingAccount[] {
+  return [live, ...places.all()].filter((it): it is Live => !!it && !it.stopped && !!it.state).map(writingOf);
 }
 
 // Files fetched while Erevos runs, so one looked at again is not fetched again (lib/file-cache.ts).

@@ -16,6 +16,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, PlaceCard, Quote, Reactions } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
+import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { NetworkFile } from '../components/network-file';
@@ -27,6 +28,7 @@ import { Button, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { nostrHistory } from '../lib/chat-history-adapters';
 import type { Place } from '../lib/chat-parts';
+import { heldIn } from '../lib/chat-writing';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
@@ -57,6 +59,7 @@ import {
   nostrDmSetSubject,
   nostrDmStickerPlace,
   nostrDmUnreact,
+  nostrDmWriting,
   NostrFileTooLargeError,
   onNostrDmChange,
   runNostrDm,
@@ -109,6 +112,10 @@ import { checkedLook } from '../theme/look';
 // geo: address and a map's link, and one that comes so shows as a place; Camera, Video and Contact
 // card (a .vcf file) send as a photo does, and in a group, @ offers its members and names them as
 // nostr:npub1… (lib/message-carry.ts, components/network-carry.tsx).
+// What is typed and not sent is kept as the chat's draft, encrypted with the account, and shows on
+// its row; Send held down holds it to go later from this phone, shown after the thread until then
+// (components/chat-writing.tsx, lib/chat-writing.ts). A message can be written into Chat with
+// myself to remind (Remind me).
 
 /** A voice message among the files: a sound that says how long it lasts. */
 const isVoice = (file: NostrDmFile): file is NostrDmFile & { duration: number } => file.type.startsWith('audio/') && !!file.duration;
@@ -171,6 +178,9 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [placing, setPlacing] = useState(false);
   const photos = usePhotoQuality();
   const among = useNetworkAmong(where);
+  // Choosing when what is typed goes, and the message a reminder is being set for (components/chat-writing.tsx).
+  const [choosingLater, setChoosingLater] = useState(false);
+  const [reminding, setReminding] = useState<RemindOf | null>(null);
 
   useEffect(() => {
     runNostrDm();
@@ -191,6 +201,8 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
+  // What is typed is kept as the chat's draft, and comes back in the field when it opens again.
+  const kept = useKeptDraft(state ? nostrDmWriting(where) : null, key, (text) => setDraft((typed) => (typed.trim() ? typed : text)));
   // The chat's own look, told to the screen that draws it.
   const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (key ? { look: ownLook, save: (look) => nostrDmSetLook(key, look) } : null), [ownLook, key]);
@@ -268,9 +280,22 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     const text = draft.trim();
     if (!text || !key) return;
     setDraft('');
+    kept.sent();
     setNote('');
     setReplyId(null);
     nostrDmSend(key, withNpubs(text, nameable), answered?.id).catch(fail);
+  }
+
+  // Holds what is typed to go at `at` from this phone (lib/chat-writing.ts), as an answer to the one chosen.
+  async function sendLater(at: number) {
+    setChoosingLater(false);
+    const text = draft.trim();
+    if (!text || !key) return;
+    if (await keepForLater(nostrDmWriting(where), { chat: key, text, at, ...(answered ? { replyTo: answered.id } : {}) }, setNote)) {
+      setDraft('');
+      kept.sent();
+      setReplyId(null);
+    }
   }
 
   const sendPhoto = (from: 'photos' | 'camera' = 'photos') =>
@@ -378,6 +403,10 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         remote: true,
       }),
     );
+    if (message.state !== 'failed' && remindPlace(where)) {
+      const from = group && !message.mine ? `Nostr · ${name} · ${whoOf(message)}` : `Nostr · ${name}`;
+      actions.push({ title: t('Remind me'), onPress: () => setReminding({ from, text: message.file ? lineOf(message) : message.text }) });
+    }
     actions.push(selectAction(() => selection.start(message.id)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove([message.id]) });
     return actions;
@@ -478,12 +507,24 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           />
         ))}
       </View>
+      <HeldBubbles held={heldIn(state.writing, key)} account={() => nostrDmWriting(where)} say={setNote} />
 
       {answered ? <Quote name={whoOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       <MentionChips text={draft} members={nameable} onPick={(member) => setDraft(withMention(draft, member.name))} />
       <Row>
-        <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
-        <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} />
+        <Input
+          style={{ flex: 1 }}
+          value={draft}
+          onChangeText={(text) => {
+            setDraft(text);
+            kept.typed(text);
+          }}
+          multiline
+          placeholder={t('Message')}
+          accessibilityLabel={t('Message')}
+        />
+        {/* Held down: what is typed goes later. */}
+        <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} onLongPress={draft.trim() ? () => setChoosingLater(true) : undefined} />
       </Row>
       {voice.recording ? null : (
         <Row wrap>
@@ -499,6 +540,8 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           />
         </Row>
       )}
+      <LaterSheet visible={choosingLater && shown} where={where} onClose={() => setChoosingLater(false)} onPick={(at) => void sendLater(at)} />
+      <RemindSheet of={shown ? reminding : null} where={where} onClose={() => setReminding(null)} say={setNote} />
       <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />

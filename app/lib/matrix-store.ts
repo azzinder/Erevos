@@ -81,6 +81,8 @@ import { addNetwork, hearing } from './network-notices';
 import type { MatrixCallsAccount } from './matrix-calls';
 import { actingWhere, type NetworkWhere } from './network-place';
 import { PlaceLives, type PlaceKey } from './place-lives';
+import { checkedWriting, type WritingAccount } from './chat-writing';
+import { dropUnsent, sendAgain, sendHeld, unsentIn } from './matrix-writing';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -793,6 +795,51 @@ export async function matrixForward(fromRoom: string, messageId: string, toRoom:
     else sent = await sendText(it.state, toRoom, message.text, [], { ...formattedOf(message.text, message.styled), ...(message.preview ? previewContent(message.preview) : {}) });
     sent.forwarded = true;
   });
+}
+
+/** Sends again one of ours that did not go, in its place (lib/matrix-writing.ts): a photo or file
+ *  is fetched back from the homeserver first; words name `mentions`. */
+export async function matrixSendAgain(roomId: string, id: string, mentions: string[] = []): Promise<void> {
+  const it = need();
+  const failed = unsentIn(it.state, roomId, id);
+  if (!failed) return;
+  const bytes = failed.file ? await matrixFile(failed.file) : null;
+  await changeAccount(it, () => sendAgain(it.state, roomId, failed, mentions, bytes));
+}
+
+/** Forgets one of ours that did not go: it never reached the room. */
+export function matrixDropUnsent(roomId: string, id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => dropUnsent(it.state, roomId, id));
+}
+
+// An account's drafts and messages held for later (lib/chat-writing.ts), changed in turn with the
+// rest of it. It can send while its last sync reached the homeserver.
+function writingOf(it: Live): WritingAccount {
+  return {
+    now: () => checkedWriting(it.state?.writing),
+    change: (use) =>
+      changeAccount(it, async () => {
+        if (it.state) it.state.writing = use(checkedWriting(it.state.writing));
+      }),
+    keep: async () => {
+      if (it.state) await saveMatrix(it.space, it.key, it.state, it.holder);
+    },
+    ready: () => !it.stopped && !!it.state && !it.problem,
+    has: (chat) => !!it.state?.rooms[chat] && !it.state.rooms[chat].invitedBy,
+    send: (held) => changeAccount(it, () => sendHeld(need(it).state, held)),
+  };
+}
+
+/** The drafts and messages held of the open space's account, or of the open hidden place's own; null with none. */
+export function matrixWriting(where: NetworkWhere = 'space'): WritingAccount | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped && it.state ? writingOf(it) : null;
+}
+
+/** Those of every account that runs: the space's, and its hidden places' (lib/chat-later.ts). */
+export function matrixWritings(): WritingAccount[] {
+  return [live, ...places.all()].filter((it): it is Live => !!it && !it.stopped && !!it.state).map(writingOf);
 }
 
 /** The account's devices. */

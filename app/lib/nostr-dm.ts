@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import type { ChatWriting } from './chat-writing';
 import { nostrChatCore } from './core';
 import { sha256Bytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
@@ -153,6 +154,8 @@ export type NostrDmState = {
   /** For each relay read, until when (seconds) it said it sent all the old private messages it
    *  keeps: one not there sends from its start, and what it sends then is told of as nothing new. */
   oldSent?: Record<string, number>;
+  /** Each chat's draft, and the messages held to go later, on this device only (lib/chat-writing.ts). */
+  writing?: ChatWriting;
 };
 
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);

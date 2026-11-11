@@ -250,6 +250,9 @@ bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
 zapamtiti, niti u kojem je prostoru. A bilješke ne idu nikome osim vašim vlastitim uređajima, šifrirane s kraja na
 kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 
+- **Iz drugih razgovora:** poruka iz razgovora na Matrixu, XMPP-u, Nostru ili SMS-a može doći i ovdje, s podsjetnikom:
+  **Podsjeti me** u njenom meniju.
+
 ### Kretanje prevlačenjem
 
 - **Nazad:** prevucite udesno bilo gdje na ekranu da se vratite nazad, kao što to radi strelica nazad. Okrugla strelica
@@ -1910,6 +1913,19 @@ razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko
   Matrix aplikacije prikazuju prikvačenom, a sobe niskog prioriteta dolaze na kraj. Na popisu početnog ekrana vaša
   posljednja poruka pokazuje ✓✓✓ čim je svi u sobi pročitaju. **Imenujte ih ovdje** (osoba) ili **Imenujte ga ovdje**
   (grupa), na dnu razgovora, daje sobi vaše ime, samo na ovom telefonu; nikome se ne javlja.
+- **Nacrti:** ono što upišete, a ne pošaljete, ostaje kao nacrt razgovora, šifrovano samo na ovom telefonu. Vraća se
+  kad ponovo otvorite razgovor, i nakon što se Erevos zatvorio, a popis početnog ekrana ga pokazuje u redu razgovora
+  kao **Nacrt**. Matrix nit nema svoj nacrt.
+- **Pošalji kasnije:** zadržite **Pošalji**, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00**
+  ili bilo koji dan i vrijeme) i dodirnite **Pošalji kasnije**. Poruka čeka na ovom telefonu, šifrovana, isprekidano
+  nakon poruka razgovora s njenim vremenom, i odlazi s ovog telefona u to vrijeme dok je Erevos otključan, na Androidu
+  i u pozadini; inače čim se ponovo otključa. Samo tekst. Dodirnite je da je pošaljete odmah ili obrišete. U skrivenim
+  razgovorima odlazi samo dok su otvoreni, osim ako primaju i zatvoreni. Poruka koju je vratila vraćena sigurnosna
+  kopija, a čije je vrijeme bilo prije vraćanja, ne odlazi sama: telefon s kojeg je kopija došla možda ju je već
+  poslao.
+- **Pošalji ponovo:** vaša poruka koja pokazuje **Nije poslano** ima u svom meniju **Pošalji ponovo** i **Obriši**.
+- **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
+  **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
 
 ## XMPP {#xmpp}
 
@@ -2060,6 +2076,19 @@ odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 - **Vaše ime za kontakt:** **Imenujte ih ovdje**, na dnu razgovora s kontaktom, čuva vaše ime za njega u vašim
   kontaktima na vašem XMPP serveru, pa ga prikazuju i vaše druge XMPP aplikacije. Kontakt to ne saznaje. Ostavite
   prazno da se ponovo prikaže njegova adresa.
+- **Nacrti:** ono što upišete, a ne pošaljete, ostaje kao nacrt razgovora, šifrovano samo na ovom telefonu. Vraća se
+  kad ponovo otvorite razgovor, i nakon što se Erevos zatvorio, a popis početnog ekrana ga pokazuje u redu razgovora
+  kao **Nacrt**.
+- **Pošalji kasnije:** zadržite **Pošalji**, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00**
+  ili bilo koji dan i vrijeme) i dodirnite **Pošalji kasnije**. Poruka čeka na ovom telefonu, šifrovana, isprekidano
+  nakon poruka razgovora s njenim vremenom, i odlazi s ovog telefona u to vrijeme dok je Erevos otključan, na Androidu
+  i u pozadini; inače čim se ponovo otključa. Samo tekst. Dodirnite je da je pošaljete odmah ili obrišete. U skrivenim
+  razgovorima odlazi samo dok su otvoreni, osim ako primaju i zatvoreni. Poruka koju je vratila vraćena sigurnosna
+  kopija, a čije je vrijeme bilo prije vraćanja, ne odlazi sama: telefon s kojeg je kopija došla možda ju je već
+  poslao.
+- **Pošalji ponovo:** vaša poruka koja pokazuje **Nije poslano** ima u svom meniju **Pošalji ponovo** i **Obriši**.
+- **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
+  **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
 
 ## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
 
@@ -2192,6 +2221,18 @@ isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim 
   kao geo: adresu i link karte koji svaka Nostr aplikacija može prikazati; mjesto poslano tako prikazuje se kao
   mjesto. U grupi, kad upišete @, vidite njene članove, imenovane tako da svaka Nostr aplikacija zna na koga se misli.
   Poruka koju proslijedite označena je kao **Proslijeđeno** samo na vašem telefonu.
+- **Nacrti:** ono što upišete, a ne pošaljete, ostaje kao nacrt razgovora, šifrovano samo na ovom telefonu. Vraća se
+  kad ponovo otvorite razgovor, i nakon što se Erevos zatvorio, a popis početnog ekrana ga pokazuje u redu razgovora
+  kao **Nacrt**.
+- **Pošalji kasnije:** zadržite **Pošalji**, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00**
+  ili bilo koji dan i vrijeme) i dodirnite **Pošalji kasnije**. Poruka čeka na ovom telefonu, šifrovana, isprekidano
+  nakon poruka razgovora s njenim vremenom, i odlazi s ovog telefona u to vrijeme dok je Erevos otključan, na Androidu
+  i u pozadini; inače čim se ponovo otključa. Samo tekst. Dodirnite je da je pošaljete odmah ili obrišete. U skrivenim
+  razgovorima odlazi samo dok su otvoreni, osim ako primaju i zatvoreni. Poruka koju je vratila vraćena sigurnosna
+  kopija, a čije je vrijeme bilo prije vraćanja, ne odlazi sama: telefon s kojeg je kopija došla možda ju je već
+  poslao.
+- **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
+  **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
 
 ## SMS {#sms}
 
@@ -2298,6 +2339,8 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   brojeve. Erevos ih samo čita da bi ih prikazao i ne čuva nikakvu kopiju.
 - **Pošiljaoci s imenom:** SMS od imena umjesto broja, kao od banke, otvara se za čitanje, ali se na njega ne može
   odgovoriti.
+- **Podsjeti me:** zadržite poruku za **Podsjeti me**: ide u **Razgovor sa sobom** s imenom razgovora, i podsjeti vas
+  u vrijeme koje izaberete.
 
 ### Šifrirani SMS kad ništa drugo ne radi
 

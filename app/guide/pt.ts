@@ -255,6 +255,9 @@ criptografado no espaço dele e o Android só fica sabendo o horário: o aviso n
 lembrar, nem em que espaço ele está. E as notas não vão para ninguém além dos seus próprios dispositivos,
 criptografadas de ponta a ponta entre eles como as suas conversas: o relay só as carrega criptografadas.
 
+- **De outras conversas:** uma mensagem de uma conversa do Matrix, XMPP, Nostr ou SMS também pode vir para cá, com um
+  lembrete: **Lembrar-me** no menu dela.
+
 ### Navegar deslizando
 
 - **Voltar:** deslize para a direita em qualquer lugar de uma tela para voltar, como faz a seta de voltar. Uma seta
@@ -1976,6 +1979,19 @@ conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcan�
   também a mostram fixada, e as salas de prioridade baixa vêm por último. Na lista da tela inicial sua última mensagem
   mostra ✓✓✓ assim que todos na sala a leram. **Dar um nome aqui** (uma pessoa) ou **Nomear aqui** (um grupo), no pé
   da conversa, dá a uma sala um nome seu, só neste celular; ninguém fica sabendo.
+- **Rascunhos:** o que você digita e não envia fica como rascunho da conversa, criptografado só neste celular. Ele
+  volta quando você abre a conversa de novo, também depois que o Erevos fechou, e a lista da tela inicial o mostra na
+  linha da conversa como **Rascunho**. Um tópico do Matrix não guarda rascunho próprio.
+- **Enviar mais tarde:** segure **Enviar**, escolha uma hora (**Daqui a 1 hora**, **Hoje à noite 20:00**, **Amanhã
+  09:00** ou qualquer dia e hora) e toque em **Enviar mais tarde**. A mensagem espera neste celular, criptografada,
+  tracejada depois das mensagens da conversa com sua hora, e sai deste celular nessa hora enquanto o Erevos está
+  desbloqueado, no Android também em segundo plano; senão assim que for desbloqueado de novo. Só texto. Toque nela
+  para enviá-la agora ou apagá-la. Nas conversas ocultas ela sai só enquanto elas estão abertas, a não ser que recebam
+  também fechadas. Uma que um backup restaurado trouxe de volta, cuja hora veio antes da restauração, não sai sozinha:
+  o celular de onde veio o backup pode já tê-la enviado.
+- **Enviar de novo:** uma mensagem sua que mostra **Não enviada** tem **Enviar de novo** e **Apagar** no menu.
+- **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
+  dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
 
 ## XMPP {#xmpp}
 
@@ -2134,6 +2150,19 @@ conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcança
 - **Um nome seu:** **Dar um nome aqui**, no pé da conversa de um contato, guarda um nome seu para ele nos seus
   contatos do seu servidor XMPP, então seus outros apps de XMPP também o mostram. Ele não fica sabendo. Deixe vazio
   para mostrar o endereço dele de novo.
+- **Rascunhos:** o que você digita e não envia fica como rascunho da conversa, criptografado só neste celular. Ele
+  volta quando você abre a conversa de novo, também depois que o Erevos fechou, e a lista da tela inicial o mostra na
+  linha da conversa como **Rascunho**.
+- **Enviar mais tarde:** segure **Enviar**, escolha uma hora (**Daqui a 1 hora**, **Hoje à noite 20:00**, **Amanhã
+  09:00** ou qualquer dia e hora) e toque em **Enviar mais tarde**. A mensagem espera neste celular, criptografada,
+  tracejada depois das mensagens da conversa com sua hora, e sai deste celular nessa hora enquanto o Erevos está
+  desbloqueado, no Android também em segundo plano; senão assim que for desbloqueado de novo. Só texto. Toque nela
+  para enviá-la agora ou apagá-la. Nas conversas ocultas ela sai só enquanto elas estão abertas, a não ser que recebam
+  também fechadas. Uma que um backup restaurado trouxe de volta, cuja hora veio antes da restauração, não sai sozinha:
+  o celular de onde veio o backup pode já tê-la enviado.
+- **Enviar de novo:** uma mensagem sua que mostra **Não enviada** tem **Enviar de novo** e **Apagar** no menu.
+- **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
+  dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
 
 ## Conversas com outros apps Nostr {#nostr-chats}
 
@@ -2272,6 +2301,18 @@ fala com quem.
   onde você está como um endereço geo: e um link de mapa que qualquer app do Nostr pode mostrar; um lugar enviado
   assim aparece como um lugar. Num grupo, digitar @ mostra seus membros, nomeados de modo que qualquer app do Nostr
   saiba quem é. Uma mensagem que você encaminha fica marcada **Encaminhada** só no seu celular.
+- **Rascunhos:** o que você digita e não envia fica como rascunho da conversa, criptografado só neste celular. Ele
+  volta quando você abre a conversa de novo, também depois que o Erevos fechou, e a lista da tela inicial o mostra na
+  linha da conversa como **Rascunho**.
+- **Enviar mais tarde:** segure **Enviar**, escolha uma hora (**Daqui a 1 hora**, **Hoje à noite 20:00**, **Amanhã
+  09:00** ou qualquer dia e hora) e toque em **Enviar mais tarde**. A mensagem espera neste celular, criptografada,
+  tracejada depois das mensagens da conversa com sua hora, e sai deste celular nessa hora enquanto o Erevos está
+  desbloqueado, no Android também em segundo plano; senão assim que for desbloqueado de novo. Só texto. Toque nela
+  para enviá-la agora ou apagá-la. Nas conversas ocultas ela sai só enquanto elas estão abertas, a não ser que recebam
+  também fechadas. Uma que um backup restaurado trouxe de volta, cuja hora veio antes da restauração, não sai sozinha:
+  o celular de onde veio o backup pode já tê-la enviado.
+- **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
+  dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
 
 ## SMS {#sms}
 
@@ -2380,6 +2421,8 @@ mostra nada.
   **Nomes** de novo para ver só números. O Erevos só os lê para mostrá-los, e não guarda cópia.
 - **Remetentes com nome:** um SMS de um nome em vez de um número, como o de um banco, abre para leitura, mas não pode
   ser respondido.
+- **Lembrar-me:** segure uma mensagem para **Lembrar-me**: ela vai para **Conversa comigo** com o nome da conversa, e
+  lembra você na hora que escolher.
 
 ### SMS criptografados quando nada mais funciona
 

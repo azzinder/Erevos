@@ -42,6 +42,7 @@ import { ownerTouched } from '../lib/safety';
 import { awakeWhile } from '../lib/sleep-look';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
+import { startChatLater } from '../lib/chat-later';
 import { StickerImageHost } from '../lib/sticker-image';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats, shareLastSeen } from '../lib/space-chats';
@@ -844,6 +845,8 @@ function Receiver({ space }: { space: number }) {
         ...(moduleOn('matrix') ? [startMatrix()] : []),
         ...(moduleOn('xmpp') ? [startXmpp()] : []),
         ...(moduleOn('nostr') ? [startNostrChats()] : []),
+        // What the Matrix, XMPP and Nostr chats hold to send later goes at its time (lib/chat-later.ts).
+        ...(moduleOn('matrix') || moduleOn('xmpp') || moduleOn('nostr') ? [startChatLater()] : []),
       ];
     });
     // A module turned on or off: what runs follows it.

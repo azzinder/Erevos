@@ -256,6 +256,9 @@ se queda cifrado en su espacio y a Android solo se le dice su hora: el aviso no 
 recordar, ni en qué espacio está. Y las notas no van a nadie más que a tus propios dispositivos, cifradas de extremo a
 extremo entre ellos como tus chats: el relay solo las lleva cifradas.
 
+- **Desde otros chats:** un mensaje de un chat de Matrix, XMPP, Nostr o SMS también puede venir aquí, con un
+  recordatorio: **Recordarme** en su menú.
+
 ### Moverse deslizando
 
 - **Atrás:** desliza hacia la derecha en cualquier punto de una pantalla para volver, como hace la flecha de volver.
@@ -1991,6 +1994,19 @@ chats de Matrix van aparte y marcados, para las personas a las que solo llegarí
   último mensaje muestra ✓✓✓ en cuanto todos en la sala lo han leído. **Ponerle un nombre aquí** (una persona) o
   **Darle un nombre aquí** (un grupo), al pie del chat, da a una sala un nombre tuyo, solo en este teléfono; nadie se
   entera.
+- **Borradores:** lo que escribes y no envías queda como borrador del chat, cifrado solo en este teléfono. Vuelve
+  cuando abres el chat otra vez, también después de que Erevos se cerró, y la lista de la pantalla de inicio lo
+  muestra en la fila del chat como **Borrador**. Un hilo de Matrix no guarda borrador propio.
+- **Enviar más tarde:** mantén pulsado **Enviar**, elige una hora (**En 1 hora**, **Esta noche 20:00**, **Mañana
+  09:00** o cualquier día y hora) y toca **Enviar más tarde**. El mensaje espera en este teléfono, cifrado, con borde
+  discontinuo después de los mensajes del chat y con su hora, y sale de este teléfono a esa hora mientras Erevos está
+  desbloqueado, en Android también en segundo plano; si no, en cuanto vuelve a desbloquearse. Solo texto. Tócalo para
+  enviarlo ya o eliminarlo. En los chats ocultos sale solo mientras están abiertos, salvo que reciban también
+  cerrados. Uno que trajo de vuelta una copia de seguridad restaurada, cuya hora llegó antes de restaurarla, no sale
+  solo: el teléfono del que vino la copia puede haberlo enviado ya.
+- **Volver a enviar:** un mensaje tuyo que muestra **No enviado** tiene **Volver a enviar** y **Eliminar** en su menú.
+- **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
+  a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
 
 ## XMPP {#xmpp}
 
@@ -2150,6 +2166,19 @@ de XMPP van aparte y marcados, para las personas a las que solo llegarías por X
 - **Un nombre tuyo:** **Ponerle un nombre aquí**, al pie del chat de un contacto, guarda un nombre tuyo para él en tus
   contactos de tu servidor XMPP, así que tus otras apps de XMPP también lo muestran. No se le avisa. Déjalo vacío para
   volver a mostrar su dirección.
+- **Borradores:** lo que escribes y no envías queda como borrador del chat, cifrado solo en este teléfono. Vuelve
+  cuando abres el chat otra vez, también después de que Erevos se cerró, y la lista de la pantalla de inicio lo
+  muestra en la fila del chat como **Borrador**.
+- **Enviar más tarde:** mantén pulsado **Enviar**, elige una hora (**En 1 hora**, **Esta noche 20:00**, **Mañana
+  09:00** o cualquier día y hora) y toca **Enviar más tarde**. El mensaje espera en este teléfono, cifrado, con borde
+  discontinuo después de los mensajes del chat y con su hora, y sale de este teléfono a esa hora mientras Erevos está
+  desbloqueado, en Android también en segundo plano; si no, en cuanto vuelve a desbloquearse. Solo texto. Tócalo para
+  enviarlo ya o eliminarlo. En los chats ocultos sale solo mientras están abiertos, salvo que reciban también
+  cerrados. Uno que trajo de vuelta una copia de seguridad restaurada, cuya hora llegó antes de restaurarla, no sale
+  solo: el teléfono del que vino la copia puede haberlo enviado ya.
+- **Volver a enviar:** un mensaje tuyo que muestra **No enviado** tiene **Volver a enviar** y **Eliminar** en su menú.
+- **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
+  a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
 
 ## Chats con otras apps de Nostr {#nostr-chats}
 
@@ -2291,6 +2320,18 @@ quién.
   estás como una dirección geo: y un enlace de mapa que cualquier app de Nostr puede mostrar; un lugar enviado así se
   ve como un lugar. En un grupo, al escribir @ ves sus miembros, nombrados de modo que cualquier app de Nostr sabe a
   quién se refiere. Un mensaje que reenvías se marca **Reenviado** solo en tu teléfono.
+- **Borradores:** lo que escribes y no envías queda como borrador del chat, cifrado solo en este teléfono. Vuelve
+  cuando abres el chat otra vez, también después de que Erevos se cerró, y la lista de la pantalla de inicio lo
+  muestra en la fila del chat como **Borrador**.
+- **Enviar más tarde:** mantén pulsado **Enviar**, elige una hora (**En 1 hora**, **Esta noche 20:00**, **Mañana
+  09:00** o cualquier día y hora) y toca **Enviar más tarde**. El mensaje espera en este teléfono, cifrado, con borde
+  discontinuo después de los mensajes del chat y con su hora, y sale de este teléfono a esa hora mientras Erevos está
+  desbloqueado, en Android también en segundo plano; si no, en cuanto vuelve a desbloquearse. Solo texto. Tócalo para
+  enviarlo ya o eliminarlo. En los chats ocultos sale solo mientras están abiertos, salvo que reciban también
+  cerrados. Uno que trajo de vuelta una copia de seguridad restaurada, cuya hora llegó antes de restaurarla, no sale
+  solo: el teléfono del que vino la copia puede haberlo enviado ya.
+- **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
+  a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
 
 ## SMS {#sms}
 
@@ -2401,6 +2442,8 @@ Erevos no muestra nada.
   ninguna copia.
 - **Remitentes con nombre:** un SMS de un nombre en lugar de un número, como el de un banco, se abre para leerlo, pero
   no se puede responder.
+- **Recordarme:** mantén pulsado un mensaje para **Recordarme**: va a **Chat conmigo** con el nombre de la
+  conversación, y te lo recuerda a la hora que elijas.
 
 ### SMS cifrados cuando nada más funciona
 

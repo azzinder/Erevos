@@ -255,6 +255,9 @@ promemoria resta crittografato nel suo spazio e ad Android viene detta solo la s
 nessuno che cosa volevi ricordare, né in quale spazio si trova. E le note non vanno a nessuno tranne ai tuoi
 dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le trasporta solo crittografate.
 
+- **Da altre chat:** un messaggio di una chat Matrix, XMPP, Nostr o SMS può venire anche qui, con un promemoria:
+  **Ricordamelo** nel suo menu.
+
 ### Spostarsi con gli scorrimenti
 
 - **Indietro:** scorri verso destra in qualsiasi punto di una schermata per tornare indietro, come fa la freccia
@@ -2004,6 +2007,19 @@ parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.
   principale il tuo ultimo messaggio mostra ✓✓✓ appena tutti nella stanza l’hanno letto. **Dagli un nome qui** (una
   persona) o **Dalle un nome qui** (un gruppo), in fondo alla chat, dà a una stanza un nome tuo, solo su questo
   telefono; nessuno viene avvisato.
+- **Bozze:** ciò che scrivi e non invii resta come bozza della chat, cifrata solo su questo telefono. Torna quando
+  riapri la chat, anche dopo che Erevos è stato chiuso, e l’elenco della schermata principale la mostra nella riga
+  della chat come **Bozza**. Un thread di Matrix non tiene una bozza sua.
+- **Invia più tardi:** tieni premuto **Invia**, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00** o
+  qualsiasi giorno e ora) e tocca **Invia più tardi**. Il messaggio aspetta su questo telefono, cifrato, tratteggiato
+  dopo i messaggi della chat con la sua ora, e parte da questo telefono a quell’ora mentre Erevos è sbloccato, su
+  Android anche in background; altrimenti appena viene sbloccato di nuovo. Solo testo. Toccalo per inviarlo subito o
+  eliminarlo. Nelle chat nascoste parte solo mentre sono aperte, a meno che ricevano anche chiuse. Uno che un backup
+  ripristinato ha riportato, la cui ora era prima del ripristino, non parte da solo: il telefono da cui viene il
+  backup potrebbe averlo già inviato.
+- **Invia di nuovo:** un tuo messaggio che mostra **Non inviato** ha **Invia di nuovo** ed **Elimina** nel suo menu.
+- **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
+  chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
 
 ## XMPP {#xmpp}
 
@@ -2162,6 +2178,19 @@ segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
 - **Un nome tuo:** **Dagli un nome qui**, in fondo alla chat di un contatto, tiene un nome tuo per lui nei tuoi
   contatti sul tuo server XMPP, così anche le tue altre app XMPP lo mostrano. Non viene avvisato. Lascialo vuoto per
   mostrare di nuovo il suo indirizzo.
+- **Bozze:** ciò che scrivi e non invii resta come bozza della chat, cifrata solo su questo telefono. Torna quando
+  riapri la chat, anche dopo che Erevos è stato chiuso, e l’elenco della schermata principale la mostra nella riga
+  della chat come **Bozza**.
+- **Invia più tardi:** tieni premuto **Invia**, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00** o
+  qualsiasi giorno e ora) e tocca **Invia più tardi**. Il messaggio aspetta su questo telefono, cifrato, tratteggiato
+  dopo i messaggi della chat con la sua ora, e parte da questo telefono a quell’ora mentre Erevos è sbloccato, su
+  Android anche in background; altrimenti appena viene sbloccato di nuovo. Solo testo. Toccalo per inviarlo subito o
+  eliminarlo. Nelle chat nascoste parte solo mentre sono aperte, a meno che ricevano anche chiuse. Uno che un backup
+  ripristinato ha riportato, la cui ora era prima del ripristino, non parte da solo: il telefono da cui viene il
+  backup potrebbe averlo già inviato.
+- **Invia di nuovo:** un tuo messaggio che mostra **Non inviato** ha **Invia di nuovo** ed **Elimina** nel suo menu.
+- **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
+  chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
 
 ## Chat con altre app Nostr {#nostr-chats}
 
@@ -2299,6 +2328,18 @@ chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie 
   come indirizzo geo: e link a una mappa che ogni app Nostr può mostrare; un luogo inviato così si vede come luogo. In
   un gruppo, scrivere @ mostra i suoi membri, nominati in modo che ogni app Nostr sappia chi si intende. Un messaggio
   che inoltri è segnato **Inoltrato** solo sul tuo telefono.
+- **Bozze:** ciò che scrivi e non invii resta come bozza della chat, cifrata solo su questo telefono. Torna quando
+  riapri la chat, anche dopo che Erevos è stato chiuso, e l’elenco della schermata principale la mostra nella riga
+  della chat come **Bozza**.
+- **Invia più tardi:** tieni premuto **Invia**, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00** o
+  qualsiasi giorno e ora) e tocca **Invia più tardi**. Il messaggio aspetta su questo telefono, cifrato, tratteggiato
+  dopo i messaggi della chat con la sua ora, e parte da questo telefono a quell’ora mentre Erevos è sbloccato, su
+  Android anche in background; altrimenti appena viene sbloccato di nuovo. Solo testo. Toccalo per inviarlo subito o
+  eliminarlo. Nelle chat nascoste parte solo mentre sono aperte, a meno che ricevano anche chiuse. Uno che un backup
+  ripristinato ha riportato, la cui ora era prima del ripristino, non parte da solo: il telefono da cui viene il
+  backup potrebbe averlo già inviato.
+- **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
+  chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
 
 ## SMS {#sms}
 
@@ -2406,6 +2447,8 @@ nulla.
   nuovo **Nomi** per vedere solo i numeri. Erevos li legge solo per mostrarli, e non ne conserva una copia.
 - **Mittenti con un nome:** un SMS da un nome invece che da un numero, come quello di una banca, si apre per leggerlo,
   ma non si può rispondere.
+- **Ricordamelo:** tieni premuto un messaggio per **Ricordamelo**: va in **Chat con me stesso** con il nome della
+  conversazione, e te lo ricorda all’ora che scegli.
 
 ### SMS crittografati quando nient’altro funziona
 

@@ -267,6 +267,9 @@ Benachrichtigung kann niemandem sagen, woran du dich erinnern wolltest, noch in 
 Notizen gehen an niemanden außer an deine eigenen Geräte, Ende-zu-Ende-verschlüsselt zwischen ihnen wie deine Chats:
 Das Relay trägt sie nur verschlüsselt.
 
+- **Aus anderen Chats:** Eine Nachricht aus einem Matrix-, XMPP-, Nostr- oder SMS-Chat kann auch hierher kommen, mit
+  einer Erinnerung: **Erinnern** in ihrem Menü.
+
 ### Mit Wischgesten navigieren
 
 - **Zurück:** Wische irgendwo auf einem Bildschirm nach rechts, um zurückzugehen, wie es der Zurück-Pfeil tut. Links
@@ -2123,6 +2126,21 @@ Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Ma
   Startbildschirms zeigt deine letzte Nachricht ✓✓✓, sobald alle im Raum sie gelesen haben. **Hier benennen** (eine
   Person) oder **Hier einen Namen geben** (eine Gruppe), unten im Chat, gibt einem Raum einen eigenen Namen, nur auf
   diesem Telefon; niemand erfährt es.
+- **Entwürfe:** Was du tippst und nicht sendest, bleibt als Entwurf des Chats, verschlüsselt nur auf diesem Telefon.
+  Er kommt zurück, wenn du den Chat wieder öffnest, auch nachdem Erevos geschlossen war, und die Liste des
+  Startbildschirms zeigt ihn in der Zeile des Chats als **Entwurf**. Ein Matrix-Thread hat keinen eigenen Entwurf.
+- **Später senden:** Halte **Senden** gedrückt, wähle eine Zeit (**In 1 Stunde**, **Heute Abend 20:00**, **Morgen
+  09:00** oder einen beliebigen Tag und eine Uhrzeit) und tippe auf **Später senden**. Die Nachricht wartet
+  verschlüsselt auf diesem Telefon, gestrichelt nach den Nachrichten des Chats mit ihrer Zeit, und geht zu dieser Zeit
+  von diesem Telefon, während Erevos entsperrt ist, auf Android auch im Hintergrund; sonst sobald es wieder entsperrt
+  ist. Nur Text. Tippe sie an, um sie jetzt zu senden oder zu löschen. In versteckten Chats geht eine nur, während sie
+  offen sind, außer sie empfangen auch geschlossen. Eine, die ein wiederhergestelltes Backup zurückgebracht hat und
+  deren Zeit vor der Wiederherstellung lag, geht nicht von selbst: Das Telefon, von dem das Backup kam, hat sie
+  vielleicht schon gesendet.
+- **Erneut senden:** Eine Nachricht von dir, die **Nicht gesendet** zeigt, hat in ihrem Menü **Erneut senden** und
+  **Löschen**.
+- **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
+  Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
 
 ## XMPP {#xmpp}
 
@@ -2291,6 +2309,21 @@ getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
 - **Ein eigener Name:** **Hier benennen**, unten im Chat eines Kontakts, behält einen eigenen Namen für ihn in deinen
   Kontakten auf deinem XMPP-Server, sodass deine anderen XMPP-Apps ihn auch zeigen. Er erfährt es nicht. Lass es leer,
   um wieder seine Adresse zu zeigen.
+- **Entwürfe:** Was du tippst und nicht sendest, bleibt als Entwurf des Chats, verschlüsselt nur auf diesem Telefon.
+  Er kommt zurück, wenn du den Chat wieder öffnest, auch nachdem Erevos geschlossen war, und die Liste des
+  Startbildschirms zeigt ihn in der Zeile des Chats als **Entwurf**.
+- **Später senden:** Halte **Senden** gedrückt, wähle eine Zeit (**In 1 Stunde**, **Heute Abend 20:00**, **Morgen
+  09:00** oder einen beliebigen Tag und eine Uhrzeit) und tippe auf **Später senden**. Die Nachricht wartet
+  verschlüsselt auf diesem Telefon, gestrichelt nach den Nachrichten des Chats mit ihrer Zeit, und geht zu dieser Zeit
+  von diesem Telefon, während Erevos entsperrt ist, auf Android auch im Hintergrund; sonst sobald es wieder entsperrt
+  ist. Nur Text. Tippe sie an, um sie jetzt zu senden oder zu löschen. In versteckten Chats geht eine nur, während sie
+  offen sind, außer sie empfangen auch geschlossen. Eine, die ein wiederhergestelltes Backup zurückgebracht hat und
+  deren Zeit vor der Wiederherstellung lag, geht nicht von selbst: Das Telefon, von dem das Backup kam, hat sie
+  vielleicht schon gesendet.
+- **Erneut senden:** Eine Nachricht von dir, die **Nicht gesendet** zeigt, hat in ihrem Menü **Erneut senden** und
+  **Löschen**.
+- **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
+  Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
 
 ## Chats mit anderen Nostr-Apps {#nostr-chats}
 
@@ -2443,6 +2476,19 @@ mit wem spricht.
   geo:-Adresse und Kartenlink sendet, wo du bist, was jede Nostr-App zeigen kann; ein so gesendeter Ort zeigt sich als
   Ort. In einer Gruppe zeigt @ ihre Mitglieder, so genannt, dass jede Nostr-App weiß, wer gemeint ist. Eine Nachricht,
   die du weiterleitest, ist nur auf deinem Telefon als **Weitergeleitet** markiert.
+- **Entwürfe:** Was du tippst und nicht sendest, bleibt als Entwurf des Chats, verschlüsselt nur auf diesem Telefon.
+  Er kommt zurück, wenn du den Chat wieder öffnest, auch nachdem Erevos geschlossen war, und die Liste des
+  Startbildschirms zeigt ihn in der Zeile des Chats als **Entwurf**.
+- **Später senden:** Halte **Senden** gedrückt, wähle eine Zeit (**In 1 Stunde**, **Heute Abend 20:00**, **Morgen
+  09:00** oder einen beliebigen Tag und eine Uhrzeit) und tippe auf **Später senden**. Die Nachricht wartet
+  verschlüsselt auf diesem Telefon, gestrichelt nach den Nachrichten des Chats mit ihrer Zeit, und geht zu dieser Zeit
+  von diesem Telefon, während Erevos entsperrt ist, auf Android auch im Hintergrund; sonst sobald es wieder entsperrt
+  ist. Nur Text. Tippe sie an, um sie jetzt zu senden oder zu löschen. In versteckten Chats geht eine nur, während sie
+  offen sind, außer sie empfangen auch geschlossen. Eine, die ein wiederhergestelltes Backup zurückgebracht hat und
+  deren Zeit vor der Wiederherstellung lag, geht nicht von selbst: Das Telefon, von dem das Backup kam, hat sie
+  vielleicht schon gesendet.
+- **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
+  Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
 
 ## SMS {#sms}
 
@@ -2552,6 +2598,8 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   Tippe erneut auf **Namen**, um nur Nummern zu sehen. Erevos liest sie nur, um sie zu zeigen, und behält keine Kopie.
 - **Absender mit Namen:** Eine SMS von einem Namen statt einer Nummer, etwa von einer Bank, lässt sich zum Lesen
   öffnen, aber nicht beantworten.
+- **Erinnern:** Halte eine Nachricht gedrückt für **Erinnern**: Sie geht mit dem Namen der Unterhaltung in **Chat mit
+  mir selbst** und erinnert dich zu der Zeit, die du wählst.
 
 ### Verschlüsselte SMS, wenn sonst nichts geht
 

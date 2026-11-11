@@ -81,6 +81,11 @@ export class PlaceLives<L extends PlaceLive> {
     return null;
   }
 
+  /** Every account that runs: the shown one's and the others'. */
+  all(): L[] {
+    return [...this.lives.values()].filter((it) => !it.stopped);
+  }
+
   /** Stops them all. Says whether any ran. */
   stopAll(): boolean {
     const any = this.lives.size > 0 || this.shownAt !== null;

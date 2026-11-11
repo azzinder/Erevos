@@ -58,6 +58,13 @@ On main, not released yet:
   and group MMS take names of one's own. A Matrix row shows ✓✓✓ once everyone has read the last message. Pins and
   archive are kept encrypted and are in backups; hidden places keep their own. Fixed: SMS pins were lost when network
   rows were merged into the list.
+- **Drafts, Send later, Send again and Remind me in Matrix, XMPP and Nostr chats**: what is typed and not sent stays
+  as the chat's draft, on this phone, encrypted with the space (or the hidden place), and shows on its row as an SMS
+  draft does. Holding **Send** holds a message to go later from this phone (text only, local, at most 100 per
+  account): it goes while the space is open, on Android with Erevos in the background too, or as soon as it runs
+  again; one a restored backup brought back past its time waits for the owner. A Matrix or XMPP message that did not
+  go now has **Send again** and **Delete** in its menu. **Remind me** on a message of these chats, or of an SMS
+  conversation, writes it into Chat with myself with a reminder. Not yet: a Matrix thread's own draft.
 
 ### Under the hood
 

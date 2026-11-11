@@ -18,6 +18,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
+import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { OwnName } from '../components/own-name';
@@ -33,6 +34,7 @@ import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
 import { matrixHistory } from '../lib/chat-history-adapters';
 import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
+import { heldIn } from '../lib/chat-writing';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
@@ -52,6 +54,7 @@ import {
   matrixDelete,
   matrixDeleteMany,
   matrixFile,
+  matrixDropUnsent,
   matrixEndPoll,
   matrixForward,
   matrixInvite,
@@ -66,6 +69,7 @@ import {
   matrixReact,
   matrixReply,
   matrixSend,
+  matrixSendAgain,
   matrixSendFile,
   matrixSendInThread,
   matrixSendSticker,
@@ -77,12 +81,13 @@ import {
   matrixVerifications,
   matrixVerify,
   matrixVote,
+  matrixWriting,
   onMatrixChange,
   runMatrix,
 } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
 import { cardFile } from '../lib/message-carry';
-import { useNetworkWhere, whereParams } from '../lib/network-place';
+import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-place';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { pickVideo } from '../lib/pick-video';
@@ -146,6 +151,10 @@ import { checkedLook } from '../theme/look';
 // kept as one of the owner's stickers, and a photo, video, sound or file saved into the Collection
 // (components/keep-actions.tsx); Starred messages lists the room's, and the chat opened at one
 // (`at`) goes to it.
+// What is typed and not sent is kept as the room's draft, encrypted with the account, and shows on
+// its row; Send held down holds it to go later from this phone, shown after the thread until then
+// (components/chat-writing.tsx, lib/chat-writing.ts). One of ours that did not go is sent again, or
+// deleted, from its menu; any message can be written into Chat with myself to remind (Remind me).
 
 // The most members Who read it names as not having read one of ours yet.
 const MOST_SHOWN = 100;
@@ -159,9 +168,10 @@ function voiceFile(audio: Uint8Array, ms: number, waveform: number[]): OutgoingF
 
 // Whether a message can be copied: it has words of its own.
 const copyable = (message: MatrixMessage) => CAN_COPY && !!message.text && !message.file && !message.locked && !message.call;
-// Whether it has a menu: not one taken back or a call's line, and one that still goes, or did not,
-// has no ID on the homeserver yet, so nothing can be done with it but copy its words.
-const menuable = (message: MatrixMessage) => !message.deleted && !message.call && (!message.state || copyable(message));
+// Whether it has a menu: not one taken back or a call's line. One that still goes has no ID on the
+// homeserver yet, so nothing can be done with it but copy its words; one that did not go can also be
+// sent again, or deleted.
+const menuable = (message: MatrixMessage) => !message.deleted && !message.call && (!message.state || message.state === 'failed' || copyable(message));
 // Whether it can be chosen with others: one on the homeserver, not taken back nor a call's line.
 const choosable = (message: MatrixMessage) => !message.deleted && !message.call && !message.state;
 
@@ -209,6 +219,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [styling, setStyling] = useState(false);
   // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
   const history = useHistoryTools();
+  // The message a reminder is being set for (components/chat-writing.tsx).
+  const [reminding, setReminding] = useState<RemindOf | null>(null);
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
@@ -258,6 +270,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
+  // What is typed in the room is kept as its draft; a thread's own screen keeps none.
+  const kept = useKeptDraft(state ? matrixWriting(where) : null, thread ? undefined : roomId);
   // The room's own look, told to the screen that draws it.
   const ownLook = useMemo(() => (room?.look ? checkedLook(room.look) : null), [room?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (roomId ? { look: ownLook, save: (look) => matrixSetLook(roomId, look) } : null), [ownLook, roomId]);
@@ -387,6 +401,16 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       await (thread ? matrixSendInThread(roomId, thread, text, answers, named, preview) : answers ? matrixReply(roomId, text, answers, named, preview) : matrixSend(roomId, text, named, preview));
     })().catch(fail);
     return true;
+  }
+
+  // Holds what is typed to go at `at` from this phone (lib/chat-writing.ts), as an answer to the one
+  // chosen, or in the thread shown, naming those it names. Says whether it is held.
+  async function holdLater(text: string, at: number): Promise<boolean> {
+    if (!roomId) return false;
+    const named = mentionsIn(text, nameable);
+    const held = await keepForLater(matrixWriting(where), { chat: roomId, text, at, ...(answered ? { replyTo: answered.id } : {}), ...(thread ? { thread } : {}), ...(named.length ? { mentions: named } : {}) }, setNote);
+    if (held) setReplyId(null);
+    return held;
   }
 
   // The preview of the first link in words typed, when this phone makes them (lib/make-preview.ts):
@@ -524,10 +548,16 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       actions.push({ title: t('Reply in thread'), onPress: () => router.push({ pathname: '/matrix-chat', params: { room: roomId, thread: message.id, ...whereParams(where) } }) });
     }
     if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+    // One of ours that did not go goes again in its place, or is forgotten: it never reached the room.
+    if (message.state === 'failed') {
+      actions.push({ title: t('Send again'), onPress: () => roomId && void matrixSendAgain(roomId, message.id, mentionsIn(message.text, nameable)).catch(fail) });
+      actions.push({ title: t('Delete'), danger: true, onPress: () => roomId && void matrixDropUnsent(roomId, message.id).catch(fail) });
+    }
     if (!message.state) {
       const pinned = room?.pinned?.includes(message.id) ?? false;
       actions.push({ title: pinned ? t('Unpin') : t('Pin'), onPress: () => roomId && void matrixPin(roomId, message.id, !pinned).catch(fail) });
       actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
+      if (remindPlace(where)) actions.push({ title: t('Remind me'), onPress: () => setReminding({ from: room?.direct ? `Matrix · ${room.name}` : `Matrix · ${room?.name} · ${nameOf(message)}`, text: message.text && !message.file ? message.text : lineOf(message) }) });
     }
     if (ours && message.poll && !pollOver(message.poll)) actions.push({ title: t('End poll'), onPress: () => roomId && void matrixEndPoll(roomId, message.id).catch(fail) });
     if (ours && !message.file && !message.locked && !message.poll && !message.place) {
@@ -709,6 +739,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           />
         ))}
       </View>
+      <HeldBubbles held={heldIn(state.writing, roomId).filter((held) => (held.thread ?? '') === (thread ?? ''))} account={() => matrixWriting(where)} say={setNote} />
       {writing.length ? (
         <Text variant="caption" tone="muted" numberOfLines={1}>
           {writing.map((who) => room.members[who]?.name || who).join(', ')} · {t('typing…')}
@@ -718,16 +749,23 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Field
         key={changed?.id ?? 'new'}
-        initial={changed?.text ?? sharedWords.current}
+        initial={changed?.text ?? (sharedWords.current || kept.initial())}
         editing={!!changed}
         saving={saving}
         members={nameable}
         onSend={send}
-        onTyped={sayTyping.typed}
+        onTyped={(text) => {
+          sayTyping.typed(text);
+          // A message being changed is not a draft: its words stay with it.
+          if (!changed) kept.typed(text);
+        }}
         onSent={() => {
           if (!changed) sharedWords.current = '';
           sayTyping.sent();
+          // Saved new words leave the draft as it was.
+          if (!changed) kept.sent();
         }}
+        later={{ where, hold: holdLater }}
       />
       {!voice.recording && !changed ? (
         <Row wrap>
@@ -808,6 +846,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         }
       />
       <PollSheet visible={polling} onClose={() => setPolling(false)} onSend={(poll) => void sendPoll(poll)} />
+      <RemindSheet of={reminding} where={where} onClose={() => setReminding(null)} say={setNote} />
       <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Everyone in this chat can see it.')} />
       <Sheet visible={readersFor !== null} onClose={() => setReadersFor(null)} title={t('Who read it')}>
         {readersFor && byId.get(readersFor) ? readersShown(byId.get(readersFor)!) : null}
@@ -913,8 +952,9 @@ function InviteCard({ roomId, say }: { roomId: string; say: (text: string) => vo
 }
 
 // The field and its button. What is typed is kept here, so typing draws only this and not the
-// whole thread above it. `initial` is the words of a message being changed. In a group, an @ being
-// typed offers the members whose names start so.
+// whole thread above it. `initial` is the words of a message being changed, or the room's draft. In
+// a group, an @ being typed offers the members whose names start so. Send held down holds what is
+// typed to go later (`later`, components/chat-writing.tsx).
 function Field({
   initial,
   editing,
@@ -923,6 +963,7 @@ function Field({
   onSend,
   onTyped,
   onSent,
+  later,
 }: {
   initial: string;
   editing: boolean;
@@ -931,8 +972,10 @@ function Field({
   onSend: (text: string) => boolean;
   onTyped: (text: string) => void;
   onSent: () => void;
+  later: { where: NetworkWhere; hold: (text: string, at: number) => Promise<boolean> };
 }) {
   const [text, setText] = useState(initial);
+  const [choosingLater, setChoosingLater] = useState(false);
   const typed = text.trim();
   const go = () => {
     if (!typed || saving) return;
@@ -958,8 +1001,21 @@ function Field({
       ) : null}
       <Row>
         <Input style={{ flex: 1 }} value={text} onChangeText={write} multiline placeholder={t('Message')} accessibilityLabel={editing ? t('Edit message') : t('Message')} />
-        <Button title={editing ? t('Save') : t('Send')} compact disabled={!typed || saving} onPress={go} />
+        <Button title={editing ? t('Save') : t('Send')} compact disabled={!typed || saving} onPress={go} onLongPress={!editing && typed ? () => setChoosingLater(true) : undefined} />
       </Row>
+      <LaterSheet
+        visible={choosingLater}
+        where={later.where}
+        onClose={() => setChoosingLater(false)}
+        onPick={(at) => {
+          setChoosingLater(false);
+          void later.hold(typed, at).then((held) => {
+            if (!held) return;
+            setText('');
+            onSent();
+          });
+        }}
+      />
     </>
   );
 }
