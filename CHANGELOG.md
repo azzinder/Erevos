@@ -32,6 +32,10 @@ On main, not released yet:
 - **With Erevos open, messages come at once**: the app now waits at the relay for what comes, as it does in the
   background, and no longer asks it every three seconds. A message shows the moment the relay has it, and the phone's
   radio is used less while a chat is open.
+- **Read marks no longer go missing**: when you read a message and put the phone away at once, before Erevos next
+  spoke to the relay, the other person was never told, and the message stayed at ✓✓ for them for good. What was
+  read is now kept until a message to them has said it, and is said at the next look, by the open chat or in the
+  background, also after Erevos was closed. Messages read before this version, whose mark was lost, stay as they are.
 
 ### Under the hood
 

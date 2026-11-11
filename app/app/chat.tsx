@@ -872,13 +872,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   async function sendReceipts(target: Relay | null) {
     // Those due to hear that the app opened, each after a wait of its own (Say when I open Erevos).
     if (e2e) tellOpenLater(e2e, answers.current);
-    for (const peer of new Set([...Object.keys(receipts.current), ...answers.current])) {
+    // What was read is kept with the contact until a message to them says it (E2E.hold): theirs too.
+    const due = (e2e?.readDue() ?? []).map((identity) => `${CONTACT_PREFIX}${identity}`);
+    for (const peer of new Set([...Object.keys(receipts.current), ...answers.current, ...due])) {
       const { got, read } = receipts.current[peer] ?? { got: [], read: [] };
       delete receipts.current[peer];
       answers.current.delete(peer);
+      const identity = peer.slice(CONTACT_PREFIX.length);
+      const held = e2e?.heldRead(identity) ?? [];
       try {
-        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read, on: appShown() ? ONLINE : 0 }, true);
+        await sendToContact(target, identity, '', { got, read, on: appShown() ? ONLINE : 0 }, true);
       } catch {
+        // Sealed, it is no longer kept: kept again, for the next look.
+        if (held.length > 0) await e2e?.hold(identity, 'read', held).catch(() => undefined);
         if (got.length + read.length === 0) continue;
         const now = receipts.current[peer] ?? { got: [], read: [] };
         receipts.current[peer] = { got: [...got, ...now.got], read: [...read, ...now.read] };
@@ -917,9 +923,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const now = receipts.current[peer] ?? { got: [], read: [] };
     // A message read needs no word that it came.
     const got = kind === 'got' ? [...now.got, ...tags] : now.got.filter((tag) => !tags.includes(tag));
-    receipts.current[peer] = { got, read: kind === 'read' ? [...now.read, ...tags] : now.read };
-    // Said with the next look, which does not wait at the relay first.
-    lookNow();
+    const say = (read: string[]) => {
+      const kept = receipts.current[peer] ?? { got: [], read: [] };
+      receipts.current[peer] = { got: kept.got, read: [...kept.read, ...read] };
+      // Said with the next look, which does not wait at the relay first.
+      lookNow();
+    };
+    receipts.current[peer] = { got, read: now.read };
+    // What was read is kept with the contact, not in memory alone, until a message to them says it:
+    // a phone put away right after reading, before the next look, still says it later (E2E.readDue).
+    if (kind === 'read' && contact && chats) chats.hold(contact.identity, 'read', tags).then(lookNow, () => say(tags));
+    else say(kind === 'read' ? tags : []);
   }
 
   // Hands the relay the first packets of conversations started here that it has not taken yet:

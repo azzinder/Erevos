@@ -1700,8 +1700,10 @@ export class E2E {
   }
 
   /**
-   * Keeps, without telling them, that these messages of theirs came (`got`) or were read here,
-   * while their chat appears offline. Told with the next message this chat writes to them.
+   * Keeps that these messages of theirs came (`got`) or were read here, to tell them with the next
+   * message that goes to them, whatever it is: while their chat appears offline, the next this chat
+   * writes; else the next look's (`readDue`). What was read is always kept so first: told from
+   * memory alone, a phone put away right after reading never said it.
    */
   hold(identity: string, kind: 'got' | 'read', held: string[]): Promise<void> {
     return this.run(async () => {
@@ -1713,6 +1715,20 @@ export class E2E {
       const heldRead = kind === 'read' ? add(contact.heldRead) : contact.heldRead;
       await this.save(this.withContact({ ...contact, heldGot, heldRead }));
     });
+  }
+
+  /**
+   * The contacts still to hear what was read here (`hold`), by identity: any message sealed for
+   * them says it. Not those whose chat appears offline, who hear with what is next written to
+   * them, nor a message request, which hears nothing.
+   */
+  readDue(): string[] {
+    return this.data.contacts.filter((contact) => !contact.hide && !contact.request && contact.heldRead.length > 0).map((contact) => contact.identity);
+  }
+
+  /** What is kept as read for a contact and not told yet. */
+  heldRead(identity: string): string[] {
+    return [...(this.find(identity)?.heldRead ?? [])];
   }
 
   /** The phone numbers linked to contacts, by identity. */

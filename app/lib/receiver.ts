@@ -867,16 +867,21 @@ export function tellOpenLater(e2e: E2E, answers: Set<string>): void {
 // next look.
 export async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, answers, near }: State) {
   tellOpenLater(chats.e2e, answers);
-  for (const peer of new Set([...Object.keys(receipts), ...answers])) {
+  // What was read in a chat and its screen did not get to say (E2E.hold) is said here: any message does.
+  const due = chats.e2e.readDue().map((identity) => `${CONTACT_PREFIX}${identity}`);
+  for (const peer of new Set([...Object.keys(receipts), ...answers, ...due])) {
     const got = receipts[peer] ?? [];
     delete receipts[peer];
     answers.delete(peer);
     const identity = peer.slice(CONTACT_PREFIX.length);
     // A contact deleted meanwhile is told nothing.
     if (!chats.e2e.contacts().some((contact) => contact.identity === identity)) continue;
+    const held = chats.e2e.heldRead(identity);
     try {
       await tell(chats, place, identity, { got, on: shows ? ONLINE : 0 }, near);
     } catch {
+      // Sealed, it is no longer kept: kept again, for the next look.
+      if (held.length > 0) await chats.e2e.hold(identity, 'read', held).catch(() => undefined);
       if (got.length > 0) receipts[peer] = [...got, ...(receipts[peer] ?? [])];
     }
   }

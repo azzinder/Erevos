@@ -1128,11 +1128,20 @@ t('a phone says it is open when it writes or answers, and a chat that appears of
   const after = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'and again', bob.from)).packet));
   assert.deepEqual([after.got, after.read], [[], []]);
 
-  // Shown again, what is held goes with the next message, whatever it is.
+  // Shown again, what is held goes with the next message, whatever it is. While the chat appears
+  // offline nothing is due of itself (readDue); shown, the next look says it.
   await bob.e2e.hold(aliceId, 'read', [two.tag]);
+  assert.deepEqual(bob.e2e.readDue(), []);
   await bob.e2e.setHidden(aliceId, false);
+  assert.deepEqual([bob.e2e.readDue(), bob.e2e.heldRead(aliceId)], [[aliceId], [two.tag]]);
   const shown = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { on: ONLINE })).packet));
   assert.deepEqual([shown.read, shown.online > 0], [[two.tag], true]);
+  // Said, it is due no more; read with the app closed before it was said, it is still due at the next start.
+  assert.deepEqual(bob.e2e.readDue(), []);
+  await bob.e2e.hold(aliceId, 'read', [one.tag]);
+  assert.deepEqual((await E2E.open('space', 1, bob.key)).readDue(), [aliceId]);
+  const late = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from)).packet));
+  assert.deepEqual(late.read, [one.tag]);
 });
 
 t('a voice message travels in parts, each with its tag, and comes back whole', async () => {
