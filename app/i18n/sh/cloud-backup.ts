@@ -179,4 +179,30 @@ export const cloudBackup: Record<string, string> = {
     "Obriši ih",
   "Leftovers":
     "Ostaci",
+  "The backup itself is not there.":
+    "Same rezervne kopije nema.",
+  "It is not made with the automatic backups’ password, so it cannot be checked here.":
+    "Nije napravljena lozinkom automatskih kopija, pa se ovdje ne može provjeriti.",
+  "The backup itself is damaged: {error}":
+    "Sama rezervna kopija je oštećena: {error}",
+  "There is no backup there.":
+    "Tamo nema rezervne kopije.",
+  "Check the backups":
+    "Provjera rezervnih kopija",
+  "After each automatic backup Erevos reads it back from the folder: it opens with its password, every part it names is there, of its size, and two of them, picked at random, are read through and open too. Of the server it then only looks at what is listed there, so nothing is downloaded. Check now also downloads the server’s newest backup and ten of its parts, and reads ten in the folder.":
+    "Nakon svake automatske kopije Erevos je ponovo čita iz mape: otvara se svojom lozinkom, svaki dio koji navodi je tu, svoje veličine, a dva od njih, nasumično odabrana, čitaju se cijela i također se otvaraju. Na serveru tada gleda samo ono što je tamo na popisu, pa se ništa ne preuzima. Provjeri sada uz to preuzima najnoviju kopiju sa servera i deset njenih dijelova, i čita deset u mapi.",
+  "Checking…":
+    "Provjera…",
+  "Check now":
+    "Provjeri sada",
+  "{place}: not checked yet.":
+    "{place}: još nije provjereno.",
+  "{place}, {when}: {error}":
+    "{place}, {when}: {error}",
+  "{place}, {when}: of its {parts} parts, {missing} are missing and {damaged} are not as made. A restore would lack their photos and files. Back up now, then check again.":
+    "{place}, {when}: od njenih {parts} dijelova nedostaje {missing}, a {damaged} nisu kakvi su napravljeni. Vraćanju bi nedostajale njihove fotografije i datoteke. Napravi kopiju sada, pa provjeri ponovo.",
+  "{place}, {when}: whole. It opens, all {parts} parts are there, and the {read} read through open too.":
+    "{place}, {when}: cijela. Otvara se, svih {parts} dijelova je tu, a i {read} pročitanih u cijelosti se otvaraju.",
+  "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
+    "{place}, {when}: kopija i svih {parts} dijelova su tu, svaki svoje veličine.",
 };

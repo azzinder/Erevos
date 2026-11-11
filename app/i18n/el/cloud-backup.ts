@@ -181,4 +181,30 @@ export const cloudBackup: Record<string, string> = {
     "Διαγραφή τους",
   "Leftovers":
     "Υπολείμματα",
+  "The backup itself is not there.":
+    "Το ίδιο το αντίγραφο δεν είναι εκεί.",
+  "It is not made with the automatic backups’ password, so it cannot be checked here.":
+    "Δεν έγινε με τον κωδικό των αυτόματων αντιγράφων, οπότε δεν ελέγχεται εδώ.",
+  "The backup itself is damaged: {error}":
+    "Το ίδιο το αντίγραφο είναι χαλασμένο: {error}",
+  "There is no backup there.":
+    "Δεν υπάρχει αντίγραφο εκεί.",
+  "Check the backups":
+    "Έλεγχος αντιγράφων",
+  "After each automatic backup Erevos reads it back from the folder: it opens with its password, every part it names is there, of its size, and two of them, picked at random, are read through and open too. Of the server it then only looks at what is listed there, so nothing is downloaded. Check now also downloads the server’s newest backup and ten of its parts, and reads ten in the folder.":
+    "Μετά από κάθε αυτόματο αντίγραφο το Erevos το ξαναδιαβάζει από τον φάκελο: ανοίγει με τον κωδικό του, κάθε κομμάτι που αναφέρει είναι εκεί, στο μέγεθός του, και δύο από αυτά, στην τύχη, διαβάζονται ολόκληρα και ανοίγουν κι αυτά. Από τον server κοιτάζει τότε μόνο τι υπάρχει στη λίστα του, οπότε δεν κατεβαίνει τίποτα. Ο «Έλεγχος τώρα» κατεβάζει επίσης το νεότερο αντίγραφο του server και δέκα κομμάτια του, και διαβάζει δέκα στον φάκελο.",
+  "Checking…":
+    "Έλεγχος…",
+  "Check now":
+    "Έλεγχος τώρα",
+  "{place}: not checked yet.":
+    "{place}: δεν έχει ελεγχθεί ακόμα.",
+  "{place}, {when}: {error}":
+    "{place}, {when}: {error}",
+  "{place}, {when}: of its {parts} parts, {missing} are missing and {damaged} are not as made. A restore would lack their photos and files. Back up now, then check again.":
+    "{place}, {when}: από τα {parts} κομμάτια του, λείπουν {missing} και {damaged} δεν είναι όπως φτιάχτηκαν. Μια επαναφορά θα έχανε τις φωτογραφίες και τα αρχεία τους. Κάνε αντίγραφο τώρα και έλεγξε ξανά.",
+  "{place}, {when}: whole. It opens, all {parts} parts are there, and the {read} read through open too.":
+    "{place}, {when}: ακέραιο. Ανοίγει, και τα {parts} κομμάτια είναι εκεί, και τα {read} που διαβάστηκαν ολόκληρα ανοίγουν κι αυτά.",
+  "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
+    "{place}, {when}: το αντίγραφο και όλα τα {parts} κομμάτια είναι εκεί, το καθένα στο μέγεθός του.",
 };

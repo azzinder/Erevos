@@ -1,0 +1,252 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+import {
+  backupFileOf,
+  checkPart,
+  DamagedPartError,
+  openBackupWithKey,
+  WrongBackupPasswordError,
+  type BackupKey,
+  type PartMade,
+  type PartReader,
+} from "../lock/backup";
+import { cloudFiles, type CloudBackup } from "./backup-cloud";
+import type { Book } from "./backup-ledger";
+import { t } from "./i18n";
+import { secureGet, secureSet } from "./secure";
+
+// Whether the newest automatic backup in each place it goes to is there whole, as a restore would
+// need it (lib/backup-folder.ts, lib/backup-cloud.ts).
+//
+// After each automatic backup, by itself: in the folder, the backup is read back and opened with
+// automatic backups' key, every part it names is there, of its size, and a few of them, picked at
+// random, are read whole and opened. On a server only what costs no download: the backup and every
+// part it named are listed there, of their sizes. Checked by hand, the server's backup is
+// downloaded and opened too, and a few of its parts, as in the folder. Every part read whole would
+// be the whole backup again, many GB on a server: a few at random find a place that damages or
+// cuts what it is given, and the sizes find one missing or cut short.
+//
+// What was found stays on the phone (CHECKED), in no backup: only the place, when, how many parts,
+// and what was wrong.
+
+/** What a check of the newest backup in one place found. `parts`: how many it names; `read`: how
+ *  many of them were read whole; `missing` and `damaged`: how many are not there, or not as made;
+ *  `opened`: whether the backup itself was read back and opened; `error`: why it could not be
+ *  checked, or what is wrong with the backup itself, '' when nothing. */
+export type Checked = {
+  at: number;
+  parts: number;
+  read: number;
+  missing: number;
+  damaged: number;
+  opened: boolean;
+  error: string;
+};
+
+/** The last check of each place: the folder's, and the server's. */
+export type Checks = { folder: Checked | null; server: Checked | null };
+
+const CHECKED = "erevos.backup-checked";
+
+/** How many parts a check reads whole: after each automatic backup, and when checked by hand. */
+export const AUTO_SAMPLE = 2;
+export const HAND_SAMPLE = 10;
+
+/** Whether a check found the backup whole. */
+export const checkedWhole = (checked: Checked): boolean =>
+  !checked.error && checked.missing === 0 && checked.damaged === 0;
+
+function checkedOf(value: unknown): Checked | null {
+  const v = value as Partial<Checked> | null;
+  if (!v || typeof v !== "object") return null;
+  const n = (x: unknown) =>
+    typeof x === "number" && Number.isFinite(x) && x >= 0 ? x : 0;
+  return {
+    at: n(v.at),
+    parts: n(v.parts),
+    read: n(v.read),
+    missing: n(v.missing),
+    damaged: n(v.damaged),
+    opened: v.opened === true,
+    error: typeof v.error === "string" ? v.error : "",
+  };
+}
+
+export async function loadChecks(): Promise<Checks> {
+  try {
+    const value = JSON.parse((await secureGet(CHECKED)) ?? "null") as Partial<
+      Record<keyof Checks, unknown>
+    > | null;
+    return {
+      folder: checkedOf(value?.folder),
+      server: checkedOf(value?.server),
+    };
+  } catch {
+    return { folder: null, server: null };
+  }
+}
+
+/** Keeps what a check found in a place; null forgets it, as when backups no longer go there. */
+export async function saveCheck(
+  place: keyof Checks,
+  checked: Checked | null,
+): Promise<Checks> {
+  const checks = { ...(await loadChecks()), [place]: checked };
+  await secureSet(CHECKED, JSON.stringify(checks));
+  return checks;
+}
+
+/** A place's backup files: their sizes (-1 where not said) and each one's bytes, read as asked. */
+export type BackupFiles = { sizes: Map<string, number>; read: PartReader };
+
+const errorText = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+// Up to `count` of `items`, picked at random.
+function pick<T>(items: T[], count: number, random: () => number): T[] {
+  const left = [...items];
+  const picked: T[] = [];
+  while (picked.length < count && left.length)
+    picked.push(left.splice(Math.floor(random() * left.length), 1)[0]);
+  return picked;
+}
+
+/**
+ * Checks the backup `name` among `files`: read back and opened with `key`, every part it names
+ * there, of its size, and `sample` of them read whole and opened.
+ */
+export async function checkBackup(
+  files: BackupFiles,
+  name: string,
+  key: Pick<BackupKey, "key" | "salt">,
+  sample: number,
+  now = Date.now(),
+  random: () => number = Math.random,
+): Promise<Checked> {
+  const checked: Checked = {
+    at: now,
+    parts: 0,
+    read: 0,
+    missing: 0,
+    damaged: 0,
+    opened: false,
+    error: "",
+  };
+  let bytes: Uint8Array | null;
+  try {
+    bytes = files.sizes.has(name) ? await files.read(name) : null;
+  } catch (error) {
+    return { ...checked, error: errorText(error) };
+  }
+  if (!bytes)
+    return { ...checked, error: t("The backup itself is not there.") };
+  let parts;
+  try {
+    parts = (await openBackupWithKey(bytes, key)).parts;
+  } catch (error) {
+    return {
+      ...checked,
+      error:
+        error instanceof WrongBackupPasswordError
+          ? t(
+              "It is not made with the automatic backups’ password, so it cannot be checked here.",
+            )
+          : t("The backup itself is damaged: {error}", {
+              error: errorText(error),
+            }),
+    };
+  }
+  checked.opened = true;
+  if (!parts) return checked;
+  checked.parts = parts.names.length;
+  const there: number[] = [];
+  parts.names.forEach((part, n) => {
+    const size = files.sizes.get(part);
+    const record = parts.made?.[n];
+    if (size === undefined) checked.missing++;
+    else if (size >= 0 && record && size !== record.size) checked.damaged++;
+    else there.push(n);
+  });
+  for (const n of pick(there, sample, random)) {
+    try {
+      const part = await files.read(parts.names[n]);
+      if (!part) checked.missing++;
+      else {
+        checkPart(parts, n, part);
+        checked.read++;
+      }
+    } catch (error) {
+      if (error instanceof DamagedPartError) checked.damaged++;
+      else return { ...checked, error: errorText(error) };
+    }
+  }
+  return checked;
+}
+
+/**
+ * Checks, by what the server lists, that the backup `name` sent there and every part it named (as
+ * the ledger says, `made`) are there, of their sizes: nothing is downloaded.
+ */
+export function checkListed(
+  sizes: Map<string, number>,
+  name: string,
+  made: readonly PartMade[],
+  now = Date.now(),
+): Checked {
+  const checked: Checked = {
+    at: now,
+    parts: made.length,
+    read: 0,
+    missing: 0,
+    damaged: 0,
+    opened: false,
+    error: "",
+  };
+  if (!sizes.has(name))
+    return { ...checked, error: t("The backup itself is not there.") };
+  for (const part of made) {
+    const size = sizes.get(part.name);
+    if (size === undefined) checked.missing++;
+    else if (size >= 0 && size !== part.size) checked.damaged++;
+  }
+  return checked;
+}
+
+/** The newest backup in a folder this phone's automatic backups made, as the ledger's book there
+ *  says, else the newest there by its name; null when there is none. */
+export function newestIn(
+  names: Iterable<string>,
+  book: Book | undefined,
+): string | null {
+  const backups = [...names]
+    .filter((name) => backupFileOf(name)?.part === false)
+    .sort();
+  const made = backups.filter((name) => book?.has(name));
+  return (made.length ? made : backups).pop() ?? null;
+}
+
+/** Checks the newest backup sent to the server, downloading it and `sample` of its parts. */
+export async function checkServer(
+  cloud: CloudBackup,
+  key: Pick<BackupKey, "key" | "salt">,
+  sample: number,
+  now = Date.now(),
+): Promise<Checked | null> {
+  const name = cloud.names[cloud.names.length - 1];
+  if (!name) return null;
+  try {
+    return await checkBackup(await cloudFiles(cloud), name, key, sample, now);
+  } catch (error) {
+    return {
+      at: now,
+      parts: 0,
+      read: 0,
+      missing: 0,
+      damaged: 0,
+      opened: false,
+      error: errorText(error),
+    };
+  }
+}

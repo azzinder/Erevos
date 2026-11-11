@@ -56,6 +56,7 @@ import {
   pickFolder,
   pickParts,
   PICKS_PART_FILES,
+  checkBackupsNow,
   runAutoBackup,
   startAutoBackup,
   stopAutoBackup,
@@ -71,6 +72,13 @@ import {
   putPhoneCalls,
   setBacksUpCalls,
 } from "../lib/backup-calls";
+import {
+  checkedWhole,
+  loadChecks,
+  saveCheck,
+  type Checked,
+  type Checks,
+} from "../lib/backup-check";
 import { phoneSettingsForBackup } from "../lib/backup-native";
 import { afterRestore, beforeRestore } from "../lib/backup-settings";
 import {
@@ -206,6 +214,8 @@ export default function Backups() {
   const [callsToo, setCallsToo] = useState(false);
   // The server automatic backups go to as well, and what is typed to add one or to restore from one.
   const [cloud, setCloud] = useState<CloudBackup | null>(null);
+  const [checks, setChecks] = useState<Checks>({ folder: null, server: null });
+  const [checking, setChecking] = useState(false);
   const [form, setForm] = useState<"add" | "restore" | null>(null);
   const adding = form === "add";
   // The backups on a server to restore from, newest first, once listed.
@@ -222,6 +232,7 @@ export default function Backups() {
   useEffect(() => {
     loadAutoBackup().then(setAuto);
     void loadCloudBackup().then(setCloud);
+    void loadChecks().then(setChecks);
     void backsUpSms().then(setSmsToo);
     void backsUpCalls().then(setCallsToo);
     void Promise.all([restoredFromOther(), lostAt()]).then(([other, at]) =>
@@ -301,12 +312,25 @@ export default function Backups() {
     await backUpNow();
   }
 
+  async function checkNow() {
+    say("");
+    setChecking(true);
+    try {
+      setChecks(await checkBackupsNow());
+    } catch (error) {
+      say(errorText(error), true);
+    } finally {
+      setChecking(false);
+    }
+  }
+
   async function backUpNow() {
     setBusy(true);
     try {
       const { auto: next, cloud: sent } = await runAutoBackup(true);
       setAuto(next);
       setCloud(sent);
+      setChecks(await loadChecks());
       if (next?.error) say(t("Not made. {error}", { error: next.error }), true);
       else if (next && !next.folder) {
         // Restored from a backup made elsewhere: no folder here yet.
@@ -353,6 +377,7 @@ export default function Backups() {
     setBusy(true);
     try {
       setCloud(await startCloudBackup(address, user.trim(), secret));
+      setChecks(await saveCheck("server", null));
       setForm(null);
       setSecret("");
     } catch (error) {
@@ -395,6 +420,7 @@ export default function Backups() {
     if (!(await confirm(t("Stop sending to the server"), told))) return;
     await stopCloudBackup();
     setCloud(null);
+    setChecks(await saveCheck("server", null));
     say(t("Backups no longer go to the server."));
   }
 
@@ -1231,6 +1257,38 @@ export default function Backups() {
         </>
       ) : null}
 
+      {CAN_AUTO_BACKUP && auto?.hard ? (
+        <>
+          <SectionTitle title={t("Check the backups")} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t(
+                "After each automatic backup Erevos reads it back from the folder: it opens with its password, every part it names is there, of its size, and two of them, picked at random, are read through and open too. Of the server it then only looks at what is listed there, so nothing is downloaded. Check now also downloads the server’s newest backup and ten of its parts, and reads ten in the folder.",
+              )}
+            </Text>
+            {auto.folder ? (
+              <CheckLine
+                where={folderLabel(auto.folder)}
+                checked={checks.folder}
+              />
+            ) : null}
+            {cloud ? (
+              <CheckLine where={cloudLabel(cloud)} checked={checks.server} />
+            ) : null}
+            <Row wrap>
+              <Button
+                title={checking ? t("Checking…") : t("Check now")}
+                kind="secondary"
+                compact
+                loading={checking}
+                onPress={() => void checkNow()}
+                disabled={busy || checking}
+              />
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
       {phoneDevice?.appSpace ? (
         <>
           <SectionTitle title={t("What takes room")} />
@@ -1443,6 +1501,62 @@ export default function Backups() {
 }
 
 const hint = { fontSize: 14, lineHeight: 20 };
+
+// What the last check of a place found (lib/backup-check.ts).
+function CheckLine({
+  where,
+  checked,
+}: {
+  where: string;
+  checked: Checked | null;
+}) {
+  const { colors } = useTheme();
+  if (!checked)
+    return (
+      <Text variant="caption" tone="muted" style={hint}>
+        {t("{place}: not checked yet.", { place: where })}
+      </Text>
+    );
+  const when = whenText(checked.at);
+  const whole = checkedWhole(checked);
+  const text = checked.error
+    ? t("{place}, {when}: {error}", {
+        place: where,
+        when,
+        error: checked.error,
+      })
+    : !whole
+      ? t(
+          "{place}, {when}: of its {parts} parts, {missing} are missing and {damaged} are not as made. A restore would lack their photos and files. Back up now, then check again.",
+          {
+            place: where,
+            when,
+            parts: checked.parts,
+            missing: checked.missing,
+            damaged: checked.damaged,
+          },
+        )
+      : checked.opened
+        ? t(
+            "{place}, {when}: whole. It opens, all {parts} parts are there, and the {read} read through open too.",
+            { place: where, when, parts: checked.parts, read: checked.read },
+          )
+        : t(
+            "{place}, {when}: the backup and all {parts} parts are there, each of its size.",
+            { place: where, when, parts: checked.parts },
+          );
+  return (
+    <Text
+      variant="caption"
+      color={whole ? undefined : colors.danger}
+      tone={whole ? "muted" : undefined}
+      style={hint}
+    >
+      {whole ? "✓ " : "⚠ "}
+      {text}
+    </Text>
+  );
+}
 
 function sizeText(bytes: number): string {
   return bytes < 1024 * 1024

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { backupFileName, backupStem, freeStem, partFileName, uniqueStem, type PartReader, type PartSink } from '../lock/backup';
+import { backupFileName, backupFileOf, backupStem, freeStem, partFileName, uniqueStem, type PartReader, type PartSink } from '../lock/backup';
 
 import { handOverAll } from './hand-over.web';
 import { SHELL, shellFetch } from './shell';
@@ -126,6 +126,15 @@ export async function writeBackup(folder: string, make: (part: PartSink) => Prom
 export async function listBackupFiles(folder: string): Promise<Map<string, number> | null> {
   if (SHELL !== 'electron') return null;
   return new Map((await namesIn(folder)).map((name) => [name, -1]));
+}
+
+/** The backups' files in a folder, their sizes not said (-1), and each one's bytes, read as asked:
+ *  to check that a backup there is whole (lib/backup-check.ts). Only in the desktop app. */
+export async function backupFilesIn(folder: string): Promise<{ sizes: Map<string, number>; read: PartReader } | null> {
+  if (SHELL !== 'electron') return null;
+  const names = (await namesIn(folder)).filter((name) => backupFileOf(name) !== null);
+  const { read } = await folderParts(folder);
+  return { sizes: new Map(names.map((name) => [name, -1])), read };
 }
 
 /** Deletes those of a folder's backup files, in the desktop app; one that does not go is left for the next time. */

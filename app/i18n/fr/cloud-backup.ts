@@ -180,4 +180,30 @@ export const cloudBackup: Record<string, string> = {
     "Les supprimer",
   "Leftovers":
     "Restes",
+  "The backup itself is not there.":
+    "La sauvegarde elle-même n’est pas là.",
+  "It is not made with the automatic backups’ password, so it cannot be checked here.":
+    "Elle n’est pas faite avec le mot de passe des sauvegardes automatiques, elle ne peut donc pas être vérifiée ici.",
+  "The backup itself is damaged: {error}":
+    "La sauvegarde elle-même est endommagée : {error}",
+  "There is no backup there.":
+    "Il n’y a pas de sauvegarde là.",
+  "Check the backups":
+    "Vérifier les sauvegardes",
+  "After each automatic backup Erevos reads it back from the folder: it opens with its password, every part it names is there, of its size, and two of them, picked at random, are read through and open too. Of the server it then only looks at what is listed there, so nothing is downloaded. Check now also downloads the server’s newest backup and ten of its parts, and reads ten in the folder.":
+    "Après chaque sauvegarde automatique, Erevos la relit depuis le dossier : elle s’ouvre avec son mot de passe, chaque partie qu’elle nomme est là, à sa taille, et deux d’entre elles, prises au hasard, sont lues en entier et s’ouvrent aussi. Du serveur, il ne regarde alors que ce qui y est listé, donc rien n’est téléchargé. Vérifier maintenant télécharge en plus la dernière sauvegarde du serveur et dix de ses parties, et en lit dix dans le dossier.",
+  "Checking…":
+    "Vérification…",
+  "Check now":
+    "Vérifier maintenant",
+  "{place}: not checked yet.":
+    "{place} : pas encore vérifiée.",
+  "{place}, {when}: {error}":
+    "{place}, {when} : {error}",
+  "{place}, {when}: of its {parts} parts, {missing} are missing and {damaged} are not as made. A restore would lack their photos and files. Back up now, then check again.":
+    "{place}, {when} : de ses {parts} parties, {missing} manquent et {damaged} ne sont pas comme faites. Une restauration n’aurait pas leurs photos et fichiers. Fais une sauvegarde maintenant, puis vérifie à nouveau.",
+  "{place}, {when}: whole. It opens, all {parts} parts are there, and the {read} read through open too.":
+    "{place}, {when} : complète. Elle s’ouvre, les {parts} parties sont là, et les {read} lues en entier s’ouvrent aussi.",
+  "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
+    "{place}, {when} : la sauvegarde et ses {parts} parties sont là, chacune à sa taille.",
 };

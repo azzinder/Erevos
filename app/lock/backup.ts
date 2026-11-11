@@ -757,7 +757,28 @@ function partsOf(entry: Entry, key: Uint8Array): BackupParts {
 }
 
 /** Opens a backup file with its password, a bare one too. Throws NotABackupError, NewerBackupError or WrongBackupPasswordError. */
-export async function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
+export function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
+  return openSealed(bytes, async (salt, iter, hard) => (await backupKey(password, salt, iter, hard)).key);
+}
+
+/** Opens a backup file with the key automatic backups keep (lib/backup-folder.ts), without their
+ *  password: to check one they made. Throws WrongBackupPasswordError when it is not made with it. */
+export function openBackupWithKey(bytes: Uint8Array, kept: Pick<BackupKey, 'key' | 'salt'>): Promise<Backup> {
+  return openSealed(bytes, async (salt) => {
+    if (!sameBytes(salt, kept.salt)) throw new WrongBackupPasswordError();
+    return kept.key;
+  });
+}
+
+/** Whether part `n` of an opened backup, read back as `bytes`, is the one it names, whole: throws
+ *  DamagedPartError when it is not. */
+export function checkPart({ names, id, key, made }: BackupParts, n: number, bytes: Uint8Array): void {
+  const record = made?.[n] ?? null;
+  if (record) openPart(key, fromHex(record.id), record.n, names[n], bytes, record);
+  else openPart(key, id, n, names[n], bytes);
+}
+
+async function openSealed(bytes: Uint8Array, derive: (salt: Uint8Array, iter: number, hard: BackupHard | null) => Promise<Uint8Array>): Promise<Backup> {
   const old = bytes.length >= MAGIC_1.length && sameBytes(bytes.subarray(0, MAGIC_1.length), MAGIC_1);
   const bare = !old && !(bytes.length >= MAGIC.length && sameBytes(bytes.subarray(0, MAGIC.length), MAGIC));
   const at = bare ? 0 : MAGIC.length;
@@ -775,7 +796,7 @@ export async function openBackup(bytes: Uint8Array, password: string): Promise<B
     // A cost no Erevos makes, as a made-up file may name to keep the phone busy.
     if (!isHardCost(hard)) throw new NotABackupError();
   }
-  const { key } = await backupKey(password, salt, iter, hard);
+  const key = await derive(salt, iter, hard);
   let packed: Uint8Array;
   try {
     packed = decryptBytes(key, bytes.subarray(at + length));

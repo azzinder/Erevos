@@ -144,6 +144,21 @@ export async function listBackupFiles(folder: string): Promise<Map<string, numbe
   return new Map(entries.map((entry) => [entry.name, entry.size]));
 }
 
+/** The backups' files in a folder, with their sizes (-1 where the folder does not say them), and
+ *  each one's bytes, read as asked: to check that a backup there is whole (lib/backup-check.ts). */
+export async function backupFilesIn(folder: string): Promise<{ sizes: Map<string, number>; read: PartReader } | null> {
+  const entries = (await entriesOf(folder, true)).filter((entry) => backupFileOf(entry.name) !== null);
+  const byName = new Map(entries.map((entry) => [entry.name, entry]));
+  return {
+    sizes: new Map(entries.map((entry) => [entry.name, entry.size])),
+    read: async (name) => {
+      const entry = byName.get(name);
+      const file = entry?.file ?? (entry?.uri ? new File(entry.uri) : null);
+      return file?.exists ? file.bytes() : null;
+    },
+  };
+}
+
 /** Deletes those of a folder's backup files; one that does not go is left for the next time. */
 export async function deleteBackupFiles(folder: string, names: string[]): Promise<void> {
   if (names.length === 0) return;

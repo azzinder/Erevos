@@ -564,6 +564,26 @@ export async function cloudParts(server: CloudServer): Promise<{ missing(names: 
   };
 }
 
+/**
+ * The backups and parts in the server's folder, with their sizes (-1 where the server does not say
+ * them), and each one's bytes, downloaded as asked, at most CLOUD_RESTORE_MOST: to check that a
+ * backup there is whole (lib/backup-check.ts). Throws CloudError with why not.
+ */
+export async function cloudFiles(server: CloudServer): Promise<{ sizes: Map<string, number>; read: PartReader }> {
+  const sizes = new Map(listed(await listing(server), isBackupName).map((file) => [file.name, file.size || -1]));
+  return {
+    sizes,
+    read: async (name) => {
+      if (!sizes.has(name)) return null;
+      const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST);
+      if (answer.status === 404) return null;
+      const said = cloudStatusText(answer.status);
+      if (said) throw new CloudError(said);
+      return answer.bytes;
+    },
+  };
+}
+
 // One element's text in a piece of WebDAV's XML, whatever prefix its namespace has.
 function element(xml: string, name: string): string | null {
   const found = new RegExp(`<(?:[\\w.-]+:)?${name}\\b[^>]*>([\\s\\S]*?)</(?:[\\w.-]+:)?${name}\\s*>`, 'i').exec(xml);

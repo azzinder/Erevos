@@ -180,4 +180,30 @@ export const cloudBackup: Record<string, string> = {
     "Borrarlos",
   "Leftovers":
     "Restos",
+  "The backup itself is not there.":
+    "La copia en sí no está.",
+  "It is not made with the automatic backups’ password, so it cannot be checked here.":
+    "No está hecha con la contraseña de las copias automáticas, así que no se puede comprobar aquí.",
+  "The backup itself is damaged: {error}":
+    "La copia en sí está dañada: {error}",
+  "There is no backup there.":
+    "No hay ninguna copia ahí.",
+  "Check the backups":
+    "Comprobar las copias",
+  "After each automatic backup Erevos reads it back from the folder: it opens with its password, every part it names is there, of its size, and two of them, picked at random, are read through and open too. Of the server it then only looks at what is listed there, so nothing is downloaded. Check now also downloads the server’s newest backup and ten of its parts, and reads ten in the folder.":
+    "Tras cada copia automática, Erevos la vuelve a leer de la carpeta: se abre con su contraseña, cada parte que nombra está ahí, con su tamaño, y dos de ellas, elegidas al azar, se leen enteras y también se abren. Del servidor solo mira entonces lo que aparece en su lista, así que no se descarga nada. Comprobar ahora además descarga la copia más reciente del servidor y diez de sus partes, y lee diez en la carpeta.",
+  "Checking…":
+    "Comprobando…",
+  "Check now":
+    "Comprobar ahora",
+  "{place}: not checked yet.":
+    "{place}: aún sin comprobar.",
+  "{place}, {when}: {error}":
+    "{place}, {when}: {error}",
+  "{place}, {when}: of its {parts} parts, {missing} are missing and {damaged} are not as made. A restore would lack their photos and files. Back up now, then check again.":
+    "{place}, {when}: de sus {parts} partes faltan {missing} y {damaged} no están como se hicieron. Una restauración no tendría sus fotos y archivos. Haz una copia ahora y vuelve a comprobar.",
+  "{place}, {when}: whole. It opens, all {parts} parts are there, and the {read} read through open too.":
+    "{place}, {when}: completa. Se abre, las {parts} partes están, y las {read} leídas enteras también se abren.",
+  "{place}, {when}: the backup and all {parts} parts are there, each of its size.":
+    "{place}, {when}: la copia y sus {parts} partes están ahí, cada una con su tamaño.",
 };

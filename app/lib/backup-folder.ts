@@ -4,18 +4,20 @@
 
 import { earlierParts, hardBackupKey, isBackupPassword, makeBackup, newBackupHard, unneededFiles, type BackupKey, type MakeOptions, type PartMade } from '../lock/backup';
 
-import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
+import { cloudFiles, loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
 import { phoneCallsForBackup } from './backup-calls';
 import { folderPlace, loadLedger, saveLedger, serverPlace, type Book, type Ledger } from './backup-ledger';
 import { phoneSettingsForBackup } from './backup-native';
-import { deleteBackupFiles, listBackupFiles, writeBackup } from './backup-place';
+import { AUTO_SAMPLE, checkBackup, checkListed, checkServer, HAND_SAMPLE, loadChecks, newestIn, saveCheck, type Checks } from './backup-check';
+import { backupFilesIn, deleteBackupFiles, listBackupFiles, writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
+import { t } from './i18n';
 import { panicFolderChanged } from './panic';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 import { openCollectionSkips } from '../lock/collection-data';
 
-export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, partsIn, pickFolder, pickParts, PICKS_PART_FILES, writeBackup, type PartSource, type Written } from './backup-place';
+export { backupFilesIn, CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, partsIn, pickFolder, pickParts, PICKS_PART_FILES, writeBackup, type PartSource, type Written } from './backup-place';
 
 // Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
 // phone with Android's folder picker, on a computer in the desktop app.
@@ -117,6 +119,7 @@ export async function changeAutoBackup(patch: Partial<Pick<AutoBackup, 'every' |
   if (!auto) return null;
   const next = { ...auto, ...patch, error: '' };
   await secureSet(AUTO, JSON.stringify(next));
+  if (patch.folder !== undefined && patch.folder !== auto.folder) await saveCheck('folder', null);
   panicFolderChanged(next.folder);
   return next;
 }
@@ -125,6 +128,8 @@ export async function changeAutoBackup(patch: Partial<Pick<AutoBackup, 'every' |
 export async function stopAutoBackup(): Promise<void> {
   await secureDelete(AUTO);
   await stopCloudBackup();
+  await saveCheck('folder', null);
+  await saveCheck('server', null);
   panicFolderChanged('');
 }
 
@@ -209,8 +214,10 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
       for (const place of [...ledger.keys()]) if (!places.has(place)) ledger.delete(place);
       if (due) {
         try {
-          await intoFolder(auto.folder, key, { phoneSms, phoneCalls, native, skip }, now, bookOf(ledger, folderPlace(auto.folder)));
+          const book = bookOf(ledger, folderPlace(auto.folder));
+          await intoFolder(auto.folder, key, { phoneSms, phoneCalls, native, skip }, now, book);
           auto = { ...auto, last: now, error: '' };
+          await checkFolder(auto.folder, key, book, AUTO_SAMPLE, now);
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
@@ -219,6 +226,15 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
       if (cloud && cloudDue) {
         const book = bookOf(ledger, serverPlace(cloud.url));
         cloud = await sendToCloud(cloud, (parts, reuse) => makeBackup(key, { parts, phoneSms, phoneCalls, native, bare: true, skip, ...reuse }), KEEP, now, book);
+        const sent = cloud.names[cloud.names.length - 1];
+        if (!cloud.error && sent) {
+          // What the server lists of it: nothing is downloaded after each one.
+          try {
+            await saveCheck('server', checkListed((await cloudFiles(cloud)).sizes, sent, book.get(sent) ?? [], now));
+          } catch (error) {
+            await saveCheck('server', { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) });
+          }
+        }
       }
       await saveLedger(key.key, ledger);
     } catch (error) {
@@ -231,6 +247,40 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
     running = null;
   });
   return running;
+}
+
+// Checks the newest backup in the folder (lib/backup-check.ts), reading `sample` of its parts
+// whole, and keeps what it found. A check that fails says so there, not as the backup's error.
+async function checkFolder(folder: string, key: BackupKey, book: Book | undefined, sample: number, now: number): Promise<void> {
+  try {
+    const files = await backupFilesIn(folder);
+    if (!files) return;
+    const name = newestIn(files.sizes.keys(), book);
+    await saveCheck('folder', name ? await checkBackup(files, name, key, sample, now) : { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: t('There is no backup there.') });
+  } catch (error) {
+    await saveCheck('folder', { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) });
+  }
+}
+
+/**
+ * Checks now the newest automatic backup in the folder and on the server (lib/backup-check.ts):
+ * each read back and opened with their key, every part there, of its size, and HAND_SAMPLE of
+ * them read whole. The server's backup and those parts are downloaded. Returns what was found.
+ */
+export async function checkBackupsNow(now = Date.now()): Promise<Checks> {
+  if (running) await running.catch(() => undefined);
+  const auto = await loadAutoBackup();
+  const cloud = await loadCloudBackup();
+  if (auto?.hard) {
+    const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...auto.hard, salt: fromBase64(auto.hard.salt) } };
+    const ledger = await loadLedger(key.key);
+    if (auto.folder) await checkFolder(auto.folder, key, ledger.get(folderPlace(auto.folder)), HAND_SAMPLE, now);
+    if (cloud) {
+      const checked = await checkServer(cloud, key, HAND_SAMPLE, now);
+      if (checked) await saveCheck('server', checked);
+    }
+  }
+  return loadChecks();
 }
 
 /** Makes an automatic backup if one is due, as Erevos looks now and then while a space is open. */

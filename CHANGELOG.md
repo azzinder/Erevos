@@ -73,6 +73,11 @@ On main, not released yet:
   spoke to the relay, the other person was never told, and the message stayed at ✓✓ for them for good. What was
   read is now kept until a message to them has said it, and is said at the next look, by the open chat or in the
   background, also after Erevos was closed. Messages read before this version, whose mark was lost, stay as they are.
+- **Backups are checked**: after each automatic backup Erevos reads it back from the folder, opens it with automatic
+  backups' key, makes sure every part it names is there, of its size, and reads two parts picked at random through.
+  On a server it then looks only at what the server lists, so nothing is downloaded. **Check now** under Backups
+  also downloads the server's newest backup and ten of its parts, and reads ten in the folder. A part missing or
+  damaged shows in red, with how many.
 
 ### Under the hood
 
