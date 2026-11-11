@@ -8,8 +8,10 @@
 // (lock/archive.ts); a file of an imported chat in more chunks than a message's; what a round says
 // (lib/chat-parts.ts); and, with the real core and real relays (crates/erevos-relay), the files
 // going in rounds (lib/share-rounds.ts) through a relay that keeps only a few MB, several times
-// that in all, each phone starting again in the middle; to an Erevos from before, none; and a share
-// stopped by either phone. Those are skipped with a note when the core or the relay is not built.
+// that in all, each phone starting again in the middle; to an Erevos from before, none, and the
+// share ends; a share stopped by either phone; a phone with too little room, or one that cannot
+// write, that waits and says so; and a place lent on a contact's relay, with Tor off, whose files
+// wait for Tor. Those are skipped with a note when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -17,7 +19,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { before, test } from 'node:test';
 
-import { blobs, files } from './files-memory';
+import { blobs, files, room } from './files-memory';
 import { ready, relayNote, startRelay } from './real-relay';
 import { bytesSource, chunkPlan, keepFile, offerRef, readFile, readOffer, sendFile, type FileOffer } from '../lib/attachments';
 import { carriedOf, checkedRounds, ROUND_IDS, toCarry } from '../lib/chat-parts';
@@ -45,7 +47,7 @@ import { canForward } from '../lib/forward';
 import { MAX_IMPORTED_FILE } from '../lib/imports';
 import { messageLine } from '../lib/message-line';
 import { sweepPendingChunks } from '../lib/pending-chunks';
-import { deleteChunk, fromHex, getChunk, putChunk, RelaySession } from '../lib/relay';
+import { deleteChunk, fromHex, getChunk, putChunk, RelaySession, setThroughTor } from '../lib/relay';
 import { beginShare, chunkAt, driveShares, forgetRounds, packCame, readyShare, roundsCame, shareLines, sharesSettled, sharingNow, startsOf, stopShare, WINDOW_CHUNKS, type ShareWay } from '../lib/share-rounds';
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
@@ -263,6 +265,11 @@ t('a round says where chunks wait, how many came, or that it ends, with no words
   assert.deepEqual(checkedRounds({ s, took: 5, gone: true, later: 1 }), { s, took: 5, gone: true });
   assert.deepEqual(checkedRounds({ s, took: 0 }), { s, took: 0 });
   assert.deepEqual(checkedRounds({ s, drop: true, took: 2 }), { s, drop: true });
+  // That the phone has no room for more, with how many it took; that no more files come.
+  assert.deepEqual(checkedRounds({ s, took: 3, full: true, later: 1 }), { s, took: 3, full: true });
+  assert.deepEqual(checkedRounds({ s, took: 3, full: 1 }), { s, took: 3 });
+  assert.deepEqual(checkedRounds({ s, end: true, took: 2 }), { s, end: true });
+  assert.equal(checkedRounds({ s, end: 1 }), null);
   const many = '00'.repeat(24 * (ROUND_IDS + 1));
   for (const bad of [null, 'x', {}, { s: 'x', took: 1 }, { s, took: -1 }, { s, took: 1.5 }, { s, at: 1, r: 'https://x', ids }, { s, at: 1, r: 'ws://x', ids: `${ids}a` }, { s, at: 1, r: 'ws://x', ids: many }, { s, at: 1, r: 'ws://x', ids: '' }, { s, r: 'ws://x', ids }]) {
     assert.equal(checkedRounds(bad), null);
@@ -594,6 +601,235 @@ t(
     await rounds(alice, bob, async () => (await loadRounds(alice.place)).out.length === 0 && (await loadRounds(bob.place)).in.length === 0);
     assert.equal(await goneFromRelay(small, up), true);
     assert.deepEqual((await bobArchive()).linked(alice.id), []);
+  },
+  !ready || !coreReady,
+);
+
+// A round on one phone, to its end.
+async function drive(p: Phone): Promise<void> {
+  driveShares(p.way);
+  await sharesSettled(p.place);
+}
+
+// A clock the checks move on: Date.now, as Erevos reads it, until `stop`.
+function fakeClock(): { now: number; stop(): void } {
+  const real = Date.now;
+  const clock = { now: real(), stop: () => void (Date.now = real) };
+  Date.now = () => clock.now;
+  return clock;
+}
+
+// The chunks of files written here from now on: counted, and while `fails`, refused as a full
+// storage refuses (QuotaExceededError).
+function chunkWrites(): { tried: number; kept: number; fails: boolean; stop(): void } {
+  const set = blobs.set;
+  const writes = { tried: 0, kept: 0, fails: false, stop: () => void (blobs.set = set) };
+  blobs.set = function (name: string, bytes: Uint8Array) {
+    if (name.startsWith(PREFIX)) {
+      writes.tried++;
+      if (writes.fails) throw Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError' });
+      writes.kept++;
+    }
+    return set.call(this, name, bytes);
+  };
+  return writes;
+}
+
+const DAY = 24 * 60 * 60_000;
+
+t(
+  'a phone with too little room takes no more and says so on both phones; one that cannot write fetches nothing again for nothing; both go on once there is room',
+  async () => {
+    forgetRounds();
+    const alice = await phone(0, small);
+    const bob = await phone(1, theirs);
+    await meet(alice, bob);
+    const { archive, film, doc, photos } = await aliceChats(alice, bob);
+    const tag = await share(alice, bob, archive);
+    const bobLine = `contact:${alice.id}|${tag}`;
+    const aliceLine = `contact:${bob.id}|${tag}`;
+    const clock = fakeClock();
+    const writes = chunkWrites();
+    try {
+      const up = await someCame(alice, bob);
+      await deliver(bob);
+      const [was] = (await loadRounds(bob.place)).in;
+      writes.tried = writes.kept = 0;
+
+      // Less than 500 MB free: Bob's Erevos fetches nothing, keeps nothing, and says why, here and to Alice.
+      room.free = 400 * 1000 * 1000;
+      const asked = room.asked;
+      await drive(bob);
+      let [coming] = (await loadRounds(bob.place)).in;
+      assert.equal(coming.taken, was.taken);
+      assert.equal(coming.waits, 'room');
+      assert.equal(writes.tried, 0);
+      assert.equal(room.asked, asked + 1);
+      assert.equal(await goneFromRelay(small, up), false, 'the chunks wait on the relay');
+      assert.equal((await shareLines(bob.place))[bobLine], `Files: ${coming.whole} of 5 · waiting for free space on this phone`);
+      await deliver(alice);
+      await drive(alice);
+      assert.match((await shareLines(alice.place))[aliceLine], /^Sharing, \d+% · waiting for free space on their phone$/);
+      // While the wait lasts the room is not even looked at; after it, once, and the next wait is longer.
+      for (let n = 0; n < 3; n++) await drive(bob);
+      assert.equal(room.asked, asked + 1);
+      clock.now += 61_000;
+      await drive(bob);
+      assert.equal(room.asked, asked + 2);
+      clock.now += 61_000;
+      await drive(bob);
+      assert.equal(room.asked, asked + 2, 'two minutes, this time');
+
+      // Room said to be there, but a chunk cannot be written: fetched once, then not again until the wait is over.
+      room.free = 50 * 1000 * 1000 * 1000;
+      writes.fails = true;
+      clock.now += 61_000;
+      await drive(bob);
+      assert.equal(writes.tried, 1);
+      for (let n = 0; n < 5; n++) await drive(bob);
+      assert.equal(writes.tried, 1, 'not fetched again and again');
+      [coming] = (await loadRounds(bob.place)).in;
+      assert.equal(coming.taken, was.taken);
+      assert.equal(coming.waits, 'room');
+      assert.equal(await goneFromRelay(small, up), false, 'the chunk stays on the relay');
+      clock.now += 4 * 60_000 + 1000;
+      await drive(bob);
+      assert.equal(writes.tried, 2);
+      assert.match((await shareLines(bob.place))[bobLine], /waiting for free space on this phone$/);
+
+      // Room again: after the wait it goes on by itself, to the end, on both phones.
+      writes.fails = false;
+      clock.now += 8 * 60_000 + 1000;
+      await drive(bob);
+      assert.ok((await loadRounds(bob.place)).in[0].taken > was.taken);
+      assert.equal((await loadRounds(bob.place)).in[0].waits, undefined);
+      await deliver(alice);
+      await drive(alice);
+      assert.match((await shareLines(alice.place))[aliceLine] ?? '', /^(Sharing, \d+%)?$/);
+      await rounds(alice, bob, async () => (await loadRounds(alice.place)).out.length === 0 && (await loadRounds(bob.place)).in.length === 0);
+      const kept = (await Archive.open('space', 1, bob.key)).linked(alice.id);
+      assert.deepEqual(await readFile(kept[0].files[0]), photos[0]);
+      assert.deepEqual(await readFile(kept[2].files[0]), film);
+      assert.deepEqual(await readFile(kept[2].files[1]), doc);
+      assert.deepEqual(await shareLines(bob.place), {});
+      assert.deepEqual(await shareLines(alice.place), {});
+    } finally {
+      writes.stop();
+      clock.stop();
+      room.free = null;
+    }
+  },
+  !ready || !coreReady,
+);
+
+t(
+  'a share to an Erevos from before ends three days after its message came, its list deleted, its line saying why; a later one that says it keeps it after all keeps the words, and hears no files come',
+  async () => {
+    forgetRounds();
+    const alice = await phone(0, small);
+    const bob = await phone(1, theirs);
+    await meet(alice, bob);
+    const { archive } = await aliceChats(alice, bob);
+    const clock = fakeClock();
+    try {
+      const tag = await share(alice, bob, archive);
+      const peer = `contact:${bob.id}`;
+      await alice.chats.history.add({ peer, text: '', mine: true, at: clock.now, tag, mark: 0 });
+      const [out] = (await loadRounds(alice.place)).out;
+      const listHere = () => blobs.has(`${PREFIX}${out.list.id}-0`);
+      assert.ok(listHere());
+      // Not said to have come to their phone: it waits, a while.
+      clock.now += 5 * DAY;
+      await drive(alice);
+      assert.deepEqual(await sharingNow(alice.place, bob.id, tag), { s: out.s, percent: 0 });
+      // Their phone says it came, as an Erevos from before does too, and nothing more: three days on, it ends.
+      await alice.chats.history.mark(peer, true, 1, clock.now, [tag]);
+      await drive(alice);
+      clock.now += 3 * DAY - 60_000;
+      await drive(alice);
+      assert.ok(await sharingNow(alice.place, bob.id, tag));
+      assert.equal((await shareLines(alice.place))[`${peer}|${tag}`], 'Sharing, 0%');
+      clock.now += 2 * 60_000;
+      await drive(alice);
+      assert.equal(await sharingNow(alice.place, bob.id, tag), null);
+      assert.deepEqual((await loadRounds(alice.place)).out, []);
+      assert.equal(listHere(), false);
+      assert.deepEqual(await shareLines(alice.place), { [`${peer}|${tag}`]: 'Their Erevos is too old for the files; the messages went as a file' });
+      assert.equal(bob.inbox.length, 0);
+
+      // Bob's was a later Erevos, its phone away: it keeps the words and says so, hears that no
+      // files come, and ends its share with its chats kept.
+      await drive(bob);
+      assert.equal((await loadRounds(bob.place)).in.length, 1);
+      await deliver(alice);
+      await drive(alice);
+      assert.deepEqual(await shareLines(alice.place), {});
+      await deliver(bob);
+      await drive(bob);
+      assert.deepEqual((await loadRounds(bob.place)).in, []);
+      assert.equal((await Archive.open('space', 1, bob.key)).linked(alice.id).length, 5);
+      assert.deepEqual(await shareLines(bob.place), {});
+
+      // Never said to have come: it ends once the relay no longer keeps the message's file, with nothing to say.
+      const again = await share(alice, bob, archive);
+      clock.now += 15 * DAY - 60_000;
+      await drive(alice);
+      assert.ok(await sharingNow(alice.place, bob.id, again));
+      clock.now += 2 * 60_000;
+      await drive(alice);
+      assert.equal(await sharingNow(alice.place, bob.id, again), null);
+      assert.deepEqual(await shareLines(alice.place), {});
+    } finally {
+      clock.stop();
+    }
+  },
+  !ready || !coreReady,
+);
+
+t(
+  'from a place lent on a contact’s relay, with Tor off, the files wait for Tor and say so, and go on by themselves once they may',
+  async () => {
+    forgetRounds();
+    const alice = await phone(0, small);
+    const bob = await phone(1, theirs);
+    await meet(alice, bob);
+    const { archive, film, photos } = await aliceChats(alice, bob);
+    const tag = await share(alice, bob, archive);
+    const line = `contact:${alice.id}|${tag}`;
+    // Bob's Erevos keeps the chats and says so; then its place is one lent on a contact's relay.
+    await drive(bob);
+    const own = bob.way.own;
+    bob.way = { ...bob.way, own: { url: bob.relay, token: `lent.${'ab'.repeat(48)}` } };
+    await rounds(alice, bob, async () => (await loadRounds(bob.place)).in[0]?.waits === 'tor');
+    for (let n = 0; n < 3; n++) {
+      await drive(alice);
+      await deliver(bob);
+      await drive(bob);
+      await deliver(alice);
+    }
+    const [coming] = (await loadRounds(bob.place)).in;
+    assert.equal(coming.taken, 0);
+    assert.equal(coming.waits, 'tor');
+    assert.equal((await shareLines(bob.place))[line], 'Files: 0 of 5 · waiting for Tor (Everything)');
+    const up = await onRelay(alice);
+    assert.ok(up.length > 0);
+    assert.equal(await goneFromRelay(small, up), false);
+    // With Everything through Tor it waits for it no longer, and fetches through it (none here: nothing comes yet).
+    setThroughTor('all');
+    try {
+      await drive(bob);
+    } finally {
+      setThroughTor('off');
+    }
+    assert.equal((await loadRounds(bob.place)).in[0].waits, undefined);
+    assert.equal((await loadRounds(bob.place)).in[0].taken, 0);
+    // Once it may, here as the place has a relay of its own now, it goes on by itself, to the end.
+    bob.way = { ...bob.way, own };
+    await rounds(alice, bob, async () => (await loadRounds(alice.place)).out.length === 0 && (await loadRounds(bob.place)).in.length === 0);
+    const kept = (await Archive.open('space', 1, bob.key)).linked(alice.id);
+    assert.deepEqual(await readFile(kept[2].files[0]), film);
+    assert.deepEqual(await readFile(kept[3].files[1]), photos[2]);
+    assert.deepEqual(await shareLines(bob.place), {});
   },
   !ready || !coreReady,
 );

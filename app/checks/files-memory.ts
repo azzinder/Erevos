@@ -55,3 +55,11 @@ export async function fileStamps(names: readonly string[], _prefix: string): Pro
   }
   return stamps;
 }
+
+/** The room free here, as freeRoom tells it (null: not told), and how many times it was asked. */
+export const room: { free: number | null; asked: number } = { free: null, asked: 0 };
+
+export async function freeRoom(): Promise<number | null> {
+  room.asked++;
+  return room.free;
+}
