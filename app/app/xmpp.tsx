@@ -18,7 +18,9 @@ import { shownLine } from '../lib/call-lines';
 import { doorIsOpen } from '../lib/closed-notices';
 import { canTor, canXmpp } from '../lib/core';
 import { t } from '../lib/i18n';
+import { xmppInboxRows } from '../lib/inbox';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
+import { askReadAll, toRead } from '../lib/read-all';
 import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
 import { xmppThroughTor } from '../lib/xmpp-net';
@@ -157,6 +159,8 @@ export default function XmppScreen() {
   }
 
   const chats = xmppChatList(state).filter((chat) => !state.requests.includes(chat.jid));
+  // Those with messages not read, to read at once (lib/read-all.ts): not who asks to add the account, nor an invitation.
+  const unread = toRead(xmppInboxRows(state));
   const withChat = new Set(chats.map((chat) => chat.jid));
   const roster = Object.values(state.roster)
     .filter((c) => c.subscription !== 'remove')
@@ -332,6 +336,11 @@ export default function XmppScreen() {
 
       <SectionTitle title={t('Chats')} />
       {chats.length === 0 ? <Text tone="muted">{t('No XMPP chats yet.')}</Text> : null}
+      {unread.length > 0 ? (
+        <Row>
+          <Button title={t('Mark all as read')} kind="secondary" compact disabled={busy} onPress={() => askReadAll(ask, unread)} />
+        </Row>
+      ) : null}
       {chats.map((chat) => (
         <ChatCard key={chat.jid} state={state} chat={chat} onOpen={() => open(chat.jid)} />
       ))}

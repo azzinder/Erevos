@@ -27,11 +27,12 @@ import { againNote, copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { press } from '../lib/haptics';
-import { lang, mark, t } from '../lib/i18n';
+import { lang, mark, plural, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { askReadAll, toReadIn } from '../lib/read-all';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { directOther, matrixPresence } from '../lib/matrix';
@@ -273,6 +274,10 @@ function Home() {
   const [online, setOnline] = useState<Set<string>>(new Set());
   // The phone's SMS as last read: the list shows them while they are read again.
   const smsShown = useRef<SmsList>(NO_SMS);
+  // Those of them in the list (not archived, spam nor in the Trash), and how the list is read again:
+  // for Mark all as read (lib/read-all.ts).
+  const smsListed = useRef<InboxSms[]>([]);
+  const reload = useRef<() => void>(() => undefined);
   // Read again, as when the names were just turned on, or a module was turned on or off.
   const [again, setAgain] = useState(0);
   useEffect(() => onModulesChange(() => setAgain((n) => n + 1)), []);
@@ -365,7 +370,8 @@ function Home() {
             // Archived, spam and those in the Trash are not in the list; pinned ones are at its top.
             const order = sms.order;
             const sorted = order ? sortSms(sms.threads, order, sms.blocked, (t) => !!t.name || phones.some((p) => sameNumber(p, t.address))) : null;
-            const merged = mergeRows(buildInbox(contacts, messages, imported, at, sorted?.list ?? sms.threads), groupRows(groups, name, (text) => noteText(text, name)));
+            smsListed.current = sorted?.list ?? sms.threads;
+            const merged = mergeRows(buildInbox(contacts, messages, imported, at, smsListed.current), groupRows(groups, name, (text) => noteText(text, name)));
             const list = order ? arrangeRows(merged, order.pinned, order.drafts) : merged;
             setFolders({ archived: sorted?.archived.length ?? 0, spam: sorted?.spam.length ?? 0, trash: order?.trash.length ?? 0 });
             if (sorted && sorted.back.length > 0) void SmsLink.open(current, key).then((link) => link.unarchive(sorted.back)).catch(() => undefined);
@@ -383,6 +389,7 @@ function Home() {
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
       };
+      reload.current = load;
       // Who shows online, again when the first of them is due to show no more, as it lasts only a
       // while, and as something comes; every half minute at least. A chat that appears offline does
       // not see it.
@@ -498,6 +505,9 @@ function Home() {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
+  // The chats of the part shown with messages not read, whatever the search says, for Mark all as
+  // read in the menu (lib/read-all.ts): none in the public feed.
+  const unreadShown = useMemo(() => toReadIn(everyRow ?? [], show), [everyRow, show]);
   // The choice shows once two parts are on, each with its chip even with no chat yet: otherwise,
   // in a space with only SMS so far, leaving the Erevos chats (as Erevos's icon opens them) for All
   // hid the chips, with no way back.
@@ -921,6 +931,22 @@ function Home() {
             </Text>
           </Pressable>
         ))}
+        {/* Every chat of the part shown read at once, asked first, as each would be opened. */}
+        {unreadShown.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setMenu(false);
+              askReadAll(ask, unreadShown, { sms: smsListed.current, onOwnRead: () => reload.current() }, () => reload.current());
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Mark all as read')}</Text>
+            <Text variant="caption" tone="muted">
+              {plural(unreadShown.length, '{n} chat', '{n} chats')}
+            </Text>
+          </Pressable>
+        ) : null}
         {/* Named in English too, so the language is found in one that cannot be read. */}
         <Pressable
           accessibilityRole="button"
