@@ -18,6 +18,10 @@ On main, not released yet:
   background), drawn on your phone or computer from the sticker's own shapes; nothing is downloaded. In a Matrix, XMPP
   or Nostr chat **Sticker** now offers the built-in sets beside **Mine**, and in an SMS conversation **+** →
   **Sticker** sends one by MMS. A sticker with words carries them in the app's language.
+- **One button for all your services**: the home screen's line of chips is now one button under the search, which
+  says which service shows, the messages not read and any service not connected now, and opens a window with every
+  service as a card, each with its number and a dot for its connection, plus **Add**. With no search the chats with
+  messages not read come first, under Unread, then the rest under Recent.
 - **Voice messages in Opus**: voice messages are recorded as Ogg/Opus on Android 10 and later and in the web and desktop
   apps, at half the size (about 240 KB a minute) and as clear. Older phones and Safari before 18.4 keep AAC. Every
   Erevos plays both, an iPhone before iOS 18.4 too, and they go to Matrix, XMPP and Nostr as voice.ogg.

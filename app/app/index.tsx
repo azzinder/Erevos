@@ -4,7 +4,7 @@
 
 import { router, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, Vibration, View } from 'react-native';
+import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatRow, MyselfRow } from '../components/chat-row';
@@ -16,6 +16,7 @@ import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { usePublicFeed } from '../components/public-feed';
 import { CollectionSign, LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
+import { ListSection, Services, type Service } from '../components/services';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SmsHome } from '../components/sms-home';
 import { SwipeTabs } from '../components/swipe-tabs';
@@ -108,6 +109,10 @@ const trashLooked = new Set<number>();
 // each time they are tapped (`opened`, app/_layout.tsx).
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' || show === 'public' ? show : 'all');
 const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr', public: () => t('Public') };
+
+// A section's title in the list of chats: Unread, then Recent (components/services.tsx ListSection).
+type Section = { section: 'unread' | 'recent' };
+const isSection = (item: object): item is Section => 'section' in item;
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds: a little
 // longer than a hold anywhere else, so an ordinary one does not open it. A short buzz says it opened.
@@ -505,6 +510,16 @@ function Home() {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
+  // With no search, the chats with messages not read come first, under Unread, and the rest under
+  // Recent, each in the order they had (an SMS conversation pinned stays first of its own). A muted
+  // chat's messages wait under Recent, as its number is left out of the service's.
+  const listed = useMemo((): (InboxRow | Section)[] => {
+    if (query.trim()) return shown;
+    const waiting = shown.filter((row) => row.unread > 0 && !row.muted);
+    if (waiting.length === 0) return shown;
+    const rest = shown.filter((row) => !(row.unread > 0 && !row.muted));
+    return [{ section: 'unread' }, ...waiting, ...(rest.length ? [{ section: 'recent' } as Section, ...rest] : [])];
+  }, [shown, query]);
   // The chats of the part shown with messages not read, whatever the search says, for Mark all as
   // read in the menu (lib/read-all.ts): none in the public feed.
   const unreadShown = useMemo(() => toReadIn(everyRow ?? [], show), [everyRow, show]);
@@ -531,18 +546,28 @@ function Home() {
   // New post, on the Public part, for a space with a Nostr key: its public posts are signed with it.
   const newPost = show === 'public' && !!nostr;
   const [writingSms, setWritingSms] = useState(false);
-  // The chips' line: where each tab's chip sits in it, and how far it is scrolled.
-  const strip = useRef<ScrollView>(null);
-  const chipAt = useRef(new Map<InboxShow, { x: number; width: number }>());
-  const stripAt = useRef({ x: 0, width: 0 });
-  useEffect(() => {
-    const chip = chipAt.current.get(show);
-    const { x, width } = stripAt.current;
-    if (!chip || !width) return;
-    const edge = space.lg;
-    if (chip.x - edge < x) strip.current?.scrollTo({ x: Math.max(chip.x - edge, 0), animated: true });
-    else if (chip.x + chip.width + edge > x + width) strip.current?.scrollTo({ x: chip.x + chip.width + edge - width, animated: true });
-  }, [show]);
+  // The services, for the button under the search and its window (components/services.tsx): each
+  // part of the list with its messages not read, and whether its network is connected. Erevos's is
+  // its relay; Matrix's its account read with no problem; XMPP's its connection open; Nostr's its
+  // inbox's relays read. The SMS and the public feed have none to show.
+  const services: Service[] = tabs.map((tab) => ({
+    key: tab,
+    label: SHOW_LABELS[tab](),
+    count: tabUnread(everyRow ?? [], tab),
+    link: linkOf(tab),
+  }));
+  function linkOf(tab: InboxShow): Service['link'] {
+    if (tab === 'erevos') return relay === 'ready' ? 'on' : 'off';
+    if (tab === 'matrix') return matrix ? (matrixNow().problem ? 'off' : 'on') : null;
+    if (tab === 'xmpp') {
+      const now = xmppNow();
+      return now.online ? 'on' : now.problem ? 'off' : null;
+    }
+    if (tab === 'nostr') return nostrAccount.reading > 0 ? 'on' : nostrAccount.problem ? 'off' : null;
+    return null;
+  }
+  // Every chat of the part shown read at once, asked first, as each would be opened.
+  const readAll = unreadShown.length > 0 ? () => askReadAll(ask, unreadShown, { sms: smsListed.current, onOwnRead: () => reload.current() }, () => reload.current()) : undefined;
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (everyRow ?? []).some((row) => row.sms !== '');
   // The Public tab (components/public-feed.tsx): the posts of the people the space's Nostr key
@@ -666,29 +691,13 @@ function Home() {
           ) : null}
         </View>
       ) : null}
-      {/* One line that scrolls to the side, so a chip that comes or goes moves none of the others to a
-          line of their own; the chosen one is scrolled into sight. */}
-      {mixed || hasSmsRows ? (
-        <ScrollView
-          ref={strip}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          style={styles.strip}
-          contentContainerStyle={styles.stripLine}
-          onLayout={(event) => (stripAt.current.width = event.nativeEvent.layout.width)}
-          onScroll={(event) => (stripAt.current.x = event.nativeEvent.contentOffset.x)}
-          scrollEventThrottle={32}
-        >
-          {mixed
-            ? tabs.map((tab) => (
-                <View key={tab} onLayout={(event) => chipAt.current.set(tab, event.nativeEvent.layout)}>
-                  <Chip label={SHOW_LABELS[tab]()} selected={show === tab} count={tabUnread(everyRow ?? [], tab)} onPress={() => setShow(tab)} />
-                </View>
-              ))
-            : null}
-          {hasSmsRows && !smsMirrored() ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
-        </ScrollView>
+      {/* The services: one button, which opens them all in a window (components/services.tsx), so
+          however many there are, the list starts at once under it. */}
+      {mixed ? <Services services={services} current={show} onPick={(key) => setShow(key as InboxShow)} onAdd={() => router.push('/modules')} onReadAll={readAll} /> : null}
+      {hasSmsRows && !smsMirrored() && (show === 'all' || show === 'sms') ? (
+        <Row wrap>
+          <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} />
+        </Row>
       ) : null}
       {feedShown ? feed.intro : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (
@@ -710,17 +719,23 @@ function Home() {
       {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Public, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
-        <FlatList<InboxRow | PublicItem>
+        <FlatList<InboxRow | PublicItem | Section>
           // The Public tab's posts are rows of the same list, so the search above them stays as it is.
-          data={feedShown ? feed.items : shown}
+          data={feedShown ? feed.items : listed}
           // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
           removeClippedSubviews={false}
-          keyExtractor={(item) => (isPublicItem(item) ? item.id : item.identity)}
+          keyExtractor={(item) => (isSection(item) ? `section:${item.section}` : isPublicItem(item) ? item.id : item.identity)}
           ListHeaderComponent={header}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           renderItem={({ item }) =>
-            isPublicItem(item) ? (
+            isSection(item) ? (
+              item.section === 'unread' ? (
+                <ListSection title={t('Unread · {n}', { n: tabUnread(shown, 'all') })} action={readAll ? t('Mark all as read') : undefined} onAction={readAll} />
+              ) : (
+                <ListSection title={t('Recent')} />
+              )
+            ) : isPublicItem(item) ? (
               feed.render(item)
             ) : item.sms ? (
               <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
@@ -932,12 +947,12 @@ function Home() {
           </Pressable>
         ))}
         {/* Every chat of the part shown read at once, asked first, as each would be opened. */}
-        {unreadShown.length > 0 ? (
+        {readAll ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => {
               setMenu(false);
-              askReadAll(ask, unreadShown, { sms: smsListed.current, onOwnRead: () => reload.current() }, () => reload.current());
+              readAll();
             }}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
           >
@@ -1060,17 +1075,6 @@ const makeStyles = (colors: Colors) =>
     },
     pressed: {
       backgroundColor: colors.surfacePressed,
-    },
-    // The chips' line reaches the list's sides, and scrolls under them.
-    strip: {
-      marginHorizontal: -space.lg,
-      flexGrow: 0,
-    },
-    stripLine: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: space.sm,
-      paddingHorizontal: space.lg,
     },
     search: {
       flexDirection: 'row',

@@ -137,13 +137,18 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den
   Farben ihrer Symbole auf dem Startbildschirm des Telefons. Im Menü unter den drei Punkten sind sie nicht noch einmal.
-- **Alle**, **SMS** und **Erevos**, über den Chats, sobald zwei Teile mit Nachrichten in den Modulen an sind, zeigen
-  alle, nur die SMS (mit den Chats, deren letzte Nachricht eine SMS war) oder nur die Erevos-Chats, bei jedem Kontakt
-  das, was zuletzt kam. Jeder Teil, der an ist, hat seinen Chip, auch noch ohne Chat: **SMS** zeigt, wenn Erevos noch
-  nicht die SMS-App ist.
-  Jeder Chip, diese und die von **Matrix**, **XMPP** und **Nostr**, zeigt hinter seinem Namen eine kleine Zahl: die
-  darin ungelesenen Nachrichten (99+ ab 99), und keine, wenn es keine gibt. Chats und Gruppen auf **Stumm** zählen
-  nicht mit, wie bei der Zahl auf Erevos’ Symbol, und was in die Suche getippt wird, ändert daran nichts.
+- **Die Dienste-Schaltfläche**, unter der Suche, sobald in den Modulen zwei Teile mit Nachrichten an sind, sagt,
+  welcher Teil der Liste zu sehen ist (**Alle Dienste** oder der gewählte), mit den Zeichen der Dienste, den
+  ungelesenen Nachrichten aller und in Rot einem Dienst, der gerade nicht verbunden ist. Tippe darauf für das Fenster
+  **Dienste**: eine Karte für jeden Teil, der an ist, auch ohne Chat, jede mit ihren ungelesenen Nachrichten (99+ über
+  99) und einem Punkt, grün, solange ihr Netz verbunden ist, rot mit **Offline**, wenn nicht. Eine Karte zeigt nur
+  diesen Teil: **Alle** alle Chats, **SMS** nur die SMS (mit den Chats, deren letzte Nachricht eine SMS war; dort
+  steht, wenn Erevos noch nicht die SMS-App ist), **Erevos** nur die Erevos-Chats, die jedes Kontakts, was auch
+  zuletzt kam, und **Matrix**, **XMPP**, **Öffentlich** und **Nostr** ihre eigenen. **Hinzufügen** öffnet die Module,
+  um mehr einzuschalten, und **Alle als gelesen markieren** liest den gezeigten Teil. Chats und Gruppen auf **Stumm**
+  zählen nicht mit, wie bei der Zahl auf dem Erevos-Symbol, und was in die Suche getippt ist, ändert die Zahlen nicht.
+  Unter der Schaltfläche kommen ohne Suche zuerst die Chats mit ungelesenen Nachrichten, unter **Ungelesen**, mit
+  **Alle als gelesen markieren** daneben, dann die übrigen unter **Zuletzt**.
 - **Das Widget**, auf Android: Füge Erevos aus den Widgets deines Startbildschirms hinzu. Seine vier Tasten öffnen
   **Telefon**, die **SMS**, die Erevos-**Nachrichten** und **Kontakte**, nach dem Passwort wie jeder Link (das Telefon
   ohne, wenn du es erlaubst). Über den ersten drei zeigt es, wie viele verpasste Anrufe, ungelesene SMS und neue
@@ -250,9 +255,8 @@ Das Relay trägt sie nur verschlüsselt.
   versteckten Chats heraus, wobei sie geschlossen werden. In den **Details** eines Chats schließt es sie.
 - **Tabs:** Wische nach links oder rechts, um zum benachbarten Tab zu gehen, wie ein Tippen auf seinen Chip: **Alle**,
   **SMS**, **Erevos**, **Matrix**, **XMPP** und **Nostr** auf dem Startbildschirm (die, die in den Modulen an sind),
-  **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die
-  Sticker-Sätze. Auf dem Startbildschirm bleiben die Chips in einer Zeile: Passen nicht alle hinein, schiebe die Zeile
-  zur Seite, um die übrigen zu sehen; der gewählte bleibt immer sichtbar.
+  **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die Sticker-Sätze.
+  Auf dem Startbildschirm wählst du die Teile im Fenster **Dienste**, über die Schaltfläche unter der Suche.
 - Auf einem Bildschirm mit Tabs wechselt ein Wischen nur den Tab, auch auf den Zeilen seiner Liste, und über den
   ersten oder letzten Tab hinaus tut es nichts: Geh dorthin mit dem Zurück-Pfeil zurück. Eine SMS-Unterhaltung wird
   archiviert oder gelöscht, indem du sie gedrückt hältst.

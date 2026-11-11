@@ -134,13 +134,18 @@ mentre il loro PIN le tiene aperte.
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori
   delle loro icone sulla schermata Home del telefono. Non sono anche nel menu dei tre puntini.
-- **Tutti**, **SMS** ed **Erevos**, sopra le chat quando in Moduli sono attive due parti con messaggi, mostrano tutte
-  le chat, solo gli SMS (con le chat il cui ultimo messaggio era un SMS), o solo le chat Erevos, di ogni contatto
-  quello che è arrivato per ultimo. Ogni parte attiva ha la sua etichetta, anche senza ancora una chat: **SMS** dice
-  quando Erevos non è ancora l’app per gli SMS.
-  Ogni chip, questi e quelli di **Matrix**, **XMPP** e **Nostr**, mostra un piccolo numero dopo il suo nome: i
-  messaggi non letti che contiene (99+ oltre 99), e niente quando non ce ne sono. Le chat e i gruppi **In silenzio**
-  non contano, come nel numero sull’icona di Erevos, e ciò che si scrive nella ricerca non lo cambia.
+- **Il pulsante dei servizi**, sotto la ricerca quando in Moduli sono attive due parti con messaggi, dice quale parte
+  dell’elenco si vede (**Tutti i servizi**, o quella scelta), con i segni dei servizi, i messaggi non letti di tutti
+  e, in rosso, un servizio che ora non è connesso. Toccalo per la finestra **Servizi**: una scheda per ogni parte
+  attiva, anche senza chat, ognuna con i suoi messaggi non letti (99+ oltre 99) e un punto, verde finché la sua rete è
+  connessa, rosso con **Offline** quando non lo è. Una scheda mostra solo quella parte: **Tutti** tutte le chat,
+  **SMS** solo gli SMS (con le chat il cui ultimo messaggio era un SMS; lì si dice se Erevos non è ancora l’app degli
+  SMS), **Erevos** solo le chat di Erevos, quelle di ogni contatto, qualunque cosa sia arrivata per ultima, e
+  **Matrix**, **XMPP**, **Pubblico** e **Nostr** le loro. **Aggiungi** apre Moduli, per attivarne altri, e **Segna
+  tutto come letto** legge la parte mostrata. Le chat e i gruppi in **In silenzio** non contano, come nel numero
+  sull’icona di Erevos, e ciò che scrivi nella ricerca non cambia i numeri. Sotto il pulsante, senza ricerca, vengono
+  prima le chat con messaggi non letti, sotto **Non letti**, con **Segna tutto come letto** accanto, poi le altre
+  sotto **Recenti**.
 - **Il widget**, su Android: aggiungi Erevos dai widget della schermata Home. I suoi quattro pulsanti aprono
   **Telefono**, gli **SMS**, i **Messaggi** di Erevos e **Contatti**, dopo la password come qualsiasi link (il Telefono
   senza, se lo permetti). Sopra i primi tre mostra quante chiamate perse, SMS non letti e nuovi messaggi ci sono, mai
@@ -239,10 +244,10 @@ dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le tra
   indietro. Se lasci prima, resti dove sei. In una chat fa quello che fa la sua freccia indietro: torna all’elenco delle
   chat, o esce dalle chat nascoste, chiudendole. Nei **Dettagli** di una chat li chiude.
 - **Schede:** scorri verso sinistra o verso destra per andare alla scheda accanto, come quando tocchi la sua
-  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli attivi
-  in Moduli), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e
-  le serie di sticker. Nella schermata principale i chip restano su una sola riga: quando non ci stanno tutti, fai
-  scorrere la riga di lato per vedere gli altri; quello scelto è sempre in vista.
+  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli
+  attivi in Moduli), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e le serie
+  di sticker. Nella schermata principale le parti si scelgono nella finestra **Servizi**, con il pulsante sotto la
+  ricerca.
 - In una schermata con schede, uno scorrimento cambia solo la scheda, anche sulle righe del suo elenco, e oltre la
   prima o l’ultima scheda non fa nulla: torna indietro con la freccia indietro. Una conversazione SMS si archivia o si
   elimina tenendola premuta.

@@ -141,14 +141,19 @@ que tant que leur code PIN les tient ouvertes.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
   aux couleurs de leurs icônes sur l’écran d’accueil du téléphone. Ils ne sont pas aussi dans le menu sous les trois
   points.
-- **Tous**, **SMS** et **Erevos**, au-dessus des discussions dès que deux parties avec des messages sont activées dans
-  Modules, montrent tout, seulement les SMS (avec les discussions dont le dernier message était un SMS), ou seulement
-  les discussions Erevos, pour chaque contact ce qui est arrivé en dernier. Chaque partie activée a sa puce, même sans
-  discussion encore : **SMS** indique quand Erevos n’est pas encore l’app SMS.
-  Chaque puce, celles-ci et celles de **Matrix**, **XMPP** et **Nostr**, montre un petit nombre après son nom : les
-  messages non lus qu’elle contient (99+ au-delà de 99), et rien quand il n’y en a pas. Les discussions et groupes
-  **En sourdine** ne comptent pas, comme dans le nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche n’y
-  change rien.
+- **Le bouton des services**, sous la recherche dès que deux parties avec des messages sont activées dans Modules, dit
+  quelle partie de la liste s’affiche (**Tous les services**, ou celle choisie), avec les signes des services, les
+  messages non lus de tous et, en rouge, un service qui n’est pas connecté en ce moment. Appuie dessus pour la fenêtre
+  **Services** : une carte par partie activée, même sans conversation encore, chacune avec ses messages non lus (99+
+  au-delà de 99) et un point, vert tant que son réseau est connecté, rouge avec **Hors ligne** sinon. Une carte
+  n’affiche que cette partie : **Tous** toutes les conversations, **SMS** seulement les SMS (avec les conversations
+  dont le dernier message était un SMS ; elle indique si Erevos n’est pas encore l’app SMS), **Erevos** seulement les
+  conversations Erevos, celles de chaque contact, quoi qu’il soit arrivé en dernier, et **Matrix**, **XMPP**,
+  **Public** et **Nostr** les leurs. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
+  lit la partie affichée. Les conversations et groupes en **En sourdine** ne comptent pas, comme pour le nombre sur
+  l’icône d’Erevos, et ce qui est tapé dans la recherche ne change pas les nombres. Sous le bouton, sans recherche,
+  viennent d’abord les conversations avec des messages non lus, sous **Non lus**, avec **Tout marquer comme lu** à
+  côté, puis les autres sous **Récents**.
 - **Le widget**, sur Android : ajoute Erevos depuis les widgets de ton écran d’accueil. Ses quatre boutons ouvrent
   **Téléphone**, les **SMS**, les **Messages** d’Erevos et **Contacts**, après le mot de passe comme tout lien (le
   Téléphone sans lui, si tu le permets). Au-dessus des trois premiers, il montre combien il y a d’appels manqués, de SMS
@@ -254,10 +259,9 @@ appareils, chiffrées de bout en bout entre eux comme tes discussions : le relai
   il les ferme.
 - **Onglets :** balaie vers la gauche ou la droite pour aller à l’onglet d’à côté, comme en appuyant sur sa puce :
   **Tous**, **SMS**, **Erevos**, **Matrix**, **XMPP** et **Nostr** sur l’écran d’accueil (ceux activés dans Modules),
-  **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans
-  **Contacts**, et les séries de stickers. Sur l’écran d’accueil, les puces restent sur une seule ligne : quand elles
-  ne tiennent pas toutes, fais glisser la ligne sur le côté pour voir les autres ; celle qui est choisie reste
-  toujours visible.
+  **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans **Contacts**, et les séries de
+  stickers. Sur l’écran d’accueil, les parties se choisissent dans la fenêtre **Services**, avec le bouton sous la
+  recherche.
 - Sur un écran avec des onglets, un balayage ne fait que changer d’onglet, sur les lignes de sa liste aussi, et au-delà
   du premier ou du dernier onglet il ne fait rien : reviens-y avec la flèche de retour. Une conversation SMS s’archive
   ou se supprime par un appui long.

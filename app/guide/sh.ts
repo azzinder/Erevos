@@ -130,13 +130,17 @@ dok ih njihov PIN drži otvorenima.
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
   bojama njihovih ikona na početnom ekranu telefona. Nema ih i u meniju pod tri tačke.
-- **Sve poruke**, **SMS** i **Erevos**, iznad razgovora kad su u Modulima uključena dva dijela s porukama, prikazuju
-  sve, samo SMS (s razgovorima čija je posljednja poruka bila SMS) ili samo Erevos razgovore, od svakog kontakta ono
-  što je posljednje stiglo. Svaki uključeni dio ima svoje dugme, i bez ijednog razgovora zasad: **SMS** pokazuje kad
-  Erevos još nije SMS aplikacija.
-  Svako dugme, ova i ona za **Matrix**, **XMPP** i **Nostr**, iza svog imena prikazuje mali broj: nepročitane poruke u
-  njemu (99+ iznad 99), a ništa kad ih nema. Razgovori i grupe na **Utišano** ne računaju se, kao ni u broju na ikoni
-  Erevosa, a ono što se upiše u pretragu ništa ne mijenja.
+- **Dugme usluga**, ispod pretrage čim su u Modulima uključena dva dijela s porukama, kaže koji se dio popisa vidi
+  (**Sve usluge** ili izabrani), sa znakovima usluga, nepročitanim porukama svih i, crveno, uslugom koja sada nije
+  povezana. Dodirnite ga za prozor **Usluge**: kartica za svaki uključeni dio, i bez razgovora zasad, svaka sa svojim
+  nepročitanim porukama (99+ iznad 99) i tačkom, zelenom dok je njena mreža povezana, crvenom uz **Van mreže** kad
+  nije. Kartica prikazuje samo taj dio: **Sve poruke** sve razgovore, **SMS** samo SMS (s razgovorima čija je
+  posljednja poruka bila SMS; tu piše ako Erevos još nije SMS aplikacija), **Erevos** samo Erevos razgovore, svakog
+  kontakta, šta god da je stiglo posljednje, a **Matrix**, **XMPP**, **Javno** i **Nostr** svoje. **Dodaj** otvara
+  Module, da uključite još, a **Označi sve kao pročitano** čita prikazani dio. Razgovori i grupe na **Utišano** se ne
+  broje, kao ni u broju na ikoni Erevosa, a ono što se upiše u pretragu ne mijenja brojeve. Ispod dugmeta, bez
+  pretrage, prvo dolaze razgovori s nepročitanim porukama, pod **Nepročitano**, s **Označi sve kao pročitano** pored,
+  pa ostali pod **Nedavno**.
 - **Widget**, na Androidu: dodajte Erevos iz widgeta svog početnog ekrana. Njegova četiri dugmeta otvaraju ekrane
   **Telefon**, **SMS**, Erevos **Poruke** i **Kontakti**, nakon lozinke kao i svaki link (Telefon i bez nje, ako to
   dozvolite). Iznad prva tri prikazuje koliko ima propuštenih poziva, nepročitanih SMS poruka i novih poruka, nikad od
@@ -236,9 +240,8 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
   zatvaraju. U **Detalji** razgovora ih zatvara.
 - **Kartice:** prevucite ulijevo ili udesno da pređete na susjednu karticu, kao kad dodirnete njeno dugme: **Sve
   poruke**, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** na početnom ekranu (one uključene u Modulima),
-  **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti
-  naljepnica. Na početnom ekranu dugmad ostaju u jednom redu: kad ne stanu sva, prevucite red u stranu da vidite
-  ostala; izabrano dugme uvijek ostaje na vidiku.
+  **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti naljepnica.
+  Na početnom ekranu dijelovi se biraju u prozoru **Usluge**, dugmetom ispod pretrage.
 - Na ekranu s karticama prevlačenje samo mijenja karticu, i na redovima njenog popisa, a iza prve ili posljednje
   kartice ne radi ništa: tamo se vratite strelicom nazad. SMS razgovor se arhivira ili briše zadržavanjem prsta na
   njemu.

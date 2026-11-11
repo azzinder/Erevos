@@ -132,13 +132,18 @@ abertas.
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
   ícones deles na tela inicial do celular. Eles não estão também no menu dos três pontos.
-- **Todos**, **SMS** e **Erevos**, acima das conversas assim que duas partes com mensagens estão ligadas em Módulos,
-  mostram todas elas, só os SMS (com as conversas cuja última mensagem foi um SMS) ou só as conversas do Erevos, o que
-  veio por último de cada contato. Cada parte ligada tem seu chip, também sem nenhuma conversa ainda: **SMS** mostra
-  quando o Erevos ainda não é o app de SMS.
-  Cada chip, esses e os de **Matrix**, **XMPP** e **Nostr**, mostra um número pequeno depois do nome: as mensagens não
-  lidas nele (99+ acima de 99), e nada quando não há nenhuma. As conversas e os grupos **Em silêncio** não contam,
-  como no número do ícone do Erevos, e o que se digita na busca não o muda.
+- **O botão de serviços**, abaixo da busca quando duas partes com mensagens estão ligadas em Módulos, diz qual parte
+  da lista aparece (**Todos os serviços**, ou a escolhida), com os sinais dos serviços, as mensagens não lidas de
+  todos e, em vermelho, um serviço que não está conectado agora. Toque nele para a janela **Serviços**: um cartão para
+  cada parte ligada, mesmo sem conversa ainda, cada um com suas mensagens não lidas (99+ acima de 99) e um ponto,
+  verde enquanto a rede dele está conectada, vermelho com **Sem conexão** quando não está. Um cartão mostra só aquela
+  parte: **Todos** todas as conversas, **SMS** só os SMS (com as conversas cuja última mensagem foi um SMS; ali
+  aparece se o Erevos ainda não é o app de SMS), **Erevos** só as conversas do Erevos, as de cada contato, o que quer
+  que tenha chegado por último, e **Matrix**, **XMPP**, **Público** e **Nostr** as deles. **Adicionar** abre Módulos,
+  para ligar mais, e **Marcar tudo como lido** lê a parte mostrada. Conversas e grupos em **Em silêncio** não contam,
+  como no número no ícone do Erevos, e o que se digita na busca não muda os números. Abaixo do botão, sem busca, vêm
+  primeiro as conversas com mensagens não lidas, em **Não lidas**, com **Marcar tudo como lido** ao lado, e depois as
+  outras em **Recentes**.
 - **O widget**, no Android: adicione o Erevos pelos widgets da tela inicial. Os quatro botões dele abrem **Telefone**,
   os **SMS**, as **Mensagens** do Erevos e **Contatos**, depois da senha como qualquer link (o Telefone sem ela, se você
   permitir). Sobre os três primeiros ele mostra quantas chamadas perdidas, SMS não lidos e mensagens novas há, nunca de
@@ -240,9 +245,8 @@ criptografadas de ponta a ponta entre eles como as suas conversas: o relay só a
   ocultas, fechando-as. Nos **Detalhes** de uma conversa, fecha-os.
 - **Abas:** deslize para a esquerda ou para a direita para ir à aba ao lado, como ao tocar no chip dela: **Todos**,
   **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** na tela inicial (os ligados em Módulos), **Teclado**,
-  **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de
-  figurinhas. Na tela inicial os chips ficam em uma linha só: quando não cabem todos, deslize a linha para o lado para
-  ver os demais; o escolhido sempre aparece.
+  **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de figurinhas. Na tela
+  inicial as partes são escolhidas na janela **Serviços**, pelo botão abaixo da busca.
 - Numa tela com abas, deslizar só muda a aba, também sobre as linhas da lista dela, e antes da primeira ou depois da
   última aba não faz nada: volte dali com a seta de voltar. Uma conversa de SMS é arquivada ou apagada segurando-a.
 

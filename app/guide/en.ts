@@ -125,13 +125,17 @@ same whether a space has any or not: their messages can be read only while their
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
   colours of their icons on the phone's home screen. They are not in the menu under the three dots as well.
-- **All messages**, **SMS** and **Erevos**, above the chats once two parts with messages are on in Modules, show all of
-  them, only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
-  came last. Each part that is on has its chip, also with no chat yet: **SMS** says so when Erevos is not the SMS app
-  yet.
-  Every chip, these and the **Matrix**, **XMPP** and **Nostr** ones, shows a small number after its name: the messages
-  not read in it (99+ above 99), and none when there are none. Chats and groups on **Muted** are left out of it, as
-  they are of the number on Erevos's icon, and what is typed in the search changes nothing in it.
+- **The services button**, under the search once two parts with messages are on in Modules, says which part of the
+  list shows (**All services**, or the one chosen), with the services' signs, the messages not read in all of them,
+  and in red a service that is not connected now. Tap it for the **Services** window: a card for each part that is on,
+  also with no chat yet, each with the messages not read in it (99+ above 99) and a dot, green while its network is
+  connected, red with **Offline** when it is not. A card shows only that part: **All messages** all of them, **SMS**
+  only the SMS (with the chats whose last message was an SMS; it says so when Erevos is not the SMS app yet),
+  **Erevos** only the Erevos chats, every contact's whatever came last, and **Matrix**, **XMPP**, **Public** and
+  **Nostr** theirs. **Add** opens Modules, to turn more on, and **Mark all as read** reads the part shown. Chats and
+  groups on **Muted** are left out of the numbers, as they are of the number on Erevos's icon, and what is typed in
+  the search changes nothing in them. Under the button, with no search, the chats with messages not read come first,
+  under **Unread**, with **Mark all as read** beside it, then the others under **Recent**.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
@@ -224,10 +228,9 @@ carries them only sealed.
   its back arrow does: back to the list of chats, or out of hidden chats, closing them. In a chat's **Details** it
   closes them.
 - **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**,
-  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those on in Modules),
-  **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On
-  the home screen the chips stay on one line: when they do not all fit, slide the line to the side for the rest; the
-  chosen one always shows.
+  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those on in Modules), **Keypad**, **Recents** and
+  **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On the home screen the parts are
+  chosen in the **Services** window, under the button below the search.
 - On a screen with tabs, a swipe only changes the tab, on the rows of its list too, and past the first or the last
   tab it does nothing: go back there with the back arrow. An SMS conversation is archived or deleted by holding it
   down.

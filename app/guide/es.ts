@@ -134,13 +134,18 @@ tiene abiertos.
   de al lado, te escribe un recordatorio.
 - **El auricular verde y la persona violeta** de arriba, en Android, abren **Teléfono** y **Contactos** directamente, en
   los colores de sus iconos en la pantalla de inicio del teléfono. No están además en el menú de los tres puntos.
-- **Todos**, **SMS** y **Erevos**, encima de los chats en cuanto hay dos partes con mensajes activadas en Módulos,
-  muestran todo, solo los SMS (con los chats cuyo último mensaje fue un SMS), o solo los chats de Erevos, de cada
-  contacto lo último que llegó. Cada parte activada tiene su chip, también sin ningún chat aún: **SMS** muestra si
-  Erevos aún no es la app de SMS.
-  Cada chip, estos y los de **Matrix**, **XMPP** y **Nostr**, muestra un número pequeño tras su nombre: los mensajes
-  sin leer que hay en él (99+ a partir de 99), y nada cuando no hay ninguno. Los chats y grupos en **Silenciado** no
-  cuentan, como en el número del icono de Erevos, y lo que se escribe en la búsqueda no lo cambia.
+- **El botón de servicios**, bajo la búsqueda cuando hay dos partes con mensajes activadas en Módulos, dice qué parte
+  de la lista se ve (**Todos los servicios**, o la elegida), con los signos de los servicios, los mensajes sin leer de
+  todos y, en rojo, un servicio que ahora no está conectado. Tócalo para la ventana **Servicios**: una tarjeta por
+  cada parte activada, también sin chats todavía, cada una con sus mensajes sin leer (99+ por encima de 99) y un
+  punto, verde mientras su red está conectada, rojo con **Sin conexión** cuando no. Una tarjeta muestra solo esa
+  parte: **Todos** todos los chats, **SMS** solo los SMS (con los chats cuyo último mensaje fue un SMS; ahí se dice si
+  Erevos aún no es la app de SMS), **Erevos** solo los chats de Erevos, los de cada contacto, llegara lo que llegara
+  al final, y **Matrix**, **XMPP**, **Público** y **Nostr** los suyos. **Añadir** abre Módulos, para activar más, y
+  **Marcar todo como leído** lee la parte que se ve. Los chats y grupos en **Silenciado** no cuentan, como en el
+  número del icono de Erevos, y lo que se escribe en la búsqueda no cambia los números. Bajo el botón, sin búsqueda,
+  primero van los chats con mensajes sin leer, en **No leídos**, con **Marcar todo como leído** al lado, y luego los
+  demás en **Recientes**.
 - **El widget**, en Android: añade Erevos desde los widgets de tu pantalla de inicio. Sus cuatro botones abren
   **Teléfono**, los **SMS**, los **Mensajes** de Erevos y **Contactos**, tras la contraseña como cualquier enlace (el
   Teléfono sin ella, si lo permites). Sobre los tres primeros muestra cuántas llamadas perdidas, SMS sin leer y mensajes
@@ -239,10 +244,9 @@ extremo entre ellos como tus chats: el relay solo las lleva cifradas.
   sueltas antes, te quedas. En un chat hace lo que hace su flecha de volver: vuelve a la lista de chats, o sale de los
   chats ocultos, cerrándolos. En los **Detalles** de un chat, los cierra.
 - **Pestañas:** desliza hacia la izquierda o la derecha para ir a la pestaña de al lado, como al tocar su chip:
-  **Todos**, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** en la pantalla de inicio (los activados en Módulos),
-  **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en
-  **Contactos**, y los grupos de stickers. En la pantalla de inicio los chips se quedan en una sola línea: cuando no
-  caben todos, desliza la línea hacia un lado para ver los demás; el elegido siempre se ve.
+  **Todos**, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** en la pantalla de inicio (los activados en
+  Módulos), **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en **Contactos**, y los grupos de
+  stickers. En la pantalla de inicio las partes se eligen en la ventana **Servicios**, con el botón bajo la búsqueda.
 - En una pantalla con pestañas, deslizar solo cambia de pestaña, también sobre las filas de su lista, y más allá de la
   primera o la última pestaña no hace nada: vuelve ahí con la flecha de volver. Una conversación SMS se archiva o se
   elimina manteniéndola pulsada.
