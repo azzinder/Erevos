@@ -44,8 +44,9 @@ import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitF
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
 import { holdPlace, receivesPocket, startPlaceReceiver } from '../lib/place-receiver';
 import { handOverHidden } from '../lib/waiting';
-import { newTag, WAITING } from '../lock/history';
-import { setAppShown } from '../lib/receiver';
+import { History, newTag, WAITING } from '../lock/history';
+import { keepReceived, setAppShown } from '../lib/receiver';
+import { VoiceAssembler } from '../lib/voice';
 import { sendSealed } from '../lib/space-chats';
 import { keepPlace, prepareKeepEntries } from '../lock/hidden-keep';
 import { setCurrentSpace } from '../lock/keys';
@@ -80,13 +81,16 @@ class NostrRelays {
   readonly refusing = new Set<string>();
   /** Relays that take what they are given only this long after, ms. */
   readonly late = new Map<string, number>();
+  /** Relays that pass on what they are given at once, but say they took it only this long after, ms. */
+  readonly slowToSay = new Map<string, number>();
   readonly lines = new Map<number, Line>();
   // How many connections were opened through Tor (the core's torTextOpen), and how many straight
   // (lib/nostr-dm-net.ts setNostrOpen, as a WebSocket of the phone's own would be).
   throughTor = 0;
   straight = 0;
   readonly straightIds = new Set<number>();
-  private made = 0;
+  // Counted across the checks: a connection a check before closes late never closes one of this one's.
+  private static made = 0;
 
   keptAt(url: string): Wrap[] {
     return [...(this.kept.get(url)?.values() ?? [])];
@@ -110,7 +114,7 @@ class NostrRelays {
 
   private open(url: string): Uint8Array {
     if (this.down.has(url)) throw new Error('Tor took too long to reach the relay');
-    const id = ++this.made;
+    const id = ++NostrRelays.made;
     this.lines.set(id, { url, frames: [], waiter: null, closed: false, subs: new Map() });
     const out = new Uint8Array(8);
     new DataView(out.buffer).setUint32(4, id);
@@ -158,7 +162,10 @@ class NostrRelays {
             this.kept.set(line.url, kept);
             const twice = kept.has(wrap.id);
             kept.set(wrap.id, wrap);
-            this.say(line, ['OK', wrap.id, !twice, twice ? 'duplicate: have it' : '']);
+            const answer = () => this.say(line, ['OK', wrap.id, !twice, twice ? 'duplicate: have it' : '']);
+            const slow = this.slowToSay.get(line.url);
+            if (slow) setTimeout(answer, slow);
+            else answer();
             if (!twice) {
               for (const other of this.lines.values()) {
                 if (other.url !== line.url) continue;
@@ -604,6 +611,50 @@ t('a text no Nostr relay takes at once goes through the relay as well, and count
   assert.equal(viaRelay, 2);
   assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).length, 1);
 }, true);
+
+t('a text their phone says came, and read, before the Nostr relay said it took it shows so once kept, not one tick', async () => {
+  // As primal did: it passes the text on at once, and says it took it seconds later.
+  setNostr([ONE]);
+  relays.slowToSay.set(ONE, 300);
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { toBob, toAlice } = await meet(alice, bob);
+  message(await tell(bob, toAlice, alice));
+  const chats = { e2e: alice.e2e, history: await History.open('space', 0, alice.place.key), voiceParts: new VoiceAssembler() };
+  const peer = `contact:${toBob}`;
+  // Bob's chat is open on Alice: what comes is said to have come, and read, at once.
+  const said: Uint8Array[] = [];
+  const stop = readNostr(
+    nostrReaderOf(
+      () => bob.e2e,
+      async (packet) => {
+        const { tag } = message(await bob.e2e.receive(packet));
+        said.push((await bob.e2e.seal(toAlice, '', bob.from, { got: [tag] })).packet);
+        said.push((await bob.e2e.seal(toAlice, '', bob.from, { read: [tag] })).packet);
+      },
+    ),
+  );
+  try {
+    const sealed = await alice.e2e.seal(toBob, 'read before it went', alice.from);
+    let viaRelay = 0;
+    const going = orNostr(alice.e2e, { url: 'ws://127.0.0.1:9' }, toBob, sealed, [sealed.packet], async () => void viaRelay++, 5000)();
+    // Alice's look takes what Bob said while her text is still going, as her chats do (lib/receiver.ts keep).
+    await until(() => said.length === 2);
+    for (const packet of said) await keepReceived(chats, await alice.e2e.receive(packet));
+    assert.equal(await going, 'nostr');
+    assert.equal(viaRelay, 0);
+    // The chat keeps what it sends once it went (app/chat.tsx sendShown): read, as Bob's phone said;
+    // in that chat only, and once.
+    await chats.history.add({ peer: `contact:${toAlice}`, text: 'another chat', mine: true, at: Date.now() - 2, tag: sealed.tag });
+    await chats.history.add({ peer, text: 'read before it went', mine: true, at: Date.now() - 1, tag: sealed.tag, lasts: 60 });
+    await chats.history.add({ peer, text: 'the next', mine: true, at: Date.now(), tag: newTag() });
+    assert.deepEqual(chats.history.messages().map((m) => [m.text, m.mark]), [['another chat', 0], ['read before it went', 2], ['the next', 0]], 'read, not one tick');
+    const kept = chats.history.messages().find((m) => m.text === 'read before it went');
+    assert.ok(kept?.until && kept.until <= Date.now() + 60_000 && !kept.lasts, 'a disappearing one starts its time');
+  } finally {
+    stop();
+  }
+});
 
 t('a reader that waits for Tor asks as soon as Tor is ready, and one whose keys come later as soon as they come', async () => {
   setNostr([ONE]);
