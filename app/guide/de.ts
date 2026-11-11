@@ -881,11 +881,14 @@ Markierungen.
   sie im Browser zu öffnen, nur wenn sie dorthin führt, wo du hinwillst. Vorher wird nichts abgerufen.
 - **Aus einer anderen App teilen** (Android): Wähle im **Teilen** einer anderen App, etwa dem des Browsers für eine
   Seite, **Erevos**. Sobald ein Bereich offen ist, listet **Senden an** die Chats, Gruppen und SMS-Unterhaltungen, die
-  der Startbildschirm zuletzt zeigte, dann jeden anderen Chat und jede Gruppe, mit einer Suche; nie versteckte Chats.
-  Wörter und Links öffnen sich im Nachrichtenfeld des gewählten Chats, um sie dort zu lesen und zu senden; ein Foto oder
-  eine Datei (höchstens 100 MB) geht, sobald sich dieser Chat oder diese Gruppe öffnet, ein Foto in der Qualität, die
-  du für Fotos gewählt hast, und nie als SMS. Es wird beim Ankommen verschlüsselt, mit einem Schlüssel nur im Speicher
-  von Erevos, und wartet so auf dem Telefon; es verschwindet, sobald es gesendet ist oder wenn du **Senden an** verlässt.
+  der Startbildschirm zuletzt zeigte, dann jeden anderen Chat und jede Gruppe und die Chats deiner Konten bei Matrix,
+  XMPP und Nostr, mit einer Suche; nie versteckte Chats. Wörter und Links öffnen sich im Nachrichtenfeld des gewählten
+  Chats, um sie dort zu lesen und zu senden; ein Foto oder eine Datei geht, sobald sich dieser Chat oder diese Gruppe
+  öffnet, ein Foto in der Qualität, die du für Fotos gewählt hast, und nie als SMS. Eine Datei darf in einem
+  Erevos-Chat höchstens 100 MB groß sein, bei Matrix und XMPP 50 MB und bei Nostr 20 MB. Es wird beim Ankommen
+  verschlüsselt, mit einem Schlüssel nur im Speicher von Erevos, und wartet so auf dem Telefon, auch während du das
+  Passwort eingibst, falls Erevos vorher sperrt; es verschwindet, sobald es gesendet ist oder wenn du **Senden an**
+  verlässt.
 - **Der Kontakt sieht, wann du liest:** Dein Telefon sagt es seinem, wie seines es deinem sagt, außer dieser Chat
   erscheint offline (siehe unten).
 - **Wann Nachrichten kommen:** Erevos schaut alle paar Sekunden beim Relay nach, solange es offen und entsperrt ist, auf

@@ -17,8 +17,10 @@ import { forwardTo } from '../lib/forward';
 import { locale, t } from '../lib/i18n';
 import { shownName } from '../lib/inbox';
 import { useModules } from '../lib/modules';
+import { holdsShare } from '../lib/open-link';
 import { handPay, payAmount, type Pay } from '../lib/pay';
 import { dropShared, handShared, isSharedPhoto, sharedFileOf, type SharedFile } from '../lib/share-in';
+import { fitsNetwork, inOrder, networkOf, tooLargeFor, useNetworkTargets, type Network } from '../lib/share-networks';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
 import { MAX_FILE } from '../lib/attachments';
@@ -30,9 +32,10 @@ import { useColors } from '../theme/context';
 
 // Send to: what another app shared with Erevos from its Share (lib/share-in.ts), opened once a
 // space is open. The chats, groups and SMS conversations the home screen showed last come first, in
-// its order, then every other chat and group of the space by name; never hidden chats. The one
-// picked opens with the words in its message field, to read and send there, and a photo or file
-// goes there at once. An SMS conversation takes only words.
+// its order, then every other chat and group of the space by name, with the chats of its Matrix,
+// XMPP and Nostr accounts (lib/share-networks.ts); never hidden chats. The one picked opens with
+// the words in its message field, to read and send there, and a photo or file goes there at once.
+// An SMS conversation takes only words.
 //
 // With the Collection on (lib/modules.ts), a photo or file has the Collection first, before the
 // chats: a sheet asks which of its folders, and the file goes into it as soon as that is answered,
@@ -40,7 +43,7 @@ import { useColors } from '../theme/context';
 // plain copy of it is ever on the disk. Opened from the Collection itself (`collection`, the
 // ids of the files), it sends those to the chat picked, as a photo or file picked there goes.
 
-type Target = { key: string; name: string; kind: 'chat' | 'group' | 'sms'; at: number; to: string; open: string };
+type Target = { key: string; name: string; kind: 'chat' | 'group' | 'sms' | Network; at: number; to: string; open: string };
 
 const plain = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -73,6 +76,9 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
   const file = useMemo(() => (asked ? null : sharedFileOf(params)), [asked, params.file, params.sealed, params.name, params.mime]);
   const large = params.large === '1';
   const [targets, setTargets] = useState<Target[] | null>(null);
+  // The home screen's list as it was kept last, its identities in its order.
+  const [order, setOrder] = useState<string[]>([]);
+  const networks = useNetworkTargets(modules);
   const [query, setQuery] = useState('');
   // The Collection's files to send (`collection`), and the Collection's folders to choose from.
   const [sending, setSending] = useState<CollectionItem[] | null>(null);
@@ -82,13 +88,15 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const fromCollection = !asked && typeof params.collection === 'string' && params.collection.length > 0;
-  // Whether the photo or file was handed on: if not, it goes as Send to closes.
+  // Whether the photo or file was handed on: if not, it goes as Send to closes. Not as Erevos locks
+  // over it, just after the share brought it back from the background: Send to opens again after
+  // the password (lib/open-link.ts lockingKeepsLink), with the file still there.
   const handed = useRef(false);
 
   useEffect(() => {
     handed.current = false;
     return () => {
-      if (file && !handed.current) dropShared(file);
+      if (file && !handed.current && !holdsShare(file.sealed?.id ?? file.file)) dropShared(file);
     };
   }, [file]);
 
@@ -129,6 +137,7 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
         ...listed.filter((g) => !shown.has(`group:${g.id}`)).map((g) => groupTarget(g.id, g.name, 0)),
       ].sort((a, b) => a.name.localeCompare(b.name));
       setTargets([...recent, ...rest]);
+      setOrder(cache.rows.map((row) => row.identity));
     });
     return () => {
       active = false;
@@ -150,16 +159,25 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
   const q = plain(query.trim());
   // Larger than a chat takes (100 MB): only the Collection may keep it.
   const onlyCollection = !!file?.sealed && file.sealed.size > MAX_FILE;
-  const shown = (onlyCollection ? [] : targets ?? []).filter((target) => (asked ? target.kind === 'chat' : !withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
+  const choices = useMemo(() => (targets ? inOrder<Target>([...targets, ...networks], order) : []), [targets, networks, order]);
+  const shown = (onlyCollection ? [] : choices).filter((target) => (asked ? target.kind === 'chat' : !withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
   // The Collection takes a photo or file shared in, on the phone, when it is on.
   const toCollection = !!file && !fromCollection && CAN_COLLECT && Platform.OS !== 'web' && modules.has('collection');
-  const kindOf = (target: Target) => (target.kind === 'group' ? t('Group') : target.kind === 'sms' ? t('SMS') : t('Erevos chat'));
+  const kindOf = (target: Target) =>
+    target.kind === 'group' ? t('Group') : target.kind === 'sms' ? t('SMS') : target.kind === 'matrix' ? 'Matrix' : target.kind === 'xmpp' ? 'XMPP' : target.kind === 'nostr' ? 'Nostr' : t('Erevos chat');
 
   async function choose(target: Target) {
     if (asked) {
       if (!pay || target.kind !== 'chat') return;
       handPay(target.to, pay);
       router.replace(target.open);
+      return;
+    }
+    // A file larger than a Matrix, XMPP or Nostr chat sends stays here, for another pick.
+    const network = networkOf(target.to);
+    const sizes = file ? [{ size: file.sealed?.size ?? file.held?.size ?? 0, photo: isSharedPhoto(file) }] : (sending ?? []).map((i) => ({ size: i.file.size, photo: isSharedPhoto({ file: '', name: i.file.name, mime: i.file.mime }) }));
+    if (network && !sizes.every((one) => fitsNetwork(network, one.size, one.photo))) {
+      setNote(tooLargeFor(network).message);
       return;
     }
     if (text) forwardTo(target.to, { text, photo: null });

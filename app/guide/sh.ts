@@ -800,11 +800,13 @@ ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom 
   pregledniku samo ako je to mjesto na koje želite ići. Prije toga se ništa ne preuzima.
 - **Dijeljenje iz druge aplikacije** (Android): u opciji **Dijeli** druge aplikacije, kao u pregledniku za stranicu,
   izaberite **Erevos**. Kad je prostor otvoren, **Pošalji u** navodi razgovore, grupe i SMS razgovore koje je početni
-  ekran posljednje prikazao, zatim sve ostale razgovore i grupe, s pretragom; nikad skrivene razgovore. Riječi i
-  linkovi otvaraju se u polju za poruku onog koji izaberete, da ih tamo pročitate i pošaljete; fotografija ili
-  datoteka (najviše 100 MB) ide čim se taj razgovor ili grupa otvori, fotografija u kvalitetu koji ste izabrali za
-  fotografije, i nikad kao SMS. Šifrira se čim stigne, ključem samo u Erevosovoj memoriji, i tako čeka na telefonu;
-  nestaje kad se pošalje, ili kad napustite **Pošalji u**.
+  ekran posljednje prikazao, zatim sve ostale razgovore i grupe, i razgovore vaših naloga na Matrixu, XMPP-u i
+  Nostru, s pretragom; nikad skrivene razgovore. Riječi i linkovi otvaraju se u polju za poruku onog koji izaberete,
+  da ih tamo pročitate i pošaljete; fotografija ili datoteka ide čim se taj razgovor ili grupa otvori, fotografija u
+  kvalitetu koji ste izabrali za fotografije, i nikad kao SMS. Datoteka može imati najviše 100 MB u Erevos razgovoru,
+  50 MB na Matrixu i XMPP-u i 20 MB na Nostru. Šifrira se čim stigne, ključem samo u Erevosovoj memoriji, i tako čeka
+  na telefonu, i dok unosite lozinku ako se Erevos prije zaključa; nestaje kad se pošalje, ili kad napustite
+  **Pošalji u**.
 - **Vide kada čitate:** vaš telefon to javlja telefonu te osobe, kao što njen javlja vašem, osim ako se u tom
   razgovoru prikazujete kao da niste na mreži (ispod).
 - **Kad poruke stižu:** Erevos gleda relay svakih nekoliko sekundi dok je otvoren i otključan, na bilo kojem ekranu, a

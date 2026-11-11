@@ -760,10 +760,12 @@ message stays at **✓**. Public groups have no marks. A computer linked to this
   only if it is where you want to go. Nothing is fetched before that.
 - **Share from another app** (Android): in another app's **Share**, such as the browser's for a page, pick
   **Erevos**. Once a space is open, **Send to** lists the chats, groups and SMS conversations the home screen showed
-  last, then every other chat and group, with a search; never hidden chats. Words and links open in the message field
-  of the one you pick, to read and send there; a photo or file (100 MB at most) goes as soon as that chat or group
-  opens, a photo at the quality you chose for photos, and never as an SMS. It is encrypted as it comes in, with a key
-  only in Erevos's memory, and waits so on the phone; it goes once sent, or when you leave **Send to**.
+  last, then every other chat and group, and the chats of your Matrix, XMPP and Nostr accounts, with a search; never
+  hidden chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file
+  goes as soon as that chat or group opens, a photo at the quality you chose for photos, and never as an SMS. A file
+  can be 100 MB at most in an Erevos chat, 50 MB on Matrix and XMPP and 20 MB on Nostr. It is encrypted as it comes
+  in, with a key only in Erevos's memory, and waits so on the phone, also while you give the password if Erevos locks
+  first; it goes once sent, or when you leave **Send to**.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
   and the home screen moves the chat to the top by itself. On Android each new message sounds, with a notice that

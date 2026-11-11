@@ -820,11 +820,13 @@ marcas. Un ordenador vinculado a este teléfono muestra las mismas marcas.
   navegador solo si es adonde quieres ir. Antes de eso no se descarga nada.
 - **Compartir desde otra app** (Android): en **Compartir** de otra app, como el del navegador para una página, elige
   **Erevos**. En cuanto hay un espacio abierto, **Enviar a** lista los chats, grupos y conversaciones SMS que mostró por
-  última vez la pantalla de inicio, y luego todos los demás chats y grupos, con una búsqueda; nunca los chats ocultos.
-  Las palabras y los enlaces se abren en el campo de mensaje del que elijas, para leerlos y enviarlos ahí; una foto o un
-  archivo (100 MB como mucho) sale en cuanto se abre ese chat o grupo, una foto con la calidad que elegiste para las
-  fotos, y nunca como SMS. Se cifra al llegar, con una clave solo en la memoria de Erevos, y así espera en el
-  teléfono; desaparece una vez enviado, o cuando sales de **Enviar a**.
+  última vez la pantalla de inicio, luego todos los demás chats y grupos, y los chats de tus cuentas de Matrix, XMPP y
+  Nostr, con una búsqueda; nunca los chats ocultos. Las palabras y los enlaces se abren en el campo de mensaje del que
+  elijas, para leerlos y enviarlos ahí; una foto o un archivo sale en cuanto se abre ese chat o grupo, una foto con la
+  calidad que elegiste para las fotos, y nunca como SMS. Un archivo puede tener como mucho 100 MB en un chat de Erevos,
+  50 MB en Matrix y XMPP y 20 MB en Nostr. Se cifra al llegar, con una clave solo en la memoria de Erevos, y así espera
+  en el teléfono, también mientras das la contraseña si Erevos se bloquea antes; desaparece una vez enviado, o cuando
+  sales de **Enviar a**.
 - **Tu contacto ve cuándo lees:** tu teléfono se lo dice al suyo, como el suyo al tuyo, salvo que ese chat aparezca sin
   conexión (más abajo).
 - **Cuando llegan mensajes:** Erevos consulta el relay cada pocos segundos mientras está abierto y desbloqueado, en

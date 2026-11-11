@@ -42,6 +42,7 @@ import { mimeOfName } from '../lib/matrix-media';
 import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { useSharedFiles, useSharedWords } from '../lib/shared-here';
 import { stickerMeta } from '../lib/own-stickers';
 import { rtc } from '../lib/webrtc';
 import { forwardable, isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppChatList, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
@@ -173,7 +174,10 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const where = useNetworkWhere(hidden === '1');
   const jid = given?.toLowerCase();
   const [now, setNow] = useState(xmppNow(where));
-  const [draft, setDraft] = useState('');
+  // What Send to handed this chat (app/share.tsx): its words in the message field, a photo or file sent at once.
+  const sharedTo = hidden === '1' || !jid ? null : `xmpp:${jid}`;
+  const sharedWords = useSharedWords(sharedTo);
+  const [draft, setDraft] = useState(sharedWords);
   const [note, setNote] = useState('');
   // What could not be sent with OMEMO, a text, a file or a sticker, kept while the person decides about writing without it.
   const [unsent, setUnsent] = useState<{ text: string; to?: string } | { file: XmppOutgoingFile } | { sticker: XmppSticker } | null>(null);
@@ -189,6 +193,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
   const sendVoice = useRef<(audio: Uint8Array, ms: number) => Promise<void>>(async () => undefined);
   const voice = useVoiceCapture({ send: (audio, ms) => sendVoice.current(audio, ms), say: setNote });
+  const sendShared = useRef<(file: XmppOutgoingFile) => Promise<void>>(async () => undefined);
+  useSharedFiles(now.state && jid && now.state.chats[jid] ? sharedTo : null, (file) => sendShared.current({ bytes: file.bytes, name: file.name, mime: file.mime }), (error) => setNote(error instanceof Error ? error.message : String(error)), () => undefined);
   // Messages chosen together, by their IDs; those being forwarded, while their chat is picked; which pin shows.
   const selection = useSelection<string>();
   const [forwarding, setForwarding] = useState<string[] | null>(null);
@@ -301,6 +307,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   }
 
   sendVoice.current = (audio, ms) => sendFile({ bytes: audio, ...voiceNamed(audio), duration: ms });
+  sendShared.current = sendFile;
 
   // Sends a sticker made from a photo, as a photo.
   async function sendOwnSticker(sticker: OwnSticker) {

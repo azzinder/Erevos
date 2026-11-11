@@ -822,11 +822,13 @@ resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a ques
   solo se è dove vuoi andare. Prima di allora non viene scaricato nulla.
 - **Condividi da un’altra app** (Android): nel menu **Condividi** di un’altra app, come quello del browser per una
   pagina, scegli **Erevos**. Appena uno spazio è aperto, **Invia a** elenca le chat, i gruppi e le conversazioni SMS
-  che la schermata principale ha mostrato per ultimi, poi ogni altra chat e gruppo, con una ricerca; mai le chat
-  nascoste. Parole e link si aprono nel campo del messaggio di quella che scegli, da leggere e inviare lì; una foto o
-  un file (al massimo 100 MB) parte appena quella chat o quel gruppo si apre, una foto con la qualità che hai scelto per
-  le foto, e mai come SMS. Viene cifrato appena arriva, con una chiave solo nella memoria di Erevos, e così aspetta sul
-  telefono; se ne va una volta inviato, o quando lasci **Invia a**.
+  che la schermata principale ha mostrato per ultimi, poi ogni altra chat e gruppo, e le chat dei tuoi account Matrix,
+  XMPP e Nostr, con una ricerca; mai le chat nascoste. Parole e link si aprono nel campo del messaggio di quella che
+  scegli, da leggere e inviare lì; una foto o un file parte appena quella chat o quel gruppo si apre, una foto con la
+  qualità che hai scelto per le foto, e mai come SMS. Un file può essere al massimo di 100 MB in una chat di Erevos, di
+  50 MB su Matrix e XMPP e di 20 MB su Nostr. Viene cifrato appena arriva, con una chiave solo nella memoria di Erevos,
+  e così aspetta sul telefono, anche mentre dai la password se Erevos si blocca prima; se ne va una volta inviato, o
+  quando lasci **Invia a**.
 - **Vede quando leggi:** il tuo telefono lo dice al suo, come il suo lo dice al tuo, a meno che quella chat non appaia
   offline (più sotto).
 - **Quando arrivano i messaggi:** Erevos controlla il relay ogni pochi secondi mentre è aperto e sbloccato, su

@@ -22,6 +22,12 @@ On main, not released yet:
   link at once, so it takes the phone's answer: linking with the small code finishes by itself, and with the full code
   **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more, as it
   looked only at the relay it had when Erevos started, until a chat was opened or Erevos started again.
+- **Sharing into Erevos reaches every service**: **Send to** lists the chats of the space's Matrix, XMPP and Nostr
+  accounts too, beside Erevos chats, groups and SMS conversations; words open in the chat's message field, and a photo
+  or file goes as soon as the chat opens, up to 50 MB on Matrix and XMPP and 20 MB on Nostr (a larger one stays in
+  **Send to** for another pick). A photo or file shared while Erevos was in the background no longer goes missing:
+  Erevos locked as **Send to** opened, **Send to** deleted the file as it closed, and after the password it said
+  nothing came to send. Now the file waits for **Send to**, which opens again after the password.
 
 ### Under the hood
 

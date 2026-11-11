@@ -816,11 +816,13 @@ este celular mostra as mesmas marcas.
   navegador só se for para onde você quer ir. Nada é buscado antes disso.
 - **Compartilhar de outro app** (Android): no **Compartilhar** de outro app, como o do navegador para uma página,
   escolha **Erevos**. Assim que um espaço estiver aberto, **Enviar para** lista as conversas, os grupos e as conversas
-  de SMS que a tela inicial mostrou por último, depois todas as outras conversas e grupos, com uma busca; nunca as
-  conversas ocultas. Palavras e links abrem no campo de mensagem da que você escolher, para ler e enviar ali; uma foto
-  ou um arquivo (100 MB no máximo) vai assim que essa conversa ou grupo abrir, uma foto na qualidade que você escolheu
-  para as fotos, e nunca como SMS. Ele é criptografado assim que chega, com uma chave só na memória do Erevos, e
-  espera assim no celular; é removido depois do envio, ou quando você sai de **Enviar para**.
+  de SMS que a tela inicial mostrou por último, depois todas as outras conversas e grupos, e as conversas das suas
+  contas de Matrix, XMPP e Nostr, com uma busca; nunca as conversas ocultas. Palavras e links abrem no campo de
+  mensagem da que você escolher, para ler e enviar ali; uma foto ou um arquivo vai assim que essa conversa ou grupo
+  abrir, uma foto na qualidade que você escolheu para as fotos, e nunca como SMS. Um arquivo pode ter no máximo 100 MB
+  numa conversa do Erevos, 50 MB no Matrix e no XMPP e 20 MB no Nostr. Ele é criptografado assim que chega, com uma
+  chave só na memória do Erevos, e espera assim no celular, também enquanto você digita a senha se o Erevos bloquear
+  antes; é removido depois do envio, ou quando você sai de **Enviar para**.
 - **A pessoa vê quando você lê:** o seu celular avisa o dela, como o dela avisa o seu, a menos que essa conversa
   apareça offline (abaixo).
 - **Quando chegam mensagens:** o Erevos olha o relay a cada poucos segundos enquanto está aberto e desbloqueado, em

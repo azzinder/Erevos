@@ -57,6 +57,7 @@ import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
 import { stickerMeta } from '../lib/own-stickers';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { useSharedFiles, useSharedWords } from '../lib/shared-here';
 import type { StickerToSend } from '../lib/sticker-send';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { space } from '../theme/colors';
@@ -127,7 +128,10 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const where = useNetworkWhere(hidden === '1');
   const key = given && /^[0-9a-f]{64}$/.test(given) ? given : undefined;
   const [now, setNow] = useState(nostrDmNow(where));
-  const [draft, setDraft] = useState('');
+  // What Send to handed this chat (app/share.tsx): its words in the message field, a photo or file sent at once.
+  const sharedTo = hidden === '1' || !key ? null : `nostr:${key}`;
+  const sharedWords = useSharedWords(sharedTo);
+  const [draft, setDraft] = useState(sharedWords);
   const [note, setNote] = useState('');
   const [naming, setNaming] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -212,6 +216,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   }
 
   const voice = useVoiceCapture({ send: (audio, ms) => sendPicked(async () => voiceFile(audio, ms)), say: setNote });
+  useSharedFiles(chat ? sharedTo : null, (file) => nostrDmSendFile(key ?? '', { bytes: file.bytes, name: file.name, mime: file.mime, ...(file.w && file.h ? { dim: `${file.w}x${file.h}` } : {}) }), fail, setSending);
 
   if (!state || !key || !chat) {
     return (

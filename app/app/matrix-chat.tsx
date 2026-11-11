@@ -78,6 +78,7 @@ import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { throughTor } from '../lib/relay';
+import { useSharedFiles, useSharedWords } from '../lib/shared-here';
 import { rtc } from '../lib/webrtc';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkedChatNotify } from '../lock/chat-notify';
@@ -288,6 +289,11 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const voice = useVoiceCapture({ send: (audio, ms, waveform) => sendPicked(async () => voiceFile(audio, ms, waveform)), say: setNote });
   // Tells the room we write, only when the account says so (app/matrix.tsx).
   const sayTyping = useSayTyping(!!state?.sayTyping && !!room && !room.invitedBy, (typing) => roomId && matrixTyped(roomId, typing));
+  // What Send to handed this chat (app/share.tsx): its words in the message field until sent, a photo or file sent at once.
+  const sharedTo = hidden === '1' || !roomId ? null : `matrix:${roomId}`;
+  const sharedText = useSharedWords(sharedTo);
+  const sharedWords = useRef(sharedText);
+  useSharedFiles(room ? sharedTo : null, (file) => matrixSendFile(roomId ?? '', file), fail, setSending);
 
   if (!state || !room || !roomId) {
     return (
@@ -666,7 +672,19 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       ) : null}
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
-      <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} onTyped={sayTyping.typed} onSent={sayTyping.sent} />
+      <Field
+        key={changed?.id ?? 'new'}
+        initial={changed?.text ?? sharedWords.current}
+        editing={!!changed}
+        saving={saving}
+        members={nameable}
+        onSend={send}
+        onTyped={sayTyping.typed}
+        onSent={() => {
+          if (!changed) sharedWords.current = '';
+          sayTyping.sent();
+        }}
+      />
       {!voice.recording && !changed ? (
         <Row wrap>
           {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}

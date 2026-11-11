@@ -193,6 +193,16 @@ export function lockingKeepsLink(now = Date.now()): void {
   opened = null;
 }
 
+/** Whether the link held opens Send to again with the photo or file shared `id` (its `sealed` id,
+ *  or a copy's name, lib/share-in.ts): Erevos locked as Send to showed, as it does when it comes
+ *  back from the background with the share, so the file waits for it, past the password. */
+export function holdsShare(id: string, now = Date.now()): boolean {
+  const href = peekLink(now);
+  if (!href || !id) return false;
+  const { path, params } = linkParts(href);
+  return path === '/share' && (params.sealed === id || params.file === id);
+}
+
 /** Forgets the link held, and the one opened last, so neither opens after the password. */
 export function dropLink(): void {
   held = null;

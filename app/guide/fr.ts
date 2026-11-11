@@ -872,11 +872,13 @@ dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous 
   dans le navigateur seulement si c’est là que tu veux aller. Rien n’est chargé avant cela.
 - **Partager depuis une autre app** (Android) : dans **Partager** d’une autre app, comme celui du navigateur pour une
   page, choisis **Erevos**. Dès qu’un espace est ouvert, **Envoyer à** liste les discussions, groupes et conversations
-  SMS que l’écran d’accueil a montrés en dernier, puis toutes les autres discussions et tous les autres groupes, avec
-  une recherche ; jamais les discussions masquées. Les mots et les liens s’ouvrent dans le champ de message de celui que
-  tu choisis, à relire et envoyer là ; une photo ou un fichier (100 Mo au plus) part dès que cette discussion ou ce
-  groupe s’ouvre, une photo à la qualité que tu as choisie pour les photos, et jamais en SMS. Il est chiffré dès son
-  arrivée, avec une clé seulement dans la mémoire d’Erevos, et attend ainsi sur le téléphone ; il disparaît une fois
+  SMS que l’écran d’accueil a montrés en dernier, puis toutes les autres discussions et tous les autres groupes, et les
+  discussions de tes comptes Matrix, XMPP et Nostr, avec une recherche ; jamais les discussions masquées. Les mots et
+  les liens s’ouvrent dans le champ de message de celui que tu choisis, à relire et envoyer là ; une photo ou un
+  fichier part dès que cette discussion ou ce groupe s’ouvre, une photo à la qualité que tu as choisie pour les photos,
+  et jamais en SMS. Un fichier peut faire 100 Mo au plus dans une discussion Erevos, 50 Mo sur Matrix et XMPP et 20 Mo
+  sur Nostr. Il est chiffré dès son arrivée, avec une clé seulement dans la mémoire d’Erevos, et attend ainsi sur le
+  téléphone, aussi pendant que tu donnes le mot de passe si Erevos se verrouille d’abord ; il disparaît une fois
   envoyé, ou quand tu quittes **Envoyer à**.
 - **Ton contact voit quand tu lis :** ton téléphone le dit au sien, comme le sien le dit au tien, sauf si cette
   discussion apparaît hors ligne (ci-dessous).
