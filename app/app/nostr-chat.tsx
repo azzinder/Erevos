@@ -8,22 +8,28 @@ import { BackHandler, Pressable, ScrollView, View, type LayoutChangeEvent } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
+import { LinkedText } from '../components/linked-text';
 import { Missing, type Answered } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Pinned, Quote, Reactions } from '../components/message-parts';
+import { Pinned, PlaceCard, Quote, Reactions } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { NostrStickers } from '../components/nostr-stickers';
+import { PlaceSheet } from '../components/place-sheet';
 import { chosenStyle, SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { Button, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import type { Place } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
+import { withMention, type Nameable } from '../lib/mentions';
+import { cardFile, namesShown, placeOnly, placeWords, withNpubs } from '../lib/message-carry';
 import { messageLine } from '../lib/message-line';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
@@ -57,6 +63,8 @@ import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
 import { stickerMeta } from '../lib/own-stickers';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { pickVideo } from '../lib/pick-video';
+import { placesIn } from '../lib/sms-parts';
 import type { StickerToSend } from '../lib/sticker-send';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { space } from '../theme/colors';
@@ -90,6 +98,10 @@ import { checkedLook } from '../theme/look';
 // the chat of that place's own key (lib/network-place.ts), which has no notification settings.
 // **Public posts**, in a chat with one person, opens what they post for everyone, read only
 // (app/nostr-posts.tsx).
+// Words show with their marks (*bold*, _italic_…) and tappable web addresses; a place goes as its
+// geo: address and a map's link, and one that comes so shows as a place; Camera, Video and Contact
+// card (a .vcf file) send as a photo does, and in a group, @ offers its members and names them as
+// nostr:npub1… (lib/message-carry.ts, components/network-carry.tsx).
 
 /** A voice message among the files: a sound that says how long it lasts. */
 const isVoice = (file: NostrDmFile): file is NostrDmFile & { duration: number } => file.type.startsWith('audio/') && !!file.duration;
@@ -100,6 +112,7 @@ function lineOf(message: NostrDmMessage): string {
   if (typeof file === 'object') {
     return messageLine(isVoice(file) ? { text: '', voice: { ms: file.duration } } : { text: '', file: { kind: file.type.startsWith('image/') ? 'photo' : 'file', name: file.name ?? t('File') } });
   }
+  if (!file && placeOnly(message.text)) return `📍 ${t('Location')}`;
   return file ? t('File') : messageLine({ text: message.text }) || t('Message');
 }
 
@@ -142,6 +155,10 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [stickering, setStickering] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const selection = useSelection<string>();
+  // The sheet that sends where we are, how photos go, and whose contacts a contact card is chosen from.
+  const [placing, setPlacing] = useState(false);
+  const photos = usePhotoQuality();
+  const among = useNetworkAmong(where);
 
   useEffect(() => {
     runNostrDm();
@@ -227,21 +244,33 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const answered = replyId ? byId.get(replyId) : undefined;
   const menuMessage = menuFor ? byId.get(menuFor) : undefined;
 
-  // What is typed goes as a new message, or as an answer to the one chosen.
+  // What is typed goes as a new message, or as an answer to the one chosen; in a group, those
+  // named with @ go as nostr:npub1… (NIP-27).
   function send() {
     const text = draft.trim();
     if (!text || !key) return;
     setDraft('');
     setNote('');
     setReplyId(null);
-    nostrDmSend(key, text, answered?.id).catch(fail);
+    nostrDmSend(key, withNpubs(text, nameable), answered?.id).catch(fail);
   }
 
-  const sendPhoto = () =>
+  const sendPhoto = (from: 'photos' | 'camera' = 'photos') =>
     sendPicked(async () => {
-      const photo = await pickPhoto('photos', 90);
+      const photo = await pickPhoto(from, photos.quality);
       return photo ? { bytes: photo.bytes, name: photo.name, mime: photo.mime, ...(photo.w && photo.h ? { dim: `${photo.w}x${photo.h}` } : {}) } : null;
     });
+  const sendVideo = () =>
+    sendPicked(async () => {
+      const video = await pickVideo(NOSTR_FILE_MOST);
+      return video ? { bytes: video.bytes, name: video.name, mime: video.mime, ...(video.w && video.h ? { dim: `${video.w}x${video.h}` } : {}) } : null;
+    });
+  // A contact card goes as a .vcf file, as a file does (kind 15); a place as its geo: address and a map's link in the words.
+  const sendCard = (card: string) => sendPicked(async () => cardFile(card));
+  function sendPlace(place: Place) {
+    setPlacing(false);
+    if (key) nostrDmSend(key, placeWords(place)).catch(fail);
+  }
   const sendAnyFile = () =>
     sendPicked(async () => {
       const picked = await pickFile(NOSTR_FILE_MOST);
@@ -253,6 +282,9 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const npub = npubOf(key);
   const name = self ? t('Chat with myself') : nameOf(state, key) || shortNpub(npub);
   const whoOf = (message: NostrDmMessage) => (message.mine ? t('You') : message.from ? personName(state, message.from) : name);
+  // In a group, the others as @ offers them; everyone a message may name, us too, as its words show them.
+  const nameable: Nameable[] = (members ?? []).map((member) => ({ identity: member, name: personName(state, member) }));
+  const people: Nameable[] = [...nameable, ...(group ? [] : [{ identity: key, name }]), { identity: state.public, name: state.name || t('You') }];
 
   // A reaction chosen: ours again takes it back, another one goes in its place.
   const mineOn = (message: NostrDmMessage) => message.reactions?.[state.public];
@@ -407,6 +439,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             state={state}
             message={message}
             group={group}
+            people={people}
             answered={answeredBy(message)}
             onRetry={() => nostrDmRetry(key, message.id).catch(fail)}
             onMenu={() => setMenuFor(message.id)}
@@ -419,10 +452,25 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       </View>
 
       {answered ? <Quote name={whoOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
+      <MentionChips text={draft} members={nameable} onPick={(member) => setDraft(withMention(draft, member.name))} />
       <Row>
         <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
         <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} />
       </Row>
+      {voice.recording ? null : (
+        <Row wrap>
+          <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
+          <CarryButtons
+            disabled={sending}
+            photos={photos}
+            among={among}
+            shown={shown}
+            onCamera={() => void sendPhoto('camera')}
+            onVideo={() => void sendVideo()}
+            onCard={(card) => void sendCard(card)}
+          />
+        </Row>
+      )}
       <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
@@ -442,6 +490,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
       </Row>
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
+      <PlaceSheet visible={placing && shown} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Everyone in this chat can see it.')} />
 
       {self ? null : naming === null ? (
         <Button title={group ? t('Name this group') : t('Name them here')} kind="secondary" compact onPress={() => setNaming((group ? chat.subject : chat.name) ?? '')} />
@@ -530,10 +579,12 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   );
 }
 
-function Bubble({ state, message, group, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout }: {
+function Bubble({ state, message, group, people, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout }: {
   state: NostrDmState;
   message: NostrDmMessage;
   group: boolean;
+  /** Who its words may name (nostr:npub1…), shown by their names. */
+  people: Nameable[];
   /** The message it answers, or null when that is not on this phone. */
   answered?: Answered | null;
   onRetry: () => void;
@@ -552,6 +603,10 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onSign, chos
   // NIP-17 says nothing back: one tick once a relay of theirs took it, no more.
   const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : `${when}${mine ? ' ✓' : ''}`;
   const file = typeof message.file === 'object' ? message.file : undefined;
+  // Its words as they show: those named by their names, a place as a place (lib/message-carry.ts).
+  const words = useMemo(() => (message.file ? '' : namesShown(message.text, people)), [message.file, message.text, people]);
+  const place = message.file ? null : placeOnly(message.text);
+  const places = useMemo(() => (message.file ? [] : placesIn(message.text)), [message.file, message.text]);
   return (
     <View onLayout={onLayout} style={chosen ? [{ padding: 2 }, chosenStyle(colors)] : undefined}>
       <Pressable
@@ -568,6 +623,11 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onSign, chos
             {personName(state, message.from)}
           </Text>
         ) : null}
+        {message.forwarded ? (
+          <Text variant="caption" tone="muted" style={{ fontStyle: 'italic' }}>
+            {t('Forwarded')}
+          </Text>
+        ) : null}
         {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
         {file ? (
           isVoice(file) ? (
@@ -577,9 +637,18 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onSign, chos
           )
         ) : message.file ? (
           <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>
+        ) : place ? (
+          <PlaceCard place={place} />
         ) : (
           // Not selectable: holding the words opens the menu, which can copy them. In the chat's text size (theme/look.ts).
-          <Text style={textSized(look.textSize, 16)}>{message.text}</Text>
+          <>
+            <Text style={textSized(look.textSize, 16)}>
+              <LinkedText text={words} />
+            </Text>
+            {places.map((one, i) => (
+              <PlaceCard key={i} place={one} />
+            ))}
+          </>
         )}
         <Text variant="caption" tone="faint">
           {status}

@@ -48,9 +48,11 @@ import {
   sendOwnPresence,
   takeBackReaction,
   type MatrixFile,
+  type MatrixMessage,
   type MatrixRoom,
   type MatrixState,
 } from './matrix';
+import { formattedOf } from './matrix-html';
 import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, takeGiven, unlockRecovery, type Unlocked } from './matrix-backup';
 import { fetchFile, fetchPicture, sendFile, sendSticker, uploadPicture, type OutgoingFile, type OutgoingSticker } from './matrix-media';
 import { learnRule, removeMember, renameRoom, roomMembers, searchPeople, setAdmin, setTopic, type FoundPerson, type RoomMember } from './matrix-members';
@@ -761,9 +763,11 @@ export async function matrixSpaceRooms(spaceId: string, since?: string): Promise
 }
 
 /**
- * Sends a copy of a message to another room of the same account: its words, place or poll anew;
- * a photo's or file's bytes fetched, opened and sent again under a key of their own, so the copy
- * shares nothing with the message on the homeserver. Matrix has no mark for a copy: it shows as ours.
+ * Sends a copy of a message to another room of the same account: its words, with their look, place
+ * or poll anew; a photo's or file's bytes fetched, opened and sent again under a key of their own,
+ * so the copy shares nothing with the message on the homeserver. The others see it as ours: the one
+ * mark Matrix has for a copy (MSC2723) would tell them the room and the person it came from, so
+ * it is marked as forwarded here only.
  */
 export async function matrixForward(fromRoom: string, messageId: string, toRoom: string): Promise<void> {
   const it = need();
@@ -772,19 +776,21 @@ export async function matrixForward(fromRoom: string, messageId: string, toRoom:
   const file = message.file;
   const bytes = file ? await matrixFile(file) : null;
   await changeAccount(it, async () => {
+    let sent: MatrixMessage;
     if (file && bytes && message.sticker) {
-      await sendSticker(it.state, toRoom, { bytes, mime: file.mime, label: file.name, ...(file.w && file.h ? { w: file.w, h: file.h } : {}) });
+      sent = await sendSticker(it.state, toRoom, { bytes, mime: file.mime, label: file.name, ...(file.w && file.h ? { w: file.w, h: file.h } : {}) });
     } else if (file && bytes) {
-      await sendFile(it.state, toRoom, {
+      sent = await sendFile(it.state, toRoom, {
         name: file.name,
         mime: file.mime,
         bytes,
         ...(file.w && file.h ? { w: file.w, h: file.h } : {}),
         ...(file.voice ? { voice: { durationMs: file.duration ?? 0, ...(file.waveform ? { waveform: file.waveform } : {}) } } : {}),
       });
-    } else if (message.place) await sendLocation(it.state, toRoom, message.place);
-    else if (message.poll) await sendPoll(it.state, toRoom, pollShown(message.poll).poll);
-    else await sendText(it.state, toRoom, message.text, [], message.preview ? previewContent(message.preview) : {});
+    } else if (message.place) sent = await sendLocation(it.state, toRoom, message.place);
+    else if (message.poll) sent = await sendPoll(it.state, toRoom, pollShown(message.poll).poll);
+    else sent = await sendText(it.state, toRoom, message.text, [], { ...formattedOf(message.text, message.styled), ...(message.preview ? previewContent(message.preview) : {}) });
+    sent.forwarded = true;
   });
 }
 

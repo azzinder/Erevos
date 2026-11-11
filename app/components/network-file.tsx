@@ -9,11 +9,13 @@ import { fileSize } from '../lib/attachments';
 import { playVoice } from '../lib/audio';
 import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
+import { isCardFile } from '../lib/message-carry';
 import { saveBytes } from '../lib/save-file';
 import { voiceDuration } from '../lib/voice';
 import { soundLength } from '../lib/xmpp-voice';
 import { radius, space } from '../theme/colors';
 import { OpenPhoto } from './attachment';
+import { ContactFile } from './network-carry';
 import { Button, Row, Text } from './ui';
 
 // A photo, sound or file in a chat on XMPP or Nostr (app/xmpp-chat.tsx, app/nostr-chat.tsx):
@@ -22,7 +24,7 @@ import { Button, Row, Text } from './ui';
 // fetched stays in memory while Erevos runs (lib/file-cache.ts). A sound is a voice message, as
 // the other apps send one: Play and Stop, how long it lasts once that is known (as it was recorded
 // here, or read from the file once it was fetched, lib/xmpp-voice.ts), and how much is left while
-// it plays.
+// it plays. A contact card (a .vcf) shows as one, once fetched (components/network-carry.tsx).
 
 /** The ending a sound's type is written with, for the phone's player. */
 function endingOf(type: string): string {
@@ -32,7 +34,7 @@ function endingOf(type: string): string {
   return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
 }
 
-export function NetworkFile({ name, type, size, dim, duration, fetch, onMenu, onDuration }: {
+type FileProps = {
   name: string;
   type: string;
   size?: number;
@@ -43,7 +45,13 @@ export function NetworkFile({ name, type, size, dim, duration, fetch, onMenu, on
   onMenu?: () => void;
   /** Told how long a sound lasts, once it was fetched and its file says, to keep it. */
   onDuration?: (ms: number) => void;
-}) {
+};
+
+export function NetworkFile(props: FileProps) {
+  return isCardFile(props.name, props.type) ? <ContactFile name={props.name} fetch={props.fetch} /> : <FileShown {...props} />;
+}
+
+function FileShown({ name, type, size, dim, duration, fetch, onMenu, onDuration }: FileProps) {
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
