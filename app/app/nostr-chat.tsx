@@ -18,6 +18,7 @@ import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
 import { useChatProtect } from '../components/chat-protect';
+import { askDelete, ChatTimer, CheckInPerson, useGoneAt, useVanishOnce, VanishStrip } from '../components/chat-rules';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { NetworkFile } from '../components/network-file';
@@ -40,8 +41,10 @@ import { cardFile, namesShown, placeOnly, placeWords, withNpubs } from '../lib/m
 import { messageLine } from '../lib/message-line';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
+import { checkByCode, isBlocked, nextGoesIn, ownCode, setBlocked, setTimerIn, shownIn, timerOf, uncheck, type NostrCheck } from '../lib/nostr-rules';
 import {
   canForwardNostr,
+  nostrDmAct,
   nostrDmDelete,
   nostrDmFile,
   nostrDmForgetChat,
@@ -184,6 +187,8 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Choosing when what is typed goes, and the message a reminder is being set for (components/chat-writing.tsx).
   const [choosingLater, setChoosingLater] = useState(false);
   const [reminding, setReminding] = useState<RemindOf | null>(null);
+  // The next message to disappear, if it is to (components/chat-rules.tsx).
+  const vanish = useVanishOnce();
 
   useEffect(() => {
     runNostrDm();
@@ -223,10 +228,13 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     onBack: () => router.back(),
   });
   const count = chat?.messages.length ?? 0;
+  // What is gone by the chat's rules leaves the screen at its time (lib/nostr-rules.ts).
+  const shownList = chat ? shownIn(chat) : [];
+  useGoneAt(chat ? nextGoesIn(chat) : 0);
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
   const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
-    list: chat?.messages ?? [],
+    list: shownList,
     idOf: (message) => message.id,
     mine: (message) => message.mine,
     unread: chat?.unread ?? 0,
@@ -299,7 +307,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     kept.sent();
     setNote('');
     setReplyId(null);
-    nostrDmSend(key, withNpubs(text, nameable), answered?.id).catch(fail);
+    nostrDmSend(key, withNpubs(text, nameable), answered?.id, vanish.lasts()).catch(fail);
   }
 
   // Holds what is typed to go at `at` from this phone (lib/chat-writing.ts), as an answer to the one chosen.
@@ -356,19 +364,23 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const pins = (chat.pins ?? []).filter((id) => byId.has(id));
   const pinAt = Math.min(pinShown, Math.max(0, pins.length - 1));
 
-  // Deletes from this device, after asking; of ours, the others are asked to delete them too.
+  // Deletes from this device, after asking; or, with some of ours that went among them, asks the
+  // others to delete those too (NIP-09).
   function remove(ids: string[]) {
-    ask(t('Delete messages'), t('They are removed from this phone. Of your own, the others are asked to remove them too: their Nostr apps may or may not do so.'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: t('Delete'),
-        style: 'destructive',
-        onPress: () => {
-          selection.clear();
-          void nostrDmDelete(key!, ids).catch(fail);
-        },
-      },
-    ]);
+    const gone = (everyone: boolean) => () => {
+      selection.clear();
+      void nostrDmDelete(key!, ids, everyone).catch(fail);
+    };
+    const ours = ids.some((id) => {
+      const m = byId.get(id);
+      return !!m?.mine && m.state !== 'failed' && m.state !== 'sending' && !m.old;
+    });
+    askDelete(
+      ids.length,
+      gone(false),
+      ours ? gone(true) : undefined,
+      t('They are removed from this phone. Of your own, the others are asked to remove them too: their Nostr apps may or may not do so.'),
+    );
   }
 
   // The words of the messages chosen, oldest first: of several, each with who wrote it.
@@ -481,6 +493,15 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         {t('Nostr · encrypted (NIP-17), not anonymous')}
       </Text>
       {group || self ? null : (
+        <CheckInPerson
+          checked={!!chat.checked}
+          code={ownCode(npubOf(state.public))}
+          about={t('Their Nostr app shows their key as a code (nostr:npub…): take a photo of it here, and the chat is marked checked when it is this chat’s key. Let them take a photo of this code too. Nothing is sent.')}
+          check={async (text) => checkSaid(await nostrDmAct((s) => checkByCode(s, key, text)))}
+          onUncheck={() => void nostrDmAct(async (s) => uncheck(s, key)).catch(fail)}
+        />
+      )}
+      {group || self ? null : (
         <>
           <Row>
             <Button title={t('Public posts')} kind="secondary" compact onPress={() => router.push({ pathname: '/nostr-posts', params: { key, ...whereParams(where) } })} />
@@ -505,7 +526,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       ) : null}
 
       <View style={{ gap: space.md }} {...threadProps}>
-        {chat.messages.map((message) => (
+        {shownList.map((message) => (
           <Bubble
             key={message.id}
             state={state}
@@ -526,6 +547,9 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       <HeldBubbles held={heldIn(state.writing, key)} account={() => nostrDmWriting(where)} say={setNote} />
 
       {answered ? <Quote name={whoOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
+      {vanish.on ? (
+        <VanishStrip seconds={vanish.seconds} note={t('Their app and the relays that honour its time (NIP-40) delete it then; others keep it.')} onChoose={vanish.choose} onClose={vanish.off} />
+      ) : null}
       <MentionChips text={draft} members={nameable} onPick={(member) => setDraft(withMention(draft, member.name))} />
       <Row>
         <Input
@@ -566,6 +590,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <Button title={t('Photo')} kind="secondary" compact disabled={sending} onPress={() => void sendPhoto()} />
             <Button title={t('File')} kind="secondary" compact disabled={sending} onPress={() => void sendAnyFile()} />
             {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
+            {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={vanish.toggle} />}
             {sending ?<Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
           </>
         )}
@@ -577,6 +602,11 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
         <StarredHere stars={keep.stars} who={name} onGo={(id) => (byId.has(id) ? goTo(id) : setNote(t('That message is not on this phone.')))} />
         {guard.buttons}
+        <ChatTimer
+          seconds={timerOf(chat)}
+          note={t('New messages, sent or received, go from this phone that long after they were sent. Yours carry that time, so their app and the relays delete them then (NIP-40); those that do not honour it keep them. Messages already here stay.')}
+          onChoose={(after) => void nostrDmAct(async (s) => setTimerIn(s, key, after)).catch(fail)}
+        />
       </Row>
       <HistoryButtons tools={history} exportable={where === 'space'} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
@@ -615,6 +645,25 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         </View>
       )}
 
+      {group || self ? null : isBlocked(state, key) ? (
+        <>
+          <Text variant="caption" tone="muted">
+            {t('Blocked: what they send is dropped on this phone.')}
+          </Text>
+          <Button title={t('Unblock')} kind="secondary" onPress={() => void nostrDmAct(async (s) => setBlocked(s, key, false)).catch(fail)} />
+        </>
+      ) : (
+        <Button
+          title={t('Block')}
+          kind="secondary"
+          onPress={() =>
+            ask(t('Block {name}?', { name }), t('What they send is dropped on this phone, unread, and does not come back if you unblock them. They are not told: Nostr cannot stop anyone from writing to you.'), [
+              { text: t('Cancel'), style: 'cancel' },
+              { text: t('Block'), style: 'destructive', onPress: () => void nostrDmAct(async (s) => setBlocked(s, key, true)).catch(fail) },
+            ])
+          }
+        />
+      )}
       <Button
         title={t('Remove this chat')}
         kind="secondary"
@@ -679,6 +728,14 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       {thread}
     </View>
   );
+}
+
+/** What a photo of their code showed (lib/nostr-rules.ts checkByCode). */
+function checkSaid(found: NostrCheck): string {
+  if (found === 'match') return t('It matches: no one is in between. Now let them take a photo of the code on this phone, so their phone checks you too.');
+  if (found === 'own') return t('That is the code this phone shows. Take a photo of the code on their phone.');
+  if (found === 'other') return t('That is the code of another key than this chat’s. Someone may be in between, or it is another account of theirs: ask them.');
+  return t('That QR code is not a code to check a contact by.');
 }
 
 function Bubble({ state, message, group, people, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout, starred }: {

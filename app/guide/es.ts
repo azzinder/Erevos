@@ -1865,6 +1865,9 @@ ningún puente se pone en medio.
 - **Varios mensajes:** **Seleccionar**, en el menú de un mensaje, lo elige, y un toque añade otros; luego **Copiar**,
   **Reenviar** o **Eliminar**. **Eliminar** los retira para todos en el chat, tras confirmar: los tuyos y, donde tu
   nivel lo permite, los de otros. No se puede deshacer.
+- **Este teléfono o todos:** **Eliminar**, para un mensaje o varios, pregunta primero: **Este teléfono** los elimina
+  solo aquí, y siguen ocultos si vuelven a llegar; **Para todos** los retira como se dice arriba, y solo se ofrece
+  cuando cada uno puede retirarse.
 - **Escribiendo:** quien está escribiendo ahora en el chat, según dice el servidor de Matrix, aparece debajo con
   **escribiendo…**. Erevos lo dice de ti solo si activas **Avisar cuando escribo** en la pantalla de Matrix; al
   principio está desactivado, ya que pasa por el servidor de Matrix sin cifrar, así que el servidor sabe cada vez que
@@ -2007,6 +2010,14 @@ chats de Matrix van aparte y marcados, para las personas a las que solo llegarí
 - **Volver a enviar:** un mensaje tuyo que muestra **No enviado** tiene **Volver a enviar** y **Eliminar** en su menú.
 - **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
   a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
+- **Mensajes temporales:** **Mensajes temporales**, bajo el campo de mensaje, fija un tiempo para los mensajes nuevos,
+  enviados o recibidos: 5 minutos, 1 hora, 1 día o 1 semana después de enviarse cada uno. Entonces se van de este
+  teléfono, y los tuyos se retiran también para todos en el chat (sus apps los muestran como eliminados), o en cuanto
+  Erevos vuelva a funcionar. Lo que enviaron los demás se queda con ellos. **Temporal**, junto a **Encuesta** y
+  **Ubicación**, lo hace solo para el siguiente mensaje. Los mensajes que ya están en el chat se quedan.
+- **Bloquear:** **Bloquear**, en un chat con una persona, la añade a la lista de ignorados de tu cuenta: nada suyo
+  llega a tu cuenta de Matrix, en ninguna de sus apps, y no se le avisa. **Contactos bloqueados**, en la pantalla de
+  Matrix, los lista, con **Desbloquear**.
 
 ## XMPP {#xmpp}
 
@@ -2044,6 +2055,9 @@ como esas apps: ningún puente se pone en medio.
   responde. **Reenviar** envía uno o varios mensajes a otro chat XMPP. **Fijar solo para mí** mantiene un mensaje arriba
   del chat, solo en este teléfono. **Seleccionar** elige varios mensajes para copiar, reenviar o eliminar; **Eliminar**
   ahí retira solo los tuyos.
+- **Este teléfono o todos:** **Eliminar**, para un mensaje o varios, pregunta primero: **Este teléfono** los elimina
+  solo aquí, y siguen ocultos si vuelven a llegar; **Para todos** los retira como se dice arriba, y solo se ofrece
+  cuando cada uno puede retirarse.
 - **Escribiendo:** cuando la app de la otra persona avisa de que está escribiendo, **escribiendo…** aparece bajo el
   chat. Erevos lo dice de ti solo si activas **Avisar cuando escribo** en la pantalla de XMPP, y solo a un contacto
   que ve tu presencia, nunca en un grupo; al principio está desactivado, ya que pasa por el servidor XMPP sin cifrar,
@@ -2179,6 +2193,17 @@ de XMPP van aparte y marcados, para las personas a las que solo llegarías por X
 - **Volver a enviar:** un mensaje tuyo que muestra **No enviado** tiene **Volver a enviar** y **Eliminar** en su menú.
 - **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
   a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
+- **Mensajes temporales:** **Mensajes temporales**, bajo el campo de mensaje, elimina de este teléfono los mensajes
+  nuevos ese tiempo después de enviarse, y **Temporal** lo hace solo para el siguiente mensaje. El otro lado los
+  guarda: XMPP no tiene forma de eliminarlos allí. Los mensajes que ya están aquí se quedan.
+- **Aparecer sin conexión:** al pie de un chat con una persona, **Aparecer sin conexión** te muestra sin conexión para
+  ella, muestre lo que muestre tu cuenta a los demás, y no le dice nada de lo que lees o escribes, ni que sus mensajes
+  llegaron. Un grupo que compartís aún te muestra. Vale solo para la conexión de este teléfono.
+- **Comprobar en persona:** bajo **Sus claves**, **Comprobar en persona** muestra un código de tu dirección y tus
+  claves, como hace Conversations. Fotografía allí el suyo: cada uno de sus dispositivos cuya clave coincide se marca
+  como comprobado. Una clave que difiere no marca nada y lo dice: puede haber alguien en medio, o cambiaron de app. No
+  se envía nada.
+- **Contactos bloqueados:** la pantalla de XMPP lista a quién bloquea la cuenta, con **Desbloquear**.
 
 ## Chats con otras apps de Nostr {#nostr-chats}
 
@@ -2234,6 +2259,9 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
 - **Seleccionar:** elige varios mensajes para **Copiar**, **Reenviar** a otro chat de Nostr (las fotos y los archivos se
   envían otra vez) o **Eliminar**. Eliminar los quita de este teléfono y pide a las apps de los demás que eliminen
   también los tuyos: sus apps pueden hacerlo o no.
+- **Este teléfono o todos:** **Eliminar** pregunta primero: **Este teléfono** los elimina solo aquí, y siguen ocultos
+  si vuelven a llegar; **Para todos** pide además a las apps de los demás que eliminen los tuyos (NIP-09), algo que
+  pueden hacer o no.
 - **Stickers:** **Sticker** envía tus propios stickers hechos con fotos (**Míos**) como fotos, cifradas: otras apps de
   Nostr los muestran como fotos. Los grupos que trae Erevos también están: cada sticker va como su imagen, hecha en tu
   dispositivo.
@@ -2332,6 +2360,16 @@ quién.
   solo: el teléfono del que vino la copia puede haberlo enviado ya.
 - **Recordarme:** el menú de un mensaje tiene **Recordarme**. Elige una hora: el mensaje, con el nombre de su chat, va
   a **Chat conmigo** y te lo recuerda entonces. Necesita **Erevos** activado en [Módulos](#modules).
+- **Mensajes temporales:** **Mensajes temporales**, bajo el campo de mensaje, elimina de este teléfono los mensajes
+  nuevos, enviados o recibidos, ese tiempo después de enviarse. Los tuyos llevan ese tiempo (NIP-40), así que su app y
+  los relays que lo respetan los eliminan entonces; los que no, los guardan. **Temporal** lo hace solo para el
+  siguiente mensaje. Un mensaje que llega con su propio tiempo se va a esa hora.
+- **Bloquear:** **Bloquear**, al pie de un chat, descarta en este teléfono lo que envía esa clave, sin leer; no vuelve
+  si la desbloqueas. No se le avisa: Nostr no puede impedir que nadie te escriba. **Contactos bloqueados**, en la
+  pantalla de chats de Nostr, los lista, con **Desbloquear**.
+- **Comprobar en persona:** en un chat con una persona, **Comprobar en persona** muestra el código de tu clave.
+  Fotografía el código que muestra su app (nostr:npub…): el chat se marca como comprobado cuando es la clave de este
+  chat. No se envía nada.
 
 ## SMS {#sms}
 
@@ -2444,6 +2482,9 @@ Erevos no muestra nada.
   no se puede responder.
 - **Recordarme:** mantén pulsado un mensaje para **Recordarme**: va a **Chat conmigo** con el nombre de la
   conversación, y te lo recuerda a la hora que elijas.
+- **Mensajes temporales:** con Erevos como app de SMS, **Mensajes temporales**, bajo la línea **SMS normal** de una
+  conversación, elimina de este teléfono sus SMS nuevos ese tiempo después de enviarse, o en cuanto Erevos vuelva a
+  funcionar. El otro teléfono los guarda: un SMS no puede eliminarse allí. Los mensajes que ya están aquí se quedan.
 
 ### SMS cifrados cuando nada más funciona
 

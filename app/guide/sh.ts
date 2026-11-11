@@ -1797,6 +1797,9 @@ između.
 - **Više poruka:** **Odaberi**, u meniju poruke, bira je, a dodir dodaje druge; zatim **Kopiraj**, **Proslijedi** ili
   **Obriši**. **Obriši** ih povlači za sve u razgovoru, nakon što potvrdite: vaše i, gdje vaš nivo dopušta, tuđe. Ne
   može se poništiti.
+- **Ovaj telefon ili svi:** **Obriši**, za jednu poruku ili više, prvo pita: **Ovaj telefon** ih briše samo ovdje, i
+  ostaju skrivene ako ponovo stignu; **Za sve** ih povlači kako je gore rečeno, a nudi se samo kad se svaka može
+  povući.
 - **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
   ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
   pa server saznaje svaki put kad pišete.
@@ -1926,6 +1929,14 @@ razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko
 - **Pošalji ponovo:** vaša poruka koja pokazuje **Nije poslano** ima u svom meniju **Pošalji ponovo** i **Obriši**.
 - **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
   **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
+- **Poruke koje nestaju:** **Poruke koje nestaju**, ispod polja za poruku, postavlja vrijeme za nove poruke, poslane
+  ili primljene: 5 minuta, 1 sat, 1 dan ili 1 sedmicu nakon što je svaka poslana. Tada odlaze s ovog telefona, a vaše
+  se povlače i za sve u razgovoru (njihove aplikacije ih prikazuju kao obrisane), ili čim Erevos ponovo radi. Ono što
+  su drugi poslali ostaje kod njih. **Nestajanje**, pored **Anketa** i **Lokacija**, to radi samo za sljedeću poruku.
+  Poruke koje su već u razgovoru ostaju.
+- **Blokiranje:** **Blokiraj**, u razgovoru s jednom osobom, dodaje je na popis ignorisanih vašeg računa: ništa njeno
+  ne stiže do vašeg Matrix računa, ni u jednoj od njegovih aplikacija, i ne javlja joj se. **Blokirani kontakti**, na
+  Matrix ekranu, navodi ih, s **Odblokiraj**.
 
 ## XMPP {#xmpp}
 
@@ -1961,6 +1972,9 @@ aplikacije: nikakav most nije između.
   odgovora vodi na poruku na koju odgovara. **Proslijedi** šalje jednu ili više poruka u drugi XMPP razgovor. **Prikvači
   samo za mene** drži poruku na vrhu razgovora, samo na ovom telefonu. **Odaberi** bira više poruka za kopiranje,
   prosljeđivanje ili brisanje; **Obriši** tamo povlači samo vaše.
+- **Ovaj telefon ili svi:** **Obriši**, za jednu poruku ili više, prvo pita: **Ovaj telefon** ih briše samo ovdje, i
+  ostaju skrivene ako ponovo stignu; **Za sve** ih povlači kako je gore rečeno, a nudi se samo kad se svaka može
+  povući.
 - **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to javlja o vama
   samo ako uključite **Reci kad pišem** na ekranu XMPP, i samo kontaktu koji vidi vašu prisutnost, nikad u grupi;
   isprva je isključeno, jer ide preko XMPP servera nešifrirano, pa server saznaje svaki put kad pišete.
@@ -2089,6 +2103,18 @@ odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 - **Pošalji ponovo:** vaša poruka koja pokazuje **Nije poslano** ima u svom meniju **Pošalji ponovo** i **Obriši**.
 - **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
   **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
+- **Poruke koje nestaju:** **Poruke koje nestaju**, ispod polja za poruku, briše nove poruke s ovog telefona toliko
+  nakon slanja, a **Nestajanje** to radi samo za sljedeću poruku. Druga strana ih zadržava: XMPP nema načina da ih
+  tamo obriše. Poruke koje su već ovdje ostaju.
+- **Prikazuj me kao da nisam na mreži:** na dnu razgovora s jednom osobom, **Prikazuj me kao da nisam na mreži**
+  pokazuje vas toj osobi kao da niste na mreži, šta god vaš račun pokazuje svima ostalima, i ne govori joj ništa o
+  tome šta čitate ili pišete, niti da su njene poruke stigle. Zajednička grupa vas i dalje pokazuje. Vrijedi samo za
+  vezu ovog telefona.
+- **Provjera uživo:** ispod **Njihovi ključevi**, **Provjera uživo** pokazuje kod vaše adrese i ključeva, kao što to
+  radi Conversations. Tamo fotografišite njihov: svaki njihov uređaj čiji se ključ poklapa označava se kao provjeren.
+  Ključ koji se razlikuje ne označava ništa i kaže to: neko je možda između, ili su promijenili aplikaciju. Ništa se
+  ne šalje.
+- **Blokirani kontakti:** XMPP ekran navodi koga račun blokira, s **Odblokiraj**.
 
 ## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
 
@@ -2141,6 +2167,8 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 - **Odaberi:** bira više poruka za **Kopiraj**, za **Proslijedi** u drugi Nostr razgovor (fotografije i datoteke šalju
   se ponovo) ili za **Obriši**. Brisanje ih uklanja s ovog telefona i traži od aplikacija ostalih da obrišu i vaše:
   njihove aplikacije to mogu ali ne moraju učiniti.
+- **Ovaj telefon ili svi:** **Obriši** prvo pita: **Ovaj telefon** ih briše samo ovdje, i ostaju skrivene ako ponovo
+  stignu; **Za sve** takođe traži od aplikacija drugih da obrišu vaše (NIP-09), što one mogu ili ne moraju učiniti.
 - **Naljepnice:** **Naljepnica** šalje vaše naljepnice napravljene od fotografija (**Moje**) kao fotografije, šifrirane:
   druge Nostr aplikacije ih prikazuju kao fotografije. Tu su i ugrađeni kompleti: svaka naljepnica ide kao njena slika,
   napravljena na vašem uređaju.
@@ -2233,6 +2261,16 @@ isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim 
   poslao.
 - **Podsjeti me:** meni poruke ima **Podsjeti me**. Izaberite vrijeme: poruka, s imenom svog razgovora, ide u
   **Razgovor sa sobom** i tada vas podsjeti. Potrebno je da je **Erevos** uključen u [Moduli](#modules).
+- **Poruke koje nestaju:** **Poruke koje nestaju**, ispod polja za poruku, briše nove poruke, poslane ili primljene, s
+  ovog telefona toliko nakon slanja. Vaše nose to vrijeme (NIP-40), pa ih njihova aplikacija i relayi koji ga poštuju
+  tada brišu; oni koji ga ne poštuju ih zadržavaju. **Nestajanje** to radi samo za sljedeću poruku. Poruka koja stigne
+  sa svojim vremenom odlazi u to vrijeme.
+- **Blokiranje:** **Blokiraj**, na dnu razgovora, odbacuje na ovom telefonu ono što taj ključ šalje, nepročitano; ne
+  vraća se ako ga odblokirate. Ne javlja mu se: Nostr ne može nikoga spriječiti da vam piše. **Blokirani kontakti**,
+  na ekranu Nostr razgovora, navodi ih, s **Odblokiraj**.
+- **Provjera uživo:** u razgovoru s jednom osobom, **Provjera uživo** pokazuje kod vašeg ključa. Fotografišite kod
+  koji pokazuje njihova aplikacija (nostr:npub…): razgovor se označava kao provjeren kad je to ključ ovog razgovora.
+  Ništa se ne šalje.
 
 ## SMS {#sms}
 
@@ -2341,6 +2379,9 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   odgovoriti.
 - **Podsjeti me:** zadržite poruku za **Podsjeti me**: ide u **Razgovor sa sobom** s imenom razgovora, i podsjeti vas
   u vrijeme koje izaberete.
+- **Poruke koje nestaju:** s Erevosom kao SMS aplikacijom, **Poruke koje nestaju**, ispod reda **Običan SMS**
+  razgovora, briše njegove nove SMS-ove s ovog telefona toliko nakon slanja, ili čim Erevos ponovo radi. Drugi telefon
+  ih zadržava: SMS se tamo ne može obrisati. Poruke koje su već ovdje ostaju.
 
 ### Šifrirani SMS kad ništa drugo ne radi
 

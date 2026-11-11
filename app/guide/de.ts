@@ -1992,6 +1992,9 @@ Element: Keine Brücke sitzt dazwischen.
 - **Mehrere Nachrichten:** **Auswählen** im Menü einer Nachricht wählt sie aus, und ein Tippen fügt weitere hinzu; dann
   **Kopieren**, **Weiterleiten** oder **Löschen**. **Löschen** nimmt sie nach deiner Bestätigung für alle im Chat
   zurück: deine und, wo deine Stufe es erlaubt, die anderer. Es lässt sich nicht rückgängig machen.
+- **Dieses Telefon oder alle:** **Löschen**, für eine Nachricht oder mehrere, fragt zuerst: **Dieses Telefon** löscht
+  sie nur hier, und sie bleiben verborgen, wenn sie wieder kommen; **Für alle** nimmt sie zurück, wie oben gesagt, und
+  wird nur angeboten, wenn jede davon zurückgenommen werden kann.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
   sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
   aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
@@ -2141,6 +2144,15 @@ Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Ma
   **Löschen**.
 - **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
   Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
+- **Verschwindende Nachrichten:** **Verschwindende Nachrichten**, unter dem Nachrichtenfeld, legt eine Zeit für neue
+  Nachrichten fest, gesendete und empfangene: 5 Minuten, 1 Stunde, 1 Tag oder 1 Woche, nachdem jede gesendet wurde.
+  Dann gehen sie von diesem Telefon, und deine werden auch für alle im Chat zurückgenommen (ihre Apps zeigen sie als
+  gelöscht), oder sobald Erevos wieder läuft. Was die anderen gesendet haben, bleibt bei ihnen. **Verschwinden**,
+  neben **Umfrage** und **Standort**, macht es nur für die nächste Nachricht. Nachrichten, die schon im Chat sind,
+  bleiben.
+- **Blockieren:** **Blockieren**, in einem Chat mit einer Person, setzt sie auf die Ignorierliste deines Kontos:
+  Nichts von ihr erreicht dein Matrix-Konto, in keiner seiner Apps, und sie erfährt es nicht. **Blockierte Kontakte**,
+  auf dem Matrix-Bildschirm, listet sie auf, mit **Blockierung aufheben**.
 
 ## XMPP {#xmpp}
 
@@ -2180,6 +2192,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   auf die sie antwortet. **Weiterleiten** sendet eine oder mehrere Nachrichten in einen anderen XMPP-Chat. **Für mich
   anheften** hält eine Nachricht oben im Chat, nur auf diesem Telefon. **Auswählen** wählt mehrere Nachrichten zum
   Kopieren, Weiterleiten oder Löschen; **Löschen** nimmt dort nur deine eigenen zurück.
+- **Dieses Telefon oder alle:** **Löschen**, für eine Nachricht oder mehrere, fragt zuerst: **Dieses Telefon** löscht
+  sie nur hier, und sie bleiben verborgen, wenn sie wieder kommen; **Für alle** nimmt sie zurück, wie oben gesagt, und
+  wird nur angeboten, wenn jede davon zurückgenommen werden kann.
 - **Schreiben:** wenn die App der anderen Person meldet, dass sie schreibt, erscheint **schreibt…** unter dem Chat.
   Erevos meldet es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem XMPP-Bildschirm einschaltest, und nur
   einem Kontakt, der deine Anwesenheit sieht, nie in einer Gruppe; anfangs ist es aus, da es unverschlüsselt über den
@@ -2324,6 +2339,17 @@ getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
   **Löschen**.
 - **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
   Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
+- **Verschwindende Nachrichten:** **Verschwindende Nachrichten**, unter dem Nachrichtenfeld, löscht neue Nachrichten
+  so lange nach ihrem Senden von diesem Telefon, und **Verschwinden** macht es nur für die nächste Nachricht. Die
+  andere Seite behält sie: XMPP hat keinen Weg, sie dort zu löschen. Nachrichten, die schon hier sind, bleiben.
+- **Offline erscheinen:** Unten in einem Chat mit einer Person zeigt dich **Offline erscheinen** ihr als offline, was
+  auch immer dein Konto allen anderen zeigt, und sagt ihr nichts davon, was du liest oder tippst, noch dass ihre
+  Nachrichten ankamen. Eine gemeinsame Gruppe zeigt dich weiterhin. Es gilt nur für die Verbindung dieses Telefons.
+- **Persönlich prüfen:** Unter **Ihre Schlüssel** zeigt **Persönlich prüfen** einen Code deiner Adresse und Schlüssel,
+  wie Conversations es tut. Fotografiere dort ihren: Jedes ihrer Geräte, dessen Schlüssel passt, wird als geprüft
+  markiert. Ein abweichender Schlüssel markiert nichts und sagt es: Jemand könnte dazwischen sein, oder sie haben ihre
+  App gewechselt. Nichts wird gesendet.
+- **Blockierte Kontakte:** Der XMPP-Bildschirm listet auf, wen das Konto blockiert, mit **Blockierung aufheben**.
 
 ## Chats mit anderen Nostr-Apps {#nostr-chats}
 
@@ -2384,6 +2410,9 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 - **Auswählen:** wählt mehrere Nachrichten zum **Kopieren**, zum **Weiterleiten** in einen anderen Nostr-Chat (Fotos und
   Dateien werden neu gesendet) oder zum **Löschen**. Löschen nimmt sie von diesem Telefon und bittet die Apps der
   anderen, auch deine eigenen zu löschen: Ihre Apps tun das vielleicht oder nicht.
+- **Dieses Telefon oder alle:** **Löschen** fragt zuerst: **Dieses Telefon** löscht sie nur hier, und sie bleiben
+  verborgen, wenn sie wieder kommen; **Für alle** bittet außerdem die Apps der anderen, deine eigenen zu löschen
+  (NIP-09), was sie tun können oder nicht.
 - **Sticker:** **Sticker** sendet deine eigenen aus Fotos gemachten Sticker (**Meine**) als Fotos, verschlüsselt: Andere
   Nostr-Apps zeigen sie als Fotos. Die eingebauten Sätze sind auch da: Jeder Sticker geht als sein Bild, auf deinem
   Gerät gemacht.
@@ -2489,6 +2518,17 @@ mit wem spricht.
   vielleicht schon gesendet.
 - **Erinnern:** Das Menü einer Nachricht hat **Erinnern**. Wähle eine Zeit: Die Nachricht geht mit dem Namen ihres
   Chats in **Chat mit mir selbst** und erinnert dich dann. Dafür muss **Erevos** unter [Module](#modules) an sein.
+- **Verschwindende Nachrichten:** **Verschwindende Nachrichten**, unter dem Nachrichtenfeld, löscht neue Nachrichten,
+  gesendete und empfangene, so lange nach ihrem Senden von diesem Telefon. Deine tragen diese Zeit (NIP-40), sodass
+  ihre App und die Relays, die sie beachten, sie dann löschen; die anderen behalten sie. **Verschwinden** macht es nur
+  für die nächste Nachricht. Eine Nachricht, die mit ihrer eigenen Zeit kommt, geht zu dieser Zeit.
+- **Blockieren:** **Blockieren**, unten in einem Chat, verwirft auf diesem Telefon, was dieser Schlüssel sendet,
+  ungelesen; es kommt nicht zurück, wenn du die Blockierung aufhebst. Sie erfahren es nicht: Nostr kann niemanden
+  daran hindern, dir zu schreiben. **Blockierte Kontakte**, auf dem Bildschirm der Nostr-Chats, listet sie auf, mit
+  **Blockierung aufheben**.
+- **Persönlich prüfen:** In einem Chat mit einer Person zeigt **Persönlich prüfen** den Code deines Schlüssels.
+  Fotografiere den Code, den ihre App zeigt (nostr:npub…): Der Chat wird als geprüft markiert, wenn es der Schlüssel
+  dieses Chats ist. Nichts wird gesendet.
 
 ## SMS {#sms}
 
@@ -2600,6 +2640,10 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   öffnen, aber nicht beantworten.
 - **Erinnern:** Halte eine Nachricht gedrückt für **Erinnern**: Sie geht mit dem Namen der Unterhaltung in **Chat mit
   mir selbst** und erinnert dich zu der Zeit, die du wählst.
+- **Verschwindende Nachrichten:** Mit Erevos als SMS-App löscht **Verschwindende Nachrichten**, unter der Zeile
+  **Normale SMS** einer Unterhaltung, ihre neuen SMS so lange nach dem Senden von diesem Telefon, oder sobald Erevos
+  wieder läuft. Das andere Telefon behält sie: Eine SMS kann dort nicht gelöscht werden. Nachrichten, die schon hier
+  sind, bleiben.
 
 ### Verschlüsselte SMS, wenn sonst nichts geht
 

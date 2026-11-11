@@ -56,6 +56,7 @@ import { groupMemberSaid, publicMemberName, spaceGroups } from '../lib/space-gro
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
+import { sweepSpaceSms } from '../lib/sms-rules';
 import { hiddenSign, onSignsChange, spacesSign } from '../lib/unread-signs';
 import { deleteSmsThread, onSmsEvent, smsMirrored, smsStatus, smsToolsReady } from '../modules/erevos-sms';
 import { NO_SMS, smsRows, type SmsList } from '../lib/sms-rows';
@@ -368,6 +369,10 @@ function Home() {
               .then((gone) => active && gone > 0 && load())
               .catch(() => undefined);
           }
+          // What a conversation's timer took goes from the phone (lib/sms-rules.ts).
+          void sweepSpaceSms(current, key)
+            .then((gone) => active && gone > 0 && load())
+            .catch(() => undefined);
         } else smsShown.current = NO_SMS;
         const groupsOn = erevos && canGroup();
         void Promise.all([

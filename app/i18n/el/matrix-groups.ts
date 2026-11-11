@@ -9,6 +9,4 @@ export const matrixGroups: Record<string, string> = {
   "invited": "έχει προσκληθεί",
   "Make {name} an admin? They may then do all you may in this group, and you cannot undo it.": "Να γίνει ο/η {name} διαχειριστής; Θα μπορεί μετά να κάνει ό,τι μπορείς κι εσύ σε αυτή την ομάδα, και δεν θα μπορείς να το αναιρέσεις.",
   "Write a Matrix ID to start a chat, or a name to look for it on your Matrix server, which then learns who you looked for.": "Γράψε ένα Matrix ID για να ξεκινήσεις συνομιλία, ή ένα όνομα για να το αναζητήσεις στον server σου στο Matrix, που μαθαίνει έτσι ποιον αναζήτησες.",
-  "Delete {n} message for everyone in the chat? It cannot be brought back.": "Διαγραφή {n} μηνύματος για όλους στη συνομιλία; Δεν μπορεί να επανέλθει.",
-  "Delete {n} messages for everyone in the chat? They cannot be brought back.": "Διαγραφή {n} μηνυμάτων για όλους στη συνομιλία; Δεν μπορούν να επανέλθουν.",
 };

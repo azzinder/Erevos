@@ -72,8 +72,23 @@ On main, not released yet:
   gets **Chat look**, and, with one number, **Notifications** to mute it or give it a sound of its own (a silent
   "sms-own" channel, the sound played by Erevos), applied only while the space is open, so a closed space shows
   nothing of which conversations are set apart. Hidden places do not offer these. On this device only.
+- **Chat rules on Matrix, XMPP, Nostr and SMS**: disappearing messages, as a timer for the chat (5 minutes to 1 week,
+  counted from sending, for new messages) or **Disappear** for one message. On Nostr they carry their NIP-40
+  expiration, so the other app and the relays that honour it delete them too; on Matrix your own are taken back for
+  everyone when due; on XMPP and SMS (Erevos as the SMS app) only this phone's copy goes, and the chat says the other
+  side keeps them. **Block** on Matrix (the account's ignore list, in all its apps) and Nostr (on this phone), with a
+  **Blocked contacts** list on the Matrix, XMPP and Nostr screens. **Delete** asks **This phone** or **Everyone**;
+  deleted here, a message stays hidden if it comes again. On XMPP, **Appear offline** to one contact (RFC 6121
+  directed presence, no receipts, markers or typing to them). **Check in person**: photograph the QR code of their
+  XMPP app (as Conversations shows it) or of their Nostr key. Timers, deleted-here, the Nostr block and appearing
+  offline are this device's own, not synced to linked devices. A starred message that disappears, or is deleted on
+  this phone, takes its star along, as in an Erevos chat.
 
 ### Under the hood
+
+- **Nostr gift wraps can carry an expiration** (crates/erevos-nostr/src/chat.rs): the rumor's exact NIP-40 time, each
+  wrap's that time plus 0–3600 s at random, so relays cannot match the two. The core packages need their usual rebuild
+  for it to go out.
 
 ## 7.0.0-rc.9 (2026-11-11)
 

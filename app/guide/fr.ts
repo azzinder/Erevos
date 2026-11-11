@@ -1966,6 +1966,9 @@ Element : aucun pont ne se met entre les deux.
 - **Plusieurs messages :** **Sélectionner**, dans le menu d’un message, le choisit, et un appui en ajoute d’autres ;
   puis **Copier**, **Transférer** ou **Supprimer**. **Supprimer** les retire pour tous dans la discussion, après
   confirmation : les tiens et, là où ton niveau le permet, ceux des autres. Cela ne peut pas être annulé.
+- **Ce téléphone ou tout le monde :** **Supprimer**, pour un message ou plusieurs, demande d’abord : **Ce téléphone**
+  les supprime ici seulement, et ils restent cachés s’ils reviennent ; **Pour tout le monde** les retire comme dit
+  plus haut, proposé seulement quand chacun peut être retiré.
 - **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
   **écrit…**. Erevos ne le dit de toi que si tu actives **Dire quand j’écris** sur l’écran Matrix ; c’est désactivé au
   départ, car cela passe par le serveur Matrix sans chiffrement, donc le serveur sait chaque fois que tu écris.
@@ -2115,6 +2118,15 @@ discussions Matrix restent donc à part et marquées, pour les personnes que tu 
 - **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
   discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
   [Modules](#modules).
+- **Messages éphémères :** **Messages éphémères**, sous le champ de message, fixe un délai pour les nouveaux messages,
+  envoyés ou reçus : 5 minutes, 1 heure, 1 jour ou 1 semaine après l’envoi de chacun. Alors ils partent de ce
+  téléphone, et les tiens sont aussi retirés pour tout le monde dans la discussion (leurs applis les montrent
+  supprimés), ou dès qu’Erevos tourne de nouveau. Ce que les autres ont envoyé reste chez eux. **Éphémère**, à côté de
+  **Sondage** et **Position**, le fait pour le prochain message seulement. Les messages déjà dans la discussion
+  restent.
+- **Bloquer :** **Bloquer**, dans une discussion avec une personne, l’ajoute à la liste d’ignorés de ton compte : rien
+  d’elle n’atteint ton compte Matrix, dans aucune de ses applis, et elle n’est pas prévenue. **Contacts bloqués**, sur
+  l’écran Matrix, les liste, avec **Débloquer**.
 
 ## XMPP {#xmpp}
 
@@ -2154,6 +2166,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   auquel elle répond. **Transférer** envoie un ou plusieurs messages dans une autre discussion XMPP. **Épingler pour
   moi** garde un message en haut de la discussion, sur ce téléphone seulement. **Sélectionner** choisit plusieurs
   messages à copier, transférer ou supprimer ; **Supprimer** n’y retire que les tiens.
+- **Ce téléphone ou tout le monde :** **Supprimer**, pour un message ou plusieurs, demande d’abord : **Ce téléphone**
+  les supprime ici seulement, et ils restent cachés s’ils reviennent ; **Pour tout le monde** les retire comme dit
+  plus haut, proposé seulement quand chacun peut être retiré.
 - **Écriture :** quand l’app de l’autre personne dit qu’elle écrit, **écrit…** s’affiche sous la discussion. Erevos ne
   le dit de toi que si tu actives **Dire quand j’écris** sur l’écran XMPP, et seulement à un contact qui voit ta
   présence, jamais dans un groupe ; c’est désactivé au départ, car cela passe par le serveur XMPP sans chiffrement,
@@ -2297,6 +2312,18 @@ discussions XMPP restent donc à part et marquées, pour les personnes que tu ne
 - **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
   discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
   [Modules](#modules).
+- **Messages éphémères :** **Messages éphémères**, sous le champ de message, supprime de ce téléphone les nouveaux
+  messages ce délai après leur envoi, et **Éphémère** le fait pour le prochain message seulement. L’autre côté les
+  garde : XMPP n’a aucun moyen de les supprimer là-bas. Les messages déjà ici restent.
+- **Apparaître hors ligne :** en bas d’une discussion avec une personne, **Apparaître hors ligne** te montre hors
+  ligne pour elle, quoi que ton compte montre aux autres, et ne lui dit rien de ce que tu lis ou tapes, ni que ses
+  messages sont arrivés. Un groupe que vous partagez te montre toujours. Cela vaut pour la connexion de ce téléphone
+  seulement.
+- **Vérifier en personne :** sous **Leurs clés**, **Vérifier en personne** montre un code de ton adresse et de tes
+  clés, comme le fait Conversations. Photographie le leur là : chacun de leurs appareils dont la clé correspond est
+  marqué vérifié. Une clé qui diffère ne marque rien et le dit : quelqu’un est peut-être entre vous, ou ils ont changé
+  d’appli. Rien n’est envoyé.
+- **Contacts bloqués :** l’écran XMPP liste qui le compte bloque, avec **Débloquer**.
 
 ## Discussions avec d’autres applis Nostr {#nostr-chats}
 
@@ -2358,6 +2385,9 @@ discussions propres à Erevos.
 - **Sélectionner :** choisit plusieurs messages à **Copier**, à **Transférer** dans une autre discussion Nostr (les
   photos et les fichiers sont renvoyés) ou à **Supprimer**. Supprimer les retire de ce téléphone et demande aux applis
   des autres de supprimer aussi les tiens : leurs applis peuvent le faire ou non.
+- **Ce téléphone ou tout le monde :** **Supprimer** demande d’abord : **Ce téléphone** les supprime ici seulement, et
+  ils restent cachés s’ils reviennent ; **Pour tout le monde** demande aussi aux applis des autres de supprimer les
+  tiens (NIP-09), ce qu’elles feront ou non.
 - **Stickers :** **Sticker** envoie tes propres stickers faits à partir de photos (**Les miens**) comme des photos,
   chiffrées : les autres applis Nostr les affichent comme des photos. Les séries intégrées y sont aussi : chaque sticker
   part comme son image, faite sur ton appareil.
@@ -2462,6 +2492,16 @@ avec qui.
 - **Me rappeler :** le menu d’un message a **Me rappeler**. Choisis une heure : le message, avec le nom de sa
   discussion, va dans **Discussion avec moi-même** et te le rappelle alors. Il faut **Erevos** activé dans
   [Modules](#modules).
+- **Messages éphémères :** **Messages éphémères**, sous le champ de message, supprime de ce téléphone les nouveaux
+  messages, envoyés ou reçus, ce délai après leur envoi. Les tiens portent ce délai (NIP-40), donc leur appli et les
+  relais qui le respectent les suppriment alors ; les autres les gardent. **Éphémère** le fait pour le prochain
+  message seulement. Un message qui arrive avec son propre délai part à ce moment-là.
+- **Bloquer :** **Bloquer**, en bas d’une discussion, jette sur ce téléphone ce qu’envoie cette clé, sans le lire ;
+  cela ne revient pas si tu la débloques. Elle n’est pas prévenue : Nostr ne peut empêcher personne de t’écrire.
+  **Contacts bloqués**, sur l’écran des discussions Nostr, les liste, avec **Débloquer**.
+- **Vérifier en personne :** dans une discussion avec une personne, **Vérifier en personne** montre le code de ta clé.
+  Photographie le code que montre leur appli (nostr:npub…) : la discussion est marquée vérifiée quand c’est la clé de
+  cette discussion. Rien n’est envoyé.
 
 ## SMS {#sms}
 
@@ -2575,6 +2615,9 @@ téléphone sans Erevos n’affiche rien.
   lu, mais on ne peut pas y répondre.
 - **Me rappeler :** garde le doigt sur un message pour **Me rappeler** : il va dans **Discussion avec moi-même** avec
   le nom de la conversation, et te le rappelle à l’heure que tu choisis.
+- **Messages éphémères :** avec Erevos comme appli SMS, **Messages éphémères**, sous la ligne **SMS ordinaire** d’une
+  conversation, supprime de ce téléphone ses nouveaux SMS ce délai après leur envoi, ou dès qu’Erevos tourne de
+  nouveau. L’autre téléphone les garde : un SMS ne peut pas y être supprimé. Les messages déjà ici restent.
 
 ### SMS chiffrés quand rien d’autre ne marche
 

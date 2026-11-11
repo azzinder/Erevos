@@ -1877,6 +1877,9 @@ sta nel mezzo.
 - **Più messaggi:** **Seleziona**, nel menu di un messaggio, lo sceglie, e un tocco ne aggiunge altri; poi **Copia**,
   **Inoltra** o **Elimina**. **Elimina** li ritira per tutti nella chat, dopo la tua conferma: i tuoi e, dove il tuo
   livello lo permette, quelli di altri. Non si può annullare.
+- **Questo telefono o tutti:** **Elimina**, per un messaggio o più, chiede prima: **Questo telefono** li elimina solo
+  qui, e restano nascosti se arrivano di nuovo; **Per tutti** li ritira come detto sopra, offerto solo quando ognuno
+  può essere ritirato.
 - **Sta scrivendo:** chi sta scrivendo ora nella chat, come dice il server Matrix, compare sotto con **sta
   scrivendo…**. Erevos lo dice di te solo se attivi **Dire quando scrivo** nella schermata Matrix; all’inizio è
   spento, perché passa dal server Matrix senza cifratura, quindi il server sa ogni volta che scrivi.
@@ -2020,6 +2023,14 @@ parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.
 - **Invia di nuovo:** un tuo messaggio che mostra **Non inviato** ha **Invia di nuovo** ed **Elimina** nel suo menu.
 - **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
   chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
+- **Messaggi effimeri:** **Messaggi effimeri**, sotto il campo del messaggio, fissa un tempo per i nuovi messaggi,
+  inviati o ricevuti: 5 minuti, 1 ora, 1 giorno o 1 settimana dopo l’invio di ciascuno. Allora se ne vanno da questo
+  telefono, e i tuoi vengono ritirati anche per tutti nella chat (le loro app li mostrano come eliminati), o appena
+  Erevos torna attivo. Ciò che hanno inviato gli altri resta a loro. **Effimero**, accanto a **Sondaggio** e
+  **Posizione**, lo fa solo per il prossimo messaggio. I messaggi già nella chat restano.
+- **Bloccare:** **Blocca**, in una chat con una persona, la aggiunge alla lista degli ignorati del tuo account: niente
+  di suo raggiunge il tuo account Matrix, in nessuna delle sue app, e non viene avvisata. **Contatti bloccati**, nella
+  schermata Matrix, li elenca, con **Sblocca**.
 
 ## XMPP {#xmpp}
 
@@ -2057,6 +2068,9 @@ app: nessun ponte sta nel mezzo.
   citazione di una risposta va al messaggio a cui risponde. **Inoltra** invia uno o più messaggi a un’altra chat XMPP.
   **Fissa solo per me** tiene un messaggio in cima alla chat, solo su questo telefono. **Seleziona** sceglie più
   messaggi da copiare, inoltrare o eliminare; **Elimina** lì ritira solo i tuoi.
+- **Questo telefono o tutti:** **Elimina**, per un messaggio o più, chiede prima: **Questo telefono** li elimina solo
+  qui, e restano nascosti se arrivano di nuovo; **Per tutti** li ritira come detto sopra, offerto solo quando ognuno
+  può essere ritirato.
 - **Scrittura:** quando l’app dell’altra persona dice che sta scrivendo, **sta scrivendo…** compare sotto la chat.
   Erevos lo dice di te solo se attivi **Dire quando scrivo** nella schermata XMPP, e solo a un contatto che vede la
   tua presenza, mai in un gruppo; all’inizio è spento, perché passa dal server XMPP senza cifratura, quindi il server
@@ -2191,6 +2205,17 @@ segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
 - **Invia di nuovo:** un tuo messaggio che mostra **Non inviato** ha **Invia di nuovo** ed **Elimina** nel suo menu.
 - **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
   chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
+- **Messaggi effimeri:** **Messaggi effimeri**, sotto il campo del messaggio, elimina da questo telefono i nuovi
+  messaggi quel tempo dopo l’invio, ed **Effimero** lo fa solo per il prossimo messaggio. L’altra parte li tiene: XMPP
+  non ha modo di eliminarli lì. I messaggi già qui restano.
+- **Mostrati offline:** in fondo a una chat con una persona, **Mostrati offline** ti mostra offline a lei, qualunque
+  cosa il tuo account mostri agli altri, e non le dice nulla di ciò che leggi o scrivi, né che i suoi messaggi sono
+  arrivati. Un gruppo che condividete ti mostra ancora. Vale solo per la connessione di questo telefono.
+- **Verifica di persona:** sotto **Le loro chiavi**, **Verifica di persona** mostra un codice del tuo indirizzo e
+  delle tue chiavi, come fa Conversations. Fotografa lì il loro: ogni loro dispositivo la cui chiave corrisponde viene
+  segnato come verificato. Una chiave diversa non segna nulla e lo dice: qualcuno potrebbe stare in mezzo, o hanno
+  cambiato app. Non si invia nulla.
+- **Contatti bloccati:** la schermata XMPP elenca chi l’account blocca, con **Sblocca**.
 
 ## Chat con altre app Nostr {#nostr-chats}
 
@@ -2244,6 +2269,9 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
 - **Seleziona:** sceglie più messaggi da copiare con **Copia**, da inoltrare con **Inoltra** a un’altra chat Nostr (foto
   e file vengono inviati di nuovo) o da eliminare con **Elimina**. Elimina li toglie da questo telefono e chiede alle
   app degli altri di eliminare anche i tuoi: le loro app possono farlo oppure no.
+- **Questo telefono o tutti:** **Elimina** chiede prima: **Questo telefono** li elimina solo qui, e restano nascosti
+  se arrivano di nuovo; **Per tutti** chiede anche alle app degli altri di eliminare i tuoi (NIP-09), cosa che possono
+  fare o no.
 - **Sticker:** **Sticker** invia i tuoi sticker fatti da foto (**Miei**) come foto, crittografate: le altre app Nostr li
   mostrano come foto. Ci sono anche le serie integrate: ogni sticker parte come la sua immagine, fatta sul tuo
   dispositivo.
@@ -2340,6 +2368,16 @@ chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie 
   backup potrebbe averlo già inviato.
 - **Ricordamelo:** il menu di un messaggio ha **Ricordamelo**. Scegli un’ora: il messaggio, con il nome della sua
   chat, va in **Chat con me stesso** e te lo ricorda allora. Serve **Erevos** attivo in [Moduli](#modules).
+- **Messaggi effimeri:** **Messaggi effimeri**, sotto il campo del messaggio, elimina da questo telefono i nuovi
+  messaggi, inviati o ricevuti, quel tempo dopo l’invio. I tuoi portano quel tempo (NIP-40), così la loro app e i
+  relay che lo rispettano li eliminano allora; gli altri li tengono. **Effimero** lo fa solo per il prossimo
+  messaggio. Un messaggio che arriva con un suo tempo se ne va a quell’ora.
+- **Bloccare:** **Blocca**, in fondo a una chat, scarta su questo telefono ciò che invia quella chiave, non letto; non
+  torna se la sblocchi. Non viene avvisata: Nostr non può impedire a nessuno di scriverti. **Contatti bloccati**,
+  nella schermata delle chat Nostr, li elenca, con **Sblocca**.
+- **Verifica di persona:** in una chat con una persona, **Verifica di persona** mostra il codice della tua chiave.
+  Fotografa il codice che mostra la loro app (nostr:npub…): la chat viene segnata come verificata quando è la chiave
+  di questa chat. Non si invia nulla.
 
 ## SMS {#sms}
 
@@ -2449,6 +2487,9 @@ nulla.
   ma non si può rispondere.
 - **Ricordamelo:** tieni premuto un messaggio per **Ricordamelo**: va in **Chat con me stesso** con il nome della
   conversazione, e te lo ricorda all’ora che scegli.
+- **Messaggi effimeri:** con Erevos come app SMS, **Messaggi effimeri**, sotto la riga **SMS normale** di una
+  conversazione, elimina da questo telefono i suoi nuovi SMS quel tempo dopo l’invio, o appena Erevos torna attivo.
+  L’altro telefono li tiene: un SMS non può essere eliminato lì. I messaggi già qui restano.
 
 ### SMS crittografati quando nient’altro funziona
 

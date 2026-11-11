@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { OwnPicture } from '../components/network-picture';
+import { BlockedList } from '../components/chat-rules';
 import { XmppAccount } from '../components/xmpp-account';
 import { XmppFind } from '../components/xmpp-find';
 import { XmppRegister } from '../components/xmpp-register';
@@ -27,7 +28,7 @@ import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '.
 import { isSound } from '../lib/xmpp-files';
 import { xmppThroughTor } from '../lib/xmpp-net';
 import { fingerprint } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppPushOn, xmppSetAvatar, xmppSetPush, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
+import { onXmppChange, runXmpp, xmppAddContact, xmppBlock, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppPushOn, xmppSetAvatar, xmppSetPush, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -379,6 +380,15 @@ export default function XmppScreen() {
       <Card>
         <SayTypingSwitch on={!!state.sayTyping} server="XMPP" onChange={(on) => void run(() => xmppSetSayTyping(on))} />
       </Card>
+
+      {state.blocked?.length ? (
+        <>
+          <SectionTitle title={t('Blocked contacts')} />
+          <Card>
+            <BlockedList people={state.blocked.map((jid) => ({ key: jid, name: nameOf(state, jid) === jid ? jid : `${nameOf(state, jid)} · ${jid}` }))} onUnblock={(jid) => void run(() => xmppBlock(jid, false))} />
+          </Card>
+        </>
+      ) : null}
 
       {Platform.OS === 'android' && where === 'space' ? <ClosedPush busy={busy} run={run} /> : null}
 

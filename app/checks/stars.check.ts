@@ -140,6 +140,20 @@ t('the starred of every chat are listed together, the latest first, each with it
   assert.equal(starRow(text, 'Mum').key, 'sms||+3069|sms:1');
 });
 
+t('a disappearing message, or one deleted on this phone, takes its star along, even older than what is kept', () => {
+  // Gone by the chat's timer: older than the messages kept, it would otherwise stay with its line.
+  const timed = star({ id: '$timed', at: 1000 });
+  const kept = star({ id: '$kept', at: 2000 });
+  const here = star({ service: 'xmpp', account: 'me@example.org', chat: 'ben@example.org', id: 'x0', at: 500 });
+  const chats: Record<string, StarChat> = {
+    '!room:example.org': { name: 'Ann', messages: [{ id: '$kept', at: 2000 }], goneHere: (id) => id === '$timed' },
+    'ben@example.org': { name: 'Ben', messages: [], goneHere: (id) => id === 'x0' },
+  };
+  const { rows, gone } = starredNow([timed, kept, here], (s) => chats[s.chat]);
+  assert.deepEqual(gone.map((s) => s.id), ['$timed', 'x0']);
+  assert.deepEqual(rows.map((r) => r.key), [starRow(kept, 'Ann').key]);
+});
+
 const place = (holder: StarPlace['holder'] = 'space', key = randomBytes(32)): StarPlace => ({ holder, space: 0, key });
 
 t('a place’s stars are kept sealed, the space’s and each hidden place’s apart', async () => {

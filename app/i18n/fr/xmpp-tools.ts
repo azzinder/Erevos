@@ -6,6 +6,5 @@
 export const xmppTools: Record<string, string> = {
   'Description': 'Description',
   'This group server does not let a group have a description.': 'Ce serveur de groupes ne permet pas de donner une description à un groupe.',
-  'Delete these messages for everyone in the chat? They cannot be brought back.': 'Supprimer ces messages pour tout le monde dans la discussion ? Ils ne pourront pas être récupérés.',
   'A sticker goes as a photo, encrypted as the chat is. Other XMPP apps show it as a photo.': 'Un sticker part comme une photo, chiffré si la discussion l’est. Les autres applis XMPP l’affichent comme une photo.',
 };

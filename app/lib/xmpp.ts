@@ -7,6 +7,7 @@ import { sha1 } from '@noble/hashes/legacy.js';
 import type { ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import type { Look } from '../theme/look';
+import type { ChatRules } from './chat-rules';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { deviceLine } from './call-lines';
 import type { Preview } from './chat-parts';
@@ -199,6 +200,8 @@ export type XmppChat = {
   room?: XmppRoom;
   /** Messages pinned on this device only, by their ids, the latest last: XMPP has no pins its apps share (lib/xmpp-actions.ts). */
   pins?: string[];
+  /** Its disappearing messages and those deleted on this device only (lib/xmpp-rules.ts), kept here only. */
+  rules?: ChatRules;
 };
 
 export type XmppContact = {
@@ -246,6 +249,8 @@ export type XmppState = {
   push?: XmppPushTo;
   /** Each chat's draft, and the messages held to go later, on this device only (lib/chat-writing.ts). */
   writing?: ChatWriting;
+  /** Contacts the account appears offline to (lib/xmpp-rules.ts), by bare address in small letters. */
+  unseenBy?: string[];
 };
 
 export class XmppError extends Error {
@@ -632,6 +637,8 @@ export async function startSession(state: XmppState, connection: XmppConnection)
   if (blocklist) takeBlocked(state, child(blocklist, 'blocklist', NS.blocking), 'block', true);
   await publishOmemo(state, connection).catch(() => undefined);
   await connection.send(el('presence', {}, el('c', { xmlns: NS.caps, hash: 'sha-1', node: CAPS_NODE, ver: capsVer() })));
+  // To those it appears offline to, at once after (RFC 6121 directed presence, lib/xmpp-rules.ts).
+  for (const jid of state.unseenBy ?? []) await connection.send(el('presence', { to: jid, type: 'unavailable' })).catch(() => undefined);
   await fetchArchive(state, connection);
   await enterRooms(state, connection);
 }
@@ -959,10 +966,11 @@ export function onXmppTyping(listener: () => void): () => void {
 
 /**
  * Tells a contact we write, or stopped, when the account says so (state.sayTyping): only in a chat
- * with one person who may see our presence, never in a group, and never kept by the server.
+ * with one person who may see our presence and to whom we do not appear offline (lib/xmpp-rules.ts),
+ * never in a group, and never kept by the server.
  */
 export async function sendXmppTyping(state: XmppState, connection: XmppConnection, peer: string, typing: boolean): Promise<boolean> {
-  if (!state.sayTyping || state.chats[peer]?.room || state.blocked?.includes(peer)) return false;
+  if (!state.sayTyping || state.chats[peer]?.room || state.blocked?.includes(peer) || state.unseenBy?.includes(peer.toLowerCase())) return false;
   if (!['both', 'from'].includes(state.roster[peer]?.subscription ?? '')) return false;
   await connection.send(el('message', { to: peer, type: 'chat', id: newId() }, el(typing ? 'composing' : 'paused', { xmlns: NS_CHATSTATES }), el('no-store', { xmlns: NS.hints })));
   return true;
@@ -1113,8 +1121,9 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   if (!mine) chat.unread += 1;
   else chat.unread = 0;
   taken.chats.push(peer);
-  // A receipt, when they asked and they are among the contacts (others do not learn we are here).
-  if (how.live && !mine && id && child(message, 'request', NS.receipts) && ['both', 'from'].includes(state.roster[peer]?.subscription ?? '')) {
+  // A receipt, when they asked and they are among the contacts (others do not learn we are here),
+  // and we do not appear offline to them (lib/xmpp-rules.ts).
+  if (how.live && !mine && id && child(message, 'request', NS.receipts) && ['both', 'from'].includes(state.roster[peer]?.subscription ?? '') && !state.unseenBy?.includes(peer.toLowerCase())) {
     await connection.send(el('message', { to: message.attrs.from, id: newId() }, el('received', { xmlns: NS.receipts, id }))).catch(() => undefined);
   }
 }
@@ -1464,6 +1473,10 @@ function takeRoster(state: XmppState, query: XmlElement | undefined, whole: bool
 async function takePresence(state: XmppState, connection: XmppConnection, presence: XmlElement): Promise<void> {
   const from = bare(presence.attrs.from ?? '');
   if (!from.includes('@') || from === state.jid) return;
+  // One the account appears offline to, coming online, may have been told otherwise by their server: told again.
+  if (presence.attrs.type === undefined && state.unseenBy?.includes(from.toLowerCase()) && !isOn(xmppPresence(state, from))) {
+    await connection.send(el('presence', { to: from, type: 'unavailable' })).catch(() => undefined);
+  }
   if (presence.attrs.type === undefined || presence.attrs.type === 'unavailable') return takeOnline(state, presence.attrs.from ?? '', presence);
   if (presence.attrs.type === 'subscribe') {
     if (isBlocked(state, from)) return;
@@ -1957,7 +1970,8 @@ export async function markXmppRead(state: XmppState, connection: XmppConnection 
   if (!chat) return;
   chat.unread = 0;
   const last = [...chat.messages].reverse().find((m) => !m.mine);
-  if (last?.markable && connection?.isOpen) {
+  // Nothing says it was read to one we appear offline to (lib/xmpp-rules.ts).
+  if (last?.markable && connection?.isOpen && !state.unseenBy?.includes(peer.toLowerCase())) {
     const to = last.markable;
     delete last.markable;
     await connection.send(el('message', { to, type: 'chat', id: newId() }, el('displayed', { xmlns: NS.markers, id: last.id }), el('store', { xmlns: NS.hints }))).catch(() => undefined);
@@ -2061,9 +2075,17 @@ export function xmppChatList(state: XmppState): XmppChat[] {
 /** The fingerprints of a person's devices, as OMEMO apps show them, whether each changed, and
  *  whether its new key waits to be accepted (acceptXmppDevice): an
  *  OMEMO 2 one (`two`) for each device that has OMEMO 2, as Kaidan shows it. */
-export function xmppDevices(state: XmppState, jid: string): { id: string; identity?: string; changed?: boolean; pending?: true; listed: boolean; two?: true }[] {
-  // One that came with another key shows that key, the one to compare before accepting it.
-  const shown = (id: string, d: OmemoDevice) => ({ id, identity: d.pending?.identity ?? d.identity, changed: d.changed, ...(d.pending ? { pending: true as const } : {}), listed: d.listed });
+export function xmppDevices(state: XmppState, jid: string): { id: string; identity?: string; changed?: boolean; pending?: true; listed: boolean; two?: true; checked?: true }[] {
+  // One that came with another key shows that key, the one to compare before accepting it; one
+  // checked in person by its code says so while its key is still the one checked (lib/xmpp-rules.ts).
+  const shown = (id: string, d: OmemoDevice) => ({
+    id,
+    identity: d.pending?.identity ?? d.identity,
+    changed: d.changed,
+    ...(d.pending ? { pending: true as const } : {}),
+    listed: d.listed,
+    ...(d.checked && d.checked === d.identity && !d.pending ? { checked: true as const } : {}),
+  });
   return [
     ...Object.entries(state.people[jid]?.devices ?? {}).map(([id, d]) => shown(id, d)),
     ...Object.entries(state.people2?.[jid]?.devices ?? {}).map(([id, d]) => ({ ...shown(id, d), two: true as const })),

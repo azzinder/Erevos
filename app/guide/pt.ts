@@ -1852,6 +1852,9 @@ fica no meio.
 - **Várias mensagens:** **Selecionar**, no menu de uma mensagem, a escolhe, e um toque acrescenta outras; depois
   **Copiar**, **Encaminhar** ou **Apagar**. **Apagar** as retira para todos na conversa, depois que você confirma: as
   suas e, onde o seu nível permite, as de outros. Não dá para desfazer.
+- **Este celular ou todos:** **Apagar**, para uma mensagem ou várias, pergunta antes: **Este celular** as apaga só
+  aqui, e elas ficam ocultas se chegarem de novo; **Para todos** as retira como dito acima, oferecido só quando cada
+  uma pode ser retirada.
 - **Digitando:** quem está escrevendo agora no chat, como o servidor Matrix diz, aparece embaixo com **digitando…**. O
   Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do Matrix; no início fica
   desligado, pois passa pelo servidor Matrix sem criptografia, então o servidor fica sabendo cada vez que você
@@ -1992,6 +1995,14 @@ conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcan�
 - **Enviar de novo:** uma mensagem sua que mostra **Não enviada** tem **Enviar de novo** e **Apagar** no menu.
 - **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
   dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
+- **Mensagens temporárias:** **Mensagens temporárias**, abaixo do campo de mensagem, define um tempo para as mensagens
+  novas, enviadas ou recebidas: 5 minutos, 1 hora, 1 dia ou 1 semana depois de cada uma ser enviada. Aí elas saem
+  deste celular, e as suas também são retiradas para todos na conversa (os apps deles as mostram como apagadas), ou
+  assim que o Erevos voltar a rodar. O que os outros enviaram fica com eles. **Temporária**, ao lado de **Enquete** e
+  **Localização**, faz isso só para a próxima mensagem. As mensagens que já estão na conversa ficam.
+- **Bloquear:** **Bloquear**, numa conversa com uma pessoa, a coloca na lista de ignorados da sua conta: nada dela
+  chega à sua conta do Matrix, em nenhum dos apps dela, e ela não fica sabendo. **Contatos bloqueados**, na tela do
+  Matrix, os lista, com **Desbloquear**.
 
 ## XMPP {#xmpp}
 
@@ -2029,6 +2040,9 @@ esses apps: nenhuma ponte fica no meio.
   ela responde. **Encaminhar** envia uma ou várias mensagens para outra conversa XMPP. **Fixar só para mim** mantém uma
   mensagem no topo da conversa, só neste celular. **Selecionar** escolhe várias mensagens para copiar, encaminhar ou
   apagar; **Apagar** ali retira só as suas.
+- **Este celular ou todos:** **Apagar**, para uma mensagem ou várias, pergunta antes: **Este celular** as apaga só
+  aqui, e elas ficam ocultas se chegarem de novo; **Para todos** as retira como dito acima, oferecido só quando cada
+  uma pode ser retirada.
 - **Escrevendo:** quando o app da outra pessoa diz que ela está escrevendo, **digitando…** aparece sob a conversa. O
   Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do XMPP, e só para um contato
   que vê sua presença, nunca num grupo; no início fica desligado, pois passa pelo servidor XMPP sem criptografia,
@@ -2163,6 +2177,17 @@ conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcança
 - **Enviar de novo:** uma mensagem sua que mostra **Não enviada** tem **Enviar de novo** e **Apagar** no menu.
 - **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
   dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
+- **Mensagens temporárias:** **Mensagens temporárias**, abaixo do campo de mensagem, apaga deste celular as mensagens
+  novas esse tempo depois de enviadas, e **Temporária** faz isso só para a próxima mensagem. O outro lado as guarda: o
+  XMPP não tem como apagá-las lá. As mensagens que já estão aqui ficam.
+- **Aparecer offline:** no pé de uma conversa com uma pessoa, **Aparecer offline** mostra você offline para ela, seja
+  o que for que sua conta mostre aos outros, e não diz nada a ela do que você lê ou digita, nem que as mensagens dela
+  chegaram. Um grupo em comum ainda mostra você. Vale só para a conexão deste celular.
+- **Conferir pessoalmente:** abaixo de **As chaves deles**, **Conferir pessoalmente** mostra um código do seu endereço
+  e das suas chaves, como o Conversations faz. Fotografe o deles ali: cada aparelho deles cuja chave confere é marcado
+  como conferido. Uma chave diferente não marca nada e avisa: alguém pode estar no meio, ou eles trocaram de app. Nada
+  é enviado.
+- **Contatos bloqueados:** a tela do XMPP lista quem a conta bloqueia, com **Desbloquear**.
 
 ## Conversas com outros apps Nostr {#nostr-chats}
 
@@ -2215,6 +2240,9 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 - **Selecionar:** escolhe várias mensagens para **Copiar**, **Encaminhar** para outra conversa do Nostr (fotos e
   arquivos são enviados de novo) ou **Apagar**. Apagar as tira deste celular e pede aos apps dos outros que apaguem
   também as suas: os apps deles podem fazê-lo ou não.
+- **Este celular ou todos:** **Apagar** pergunta antes: **Este celular** as apaga só aqui, e elas ficam ocultas se
+  chegarem de novo; **Para todos** também pede aos apps dos outros que apaguem as suas (NIP-09), o que eles podem
+  fazer ou não.
 - **Figurinhas:** **Figurinha** envia as suas próprias figurinhas feitas de fotos (**Minhas**) como fotos,
   criptografadas: outros apps do Nostr as mostram como fotos. Os conjuntos embutidos também estão lá: cada figurinha vai
   como a imagem dela, feita no seu aparelho.
@@ -2313,6 +2341,16 @@ fala com quem.
   o celular de onde veio o backup pode já tê-la enviado.
 - **Lembrar-me:** o menu de uma mensagem tem **Lembrar-me**. Escolha uma hora: a mensagem, com o nome da conversa
   dela, vai para **Conversa comigo** e lembra você nessa hora. Precisa do **Erevos** ligado em [Módulos](#modules).
+- **Mensagens temporárias:** **Mensagens temporárias**, abaixo do campo de mensagem, apaga deste celular as mensagens
+  novas, enviadas ou recebidas, esse tempo depois de enviadas. As suas levam esse tempo (NIP-40), então o app deles e
+  os relays que o respeitam as apagam nessa hora; os que não respeitam as guardam. **Temporária** faz isso só para a
+  próxima mensagem. Uma mensagem que chega com seu próprio tempo sai nessa hora.
+- **Bloquear:** **Bloquear**, no pé de uma conversa, descarta neste celular o que essa chave envia, sem ler; não volta
+  se você desbloquear. Ela não fica sabendo: o Nostr não pode impedir ninguém de escrever para você. **Contatos
+  bloqueados**, na tela de conversas do Nostr, os lista, com **Desbloquear**.
+- **Conferir pessoalmente:** numa conversa com uma pessoa, **Conferir pessoalmente** mostra o código da sua chave.
+  Fotografe o código que o app deles mostra (nostr:npub…): a conversa é marcada como conferida quando é a chave desta
+  conversa. Nada é enviado.
 
 ## SMS {#sms}
 
@@ -2423,6 +2461,9 @@ mostra nada.
   ser respondido.
 - **Lembrar-me:** segure uma mensagem para **Lembrar-me**: ela vai para **Conversa comigo** com o nome da conversa, e
   lembra você na hora que escolher.
+- **Mensagens temporárias:** com o Erevos como app de SMS, **Mensagens temporárias**, abaixo da linha **SMS comum** de
+  uma conversa, apaga deste celular os SMS novos dela esse tempo depois de enviados, ou assim que o Erevos voltar a
+  rodar. O outro celular os guarda: um SMS não pode ser apagado lá. As mensagens que já estão aqui ficam.
 
 ### SMS criptografados quando nada mais funciona
 

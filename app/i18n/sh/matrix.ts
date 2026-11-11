@@ -49,7 +49,6 @@ export const matrix: Record<string, string> = {
   "Message deleted": "Poruka je obrisana",
   "A message from before": "Ranija poruka",
   "Load earlier messages": "Učitaj ranije poruke",
-  "Delete this message for everyone in the chat? It cannot be brought back.": "Obrisati ovu poruku za sve u razgovoru? Ne može se vratiti.",
   "No earlier messages came this time. Try again to look further back.": "Ovaj put nisu stigle ranije poruke. Pokušaj ponovo da potražiš dalje unazad.",
   "Only a message of yours that went can be changed.": "Može se promijeniti samo tvoja poruka koja je već poslana.",
   "Checked by emoji": "Provjereno emojijima",

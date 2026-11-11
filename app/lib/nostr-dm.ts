@@ -4,7 +4,7 @@
 
 import type { ChatWriting } from './chat-writing';
 import { nostrChatCore } from './core';
-import { sha256Bytes, toHex, utf8Decode, utf8Encode } from './crypto';
+import { randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
 import { emojiUrlOf, isEmojiCode } from './nostr-emoji';
@@ -13,6 +13,7 @@ import { isNostrRelay } from '../lock/e2e-data';
 import type { ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import type { Look } from '../theme/look';
+import { checkedRules, withOne, type ChatRules } from './chat-rules';
 
 // Chats with people on other Nostr apps (docs/nostr-chats.md): 0xchat, Amethyst, Coracle, Primal
 // and any other that writes private messages as NIP-17 says. A space can have a Nostr key of its
@@ -119,6 +120,10 @@ export type NostrDmChat = {
   shots?: true;
   /** Messages pinned here, by id, the latest first: on this device only, as NIP-17 has no pins. */
   pins?: string[];
+  /** Its disappearing messages (lib/nostr-rules.ts): its timer, and the messages that go at a time of their own. */
+  rules?: ChatRules;
+  /** When its key was checked in person, by the QR code of it on their phone (ms). */
+  checked?: number;
 };
 
 export type NostrDmState = {
@@ -160,6 +165,8 @@ export type NostrDmState = {
   oldSent?: Record<string, number>;
   /** Each chat's draft, and the messages held to go later, on this device only (lib/chat-writing.ts). */
   writing?: ChatWriting;
+  /** Keys blocked on this device (lib/nostr-rules.ts): what they send is dropped as it comes. */
+  blocked?: string[];
 };
 
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -527,9 +534,20 @@ export async function nameIn(key: string, events: NostrEvent[]): Promise<string 
   return undefined;
 }
 
+/** The expiration a message came with (NIP-40), in seconds, or 0 for none. */
+export function expirationOf(tags: string[][]): number {
+  const at = Number(tags.find((tag) => tag[0] === 'expiration')?.[1]);
+  return Number.isSafeInteger(at) && at > 0 ? at : 0;
+}
+
+/** How much later, at most, a wrap's expiration is than its message's (seconds): at random, so the relays' copy does not say to the second when it was sent. */
+export const EXPIRATION_LATER = 3600;
+
 /**
  * A message of `kind` to the chat `key`: its id and time, and a wrap for each of its readers and
- * for the space's own copy, by key. It names them all (p tags), and a group's name.
+ * for the space's own copy, by key. It names them all (p tags), and a group's name. With `expires`
+ * (seconds), it disappears then (NIP-40, as NIP-17 has it): its message says so, for the readers'
+ * apps, and each wrap a little later, for the relays (lib/nostr-rules.ts).
  */
 export async function wrapMessage(
   state: NostrDmState,
@@ -538,6 +556,7 @@ export async function wrapMessage(
   tags: string[][],
   content: string,
   now = Date.now(),
+  expires = 0,
 ): Promise<{ id: string; at: number; wraps: Record<string, NostrEvent>; subject?: string }> {
   const readers = readersOf(state, key);
   const chat = state.chats[key];
@@ -545,11 +564,14 @@ export async function wrapMessage(
   // A group's name given here goes with its next message (not with a reaction).
   const owed = !!chat?.members && !!chat.subjectOwed && (kind === 14 || kind === 15);
   const subject = owed ? [['subject', chat.subject ?? '']] : [];
+  const expiring = expires > 0 ? [['expiration', String(expires)]] : [];
+  const [high, low] = randomBytes(2);
   const made = await chatCore<{ rumor: { id: string; created_at: number }; wraps: { to: string; event: string }[] }>('wrap', {
     secret: state.secret,
-    rumor: { kind, created_at: seconds(now), tags: [...named, ...subject, ...tags], content },
+    rumor: { kind, created_at: seconds(now), tags: [...named, ...subject, ...tags, ...expiring], content },
     to: [...new Set([...readers, state.public])],
     now: seconds(now),
+    ...(expires > 0 ? { expiration: expires + (((high << 8) | low) % (EXPIRATION_LATER + 1)) } : {}),
   });
   return {
     id: made.rumor.id,
@@ -632,6 +654,17 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
     return null;
   }
   const mine = rumor.pubkey === state.public;
+  // What a key blocked here sends is dropped, and not kept (lib/nostr-rules.ts).
+  if (!mine && Array.isArray(state.blocked) && state.blocked.includes(rumor.pubkey)) {
+    remember(state, event.id);
+    return null;
+  }
+  // A message past its expiration (NIP-40) is not kept.
+  const expires = rumor.kind === 14 || rumor.kind === 15 ? expirationOf(rumor.tags) : 0;
+  if (expires && expires * 1000 <= now) {
+    remember(state, event.id);
+    return null;
+  }
   // The chat is the sender and everyone it names: one other person (theirs, or ours to them from
   // another app with this key), nobody else (notes to oneself), or more: a group.
   const people = new Set([rumor.pubkey, ...rumor.tags.filter((tag) => tag[0] === 'p' && isHex64(tag[1])).map((tag) => tag[1])]);
@@ -695,6 +728,8 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
   const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}), ...(replyTo ? { replyTo } : {}), ...(old ? { old: true as const } : {}) };
   const message: NostrDmMessage = rumor.kind === 15 ? { ...base, text: '', file: fileOfRumor(rumor.tags, rumor.content) ?? true } : { ...base, text: rumor.content.slice(0, 64_000) };
   const added = addMessage(state, key, message);
+  // It goes from here at its expiration (lib/nostr-rules.ts).
+  if (added && expires) chat.rules = withOne(checkedRules(chat.rules), message.id, expires * 1000);
   // Reactions to it that came first.
   const early = Array.isArray(state.early) ? state.early.filter((r) => r.key === key && r.target === message.id) : [];
   if (!early.length) return added ? key : null;

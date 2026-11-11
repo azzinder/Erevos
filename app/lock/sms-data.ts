@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { checkedRules, type VanishStep } from '../lib/chat-rules';
 import { phoneId, simsHere } from './restored';
 import { sealedFile, type Holder } from './sealed-file';
 import { checkedSmsOwn, type SmsOwn } from './sms-own';
@@ -63,6 +64,9 @@ export type SpamMark = { number: string; spam: boolean; at: number };
 /** An SMS a linked device asked this phone to send (lib/sms-share.ts), by its id in the log: taken
  *  (`sending`), and what came of it, so none goes twice. */
 export type DeviceAsk = { id: string; at: number; done: 'sending' | 'sent' | 'failed' };
+/** A conversation's timer for disappearing messages, as it changed (lib/sms-rules.ts): SMS cannot
+ *  delete anything on the other phone, so it deletes this phone's copies only. */
+export type SmsVanish = { address: string; steps: VanishStep[] };
 
 export type SmsData = {
   /** Send an invite with the first SMS to a number with no contact. */
@@ -118,6 +122,8 @@ export type SmsData = {
   fromDevices: DeviceAsk[];
   /** The conversations with something of their own here: a PIN, screenshots blocked, a look, notifications (sms-own.ts). */
   own: SmsOwn[];
+  /** The conversations whose messages disappear from this phone, each with its timer. */
+  vanish: SmsVanish[];
 };
 
 export const EMPTY_SMS: SmsData = {
@@ -150,6 +156,7 @@ export const EMPTY_SMS: SmsData = {
   devices: false,
   fromDevices: [],
   own: [],
+  vanish: [],
 };
 
 /** The rest of the space's SMS data. Backups hold it too, from the version that holds photos and
@@ -188,6 +195,8 @@ export const MAX_SMS_WAY = 500;
  *  waits to be sent (lib/sync/sms.ts ASK_LASTS). */
 export const DEVICE_ASKS_KEPT = 7 * 24 * 3600 * 1000;
 const MAX_DEVICE_ASKS = 500;
+/** The conversations with a timer, at most. */
+export const MAX_VANISH = 300;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
@@ -258,6 +267,14 @@ function checked(value: unknown): SmsData {
       MAX_DEVICE_ASKS,
     ),
     own: checkedSmsOwn(v.own),
+    vanish: list(
+      v.vanish,
+      (c) => {
+        const steps = isAddress(c.address) ? checkedRules({ vanish: c.steps })?.vanish : undefined;
+        return steps ? { address: c.address as string, steps } : null;
+      },
+      MAX_VANISH,
+    ),
   };
 }
 

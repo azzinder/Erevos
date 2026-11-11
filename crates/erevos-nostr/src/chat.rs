@@ -97,8 +97,10 @@ fn backdated(now: u64) -> u64 {
 
 // Messages (NIP-17, NIP-59).
 
-/// `{secret, rumor: {kind, created_at, tags, content}, to: [public hex], now}`: the rumor as it
-/// reads (`id`, `pubkey` set), and a wrap for each key in `to`, each with whom it is for.
+/// `{secret, rumor: {kind, created_at, tags, content}, to: [public hex], now, expiration?}`: the
+/// rumor as it reads (`id`, `pubkey` set), and a wrap for each key in `to`, each with whom it is
+/// for. With `expiration` (seconds), each wrap asks relays to drop it then (NIP-40), as NIP-17 has
+/// disappearing messages.
 fn wrap(request: &Value) -> Result<Value> {
     let secret = secret(request)?;
     let me = hex(&public_key(&secret)?);
@@ -112,6 +114,10 @@ fn wrap(request: &Value) -> Result<Value> {
     let rumor_json = Zeroizing::new(rumor.to_string());
     let now = number(request, "now")?;
     let to = field(request, "to")?.as_array().ok_or_else(|| "to is a list of keys".to_string())?;
+    let expiration = match request.get("expiration") {
+        None | Some(Value::Null) => None,
+        Some(_) => Some(number(request, "expiration")?),
+    };
     let mut wraps = Vec::with_capacity(to.len());
     for reader in to {
         let reader = reader.as_str().ok_or_else(|| "to is a list of keys".to_string())?;
@@ -120,7 +126,11 @@ fn wrap(request: &Value) -> Result<Value> {
         let seal = Event::sign(&secret, backdated(now), SEAL_KIND, vec![], encrypt(&conversation_key(&secret, &key)?, &rumor_json)?)?;
         let once = Zeroizing::new(new_secret());
         let content = encrypt(&conversation_key(once.as_ref(), &key)?, &seal.to_json())?;
-        let event = Event::sign(once.as_ref(), backdated(now), WRAP_KIND, vec![vec!["p".to_string(), reader.to_string()]], content)?;
+        let mut tags = vec![vec!["p".to_string(), reader.to_string()]];
+        if let Some(at) = expiration {
+            tags.push(vec!["expiration".to_string(), at.to_string()]);
+        }
+        let event = Event::sign(once.as_ref(), backdated(now), WRAP_KIND, tags, content)?;
         wraps.push(json!({ "to": reader, "event": event.to_json() }));
     }
     Ok(json!({ "rumor": rumor, "wraps": wraps }))
@@ -506,6 +516,28 @@ mod tests {
             assert_eq!(opened["wrap"]["id"], event.id);
         }
         assert_ne!(signers[0], signers[1]);
+    }
+
+    #[test]
+    fn a_disappearing_message_asks_relays_to_drop_its_wraps() {
+        let alice = ask(json!({ "op": "keys_new" })).unwrap();
+        let bob = ask(json!({ "op": "keys_new" })).unwrap();
+        let now = 1_792_800_000u64;
+        let rumor = json!({ "kind": 14, "created_at": now, "tags": [["p", bob["public"]], ["expiration", (now + 3600).to_string()]], "content": "soon gone" });
+        let sent = ask(json!({ "op": "wrap", "secret": alice["secret"], "rumor": rumor, "to": [bob["public"], alice["public"]], "now": now, "expiration": now + 3700 })).unwrap();
+        for (wrap, reader) in sent["wraps"].as_array().unwrap().iter().zip([&bob, &alice]) {
+            let event = Event::from_json(wrap["event"].as_str().unwrap()).unwrap();
+            let p = vec!["p".to_string(), reader["public"].as_str().unwrap().to_string()];
+            assert_eq!(event.tags, vec![p, vec!["expiration".to_string(), (now + 3700).to_string()]]);
+            event.verify().unwrap();
+            // The rumor keeps its own, for the reader's app.
+            let opened = ask(json!({ "op": "unwrap", "secret": reader["secret"], "event": wrap["event"] })).unwrap();
+            assert_eq!(opened["rumor"]["tags"][1], json!(["expiration", (now + 3600).to_string()]));
+        }
+        // Without one, or with null, a wrap has its p tag alone; one that is not a number is refused.
+        let plain = ask(json!({ "op": "wrap", "secret": alice["secret"], "rumor": rumor, "to": [bob["public"]], "now": now, "expiration": null })).unwrap();
+        assert_eq!(Event::from_json(plain["wraps"][0]["event"].as_str().unwrap()).unwrap().tags.len(), 1);
+        assert!(ask(json!({ "op": "wrap", "secret": alice["secret"], "rumor": rumor, "to": [bob["public"]], "now": now, "expiration": "soon" })).is_err());
     }
 
     #[test]

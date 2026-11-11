@@ -1716,6 +1716,9 @@ between.
 - **Several messages:** **Select**, in a message's menu, chooses it, and a tap adds others; then **Copy**, **Forward**
   or **Delete**. **Delete** takes them back for everyone in the chat, after you confirm: yours and, where your level
   allows, those of others. It cannot be undone.
+- **This phone or everyone:** **Delete**, for one message or several, asks first: **This phone** deletes them here
+  only, and they stay hidden if they come again; **Everyone** takes them back as said above, offered only when each of
+  them can be taken back.
 - **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
   it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
   the Matrix server not encrypted, so the server learns each time you write.
@@ -1842,6 +1845,14 @@ marked, for the people you would otherwise reach only on Matrix.
 - **Send again:** a message of yours that shows **Not sent** has **Send again** and **Delete** in its menu.
 - **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
   **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
+- **Disappearing messages:** **Disappearing messages**, under the message field, sets a time for new messages, sent or
+  received: 5 minutes, 1 hour, 1 day or 1 week after each was sent. Then they go from this phone, and yours are taken
+  back for everyone in the chat too (their apps show them as deleted), or as soon as Erevos runs again. What the
+  others sent stays with them. **Disappear**, beside **Poll** and **Location**, does it for the next message only.
+  Messages already in the chat stay.
+- **Blocking:** **Block**, in a chat with one person, adds them to your account's ignore list: nothing of theirs
+  reaches your Matrix account, in any of its apps, and they are not told. **Blocked contacts**, on the Matrix screen,
+  lists them, with **Unblock**.
 
 ## XMPP {#xmpp}
 
@@ -1878,6 +1889,9 @@ bridge sits in between.
   reply goes to the message it answers. **Forward** sends one or several messages to another XMPP chat. **Pin for me**
   keeps a message at the top of the chat, on this phone only. **Select** chooses several messages to copy, forward or
   delete; the **Delete** there takes back only your own.
+- **This phone or everyone:** **Delete**, for one message or several, asks first: **This phone** deletes them here
+  only, and they stay hidden if they come again; **Everyone** takes them back as said above, offered only when each of
+  them can be taken back.
 - **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos says it of
   you only if you turn on **Say when I am writing** on the XMPP screen, and only to a contact who sees your presence,
   never in a group; it is off at first, as it goes through the XMPP server not encrypted, so the server learns each
@@ -2002,6 +2016,16 @@ the people you would otherwise reach only on XMPP.
 - **Send again:** a message of yours that shows **Not sent** has **Send again** and **Delete** in its menu.
 - **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
   **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
+- **Disappearing messages:** **Disappearing messages**, under the message field, deletes new messages from this phone
+  that long after they were sent, and **Disappear** does it for the next message only. The other side keeps them: XMPP
+  has no way to delete them there. Messages already here stay.
+- **Appear offline:** at the bottom of a chat with one person, **Appear offline** shows you offline to them, whatever
+  your account shows everyone else, and tells them nothing of what you read or type, nor that their messages came. A
+  group you share still shows you. It holds for this phone's connection only.
+- **Check in person:** under **Their keys**, **Check in person** shows a code of your address and keys, as
+  Conversations does. Photograph theirs there: each of their devices whose key matches is marked checked. A key that
+  differs marks nothing and says so: someone may be in between, or they changed their app. Nothing is sent.
+- **Blocked contacts:** the XMPP screen lists whom the account blocks, with **Unblock**.
 
 ## Chats with other Nostr apps {#nostr-chats}
 
@@ -2054,6 +2078,8 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 - **Select:** chooses several messages to **Copy**, to **Forward** to another Nostr chat (photos and files are sent
   again) or to **Delete**. Delete takes them from this phone and asks the others' apps to delete your own too: their
   apps may or may not do so.
+- **This phone or everyone:** **Delete** asks first: **This phone** deletes them here only, and they stay hidden if
+  they come again; **Everyone** also asks the others' apps to delete your own (NIP-09), which they may or may not do.
 - **Stickers:** **Sticker** sends your own stickers made from photos (**Mine**) as photos, encrypted: other Nostr apps
   show them as photos. The built-in sets are there too: each sticker goes as its picture, made on your device.
 - **Encryption:** each message is encrypted for them and signed by you, then wrapped again by a key made for that
@@ -2140,6 +2166,15 @@ because a Nostr key is the same to everyone you write to, while Erevos's own cha
   before the restore, does not go by itself: the phone the backup came from may have sent it already.
 - **Remind me:** a message's menu has **Remind me**. Pick a time: the message, with the name of its chat, goes into
   **Chat with myself** and reminds you then. It needs **Erevos** on in [Modules](#modules).
+- **Disappearing messages:** **Disappearing messages**, under the message field, deletes new messages, sent or
+  received, from this phone that long after they were sent. Yours carry that time (NIP-40), so their app and the
+  relays that honour it delete them then; those that do not keep them. **Disappear** does it for the next message
+  only. A message that comes with its own time goes at that time.
+- **Blocking:** **Block**, at the bottom of a chat, drops what that key sends on this phone, unread; it does not come
+  back if you unblock them. They are not told: Nostr cannot stop anyone from writing to you. **Blocked contacts**, on
+  the Nostr chats screen, lists them, with **Unblock**.
+- **Check in person:** in a chat with one person, **Check in person** shows your key's code. Photograph the code their
+  app shows (nostr:npub…): the chat is marked checked when it is this chat's key. Nothing is sent.
 
 ## SMS {#sms}
 
@@ -2238,6 +2273,9 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   answered.
 - **Remind me:** hold a message down for **Remind me**: it goes into **Chat with myself** with the conversation's
   name, and reminds you at the time you pick.
+- **Disappearing messages:** with Erevos as the SMS app, **Disappearing messages**, under a conversation's **Plain
+  SMS** line, deletes its new SMS from this phone that long after they were sent, or as soon as Erevos runs again. The
+  other phone keeps them: an SMS cannot be deleted there. Messages already here stay.
 
 ### Encrypted SMS when nothing else works
 

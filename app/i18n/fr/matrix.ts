@@ -49,7 +49,6 @@ export const matrix: Record<string, string> = {
   "Message deleted": "Message supprimé",
   "A message from before": "Un message plus ancien",
   "Load earlier messages": "Charger les messages précédents",
-  "Delete this message for everyone in the chat? It cannot be brought back.": "Supprimer ce message pour tout le monde dans la discussion ? Il ne pourra pas être récupéré.",
   "No earlier messages came this time. Try again to look further back.": "Aucun message précédent n’est arrivé cette fois. Réessaie pour remonter plus loin.",
   "Only a message of yours that went can be changed.": "Seul un de tes messages déjà envoyés peut être modifié.",
   "Checked by emoji": "Vérifié par emoji",
