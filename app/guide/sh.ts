@@ -114,6 +114,11 @@ dok ih njihov PIN drži otvorenima.
 - **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
   **Nostr** prikazuje samo njih, s brojem nepročitanih poruka, a tamo **Novi razgovor** otvara ekran Nostr razgovora:
   pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
+- **Označi sve kao pročitano**, u meniju ⋮, odjednom čita svaki razgovor onog dijela liste u kojem se nalazite (sve
+  poruke, SMS, Erevos, Matrix, XMPP ili Nostr), i utišane i zaključane PIN-om, nakon što pita. Svaki se čita kao da ste
+  ga otvorili, pa oni koji su pisali saznaju kao tada; pozivnice i ljudi koji traže da vas dodaju ostaju dok im ne
+  odgovorite. Ekrani Matrixa, XMPP-a i Nostra imaju je pod **Razgovori** za svoje razgovore. Skrivene razgovore nikad ne
+  čita.
 - **Javni feed**, kad prostor ima Nostr ključ ili je u javnoj Matrix sobi, još je jedno dugme, **Javno**: jedan feed,
   kao u Amethystu, s javnim objavama ljudi koje prati vaš Nostr ključ i porukama javnih Matrix soba u kojima ste,
   najnovije prvo. Svaka pokazuje ko ju je napisao (malo N ili M kaže mrežu), kada, njene riječi, njene fotografije u
@@ -730,7 +735,8 @@ podmetnuti nekog drugog, uporedite sigurnosni broj s novim kontaktom kao s bilo 
 Ispod svake vaše poruke kontaktu, **✓** kaže da ju je preuzeo relay ili telefon u blizini, **✓✓** da je stigla na
 telefon te osobe, a **✓✓✓** da ju je pročitala. Njen telefon to javlja vašem, unutar šifriranja, sljedeći put kad
 svaki od njih pogleda relay, ili odmah kad su u blizini. Poruka se računa kao pročitana čim se njen razgovor prikaže
-na ekranu.
+na ekranu. **Označi sve kao pročitano** u meniju ⋮ računa se isto: njihovi telefoni saznaju pri sljedećem pogledu na
+relay.
 
 U grupi koja nije javna vaše poruke imaju iste oznake, za sve ostale članove zajedno: **✓** kad je poslana, **✓✓** kad
 je poruka stigla na telefon svakog člana koji je bio u grupi kad ste je poslali, a **✓✓✓** kad su je svi pročitali.
@@ -975,6 +981,9 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
 - **Kopiraj:** stavlja njene riječi u međuspremnik, da ih zalijepite u drugu aplikaciju. Na Androidu je kopija
   označena kao privatna, pa obavijest telefona o njoj ne prikazuje riječi, ali svaka aplikacija koja čita
   međuspremnik može ih pročitati.
+- **Odaberi:** bira ovu poruku, a dodir na druge ih dodaje; traka tada nudi **Kopiraj**, koji stavlja sve njihove riječi
+  u jedan tekst s vremenom i piscem svake, **Proslijedi**, koji ih šalje u jedan razgovor, i **Obriši**, koji pita
+  jednom prije nego ih obriše. **Nazad** prestaje s biranjem.
 - **Uredi:** za vašu poruku, do jednog dana nakon što ste je poslali. Njene riječi idu u polje pod **Uređivanje
   poruke**: promijenite ih i pošaljite, ili **✕** da ostane kakva je bila. Oba telefona prikazuju nove riječi, s
   **Uređeno** pored vremena. Uređuju se samo riječi, ne naljepnica, lokacija, anketa, glasovna poruka, fotografija ili
@@ -983,6 +992,8 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
   uređaji. Erevos od prije ovoga zadržava stare riječi.
   **Zašto:** dan je dovoljno vremena da se ispravi greška, a niko ne može mijenjati ono što je rekao prije više dana.
   Oznaka pokazuje da riječi nisu prve.
+- **Završi anketu:** za vašu anketu: nijedan glas se više ne računa i prikazuju se konačni rezultati. Erevos od prije
+  ovoga je i dalje vidi otvorenom, a glas poslan u tom trenutku može se računati samo na nekim telefonima.
 - **Obriši:** na ovom telefonu ili na oba, kao iznad.
 
 Reakcije, odgovori, prikvačene poruke i izmjene putuju unutar šifriranja, kao i poruke.
@@ -1060,8 +1071,11 @@ mikrofon: snima samo dok ga držite. S TalkBackom ga dodirnite jednom da počnet
 glasovnu poruku da je pustite, i ponovo da je zaustavite. Glasovne poruke imaju iste oznake kao i ostale i prate
 postavku nestajanja razgovora.
 
-**Zašto:** na telefonu je glasovna poruka AAC sa 64 kbit/s, oko 480 KB po minutu: govor jasniji od toga ne može biti.
-Više se u glasu ne bi čulo, ali bi se sporije slalo, naročito preko Bluetootha.
+**Zašto:** na Androidu 10 i novijem, u web aplikaciji i na računaru glasovna poruka je Opus sa 32 kbit/s, oko 240 KB po
+minutu, kako ih šalju Telegram, Element i Conversations: govor jasniji od toga ne može biti. Na Androidu 9 i starijem, i
+u Safariju prije iOS-a 18.4 i macOS-a 15.4, to je AAC sa 64 kbit/s, oko 480 KB po minutu. Više se u glasu ne bi čulo,
+ali bi se sporije slalo, naročito preko Bluetootha. Svaki Erevos pušta oba: Safari prije 18.4 pušta Opus kad ga Erevos
+ponovo upakuje za njega, a gdje preglednik ne može pustiti neki, Erevos to kaže.
 
 - **Preko relaya ili u blizini,** šifrirane s kraja na kraj kao i riječi, u nekoliko dijelova. Niko između ih ne može
   čuti, ali iz dijelova relay, ili onaj ko prisluškuje u blizini, može saznati da je poslano nešto dugo, i otprilike
@@ -1133,6 +1147,10 @@ Pod **+** ima više za slanje od fotografija i datoteka (smajli na kraju polja z
   prikazuje vam mjesto prije nego što ode i ne prati vas nakon toga. Poruka sadrži samo koordinate, šifrirane s kraja na
   kraj; u Erevosu se ne učitava nikakva karta. **Otvori u kartama** predaje mjesto vašoj aplikaciji za karte, koja svoju
   kartu može učitati s interneta. Erevos od prije ovoga prikazuje koordinate kao riječi.
+- **Kartica kontakta:** šalje kontakt iz kontakata vašeg telefona kao karticu, s imenom, brojevima i e-mail adresama,
+  šifrirano s kraja na kraj. Druga osoba vidi karticu s **Dodaj u kontakte**; Erevos od prije ovoga je prikazuje kao
+  riječi. U skrivenim razgovorima birate samo među kontaktima čuvanim u skrivenom prostoru, nikad među onima iz
+  telefona.
 - **Anketa:** pitanje s dvije ili više opcija, najviše 12, i, s **Više od jednog odgovora**, mogućnošću izbora više
   njih. Dodirnite opciju da je izaberete, a ponovo da povučete izbor; svaka opcija pokazuje koliko ju je izabralo, i
   ko. Glasovi putuju unutar šifriranja, kao i reakcije. Erevos od prije ovoga prikazuje pitanje i njegove opcije kao
@@ -1173,6 +1191,16 @@ Prvi put Android pita smije li Erevos koristiti mikrofon, a za video i kameru. T
 tamo otvoren, na bilo kojem ekranu prostora: ona dodirne **Javi se** ili **Odbij**. Tokom poziva možete isključiti
 mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati se između prednje i zadnje kamere, i
 **Prekini**. Svaki poziv ostavlja red u razgovoru, na primjer koliko je trajao, ili propušteni poziv.
+
+- **Javiti se s videom ili samo glasom:** poziv koji zvoni nudi **Javi se**, samo glasom, i **Javi se s videom**, u
+  pozivima Erevosa te u XMPP i Matrix pozivima; u grupnom pozivu to su **Pridruži se** i **Pridruži se s videom**. Video
+  poziv na koji se javite samo glasom počinje s isključenom kamerom.
+- **Uključiti kameru kasnije:** **Uključi kameru**, na ekranu poziva, radi kad aplikacija druge strane može promijeniti
+  poziv dok traje; grupni poziv ostaje kako ste mu se pridružili.
+- **Dodati video glasovnom pozivu:** u glasovnom pozivu Erevosa **Dodaj video** uključuje vašu kameru kad druga osoba
+  kaže da; ako kaže ne, poziv ostaje glasovni.
+- **Promijeniti kameru:** **Promijeni kameru** prelazi na sljedeću kameru. Na računaru se prikazuje samo kad postoji
+  više od jedne kamere.
 
 **Poziv na telefon koji ga sporo prima:** kad njihov telefon primi vaš poziv sa zakašnjenjem, na primjer zato što čita
 preko Tora, **Pozivanje…** se vidi do minut i četvrt, a čim tamo zazvoni, zvoni 45 sekundi od tog trenutka, da poziv
@@ -1339,8 +1367,15 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
 - **Članovi:** dodirnite ime grupe na vrhu, ili **⋯** pored njega. Admin dodaje kontakte, uklanja članove i
   preimenuje grupu. Uklonjeni član od tada ne čita ništa što se u grupi kaže, a grupa ostaje na njegovom telefonu,
   samo za čitanje, dok je ne obriše.
+- **Niti:** zadržite prst na poruci i izaberite **Odgovori u niti** da joj odgovorite u niti, ili dodirnite **n odgovora
+  u niti** ispod poruke da je otvorite. Nit se prikazuje sama, a ono što tamo pošaljete odgovara na nju.
+- **Opis:** admin grupe ga piše u listu članova, pod **Opis**, i dodirne **Sačuvaj**. Svaki član ga čita, i oni koji se
+  pridruže kasnije. Promjena od bilo koga drugog se zanemaruje.
 - **Napuštanje grupe:** **Napusti grupu** to traži od admina, čiji vas telefon uklanja sljedeći put kad se na njemu
   otvori Erevos. Adminovo vlastito dugme je **Zatvori grupu**: uklanja sve članove.
+- **Jedan admin:** privatna grupa ima jednog admina, onoga ko ju je napravio. **Zašto:** promjene grupe moraju stizati
+  jednim redoslijedom, a s MLS-om nijedan server ih ne slaže u red, pa bi dva admina mogla istovremeno promijeniti grupu
+  i raspoloviti je. Erevos od prije ovoga prihvata promjene samo od onoga ko je grupu napravio.
 - **Grupni pozivi:** zelena slušalica na vrhu grupe pokreće glasovni poziv u njoj, a plava kamera pored nje
   videopoziv (i **Videopoziv** pod **⋯**). Dok jedan traje, prikazuje se samo njegovo dugme, da mu se pridružite.
   Zvoni na telefonima članova na kojima je Erevos otvoren, a ko se javi, u pozivu je. Poziv koji traje prikazuje se na
@@ -1348,7 +1383,8 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
   pozive, pa nijedan telefon ne vidi IP adresu drugog; bez relaya za pozive, samo na istoj Wi-Fi mreži. Šifrirano s
   kraja na kraj između svaka dva telefona, a njihovi ključevi šalju se u šifriranju grupe. U videopozivu svaki telefon
   šalje svoju sliku svakom drugom, pa se slike prikazuju za najviše četiri osobe; s više njih se pauziraju, a zvuk
-  ide dalje, dok se ne postavi server za veće videopozive.
+  ide dalje, dok se ne postavi server za veće videopozive. Poziv koji zvoni nudi **Pridruži se** i **Pridruži se s
+  videom**.
 - **Fotografije, datoteke i glasovne poruke:** **+** pored polja šalje fotografiju ili datoteku, kao u razgovoru s
   kontaktom, s istim **Kvalitet fotografije**; držite mikrofon dok govorite, i pustite da pošaljete. Svaka se
   šifrira vlastitim ključem i jednom stavlja na vaš relay, a u grupu, u njenom šifriranju, idu samo njena lokacija i
@@ -1370,7 +1406,9 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
   su uključeni, idu s vašim linkovima. Na popisu članova, ili na vlastitom ekranu javne grupe, **Traži u ovom
   razgovoru** pretražuje poruke grupe, a **Izvezi razgovor** ih ispisuje, a **Mediji, linkovi i fajlovi** navodi fotografije, videe, glasovne poruke, muziku, fajlove i linkove grupe, svaku vrstu posebno, kao u razgovoru s kontaktom (vidi gore), svaki s skokom na svoju poruku; **Poruke sa zvjezdicom** i pretraga
   početnog ekrana obuhvataju i grupe. Član čiji je Erevos od prije ove verzije vidi riječi, emoji naljepnice,
-  koordinate lokacije i pitanje ankete, a ništa od reakcija, prikvačenih poruka, izmjena i brisanja.
+  koordinate lokacije i pitanje ankete, a ništa od reakcija, prikvačenih poruka, izmjena i brisanja. **Odaberi** bira
+  više poruka da ih zajedno kopirate, proslijedite ili obrišete, vaša anketa ima **Završi anketu**, a **+** ima i
+  **Kartica kontakta**. **Za sve** se pri brisanju nudi samo ako je sve što ste izabrali vaše.
 - **Imenovanje člana:** upišite **@** u polje za poruku i članovi čija imena počinju onim što slijedi prikažu se iznad
   njega: dodirnite jednog da unesete cijelo njegovo ime. Član imenovan tako dobije obavijest o poruci čak i ako je
   utišao grupu. Računaju se samo cijela imena, pa **@Ana** ne imenuje Anu Mariju. Raniji Erevos prikazuje samo riječi i
@@ -1387,6 +1425,7 @@ na kraj pomoću MLS-a i idu svakom članu kao u svakoj grupi, a nijedan relay ne
 - **Link:** dodirnite ime grupe na vrhu za njen link i QR kod, i **Podijeli link**. Ko ga otvori, ili skenira kod
   kamerom telefona, bira ime koje grupa vidi i dodirne **Zatraži pridruživanje**. Link se može i zalijepiti pod
   **Pridruži se putem linka**. Svaki član ima link i može ga proslijediti dalje.
+- **Opis:** vlasnik ili admin ga piše na ekranu same grupe, pod **Opis**, i dodirne **Sačuvaj**; svi u grupi ga čitaju.
 - **Ulazak dok niste tu:** zahtjev čeka na vašem relayu, zapečaćen tako da ga otvara samo vaš telefon, dok se Erevos
   ne otvori na vašem telefonu: gleda svakih nekoliko sekundi dok je Erevos na ekranu, a otprilike svakog minuta u
   pozadini. Tada ih pušta, i grupa se prikazuje na njihovom telefonu.
@@ -1683,13 +1722,18 @@ između.
   samo kad ih server primi bez ponovnog pitanja; inače provjerite ovaj uređaj emojijima ili QR kodom s drugog svog
   uređaja, ili unesite sigurnosni ključ.
 - **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
-  **Pridruži se** i **Odbij**.
+  **Pridruži se** i **Odbij**. Napišite ime umjesto Matrix ID-a da tražite ljude u imeniku korisnika vašeg Matrix
+  servera, koji tako sazna koga ste tražili; **Pokreni** počinje razgovor s onim koga dodirnete.
 - **Grupe:** **Nova grupa**, na Matrix ekranu, pravi šifrovanu grupu od imena i Matrix ID-ova koje napišete, svaki
   pozvan da uđe, kako je pravi Element; svi u njoj vide ko su ostali. **Pridruži se grupi** ulazi u grupu po njenoj adresi,
   kao #name:matrix.org. Javna grupa možda nije šifrovana, i tada to kaže njen ekran. U grupi, **Pozovi** poziva nekog
   drugog, ako vam grupa to dozvoljava.
   Kad u grupi otkucate **@**, nude se njeni članovi; poruka imenuje one napisane cijele, i njihove aplikacije im to
   jave.
+- **Članovi:** u grupi **Članovi** navode njene ljude i pokazuju ko je **vlasnik**, **admin** ili **moderator**, kako
+  kažu njihovi nivoi ovlaštenja. Gdje vaš nivo dopušta, preimenujete grupu, postavite njenu **Temu**, **Postavi za
+  admina** ili **Ukloni kao admina**, **Ukloni** nekoga (poruke grupe mu više ne stižu) ili ga **Zabrani** (ne može se
+  ponovo pridružiti dok ga admin ne pusti).
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
   vodozemac). Razgovor koji nije šifrovan to kaže.
 - **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara i kada, i, bez Tora, odakle. U razgovoru s
@@ -1705,6 +1749,9 @@ između.
   Dodirnite prikazanu fotografiju da je vidite preko cijelog ekrana, kao u razgovoru s kontaktom: dva prsta ili
   dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
   [Razgovor preko relaya](#relay)).
+- **Naljepnice:** naljepnica koju pošalju Element, FluffyChat ili Element X prikazuje se u razgovoru; **Prikaži
+  naljepnicu** je preuzima preko vašeg Matrix servera. **Naljepnica** šalje vaše naljepnice napravljene od fotografija
+  (**Moje**) kao slike, šifrirane gdje je i razgovor.
 - **Reakcije, odgovori, izmjene i brisanje:** zadržite prst na poruci da otvorite njen meni: izaberite reakciju na vrhu,
   **Odgovori** da joj odgovorite, **Kopiraj** za njene riječi, a na svojoj poruci **Uredi** ili **Obriši**. Odgovor
   iznad svojih riječi prikazuje poruku na koju odgovara, a dodir na to vodi do poruke. Reakcije se vide ispod poruke;
@@ -1712,6 +1759,9 @@ između.
   razgovoru: Matrix server vidi koja je poruka dobila koju reakciju i od koga. Samo vi možete mijenjati svoje poruke, a
   izmijenjena piše **Uređeno**. **Obriši** povlači vašu poruku za sve u razgovoru, kad potvrdite; ne može se poništiti,
   a razgovor zadržava red koji kaže da je obrisana.
+- **Više poruka:** **Odaberi**, u meniju poruke, bira je, a dodir dodaje druge; zatim **Kopiraj**, **Proslijedi** ili
+  **Obriši**. **Obriši** ih povlači za sve u razgovoru, nakon što potvrdite: vaše i, gdje vaš nivo dopušta, tuđe. Ne
+  može se poništiti.
 - **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
   ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
   pa server saznaje svaki put kad pišete.
@@ -1845,7 +1895,10 @@ aplikacije: nikakav most nije između.
   Conversations, Dino, Gajim, Monal i Kaidan; druge aplikacije prikazuju odgovor s citatom onoga na što odgovara, a
   izmjenu kao novu poruku. Riječi odgovora i izmjene šifrovane su kao razgovor, ali na koju poruku se odnosi odgovor,
   izmjena, reakcija ili brisanje, i emotikon reakcije, idu onako kako ih te aplikacije šalju, nešifrovano, pa ih XMPP
-  serveri vide. U grupi se na poruku može odgovoriti, reagovati ili je obrisati kad je grupa vrati.
+  serveri vide. U grupi se na poruku može odgovoriti, reagovati ili je obrisati kad je grupa vrati. Dodir na citat
+  odgovora vodi na poruku na koju odgovara. **Proslijedi** šalje jednu ili više poruka u drugi XMPP razgovor. **Prikvači
+  samo za mene** drži poruku na vrhu razgovora, samo na ovom telefonu. **Odaberi** bira više poruka za kopiranje,
+  prosljeđivanje ili brisanje; **Obriši** tamo povlači samo vaše.
 - **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to javlja o vama
   samo ako uključite **Reci kad pišem** na ekranu XMPP, i samo kontaktu koji vidi vašu prisutnost, nikad u grupi;
   isprva je isključeno, jer ide preko XMPP servera nešifrirano, pa server saznaje svaki put kad pišete.
@@ -1871,8 +1924,13 @@ aplikacije: nikakav most nije između.
   Dodirnite prikazanu fotografiju da je vidite preko cijelog ekrana, kao u razgovoru s kontaktom: dva prsta ili
   dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
   [Razgovor preko relaya](#relay)).
+- **Naljepnice:** **Naljepnica** šalje vaše naljepnice napravljene od fotografija (**Moje**) kao fotografije, šifrirane
+  kao i razgovor; druge XMPP aplikacije ih prikazuju kao fotografije. Paket naljepnica koji pošalje druga aplikacija
+  (XEP-0449) ne preuzima se: prikazuje svoje riječi.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete, kao u
-  Matrix razgovoru. Ide kao zvučna datoteka, šifrovana kao razgovor, kako je šalje Conversations.
+  Matrix razgovoru. Ide kao zvučna datoteka, šifrovana kao razgovor, kako je šalje Conversations. Glasovna poruka iz
+  Conversationsa ili druge XMPP aplikacije (datoteka .m4a ili .ogg) takođe se prikazuje kao glasovna poruka, s **Pusti**
+  i svojim trajanjem.
 - **Grupe:** **privatna grupa** je samo za svoje članove, i svaki vidi ko su ostali. Svaka poruka u njoj šifrovana je
   OMEMO-om za uređaje svakog člana, kao u privatnim grupama Conversationsa, pa je XMPP serveri ne mogu čitati; ono što je
   napisano prije vašeg ulaska prikazuje se zaključano. **Kanal** je svaka druga grupa: nije šifrovan, pa ga svi u njemu,
@@ -1883,12 +1941,14 @@ aplikacije: nikakav most nije između.
   šifrovano; njen administrator može **Dodaj ljude**. Kontakt koji vas pozove u grupu prikazuje se pod **Pozivi u
   grupe**, s **Pridruži se** i **Odbij**; poziv bilo koga drugog se ne prikazuje. Vaše grupe prate ostale XMPP
   aplikacije vašeg računa preko njegovih zabilješki: grupa kojoj se tamo pridružite pridružena je i ovdje, a **Napusti
-  grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju.
+  grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju. U grupi se **vlasnik** i **admin** prikazuju
+  pored članova koji to jesu, a **Opis** grupe prikazuje se ispod njene teme.
 - **Upravljanje grupom:** admini grupe vide **Upravljanje grupom** na njenom ekranu. Oni postavljaju **Temu**; vlasnik
   je može i **preimenovati**. U privatnoj grupi svaki član ima **Ukloni** (poruke grupe više ne idu toj osobi, a admin
   je može ponovo dodati) i **Zabrani** (ne može ući dok admin ne dopusti); vlasnik može člana **postaviti za admina**
   ili ga **ukloniti kao admina**. U kanalu **Upravljanje grupom** navodi ko je unutra, svakoga s **Ukloni**. Admini ne
-  mogu ukloniti druge admine; samo vlasnik.
+  mogu ukloniti druge admine; samo vlasnik. Vlasnik postavlja i **Opis** grupe; neki serveri ga ne dopuštaju, i Erevos
+  to kaže.
 - **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
   vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
   kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem
@@ -1983,7 +2043,8 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
   [Razgovor preko relaya](#relay)).
 - **Reakcije:** zadržite poruku da otvorite njen meni i reagirate s 👍, ❤️, 😂, 😮, 😢 ili 🙏, ili jednom od ostalih iza
-  **+**; ispod se vide reakcije, posljednja od svake osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
+  **+**; ispod se vide reakcije, posljednja od svake osobe, kako ih šalju druge Nostr aplikacije (NIP-25). Dodirnite
+  reakciju ispod poruke da dodate istu, ili svoju da je povučete; aplikacije ostalih se mole da je uklone.
 - **Odgovori:** **Odgovori**, u meniju poruke koju zadržite, odgovara na nju. Poruka se prikazuje iznad polja za poruku,
   s ✕ da je ostavite, a zatim iznad vašeg odgovora u razgovoru, gdje dodir vodi do nje. I druge Nostr aplikacije je
   prikazuju kao odgovor (NIP-17 je označava kao odgovor). I fotografija, datoteka ili glasovna poruka koju pošaljete dok
@@ -1993,6 +2054,12 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   kao datoteka: šifrovana na ovom telefonu i stavljena na poslužitelj datoteka, s trajanjem u poruci; hoće li je druga
   aplikacija puštati kao glasovnu poruku ili kao zvučnu datoteku, odlučuje ta aplikacija. Onu koja stigne s trajanjem
   pušta **Pusti**, a preuzima se tek kad je pustite.
+- **Prikvači samo za mene:** drži poruku na vrhu razgovora, samo na ovom telefonu; niko drugi je ne vidi.
+- **Odaberi:** bira više poruka za **Kopiraj**, za **Proslijedi** u drugi Nostr razgovor (fotografije i datoteke šalju
+  se ponovo) ili za **Obriši**. Brisanje ih uklanja s ovog telefona i traži od aplikacija ostalih da obrišu i vaše:
+  njihove aplikacije to mogu ali ne moraju učiniti.
+- **Naljepnice:** **Naljepnica** šalje vaše naljepnice napravljene od fotografija (**Moje**) kao fotografije, šifrirane:
+  druge Nostr aplikacije ih prikazuju kao fotografije.
 - **Šifrovanje:** svaka poruka šifrira se za drugu osobu i vi je potpisujete, a zatim je ponovo omata ključ izrađen samo
   za tu poruku, s vremenom pomaknutim unatrag do dva dana (NIP-17, s NIP-44 i NIP-59). Relayi vide kome je namijenjena,
   ne i tko ju je napisao, kada ni što piše. Kopija ide na vaše vlastite relaye, da vaše druge Nostr aplikacije s ovim
@@ -2044,6 +2111,11 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   kako i treba kod javne objave. Ispod Matrix poruke: **Odgovori**, **Reaguj** (izbor od šest) i dijeljenje (veza
   matrix.to), a u njenim trima tačkama **Kopiraj tekst** i **Otvori sobu**. Uvijek je to ključ i račun ovog prostora,
   nikad vlastiti skrivenih razgovora.
+- **Ankete:** u javnom feedu anketa se prikazuje sa svojim odgovorima, za **Glasajte** i, dok je otvorena, s
+  **Rezultati**. **Nova objava** pa **Anketa** pravi jednu: do 10 odgovora, jedan ili više za izbor, otvorena 1, 3 ili 7
+  dana. Glasovi su javni: svako može vidjeti šta ste izabrali. Vašu reakciju ispod objave povlačite ponovnim dodirom.
+- **Vlastiti emoji:** u javnom feedu emoji koje prave druge aplikacije učitavaju se kao fotografije objava, kako kažu
+  **Fotografije** i Tor gore. U privatnim razgovorima prikazuju se kao :ime: i nikad se ne učitavaju.
 - **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
   ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
 - **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu
@@ -2121,9 +2193,23 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
 - **✓ i ✓✓✓:** vaš SMS prikazuje ✓ kad ode, a ✓✓✓ kad izvještaj mreže o isporuci kaže da je stigao na telefon te
   osobe, ili „nije isporučeno“. Neke telefonske kompanije ne šalju izvještaje o isporuci; tada ostaje ✓. SMS ne može
   reći je li pročitan.
-- **Fotografije (MMS):** slika ispred polja za poruku (**Fotografija**) dodaje fotografiju, smanjenu da stane u jedan
-  MMS (oko 280 KB), bez ičega u njoj osim same slike. Fotografije koje stignu MMS-om prikazuju se u razgovoru. MMS je
-  jednako običan kao i SMS: telefonska kompanija ga može vidjeti.
+- **Fotografije, glasovne poruke i kartice kontakata (MMS):** **+** → **Fotografija** dodaje fotografiju, smanjenu da
+  stane u jedan MMS (oko 280 KB), bez ičega u njoj osim slike. Držite mikrofon, kad ništa nije otkucano, da snimite
+  glasovnu poruku do minute, poslanu kao MMS u AMR-u, formatu koji puštaju aplikacije za poruke na telefonima. **+** →
+  **Kartica kontakta** šalje kontakt iz kontakata telefona kao vCard, bez vaših bilješki o njemu i njegovih grupa, a sa
+  njegovom slikom samo ako još stane. Fotografije, glasovne poruke i kartice kontakata koje stignu prikazuju se u
+  razgovoru, za puštanje ili čuvanje (**Sačuvaj** otvara novi kontakt s podacima kartice). MMS je jednako otvoren kao
+  SMS: operater ga može vidjeti.
+- **Gdje ste:** **+** → **Lokacija** šalje gdje ste kao SMS s geo: adresom i OpenStreetMap linkom, koji otvara svaki
+  telefon. Geo: adresa, ili link OpenStreetMapa, Google Mapsa, Apple Mapsa ili Wazea, u SMS-u koji stigne prikazuje se
+  kao mjesto, za otvaranje u aplikaciji za karte; kratak link ostaje link, jer bi se morao preuzeti da bi se znalo
+  mjesto.
+- **Prikvačene za vas:** zadržite prst na poruci i izaberite **Prikvači samo za mene** da je prikvačite iznad razgovora.
+  SMS nemaju prikvačenih poruka: čuva se samo na ovom telefonu, šifrirana SMS podacima prostora, i druga osoba nikad ne
+  sazna.
+- **Više poruka:** zadržite prst na poruci i izaberite **Odaberi**, pa dodirnite druge: **Kopiraj** ih stavlja u jedan
+  tekst, **Proslijedi** ih šalje kao jednu u nacrt drugog razgovora, a **Obriši** ih briše s telefona, s **Poništi**
+  nekoliko sekundi.
 - **Biranje primaoca:** pod **Novi SMS** dodirnite **Kontakti** da biste izabrali iz kontakata, uz pretragu, ili samo
   ukucajte: kontakti čije ime ili broj odgovara onome što kucate prikazuju se ispod polja, a dodir ga popunjava. Kontakt
   s više brojeva prikazuje po jedan red za svaki. Za grupu se svaki izabrani kontakt dodaje brojevima koji već postoje.
