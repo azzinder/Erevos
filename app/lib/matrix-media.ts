@@ -102,7 +102,7 @@ export type OutgoingFile = { name: string; mime: string; bytes: Uint8Array; w?: 
 const MIMES: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic',
   mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', ogg: 'audio/ogg', opus: 'audio/ogg', m4a: 'audio/mp4',
-  pdf: 'application/pdf', txt: 'text/plain', zip: 'application/zip',
+  pdf: 'application/pdf', txt: 'text/plain', zip: 'application/zip', vcf: 'text/vcard',
 };
 
 /** The type of a picked file by its name's ending, as the picker does not always say. */

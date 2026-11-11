@@ -18,6 +18,7 @@ import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { CarryButtons, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
 import { PollSheet } from '../components/poll';
@@ -76,9 +77,11 @@ import {
   runMatrix,
 } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
+import { cardFile } from '../lib/message-carry';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { pickVideo } from '../lib/pick-video';
 import { throughTor } from '../lib/relay';
 import { useSharedFiles, useSharedWords } from '../lib/shared-here';
 import { rtc } from '../lib/webrtc';
@@ -131,6 +134,10 @@ import { checkedLook } from '../theme/look';
 // a group, Members opens its sheet (components/matrix-members.tsx): who is in it and what they
 // are, its name and what it is about, and what our level lets us do there; what it is about shows
 // under its name.
+//
+// Words go as typed, and beside them, when their marks change their look (*bold*, _italic_…),
+// their HTML (lib/matrix-html.ts), as Element sends it; what comes shows so too. Camera, Video,
+// Contact card (a .vcf file) and how photos go sit by Location (components/network-carry.tsx).
 
 // The most members Who read it names as not having read one of ours yet.
 const MOST_SHOWN = 100;
@@ -291,6 +298,9 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   }
 
   const voice = useVoiceCapture({ send: (audio, ms, waveform) => sendPicked(async () => voiceFile(audio, ms, waveform)), say: setNote });
+  // How photos go, and whose contacts a contact card is chosen from (components/network-carry.tsx).
+  const photos = usePhotoQuality();
+  const among = useNetworkAmong(where);
   // Tells the room we write, only when the account says so (app/matrix.tsx).
   const sayTyping = useSayTyping(!!state?.sayTyping && !!room && !room.invitedBy, (typing) => roomId && matrixTyped(roomId, typing));
   // What Send to handed this chat (app/share.tsx): its words in the message field until sent, a photo or file sent at once.
@@ -431,7 +441,14 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     ]);
   }
 
-  const sendPhoto = () => sendPicked(() => pickPhoto('photos', 90));
+  const sendPhoto = (from: 'photos' | 'camera' = 'photos') => sendPicked(() => pickPhoto(from, photos.quality));
+  // A video goes as Element sends one (m.video); a contact card as a .vcf file (m.file).
+  const sendVideo = () =>
+    sendPicked(async () => {
+      const video = await pickVideo(MATRIX_MOST);
+      return video && { name: video.name, mime: video.mime, bytes: video.bytes, w: video.w, h: video.h };
+    });
+  const sendCard = (card: string) => sendPicked(async () => cardFile(card));
   const sendAnyFile = () =>
     sendPicked(async () => {
       const picked = await pickFile(MATRIX_MOST);
@@ -694,6 +711,15 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}
           <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
           {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
+          <CarryButtons
+            disabled={sending}
+            photos={photos}
+            among={among}
+            foot={room.encrypted ? undefined : t('Not encrypted: the Matrix server can read this chat.')}
+            onCamera={() => void sendPhoto('camera')}
+            onVideo={() => void sendVideo()}
+            onCard={(card) => void sendCard(card)}
+          />
         </Row>
       ) : null}
       <Row {...endProps}>

@@ -1886,6 +1886,16 @@ između.
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.
 
+- **Šta poruka nosi:** oznake za izgled riječi, kao podebljano i skrivene riječi, prikazuju se kao u Erevos razgovoru
+  (pogledajte [Razgovor preko relaya](#relay)) i idu s porukom, pa ih i Element prikazuje. Od onoga što šalje druga
+  aplikacija prikazuju se samo podebljano, kurziv, precrtano, kod i skrivene riječi: ništa se u tome ne pokreće,
+  nijedna slika se ne preuzima, a link pokazuje kamo zaista vodi. Web adrese se mogu dodirnuti, a Erevos pita prije
+  nego što otvori neku. Pored **Fotografija** i **Datoteka** su **Kamera**, **Video**, **Kartica kontakta** i
+  **Kvalitet fotografije**: kartica kontakta ide kao .vcf datoteka koju otvara svaka aplikacija, a ona koja stigne
+  prikazuje se kao kartica čim dodirnete **Prikaži**, s **Dodaj u kontakte**; video ide bez dijelova koji govore gdje
+  je snimljen ili kojim telefonom. Poruka koju proslijedite označena je kao **Proslijeđeno** samo na vašem telefonu,
+  pa drugi nikad ne saznaju odakle je došla.
+
 ## XMPP {#xmpp}
 
 U **Postavke** → **Relay i mreže** → **XMPP**, prostor se može prijaviti na XMPP račun, za razgovor s ljudima koji
@@ -2029,6 +2039,10 @@ aplikacije: nikakav most nije između.
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 
+- **Šta poruka nosi:** oznake za izgled riječi i web adrese koje se mogu dodirnuti, kao u razgovoru na Matrixu, s
+  **Kamera**, **Video**, **Kartica kontakta** i **Kvalitet fotografije** (pogledajte [Matrix](#matrix)). U grupi, kad
+  upišete @, vidite njene članove, a dodir upisuje ime tog člana u grupu, kao što to radi Conversations.
+
 ## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
 
 Pod **Postavke** → **Relay i mreže** → **Nostr razgovori**, prostor može imati vlastiti Nostr ključ, za razgovor u
@@ -2155,6 +2169,11 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
 isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim razgovara.
+
+- **Šta poruka nosi:** kao u razgovoru na Matrixu (pogledajte [Matrix](#matrix)), i **Lokacija**, koja šalje gdje ste
+  kao geo: adresu i link karte koji svaka Nostr aplikacija može prikazati; mjesto poslano tako prikazuje se kao
+  mjesto. U grupi, kad upišete @, vidite njene članove, imenovane tako da svaka Nostr aplikacija zna na koga se misli.
+  Poruka koju proslijedite označena je kao **Proslijeđeno** samo na vašem telefonu.
 
 ## SMS {#sms}
 

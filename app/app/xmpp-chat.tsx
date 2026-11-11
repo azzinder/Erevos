@@ -8,6 +8,7 @@ import { BackHandler, Pressable, ScrollView, View, type LayoutChangeEvent } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
+import { LinkedText } from '../components/linked-text';
 import { Missing, ReactionChips } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -19,6 +20,7 @@ import { XmppStickerSheet } from '../components/xmpp-stickers';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
@@ -41,10 +43,13 @@ import { voiceNamed } from '../lib/group-media';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
+import type { Nameable } from '../lib/mentions';
+import { cardFile, withNick } from '../lib/message-carry';
 import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { useSharedFiles, useSharedWords } from '../lib/shared-here';
+import { pickVideo } from '../lib/pick-video';
 import { stickerMeta } from '../lib/own-stickers';
 import { rtc } from '../lib/webrtc';
 import { forwardable, isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppChatList, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
@@ -139,6 +144,10 @@ import { checkedLook } from '../theme/look';
 // as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
 // a chat written without encryption, and only when this phone makes previews (as for contacts);
 // one that comes so shows under the words.
+//
+// Words show as XEP-0393 styles them (lib/text-style.ts), their web addresses tappable. Camera,
+// Video and Contact card (a .vcf file) send as a file does, and in a group, @ offers who is in it
+// and writes the name they have there (components/network-carry.tsx).
 
 /** The place a message is, when its words are only a geo: link, as Conversations sends one. */
 const placeIn = (message: XmppMessage) => (/^geo:\S+$/i.test(message.text.trim()) ? placeOfGeo(message.text.trim()) : null);
@@ -209,6 +218,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
   const [, setCalls] = useState(0);
   const [placing, setPlacing] = useState(false);
+  // How photos go, and whose contacts a contact card is chosen from (components/network-carry.tsx).
+  const photos = usePhotoQuality();
+  const among = useNetworkAmong(where);
   // Whether this phone makes the preview of a link it sends (the space's setting).
   const [previews, setPreviews] = useState(false);
   useEffect(() => {
@@ -357,11 +369,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       fail(error);
     }
   }
-  const sendPhoto = () =>
+  const sendPhoto = (from: 'photos' | 'camera' = 'photos') =>
     sendPicked(async () => {
-      const photo = await pickPhoto('photos', 90);
+      const photo = await pickPhoto(from, photos.quality);
       return photo ? { bytes: photo.bytes, name: photo.name, mime: photo.mime } : null;
     });
+  // A video and a contact card (a .vcf) go as files do, by the server's HTTP upload.
+  const sendVideo = () =>
+    sendPicked(async () => {
+      const video = await pickVideo(XMPP_FILE_MOST);
+      return video ? { bytes: video.bytes, name: video.name, mime: video.mime } : null;
+    });
+  const sendCard = (card: string) => sendPicked(async () => cardFile(card));
   const sendAnyFile = () =>
     sendPicked(async () => {
       const picked = await pickFile(XMPP_FILE_MOST);
@@ -556,6 +575,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       : room
         ? t('XMPP group · encrypted with OMEMO for every member, not anonymous')
         : t('XMPP · encrypted with OMEMO, not anonymous');
+  // In a group, who is in it now, as @ offers them: by the name they have there, as its apps name them.
+  const nicks: Nameable[] = room?.joined ? Object.keys(room.occupants).filter((nick) => nick !== room.nick).map((nick) => ({ identity: nick, name: nick })) : [];
   // Where what is forwarded can go: the account's other chats, a group only once joined.
   const targets = xmppChatList(state).filter((other) => other.jid !== jid && (!other.room || other.room.joined) && !isBlocked(state, other.jid));
   return (
@@ -741,6 +762,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
           {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onPress={() => reach(answered.id)} onClose={() => setReplyId(null)} /> : null}
           {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
+          <MentionChips text={draft} members={nicks} onPick={(member) => setDraft(withNick(draft, member.name))} />
           <Row>
             <Input
               style={{ flex: 1 }}
@@ -759,6 +781,15 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <Row wrap>
               <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => setPlacing(true)} />
               <Button title={t('Sticker')} kind="secondary" compact disabled={sending || unsent !== null || !stickerPlace} onPress={() => setStickering(true)} />
+              <CarryButtons
+                disabled={sending || unsent !== null}
+                photos={photos}
+                among={among}
+                foot={channel || plain ? how : undefined}
+                onCamera={() => void sendPhoto('camera')}
+                onVideo={() => void sendVideo()}
+                onCard={(card) => void sendCard(card)}
+              />
             </Row>
           ) : null}
           <Row {...endProps}>
@@ -1219,7 +1250,14 @@ function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu
           ) : (
             // Not selectable when it has a menu: holding the words opens it, which can copy them.
             <>
-              {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu} style={textSized(look.textSize, 16)}>{message.text}</Text>}
+              {placeIn(message) ? (
+                <PlaceCard place={placeIn(message)!} />
+              ) : (
+                // As XEP-0393 styles them (lib/text-style.ts), its web addresses tappable.
+                <Text selectable={!onMenu} style={textSized(look.textSize, 16)}>
+                  <LinkedText text={message.text} />
+                </Text>
+              )}
               {message.preview ? <PreviewCard preview={message.preview} /> : null}
             </>
           )}

@@ -1806,6 +1806,15 @@ between.
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.
 
+- **What a message carries:** the marks for how words look, such as bold and hidden words, show as in an Erevos chat
+  (see [Chat through a relay](#relay)), and go with the message, so Element shows them too. Of what another app sends,
+  only bold, italic, struck through, code and hidden words show: nothing in it runs, no picture is fetched, and a link
+  shows where it really goes. Web addresses can be tapped, and Erevos asks before opening one. Beside **Photo** and
+  **File** are **Camera**, **Video**, **Contact card** and **Photo quality**: a contact card goes as a .vcf file that
+  any app opens, and one that comes shows as a card once you tap **Show**, with **Add to contacts**; a video goes
+  without the parts that say where it was filmed or on which phone. A message you forward is marked **Forwarded** on
+  your phone only, so the others never learn where it came from.
+
 ## XMPP {#xmpp}
 
 Under **Settings** → **Relay and networks** → **XMPP**, a space can sign in to an XMPP account, to chat with people who
@@ -1948,6 +1957,10 @@ bridge sits in between.
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.
 
+- **What a message carries:** the marks for how words look and tappable web addresses, as in a Matrix chat, with
+  **Camera**, **Video**, **Contact card** and **Photo quality** (see [Matrix](#matrix)). In a group, typing @ offers
+  its members, and a tap writes that one's name in the group, as Conversations does.
+
 ## Chats with other Nostr apps {#nostr-chats}
 
 Under **Settings** → **Relay and networks** → **Nostr chats**, a space can have a Nostr key of its own, to chat one to
@@ -2070,6 +2083,11 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
 because a Nostr key is the same to everyone you write to, while Erevos's own chats hide who talks with whom.
+
+- **What a message carries:** as in a Matrix chat (see [Matrix](#matrix)), and **Location**, which sends where you are
+  as a geo: address and a map link that every Nostr app can show; a place sent so shows as a place. In a group, typing
+  @ offers its members, named so that every Nostr app knows who is meant. A message you forward is marked
+  **Forwarded** on your phone only.
 
 ## SMS {#sms}
 

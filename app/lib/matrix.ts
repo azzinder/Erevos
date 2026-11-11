@@ -43,6 +43,8 @@ import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Place, Poll, Preview } from './chat-parts';
 import { t } from './i18n';
+import { formattedOf, styledOf } from './matrix-html';
+import type { StyledPart } from './text-style';
 import { cleanStatus, type NetPresence } from './net-presence';
 import {
   endContent,
@@ -120,6 +122,10 @@ export type MatrixMessage = {
   unverified?: true;
   /** A sticker (m.sticker): its picture is `file`, its words what it shows. */
   sticker?: true;
+  /** How its words look, as its HTML (formatted_body) says, when that changes their look (lib/matrix-html.ts). */
+  styled?: StyledPart[];
+  /** Ours, sent on from another chat: marked so here only, as Matrix has no mark for it that does not tell where it came from. */
+  forwarded?: true;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -1117,10 +1123,15 @@ function place(room: MatrixRoom, message: MatrixMessage, event: Json, older: boo
   if (at >= 0) {
     const before = room.messages[at];
     // What came for it while it went, or before it was fetched again, stays.
+    const { styled, ...rest } = message;
+    // A change's words keep the look the change gave them.
+    const look = before.edited && !message.deleted ? before.styled : styled;
     room.messages[at] = {
-      ...message,
+      ...rest,
+      ...(look ? { styled: look } : {}),
       ...(before.reactions ? { reactions: before.reactions } : {}),
       ...(before.edited && !message.deleted ? { text: before.text, edited: before.edited } : {}),
+      ...(before.forwarded && !message.deleted ? { forwarded: true as const } : {}),
       ...(before.threadCount !== undefined ? { threadCount: before.threadCount } : {}),
       ...(message.poll && before.poll ? { poll: { ...message.poll, votes: before.poll.votes, ended: before.poll.ended } } : {}),
     };
@@ -1169,6 +1180,8 @@ function change(room: MatrixRoom, base: { sender: string; ts: number; unverified
   if (target.edited && target.edited > base.ts) return true;
   const shown = shownOf(fresh);
   target.text = shown.text;
+  if (shown.styled) target.styled = shown.styled;
+  else delete target.styled;
   if (shown.file) target.file = shown.file;
   if (shown.preview) target.preview = shown.preview;
   else delete target.preview;
@@ -1195,7 +1208,7 @@ function redact(room: MatrixRoom, id: string): boolean {
   if (!target || target.deleted) return false;
   target.text = '';
   target.deleted = true;
-  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited', 'poll', 'place', 'preview', 'sticker'] as const) delete target[gone];
+  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited', 'poll', 'place', 'preview', 'sticker', 'styled', 'forwarded'] as const) delete target[gone];
   return true;
 }
 
@@ -1244,8 +1257,14 @@ function withoutQuote(body: string): string {
   return lines.slice(at + 1).join('\n');
 }
 
+/** How words look, when their content's HTML says it (lib/matrix-html.ts): never the HTML itself. */
+function styleOf(content: Json | undefined): Pick<MatrixMessage, 'styled'> {
+  const styled = styledOf(content);
+  return styled ? { styled } : {};
+}
+
 /** What a message's content shows: its words, its file when it carries one, and what it answers. */
-function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file' | 'replyTo' | 'place' | 'preview' | 'thread'> {
+function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file' | 'replyTo' | 'place' | 'preview' | 'thread' | 'styled'> {
   const thread = content ? threadOf(content) : null;
   if (thread) {
     const inside = shownOf({ ...content, 'm.relates_to': thread.answers ? { 'm.in_reply_to': { event_id: thread.answers } } : undefined });
@@ -1256,10 +1275,10 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
   const where = content ? placeOfContent(content) : null;
   if (where) return { text: '', place: where };
   const preview = content && content.msgtype === 'm.text' ? previewOfContent(content) : null;
-  if (preview) return { text: bodyOf(content), preview };
+  if (preview) return { text: bodyOf(content), preview, ...styleOf(content) };
   if (content?.msgtype === 'm.key.verification.request') return { text: t('Asked to check devices by emoji.') };
   const kind = KINDS[String(content?.msgtype)];
-  if (!content || !kind) return { text: bodyOf(content) };
+  if (!content || !kind) return { text: bodyOf(content), ...styleOf(content) };
   const info = (content.info as Json | undefined) ?? {};
   const encrypted = isEncryptedFile(content.file) ? content.file : undefined;
   const url = typeof content.url === 'string' && content.url.startsWith('mxc://') ? content.url : undefined;
@@ -1618,7 +1637,7 @@ export async function sendToDevicePlain(state: MatrixState, type: string, to: Re
 /** Sends `text` to a room, encrypted when the room is. Answers the message as it now shows. */
 /** Sends words, naming `mentions`; `extra` goes with them, such as the preview of a link in them (lib/matrix-parts.ts). */
 export function sendText(state: MatrixState, roomId: string, text: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...mentionsOf(mentions), ...extra });
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...formattedOf(text), ...mentionsOf(mentions), ...extra });
 }
 
 /**
@@ -1626,7 +1645,7 @@ export function sendText(state: MatrixState, roomId: string, text: string, menti
  * otherwise as the thread's latest message, which an app without threads shows as an answer to it.
  */
 export function sendInThread(state: MatrixState, roomId: string, root: string, text: string, answers?: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': threadRelation(root, latestIn(state, roomId, root), answers), ...mentionsOf(mentions), ...extra });
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...formattedOf(text), 'm.relates_to': threadRelation(root, latestIn(state, roomId, root), answers), ...mentionsOf(mentions), ...extra });
 }
 
 /** Sends a poll (lib/matrix-parts.ts), as Element sends one. */
@@ -1693,7 +1712,7 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
 
 /** Answers the message `replyTo` with `text`. */
 export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } }, ...mentionsOf(mentions), ...extra });
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...formattedOf(text), 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } }, ...mentionsOf(mentions), ...extra });
 }
 
 /** Reacts to a message with `key`, an emoji; once only. */
@@ -1723,15 +1742,20 @@ export async function sendChange(state: MatrixState, roomId: string, target: str
   const room = roomOf(state, roomId);
   const message = room.messages.find((m) => m.id === target);
   if (!message || message.sender !== state.userId || message.deleted || message.state || message.poll || message.place) throw new Error(t('Only a message of yours that went can be changed.'));
+  // Its new look goes too, for the apps that show the change, and for those that show only what changed it.
+  const formatted = formattedOf(text);
   await sendEvent(state, roomId, 'm.room.message', {
     msgtype: 'm.text',
     body: `* ${text}`,
-    'm.new_content': { msgtype: 'm.text', body: text },
+    ...(formatted.formatted_body ? { format: formatted.format, formatted_body: `* ${formatted.formatted_body}` } : {}),
+    'm.new_content': { msgtype: 'm.text', body: text, ...formatted },
     'm.relates_to': { rel_type: 'm.replace', event_id: target },
   });
   message.text = text;
   message.edited = Date.now();
   delete message.preview;
+  // Its marks show as they are typed.
+  delete message.styled;
 }
 
 /** Takes back a message, for everyone in the room (a redaction): ours, or anyone's where we may. */

@@ -1952,6 +1952,16 @@ fica no meio.
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
 conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.
 
+- **O que uma mensagem leva:** as marcas de como as palavras aparecem, como negrito e palavras ocultas, aparecem como
+  numa conversa do Erevos (veja [Conversar por um relay](#relay)) e vão com a mensagem, então o Element também as
+  mostra. Do que outro app envia, só aparecem negrito, itálico, riscado, código e palavras ocultas: nada nele é
+  executado, nenhuma imagem é buscada, e um link mostra para onde leva de verdade. Endereços web podem ser tocados, e
+  o Erevos pergunta antes de abrir um. Ao lado de **Foto** e **Arquivo** ficam **Câmera**, **Vídeo**, **Cartão de
+  contato** e **Qualidade da foto**: um cartão de contato vai como um arquivo .vcf que qualquer app abre, e um que
+  chega aparece como cartão assim que você toca em **Mostrar**, com **Adicionar aos contatos**; um vídeo vai sem as
+  partes que dizem onde foi filmado ou com qual celular. Uma mensagem que você encaminha fica marcada **Encaminhada**
+  só no seu celular, então os outros nunca sabem de onde veio.
+
 ## XMPP {#xmpp}
 
 Em **Configurações** → **Relay e redes** → **XMPP**, um espaço pode entrar numa conta XMPP, para conversar com pessoas
@@ -2103,6 +2113,10 @@ esses apps: nenhuma ponte fica no meio.
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
 conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.
 
+- **O que uma mensagem leva:** as marcas de como as palavras aparecem e endereços web para tocar, como numa conversa
+  do Matrix, com **Câmera**, **Vídeo**, **Cartão de contato** e **Qualidade da foto** (veja [Matrix](#matrix)). Num
+  grupo, digitar @ mostra seus membros, e um toque escreve o nome desse membro no grupo, como faz o Conversations.
+
 ## Conversas com outros apps Nostr {#nostr-chats}
 
 Em **Configurações** → **Relay e redes** → **Conversas Nostr**, um espaço pode ter uma chave Nostr própria, para
@@ -2235,6 +2249,11 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 **Por quê:** muita gente está no Nostr e vai continuar lá. Assim você escreve para elas pelo Erevos, à parte e marcado,
 porque uma chave Nostr é a mesma para todos com quem você fala, enquanto as conversas do próprio Erevos escondem quem
 fala com quem.
+
+- **O que uma mensagem leva:** como numa conversa do Matrix (veja [Matrix](#matrix)), e **Localização**, que envia
+  onde você está como um endereço geo: e um link de mapa que qualquer app do Nostr pode mostrar; um lugar enviado
+  assim aparece como um lugar. Num grupo, digitar @ mostra seus membros, nomeados de modo que qualquer app do Nostr
+  saiba quem é. Uma mensagem que você encaminha fica marcada **Encaminhada** só no seu celular.
 
 ## SMS {#sms}
 

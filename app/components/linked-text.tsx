@@ -8,7 +8,7 @@ import { Linking, Platform, Text as NativeText, type StyleProp, type TextStyle }
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { splitLinks } from '../lib/links';
-import { hasStyle, styleText, type Look } from '../lib/text-style';
+import { hasStyle, styleText, type Look, type StyledPart } from '../lib/text-style';
 
 /** Asks before opening a web address from a message, showing it whole, then opens it in the browser. */
 export function openLink(url: string): void {
@@ -59,20 +59,21 @@ function withLinks(text: string, key: string, style: StyleProp<TextStyle>, tappa
  * A message's words, its web addresses underlined and tappable (lib/links.ts), and its marks shown
  * as they say (lib/text-style.ts): bold, italic, struck through, code, and words hidden till
  * tapped, each hidden part apart. Inside a Text, so it takes that Text's look; nothing is fetched
- * or opened until tapped and confirmed, and a hidden link opens only once it shows.
+ * or opened until tapped and confirmed, and a hidden link opens only once it shows. `parts`, the
+ * runs a message came with already made (a Matrix message's HTML, lib/matrix-html.ts), in place of
+ * reading the marks of `text`.
  */
-export function LinkedText({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
+export function LinkedText({ text, style, parts }: { text: string; style?: StyleProp<TextStyle>; parts?: StyledPart[] }) {
   const [shown, setShown] = useState<number[]>([]);
   // Edited words hide again: their hidden parts may be others.
-  useEffect(() => setShown([]), [text]);
-  if (!hasStyle(text)) {
-    const parts = splitLinks(text);
-    if (parts.every((part) => !part.url)) return <>{text}</>;
+  useEffect(() => setShown([]), [text, parts]);
+  if (!parts && !hasStyle(text)) {
+    if (splitLinks(text).every((piece) => !piece.url)) return <>{text}</>;
     return <>{withLinks(text, 'w', style, true)}</>;
   }
   return (
     <>
-      {styleText(text).map((part, i) => {
+      {(parts ?? styleText(text)).map((part, i) => {
         const open = part.spoiler === undefined || shown.includes(part.spoiler);
         const look = [lookStyle(part.look, open), style];
         if (!open) {

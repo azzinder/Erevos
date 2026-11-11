@@ -37,6 +37,13 @@ On main, not released yet:
   tap fetches them as before, so no server learns which were looked at; MMS pictures show in the grid. **Export chat**
   writes the chat out as for an Erevos contact, after the same warning; a hidden place's chats are not exported. Not
   yet: going to a Matrix day older than what the phone keeps.
+- **Styles, cards and video in Matrix, XMPP and Nostr**: the marks for how words look show, with tappable links. A
+  Matrix message carries its look to Element and the other Matrix apps (formatted_body), and of what those apps send
+  only bold, italic, struck through, code and hidden words show: nothing runs, no picture is fetched. In a group, @
+  offers the members (Nostr names them as NIP-27 asks; XMPP writes the nick, as Conversations does). A contact card
+  goes as a .vcf any app opens; a video goes with its udta and meta boxes emptied, so not where it was filmed nor on
+  which phone; a photo from the camera goes at the quality chosen. Nostr chats send a location as a geo: address and a
+  map link. A forwarded message is marked as forwarded on the phone only, in Matrix and Nostr.
 
 ### Under the hood
 

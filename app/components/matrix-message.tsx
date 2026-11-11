@@ -11,6 +11,7 @@ import { toBase64 } from '../lib/crypto';
 import { plural, t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { pollOver, pollShown } from '../lib/matrix-parts';
+import { isCardFile } from '../lib/message-carry';
 import { matrixFile, matrixFileKept } from '../lib/matrix-store';
 import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
@@ -18,8 +19,10 @@ import { softBubble, textSized } from '../theme/bubbles';
 import { useColors, useTheme } from '../theme/context';
 
 import { OpenPhoto } from './attachment';
+import { LinkedText } from './linked-text';
 import { VoiceClip } from './matrix-voice';
 import { PlaceCard, PreviewCard, Quote } from './message-parts';
+import { ContactFile } from './network-carry';
 import { PollCard } from './poll';
 import { chosenStyle } from './select-bar';
 import { STICKER_SIZE } from './stickers';
@@ -32,6 +35,9 @@ import { Button, Row, Text } from './ui';
 // merely by scrolling; a voice message is fetched when played. A sticker (m.sticker) is fetched
 // so too, and shows as a picture of its own, without a frame. While messages are chosen
 // (components/select-bar.tsx), a tap chooses one or takes it out, and one chosen is washed over.
+// Words show as they look (bold, italic… as their HTML says, lib/matrix-html.ts, or as their marks
+// do), their web addresses tappable; a contact card (a .vcf) shows as one once asked for; one of
+// ours sent on from another chat is marked as forwarded, on this phone.
 
 /** A message in one line, for its menu, the strip over the field and the quote of an answer. */
 export function lineOf(message: MatrixMessage): string {
@@ -105,6 +111,11 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
               {sender}
             </Text>
           ) : null}
+          {message.forwarded && !message.deleted ? (
+            <Text variant="caption" tone="muted" style={{ fontStyle: 'italic' }}>
+              {t('Forwarded')}
+            </Text>
+          ) : null}
           {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
           {message.deleted ? (
             <Text tone="muted" style={{ fontStyle: 'italic' }}>
@@ -117,6 +128,8 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
               <StickerPart file={message.file} />
             ) : message.file.voice ? (
               <VoicePart file={message.file} />
+            ) : isCardFile(message.file.name, message.file.mime) ? (
+              <ContactFile name={message.file.name} fetch={() => matrixFile(message.file!)} />
             ) : (
               <FilePart file={message.file} onMenu={hold} />
             )
@@ -141,7 +154,9 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
           ) : (
             // Not selectable: holding the words opens the menu, which can copy them.
             <>
-              <Text style={words}>{message.text}</Text>
+              <Text style={words}>
+                <LinkedText text={message.text} parts={message.styled} />
+              </Text>
               {message.preview ? <PreviewCard preview={message.preview} /> : null}
             </>
           )}

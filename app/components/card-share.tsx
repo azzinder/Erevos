@@ -21,8 +21,12 @@ import { Input, Sheet, Text, TextButton } from './ui';
 // or, among the hidden chats, from theirs only; and the card in its bubble, with what it says and a
 // button to add it to this phone's contacts (app/contact-edit.tsx), there among the hidden chats.
 
-/** The sheet to choose a contact whose card goes, one with a number or an email, `among` the space's contacts or the open hidden chats' (none while those are closed). */
-export function CardSheet({ visible, onClose, onSend, among }: { visible: boolean; onClose: () => void; onSend: (card: string) => void; among: Among }) {
+/**
+ * The sheet to choose a contact whose card goes, one with a number or an email, `among` the space's
+ * contacts or the open hidden chats' (none while those are closed). `foot`, said under it in place
+ * of its going end-to-end encrypted, where it does not (a chat of another network).
+ */
+export function CardSheet({ visible, onClose, onSend, among, foot }: { visible: boolean; onClose: () => void; onSend: (card: string) => void; among: Among; foot?: string }) {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [query, setQuery] = useState('');
   useEffect(() => {
@@ -60,7 +64,7 @@ export function CardSheet({ visible, onClose, onSend, among }: { visible: boolea
         )}
       </ScrollView>
       <Text variant="caption" tone="muted">
-        {t('Only its name, numbers and email addresses go, end-to-end encrypted.')}
+        {foot ?? t('Only its name, numbers and email addresses go, end-to-end encrypted.')}
       </Text>
     </Sheet>
   );

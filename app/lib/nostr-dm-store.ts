@@ -1448,11 +1448,11 @@ async function sendTo(
 }
 
 /** Sends `text` to `key`, answering the message `replyTo` when given: to the relays they read on,
- *  and a copy to the space's own. */
-export async function nostrDmSend(key: string, text: string, replyTo?: string): Promise<void> {
+ *  and a copy to the space's own. Answers its id. */
+export async function nostrDmSend(key: string, text: string, replyTo?: string): Promise<string> {
   const it = need();
   const answers = replyTo ? { replyTo } : {};
-  await sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }));
+  return sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }));
 }
 
 /** A photo, file or voice message as picked, to send; a voice message says how long it lasts. */
@@ -1468,16 +1468,20 @@ export class NostrFileTooLargeError extends Error {
 /** Sends a photo or file: encrypted here, put on the space's file server, and its key in the message
  *  (kind 15), answering the message `replyTo` when given, as a text does. */
 export async function nostrDmSendFile(key: string, picked: NostrOutgoingFile, replyTo?: string): Promise<void> {
-  const it = need();
+  await sendPicked(need(), key, picked, replyTo);
+}
+
+// Sends a photo or file as nostrDmSendFile says; answers its id.
+async function sendPicked(it: Live & { state: NostrDmState }, key: string, picked: NostrOutgoingFile, replyTo?: string): Promise<string> {
   if (picked.bytes.length > NOSTR_FILE_MOST) throw new NostrFileTooLargeError();
   const { sealed, file } = await sealFile(picked.bytes, picked.mime, picked.name, picked.dim, picked.durationMs);
   const url = await uploadBlob(it.state.files?.length ? it.state.files : FILE_SERVERS, sealed, (kind, tags, content) => signedOnce(kind, tags, content));
-  await sendFile(it, key, { ...file, url }, replyTo);
+  return sendFile(it, key, { ...file, url }, replyTo);
 }
 
-async function sendFile(it: Live & { state: NostrDmState }, key: string, file: NostrDmFile, replyTo?: string): Promise<void> {
+async function sendFile(it: Live & { state: NostrDmState }, key: string, file: NostrDmFile, replyTo?: string): Promise<string> {
   const answers = replyTo ? { replyTo } : {};
-  await sendTo(it, key, 15, [...(replyTo ? [['e', replyTo, '', 'reply']] : []), ...fileTags(file)], file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file, ...answers }));
+  return sendTo(it, key, 15, [...(replyTo ? [['e', replyTo, '', 'reply']] : []), ...fileTags(file)], file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file, ...answers }));
 }
 
 /** A sticker to send, as a picture: a PNG or JPEG, its width and height, and the words it stands for, if any. */
@@ -1569,7 +1573,8 @@ export const canForwardNostr = (message: NostrDmMessage): boolean => (message.fi
 /**
  * Forwards these messages of the chat `from` to the chat `to`, oldest first, each as a new message:
  * its words, or its file fetched and opened here and sent again, encrypted with a key of its own,
- * so nothing ties the copy to the message it came from. Answers how many went.
+ * so nothing ties the copy to the message it came from. NIP-17 has no mark for a copy: each is
+ * marked as forwarded here only, kept with the chat. Answers how many went.
  */
 export async function nostrDmForward(from: string, ids: string[], to: string): Promise<number> {
   const it = need();
@@ -1577,10 +1582,15 @@ export async function nostrDmForward(from: string, ids: string[], to: string): P
   let went = 0;
   for (const message of chosen) {
     const file = message.file;
+    let id: string;
     if (typeof file === 'object') {
       const bytes = await nostrDmFile(file);
-      await nostrDmSendFile(to, { bytes, name: file.name ?? '', mime: file.type, ...(file.dim ? { dim: file.dim } : {}), ...(file.duration ? { durationMs: file.duration } : {}) });
-    } else await nostrDmSend(to, message.text);
+      id = await sendPicked(it, to, { bytes, name: file.name ?? '', mime: file.type, ...(file.dim ? { dim: file.dim } : {}), ...(file.duration ? { durationMs: file.duration } : {}) });
+    } else id = await nostrDmSend(to, message.text);
+    await changeAccount(it, async () => {
+      const copy = it.state.chats[to]?.messages.find((m) => m.id === id);
+      if (copy) copy.forwarded = true;
+    });
     went += 1;
   }
   return went;

@@ -2070,6 +2070,17 @@ Element : aucun pont ne se met entre les deux.
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.
 
+- **Ce qu’un message porte :** les marques de l’aspect des mots, comme le gras et les mots cachés, s’affichent comme
+  dans une discussion Erevos (voir [Discuter par un relais](#relay)) et partent avec le message, donc Element les
+  montre aussi. De ce qu’envoie une autre app, seuls le gras, l’italique, le barré, le code et les mots cachés
+  s’affichent : rien dedans ne s’exécute, aucune image n’est récupérée, et un lien montre où il mène vraiment. Les
+  adresses web peuvent être touchées, et Erevos demande avant d’en ouvrir une. À côté de **Photo** et **Fichier** se
+  trouvent **Appareil photo**, **Vidéo**, **Carte de contact** et **Qualité de la photo** : une carte de contact part
+  comme un fichier .vcf que toute app ouvre, et une qui arrive s’affiche comme une carte dès que tu touches
+  **Afficher**, avec **Ajouter aux contacts** ; une vidéo part sans les parties qui disent où elle a été filmée ou
+  avec quel téléphone. Un message que tu transfères est marqué **Transféré** sur ton téléphone seulement, donc les
+  autres n’apprennent jamais d’où il vient.
+
 ## XMPP {#xmpp}
 
 Dans **Réglages** → **Relais et réseaux** → **XMPP**, un espace peut se connecter à un compte XMPP, pour discuter avec
@@ -2229,6 +2240,11 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.
 
+- **Ce qu’un message porte :** les marques de l’aspect des mots et des adresses web à toucher, comme dans une
+  discussion Matrix, avec **Appareil photo**, **Vidéo**, **Carte de contact** et **Qualité de la photo** (voir
+  [Matrix](#matrix)). Dans un groupe, taper @ propose ses membres, et un appui écrit le nom de celui-ci dans le
+  groupe, comme le fait Conversations.
+
 ## Discussions avec d’autres applis Nostr {#nostr-chats}
 
 Dans **Réglages** → **Relais et réseaux** → **Discussions Nostr**, un espace peut avoir sa propre clé Nostr, pour
@@ -2374,6 +2390,11 @@ discussions propres à Erevos.
 **Pourquoi :** beaucoup de gens sont sur Nostr et y resteront. Ainsi tu leur écris depuis Erevos, à part et marqué, car
 une clé Nostr est la même pour tous ceux à qui tu écris, alors que les discussions propres à Erevos cachent qui parle
 avec qui.
+
+- **Ce qu’un message porte :** comme dans une discussion Matrix (voir [Matrix](#matrix)), et **Position**, qui envoie
+  où tu es comme une adresse geo: et un lien de carte que toute app Nostr peut afficher ; un lieu envoyé ainsi
+  s’affiche comme un lieu. Dans un groupe, taper @ propose ses membres, nommés pour que toute app Nostr sache de qui
+  il s’agit. Un message que tu transfères est marqué **Transféré** sur ton téléphone seulement.
 
 ## SMS {#sms}
 

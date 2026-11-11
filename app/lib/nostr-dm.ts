@@ -83,6 +83,8 @@ export type NostrDmMessage = {
   replyTo?: string;
   /** An old private message (NIP-04, kind 4): the relays saw who wrote to whom, and when. */
   old?: true;
+  /** Ours, sent on from another chat: marked so on this device only, as NIP-17 has no mark for it. */
+  forwarded?: true;
 };
 
 export type NostrDmChat = {

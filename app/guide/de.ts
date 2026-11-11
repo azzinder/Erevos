@@ -2097,6 +2097,16 @@ Element: Keine Brücke sitzt dazwischen.
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
 Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.
 
+- **Was eine Nachricht trägt:** Die Zeichen dafür, wie Wörter aussehen, etwa fett und versteckte Wörter, zeigen sich
+  wie in einem Erevos-Chat (siehe [Chat über ein Relay](#relay)) und gehen mit der Nachricht, sodass Element sie auch
+  zeigt. Von dem, was eine andere App sendet, zeigen sich nur fett, kursiv, durchgestrichen, Code und versteckte
+  Wörter: Nichts darin läuft, kein Bild wird geholt, und ein Link zeigt, wohin er wirklich führt. Webadressen lassen
+  sich antippen, und Erevos fragt, bevor es eine öffnet. Neben **Foto** und **Datei** gibt es **Kamera**, **Video**,
+  **Kontaktkarte** und **Fotoqualität**: Eine Kontaktkarte geht als .vcf-Datei, die jede App öffnet, und eine, die
+  kommt, zeigt sich als Karte, sobald du **Zeigen** tippst, mit **Zu Kontakten hinzufügen**; ein Video geht ohne die
+  Teile, die sagen, wo es gefilmt wurde oder mit welchem Telefon. Eine Nachricht, die du weiterleitest, ist nur auf
+  deinem Telefon als **Weitergeleitet** markiert, sodass die anderen nie erfahren, woher sie kam.
+
 ## XMPP {#xmpp}
 
 Unter **Einstellungen** → **Relay und Netze** → **XMPP** kann sich ein Bereich bei einem XMPP-Konto anmelden, um mit
@@ -2257,6 +2267,11 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
 
+- **Was eine Nachricht trägt:** die Zeichen dafür, wie Wörter aussehen, und antippbare Webadressen, wie in einem
+  Matrix-Chat, mit **Kamera**, **Video**, **Kontaktkarte** und **Fotoqualität** (siehe [Matrix](#matrix)). In einer
+  Gruppe zeigt @ ihre Mitglieder, und ein Tippen schreibt den Namen des Mitglieds in die Gruppe, wie Conversations es
+  tut.
+
 ## Chats mit anderen Nostr-Apps {#nostr-chats}
 
 Unter **Einstellungen** → **Relay und Netze** → **Nostr-Chats** kann ein Bereich einen eigenen Nostr-Schlüssel haben, um
@@ -2403,6 +2418,11 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 **Warum:** Viele Menschen sind auf Nostr und werden dort bleiben. So schreibst du ihnen aus Erevos, getrennt und
 markiert, denn ein Nostr-Schlüssel ist für alle gleich, denen du schreibst, während Erevos' eigene Chats verbergen, wer
 mit wem spricht.
+
+- **Was eine Nachricht trägt:** wie in einem Matrix-Chat (siehe [Matrix](#matrix)), und **Standort**, der als
+  geo:-Adresse und Kartenlink sendet, wo du bist, was jede Nostr-App zeigen kann; ein so gesendeter Ort zeigt sich als
+  Ort. In einer Gruppe zeigt @ ihre Mitglieder, so genannt, dass jede Nostr-App weiß, wer gemeint ist. Eine Nachricht,
+  die du weiterleitest, ist nur auf deinem Telefon als **Weitergeleitet** markiert.
 
 ## SMS {#sms}
 
