@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { arrangeServices, readServiceOrder } from '../lib/service-order';
+import { arrangeServices, readServiceOrder, servicePart } from '../lib/service-order';
 
 test('All messages stays first and is never hidden; the rest follow the order kept, new ones after', () => {
   const kept = { order: ['nostr', 'sms'], hidden: ['xmpp'] };
@@ -20,4 +20,10 @@ test('what was kept is read safely', () => {
   assert.deepEqual(readServiceOrder(null), { order: [], hidden: [] });
   assert.deepEqual(readServiceOrder('not json'), { order: [], hidden: [] });
   assert.deepEqual(readServiceOrder('{"order":["sms",3],"hidden":["all","nostr"]}'), { order: ['sms'], hidden: ['nostr'] });
+});
+
+test('a chat is of its network, the SMS, or Erevos', () => {
+  assert.equal(servicePart({ sms: '', network: 'matrix' }), 'matrix');
+  assert.equal(servicePart({ sms: '+300000000001' }), 'sms');
+  assert.equal(servicePart({ sms: '' }), 'erevos');
 });

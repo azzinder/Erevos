@@ -146,12 +146,12 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   steht, wenn Erevos noch nicht die SMS-App ist), **Erevos** nur die Erevos-Chats, die jedes Kontakts, was auch
   zuletzt kam, und **Matrix**, **XMPP**, **Öffentlich** und **Nostr** ihre eigenen. **Hinzufügen** öffnet die Module,
   um mehr einzuschalten, und **Alle als gelesen markieren** liest den gezeigten Teil. Halte eine Karte gedrückt, um
-  sie nach vorn oder hinten zu verschieben oder mit **Ausblenden** auszublenden: Ein ausgeblendeter Dienst bleibt an,
-  seine Chats stehen weiter unter **Alle**, er benachrichtigt weiter und wartet unten im Fenster, wo ein Tippen ihn
-  wieder zeigt. Chats und Gruppen auf **Stumm** zählen nicht mit, wie bei der Zahl auf dem Erevos-Symbol, und was in
-  die Suche getippt ist, ändert die Zahlen nicht. Unter der Schaltfläche kommen ohne Suche zuerst die Chats mit
-  ungelesenen Nachrichten, unter **Ungelesen**, mit **Alle als gelesen markieren** daneben, dann die übrigen unter
-  **Zuletzt**.
+  sie nach vorn oder hinten zu verschieben oder mit **Ausblenden** auszublenden: Ein ausgeblendeter Dienst bleibt an
+  und benachrichtigt weiter, aber seine Chats verschwinden auch aus **Alle** (die Suche findet sie noch), und er
+  wartet unten im Fenster, wo ein Tippen ihn wieder zeigt. Chats und Gruppen auf **Stumm** zählen nicht mit, wie bei
+  der Zahl auf dem Erevos-Symbol, und was in die Suche getippt ist, ändert die Zahlen nicht. Unter der Schaltfläche
+  kommen ohne Suche zuerst die Chats mit ungelesenen Nachrichten, unter **Ungelesen**, mit **Alle als gelesen
+  markieren** daneben, dann die übrigen unter **Zuletzt**.
 - **Das Widget**, auf Android: Füge Erevos aus den Widgets deines Startbildschirms hinzu. Seine vier Tasten öffnen
   **Telefon**, die **SMS**, die Erevos-**Nachrichten** und **Kontakte**, nach dem Passwort wie jeder Link (das Telefon
   ohne, wenn du es erlaubst). Über den ersten drei zeigt es, wie viele verpasste Anrufe, ungelesene SMS und neue

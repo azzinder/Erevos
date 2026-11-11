@@ -143,11 +143,11 @@ mentre il loro PIN le tiene aperte.
   SMS), **Erevos** solo le chat di Erevos, quelle di ogni contatto, qualunque cosa sia arrivata per ultima, e
   **Matrix**, **XMPP**, **Pubblico** e **Nostr** le loro. **Aggiungi** apre Moduli, per attivarne altri, e **Segna
   tutto come letto** legge la parte mostrata. Tieni premuta una scheda per spostarla prima o dopo o per nasconderla
-  con **Nascondi**: un servizio nascosto resta attivo, le sue chat restano in **Tutti** e continua ad avvisare, e
-  aspetta in fondo alla finestra, dove un tocco lo mostra di nuovo. Le chat e i gruppi in **In silenzio** non contano,
-  come nel numero sull’icona di Erevos, e ciò che scrivi nella ricerca non cambia i numeri. Sotto il pulsante, senza
-  ricerca, vengono prima le chat con messaggi non letti, sotto **Non letti**, con **Segna tutto come letto** accanto,
-  poi le altre sotto **Recenti**.
+  con **Nascondi**: un servizio nascosto resta attivo e continua ad avvisare, ma le sue chat escono anche da **Tutti**
+  (la ricerca le trova ancora), e aspetta in fondo alla finestra, dove un tocco lo mostra di nuovo. Le chat e i gruppi
+  in **In silenzio** non contano, come nel numero sull’icona di Erevos, e ciò che scrivi nella ricerca non cambia i
+  numeri. Sotto il pulsante, senza ricerca, vengono prima le chat con messaggi non letti, sotto **Non letti**, con
+  **Segna tutto come letto** accanto, poi le altre sotto **Recenti**.
 - **Il widget**, su Android: aggiungi Erevos dai widget della schermata Home. I suoi quattro pulsanti aprono
   **Telefono**, gli **SMS**, i **Messaggi** di Erevos e **Contatti**, dopo la password come qualsiasi link (il Telefono
   senza, se lo permetti). Sopra i primi tre mostra quante chiamate perse, SMS non letti e nuovi messaggi ci sono, mai

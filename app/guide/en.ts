@@ -133,11 +133,11 @@ same whether a space has any or not: their messages can be read only while their
   only the SMS (with the chats whose last message was an SMS; it says so when Erevos is not the SMS app yet),
   **Erevos** only the Erevos chats, every contact's whatever came last, and **Matrix**, **XMPP**, **Public** and
   **Nostr** theirs. **Add** opens Modules, to turn more on, and **Mark all as read** reads the part shown. Hold a card
-  down to move it earlier or later or to **Hide** it: a hidden service stays on, its chats still show under **All
-  messages** and it still notifies, and it waits at the foot of the window, where a tap shows it again. Chats and
-  groups on **Muted** are left out of the numbers, as they are of the number on Erevos's icon, and what is typed in
-  the search changes nothing in them. Under the button, with no search, the chats with messages not read come first,
-  under **Unread**, with **Mark all as read** beside it, then the others under **Recent**.
+  down to move it earlier or later or to **Hide** it: a hidden service stays on and still notifies, but its chats
+  leave **All messages** too (a search still finds them), and it waits at the foot of the window, where a tap shows it
+  again. Chats and groups on **Muted** are left out of the numbers, as they are of the number on Erevos's icon, and
+  what is typed in the search changes nothing in them. Under the button, with no search, the chats with messages not
+  read come first, under **Unread**, with **Mark all as read** beside it, then the others under **Recent**.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or

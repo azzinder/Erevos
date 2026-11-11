@@ -35,7 +35,7 @@ import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-no
 import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { askReadAll, toReadIn } from '../lib/read-all';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
-import { arrangeServices, hideService, moveService, useServiceOrder } from '../lib/service-order';
+import { arrangeServices, hideService, moveService, servicePart, useServiceOrder } from '../lib/service-order';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { directOther, matrixPresence } from '../lib/matrix';
 import { isOn } from '../lib/net-presence';
@@ -507,10 +507,17 @@ function Home() {
     }
     return ids;
   }, [online, xmpp, xmppConnected, xmppTick, matrix, matrixTick]);
+  // A service hidden in the Services window (lib/service-order.ts) leaves its chats out of All
+  // messages too, and out of its number; a search still finds them, and its own part still shows them.
+  const serviceOrder = useServiceOrder();
+  const allRows = useMemo(() => {
+    if (!everyRow || serviceOrder.hidden.length === 0) return everyRow;
+    return everyRow.filter((row) => !serviceOrder.hidden.includes(servicePart(row)));
+  }, [everyRow, serviceOrder]);
   const shown = useMemo(() => {
-    const found = filterInbox(everyRow ?? [], query);
+    const found = filterInbox((show === 'all' && !query.trim() ? allRows : everyRow) ?? [], query);
     return found.filter((row) => showsIn(row, show));
-  }, [everyRow, query, show]);
+  }, [everyRow, allRows, query, show]);
   // With no search, the chats with messages not read come first, under Unread, and the rest under
   // Recent, each in the order they had (an SMS conversation pinned stays first of its own). A muted
   // chat's messages wait under Recent, as its number is left out of the service's.
@@ -523,7 +530,7 @@ function Home() {
   }, [shown, query]);
   // The chats of the part shown with messages not read, whatever the search says, for Mark all as
   // read in the menu (lib/read-all.ts): none in the public feed.
-  const unreadShown = useMemo(() => toReadIn(everyRow ?? [], show), [everyRow, show]);
+  const unreadShown = useMemo(() => toReadIn((show === 'all' ? allRows : everyRow) ?? [], show), [everyRow, allRows, show]);
   // The choice shows once two parts are on, each with its chip even with no chat yet: otherwise,
   // in a space with only SMS so far, leaving the Erevos chats (as Erevos's icon opens them) for All
   // hid the chips, with no way back.
@@ -538,7 +545,6 @@ function Home() {
   });
   // The parts in the order chosen in the Services window, those hidden there left out (lib/service-order.ts):
   // a hidden part's chats still show under All messages. One opened by an icon or the widget shows even so.
-  const serviceOrder = useServiceOrder();
   const arranged = arrangeServices(['all', ...parts] as InboxShow[], serviceOrder);
   const tabs: InboxShow[] = [...arranged.shown, ...(show !== 'all' && !arranged.shown.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
@@ -558,7 +564,7 @@ function Home() {
   const services: Service[] = tabs.map((tab) => ({
     key: tab,
     label: SHOW_LABELS[tab](),
-    count: tabUnread(everyRow ?? [], tab),
+    count: tabUnread((tab === 'all' ? allRows : everyRow) ?? [], tab),
     link: linkOf(tab),
   }));
   function linkOf(tab: InboxShow): Service['link'] {

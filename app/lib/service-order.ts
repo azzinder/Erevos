@@ -7,9 +7,9 @@ import { useEffect, useState } from 'react';
 import { secureGet, secureSet } from './secure';
 
 // The order of the services on home, and those hidden from it (components/services.tsx): kept for
-// the device, outside the spaces, as the modules are (lib/modules.ts). A hidden service stays on:
-// its chats still show under All messages and it still notifies; only its card and its part of the
-// list are left out, until it is shown again. All messages is always first and never hidden.
+// the device, outside the spaces, as the modules are (lib/modules.ts). A hidden service stays on
+// and still notifies, but its card, its part and its chats under All messages are left out (a
+// search still finds them), until it is shown again. All messages is always first and never hidden.
 
 const KEY = 'erevos.home-services';
 
@@ -90,4 +90,10 @@ export function hideService(key: string, hidden: boolean): Promise<void> {
   if (key === 'all') return Promise.resolve();
   const others = now.hidden.filter((k) => k !== key);
   return keep({ order: now.order, hidden: hidden ? [...others, key] : others });
+}
+
+/** The service a chat is of, for leaving a hidden one's chats out of All messages: its network's, the
+ *  SMS for an SMS conversation, and Erevos for every contact's chat and group (lib/inbox.ts rowOn). */
+export function servicePart(row: { sms: string; network?: string }): string {
+  return row.network ?? (row.sms !== '' ? 'sms' : 'erevos');
 }

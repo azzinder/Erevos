@@ -143,11 +143,11 @@ tiene abiertos.
   Erevos aún no es la app de SMS), **Erevos** solo los chats de Erevos, los de cada contacto, llegara lo que llegara
   al final, y **Matrix**, **XMPP**, **Público** y **Nostr** los suyos. **Añadir** abre Módulos, para activar más, y
   **Marcar todo como leído** lee la parte que se ve. Mantén pulsada una tarjeta para moverla antes o después u
-  ocultarla con **Ocultar**: un servicio oculto sigue activado, sus chats siguen en **Todos** y sigue avisando, y
-  espera al pie de la ventana, donde un toque lo muestra de nuevo. Los chats y grupos en **Silenciado** no cuentan,
-  como en el número del icono de Erevos, y lo que se escribe en la búsqueda no cambia los números. Bajo el botón, sin
-  búsqueda, primero van los chats con mensajes sin leer, en **No leídos**, con **Marcar todo como leído** al lado, y
-  luego los demás en **Recientes**.
+  ocultarla con **Ocultar**: un servicio oculto sigue activado y sigue avisando, pero sus chats salen también de
+  **Todos** (la búsqueda aún los encuentra), y espera al pie de la ventana, donde un toque lo muestra de nuevo. Los
+  chats y grupos en **Silenciado** no cuentan, como en el número del icono de Erevos, y lo que se escribe en la
+  búsqueda no cambia los números. Bajo el botón, sin búsqueda, primero van los chats con mensajes sin leer, en **No
+  leídos**, con **Marcar todo como leído** al lado, y luego los demás en **Recientes**.
 - **El widget**, en Android: añade Erevos desde los widgets de tu pantalla de inicio. Sus cuatro botones abren
   **Teléfono**, los **SMS**, los **Mensajes** de Erevos y **Contactos**, tras la contraseña como cualquier enlace (el
   Teléfono sin ella, si lo permites). Sobre los tres primeros muestra cuántas llamadas perdidas, SMS sin leer y mensajes

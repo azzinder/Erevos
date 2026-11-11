@@ -141,11 +141,11 @@ abertas.
   aparece se o Erevos ainda não é o app de SMS), **Erevos** só as conversas do Erevos, as de cada contato, o que quer
   que tenha chegado por último, e **Matrix**, **XMPP**, **Público** e **Nostr** as deles. **Adicionar** abre Módulos,
   para ligar mais, e **Marcar tudo como lido** lê a parte mostrada. Toque e segure um cartão para movê-lo para antes
-  ou depois ou ocultá-lo com **Ocultar**: um serviço oculto continua ligado, suas conversas continuam em **Todos** e
-  ele continua avisando, e fica no pé da janela, onde um toque o mostra de novo. Conversas e grupos em **Em silêncio**
-  não contam, como no número no ícone do Erevos, e o que se digita na busca não muda os números. Abaixo do botão, sem
-  busca, vêm primeiro as conversas com mensagens não lidas, em **Não lidas**, com **Marcar tudo como lido** ao lado, e
-  depois as outras em **Recentes**.
+  ou depois ou ocultá-lo com **Ocultar**: um serviço oculto continua ligado e avisando, mas suas conversas saem também
+  de **Todos** (a busca ainda as encontra), e fica no pé da janela, onde um toque o mostra de novo. Conversas e grupos
+  em **Em silêncio** não contam, como no número no ícone do Erevos, e o que se digita na busca não muda os números.
+  Abaixo do botão, sem busca, vêm primeiro as conversas com mensagens não lidas, em **Não lidas**, com **Marcar tudo
+  como lido** ao lado, e depois as outras em **Recentes**.
 - **O widget**, no Android: adicione o Erevos pelos widgets da tela inicial. Os quatro botões dele abrem **Telefone**,
   os **SMS**, as **Mensagens** do Erevos e **Contatos**, depois da senha como qualquer link (o Telefone sem ela, se você
   permitir). Sobre os três primeiros ele mostra quantas chamadas perdidas, SMS não lidos e mensagens novas há, nunca de
