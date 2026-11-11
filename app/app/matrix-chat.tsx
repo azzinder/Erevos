@@ -4,11 +4,13 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { BackHandler, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
+import { MatrixRoomInfo } from '../components/matrix-members';
 import { MatrixBubble, lineOf, type Answered } from '../components/matrix-message';
+import { MatrixStickers } from '../components/matrix-stickers';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -19,6 +21,7 @@ import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
 import { PollSheet } from '../components/poll';
 import { useSayTyping } from '../components/say-typing';
+import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { WhoRead } from '../components/who-read';
@@ -28,7 +31,7 @@ import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
@@ -36,14 +39,17 @@ import { directOther, isMatrixId, MATRIX_TYPING_SHOWS, matrixPresence, matrixTyp
 import { presenceText } from '../lib/net-presence';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { pollOver, pollShown } from '../lib/matrix-parts';
+import { mayRedactOthers } from '../lib/matrix-power';
 import { canMatrixVoip, startMatrixVoip } from '../lib/matrix-voip';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import {
   matrixChange,
   matrixDelete,
+  matrixDeleteMany,
   matrixEndPoll,
   matrixForward,
   matrixInvite,
+  matrixLearnRule,
   matrixLeave,
   matrixLoadEarlier,
   matrixLocation,
@@ -56,8 +62,10 @@ import {
   matrixSend,
   matrixSendFile,
   matrixSendInThread,
+  matrixSendSticker,
   matrixSetLook,
   matrixSetNotify,
+  matrixStickerPlace,
   matrixTyped,
   matrixVerifications,
   matrixVerify,
@@ -111,6 +119,14 @@ import { checkedLook } from '../theme/look';
 // Ours are marked ✓ once the homeserver took them and ✓✓✓ once every other member read them, as
 // their apps say (m.receipt, lib/matrix.ts readersOf); held down, Who read it lists who did, when.
 // Matrix says nothing of what reached a phone, so there is no ✓✓.
+//
+// Select, in a message's menu, chooses several messages (components/select-bar.tsx) to copy their
+// words, forward them, or delete them for everyone: ours, and others' too where our level in the
+// room lets us take them back (lib/matrix-power.ts), as the homeserver allows the same; Matrix keeps
+// nothing hidden on one phone only, so others' stay otherwise. Stickers made from photos go as
+// Matrix's stickers (components/matrix-stickers.tsx). In a group, Members opens its sheet
+// (components/matrix-members.tsx): who is in it and what they are, its name and what it is about,
+// and what our level lets us do there; what it is about shows under its name.
 
 // The most members Who read it names as not having read one of ours yet.
 const MOST_SHOWN = 100;
@@ -127,6 +143,8 @@ const copyable = (message: MatrixMessage) => CAN_COPY && !!message.text && !mess
 // Whether it has a menu: not one taken back or a call's line, and one that still goes, or did not,
 // has no ID on the homeserver yet, so nothing can be done with it but copy its words.
 const menuable = (message: MatrixMessage) => !message.deleted && !message.call && (!message.state || copyable(message));
+// Whether it can be chosen with others: one on the homeserver, not taken back nor a call's line.
+const choosable = (message: MatrixMessage) => !message.deleted && !message.call && !message.state;
 
 /** A Matrix chat's screen, in the room's own look or the space's (components/chat-look.tsx). */
 export default function MatrixChatScreen() {
@@ -157,7 +175,12 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // which pinned message the bar shows, and the one lit after going to it.
   const [polling, setPolling] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [forwarding, setForwarding] = useState<string | null>(null);
+  // The messages being sent on, in the thread's order.
+  const [forwarding, setForwarding] = useState<string[] | null>(null);
+  // The sheets of stickers, and of the group's members.
+  const [stickering, setStickering] = useState(false);
+  const [info, setInfo] = useState(false);
+  const selection = useSelection<string>();
   // One of ours whose readers are shown, by its ID.
   const [readersFor, setReadersFor] = useState<string | null>(null);
   const [previews, setPreviews] = useState(false);
@@ -202,6 +225,16 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     return onMatrixChange(() => setNow(matrixNow(where)));
   }, [where]);
 
+  // Back ends the choosing first.
+  useEffect(() => {
+    if (!selection.on) return;
+    const held = BackHandler.addEventListener('hardwareBackPress', () => {
+      selection.clear();
+      return true;
+    });
+    return () => held.remove();
+  }, [selection.on, selection.clear]);
+
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
   // The room's own look, told to the screen that draws it.
@@ -228,6 +261,12 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   useEffect(() => {
     if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
   }, [shown, roomId, count, room?.unread]);
+
+  // Who may do what in it, once, for a room kept from before this phone kept that.
+  const needsRule = !!room && !room.invitedBy && !room.power && !room.creators;
+  useEffect(() => {
+    if (needsRule && roomId) matrixLearnRule(roomId).catch(() => undefined);
+  }, [needsRule, roomId]);
 
   const fail = (error: unknown) => setNote(errorText(error));
 
@@ -279,6 +318,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   })();
 
   const stopEditing = () => setEditId(null);
+  // Whose stickers made from photos this chat sends: the account's space's, or its hidden place's.
+  const stickerPlace = matrixStickerPlace(where);
 
   // What is typed goes as a new message, as an answer to the one chosen, or as the new words of the
   // one being changed. Says whether the words were taken, so the field empties; a change empties it
@@ -413,7 +454,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
   }
 
-  // Takes a message of ours back, for everyone in the room, once asked.
+  // Takes a message back, for everyone in the room, once asked: ours, or another's where our level lets us.
   async function remove(message: MatrixMessage) {
     if (!roomId) return;
     if (!(await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete')))) return;
@@ -445,7 +486,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     if (!message.state) {
       const pinned = room?.pinned?.includes(message.id) ?? false;
       actions.push({ title: pinned ? t('Unpin') : t('Pin'), onPress: () => roomId && void matrixPin(roomId, message.id, !pinned).catch(fail) });
-      actions.push({ title: t('Forward'), onPress: () => setForwarding(message.id) });
+      actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
     }
     if (ours && message.poll && !pollOver(message.poll)) actions.push({ title: t('End poll'), onPress: () => roomId && void matrixEndPoll(roomId, message.id).catch(fail) });
     if (ours && !message.file && !message.locked && !message.poll && !message.place) {
@@ -458,9 +499,33 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       });
     }
     if (ours && !message.call) actions.push({ title: t('Who read it'), onPress: () => setReadersFor(message.id) });
-    if (ours) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
+    if (choosable(message)) actions.push(selectAction(() => selection.start(message.id)));
+    if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
     return actions;
   }
+
+  // Whether a message can be taken back for everyone: ours, or another's where our level lets us.
+  const othersToo = mayRedactOthers(room, me);
+  const deletable = (message: MatrixMessage) => !message.state && !message.deleted && !message.call && (message.sender === me || othersToo);
+
+  // The messages chosen, in the thread's order, and what can be done to them all.
+  const chosen = selection.on ? shownMessages.filter((message) => selection.chosen.has(message.id)) : [];
+  const copyChosen = async () => {
+    const one = new Set(chosen.map((message) => message.sender)).size === 1;
+    selection.clear();
+    await copy(chosen.map((message) => (one ? message.text : `${nameOf(message)}: ${message.text}`)).join('\n\n'));
+  };
+  const deleteChosen = async () => {
+    const ids = chosen.map((message) => message.id);
+    const asked = plural(ids.length, 'Delete {n} message for everyone in the chat? It cannot be brought back.', 'Delete {n} messages for everyone in the chat? They cannot be brought back.');
+    if (!(await confirm(t('Delete messages'), asked, t('Delete')))) return;
+    selection.clear();
+    try {
+      await matrixDeleteMany(roomId, ids);
+    } catch (error) {
+      setNote(t('Not deleted. {reason}', { reason: errorText(error) }));
+    }
+  };
 
   // Who of the room's members read one of ours, and when, as they said; who has not, the first
   // MOST_SHOWN of them. Matrix says nothing of what reached a phone.
@@ -485,7 +550,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     return to ? { name: nameOf(to), line: lineOf(to), onPress: () => reach(to.id) } : null;
   };
 
-  return withArrows(
+  // The bar over the thread while messages are chosen; the thread stays as it was under it.
+  const screen = withArrows(
     <KeyboardAwareScrollView
       ref={scroll}
       style={{ flex: 1, backgroundColor: colors.ground }}
@@ -527,6 +593,11 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       {presence ? (
         <Text variant="caption" numberOfLines={2}>
           {presence}
+        </Text>
+      ) : null}
+      {room.topic && !thread ? (
+        <Text variant="caption" numberOfLines={3}>
+          {room.topic}
         </Text>
       ) : null}
       <Text variant="caption" tone="muted">
@@ -579,7 +650,9 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             onThread={!thread ? () => router.push({ pathname: '/matrix-chat', params: { room: roomId, thread: message.id, ...whereParams(where) } }) : undefined}
             lit={lit === message.id}
             onReact={(emoji) => void react(message.id, emoji)}
-            onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
+            onMenu={menuable(message) && !selection.on ? () => setMenuFor(message.id) : undefined}
+            chosen={selection.chosen.has(message.id)}
+            onChoose={selection.on && choosable(message) ? () => selection.toggle(message.id) : undefined}
             onLayout={place(message.id)}
             mark={message.sender === me && !message.state && !message.call && !message.deleted ? (readByAll(room, message, me) ? '✓✓✓' : '✓') : undefined}
           />
@@ -597,6 +670,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <Row wrap>
           {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}
           <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
+          {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
         </Row>
       ) : null}
       <Row {...endProps}>
@@ -617,8 +691,19 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <Row wrap>
           <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
           <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+          {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
         </Row>
       ) : null}
+      {!room.direct && !room.invitedBy ? <MatrixRoomInfo visible={info} onClose={() => setInfo(false)} room={room} me={me} /> : null}
+      <MatrixStickers
+        visible={stickering}
+        place={stickerPlace}
+        onClose={() => setStickering(false)}
+        onPick={(sticker) => {
+          setStickering(false);
+          matrixSendSticker(roomId, sticker, thread).catch(fail);
+        }}
+      />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={room.name} chat={lookChat} />
       <Button
         title={t('Leave')}
@@ -653,9 +738,12 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                 title={other.encrypted ? other.name : `${other.name} · ${t('not encrypted')}`}
                 kind="secondary"
                 onPress={() => {
-                  const id = forwarding;
+                  const ids = forwarding ?? [];
                   setForwarding(null);
-                  if (id) matrixForward(roomId, id, other.id).then(() => setNote(t('Forwarded to {name}.', { name: other.name })), fail);
+                  // One after another, in the thread's order.
+                  void (async () => {
+                    for (const id of ids) await matrixForward(roomId, id, other.id);
+                  })().then(() => setNote(t('Forwarded to {name}.', { name: other.name })), fail);
                 }}
               />
             ))}
@@ -670,6 +758,28 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
     </KeyboardAwareScrollView>,
+  );
+  return (
+    <View style={{ flex: 1 }}>
+      {chosen.length ? (
+        <SelectBar
+          count={chosen.length}
+          onCancel={selection.clear}
+          onAll={() => selection.set(shownMessages.filter(choosable).map((message) => message.id))}
+          onCopy={chosen.every(copyable) ? () => void copyChosen() : undefined}
+          onForward={
+            chosen.every((message) => !message.locked)
+              ? () => {
+                  setForwarding(chosen.map((message) => message.id));
+                  selection.clear();
+                }
+              : undefined
+          }
+          onDelete={chosen.every(deletable) ? () => void deleteChosen() : undefined}
+        />
+      ) : null}
+      {screen}
+    </View>
   );
 }
 

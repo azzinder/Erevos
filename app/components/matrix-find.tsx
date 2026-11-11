@@ -6,9 +6,10 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { plural, t } from '../lib/i18n';
-import type { MatrixState } from '../lib/matrix';
+import { isMatrixId, type MatrixState } from '../lib/matrix';
+import type { FoundPerson } from '../lib/matrix-members';
 import { findMessages, spacesOf, type FoundRoom } from '../lib/matrix-rooms';
-import { matrixJoin, matrixPublicRooms, matrixSpaceRooms } from '../lib/matrix-store';
+import { matrixJoin, matrixPublicRooms, matrixSearchPeople, matrixSpaceRooms } from '../lib/matrix-store';
 import { space } from '../theme/colors';
 
 import { lineOf } from './matrix-message';
@@ -17,7 +18,9 @@ import { Button, Card, Chip, Input, Row, SectionTitle, Text } from './ui';
 // Finding rooms and words in the Matrix screen (app/matrix.tsx): the public rooms our Matrix server
 // lists, or another server's; the rooms in the spaces we are in; and the words in the messages this
 // phone keeps. The first two ask the Matrix server, which then learns what was looked for, as it
-// does for Element, and the screen says so; looking for words asks nobody.
+// does for Element, and the screen says so; looking for words asks nobody. And a new chat with
+// someone by their Matrix ID, or found by name in the Matrix server's user directory
+// (lib/matrix-members.ts searchPeople), which learns so who was looked for.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -136,6 +139,83 @@ export function MatrixFind({ state, busy, open, run }: { state: MatrixState; bus
             </Row>
           </View>
         ))}
+      </Card>
+    </>
+  );
+}
+
+/** A new chat: with a Matrix ID written whole, at once; otherwise the words are looked for in the Matrix server's user directory, to start one with whom it finds. */
+export function MatrixNewChat({ busy, run, start }: { busy: boolean; run: (work: () => Promise<unknown>) => Promise<void>; start: (userId: string) => Promise<void> }) {
+  const [who, setWho] = useState('');
+  const [found, setFound] = useState<FoundPerson[] | null>(null);
+  const [asking, setAsking] = useState(false);
+  const [note, setNote] = useState('');
+  const exact = isMatrixId(who);
+  const typed = who.trim();
+
+  async function look() {
+    if (asking || typed.length < 2) return;
+    setAsking(true);
+    setNote('');
+    try {
+      const { people } = await matrixSearchPeople(typed);
+      setFound(people);
+      if (!people.length) setNote(t('Nothing found.'));
+    } catch (error) {
+      setNote(errorText(error));
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  const open = (userId: string) =>
+    void run(async () => {
+      await start(userId);
+      setWho('');
+      setFound(null);
+    });
+
+  return (
+    <>
+      <SectionTitle title={t('New chat')} />
+      <Card>
+        <Row>
+          <Input
+            style={{ flex: 1 }}
+            value={who}
+            onChangeText={setWho}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="@name:matrix.org"
+            accessibilityLabel={t('Matrix ID')}
+            onSubmitEditing={() => (exact ? open(typed) : void look())}
+          />
+          <Button
+            title={exact ? t('Start') : asking ? t('Looking…') : t('Search')}
+            compact
+            disabled={busy || asking || (!exact && typed.length < 2)}
+            onPress={() => (exact ? open(typed) : void look())}
+          />
+        </Row>
+        <Text variant="caption" tone="muted">
+          {t('Write a Matrix ID to start a chat, or a name to look for it on your Matrix server, which then learns who you looked for.')}
+        </Text>
+        {found?.map((person) => (
+          <Row key={person.id}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text variant="bodyStrong" numberOfLines={1}>
+                {person.name ?? person.id}
+              </Text>
+              {person.name ? (
+                <Text variant="caption" tone="muted" numberOfLines={1}>
+                  {person.id}
+                </Text>
+              ) : null}
+            </View>
+            <Button title={t('Start')} kind="secondary" compact disabled={busy} onPress={() => open(person.id)} />
+          </Row>
+        ))}
+        {note ? <Text tone="muted">{note}</Text> : null}
       </Card>
     </>
   );

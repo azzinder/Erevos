@@ -6,13 +6,18 @@ import { ctr } from '@noble/ciphers/aes.js';
 
 import { fromBase64, randomBytes, sha256Bytes, toBase64 } from './crypto';
 import { t } from './i18n';
-import { request, sendContent, type EncryptedFile, type MatrixFile, type MatrixMessage, type MatrixState } from './matrix';
+import { request, sendContent, STICKER, threadFor, type EncryptedFile, type MatrixFile, type MatrixMessage, type MatrixState } from './matrix';
 
 // Photos and files in Matrix chats (docs/matrix.md), as Matrix sends them: in an encrypted room,
 // encrypted on the phone with a key of their own (AES-256-CTR) before they go up, and checked
 // against their SHA-256 when they come back down, the key going inside the encrypted message; in a
 // room that is not encrypted, as they are. They are kept on the homeserver (its media store), so
 // the server sees how big each is and when, never what.
+//
+// A sticker made here from a photo (lib/own-stickers.ts) goes as Matrix's stickers do (m.sticker),
+// its picture as a photo's: in an encrypted room encrypted, the key in the message (`file`, which
+// Element, FluffyChat and Element X read on a sticker too), so the server never sees it; in one
+// that is not, as it is (`url`).
 
 /** The largest file sent: most homeservers take 50 MB. */
 export const MATRIX_MOST = 50 * 1024 * 1024;
@@ -130,6 +135,28 @@ export async function sendFile(state: MatrixState, roomId: string, outgoing: Out
     content.url = await upload(state, outgoing.bytes, outgoing.mime, outgoing.name);
   }
   return sendContent(state, roomId, content);
+}
+
+/** A sticker's picture to send: a JPEG or PNG, and how wide and high it is. */
+/** A sticker to send: its picture, and the words an app that cannot show it shows instead (its name). */
+export type OutgoingSticker = { bytes: Uint8Array; mime: string; w?: number; h?: number; label?: string };
+
+/** Sends a sticker to a room, or to the thread of `thread` in it: its picture encrypted first when the room is. */
+export async function sendSticker(state: MatrixState, roomId: string, sticker: OutgoingSticker, thread?: string): Promise<MatrixMessage> {
+  if (sticker.bytes.length > MATRIX_MOST) throw new MatrixFileTooLargeError();
+  const info: Record<string, unknown> = { mimetype: sticker.mime, size: sticker.bytes.length };
+  if (sticker.w) info.w = sticker.w;
+  if (sticker.h) info.h = sticker.h;
+  // Its words, for an app that cannot show it, as Element's stickers have them.
+  const content: Record<string, unknown> = { body: sticker.label?.trim().slice(0, 200) || 'Sticker', info };
+  if (state.rooms[roomId]?.encrypted) {
+    const { data, file } = encryptFile(sticker.bytes);
+    content.file = { ...file, url: await upload(state, data, 'application/octet-stream', 'file') };
+  } else {
+    content.url = await upload(state, sticker.bytes, sticker.mime, sticker.mime === 'image/png' ? 'sticker.png' : 'sticker.jpg');
+  }
+  if (thread) content['m.relates_to'] = threadFor(state, roomId, thread);
+  return sendContent(state, roomId, content, STICKER);
 }
 
 /** A message's file, fetched and opened. */

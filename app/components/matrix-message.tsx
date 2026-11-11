@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useMemo, useState } from 'react';
-import { Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { Image, Pressable, View, type LayoutChangeEvent } from 'react-native';
 
 import { fileSize } from '../lib/attachments';
 import { shownLine } from '../lib/call-lines';
@@ -11,7 +11,7 @@ import { toBase64 } from '../lib/crypto';
 import { plural, t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { pollOver, pollShown } from '../lib/matrix-parts';
-import { matrixFile } from '../lib/matrix-store';
+import { matrixFile, matrixFileKept } from '../lib/matrix-store';
 import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
 import { softBubble, textSized } from '../theme/bubbles';
@@ -21,18 +21,23 @@ import { OpenPhoto } from './attachment';
 import { VoiceClip } from './matrix-voice';
 import { PlaceCard, PreviewCard, Quote } from './message-parts';
 import { PollCard } from './poll';
+import { chosenStyle } from './select-bar';
+import { STICKER_SIZE } from './stickers';
 import { Button, Row, Text } from './ui';
 
 // A message in a Matrix chat (app/matrix-chat.tsx): its bubble with what it answers, its words, photo,
 // file or voice message, when it was written and changed, whether its key's sender is not known for
 // sure (Not verified, lib/matrix.ts openMegolm), and the reactions to it under it. A photo
 // or file is fetched only when asked for, so the homeserver does not learn which were looked at
-// merely by scrolling; a voice message is fetched when played.
+// merely by scrolling; a voice message is fetched when played. A sticker (m.sticker) is fetched
+// so too, and shows as a picture of its own, without a frame. While messages are chosen
+// (components/select-bar.tsx), a tap chooses one or takes it out, and one chosen is washed over.
 
 /** A message in one line, for its menu, the strip over the field and the quote of an answer. */
 export function lineOf(message: MatrixMessage): string {
   if (message.deleted) return t('Message deleted');
   if (message.locked) return t('Locked message');
+  if (message.sticker) return message.file && message.file.name !== 'Sticker' ? t('Sticker: {name}', { name: message.file.name }) : t('Sticker');
   if (message.file) return message.file.voice ? t('Voice message') : message.file.name;
   if (message.poll) return `📊 ${message.poll.q}`;
   if (message.place) return `📍 ${t('Location')}`;
@@ -42,7 +47,7 @@ export function lineOf(message: MatrixMessage): string {
 /** The message an answer is to, as the answer quotes it. */
 export type Answered = { name: string; line: string; onPress: () => void };
 
-export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout, mark }: {
+export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout, mark, chosen, onChoose }: {
   message: MatrixMessage;
   /** Our Matrix ID, to see which reactions are ours. */
   me: string;
@@ -65,6 +70,10 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   onLayout?: (event: LayoutChangeEvent) => void;
   /** Of ours, how far it went: ✓ taken by the homeserver, ✓✓✓ read by every other member. */
   mark?: string;
+  /** It is among the messages chosen. */
+  chosen?: boolean;
+  /** While messages are chosen: tapped or held, chooses it or takes it out. */
+  onChoose?: () => void;
 }) {
   const { colors, look } = useTheme();
   const mine = message.sender === me;
@@ -75,71 +84,80 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   const side = mine ? 'flex-end' : 'flex-start';
   const shownPoll = message.poll && !message.deleted ? pollShown(message.poll) : null;
   const ended = message.poll ? pollOver(message.poll) : false;
+  // While messages are chosen, holding it chooses it too.
+  const hold = onChoose ?? onMenu;
   return (
-    <View onLayout={onLayout} style={{ alignSelf: side, maxWidth: '85%', gap: 4 }}>
-      <Pressable
-        onLongPress={onMenu}
-        disabled={!onMenu}
-        // One with buttons in it (Play, Save) stays apart from them for a screen reader.
-        accessible={!message.file}
-        accessibilityHint={onMenu ? t('Hold for more') : undefined}
-        style={[{ alignSelf: side, padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine), lit && { backgroundColor: withAlpha(colors.primary, 0.3) }]}
-      >
-        {!mine ? (
-          <Text variant="caption" tone="muted" numberOfLines={1}>
-            {sender}
-          </Text>
-        ) : null}
-        {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
-        {message.deleted ? (
-          <Text tone="muted" style={{ fontStyle: 'italic' }}>
-            {t('Message deleted')}
-          </Text>
-        ) : message.locked ? (
-          <Text tone="muted">{t('Locked: the key for this message has not come to this device.')}</Text>
-        ) : message.file ? (
-          message.file.voice ? (
-            <VoicePart file={message.file} />
-          ) : (
-            <FilePart file={message.file} onMenu={onMenu} />
-          )
-        ) : message.call ? (
-          <Text>{shownLine(message.text)}</Text>
-        ) : shownPoll ? (
-          <View style={{ gap: space.xs }}>
-            <PollCard
-              poll={shownPoll.poll}
-              voters={shownPoll.votes.map((vote) => ({ name: names ? names(vote.who) : vote.who, chose: vote.chose }))}
-              mine={shownPoll.votes.find((vote) => vote.who === me)?.chose ?? []}
-              onChoose={ended || message.state ? undefined : onVote}
-            />
-            {ended ? (
-              <Text variant="caption" tone="muted">
-                {t('Poll ended')}
-              </Text>
-            ) : null}
-          </View>
-        ) : message.place ? (
-          <PlaceCard place={message.place} />
-        ) : (
-          // Not selectable: holding the words opens the menu, which can copy them.
-          <>
-            <Text style={words}>{message.text}</Text>
-            {message.preview ? <PreviewCard preview={message.preview} /> : null}
-          </>
-        )}
-        {onThread && message.threadCount ? (
-          <Pressable onPress={onThread} accessibilityRole="button" hitSlop={6}>
-            <Text variant="caption" color={colors.accentText}>
-              {plural(message.threadCount, '{n} answer in the thread', '{n} answers in the thread')}
+    // Across the thread, to wash it over when chosen.
+    <View onLayout={onLayout} style={chosen ? chosenStyle(colors) : undefined}>
+      <View style={{ alignSelf: side, maxWidth: '85%', gap: 4 }}>
+        <Pressable
+          onPress={onChoose}
+          onLongPress={hold}
+          disabled={!hold}
+          // One with buttons in it (Play, Save) stays apart from them for a screen reader.
+          accessible={!message.file}
+          accessibilityHint={onMenu && !onChoose ? t('Hold for more') : undefined}
+          accessibilityState={onChoose ? { selected: !!chosen } : undefined}
+          style={[{ alignSelf: side, padding: space.sm + 2, gap: 2 }, message.sticker && !message.deleted ? null : softBubble(look.bubbles, colors, mine), lit && { backgroundColor: withAlpha(colors.primary, 0.3) }]}
+        >
+          {!mine ? (
+            <Text variant="caption" tone="muted" numberOfLines={1}>
+              {sender}
             </Text>
-          </Pressable>
-        ) : null}
-        <Text variant="caption" tone="faint">
-          {status}
-        </Text>
-      </Pressable>
-      {message.reactions ? <ReactionChips reactions={message.reactions} me={me} mine={mine} onReact={onReact} /> : null}
+          ) : null}
+          {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
+          {message.deleted ? (
+            <Text tone="muted" style={{ fontStyle: 'italic' }}>
+              {t('Message deleted')}
+            </Text>
+          ) : message.locked ? (
+            <Text tone="muted">{t('Locked: the key for this message has not come to this device.')}</Text>
+          ) : message.file ? (
+            message.sticker ? (
+              <StickerPart file={message.file} />
+            ) : message.file.voice ? (
+              <VoicePart file={message.file} />
+            ) : (
+              <FilePart file={message.file} onMenu={hold} />
+            )
+          ) : message.call ? (
+            <Text>{shownLine(message.text)}</Text>
+          ) : shownPoll ? (
+            <View style={{ gap: space.xs }}>
+              <PollCard
+                poll={shownPoll.poll}
+                voters={shownPoll.votes.map((vote) => ({ name: names ? names(vote.who) : vote.who, chose: vote.chose }))}
+                mine={shownPoll.votes.find((vote) => vote.who === me)?.chose ?? []}
+                onChoose={ended || message.state ? undefined : onVote}
+              />
+              {ended ? (
+                <Text variant="caption" tone="muted">
+                  {t('Poll ended')}
+                </Text>
+              ) : null}
+            </View>
+          ) : message.place ? (
+            <PlaceCard place={message.place} />
+          ) : (
+            // Not selectable: holding the words opens the menu, which can copy them.
+            <>
+              <Text style={words}>{message.text}</Text>
+              {message.preview ? <PreviewCard preview={message.preview} /> : null}
+            </>
+          )}
+          {onThread && message.threadCount ? (
+            <Pressable onPress={onThread} accessibilityRole="button" hitSlop={6}>
+              <Text variant="caption" color={colors.accentText}>
+                {plural(message.threadCount, '{n} answer in the thread', '{n} answers in the thread')}
+              </Text>
+            </Pressable>
+          ) : null}
+          <Text variant="caption" tone="faint">
+            {status}
+          </Text>
+        </Pressable>
+        {message.reactions ? <ReactionChips reactions={message.reactions} me={me} mine={mine} onReact={onReact} /> : null}
+      </View>
     </View>
   );
 }
@@ -251,6 +269,52 @@ function FilePart({ file, onMenu }: { file: MatrixFile; onMenu?: () => void }) {
         <Row>
           {file.kind === 'image' && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
           <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
+        </Row>
+      ) : null}
+      {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}
+      {note ? <Text variant="caption" tone="muted">{note}</Text> : null}
+    </View>
+  );
+}
+
+// A sticker: its picture fetched when asked for, as a photo's, or at once when it was before (one
+// we sent, or looked at); then shown at a sticker's size, as wide and high as it says.
+function StickerPart({ file }: { file: MatrixFile }) {
+  const [bytes, setBytes] = useState<Uint8Array | null>(() => matrixFileKept(file));
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const uri = useMemo(() => (bytes ? `data:${file.mime.startsWith('image/') ? file.mime : 'image/png'};base64,${toBase64(bytes)}` : null), [file.mime, bytes]);
+
+  async function show() {
+    setBusy(true);
+    setNote('');
+    try {
+      setBytes(await matrixFile(file));
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ratio = file.w && file.h ? file.w / file.h : 1;
+  const named = file.name !== 'Sticker' ? file.name : '';
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        resizeMode="contain"
+        style={{ width: ratio >= 1 ? STICKER_SIZE : STICKER_SIZE * ratio, height: ratio >= 1 ? STICKER_SIZE / ratio : STICKER_SIZE }}
+        accessibilityLabel={named || t('Sticker')}
+      />
+    );
+  }
+  return (
+    <View style={{ gap: space.xs }}>
+      <Text numberOfLines={2}>{named ? t('Sticker: {name}', { name: named }) : t('Sticker')}</Text>
+      {file.encrypted || file.url ? (
+        <Row>
+          <Button title={t('Show sticker')} compact disabled={busy} onPress={() => void show()} />
         </Row>
       ) : null}
       {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}

@@ -7,7 +7,10 @@
 // to-device messages waiting for each device, and what each was asked; and for calls, a room's
 // state, delayed events (MSC4140), OpenID tokens, and where a call's media goes (MSC4143); and
 // pushers, which it tells of events through their gateways (checks/doors.check.ts); redactions,
-// and a room's older events (/messages) behind a sync that gives only the latest.
+// and a room's older events (/messages) behind a sync that gives only the latest; a room's power
+// levels, checked for its name, topic and levels, for taking back others' messages, and for taking
+// someone out or barring them, rooms of version 12 whose makers stand above all levels, and a user
+// directory to look in.
 /// <reference types="node" />
 import type { MatrixRequest } from '../lib/matrix';
 
@@ -71,8 +74,8 @@ export class Homeserver {
     return [...new Set(this.log.map((l) => l.room))];
   }
 
-  private add(room: string, sender: string, type: string, content: Json, stateKey?: string, txn?: string): string {
-    const event: Json = { type, sender, content, event_id: `$e${++this.made}`, origin_server_ts: Date.now() + this.made };
+  private add(room: string, sender: string, type: string, content: Json, stateKey?: string, txn?: string, eventId?: string): string {
+    const event: Json = { type, sender, content, event_id: eventId ?? `$e${++this.made}`, origin_server_ts: Date.now() + this.made };
     if (stateKey !== undefined) event.state_key = stateKey;
     if (txn) event.unsigned = { transaction_id: txn };
     this.log.push({ seq: this.next(), room, event });
@@ -134,6 +137,48 @@ export class Homeserver {
 
   /** Profile pictures, by user. */
   avatars = new Map<string, string>();
+
+  /** The version new rooms are made in, said in their m.room.create; '12' on, their makers stand above every level. */
+  roomVersion: string | null = null;
+  /** Whether GET of a piece of state gives the whole event when asked (?format=event, spec 1.16). */
+  stateAsEvent = true;
+  /** Display names, by user, for the user directory. */
+  displayNames = new Map<string, string>();
+
+  /** A member's level in a room, as its power levels say: Infinity for a maker of a room of version 12 on. */
+  levelIn(room: string, user: string): number {
+    const create = this.stateOf(room, 'm.room.create', '');
+    const version = Number(create?.content.room_version ?? 1);
+    if (version >= 12 && (create?.sender === user || (create?.content.additional_creators ?? []).includes(user))) return Infinity;
+    const power = this.stateOf(room, 'm.room.power_levels', '')?.content;
+    if (!power) return 0;
+    return power.users?.[user] ?? power.users_default ?? 0;
+  }
+
+  private powerOf(room: string): Json {
+    return this.stateOf(room, 'm.room.power_levels', '')?.content ?? {};
+  }
+
+  // Whether `user` may set a piece of state of `type` with `content`, as the spec checks the name,
+  // the topic and the levels: a level high enough for it; for the levels, no one changed who stands
+  // as high as us or higher (but ourselves), and no one raised above us.
+  private maySet(room: string, user: string, type: string, content: Json): boolean {
+    if (!['m.room.name', 'm.room.topic', 'm.room.power_levels'].includes(type) || !this.stateOf(room, 'm.room.power_levels', '')) return true;
+    const mine = this.levelIn(room, user);
+    const power = this.powerOf(room);
+    if (mine < (power.events?.[type] ?? power.state_default ?? 50)) return false;
+    if (type !== 'm.room.power_levels') return true;
+    const before = (power.users ?? {}) as Json;
+    const after = (content.users ?? {}) as Json;
+    for (const who of new Set([...Object.keys(before), ...Object.keys(after)])) {
+      const was = before[who] ?? power.users_default ?? 0;
+      const now = after[who] ?? content.users_default ?? 0;
+      if (was === now) continue;
+      if (who !== user && was >= mine) return false;
+      if (now > mine) return false;
+    }
+    return true;
+  }
 
   /** Uploaded files, by their mxc:// address. */
   media = new Map<string, Uint8Array>();
@@ -369,10 +414,29 @@ export class Homeserver {
       this.uiaDone.delete(`del${user}`);
       return { status: 200, json: {} };
     }
+    if (path === '/user_directory/search' && request.method === 'POST') {
+      const term = String(body.search_term ?? '').toLowerCase();
+      const limit = Number(body.limit ?? 10);
+      const users = [...new Set([...this.tokens.values()].map((t) => t.user))];
+      const found = users.filter((u) => `${u} ${this.displayNames.get(u) ?? ''}`.toLowerCase().includes(term));
+      const results = found.slice(0, limit).map((u) => ({ user_id: u, ...(this.displayNames.has(u) ? { display_name: this.displayNames.get(u) } : {}) }));
+      return { status: 200, json: { results, limited: found.length > limit } };
+    }
     if (path === '/createRoom') {
-      const id = `!r${++this.made}:example.org`;
-      this.add(id, user, 'm.room.create', { creator: user }, '');
+      // A room of version 12 on is named by its m.room.create event, with ! for $.
+      const v12 = Number(this.roomVersion ?? 1) >= 12;
+      const made = ++this.made;
+      const id = v12 ? `!r${made}` : `!r${made}:example.org`;
+      this.add(id, user, 'm.room.create', { creator: user, ...(this.roomVersion ? { room_version: this.roomVersion } : {}) }, '', undefined, v12 ? `$r${made}` : undefined);
       this.add(id, user, 'm.room.member', { membership: 'join' }, user);
+      // As Synapse makes them: the maker an admin, but where makers stand above every level.
+      this.add(
+        id,
+        user,
+        'm.room.power_levels',
+        { users: v12 ? {} : { [user]: 100 }, users_default: 0, events: { 'm.room.name': 50, 'm.room.power_levels': 100, 'm.room.topic': 50 }, events_default: 0, state_default: 50, ban: 50, kick: 50, redact: 50, invite: 0 },
+        '',
+      );
       for (const s of body.initial_state ?? []) this.add(id, user, s.type, s.content, s.state_key);
       if (typeof body.name === 'string') this.add(id, user, 'm.room.name', { name: body.name }, '');
       for (const invited of body.invite ?? []) this.add(id, user, 'm.room.member', { membership: 'invite', is_direct: body.is_direct }, invited);
@@ -412,6 +476,7 @@ export class Homeserver {
     }
     if ((m = path.match(/^\/join\/(.+)$/))) {
       const id = room(m[1]);
+      if (this.membership(id, user) === 'ban') return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Banned' } };
       if (this.membership(id, user) !== 'invite' && !this.published.has(id)) return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Not invited' } };
       this.add(id, user, 'm.room.member', { membership: 'join' }, user);
       return { status: 200, json: { room_id: id } };
@@ -434,8 +499,8 @@ export class Homeserver {
       const id = room(m[1]);
       const target = this.log.find((l) => l.room === id && l.event.event_id === decodeURIComponent(m![2]));
       if (this.membership(id, user) !== 'join' || !target) return { status: 404, json: { errcode: 'M_NOT_FOUND' } };
-      // Only one's own, as a room's default power levels let members.
-      if (target.event.sender !== user) return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      // One's own, or another's with the level the room asks for that.
+      if (target.event.sender !== user && this.levelIn(id, user) < (this.stateOf(id, 'm.room.power_levels', '') ? (this.powerOf(id).redact ?? 50) : Infinity)) return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
       const redaction = this.add(id, user, 'm.room.redaction', { redacts: target.event.event_id }, undefined, m[3]);
       this.log.at(-1)!.event.redacts = target.event.event_id;
       target.event.content = {};
@@ -458,9 +523,31 @@ export class Homeserver {
       if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
       return { status: 200, json: { event_id: this.add(id, user, decodeURIComponent(m[2]), body, undefined, m[3]) } };
     }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/(kick|ban)$/)) && request.method === 'POST') {
+      const id = room(m[1]);
+      const target = String(body.user_id);
+      const mine = this.levelIn(id, user);
+      if (this.membership(id, user) !== 'join' || mine < (this.powerOf(id)[m[2]] ?? 50) || this.levelIn(id, target) >= mine) return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      this.add(id, user, 'm.room.member', { membership: m[2] === 'ban' ? 'ban' : 'leave' }, target);
+      return { status: 200, json: {} };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/state\/([^/]+)\/([^/]*)$/)) && request.method === 'GET') {
+      const id = room(m[1]);
+      if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      const found = this.stateOf(id, decodeURIComponent(m[2]), decodeURIComponent(m[3]));
+      if (!found) return { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+      return { status: 200, json: this.stateAsEvent && url.searchParams.get('format') === 'event' ? { ...found, room_id: id } : found.content };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/event\/([^/]+)$/)) && request.method === 'GET') {
+      const id = room(m[1]);
+      const found = this.log.find((l) => l.room === id && l.event.event_id === decodeURIComponent(m![2]));
+      if (this.membership(id, user) !== 'join' || !found) return { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+      return { status: 200, json: { ...found.event, room_id: id } };
+    }
     if ((m = path.match(/^\/rooms\/([^/]+)\/state\/([^/]+)\/([^/]*)$/)) && request.method === 'PUT') {
       const id = room(m[1]);
       if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      if (!this.maySet(id, user, decodeURIComponent(m[2]), body)) return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Not allowed' } };
       const delayMs = url.searchParams.get('org.matrix.msc4140.delay');
       if (delayMs !== null) {
         if (!this.delaysAsFirst) return { status: 400, json: { errcode: 'M_UNKNOWN', error: 'Delays as first are not kept here' } };

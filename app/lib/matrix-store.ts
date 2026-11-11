@@ -4,6 +4,7 @@
 
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
+import type { StickerPlace } from '../lock/sticker-data';
 import { currentSpace } from '../lock/keys';
 import { lastRestore } from '../lock/restored';
 import type { Holder } from '../lock/sealed-file';
@@ -51,7 +52,8 @@ import {
   type MatrixState,
 } from './matrix';
 import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, takeGiven, unlockRecovery, type Unlocked } from './matrix-backup';
-import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } from './matrix-media';
+import { fetchFile, fetchPicture, sendFile, sendSticker, uploadPicture, type OutgoingFile, type OutgoingSticker } from './matrix-media';
+import { learnRule, removeMember, renameRoom, roomMembers, searchPeople, setAdmin, setTopic, type FoundPerson, type RoomMember } from './matrix-members';
 import { listDevices, register, renameDevice, signOutDevices, type AccountDevice, type AuthAsk } from './matrix-account';
 import { pollShown, previewContent } from './matrix-parts';
 import { learnJoins, leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
@@ -770,7 +772,9 @@ export async function matrixForward(fromRoom: string, messageId: string, toRoom:
   const file = message.file;
   const bytes = file ? await matrixFile(file) : null;
   await changeAccount(it, async () => {
-    if (file && bytes) {
+    if (file && bytes && message.sticker) {
+      await sendSticker(it.state, toRoom, { bytes, mime: file.mime, label: file.name, ...(file.w && file.h ? { w: file.w, h: file.h } : {}) });
+    } else if (file && bytes) {
       await sendFile(it.state, toRoom, {
         name: file.name,
         mime: file.mime,
@@ -860,6 +864,76 @@ export function matrixDelete(roomId: string, target: string): Promise<void> {
   return changeAccount(it, () => deleteMessage(it.state, roomId, target));
 }
 
+/** Takes several messages back, for everyone in the room, each in turn; what the homeserver refused of them is thrown after. */
+export function matrixDeleteMany(roomId: string, targets: string[]): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    let refused: unknown = null;
+    for (const target of targets) await deleteMessage(it.state, roomId, target).catch((error: unknown) => (refused ??= error));
+    if (refused) throw refused;
+  });
+}
+
+/** Whose stickers made from photos a Matrix chat offers: the space's, or the hidden place's own whose account it is. */
+export function matrixStickerPlace(where: NetworkWhere = 'space'): StickerPlace | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped ? { holder: it.holder, space: it.space, key: it.key } : null;
+}
+
+/** Sends a sticker made here to a room, or to the thread of `thread`; its picture is kept as fetched, so it shows at once. */
+export function matrixSendSticker(roomId: string, sticker: OutgoingSticker, thread?: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const sent = await sendSticker(it.state, roomId, sticker, thread);
+    if (sent.file) keepFetched(sent.file, sticker.bytes);
+  });
+}
+
+/** The members of a room as its homeserver has them now; the room learns again who may do what in it. */
+export function matrixMembers(roomId: string): Promise<RoomMember[]> {
+  const it = need();
+  return changeAccount(it, () => roomMembers(it.state, roomId));
+}
+
+/** Learns who may do what in a room, for one whose levels this phone did not keep yet. */
+export function matrixLearnRule(roomId: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => learnRule(it.state, roomId));
+}
+
+/** Makes a member of a room an admin, or no more one. */
+export function matrixSetAdmin(roomId: string, target: string, admin: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => setAdmin(it.state, roomId, target, admin));
+}
+
+/** Takes a member out of a room, or bars them from it. */
+export function matrixRemoveMember(roomId: string, target: string, ban: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => removeMember(it.state, roomId, target, ban));
+}
+
+/** Gives a room a new name. */
+export function matrixRename(roomId: string, name: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => renameRoom(it.state, roomId, name));
+}
+
+/** Sets what a room is about, or takes it away with ''. */
+export function matrixSetTopic(roomId: string, topic: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => setTopic(it.state, roomId, topic));
+}
+
+/** The people the homeserver's user directory finds by name or Matrix ID. */
+export async function matrixSearchPeople(term: string): Promise<{ people: FoundPerson[]; more: boolean }> {
+  try {
+    return await searchPeople(need().state, term);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
 /** Fetches older messages of a room; answers how many came. Locked ones are tried with the key backup. */
 export function matrixLoadEarlier(roomId: string): Promise<number> {
   const it = need();
@@ -946,6 +1020,20 @@ export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
   const kept = fetched.get(where);
   if (kept) return kept;
   const bytes = await fetchFile(it.state, file);
+  keepFetched(file, bytes);
+  return bytes;
+}
+
+/** A message's file as fetched before, while Erevos runs, or null. */
+export function matrixFileKept(file: MatrixFile): Uint8Array | null {
+  return fetched.get(file.encrypted?.url ?? file.url ?? '') ?? null;
+}
+
+// Keeps a file's bytes as fetched, the newest few up to FETCHED_MOST.
+function keepFetched(file: MatrixFile, bytes: Uint8Array): void {
+  const where = file.encrypted?.url ?? file.url ?? '';
+  if (!where) return;
+  fetched.delete(where);
   fetched.set(where, bytes);
   let total = [...fetched.values()].reduce((sum, b) => sum + b.length, 0);
   for (const [key, b] of fetched) {
@@ -953,7 +1041,6 @@ export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
     fetched.delete(key);
     total -= b.length;
   }
-  return bytes;
 }
 
 /** The open space's checks by emoji (lib/matrix-verify.ts), or the open hidden place's: asked, going on, or just ended. */

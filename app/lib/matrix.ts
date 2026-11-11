@@ -24,6 +24,9 @@
 //  - Opens a room message only with a key its sender gave, through Olm, from a device of theirs:
 //    one restored from the key backup, or from a device not known yet, opens it as not verified.
 //  - Starts a chat with someone (startChat), joins, leaves, marks as read, signs out.
+//  - Shows a sticker (m.sticker) as a picture of its own, fetched as a photo is; keeps who may do
+//    what in each room (m.room.power_levels, and in rooms of version 12 who made it), for
+//    lib/matrix-power.ts to say.
 //  - Passes the steps of a check by emoji, to-device or in a room, to lib/matrix-verify.ts.
 //  - Passes a call's events to lib/matrix-calls.ts, and a room's events to Element Call while it
 //    shows that room (lib/matrix-widget.ts), with what Element Call asks of the homeserver.
@@ -60,6 +63,7 @@ import {
   votedOf,
   type MatrixPoll,
 } from './matrix-parts';
+import { creatorsOf, powerOfContent, type MatrixPower } from './matrix-power';
 import { fetchCapped, HTTP_MOST, HttpTooLargeError } from './net-http';
 import { throughTor, torFor } from './relay';
 
@@ -114,6 +118,8 @@ export type MatrixMessage = {
   /** Opened with a key whose sender's device is not known for sure: one restored from the key
    *  backup, or sent by a device not known yet (openMegolm). */
   unverified?: true;
+  /** A sticker (m.sticker): its picture is `file`, its words what it shows. */
+  sticker?: true;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -178,6 +184,10 @@ export type MatrixRoom = {
   /** How far each other member read it, as the homeserver last said (m.receipt, m.read): the event
    *  they read up to, and when. Only members it lists, the latest MOST_READERS. */
   readBy?: Record<string, { event: string; ts: number }>;
+  /** Who may do what in it (m.room.power_levels), once the homeserver said (lib/matrix-power.ts). */
+  power?: MatrixPower;
+  /** In a room of version 12 on, those who made it, above every level (m.room.create). */
+  creators?: string[];
 };
 
 /** The most members a room keeps how far they read. */
@@ -852,8 +862,14 @@ function takeState(room: MatrixRoom, event: Json): void {
       else delete room.pinned;
       break;
     }
-    case 'm.room.create':
+    case 'm.room.create': {
       if (content.type === 'm.space') room.space = true;
+      const makers = creatorsOf(event.sender, content);
+      if (makers) room.creators = makers;
+      break;
+    }
+    case 'm.room.power_levels':
+      room.power = powerOfContent(content);
       break;
     case 'm.room.join_rules':
       room.joins = content.join_rule === 'public' ? 'public' : 'other';
@@ -1012,7 +1028,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
   const unsigned = event.unsigned as Json | undefined;
   // Taken back before it came here: it shows as such, its words gone.
   if (unsigned?.redacted_because) {
-    if (type !== 'm.room.message' && type !== 'm.room.encrypted' && !POLL_START.includes(type)) return false;
+    if (type !== 'm.room.message' && type !== 'm.room.encrypted' && type !== STICKER && !POLL_START.includes(type)) return false;
     return place(room, { ...base, text: '', deleted: true }, event, older);
   }
   if (type === 'm.room.redaction') return redact(room, String(event.redacts ?? content.redacts ?? ''));
@@ -1062,6 +1078,7 @@ async function takeContent(state: MatrixState, roomId: string, base: { id: strin
     const words = poll ? '' : bodyOf(content) || String(content['org.matrix.msc1767.text'] ?? '');
     return place(room, { ...base, text: words, ...(poll ? { poll } : {}) }, event, older);
   }
+  if (type === STICKER) return place(room, { ...base, ...stickerShown(content) }, event, older);
   if (type !== 'm.room.message') return false;
   if (relation?.rel_type === 'm.replace') return change(room, base, relation, content) || (older && waitFor(room, base, type, content));
   return place(room, { ...base, ...shownOf(content) }, event, older);
@@ -1147,7 +1164,7 @@ function change(room: MatrixRoom, base: { sender: string; ts: number; unverified
   const target = room.messages.find((m) => m.id === relation.event_id);
   const fresh = content['m.new_content'] as Json | undefined;
   // Only its writer may change it; a change of a change is not one.
-  if (!target || !fresh || target.sender !== base.sender || target.deleted || target.call) return false;
+  if (!target || !fresh || target.sender !== base.sender || target.deleted || target.call || target.sticker) return false;
   // An older change than the one it shows, fetched after it, is past.
   if (target.edited && target.edited > base.ts) return true;
   const shown = shownOf(fresh);
@@ -1178,7 +1195,7 @@ function redact(room: MatrixRoom, id: string): boolean {
   if (!target || target.deleted) return false;
   target.text = '';
   target.deleted = true;
-  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited', 'poll', 'place', 'preview'] as const) delete target[gone];
+  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited', 'poll', 'place', 'preview', 'sticker'] as const) delete target[gone];
   return true;
 }
 
@@ -1263,6 +1280,21 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
   // A caption, when the words are not only the file's name.
   const text = !file.voice && content.filename && content.body !== content.filename ? bodyOf(content) : '';
   return { text, file };
+}
+
+/** A sticker's event type. */
+export const STICKER = 'm.sticker';
+
+/**
+ * What a sticker's content (m.sticker) shows: its picture, as a photo's is (`url`, or `file` where
+ * it came encrypted, as Element, FluffyChat and Element X read it), its words its name; only its
+ * words when it has no picture. What it answers, and its thread, as a message's.
+ */
+export function stickerShown(content: Json): Pick<MatrixMessage, 'text' | 'file' | 'replyTo' | 'thread' | 'sticker'> {
+  const words = bodyOf(content).trim().slice(0, 200);
+  const shown = shownOf({ ...content, msgtype: 'm.image', body: words || 'Sticker', filename: undefined });
+  if (!shown.file) return shown;
+  return { ...shown, text: '', file: { ...shown.file, kind: 'image' }, sticker: true };
 }
 
 /** `text` parsed as a JSON object, or null when it is none. */
@@ -1625,6 +1657,11 @@ export function sendLocation(state: MatrixState, roomId: string, where: Place, t
   return sendContent(state, roomId, thread ? { ...content, 'm.relates_to': threadRelation(thread, latestIn(state, roomId, thread)) } : content);
 }
 
+/** The relation that puts what is sent in the thread of `root`, after its latest message. */
+export function threadFor(state: MatrixState, roomId: string, root: string): Json {
+  return threadRelation(root, latestIn(state, roomId, root));
+}
+
 /** The latest message in the thread of `root`, or the root itself. */
 function latestIn(state: MatrixState, roomId: string, root: string): string {
   return roomOf(state, roomId).messages.filter((m) => !m.state && (m.thread === root || m.id === root)).at(-1)?.id ?? root;
@@ -1641,7 +1678,7 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
   const room = roomOf(state, roomId);
   const id = txn();
   const poll = POLL_START.includes(type) ? pollOfContent(content) : null;
-  const shown = poll ? { text: '', poll } : shownOf(content);
+  const shown = poll ? { text: '', poll } : type === STICKER ? stickerShown(content) : shownOf(content);
   const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), ...shown, state: 'sending' };
   room.messages.push(message);
   try {
