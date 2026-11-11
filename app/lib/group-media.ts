@@ -7,6 +7,7 @@ import type { GroupMessage, GroupParts } from '../lock/group-data';
 import { AUTO_TAKE, sendFile, takeFile, type Source, takesItself } from './attachments';
 import type { GroupTransport, Groups } from './groups';
 import type { Relay } from './relay';
+import { soundOf } from './voice';
 
 // Photos, files and voice messages in group chats (lib/groups.ts), through the relay's file store
 // as a chat's are (lib/attachments.ts). The sender's phone encrypts the file and puts it on its
@@ -65,18 +66,22 @@ export function filesToTake(messages: GroupMessage[], tried: Set<string>, own: R
   return messages.flatMap((m) => (m.file?.from && m.file.size <= AUTO_TAKE && !tried.has(m.file.id) && (own === null || takesItself(own, m.file.from)) ? [m.file] : []));
 }
 
-/** The type of a voice message's sound, from how it starts: AAC from a phone, Opus from a computer. */
+const VOICE_TYPES = { ogg: 'audio/ogg', webm: 'audio/webm', mp4: 'audio/mp4' } as const;
+
+/**
+ * The type of a voice message's sound, from how it starts (lib/voice.ts soundOf): Ogg/Opus from
+ * Android 10 and later and the browsers, AAC from older phones and Safari before 18.4, WebM/Opus
+ * from a browser that does not play Ogg. Ogg goes as plain audio/ogg, as Element sends voice
+ * messages and Matrix's MSC3245 has it: the codec is not added, as some apps and upload servers
+ * compare the type whole, and an older Erevos knows audio/ogg.
+ */
 export function voiceMime(audio: Uint8Array): string {
-  const text = (from: number, to: number) => String.fromCharCode(...audio.subarray(from, to));
-  if (text(4, 8) === 'ftyp') return 'audio/mp4';
-  if (text(0, 4) === 'OggS') return 'audio/ogg';
-  if (audio[0] === 0x1a && audio[1] === 0x45 && audio[2] === 0xdf && audio[3] === 0xa3) return 'audio/webm';
-  return 'application/octet-stream';
+  const kind = soundOf(audio);
+  return kind ? VOICE_TYPES[kind] : 'application/octet-stream';
 }
 
-/** The name and type a recorded voice message is sent under: the phone's AAC, or what the browser records in the web app and on a computer. */
+/** The name and type a recorded voice message is sent under to Matrix, XMPP and Nostr: voice.ogg, voice.m4a or voice.webm. */
 export function voiceNamed(audio: Uint8Array): { name: string; mime: string } {
-  const mime = voiceMime(audio);
-  const browser = mime === 'audio/ogg' || mime === 'audio/webm';
-  return browser ? { name: `voice.${mime.slice('audio/'.length)}`, mime } : { name: 'voice.m4a', mime: 'audio/mp4' };
+  const kind = soundOf(audio);
+  return kind === 'ogg' || kind === 'webm' ? { name: `voice.${kind}`, mime: VOICE_TYPES[kind] } : { name: 'voice.m4a', mime: 'audio/mp4' };
 }

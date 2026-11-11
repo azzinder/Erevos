@@ -103,6 +103,12 @@ type Device = {
   nearbyAppProgress?(): { received: number; total: number };
   /** Stops taking it. */
   cancelNearbyApp?(): void;
+  /** Starts recording a voice message as Ogg/Opus, smaller with `talk` (Voice.kt): its file's uri, or null before Android 10 or when it could not start. Missing in a build before it. */
+  voiceStart?(talk: boolean): Promise<string | null>;
+  /** How loud the recording was since last asked, dBFS (-160 for silence); null when none is recording. */
+  voiceLevel?(): number | null;
+  /** Stops the recording: its file's uri, to read and delete, or null when it failed. */
+  voiceStop?(): Promise<string | null>;
   /** A folder picked with Android's folder picker (a tree uri): its files with their names, sizes (-1 where it does not say) and uris, in one look (Folders.kt). Null where it cannot be read. Missing in a build before it. */
   folderFiles?(folder: string): Promise<FolderFile[] | null>;
   /** Writes `bytes` as a new file in that folder: its name as the folder gave it, and its uri. Rejects, with none of it left, when it could not be written whole. */

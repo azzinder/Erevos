@@ -20,6 +20,53 @@ export const MAX_PARTS = 64;
 // Parts of a message that stop coming are dropped after this long, milliseconds.
 const STALE = 10 * 60_000;
 
+// What a voice message is recorded as. Opus in Ogg, as Telegram, Element and Conversations send
+// them, wherever the phone or browser can make it: Android 10 and later (modules/erevos-device
+// Voice.kt, as expo-audio has no Opus), and the browsers (lib/audio.web.ts: Firefox records Ogg
+// itself, Chrome, Electron and Safari from 18.4 record WebM, which is put in Ogg). Opus at 32
+// kbit/s sounds as clear in a voice as AAC at 64, at half the size: Xiph names 28 to 40 kbit/s for
+// speech at its fullest, Telegram and Conversations record at 32, Element at 24. A minute is about
+// 240 KB. Android 9 and older, and Safari before 18.4, keep AAC in MP4 at 64 kbit/s. The
+// walkie-talkie keeps its smaller 24 kbit/s at 16 kHz in either.
+
+/** Bits a second of a voice message in Opus. */
+export const OPUS_BITS = 32_000;
+/** Bits a second of a voice message in AAC, where there is no Opus. */
+export const AAC_BITS = 64_000;
+/** Bits a second, and samples a second, of the walkie-talkie's. */
+export const TALK_BITS = 24_000;
+export const TALK_RATE = 16_000;
+/** The first Android that records Ogg/Opus (10). */
+export const OPUS_ANDROID = 29;
+
+/** Whether this phone records voice messages as Ogg/Opus: Android 10 and later, in a build with the recorder for it. */
+export function phoneRecordsOpus(os: string, version: number | string, recorder: boolean): boolean {
+  return os === 'android' && typeof version === 'number' && version >= OPUS_ANDROID && recorder;
+}
+
+/** The kinds a browser may record in, the first it can: Ogg/Opus (Firefox), else WebM/Opus to be put in Ogg (Chrome, Electron, Safari 18.4). */
+export const WEB_VOICE_TYPES = ['audio/ogg;codecs=opus', 'audio/webm;codecs=opus'];
+
+/** What the browser records voice messages in: the first of WEB_VOICE_TYPES it can, or undefined for its own (AAC in MP4 on Safari before 18.4). */
+export function webVoiceType(records: (type: string) => boolean): string | undefined {
+  return WEB_VOICE_TYPES.find((type) => {
+    try {
+      return records(type);
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** What kind of sound these bytes are, from how they start: Ogg, WebM (Matroska), MP4 (AAC), or '' for another. */
+export function soundOf(audio: Uint8Array): 'ogg' | 'webm' | 'mp4' | '' {
+  const text = (from: number, to: number) => String.fromCharCode(...audio.subarray(from, to));
+  if (text(4, 8) === 'ftyp') return 'mp4';
+  if (text(0, 4) === 'OggS') return 'ogg';
+  if (audio[0] === 0x1a && audio[1] === 0x45 && audio[2] === 0xdf && audio[3] === 0xa3) return 'webm';
+  return '';
+}
+
 /** How long a voice message lasts, as minutes:seconds. */
 export function voiceDuration(ms: number): string {
   const seconds = Math.max(1, Math.round(ms / 1000));

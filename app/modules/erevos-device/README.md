@@ -18,6 +18,10 @@ What a chat asks of the phone itself on Android that React Native does not give:
   id and the time are kept here, what it reminds of stays encrypted in its space.
   The alarm is set again when the phone starts, the app is updated or the time
   changes.
+- `voiceStart(talk)`, `voiceLevel()` and `voiceStop()`: a voice message recorded
+  as Ogg with Opus in it (`Voice.kt`), on Android 10 and later, as expo-audio has
+  no Opus. The file goes where expo-audio's recordings go, and the app deletes it
+  once read.
 
-Used by `lib/clipboard.ts`, `lib/place.ts` and `lib/myself.ts`. Plain Kotlin on the Android SDK,
+Used by `lib/clipboard.ts`, `lib/place.ts`, `lib/myself.ts` and `lib/audio.ts`. Plain Kotlin on the Android SDK,
 no other library.

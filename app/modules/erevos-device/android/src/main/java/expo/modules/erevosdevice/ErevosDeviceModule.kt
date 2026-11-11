@@ -291,6 +291,22 @@ class ErevosDeviceModule : Module() {
       NearbyApk.cancelReceiving()
     }
 
+    // A voice message as Ogg/Opus (Voice.kt), on Android 10 and later: starting it (the file's uri,
+    // or null where it cannot, and lib/audio.ts records AAC with expo-audio instead), how loud it
+    // is as it goes, and stopping it (the finished file's uri, or null).
+    AsyncFunction("voiceStart") { talk: Boolean ->
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      Voice.start(app, talk)
+    }
+
+    Function("voiceLevel") {
+      Voice.level()
+    }
+
+    AsyncFunction("voiceStop") {
+      Voice.stop()
+    }
+
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it
     // started, "permission" when Erevos may not use the location, "off" when the phone's location
     // is off, "approximate" when Erevos may use only the approximate location and the phone has no
