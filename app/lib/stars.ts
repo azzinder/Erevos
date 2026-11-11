@@ -121,7 +121,8 @@ export function starRow(star: Star, chat: string): StarredRow {
  * A starred message's chat as the device has it now: its name, and its messages (the oldest
  * first), null when the chat is gone, or none when they are not known (still being read).
  */
-export type StarChat = { name: string; messages?: readonly LiveMessage[] | null };
+/** A star's chat as it is now; `locked`, with a PIN of its own (lib/chat-protect.ts), its stars show only inside it. */
+export type StarChat = { name: string; messages?: readonly LiveMessage[] | null; locked?: boolean };
 
 /**
  * The rows of a place's stars, by their chats as they are now (`chatOf`: undefined while the
@@ -135,7 +136,7 @@ export function starredNow(stars: readonly Star[], chatOf: (star: Star) => StarC
     const chat = chatOf(star);
     if (!chat) continue;
     if (chat.messages !== undefined && starGone(star, chat.messages)) gone.push(star);
-    else rows.push(starRow(star, chat.name));
+    else if (!chat.locked) rows.push(starRow(star, chat.name));
   }
   return { rows, gone };
 }

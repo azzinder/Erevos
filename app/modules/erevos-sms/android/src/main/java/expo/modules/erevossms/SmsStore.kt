@@ -15,6 +15,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import android.provider.BlockedNumberContract
@@ -42,6 +43,9 @@ internal object SmsStore {
   const val SENT_ACTION = "expo.modules.erevossms.SENT"
   const val DELIVERED_ACTION = "expo.modules.erevossms.DELIVERED"
   private const val CHANNEL = "sms"
+  // The same notice for a conversation with a sound of its own, or none: it never sounds, and the
+  // app plays the conversation's (lib/background.ts). A channel's sound is fixed once it is made.
+  private const val OWN_CHANNEL = "sms-own"
   // The notice of what came: one, replaced by the next.
   private const val NEW_ID = 1
   private const val PREFS = "erevos-sms"
@@ -469,16 +473,41 @@ internal object SmsStore {
     shown = numbers
   }
 
+  // The open space's SMS conversations with notifications of their own (lib/sms-notices.ts), by the
+  // one number of each: muted ones until then (milliseconds), whose SMS come with no notice, and
+  // those with a sound of their own, or none, whose notice makes none. In memory only, told by the
+  // app while a space is open: once it closes, or Erevos is stopped, each SMS tells as ever, as a
+  // closed space says nothing of which chat a message came in.
+  @Volatile private var muted: List<Pair<String, Double>> = emptyList()
+  @Volatile private var ownSound: List<String> = emptyList()
+
+  fun setOwnNotices(numbers: List<String>, ends: List<Double>, sounds: List<String>) {
+    muted = numbers.zip(ends)
+    ownSound = sounds
+  }
+
+  private fun mutedNow(context: Context, address: String?): Boolean {
+    if (address == null) return false
+    val now = System.currentTimeMillis().toDouble()
+    return muted.any { (number, end) -> end > now && PhoneNumberUtils.compare(context, number, address) }
+  }
+
+  // Only while the app listens: it plays the sound.
+  private fun soundOfItsOwn(context: Context, address: String?): Boolean =
+    address != null && listener != null && ownSound.any { PhoneNumberUtils.compare(context, it, address) }
+
   /** Tells the open app that something came, and shows a notice unless its conversation is on the
    *  screen, where it only sounds (`shown`, played by the app): in the background its JS side still
    *  runs, but nobody looks at it, and on another screen, the password's too, the owner does not see
    *  it. A one-time code in what came gives the notice Copy code (OneTimeCode.kt). Spam by the
-   *  built-in rule (`spam`, BuiltInSpam.kt) gets neither: the app is told so, and plays nothing. */
+   *  built-in rule (`spam`, BuiltInSpam.kt) gets neither: the app is told so, and plays nothing.
+   *  From a number muted in the open space, no notice either; from one with a sound of its own, a
+   *  notice without sound (setOwnNotices). */
   fun came(context: Context, body: Map<String, Any?>, code: String? = null, spam: Boolean = false) {
     val address = body["address"] as? String
     val here = address != null && onScreen() && shown.any { PhoneNumberUtils.compare(context, it, address) }
     listener?.invoke("onSms", body + ("shown" to here) + (if (spam) mapOf("spam" to true) else emptyMap()))
-    if (!here && !spam) notifyNew(context, code)
+    if (!here && !spam && !mutedNow(context, address)) notifyNew(context, code, soundOfItsOwn(context, address))
     Widget.refresh(context)
   }
 
@@ -490,21 +519,30 @@ internal object SmsStore {
 
   /** A notice that something came, without who sent it or what it says. With a one-time code
    *  (`code`), it has Copy code, which works only on an unlocked phone (Android 12 and later ask to
-   *  unlock first); the code itself never shows on it. */
-  fun notifyNew(context: Context, code: String? = null) {
+   *  unlock first); the code itself never shows on it. `quiet`: for a conversation with a sound of
+   *  its own, or none, which the app plays: the notice makes none. */
+  fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
       // "SMS", apart from Erevos's own "Messages" in Android's notice settings; made again, an older one takes the name.
       notifications.createNotificationChannel(NotificationChannel(CHANNEL, "SMS", NotificationManager.IMPORTANCE_HIGH))
+      if (quiet) {
+        notifications.createNotificationChannel(
+          NotificationChannel(OWN_CHANNEL, if (greek) "SMS με δικό τους ήχο" else "SMS with a sound of their own", NotificationManager.IMPORTANCE_HIGH).apply {
+            setSound(null, null as AudioAttributes?)
+            enableVibration(false)
+          },
+        )
+      }
     }
     // It opens the SMS (erevos://?show=sms), as their icon does: with the password lock, the
     // password given then opens only them (app/_layout.tsx).
     val sms = Intent(Intent.ACTION_VIEW, Uri.parse("erevos://?show=sms")).setPackage(context.packageName)
     val launch = if (sms.resolveActivity(context.packageManager) != null) sms else context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val open = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-    val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
+    val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, if (quiet) OWN_CHANNEL else CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     builder
       .setSmallIcon(android.R.drawable.stat_notify_chat)
       .setContentTitle(if (greek) "Νέο μήνυμα" else "New message")

@@ -2465,6 +2465,10 @@ escolhe.
   chega um novo SMS daquele número, ou com **Desarquivar**.
 - **Nomes de MMS em grupo:** segure um MMS em grupo e escolha **Nomear aqui** para dar a ele um nome seu, só neste
   celular.
+- **O próprio de uma conversa:** abaixo da linha **SMS comum**, uma conversa tem **Aparência da conversa**, como uma
+  conversa do Erevos, e, com um número só, **Notificações**: silencie-a por um tempo ou sempre, ou dê a ela um som
+  próprio, ou nenhum. Valem enquanto o espaço está aberto; com ele fechado, cada SMS avisa como dizem as
+  configurações.
 - **Lixeira:** uma conversa apagada espera na **Lixeira** 30 dias, e depois o Erevos a apaga dos SMS do celular. Até
   lá, **Recuperar** a põe de volta na lista; **Apagar agora** e **Esvaziar a lixeira** apagam na hora, de vez. Um SMS
   que chega depois de ela ir para a Lixeira aparece na lista de novo. Só o app de SMS pode apagar SMS.
@@ -3035,6 +3039,11 @@ abre com o PIN dele.
   volta a pedir.
 - **Para removê-lo:** **Detalhes** → **Bloquear com um PIN** de novo, e digite o PIN dela.
 - **Só este celular o conhece,** e cada dispositivo conectado tem o seu. Os backups o guardam.
+- **Também no Matrix, XMPP, Nostr e SMS:** uma conversa do Matrix, XMPP ou Nostr tem **Bloquear com um PIN** no pé, e
+  uma conversa por SMS abaixo da linha **SMS comum**, e funciona do mesmo jeito: na lista o nome dela com um cadeado,
+  nenhuma mensagem dela na busca, e a senha do espaço tira um PIN esquecido. **Bloquear capturas de tela** fica ao
+  lado, só neste celular (Android): os outros não ficam sabendo. As conversas de um lugar oculto não oferecem nenhum
+  dos dois, pois o PIN dele as protege e elas ficam sempre fora das capturas.
 
 **Por quê:** algumas conversas devem ficar onde estão, mas não abertas para quem segura o celular por um momento. O
 PIN só é guardado como Argon2id dele, para que não possa ser lido do celular, e as tentativas de adivinhar são lentas.

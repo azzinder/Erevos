@@ -17,6 +17,7 @@ import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
 import { doorIsOpen } from '../lib/closed-notices';
 import { canTor, canXmpp } from '../lib/core';
+import { lockedChat } from '../lib/chat-protect';
 import { t } from '../lib/i18n';
 import { xmppInboxRows } from '../lib/inbox';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
@@ -421,7 +422,9 @@ export default function XmppScreen() {
 
 function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; onOpen: () => void }) {
   const colors = useColors();
-  const last = chat.messages.at(-1);
+  // Locked with a PIN of its own (lib/chat-protect.ts): nothing of its messages shows.
+  const locked = lockedChat(chat);
+  const last = locked ? undefined : chat.messages.at(-1);
   const said = !last
     ? ''
     : last.locked
@@ -445,6 +448,11 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
             <Text variant="bodyStrong" numberOfLines={1}>
               {nameOf(state, chat.jid)}
             </Text>
+            {locked ? (
+              <Text tone="muted" numberOfLines={1}>
+                {t('Locked with a PIN')}
+              </Text>
+            ) : null}
             {last ? (
               <Text tone="muted" numberOfLines={1}>
                 {chat.room && !last.mine && last.by ? `${last.by}: ${said}` : said}

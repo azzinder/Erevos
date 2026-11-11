@@ -2485,6 +2485,9 @@ cuando tú lo eliges.
   a la lista cuando llega un SMS nuevo de ese número, o con **Desarchivar**.
 - **Nombres de MMS de grupo:** mantén pulsado un MMS de grupo y elige **Darle un nombre aquí** para darle un nombre
   tuyo, solo en este teléfono.
+- **Lo propio de una conversación:** bajo su línea **SMS normal**, una conversación tiene **Apariencia del chat**,
+  como un chat, y, con un número, **Notificaciones**: siléncialo un rato o siempre, o dale un sonido propio, o
+  ninguno. Valen mientras el espacio está abierto; con él cerrado, cada SMS avisa como dicen los ajustes.
 - **Papelera:** una conversación eliminada espera en la **Papelera** 30 días, y luego Erevos la elimina de los SMS del
   teléfono. Hasta entonces **Recuperar** la devuelve a la lista; **Eliminar ahora** y **Vaciar la papelera** eliminan al
   instante, para siempre. Un SMS que llega después de que fuera a la Papelera aparece de nuevo en la lista. Solo la app
@@ -3056,6 +3059,11 @@ con su PIN.
   propio de los chats ocultos los protege. Devuelto a los chats, el mismo PIN vuelve a pedirse.
 - **Para quitarlo:** **Detalles** → **Bloquear con un PIN** otra vez, y escribe su PIN.
 - **Solo este teléfono lo conoce,** y cada dispositivo vinculado tiene el suyo. Las copias de seguridad lo conservan.
+- **También en Matrix, XMPP, Nostr y SMS:** un chat de Matrix, XMPP o Nostr tiene **Bloquear con un PIN** al pie, y
+  una conversación SMS bajo su línea **SMS normal**, y funciona igual: en la lista su nombre con un candado, ninguno
+  de sus mensajes en la búsqueda, y la contraseña del espacio quita un PIN olvidado. **Bloquear capturas de pantalla**
+  está al lado, solo en este teléfono (Android): los demás no se enteran. Los chats de un lugar oculto no ofrecen
+  ninguno de los dos, ya que su propio PIN los guarda y siempre quedan fuera de las capturas.
 
 **Por qué:** algunos chats deben quedarse donde están, pero sin abrirse para quien tenga el teléfono un momento. El PIN
 solo se guarda como su Argon2id, así que no se puede leer del teléfono, y los intentos de adivinarlo son lentos. Es un

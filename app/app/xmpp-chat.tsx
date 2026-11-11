@@ -21,6 +21,7 @@ import { XmppStickerSheet } from '../components/xmpp-stickers';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
+import { useChatProtect } from '../components/chat-protect';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { OwnName } from '../components/own-name';
@@ -37,6 +38,7 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { xmppHistory } from '../lib/chat-history-adapters';
 import type { Place } from '../lib/chat-parts';
 import { heldIn } from '../lib/chat-writing';
+import { pinOf, shotsBlocked } from '../lib/chat-protect';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { geoUri, placeOfGeo } from '../lib/matrix-parts';
@@ -94,6 +96,7 @@ import {
   xmppSendAgain,
   xmppSendFile,
   xmppSendSticker,
+  xmppSetGuard,
   xmppSetLook,
   xmppSetNotify,
   xmppSetPlain,
@@ -287,6 +290,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (jid && isXmppId(jid) ? { look: ownLook, save: (look) => xmppSetLook(jid, look) } : null), [ownLook, jid]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  // Locked with a PIN of its own, its screenshots blocked (components/chat-protect.tsx): not in a
+  // hidden place's chats, which their own PIN guards. While its PIN asks, nothing of it shows or is read.
+  const guard = useChatProtect({
+    id: `xmpp:${jid ?? ''}`,
+    name: state && jid ? nameOf(state, jid) : (jid ?? ''),
+    pin: pinOf(chat),
+    shots: shotsBlocked(chat),
+    lockable: where === 'space' && !!state && !!jid && isXmppId(jid),
+    save: (change) => (jid ? xmppSetGuard(jid, change) : Promise.resolve()),
+    say: setNote,
+    onBack: () => router.back(),
+  });
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
@@ -300,7 +315,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     onAt: (found) => found || setNote(t('That message is not on this phone.')),
   });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(!jid ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen());
+  const shown = useNetworkChatShown(!jid || guard.gated ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen()) && !guard.gated;
   useEffect(() => {
     if (shown && jid && chat?.unread) xmppRead(jid).catch(() => undefined);
   }, [shown, jid, count, chat?.unread]);
@@ -315,6 +330,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
   const keep = useKeep({ service: 'xmpp', place: stickerPlace, account: account ?? '', chat: jid ?? '', group: !!chat?.room, messages: chat?.messages, say: setNote });
 
+  if (guard.gate) return guard.gate;
   if (!state || !jid || !isXmppId(jid)) {
     return (
       <Page>
@@ -917,6 +933,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
             <StarredHere stars={keep.stars} who={name} onGo={reach} />
+            {guard.buttons}
           </Row>
           <HistoryButtons tools={history} exportable={where === 'space'} />
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />

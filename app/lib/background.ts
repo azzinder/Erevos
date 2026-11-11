@@ -35,6 +35,7 @@ import { setLightSleep, sleepLook } from './sleep-look';
 import { secureGet, secureSet } from './secure';
 import { spaceChats } from './space-chats';
 import { onSpaceGroupGone, onSpaceGroupMessage } from './space-groups';
+import { smsSoundOf } from './sms-notices';
 import { spaceUnreadAt } from './unread';
 
 // Receiving while Erevos is in the background, on Android: while a space is open, Erevos keeps
@@ -228,9 +229,18 @@ if (Platform.OS === 'android') {
     // A build from before it: the phone is held for the alarm's whole time.
   }
   onAppShown(tellSmsShown);
-  // Spam that Spam's built-in rule caught (SmsStore.kt) plays nothing, on the screen too.
-  onSmsEvent('onSms', ({ shown, spam }) => {
-    if (shown && !spam && appShown()) chime();
+  // Spam that Spam's built-in rule caught (SmsStore.kt) plays nothing, on the screen too. A
+  // conversation muted in the open space plays nothing either; one with a sound of its own came with
+  // a notice that made none, and plays its own here, on the screen or not (lib/sms-notices.ts).
+  onSmsEvent('onSms', ({ address, shown, spam }) => {
+    if (spam) return;
+    const own = smsSoundOf(address);
+    if (own === null) return;
+    if (own !== undefined) {
+      if (own && (!shown || appShown())) chime(own);
+      return;
+    }
+    if (shown && appShown()) chime();
   });
 }
 

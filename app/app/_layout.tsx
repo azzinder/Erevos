@@ -43,6 +43,7 @@ import { awakeWhile } from '../lib/sleep-look';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { startChatLater } from '../lib/chat-later';
+import { startSmsNotices } from '../lib/sms-notices';
 import { StickerImageHost } from '../lib/sticker-image';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats, shareLastSeen } from '../lib/space-chats';
@@ -631,8 +632,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
       <Stack
         key={`${phase.space}-${lang}`}
         // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx), and goes back by a
-        // swipe in its own way, as its back arrow does; so do a group, Chat with myself and a chat
-        // on Matrix, XMPP or Nostr (components/chat-look.tsx). Every other screen goes back by a
+        // swipe in its own way, as its back arrow does; so do a group, Chat with myself, a chat
+        // on Matrix, XMPP or Nostr and an SMS conversation (components/chat-look.tsx). Every other screen goes back by a
         // swipe to the right (components/swipe-back.tsx).
         // With only the SMS or the Contacts open, any other screen asks for the password first, and shows nothing of itself.
         // A screen of a module that is off shows only that it is off (lib/modules.ts).
@@ -688,7 +689,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
 const HEADERLESS = new Set(['index', 'chat', 'group', 'myself', 'collection', 'first-steps']);
 
 // The chats' screens, which each draw their backdrop in the chat's own look (above).
-const OWN_LOOK = new Set(['chat', 'group', 'myself', 'matrix-chat', 'xmpp-chat', 'nostr-chat']);
+const OWN_LOOK = new Set(['chat', 'group', 'myself', 'matrix-chat', 'xmpp-chat', 'nostr-chat', 'sms']);
 
 // How long before Erevos goes to the background a call made on the locked Phone may be, for it to
 // be what took Erevos there.
@@ -816,7 +817,8 @@ function OpenLink() {
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
 // relay, from phones nearby (lib/nearby-links.ts) and by SMS when that is on (lib/sms-way.ts), and those of its hidden chats that receive
 // while closed (lib/place-receiver.ts), and tells it whether the app shows: only then
-// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), the
+// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), and
+// the phone learns which SMS conversations have notifications of their own (lib/sms-notices.ts); the
 // doors of the public groups the space owns are looked at (lib/space-public-groups.ts), and its
 // calls ring (components/call-host.tsx). While the space is open, a call from a number linked to
 // one of its contacts, or kept only in Erevos, shows their name (lib/known-names.ts). On Android,
@@ -835,7 +837,7 @@ function Receiver({ space }: { space: number }) {
       return [
         ...relays,
         ...(erevos ? [startNearbyLinks(), startSmsWay(), startLinkedAccounts(), startChunkChannel(), watchPlaceNetworks()] : []),
-        ...(moduleOn('sms') ? [startSmsLater()] : []),
+        ...(moduleOn('sms') ? [startSmsLater(), startSmsNotices()] : []),
         ...(moduleOn('phone') ? [watchKnownNames()] : []),
         // Receiving and ringing in the background, for what brings messages and calls; the phone's
         // calls and the SMS come through Android itself.

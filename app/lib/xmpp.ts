@@ -5,6 +5,7 @@
 import { sha1 } from '@noble/hashes/legacy.js';
 
 import type { ChatNotify } from '../lock/chat-notify';
+import type { ChatPin } from '../lock/chat-pin';
 import type { Look } from '../theme/look';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { deviceLine } from './call-lines';
@@ -191,6 +192,9 @@ export type XmppChat = {
   notify?: ChatNotify;
   /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
   look?: Look;
+  /** The PIN it opens with, as kept, and its screenshots blocked (lib/chat-protect.ts), on this device only. */
+  pin?: ChatPin;
+  shots?: true;
   /** A group (lib/xmpp-muc.ts), its address the chat's. */
   room?: XmppRoom;
   /** Messages pinned on this device only, by their ids, the latest last: XMPP has no pins its apps share (lib/xmpp-actions.ts). */

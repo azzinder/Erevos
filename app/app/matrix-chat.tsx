@@ -19,6 +19,7 @@ import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
+import { useChatProtect } from '../components/chat-protect';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { OwnName } from '../components/own-name';
@@ -35,6 +36,7 @@ import { callPermissions } from '../lib/call-permissions';
 import { matrixHistory } from '../lib/chat-history-adapters';
 import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
 import { heldIn } from '../lib/chat-writing';
+import { pinOf, shotsBlocked } from '../lib/chat-protect';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
@@ -73,6 +75,7 @@ import {
   matrixSendFile,
   matrixSendInThread,
   matrixSendSticker,
+  matrixSetGuard,
   matrixSetLook,
   matrixSetNotify,
   matrixSetOwnName,
@@ -276,6 +279,18 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const ownLook = useMemo(() => (room?.look ? checkedLook(room.look) : null), [room?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (roomId ? { look: ownLook, save: (look) => matrixSetLook(roomId, look) } : null), [ownLook, roomId]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  // Locked with a PIN of its own, its screenshots blocked (components/chat-protect.tsx): not in a
+  // hidden place's chats, which their own PIN guards. While its PIN asks, nothing of it shows or is read.
+  const guard = useChatProtect({
+    id: `matrix:${roomId ?? ''}`,
+    name: room?.name ?? '',
+    pin: pinOf(room),
+    shots: shotsBlocked(room),
+    lockable: where === 'space' && !!room && !room.invitedBy,
+    save: (change) => (roomId ? matrixSetGuard(roomId, change) : Promise.resolve()),
+    say: setNote,
+    onBack: () => router.back(),
+  });
   // The room's thread holds what is not in a thread; a thread's own screen, its first message and what is in it.
   const shownMessages = room ? room.messages.filter((m) => (thread ? m.id === thread || m.thread === thread : !m.thread)) : [];
   const count = shownMessages.length;
@@ -297,7 +312,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
   const keep = useKeep({ service: 'matrix', place: matrixStickerPlace(where), account: state?.userId ?? '', chat: roomId ?? '', group: !room?.direct, messages: room?.messages.map((m) => ({ id: m.id, at: m.ts, deleted: m.deleted })), say: setNote });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(!roomId ? undefined : where === 'space' ? `matrix:${roomId}` : hiddenOnScreen());
+  const shown = useNetworkChatShown(!roomId || guard.gated ? undefined : where === 'space' ? `matrix:${roomId}` : hiddenOnScreen()) && !guard.gated;
   useEffect(() => {
     if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
   }, [shown, roomId, count, room?.unread]);
@@ -336,6 +351,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const sharedWords = useRef(sharedText);
   useSharedFiles(room ? sharedTo : null, (file) => matrixSendFile(roomId ?? '', file), fail, setSending);
 
+  if (guard.gate) return guard.gate;
   if (!state || !room || !roomId) {
     return (
       <Page>
@@ -801,6 +817,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <Row wrap>
           <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
           <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+          {guard.buttons}
           {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
           <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} />
         </Row>

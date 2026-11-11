@@ -2381,6 +2381,9 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
   kad od te osobe stigne novi SMS, ili s **Vrati iz arhive**.
 - **Imena grupnih MMS-ova:** zadržite grupni MMS i izaberite **Imenujte ga ovdje** da mu date vaše ime, samo na ovom
   telefonu.
+- **Ono što je razgovora:** ispod reda **Običan SMS**, razgovor ima **Izgled razgovora**, kao razgovor, i, s jednim
+  brojem, **Obavijesti**: utišajte ga na neko vrijeme ili zauvijek, ili mu dajte vlastiti zvuk, ili nijedan. To
+  vrijedi dok je prostor otvoren; kad je zatvoren, svaki SMS obavještava kako kažu postavke.
 - **Otpad:** obrisani razgovor čeka u **Otpad** 30 dana, a zatim ga Erevos briše iz SMS poruka telefona. Do tada ga
   **Vrati** vraća na popis; **Obriši sada** i **Isprazni otpad** brišu odmah, zauvijek. SMS koji stigne nakon što je
   razgovor otišao u otpad ponovo se prikazuje na popisu. Samo SMS aplikacija smije brisati SMS poruke.
@@ -2933,6 +2936,11 @@ otvara samo svojim PIN-om.
   traži, jer ih čuva vlastiti PIN skrivenih razgovora. Kad se vrati među razgovore, isti PIN ponovo se traži.
 - **Da ga uklonite:** **Detalji** → ponovo **Zaključaj PIN-om**, i upišite njegov PIN.
 - **Zna ga samo ovaj telefon,** a svaki povezani uređaj ima vlastiti. Rezervne kopije ga zadržavaju.
+- **I na Matrixu, XMPP-u, Nostru i u SMS-u:** razgovor na Matrixu, XMPP-u ili Nostru ima **Zaključaj PIN-om** na dnu,
+  a SMS razgovor ispod reda **Običan SMS**, i radi isto: na popisu njegovo ime s lokotom, nijedna njegova poruka u
+  pretrazi, a lozinka prostora skida zaboravljeni PIN. **Blokiraj snimke ekrana** je pored, samo na ovom telefonu
+  (Android): drugima se ne javlja. Razgovori skrivenog mjesta ne nude ni jedno ni drugo, jer ih čuva njihov PIN i
+  uvijek su izvan snimaka ekrana.
 
 **Zašto:** neki razgovori trebaju ostati tamo gdje jesu, ali ne i biti otvoreni za onoga ko na trenutak drži
 telefon. PIN se čuva samo kao njegov Argon2id, pa se ne može pročitati s telefona, a pogađanje je sporo. To je brava

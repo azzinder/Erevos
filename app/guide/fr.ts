@@ -2619,6 +2619,10 @@ dernier chemin, et seulement quand tu le choisis.
   revient toute seule dans la liste quand un nouveau SMS en arrive, ou avec **Désarchiver**.
 - **Noms des MMS de groupe :** garde le doigt sur un MMS de groupe et choisis **Donner un nom ici** pour lui donner un
   nom à toi, sur ce téléphone seulement.
+- **Le propre d’une conversation :** sous sa ligne **SMS ordinaire**, une conversation a **Apparence de la
+  discussion**, comme une discussion, et, avec un seul numéro, **Notifications** : la mettre en sourdine un moment ou
+  toujours, ou lui donner un son à elle, ou aucun. Cela vaut tant que l’espace est ouvert ; fermé, chaque SMS notifie
+  comme le disent les réglages.
 - **Corbeille :** une conversation supprimée attend 30 jours dans la **Corbeille**, puis Erevos la supprime des SMS du
   téléphone. D’ici là, **Récupérer** la remet dans la liste ; **Supprimer maintenant** et **Vider la corbeille**
   suppriment aussitôt, pour de bon. Un SMS qui arrive après qu’elle est partie dans la corbeille s’affiche de nouveau
@@ -3229,6 +3233,12 @@ discussions, mais ne s’ouvre qu’avec son code PIN.
   le même code PIN est de nouveau demandé.
 - **Pour le retirer :** **Détails** → **Verrouiller par un code PIN** de nouveau, et tape son code PIN.
 - **Seul ce téléphone le connaît,** et chaque appareil associé a le sien. Les sauvegardes le gardent.
+- **Aussi sur Matrix, XMPP, Nostr et en SMS :** une discussion Matrix, XMPP ou Nostr a **Verrouiller par un code PIN**
+  en bas, et une conversation SMS sous sa ligne **SMS ordinaire**, et cela marche de la même façon : dans la liste son
+  nom avec un cadenas, aucun de ses messages dans la recherche, et le mot de passe de l’espace retire un code PIN
+  oublié. **Bloquer les captures d’écran** est à côté, sur ce téléphone seulement (Android) : les autres ne sont pas
+  prévenus. Les discussions d’un lieu caché n’offrent ni l’un ni l’autre, car leur propre code PIN les garde et elles
+  restent toujours hors des captures.
 
 **Pourquoi :** certaines discussions doivent rester où elles sont, mais sans s’ouvrir pour quiconque tient un moment le
 téléphone. Le code PIN n’est gardé que sous forme d’Argon2id, si bien qu’il ne peut pas être lu sur le téléphone, et les

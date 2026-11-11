@@ -4,6 +4,7 @@
 
 import { loadStars, type StarPlace } from '../lock/stars-data';
 import { contactCards, smsMessages, smsMirrored, type ContactCard } from '../modules/erevos-sms';
+import { lockedChat } from './chat-protect';
 import { sealedNamer } from './contact-book';
 import { t } from './i18n';
 import { matrixNow } from './matrix-store';
@@ -35,11 +36,12 @@ export async function loadSpaceStars(place: StarPlace, modules: ReadonlySet<Modu
   const sms = new Map<string, StarChat>();
   if (addresses.length === 0) return { stars, sms };
   const names = await smsNames(place, addresses).catch(() => ({}) as Record<string, string>);
+  const link = await SmsLink.open(place.space, place.key).catch(() => null);
   for (const address of addresses) {
     const read = await smsMessages(address).catch(() => null);
     // None read (the SMS not Erevos's to read now) tells nothing of what is gone.
     const messages: LiveMessage[] | undefined = read?.length ? read.map((m) => ({ id: smsLineId(m), at: m.at })) : undefined;
-    sms.set(address, { name: names[address] || address, messages });
+    sms.set(address, { name: names[address] || address, messages, ...(lockedChat(link?.own(address)) ? { locked: true } : {}) });
   }
   return { stars, sms };
 }
@@ -76,20 +78,20 @@ export function starChatNow(star: Star, modules: ReadonlySet<Module>, sms: Map<s
       const { state } = matrixNow('space');
       if (!state || state.userId !== star.account) return undefined;
       const room = state.rooms[star.chat];
-      return room ? { name: room.name, messages: room.messages.map((m) => ({ id: m.id, at: m.ts, deleted: m.deleted })) } : { name: '', messages: null };
+      return room ? { name: room.name, messages: room.messages.map((m) => ({ id: m.id, at: m.ts, deleted: m.deleted })), locked: lockedChat(room) } : { name: '', messages: null };
     }
     case 'xmpp': {
       const { state } = xmppNow('space');
       if (!state || state.jid !== star.account) return undefined;
       const chat = state.chats[star.chat];
-      return chat ? { name: xmppName(state, star.chat), messages: chat.messages } : { name: '', messages: null };
+      return chat ? { name: xmppName(state, star.chat), messages: chat.messages, locked: lockedChat(chat) } : { name: '', messages: null };
     }
     case 'nostr': {
       const { state } = nostrDmNow('space');
       if (!state || state.public !== star.account) return undefined;
       const chat = state.chats[star.chat];
       const name = star.chat === state.public ? t('Chat with myself') : nostrName(state, star.chat) || shortNpub(npubOf(star.chat));
-      return chat ? { name, messages: chat.messages } : { name: '', messages: null };
+      return chat ? { name, messages: chat.messages, locked: lockedChat(chat) } : { name: '', messages: null };
     }
     case 'sms':
       return sms.get(star.chat) ?? { name: star.chat };

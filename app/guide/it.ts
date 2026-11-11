@@ -2491,6 +2491,9 @@ la scegli tu.
   da sola nell’elenco quando arriva un nuovo SMS da quel numero, o con **Annulla archiviazione**.
 - **Nomi degli MMS di gruppo:** tieni premuto un MMS di gruppo e scegli **Dalle un nome qui** per dargli un nome tuo,
   solo su questo telefono.
+- **Il proprio di una conversazione:** sotto la riga **SMS normale**, una conversazione ha **Aspetto della chat**,
+  come una chat, e, con un solo numero, **Notifiche**: silenziala per un po’ o sempre, o dalle un suono suo, o
+  nessuno. Valgono mentre lo spazio è aperto; chiuso, ogni SMS avvisa come dicono le impostazioni.
 - **Cestino:** una conversazione eliminata aspetta nel **Cestino** 30 giorni, poi Erevos la elimina dagli SMS del
   telefono. Fino ad allora **Recupera** la rimette nell’elenco; **Elimina ora** e **Svuota il cestino** eliminano
   subito, per sempre. Un SMS che arriva dopo che è finita nel Cestino la fa riapparire nell’elenco. Solo l’app per gli
@@ -3070,6 +3073,11 @@ PIN.
   perché le protegge il PIN delle chat nascoste stesse. Riportata tra le chat, lo stesso PIN chiede di nuovo.
 - **Per toglierlo:** **Dettagli** → di nuovo **Blocca con un PIN**, e scrivi il suo PIN.
 - **Lo conosce solo questo telefono,** e ogni dispositivo collegato ha il suo. I backup lo conservano.
+- **Anche su Matrix, XMPP, Nostr e SMS:** una chat su Matrix, XMPP o Nostr ha **Blocca con un PIN** in fondo, e una
+  conversazione SMS sotto la riga **SMS normale**, e funziona allo stesso modo: nell’elenco il suo nome con un
+  lucchetto, nessuno dei suoi messaggi nella ricerca, e la password dello spazio toglie un PIN dimenticato. **Blocca
+  gli screenshot** è accanto, solo su questo telefono (Android): gli altri non vengono avvisati. Le chat di un luogo
+  nascosto non offrono né l’uno né l’altro, perché le protegge il loro PIN e restano sempre fuori dagli screenshot.
 
 **Perché:** alcune chat dovrebbero restare dove sono, ma non aprirsi per chi ha in mano il telefono per un momento. Il
 PIN è conservato solo come suo Argon2id, quindi non si può leggere dal telefono, e i tentativi sono lenti. È un blocco

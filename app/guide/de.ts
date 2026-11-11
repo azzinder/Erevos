@@ -2643,6 +2643,10 @@ wenn du ihn wählst.
   von selbst in die Liste zurück, wenn eine neue SMS von dort kommt, oder mit **Aus dem Archiv holen**.
 - **Namen für Gruppen-MMS:** Halte eine Gruppen-MMS gedrückt und wähle **Hier einen Namen geben**, um ihr einen
   eigenen Namen zu geben, nur auf diesem Telefon.
+- **Eigenes einer Unterhaltung:** Unter ihrer Zeile **Normale SMS** hat eine Unterhaltung **Chat-Aussehen**, wie ein
+  Chat, und, mit einer Nummer, **Benachrichtigungen**: Schalte sie für eine Weile oder immer stumm oder gib ihr einen
+  eigenen Ton oder keinen. Das gilt, während der Bereich offen ist; ist er geschlossen, benachrichtigt jede SMS so,
+  wie es die Einstellungen sagen.
 - **Papierkorb:** Eine gelöschte Unterhaltung wartet 30 Tage im **Papierkorb**, dann löscht Erevos sie aus den SMS des
   Telefons. Bis dahin legt **Zurückholen** sie zurück in die Liste; **Jetzt löschen** und **Papierkorb leeren** löschen
   sofort, endgültig. Eine SMS, die kommt, nachdem die Unterhaltung im Papierkorb gelandet ist, erscheint wieder in der
@@ -3260,6 +3264,12 @@ Chats, öffnet sich aber nur mit seiner PIN.
   wieder.
 - **Sie entfernen:** **Details** → erneut **Mit PIN sperren**, und gib seine PIN ein.
 - **Nur dieses Telefon kennt sie,** und jedes verknüpfte Gerät hat seine eigene. Backups behalten sie.
+- **Auch bei Matrix, XMPP, Nostr und SMS:** Ein Chat bei Matrix, XMPP oder Nostr hat unten **Mit PIN sperren**, eine
+  SMS-Unterhaltung unter ihrer Zeile **Normale SMS**, und es wirkt genauso: in der Liste ihr Name mit einem Schloss,
+  keine ihrer Nachrichten in der Suche, und das Passwort des Bereichs nimmt eine vergessene PIN ab. **Bildschirmfotos
+  blockieren** steht daneben, nur auf diesem Telefon (Android): Die anderen erfahren es nicht. Die Chats eines
+  versteckten Ortes bieten beides nicht, da ihre eigene PIN sie schützt und sie immer aus Bildschirmfotos
+  herausbleiben.
 
 **Warum:** Manche Chats sollen bleiben, wo sie sind, aber nicht offen für jeden, der das Telefon einen Moment in der
 Hand hat. Die PIN wird nur als ihr Argon2id aufbewahrt, sodass sie sich nicht vom Telefon lesen lässt und Raten

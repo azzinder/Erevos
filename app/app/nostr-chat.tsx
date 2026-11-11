@@ -17,6 +17,7 @@ import { Pinned, PlaceCard, Quote, Reactions } from '../components/message-parts
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
+import { useChatProtect } from '../components/chat-protect';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { CarryButtons, MentionChips, useNetworkAmong, usePhotoQuality } from '../components/network-carry';
 import { NetworkFile } from '../components/network-file';
@@ -29,6 +30,7 @@ import { ask } from '../lib/alert';
 import { nostrHistory } from '../lib/chat-history-adapters';
 import type { Place } from '../lib/chat-parts';
 import { heldIn } from '../lib/chat-writing';
+import { pinOf, shotsBlocked } from '../lib/chat-protect';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
@@ -54,6 +56,7 @@ import {
   nostrDmSend,
   nostrDmSendFile,
   nostrDmSendSticker,
+  nostrDmSetGuard,
   nostrDmSetLook,
   nostrDmSetNotify,
   nostrDmSetSubject,
@@ -207,6 +210,18 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (key ? { look: ownLook, save: (look) => nostrDmSetLook(key, look) } : null), [ownLook, key]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  // Locked with a PIN of its own, its screenshots blocked (components/chat-protect.tsx): not in a
+  // hidden place's chats, which their own PIN guards. While its PIN asks, nothing of it shows or is read.
+  const guard = useChatProtect({
+    id: `nostr:${key ?? ''}`,
+    name: !state || !key ? '' : key === state.public ? t('Chat with myself') : nameOf(state, key) || shortNpub(npubOf(key)),
+    pin: pinOf(chat),
+    shots: shotsBlocked(chat),
+    lockable: where === 'space' && !!chat,
+    save: (change) => (key ? nostrDmSetGuard(key, change) : Promise.resolve()),
+    say: setNote,
+    onBack: () => router.back(),
+  });
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
@@ -222,7 +237,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
   const keep = useKeep({ service: 'nostr', place: nostrDmStickerPlace(where), account: state?.public ?? '', chat: key ?? '', group: !!chat?.members, messages: chat?.messages, say: setNote });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(!key ? undefined : where === 'space' ? `nostr:${key}` : hiddenOnScreen());
+  const shown = useNetworkChatShown(!key || guard.gated ? undefined : where === 'space' ? `nostr:${key}` : hiddenOnScreen()) && !guard.gated;
   useEffect(() => {
     if (shown && key && chat?.unread) nostrDmRead(key).catch(() => undefined);
   }, [shown, key, count, chat?.unread]);
@@ -260,6 +275,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const voice = useVoiceCapture({ send: (audio, ms) => sendPicked(async () => voiceFile(audio, ms)), say: setNote });
   useSharedFiles(chat ? sharedTo : null, (file) => nostrDmSendFile(key ?? '', { bytes: file.bytes, name: file.name, mime: file.mime, ...(file.w && file.h ? { dim: `${file.w}x${file.h}` } : {}) }), fail, setSending);
 
+  if (guard.gate) return guard.gate;
   if (!state || !key || !chat) {
     return (
       <Page>
@@ -560,6 +576,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         <NetworkChatNotify notify={checkedChatNotify(chat.notify)} hidden={where !== 'space'} calls={false} onChange={(next) => nostrDmSetNotify(key, next)} />
         <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
         <StarredHere stars={keep.stars} who={name} onGo={(id) => (byId.has(id) ? goTo(id) : setNote(t('That message is not on this phone.')))} />
+        {guard.buttons}
       </Row>
       <HistoryButtons tools={history} exportable={where === 'space'} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />

@@ -65,6 +65,13 @@ On main, not released yet:
   again; one a restored backup brought back past its time waits for the owner. A Matrix or XMPP message that did not
   go now has **Send again** and **Delete** in its menu. **Remind me** on a message of these chats, or of an SMS
   conversation, writes it into Chat with myself with a reminder. Not yet: a Matrix thread's own draft.
+- **A PIN and screenshots for Matrix, XMPP, Nostr and SMS chats**: a chat on Matrix, XMPP or Nostr, and an SMS
+  conversation, can be locked with a PIN of its own (kept only as Argon2id of it, in the account's or the SMS data,
+  encrypted) and have its screenshots blocked, as Erevos chats can: locked, nothing of it is drawn, read or marked
+  read, the home list shows only its name with a lock, and the search finds nothing of it. An SMS conversation also
+  gets **Chat look**, and, with one number, **Notifications** to mute it or give it a sound of its own (a silent
+  "sms-own" channel, the sound played by Erevos), applied only while the space is open, so a closed space shows
+  nothing of which conversations are set apart. Hidden places do not offer these. On this device only.
 
 ### Under the hood
 

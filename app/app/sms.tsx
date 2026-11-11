@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ import { Pinned } from '../components/message-parts';
 import { PlaceSheet } from '../components/place-sheet';
 import { chosenStyle, SelectBar, useSelection } from '../components/select-bar';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
+import { SmsOwnScreen } from '../components/sms-own';
 import { SmsExtras, useSmsVoice } from '../components/sms-parts';
 import { ContactsSheet } from '../components/sms-recipient';
 import { StickerPicker } from '../components/stickers';
@@ -120,6 +121,8 @@ import { useStyles, useTheme } from '../theme/context';
 // owner's stickers, and its picture, voice message or contact card saved into the Collection
 // (components/keep-actions.tsx); the stickers made from photos go as an MMS, as the built-in ones
 // do. Opened at a message (`at`, a starred one), the conversation goes to it.
+// It can have a look of its own, a PIN of its own, its screenshots blocked and, with one number,
+// notifications of its own, all kept in the space (components/sms-own.tsx).
 
 /** What an MMS carries besides its words: a picture, a voice message or a contact card (`name`, whose). */
 type Part = { bytes: Uint8Array; mime: string; name?: string };
@@ -192,16 +195,29 @@ async function invite(to: string, space: number) {
   }
 }
 
-export default function Sms() {
+// The conversation a link names: its numbers, a group's comma-separated; or a sender that writes
+// with a name instead of a number, whose SMS show, but cannot be answered.
+function conversationOf(raw: string): string {
+  const numbers = smsNumbers(raw);
+  const sender = numbers.length === 0 && /^[\p{L}\p{N}][\p{L}\p{N} .&_-]{0,19}$/u.test(raw.trim()) ? raw.trim() : '';
+  return smsAddress(numbers) || sender;
+}
+
+/** An SMS conversation's screen, in its own look or the space's, and locked with its PIN or not
+ *  (components/sms-own.tsx): `tools` are the buttons for those, in it. */
+export default function SmsScreen() {
+  const params = useLocalSearchParams<{ to?: string }>();
+  return <SmsOwnScreen to={conversationOf(typeof params.to === 'string' ? params.to : '')}>{(tools) => <Sms tools={tools} />}</SmsOwnScreen>;
+}
+
+function Sms({ tools }: { tools: ReactNode }) {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string; at?: string }>();
   // With only the SMS open (app/_layout.tsx), a number of a contact stays a plain SMS conversation,
   // and nothing names the space's contacts.
   const smsOnly = useLock().only === 'sms';
   const raw = typeof params.to === 'string' ? params.to : '';
   const numbers = smsNumbers(raw);
-  // A sender that writes with a name instead of a number: its SMS show, but cannot be answered.
-  const sender = numbers.length === 0 && /^[\p{L}\p{N}][\p{L}\p{N} .&_-]{0,19}$/u.test(raw.trim()) ? raw.trim() : '';
-  const to = smsAddress(numbers) || sender;
+  const to = conversationOf(raw);
   const group = numbers.length > 1;
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -854,6 +870,7 @@ export default function Sms() {
             <Text variant="caption" color={colors.warning}>
               {t('Plain SMS: not encrypted. The phone company can read these messages.')}
             </Text>
+            {tools}
             {contacts.length > 0 && !group && mayAnswer ? (
               choosing ? (
                 <>

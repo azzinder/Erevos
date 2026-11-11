@@ -16,6 +16,9 @@ not been compiled yet.
   sent it or what it says. One that Spam's built-in rule catches (`BuiltInSpam.kt`: a phone number in
   none of the contacts and never answered, a link, and words that try to fool) comes with none, while
   `setSpamFilter()` says the filter is on.
+  `setOwnNotices()` tells it, in memory only while a space is open, the numbers muted there (until
+  when), whose SMS come with no notice, and those with a sound of their own, whose notice makes
+  none while the app plays theirs (`lib/sms-notices.ts`).
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.

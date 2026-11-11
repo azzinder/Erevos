@@ -121,7 +121,7 @@ export function ChatRow({
             {row.locked ? <LockIcon color={colors.textMuted} size={13} /> : null}
             {row.muted ? <QuietIcon color={colors.textMuted} size={13} /> : null}
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
-            {row.draft ? (
+            {row.draft && !row.locked ? (
               <Text variant="caption" color={colors.danger}>
                 {t('Draft')}
               </Text>

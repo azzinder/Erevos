@@ -4,6 +4,7 @@
 
 import type { SmsData } from '../lock/sms-data';
 import { blockedNumbers, contactCards, smsMirrored, smsThreads, type ContactCard } from '../modules/erevos-sms';
+import { lockSmsThreads } from './chat-protect';
 import { sealedNamer } from './contact-book';
 import type { InboxSms } from './inbox';
 import { smsTitle } from './sms-folders';
@@ -20,6 +21,7 @@ import { listWords } from './sms-parts';
 // or as the space's contacts kept only in Erevos do; with the space's own order of them
 // (lib/sms-folders.ts: pinned, archived, in the Trash, spam) and the numbers Android blocks. On a
 // linked device given the phone's SMS (lib/sms-mirror.ts), named as the phone names them, if it does.
+// Those locked with a PIN of their own in the space are marked so (lib/chat-protect.ts).
 export type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[]; names: boolean };
 
 export const NO_SMS: SmsList = { threads: [], order: null, blocked: [], names: true };
@@ -43,5 +45,5 @@ export async function smsRows(space: number, key: Uint8Array): Promise<SmsList> 
     const card = numbers.length > 1 ? undefined : cards[one];
     return { ...t, text: listWords(t.text), name: numbers.length > 1 ? smsTitle(link?.state, t.address) || groupName(numbers, names) : names[one], photo: card?.photo || undefined };
   });
-  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers(), names: naming };
+  return { threads: lockSmsThreads(rows, link?.state.own ?? []), order: link?.state ?? null, blocked: await blockedNumbers(), names: naming };
 }

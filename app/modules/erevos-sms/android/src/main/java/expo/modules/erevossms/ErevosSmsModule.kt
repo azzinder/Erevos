@@ -108,6 +108,8 @@ class ErevosSmsModule : Module() {
     Function("showOnScreen") { numbers: List<String> -> SmsStore.showOnScreen(numbers) }
     // Spam's filter on or off: with it on, spam by the built-in rule comes with no notice (BuiltInSpam.kt).
     Function("setSpamFilter") { on: Boolean -> SmsStore.setSpamFilter(context(), on) }
+    // The open space's conversations muted (numbers, until when) and with a sound of their own (lib/sms-notices.ts).
+    Function("setOwnNotices") { numbers: List<String>, ends: List<Double>, sounds: List<String> -> SmsStore.setOwnNotices(numbers, ends, sounds) }
     AsyncFunction("send") { address: String, text: String, sim: Int -> SmsStore.send(context(), address, text, sim).toDouble() }
     AsyncFunction("sendMms") { address: String, text: String, data: ByteArray, type: String, sim: Int ->
       MmsStore.send(context(), address, text, if (data.isEmpty()) null else data, type, sim).toDouble()

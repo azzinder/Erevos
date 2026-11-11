@@ -11,6 +11,7 @@ import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { Button, Card, Page, Row, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { confirm } from '../lib/alert';
+import { lockSmsThreads } from '../lib/chat-protect';
 import { lang, plural, t } from '../lib/i18n';
 import { rowTime, type InboxSms } from '../lib/inbox';
 import { emptyTrash, onSmsOrderChanged, smsOrderChanged, smsTitle, sortSms, spamReason, spamWhy, trashGoesAt } from '../lib/sms-folders';
@@ -74,7 +75,8 @@ export default function SmsFolderScreen() {
       setNames(found);
       setTitles(link.state.titles);
       setWhy(reasons);
-      setRows(folder === 'spam' ? sorted.spam : sorted.archived);
+      // One locked with its PIN says nothing of what it says here either (lib/chat-protect.ts).
+      setRows(lockSmsThreads(folder === 'spam' ? sorted.spam : sorted.archived, link.state.own));
       setTrash([...link.state.trash].sort((a, b) => b.at - a.at));
       setNow(Date.now());
     })().catch((error) => setNote(errorText(error)));
@@ -184,7 +186,7 @@ export default function SmsFolderScreen() {
                   </Text>
                 </View>
                 <Text variant="caption" tone={row.unread ? undefined : 'muted'} numberOfLines={1}>
-                  {row.text}
+                  {row.locked ? t('Locked with a PIN') : row.text}
                 </Text>
                 {why[row.address] ? (
                   <Text variant="caption" tone="faint" numberOfLines={2}>

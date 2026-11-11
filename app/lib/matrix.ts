@@ -35,6 +35,7 @@
 // lib/matrix-backup.ts's. Not audited.
 
 import type { ChatNotify } from '../lock/chat-notify';
+import type { ChatPin } from '../lock/chat-pin';
 import type { Look } from '../theme/look';
 import { deviceLine } from './call-lines';
 import { canTorHttp, matrixCore, torHttp } from './core';
@@ -168,6 +169,9 @@ export type MatrixRoom = {
   look?: Look;
   /** A name of our own for it, given here and kept on this device only (shownRoomName): nobody is told. */
   own?: string;
+  /** The PIN it opens with, as kept, and its screenshots blocked (lib/chat-protect.ts), on this device only. */
+  pin?: ChatPin;
+  shots?: true;
   /** Reactions by their own event ID, so one taken back comes off its message. */
   reactionsBy?: Record<string, { target: string; key: string; sender: string }>;
   /** Where its older messages are to be fetched from (/messages), once the homeserver said. */

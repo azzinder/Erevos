@@ -2278,6 +2278,9 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
   the list by itself when a new SMS comes from them, or with **Unarchive**.
 - **Group MMS names:** hold a group MMS down and choose **Name it here** to give it a name of your own, only on this
   phone.
+- **A conversation's own:** under its **Plain SMS** line, a conversation has **Chat look**, as a chat does, and, with
+  one number, **Notifications**: mute it for a while or always, or give it a sound of its own, or none. These hold
+  while the space is open; with it closed, every SMS notifies as the settings say.
 - **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
   then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
   SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.
@@ -2800,6 +2803,11 @@ its PIN.
   hidden chats' own PIN guards them. Moved back to the chats, the same PIN asks again.
 - **To take it off:** **Details** → **Lock with a PIN** again, and type its PIN.
 - **Only this phone knows it,** and each linked device has its own. Backups keep it.
+- **On Matrix, XMPP, Nostr and SMS too:** a chat on Matrix, XMPP or Nostr has **Lock with a PIN** at its foot, and an
+  SMS conversation under its **Plain SMS** line, working the same way: its name with a lock in the list, none of its
+  messages in the search, and the space's password takes a forgotten PIN off. **Block screenshots** sits beside it, on
+  this phone only (Android): the others are not told. A hidden place's chats offer neither, as its own PIN guards them
+  and they always stay out of screenshots.
 
 **Why:** some chats should stay where they are, but not open for whoever holds the phone a moment. The PIN is kept
 only as Argon2id of it, so it cannot be read from the phone, and guesses are slow. It is a lock on the screen, not a
