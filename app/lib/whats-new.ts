@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Stickers on other networks**: a built-in sticker sent on Matrix, XMPP, Nostr or by MMS arrives as its picture, made on your device, its words in your language. See [Stickers](#relay)."),
     mark("**Voice messages in Opus**: on Android 10 and later, in the web app and on a computer, voice messages are recorded as Ogg/Opus, as Telegram and Element send them: as clear as before at half the size, about 240 KB a minute. Every Erevos plays them, Safari on an older iPhone too. See [Chat through a relay](#relay)."),
     mark("**Mark all as read**: the ⋮ menu of the chats has it for the part of the list you are on, all messages, SMS, Erevos, Matrix, XMPP or Nostr, and the Matrix, XMPP and Nostr screens have it for their chats. It asks first, then reads each chat as opening it would: those who wrote are told as then. See [Getting started](#start)."),
     mark("**Answer with video, or voice only**: an incoming call, Erevos, group, XMPP or Matrix, now offers both. You can add video to an Erevos voice call while it goes on, and Flip on a computer moves to your next camera. See [Chat through a relay](#relay)."),

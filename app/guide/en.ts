@@ -1077,6 +1077,9 @@ stickers too):
   downloaded. An Erevos from before this shows its emoji instead. All but the words and the treats move a little for a
   few seconds as they come and when tapped, then rest; with the phone's reduce motion setting on, they stay still. The
   words show in the app's language.
+- **As a picture:** in a chat on another network that takes only pictures, a built-in sticker goes as its picture
+  instead: 512 by 512 with a clear background, drawn on your phone or computer from the same shapes, at rest, its words
+  in the app's language. Nothing is downloaded to make it.
 - **Mine**, among the stickers, holds those you make from photos. **New sticker from a photo** cuts one square, makes it
   small (512 by 512, about 100 KB at most) and keeps only its picture, nothing of where or with what it was taken. It is
   kept sealed in the space, or in the hidden chats it was made in, and shows only there, up to 100 of them; hold one to
@@ -1672,7 +1675,8 @@ between.
   it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Stickers:** a sticker that Element, FluffyChat or Element X send shows in the chat; **Show sticker** fetches it
   through your Matrix server. **Sticker** sends your own stickers made from photos (**Mine**) as pictures, encrypted
-  where the chat is.
+  where the chat is. The built-in sets are there too: each sticker goes as its picture, made on your device, with its
+  words for apps that show only those.
 - **Reactions, answers, changes and deleting:** hold a message to open its menu: pick a reaction at the top, **Reply**
   to answer it, **Copy** its words, and for a message of yours **Edit** or **Delete** it. An answer shows the message it
   is to above its words, and a tap on that goes to the message. Reactions show under a message; tap one to react the
@@ -1845,8 +1849,8 @@ bridge sits in between.
   Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
   it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Stickers:** **Sticker** sends your own stickers made from photos (**Mine**) as photos, encrypted as the chat is;
-  other XMPP apps show them as photos. A sticker pack that another app sends (XEP-0449) is not fetched: it shows its
-  words.
+  other XMPP apps show them as photos. The built-in sets are there too: each sticker goes as its picture, made on your
+  device. A sticker pack that another app sends (XEP-0449) is not fetched: it shows its words.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send, as in a
   Matrix chat. It goes as a sound file, encrypted as the chat is, as Conversations sends one, and plays with **Play**. A
   voice message from Conversations or another XMPP app (a .m4a or .ogg file) shows as a voice message too, with **Play**
@@ -1979,7 +1983,7 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   again) or to **Delete**. Delete takes them from this phone and asks the others' apps to delete your own too: their
   apps may or may not do so.
 - **Stickers:** **Sticker** sends your own stickers made from photos (**Mine**) as photos, encrypted: other Nostr apps
-  show them as photos.
+  show them as photos. The built-in sets are there too: each sticker goes as its picture, made on your device.
 - **Encryption:** each message is encrypted for them and signed by you, then wrapped again by a key made for that
   message alone, its time set back by up to two days (NIP-17, with NIP-44 and NIP-59). The relays see whom it is for,
   not who wrote it, when, or what it says. A copy goes to your own relays, so your other Nostr apps with this key read
@@ -2107,8 +2111,9 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   280 KB), with nothing in it besides the picture. Hold the microphone, with nothing typed, to record a voice message of
   up to a minute, sent as an MMS in AMR, the format phones' messaging apps play. **+** → **Contact card** sends a
   contact from the phone's contacts as a vCard, without your notes on it or its groups, and with its picture only if
-  that still fits. Photos, voice messages and contact cards that come show in the conversation, to play or to save
-  (**Save** opens a new contact with the card's details). An MMS is as plain as an SMS: the phone company can see it.
+  that still fits. **+** → **Sticker** sends one of the built-in stickers as its picture, alone in an MMS. Photos,
+  voice messages and contact cards that come show in the conversation, to play or to save (**Save** opens a new contact
+  with the card's details). An MMS is as plain as an SMS: the phone company can see it.
 - **Where you are:** **+** → **Location** sends where you are as an SMS with a geo: address and an OpenStreetMap link,
   which any phone opens. A geo: address, or a link of OpenStreetMap, Google Maps, Apple Maps or Waze, in an SMS that
   comes shows as a place, to open in the maps app; a short link stays a link, as it would have to be fetched to tell the

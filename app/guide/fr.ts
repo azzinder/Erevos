@@ -1235,6 +1235,9 @@ stickers) :
   gourmandises bougent un peu pendant quelques secondes quand ils arrivent et quand on appuie dessus, puis se reposent ;
   avec le réglage de réduction des animations du téléphone activé, ils restent immobiles. Les mots s’affichent dans la
   langue de l’app.
+- **En image :** dans une discussion d’un autre réseau qui ne prend que des images, un sticker intégré part à la place
+  comme son image : 512 sur 512 sur fond transparent, dessinée sur ton téléphone ou ton ordinateur à partir des mêmes
+  formes, au repos, ses mots dans la langue de l’app. Rien n’est téléchargé pour la faire.
 - **Les miens**, parmi les stickers, contient ceux que tu fais à partir de photos. **Nouveau sticker à partir d’une
   photo** en découpe un carré, le réduit (512 sur 512, environ 100 Ko au plus) et ne garde que son image, rien de
   l’endroit ni de l’appareil avec lequel elle a été prise. Il est gardé scellé dans l’espace, ou dans les discussions
@@ -1916,7 +1919,8 @@ Element : aucun pont ne se met entre les deux.
   [Discuter par un relais](#relay)).
 - **Stickers :** un sticker qu’envoient Element, FluffyChat ou Element X s’affiche dans la discussion ; **Afficher le
   sticker** le récupère par ton serveur Matrix. **Sticker** envoie tes propres stickers faits à partir de photos (**Les
-  miens**) comme des images, chiffrées là où la discussion l’est.
+  miens**) comme des images, chiffrées là où la discussion l’est. Les séries intégrées y sont aussi : chaque sticker
+  part comme son image, faite sur ton appareil, avec ses mots pour les applis qui n’affichent que ceux-ci.
 - **Réactions, réponses, modifications et suppression :** appuie longuement sur un message pour ouvrir son menu :
   choisis une réaction en haut, **Répondre** pour lui répondre, **Copier** pour ses mots, et sur un message de toi
   **Modifier** ou **Supprimer**. Une réponse montre le message auquel elle répond au-dessus de ses mots, et un appui
@@ -2115,8 +2119,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   double appui zooment, elle tourne avec le téléphone, et **Enregistrer** la garde (voir Photos et fichiers, sous
   [Discuter par un relais](#relay)).
 - **Stickers :** **Sticker** envoie tes propres stickers faits à partir de photos (**Les miens**) comme des photos,
-  chiffrées comme la discussion ; les autres applis XMPP les affichent comme des photos. Un lot de stickers qu’envoie
-  une autre appli (XEP-0449) n’est pas récupéré : il affiche ses mots.
+  chiffrées comme la discussion ; les autres applis XMPP les affichent comme des photos. Les séries intégrées y sont
+  aussi : chaque sticker part comme son image, faite sur ton appareil. Un lot de stickers qu’envoie une autre appli
+  (XEP-0449) n’est pas récupéré : il affiche ses mots.
 - **Messages vocaux :** appuie longuement sur le micro sous la zone de message pour enregistrer, et relâche pour
   envoyer, comme dans une discussion Matrix. Il part comme fichier son, chiffré comme la discussion, comme Conversations
   l’envoie. Un message vocal de Conversations ou d’une autre appli XMPP (un fichier .m4a ou .ogg) s’affiche aussi comme
@@ -2266,7 +2271,8 @@ discussions propres à Erevos.
   photos et les fichiers sont renvoyés) ou à **Supprimer**. Supprimer les retire de ce téléphone et demande aux applis
   des autres de supprimer aussi les tiens : leurs applis peuvent le faire ou non.
 - **Stickers :** **Sticker** envoie tes propres stickers faits à partir de photos (**Les miens**) comme des photos,
-  chiffrées : les autres applis Nostr les affichent comme des photos.
+  chiffrées : les autres applis Nostr les affichent comme des photos. Les séries intégrées y sont aussi : chaque sticker
+  part comme son image, faite sur ton appareil.
 - **Chiffrement :** chaque message est chiffré pour l’autre personne et signé par toi, puis enveloppé de nouveau par une
   clé créée pour ce seul message, son heure reculée jusqu’à deux jours (NIP-17, avec NIP-44 et NIP-59). Les relais
   voient à qui il est destiné, pas qui l’a écrit, quand, ni ce qu’il dit. Une copie va à tes propres relais, pour que
@@ -2415,9 +2421,10 @@ téléphone sans Erevos n’affiche rien.
   un MMS (environ 280 Ko), sans rien dedans que l’image. Maintiens le micro, sans rien de tapé, pour enregistrer un
   message vocal d’une minute au plus, envoyé en MMS en AMR, le format que lisent les applis de messages des téléphones.
   **+** → **Carte de contact** envoie un contact de ceux du téléphone en vCard, sans tes notes dessus ni ses groupes, et
-  avec son image seulement si elle tient encore. Les photos, messages vocaux et cartes de contact qui arrivent
-  s’affichent dans la conversation, à lire ou à enregistrer (**Enregistrer** ouvre un nouveau contact avec les détails
-  de la carte). Un MMS est aussi en clair qu’un SMS : l’opérateur peut le voir.
+  avec son image seulement si elle tient encore. **+** → **Sticker** envoie l’un des stickers intégrés comme son image,
+  seul dans un MMS. Les photos, messages vocaux et cartes de contact qui arrivent s’affichent dans la conversation, à
+  lire ou à enregistrer (**Enregistrer** ouvre un nouveau contact avec les détails de la carte). Un MMS est aussi en
+  clair qu’un SMS : l’opérateur peut le voir.
 - **Où tu es :** **+** → **Position** envoie où tu es en SMS avec une adresse geo: et un lien OpenStreetMap, que
   n’importe quel téléphone ouvre. Une adresse geo:, ou un lien d’OpenStreetMap, de Google Maps, d’Apple Maps ou de Waze,
   dans un SMS qui arrive s’affiche comme un lieu, à ouvrir dans l’appli de cartes ; un lien court reste un lien, car il

@@ -128,9 +128,9 @@ import { checkedLook } from '../theme/look';
 // (components/say-typing.tsx).
 //
 // A sound is a voice message, as the other apps send one, played here with how long it lasts
-// (components/network-file.tsx). Sticker sends one of the stickers made here from photos
-// (components/xmpp-stickers.tsx), as a photo. Who owns a group and who runs it is said beside them,
-// and its owner sets its description.
+// (components/network-file.tsx). Sticker sends one of Erevos's own, as its picture, or one of the
+// stickers made here from photos (components/xmpp-stickers.tsx), as a photo. Who owns a group and
+// who runs it is said beside them, and its owner sets its description.
 //
 // A place goes as a geo: link in the words, as Conversations sends one, and one that comes so shows
 // as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
@@ -752,7 +752,16 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           </Row>
           {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
           <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={channel ? t('Everyone in this group can see it, and the servers.') : t('Everyone in this chat can see it.')} />
-          <XmppStickerSheet visible={stickering} onClose={() => setStickering(false)} place={stickerPlace} onPick={(sticker) => void sendOwnSticker(sticker)} />
+          <XmppStickerSheet
+            visible={stickering}
+            onClose={() => setStickering(false)}
+            place={stickerPlace}
+            onPick={(sticker) => void sendOwnSticker(sticker)}
+            onBuiltIn={(sticker) => {
+              setStickering(false);
+              void sendSticker(sticker);
+            }}
+          />
           <Sheet visible={forwarding !== null} onClose={() => setForwarding(null)} title={t('Forward to')}>
             <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
               {targets.map((other) => (

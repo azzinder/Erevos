@@ -1131,6 +1131,9 @@ Pod **+** ima više za slanje od fotografija i datoteka (smajli na kraju polja z
   ne preuzima. Erevos od prije ovoga umjesto nje prikazuje njen emoji. Sve osim riječi i poslastica malo se pomjeraju
   nekoliko sekundi kad stignu i kad ih dodirnete, a zatim miruju; s uključenom postavkom telefona za smanjenje pokreta
   ostaju mirne. Riječi se prikazuju na jeziku aplikacije.
+- **Kao slika:** u razgovoru na drugoj mreži koja prima samo slike, ugrađena naljepnica ide umjesto toga kao njena
+  slika: 512 sa 512 s prozirnom pozadinom, iscrtana na vašem telefonu ili računaru iz istih oblika, mirna, s riječima na
+  jeziku aplikacije. Ništa se ne preuzima da bi se napravila.
 - **Moje**, među naljepnicama, sadrži one koje napravite od fotografija. **Nova naljepnica od fotografije** izrezuje
   kvadrat, smanjuje ga (512 sa 512, najviše oko 100 KB) i zadržava samo sliku, ništa o tome gdje je ili čime je
   snimljena. Čuva se zapečaćena u prostoru, ili u skrivenim razgovorima u kojima je napravljena, i prikazuje se samo
@@ -1751,7 +1754,8 @@ između.
   [Razgovor preko relaya](#relay)).
 - **Naljepnice:** naljepnica koju pošalju Element, FluffyChat ili Element X prikazuje se u razgovoru; **Prikaži
   naljepnicu** je preuzima preko vašeg Matrix servera. **Naljepnica** šalje vaše naljepnice napravljene od fotografija
-  (**Moje**) kao slike, šifrirane gdje je i razgovor.
+  (**Moje**) kao slike, šifrirane gdje je i razgovor. Tu su i ugrađeni kompleti: svaka naljepnica ide kao njena slika,
+  napravljena na vašem uređaju, s riječima za aplikacije koje prikazuju samo njih.
 - **Reakcije, odgovori, izmjene i brisanje:** zadržite prst na poruci da otvorite njen meni: izaberite reakciju na vrhu,
   **Odgovori** da joj odgovorite, **Kopiraj** za njene riječi, a na svojoj poruci **Uredi** ili **Obriši**. Odgovor
   iznad svojih riječi prikazuje poruku na koju odgovara, a dodir na to vodi do poruke. Reakcije se vide ispod poruke;
@@ -1925,8 +1929,9 @@ aplikacije: nikakav most nije između.
   dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
   [Razgovor preko relaya](#relay)).
 - **Naljepnice:** **Naljepnica** šalje vaše naljepnice napravljene od fotografija (**Moje**) kao fotografije, šifrirane
-  kao i razgovor; druge XMPP aplikacije ih prikazuju kao fotografije. Paket naljepnica koji pošalje druga aplikacija
-  (XEP-0449) ne preuzima se: prikazuje svoje riječi.
+  kao i razgovor; druge XMPP aplikacije ih prikazuju kao fotografije. Tu su i ugrađeni kompleti: svaka naljepnica ide
+  kao njena slika, napravljena na vašem uređaju. Paket naljepnica koji pošalje druga aplikacija (XEP-0449) ne preuzima
+  se: prikazuje svoje riječi.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete, kao u
   Matrix razgovoru. Ide kao zvučna datoteka, šifrovana kao razgovor, kako je šalje Conversations. Glasovna poruka iz
   Conversationsa ili druge XMPP aplikacije (datoteka .m4a ili .ogg) takođe se prikazuje kao glasovna poruka, s **Pusti**
@@ -2059,7 +2064,8 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   se ponovo) ili za **Obriši**. Brisanje ih uklanja s ovog telefona i traži od aplikacija ostalih da obrišu i vaše:
   njihove aplikacije to mogu ali ne moraju učiniti.
 - **Naljepnice:** **Naljepnica** šalje vaše naljepnice napravljene od fotografija (**Moje**) kao fotografije, šifrirane:
-  druge Nostr aplikacije ih prikazuju kao fotografije.
+  druge Nostr aplikacije ih prikazuju kao fotografije. Tu su i ugrađeni kompleti: svaka naljepnica ide kao njena slika,
+  napravljena na vašem uređaju.
 - **Šifrovanje:** svaka poruka šifrira se za drugu osobu i vi je potpisujete, a zatim je ponovo omata ključ izrađen samo
   za tu poruku, s vremenom pomaknutim unatrag do dva dana (NIP-17, s NIP-44 i NIP-59). Relayi vide kome je namijenjena,
   ne i tko ju je napisao, kada ni što piše. Kopija ide na vaše vlastite relaye, da vaše druge Nostr aplikacije s ovim
@@ -2197,9 +2203,10 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   stane u jedan MMS (oko 280 KB), bez ičega u njoj osim slike. Držite mikrofon, kad ništa nije otkucano, da snimite
   glasovnu poruku do minute, poslanu kao MMS u AMR-u, formatu koji puštaju aplikacije za poruke na telefonima. **+** →
   **Kartica kontakta** šalje kontakt iz kontakata telefona kao vCard, bez vaših bilješki o njemu i njegovih grupa, a sa
-  njegovom slikom samo ako još stane. Fotografije, glasovne poruke i kartice kontakata koje stignu prikazuju se u
-  razgovoru, za puštanje ili čuvanje (**Sačuvaj** otvara novi kontakt s podacima kartice). MMS je jednako otvoren kao
-  SMS: operater ga može vidjeti.
+  njegovom slikom samo ako još stane. **+** → **Naljepnica** šalje jednu od ugrađenih naljepnica kao njenu sliku, samu u
+  jednom MMS-u. Fotografije, glasovne poruke i kartice kontakata koje stignu prikazuju se u razgovoru, za puštanje ili
+  čuvanje (**Sačuvaj** otvara novi kontakt s podacima kartice). MMS je jednako otvoren kao SMS: operater ga može
+  vidjeti.
 - **Gdje ste:** **+** → **Lokacija** šalje gdje ste kao SMS s geo: adresom i OpenStreetMap linkom, koji otvara svaki
   telefon. Geo: adresa, ili link OpenStreetMapa, Google Mapsa, Apple Mapsa ili Wazea, u SMS-u koji stigne prikazuje se
   kao mjesto, za otvaranje u aplikaciji za karte; kratak link ostaje link, jer bi se morao preuzeti da bi se znalo

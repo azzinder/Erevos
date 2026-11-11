@@ -5,7 +5,6 @@
 // The Greek of running Matrix groups, their stickers, choosing several messages and finding people (app/matrix-chat.tsx, components/matrix-members.tsx, components/matrix-stickers.tsx) (i18n/el/index.ts).
 export const matrixGroups: Record<string, string> = {
   "Show sticker": "Εμφάνιση αυτοκόλλητου",
-  "Your stickers made from photos go to Matrix as pictures, encrypted where the chat is. Erevos’s own sets are drawn by Erevos itself, so other Matrix apps could not show them.": "Τα αυτοκόλλητα που φτιάχνεις από φωτογραφίες πηγαίνουν στο Matrix ως εικόνες, κρυπτογραφημένα όπου είναι κρυπτογραφημένη η συνομιλία. Τα σετ του ίδιου του Erevos τα σχεδιάζει το Erevos, οπότε άλλες εφαρμογές Matrix δεν θα μπορούσαν να τα δείξουν.",
   "moderator": "συντονιστής",
   "invited": "έχει προσκληθεί",
   "Make {name} an admin? They may then do all you may in this group, and you cannot undo it.": "Να γίνει ο/η {name} διαχειριστής; Θα μπορεί μετά να κάνει ό,τι μπορείς κι εσύ σε αυτή την ομάδα, και δεν θα μπορείς να το αναιρέσεις.",

@@ -123,10 +123,11 @@ import { checkedLook } from '../theme/look';
 // Select, in a message's menu, chooses several messages (components/select-bar.tsx) to copy their
 // words, forward them, or delete them for everyone: ours, and others' too where our level in the
 // room lets us take them back (lib/matrix-power.ts), as the homeserver allows the same; Matrix keeps
-// nothing hidden on one phone only, so others' stay otherwise. Stickers made from photos go as
-// Matrix's stickers (components/matrix-stickers.tsx). In a group, Members opens its sheet
-// (components/matrix-members.tsx): who is in it and what they are, its name and what it is about,
-// and what our level lets us do there; what it is about shows under its name.
+// nothing hidden on one phone only, so others' stay otherwise. Stickers, Erevos's own as their
+// picture and those made from photos, go as Matrix's stickers (components/matrix-stickers.tsx). In
+// a group, Members opens its sheet (components/matrix-members.tsx): who is in it and what they
+// are, its name and what it is about, and what our level lets us do there; what it is about shows
+// under its name.
 
 // The most members Who read it names as not having read one of ours yet.
 const MOST_SHOWN = 100;
