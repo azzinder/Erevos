@@ -11,7 +11,7 @@ import { checkedLook, type Look } from '../theme/look';
 import { canNostrChat } from './core';
 import { sha256Bytes, toHex } from './crypto';
 import { fileCache } from './file-cache';
-import { t } from './i18n';
+import { plural, t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
 import { PlaceLives, type PlaceKey } from './place-lives';
@@ -825,8 +825,14 @@ export function sayFollowsReport(report: NostrFollowsReport, key: string): strin
           : t('Your newest list of people you follow has no one in it.'),
     t('Looked for the list of {npub}.', { npub: shortNpub(npubOf(key)) }),
   ];
+  return [...said, ...sayRelays(report.relays)];
+}
+
+/** How each relay answered, a line for each way, those that answered first. */
+function sayRelays(relays: NostrFollowsReport['relays']): string[] {
+  const said: string[] = [];
   const host = (url: string) => url.replace(/^wss?:\/\//, '').replace(/\/+$/, '');
-  const of = (how: NostrFollowsReport['relays'][number]['how']) => report.relays.filter((r) => r.how === how);
+  const of = (how: NostrFollowsReport['relays'][number]['how']) => relays.filter((r) => r.how === how);
   const answered = of('all').map((r) => host(r.url));
   const late = of('late').map((r) => host(r.url));
   const closed = of('closed').map((r) => (r.why ? `${host(r.url)} (${r.why.slice(0, 80)})` : host(r.url)));
@@ -836,6 +842,18 @@ export function sayFollowsReport(report: NostrFollowsReport, key: string): strin
   if (closed.length) said.push(t('Closed: {relays}.', { relays: closed.join(', ') }));
   if (unreached.length) said.push(t('Not reached: {relays}.', { relays: unreached.join(', ') }));
   return said;
+}
+
+/**
+ * What the Public tab says when the newest page of a key that follows people has no post: whether
+ * posts came and none could be shown, or none came, then how each relay answered the ask.
+ */
+export function sayFeedReport(page: Pick<NostrFeedPage, 'follows' | 'came' | 'relays'>): string[] {
+  const first =
+    page.came > 0
+      ? plural(page.came, '{n} post came from the relays, but none could be shown.', '{n} posts came from the relays, but none could be shown.')
+      : plural(page.follows, 'You follow {n} person, but no relay sent a post of theirs.', 'You follow {n} people, but no relay sent a post of theirs.');
+  return [first, ...sayRelays(page.relays)];
 }
 
 // How many people one look-up of names asks for, and how many such look-ups go at once.
@@ -1032,6 +1050,12 @@ export type NostrFeedPage = {
   follows: number;
   /** The names of the people on the page, by key: given here, or as they call themselves. */
   names: Record<string, string>;
+  /** When the key follows no one: how the look-up of its follow list went. */
+  report?: NostrFollowsReport;
+  /** How many posts and shares the relays sent for this page, shown or not. */
+  came: number;
+  /** How each relay asked for the posts answered. */
+  relays: NostrFollowsReport['relays'];
 };
 
 /**
@@ -1040,12 +1064,12 @@ export type NostrFeedPage = {
  * looks up. An ask cut short counts as full: what it did not send may be older. With them, whether
  * the relay answered.
  */
-async function askFeed(it: Live, url: string, authors: string[], until?: number): Promise<{ answers: FeedAnswer[]; answered: boolean }> {
+async function askFeed(it: Live, url: string, authors: string[], until?: number): Promise<{ answers: FeedAnswer[]; answered: boolean; report: NostrFollowsReport['relays'][number] }> {
   let relay: NostrRelay;
   try {
     relay = await reach(it, url);
-  } catch {
-    return { answers: [], answered: false };
+  } catch (error) {
+    return { answers: [], answered: false, report: { url, how: 'unreached', why: error instanceof Error ? error.message : String(error) } };
   }
   const filters: Record<string, unknown>[] = [];
   for (let i = 0; i < authors.length; i += NAMES_AT_ONCE) {
@@ -1053,14 +1077,17 @@ async function askFeed(it: Live, url: string, authors: string[], until?: number)
   }
   const answers: FeedAnswer[] = [];
   let answered = false;
+  // How it answered: all it keeps for one ask at least, else as its last ask ended.
+  let report: NostrFollowsReport['relays'][number] = { url, how: 'late' };
   for (let i = 0; i < filters.length; i += LOOKUPS_AT_ONCE) {
     const got = await Promise.all(filters.slice(i, i + LOOKUPS_AT_ONCE).map((filter) => relay.ask([filter], FOLLOWS_WAIT)));
     for (const one of got) {
       answers.push({ events: one.events, full: one.events.length >= FEED_AT_ONCE || one.how !== 'all' });
       answered ||= one.how === 'all';
+      if (report.how !== 'all') report = one.why ? { url, how: one.how, why: one.why } : { url, how: one.how };
     }
   }
-  return { answers, answered };
+  return { answers, answered, report };
 }
 
 /**
@@ -1084,7 +1111,7 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
   if (!known || until === undefined) {
     const { keys, report } = await followListOf(it, state);
     const answering = report.relays.filter((r) => r.how === 'all').map((r) => r.url);
-    if (!keys.length) return { posts: [], until: 0, older: false, answered: answering.length > 0, follows: 0, names: {} };
+    if (!keys.length) return { posts: [], until: 0, older: false, answered: answering.length > 0, follows: 0, names: {}, report, came: 0, relays: [] };
     const gathering = answering.filter((url) => GATHERERS.includes(url));
     const fresh: FeedKnown = { of: it, me: state.public, follows: keys, listing: gathering.length ? gathering : answering, writes: kept?.writes ?? new Map(), names: kept?.names ?? new Map() };
     // Where those not looked up yet write; one with no list found is asked of the fixed relays only.
@@ -1118,7 +1145,8 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
     const name = key === state.public ? t('You') : (!state.chats[key]?.members && state.chats[key]?.name) || known.names.get(key) || state.people[key]?.name;
     if (name) names[key] = name;
   }
-  return { posts: page.posts, until: page.until, older: page.older, answered: asked.some((one) => one.answered), follows: known.follows.length, names };
+  const came = asked.reduce((sum, one) => sum + one.answers.reduce((n, answer) => n + answer.events.length, 0), 0);
+  return { posts: page.posts, until: page.until, older: page.older, answered: asked.some((one) => one.answered), follows: known.follows.length, names, came, relays: asked.map((one) => one.report) };
 }
 
 /** Forgets what the feed found, as it goes from the screen: its next showing looks all up again. */

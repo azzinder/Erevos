@@ -35,6 +35,8 @@ import {
   nostrDmWritePoll,
   nostrDmWritePost,
   onNostrDmChange,
+  sayFeedReport,
+  sayFollowsReport,
   type PublicPhoto,
 } from '../lib/nostr-dm-store';
 import { EMOJI_MOST, emojiOf, withEmoji } from '../lib/nostr-emoji';
@@ -599,6 +601,9 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
   const [looking, setLooking] = useState<'newest' | 'older' | null>(null);
   const [looked, setLooked] = useState(false);
   const [follows, setFollows] = useState<number | null>(null);
+  // Why the newest page has no Nostr post: how the follow list's look-up went, or the posts' ask,
+  // a line each, the first the reason.
+  const [why, setWhy] = useState<string[]>([]);
   const [said, setSaid] = useState('');
   const [filter, setFilter] = useState<PublicShow>('all');
   const [matrixTick, setMatrixTick] = useState(0);
@@ -624,6 +629,8 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
       const page = await nostrDmFeed(older ? before.until : undefined, before.posts);
       if (at !== showing.current) return;
       setFollows(page.follows);
+      // A list found and checked that names no one: the key follows no one, as the text says.
+      if (!older) setWhy(page.posts.length ? [] : page.report ? (page.report.checked > 0 ? [] : sayFollowsReport(page.report, me)) : page.follows ? sayFeedReport(page) : []);
       setNames((known) => ({ ...(older ? known : {}), ...page.names }));
       setFeed({ posts: morePosts(before.posts, page.posts), until: page.until, older: page.older });
       if (!page.answered) setSaid(t('No relay answered. Try again in a while.'));
@@ -650,6 +657,7 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
       setLooking(null);
       setLooked(false);
       setFollows(null);
+      setWhy([]);
       setSaid('');
       nostrDmFeedDone();
     };
@@ -701,6 +709,8 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
     </View>
   );
 
+  // Why no Nostr post came, while the Nostr posts show: the follow list not found, or none sent.
+  const reasons = !said && nostrOn && show !== 'matrix' ? why : [];
   const empty =
     account === 'loading' && !matrixOn ? null : account === 'none' && !matrixOn ? (
       <View style={styles.empty}>
@@ -717,10 +727,16 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
       <View style={styles.empty}>
         <Text tone="muted">
           {said ||
-            (nostrOn && follows === 0 && !matrixOn
+            reasons[0] ||
+            (nostrOn && follows === 0 && (!matrixOn || show === 'nostr')
               ? t('Your Nostr key follows no one yet. Follow people with it in another Nostr app, such as Amethyst or Primal, and their posts show here.')
               : t('No public posts were found.'))}
         </Text>
+        {reasons.slice(1).map((line, i) => (
+          <Text key={i} variant="caption" tone="faint">
+            {line}
+          </Text>
+        ))}
         {nostrOn ? <Row>{lookAgain}</Row> : null}
       </View>
     );

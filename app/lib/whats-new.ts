@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found, or they were found but no relay sent their posts, or their posts came but could not be shown, and how each relay answered. Before, it said only that no public posts were found. See [Chats with other Nostr apps](#nostr-chats)."),
     mark("**A new computer links to the end**: a computer with no relay before linking now takes the phone's answer at once, so linking with the small code finishes by itself, and with the full code **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more until Erevos started again. See [Linked devices](#devices)."),
   ],
   underTheHood: [],

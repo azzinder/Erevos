@@ -86,6 +86,7 @@ import {
   nostrDmUnread,
   nostrDmUnreact,
   runNostrDm,
+  sayFeedReport,
   sayFollowsReport,
   stopNostrDm,
 } from '../lib/nostr-dm-store';
@@ -189,6 +190,16 @@ test('a look-up of the follow list that found no one says why, whose list, and h
   const none = sayFollowsReport({ relays: relays.filter((r) => r.how !== 'all'), lists: 0, checked: 0, people: 0 }, key);
   assert.equal(none[0], 'No relay answered. Try again in a while.');
   assert.ok(!none.some((line) => line.startsWith('Answered')));
+});
+
+test("the Public tab's newest page with no post says whether posts came, or none did, and how each relay answered", () => {
+  const relays = [
+    { url: 'wss://a.example', how: 'all' as const },
+    { url: 'wss://d.example', how: 'unreached' as const, why: 'The Nostr relay did not answer.' },
+  ];
+  assert.deepEqual(sayFeedReport({ follows: 40, came: 0, relays }), ['You follow 40 people, but no relay sent a post of theirs.', 'Answered: a.example.', 'Not reached: d.example.']);
+  assert.equal(sayFeedReport({ follows: 1, came: 0, relays })[0], 'You follow 1 person, but no relay sent a post of theirs.');
+  assert.equal(sayFeedReport({ follows: 40, came: 12, relays })[0], '12 posts came from the relays, but none could be shown.');
 });
 
 test("NIP-17's own example opens, for its reader and as its sender's copy", { skip: !coreReady }, async () => {

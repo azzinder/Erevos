@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
+  (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
+  posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were
+  found, which hid a key that follows no one.
 - **A new computer links to the end**: a computer that had no relay before linking now reads the queue it makes for the
   link at once, so it takes the phone's answer: linking with the small code finishes by itself, and with the full code
   **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more, as it
