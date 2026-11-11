@@ -6,6 +6,7 @@ import { nostrChatCore } from './core';
 import { sha256Bytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
+import { emojiUrlOf, isEmojiCode } from './nostr-emoji';
 import { fileOfRumor, type NostrDmFile } from './nostr-files';
 import { isNostrRelay } from '../lock/e2e-data';
 import type { ChatNotify } from '../lock/chat-notify';
@@ -17,9 +18,11 @@ import type { Look } from '../theme/look';
 // come to the relays it names for them (its "inbox", kind 10050), and go to those the other person
 // names. The core makes and opens them (crates/erevos-nostr chat): each one sealed for its reader,
 // wrapped by a key made for it alone, its time set up to two days back, so a relay sees only
-// which key it is for. Texts (kind 14), photos and files (kind 15, lib/nostr-files.ts) and
-// reactions (kind 7); a group is the set of people a message names (NIP-17 has no admins), and
-// each of them gets a wrap of their own.
+// which key it is for. Texts (kind 14), photos and files (kind 15, lib/nostr-files.ts), reactions
+// (kind 7), and asks to take back a message or a reaction (kind 5, NIP-09, as NIP-17 allows): the
+// others' apps that do so remove it, and Erevos removes what its writer took back. A group is the
+// set of people a message names (NIP-17 has no admins), and each of them gets a wrap of their own.
+// Pins are this device's own: NIP-17 has none, and nothing of them goes anywhere.
 //
 // This is the account and its chats, as one value kept sealed in the space (lock/nostr-dm-data.ts);
 // lib/nostr-dm-store.ts connects it to relays.
@@ -32,6 +35,12 @@ export const KEEP_MESSAGES = 500;
 const SEEN_MOST = 5000;
 // Reactions kept for messages not here yet, at most.
 const EARLY_MOST = 200;
+// Messages and reactions taken back that are remembered, so that one that comes late stays away.
+const GONE_MOST = 500;
+/** The most messages a chat keeps pinned. */
+export const PINS_MOST = 20;
+/** The most messages one ask to take back names: a wrap holds no more than some 64 kB. */
+export const TAKE_BACK_MOST = 100;
 /** How many chats a space keeps at most (roomForChat). */
 export const CHATS_MOST = 300;
 
@@ -65,6 +74,11 @@ export type NostrDmMessage = {
   file?: NostrDmFile | true;
   /** Reactions (kind 7): the latest of each who reacted, by their key. */
   reactions?: Record<string, string>;
+  /** The id of each of those reactions, by key: to take it back (kind 5), or know it taken back. */
+  reactionIds?: Record<string, string>;
+  /** Where the pictures of the custom emoji among them are (NIP-30), by :shortcode:: never
+   *  fetched in a chat, only sent on with the same reaction, for the other apps to show. */
+  emoji?: Record<string, string>;
   /** The message it answers, by id (its e tag, as NIP-17 has it). */
   replyTo?: string;
   /** An old private message (NIP-04, kind 4): the relays saw who wrote to whom, and when. */
@@ -96,6 +110,8 @@ export type NostrDmChat = {
   notify?: ChatNotify;
   /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
   look?: Look;
+  /** Messages pinned here, by id, the latest first: on this device only, as NIP-17 has no pins. */
+  pins?: string[];
 };
 
 export type NostrDmState = {
@@ -119,7 +135,10 @@ export type NostrDmState = {
   /** Wraps taken already, by id. */
   seen: string[];
   /** Reactions that came before the message they are for (wraps come in any order): put on it as it comes. */
-  early?: { key: string; target: string; from: string; emoji: string }[];
+  early?: { key: string; target: string; from: string; emoji: string; id?: string; url?: string }[];
+  /** Messages and reactions taken back (kind 5) or removed here, by id and by whose they were: one
+   *  that comes after stays away. */
+  gone?: { id: string; by: string }[];
   /** Made here (not brought from another app): its nsec is only here unless written down. */
   madeHere?: boolean;
   /** For a key brought from another app: when Erevos looked for where that app said its messages
@@ -296,12 +315,18 @@ export function newGroup(state: NostrDmState, members: string[], subject = '', n
   return key;
 }
 
-/** How a reaction reads: NIP-25's + as 👍, - as 👎, anything else as written, short. */
+/** How a reaction reads: NIP-25's + as 👍, - as 👎, a custom emoji as its :shortcode: (NIP-30), anything else as written, short. */
 export function reactionOf(content: string): string {
   const said = content.trim();
   if (said === '' || said === '+') return '👍';
   if (said === '-') return '👎';
+  if (isEmojiCode(said)) return said;
   return [...said].slice(0, 8).join('');
+}
+
+/** What a reaction says as it goes: NIP-25's + for 👍 and - for 👎, as other apps write them. */
+export function reactionContent(sign: string): string {
+  return sign === '👍' ? '+' : sign === '👎' ? '-' : sign;
 }
 
 /** Signs an event with the space's key (its inbox list, its name, an answer to a relay that asks who reads). */
@@ -593,7 +618,7 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
     return null;
   }
   const { rumor } = opened;
-  if (rumor.kind !== 14 && rumor.kind !== 15 && rumor.kind !== 7) {
+  if (rumor.kind !== 14 && rumor.kind !== 15 && rumor.kind !== 7 && rumor.kind !== 5) {
     remember(state, event.id);
     return null;
   }
@@ -608,22 +633,35 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
   }
   const group = people.size > 1;
   const key = group ? groupKey([...people, state.public]) : people.size ? [...people][0] : state.public;
+  if (rumor.kind === 5) {
+    remember(state, event.id);
+    // NIP-09: what it takes back, by id, each only if it was its writer's.
+    const ids = rumor.tags.filter((tag) => tag[0] === 'e' && isHex64(tag[1])).map((tag) => tag[1]);
+    return takeBack(state, key, rumor.pubkey, ids.slice(0, TAKE_BACK_MOST)) ? key : null;
+  }
   if (rumor.kind === 7) {
     remember(state, event.id);
+    if (isGone(state, rumor.id, rumor.pubkey)) return null;
     // NIP-25: the last e tag is the message reacted to; one that is not here is let be.
     const target = [...rumor.tags].reverse().find((tag) => tag[0] === 'e' && isHex64(tag[1]))?.[1];
     if (!target) return null;
     const emoji = reactionOf(rumor.content);
+    const url = emojiUrlOf(emoji, rumor.tags);
     const message = state.chats[key]?.messages.find((m) => m.id === target);
     if (!message) {
       // Its message may come after it: kept for it a while.
       const early = (Array.isArray(state.early) ? state.early : []).filter((r) => !(r.target === target && r.from === rumor.pubkey));
-      early.push({ key, target, from: rumor.pubkey, emoji });
+      early.push({ key, target, from: rumor.pubkey, emoji, id: rumor.id, ...(url ? { url } : {}) });
       state.early = early.slice(-EARLY_MOST);
       return null;
     }
-    message.reactions = { ...message.reactions, [rumor.pubkey]: emoji };
+    putReaction(message, rumor.pubkey, emoji, rumor.id, url);
     return key;
+  }
+  // One its writer took back already (wraps come in any order), or removed here.
+  if (isGone(state, rumor.id, rumor.pubkey)) {
+    remember(state, event.id);
+    return null;
   }
   // With no room, it is not remembered: it comes again from the relay once there is.
   if (!state.chats[key] && !roomForChat(state)) return null;
@@ -652,10 +690,109 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
   const early = Array.isArray(state.early) ? state.early.filter((r) => r.key === key && r.target === message.id) : [];
   if (!early.length) return added ? key : null;
   const kept = chat.messages.find((m) => m.id === message.id);
-  if (kept) kept.reactions = { ...kept.reactions, ...Object.fromEntries(early.map((r) => [r.from, r.emoji])) };
+  if (kept) for (const r of early) putReaction(kept, r.from, r.emoji, r.id, r.url);
   state.early = state.early!.filter((r) => !early.includes(r));
   if (!state.early.length) delete state.early;
   return key;
+}
+
+/** Puts `from`'s reaction on a message, in place of their one before, with its id when known. */
+export function putReaction(message: NostrDmMessage, from: string, emoji: string, id?: string, url?: string): void {
+  message.reactions = { ...message.reactions, [from]: emoji };
+  const ids = { ...message.reactionIds };
+  if (id && isHex64(id)) ids[from] = id;
+  else delete ids[from];
+  if (Object.keys(ids).length) message.reactionIds = ids;
+  else delete message.reactionIds;
+  if (url) message.emoji = { ...message.emoji, [emoji]: url };
+}
+
+/** Takes `from`'s reaction off a message. */
+export function dropReaction(message: NostrDmMessage, from: string): void {
+  for (const field of ['reactions', 'reactionIds'] as const) {
+    const rest = { ...message[field] };
+    delete rest[from];
+    if (Object.keys(rest).length) message[field] = rest;
+    else delete message[field];
+  }
+}
+
+/** Whose a message of the chat `key` is: the space's, a group member's, or the person's. */
+export function authorOf(state: NostrDmState, key: string, message: NostrDmMessage): string {
+  return message.mine ? state.public : (message.from ?? key);
+}
+
+/** Whether `by` took back, or this device removed, what has the id `id`. */
+function isGone(state: NostrDmState, id: string, by: string): boolean {
+  return Array.isArray(state.gone) && state.gone.some((g) => g.id === id && g.by === by);
+}
+
+function rememberGone(state: NostrDmState, id: string, by: string): void {
+  if (isGone(state, id, by)) return;
+  const gone = Array.isArray(state.gone) ? state.gone : [];
+  gone.push({ id, by });
+  state.gone = gone.slice(-GONE_MOST);
+}
+
+/** Takes a message out of its chat, with its pin and its place among those not read. */
+function removeMessage(chat: NostrDmChat, message: NostrDmMessage): void {
+  const theirs = chat.messages.filter((m) => !m.mine);
+  // Those not read are the last of theirs.
+  if (!message.mine && chat.unread > 0 && theirs.indexOf(message) >= theirs.length - chat.unread) chat.unread -= 1;
+  chat.messages = chat.messages.filter((m) => m !== message);
+  if (chat.pins) {
+    chat.pins = chat.pins.filter((id) => id !== message.id);
+    if (!chat.pins.length) delete chat.pins;
+  }
+}
+
+/**
+ * What `by` took back (NIP-09, kind 5) in the chat `key`: the messages of theirs and the reactions
+ * of theirs with these ids, and a reaction of theirs still waiting for its message. Each id is
+ * remembered, so that what it names stays away should it come after. Answers whether the chat changed.
+ */
+export function takeBack(state: NostrDmState, key: string, by: string, ids: readonly string[]): boolean {
+  const chat = state.chats[key];
+  let changed = false;
+  for (const id of ids) {
+    rememberGone(state, id, by);
+    if (Array.isArray(state.early)) state.early = state.early.filter((r) => !(r.id === id && r.from === by));
+    if (!chat) continue;
+    const message = chat.messages.find((m) => m.id === id && authorOf(state, key, m) === by);
+    if (message) {
+      removeMessage(chat, message);
+      changed = true;
+    }
+    for (const m of chat.messages) {
+      if (m.reactionIds?.[by] !== id) continue;
+      dropReaction(m, by);
+      changed = true;
+    }
+  }
+  if (Array.isArray(state.early) && !state.early.length) delete state.early;
+  return changed;
+}
+
+/** Removes these messages of the chat `key` from this device; one that comes again stays away. Answers those removed, oldest first. */
+export function removeHere(state: NostrDmState, key: string, ids: readonly string[]): NostrDmMessage[] {
+  const chat = state.chats[key];
+  if (!chat) return [];
+  const removed = chat.messages.filter((m) => ids.includes(m.id));
+  for (const message of removed) {
+    rememberGone(state, message.id, authorOf(state, key, message));
+    removeMessage(chat, message);
+  }
+  return removed;
+}
+
+/** Pins a message of a chat on this device, or (`on` false) takes its pin off: the latest pin first. */
+export function pinHere(state: NostrDmState, key: string, id: string, on: boolean): void {
+  const chat = state.chats[key];
+  if (!chat || (on && !chat.messages.some((m) => m.id === id))) return;
+  const pins = (chat.pins ?? []).filter((pin) => pin !== id);
+  if (on) pins.unshift(id);
+  if (pins.length) chat.pins = pins.slice(0, PINS_MOST);
+  else delete chat.pins;
 }
 
 /** Marks a chat's messages read here (NIP-17 tells no one). */

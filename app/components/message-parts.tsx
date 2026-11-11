@@ -65,42 +65,63 @@ export function Quote({ name, line, ink, onPress, onClose }: {
   );
 }
 
-/** The reactions to a message, under its bubble: each emoji once, with how many chose it. Ours stands out. */
-export function Reactions({ signs, mine, mineSide, onPress }: { signs: string[]; mine?: string; mineSide: boolean; onPress?: () => void }) {
+/**
+ * The reactions to a message, under its bubble: each emoji once, with how many chose it. Ours
+ * stands out. With `onSign`, each is tapped on its own: ours to take it back, another to add the same.
+ */
+export function Reactions({ signs, mine, mineSide, onPress, onSign }: { signs: string[]; mine?: string; mineSide: boolean; onPress?: () => void; onSign?: (sign: string) => void }) {
   const colors = useColors();
   const counted = new Map<string, number>();
   for (const sign of signs) counted.set(sign, (counted.get(sign) ?? 0) + 1);
   if (counted.size === 0) return null;
   return (
     <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
+      onPress={onSign ? undefined : onPress}
+      accessible={!onSign}
+      accessibilityRole={onSign ? undefined : 'button'}
       accessibilityLabel={t('Reactions: {list}', { list: [...counted.keys()].join(' ') })}
       style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignSelf: mineSide ? 'flex-end' : 'flex-start', marginTop: -2, marginBottom: 4 }}
     >
-      {[...counted].map(([sign, count]) => (
-        <View
-          key={sign}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 3,
-            paddingHorizontal: 7,
-            paddingVertical: 1,
-            borderRadius: radius.pill,
-            backgroundColor: sign === mine ? withAlpha(colors.primary, 0.22) : colors.surface,
-            borderWidth: 1,
-            borderColor: sign === mine ? colors.primary : withAlpha(colors.border, 0.8),
-          }}
-        >
-          <Text style={{ fontSize: 15, lineHeight: 20 }}>{sign}</Text>
-          {count > 1 ? (
-            <Text variant="caption" tone="muted">
-              {count}
-            </Text>
-          ) : null}
-        </View>
-      ))}
+      {[...counted].map(([sign, count]) => {
+        const chip = {
+          flexDirection: 'row' as const,
+          alignItems: 'center' as const,
+          gap: 3,
+          paddingHorizontal: 7,
+          paddingVertical: 1,
+          borderRadius: radius.pill,
+          backgroundColor: sign === mine ? withAlpha(colors.primary, 0.22) : colors.surface,
+          borderWidth: 1,
+          borderColor: sign === mine ? colors.primary : withAlpha(colors.border, 0.8),
+        };
+        const inside = (
+          <>
+            <Text style={{ fontSize: 15, lineHeight: 20 }}>{sign}</Text>
+            {count > 1 ? (
+              <Text variant="caption" tone="muted">
+                {count}
+              </Text>
+            ) : null}
+          </>
+        );
+        return onSign ? (
+          <Pressable
+            key={sign}
+            onPress={() => onSign(sign)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: sign === mine }}
+            accessibilityLabel={sign === mine ? t('Take back {emoji}', { emoji: sign }) : t('React with {emoji}', { emoji: sign })}
+            hitSlop={4}
+            style={chip}
+          >
+            {inside}
+          </Pressable>
+        ) : (
+          <View key={sign} style={chip}>
+            {inside}
+          </View>
+        );
+      })}
     </Pressable>
   );
 }

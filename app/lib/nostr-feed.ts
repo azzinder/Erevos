@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { postParts, POSTS_AT_ONCE, verified, type NostrPost } from './nostr-dm';
+import { postParts, POSTS_AT_ONCE, reactionOf, verified, type NostrPost } from './nostr-dm';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
+import { emojiUrlOf } from './nostr-emoji';
+import { POLL_KIND, pollOf, type NostrPoll } from './nostr-polls';
 
 // The feed of the Public tab on home (components/public-feed.tsx, docs/nostr-chats.md), as Amethyst's
-// home or a Telegram channel shows one: the public posts (kind 1) of the people the space's Nostr
-// key follows, and the posts they shared again (kind 6, NIP-18), newest first, a page at a time.
+// home or a Telegram channel shows one: the public posts (kind 1) and polls (kind 1068, NIP-88,
+// lib/nostr-polls.ts) of the people the space's Nostr key follows, and the posts they shared again
+// (kind 6, NIP-18), newest first, a page at a time.
 // This is what is worked out from what the relays sent: which relays to ask for whose posts, and
 // the next page, each post checked and shown once. lib/nostr-dm-store.ts (nostrDmFeed) asks the
 // relays. Read only, never kept: the screen holds it while it shows.
@@ -27,7 +30,16 @@ export type FeedPost = NostrPost & {
   /** The post that shows, as it came, checked: to answer it, share it again or like it, and for
    *  the photos it names (lib/public-media.ts). Held while it shows, never kept. */
   event?: NostrEvent;
+  /** A poll (its words are its question): its options, and how and until when it is voted on. */
+  poll?: NostrPoll;
 };
+
+/** A post of the feed made of a checked event: a post (kind 1) or a poll (kind 1068); null for a poll that cannot be shown. */
+export function feedPostOf(event: NostrEvent, by = event.pubkey, at = event.created_at, id = event.id): FeedPost | null {
+  const poll = event.kind === POLL_KIND ? pollOf(event) : undefined;
+  if (poll === null) return null;
+  return { id, note: event.id, by, at: at * 1000, ...postParts(event), ...(poll ? { poll } : {}), event };
+}
 
 const bare = (url: string) => url.replace(/\/+$/, '');
 
@@ -75,11 +87,11 @@ export type FeedAnswer = { events: NostrEvent[]; full: boolean };
 
 /**
  * The next page of the feed, from what the relays sent for it: asked `until` (seconds, as NIP-01
- * counts it in), or the newest when not. Posts (kind 1) and shares (kind 6) whose shared post is
- * inside, of the people followed, each checked (a share's post too), newest first, FEED_AT_ONCE at
- * most, each event once and each post once (the newest share of it or itself wins), none of those
- * `shown` already. One dated more than ten minutes ahead is let be, as is a share with nothing to
- * show in it.
+ * counts it in), or the newest when not. Posts (kind 1), polls (kind 1068) and shares (kind 6)
+ * whose shared post is inside, of the people followed, each checked (a share's post too), newest
+ * first, FEED_AT_ONCE at most, each event once and each post once (the newest share of it or itself
+ * wins), none of those `shown` already. One dated more than ten minutes ahead is let be, as is a
+ * share with nothing to show in it and a poll with no option.
  *
  * A relay that sent as many as asked may keep more, older: what it did not send could come before
  * what another relay sent. So the page stops at the oldest time such a relay sent (its horizon),
@@ -100,7 +112,7 @@ export async function feedPage(
   const horizon = Math.max(0, ...fulls.map((answer) => Math.min(...answer.events.map((e) => e.created_at))));
   const candidates = answers
     .flatMap((answer) => answer.events)
-    .filter((e) => follows.has(e.pubkey) && (e.kind === 1 || e.kind === 6) && e.created_at <= latest && e.created_at >= horizon)
+    .filter((e) => follows.has(e.pubkey) && (e.kind === 1 || e.kind === 6 || e.kind === POLL_KIND) && e.created_at <= latest && e.created_at >= horizon)
     .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const ids = new Set(shown.map((post) => post.id));
   const notes = new Set(shown.map((post) => post.note));
@@ -115,10 +127,11 @@ export async function feedPage(
     }
     if (!(await check(event))) continue;
     ids.add(event.id);
-    if (event.kind === 1) {
-      if (notes.has(event.id)) continue;
+    if (event.kind !== 6) {
+      const post = notes.has(event.id) ? null : feedPostOf(event);
+      if (!post) continue;
       notes.add(event.id);
-      posts.push({ id: event.id, note: event.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(event), event });
+      posts.push(post);
       continue;
     }
     let inner: unknown;
@@ -140,6 +153,44 @@ export async function feedPage(
 export function morePosts(shown: readonly FeedPost[], page: readonly FeedPost[]): FeedPost[] {
   const notes = new Set(shown.map((post) => post.note));
   return [...shown, ...page.filter((post) => !notes.has(post.note))].sort((a, b) => b.at - a.at);
+}
+
+/** One reaction to a post, as its screen shows it: its sign (an emoji, or a custom one's
+ *  :shortcode: with where its picture is, NIP-30), how many chose it, and the ids of the space's
+ *  own reactions with it, to take them back. */
+export type PostReaction = { sign: string; url?: string; count: number; mine: string[] };
+
+/** The reactions to a post among these checked ones (kind 7), each sign once with how many people chose it, the most chosen first; `me`'s marked. */
+export function tallyReactions(events: readonly NostrEvent[], me: string): PostReaction[] {
+  const by = new Map<string, { reaction: PostReaction; who: Set<string> }>();
+  for (const event of events) {
+    if (event.kind !== 7) continue;
+    const sign = reactionOf(event.content);
+    let one = by.get(sign);
+    if (!one) {
+      one = { reaction: { sign, count: 0, mine: [] }, who: new Set() };
+      by.set(sign, one);
+    }
+    const url = one.reaction.url ?? emojiUrlOf(sign, event.tags);
+    if (url) one.reaction.url = url;
+    if (event.pubkey === me && !one.reaction.mine.includes(event.id)) one.reaction.mine.push(event.id);
+    if (one.who.has(event.pubkey)) continue;
+    one.who.add(event.pubkey);
+    one.reaction.count += 1;
+  }
+  return [...by.values()].map((one) => one.reaction).sort((a, b) => b.count - a.count);
+}
+
+/** The reactions with the space's new one (`id`) with `sign`. */
+export function withReaction(reactions: readonly PostReaction[], sign: string, id: string, url?: string): PostReaction[] {
+  const had = reactions.find((r) => r.sign === sign);
+  if (!had) return [...reactions, { sign, ...(url ? { url } : {}), count: 1, mine: [id] }];
+  return reactions.map((r) => (r === had ? { ...r, count: r.mine.length ? r.count : r.count + 1, mine: [...r.mine, id] } : r));
+}
+
+/** The reactions once the space's own with `sign` are taken back. */
+export function withoutMine(reactions: readonly PostReaction[], sign: string): PostReaction[] {
+  return reactions.flatMap((r) => (r.sign !== sign || !r.mine.length ? [r] : r.count > 1 ? [{ ...r, count: r.count - 1, mine: [] }] : []));
 }
 
 /** The keys a page names, whose names it shows: who posted or shared, and whose post was shared. */

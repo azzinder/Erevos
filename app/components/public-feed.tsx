@@ -4,12 +4,13 @@
 
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Image, Platform, Pressable, RefreshControl, Share, StyleSheet, View } from 'react-native';
+import { Image, Platform, Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { ask, choose, confirm } from '../lib/alert';
+import { MAX_OPTION, MAX_OPTIONS, MAX_QUESTION } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canTor } from '../lib/core';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { rowTime } from '../lib/inbox';
 import type { MatrixFile, MatrixState } from '../lib/matrix';
 import { matrixFile, matrixLearnJoins, matrixNow, matrixReact, matrixReply, onMatrixChange } from '../lib/matrix-store';
@@ -23,14 +24,22 @@ import {
   nostrDmFeedDone,
   nostrDmLike,
   nostrDmNow,
+  nostrDmPollCount,
+  nostrDmReactPost,
   nostrDmRepost,
   nostrDmStart,
   nostrDmTakeBack,
+  nostrDmTakeBackReactions,
+  nostrDmUnlike,
+  nostrDmVote,
+  nostrDmWritePoll,
   nostrDmWritePost,
   onNostrDmChange,
   type PublicPhoto,
 } from '../lib/nostr-dm-store';
-import { morePosts, type FeedPost } from '../lib/nostr-feed';
+import { EMOJI_MOST, emojiOf, withEmoji } from '../lib/nostr-emoji';
+import { morePosts, withoutMine, withReaction, type FeedPost, type PostReaction } from '../lib/nostr-feed';
+import { POLL_LASTS, pollOpen, withMyVote, type PollCount } from '../lib/nostr-polls';
 import { CAN_TAKE_PHOTOS, pickPhoto } from '../lib/pick-photo';
 import { photoUri, releaseUri } from '../lib/photo-uri';
 import { publicCard, publicPhoto, fetchesByItself, type FetchWhy, type LinkCard } from '../lib/public-fetch';
@@ -57,9 +66,12 @@ import { Button, Chip, Row, Sheet, Text, TextButton, Toggle, Input } from './ui'
 // nostrDmFeed), as the space's Tor way says; the Matrix ones are the rooms' own messages
 // (lib/public-feed.ts). A photo or a card is fetched only while its row shows, and only as the
 // owner chose under Photos (lib/public-fetch.ts): at once, only through Tor, or on a tap. What is
-// held is held in memory while the feed shows, never kept. Answering, sharing again, liking and new
-// posts are public and signed with the space's own Nostr key (lib/nostr-dm-store.ts): home never
-// shows a hidden place's.
+// held is held in memory while the feed shows, never kept; a post's custom emoji (NIP-30) are
+// pictures fetched the same way, their :shortcode: until then. A poll (NIP-88, lib/nostr-polls.ts)
+// shows its options, voted on with a tap while it is open, and how it stands when asked; one is
+// made in the sheet of a new post, open for a day, three days or a week. Answering, sharing again,
+// liking (a second tap takes it back, NIP-09), reacting, voting and new posts are public and signed
+// with the space's own Nostr key (lib/nostr-dm-store.ts): home never shows a hidden place's.
 
 // Longer posts show this many characters until Show all.
 const LONG = 700;
@@ -101,6 +113,8 @@ type Ctx = {
   me: string;
   /** How photos and cards are fetched; null until it is read, when none is fetched. */
   images: PublicImages | null;
+  /** A poll's results are looked up as it shows (a post's own screen), not only when asked for. */
+  pollsAtOnce?: boolean;
   cards: boolean;
   nameOf: (key: string) => string;
   named: (key: string) => boolean;
@@ -222,10 +236,11 @@ export function usePublicActions(names: Record<string, string>, shown: boolean, 
         }
       });
     },
+    // A second tap takes the like back.
     onLike: (event) => {
-      if (nostrDmDoneWith(event.id).liked || liking.has(event.id)) return;
+      if (liking.has(event.id)) return;
       liking.add(event.id);
-      void nostrDmLike(event)
+      void (nostrDmDoneWith(event.id).liked ? nostrDmUnlike(event) : nostrDmLike(event))
         .catch(fail)
         .finally(() => liking.delete(event.id));
     },
@@ -361,16 +376,27 @@ export function usePublicActions(names: Record<string, string>, shown: boolean, 
 
 type Picked = { bytes: Uint8Array; mime: string; w?: number; h?: number; uri: string };
 
-/** The sheet to write a post, a Nostr one with photos or an answer to a Matrix message. */
+/**
+ * The sheet to write a post, a Nostr one with photos or an answer to a Matrix message; or a Nostr
+ * poll (NIP-88), its words the question, open for as long as chosen: its end closes it.
+ */
 function WriteSheet({ writing, onClose, onDone }: { writing: Writing | null; onClose: () => void; onDone: () => void }) {
   const [text, setText] = useState('');
   const [photos, setPhotos] = useState<Picked[]>([]);
+  const [polling, setPolling] = useState(false);
+  const [options, setOptions] = useState(['', '']);
+  const [multiple, setMultiple] = useState(false);
+  const [lasts, setLasts] = useState(POLL_LASTS[0]);
   const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState('');
   const held = useRef<Picked[]>([]);
   held.current = photos;
   const open = writing !== null;
   const matrix = !!writing?.roomId;
+  // A poll is a post of its own, never an answer.
+  const canPoll = !matrix && !writing?.to;
+  const poll = canPoll && polling;
+  const pollReady = !!text.trim() && options.filter((o) => o.trim()).length >= 2;
 
   // What was written or chosen goes when the sheet closes; the photos' addresses are let go.
   useEffect(() => {
@@ -378,6 +404,10 @@ function WriteSheet({ writing, onClose, onDone }: { writing: Writing | null; onC
     for (const photo of held.current) releaseUri(photo.uri);
     setText('');
     setPhotos([]);
+    setPolling(false);
+    setOptions(['', '']);
+    setMultiple(false);
+    setLasts(POLL_LASTS[0]);
     setSaid('');
     setBusy(false);
   }, [open]);
@@ -413,6 +443,8 @@ function WriteSheet({ writing, onClose, onDone }: { writing: Writing | null; onC
       if (writing.roomId && writing.eventId) {
         if (!text.trim()) throw new Error(t('Write something first.'));
         await matrixReply(writing.roomId, text.trim(), writing.eventId);
+      } else if (poll) {
+        await nostrDmWritePoll(text, options, multiple, Math.floor(Date.now() / 1000) + lasts);
       } else {
         const files: PublicPhoto[] = photos.map(({ bytes, mime, w, h }) => ({ bytes, mime, w, h }));
         await nostrDmWritePost(text, files, writing.to);
@@ -425,9 +457,49 @@ function WriteSheet({ writing, onClose, onDone }: { writing: Writing | null; onC
   }
 
   return (
-    <Sheet visible={open} onClose={onClose} title={matrix ? t('Reply in {room}', { room: writing?.room ?? '' }) : writing?.to ? t('Reply') : t('New post')}>
-      <Input value={text} onChangeText={setText} multiline placeholder={t('Write something')} style={{ minHeight: 110, textAlignVertical: 'top' }} />
-      {!matrix ? (
+    <Sheet visible={open} onClose={onClose} title={matrix ? t('Reply in {room}', { room: writing?.room ?? '' }) : writing?.to ? t('Reply') : poll ? t('New poll') : t('New post')}>
+      {canPoll ? (
+        <Row wrap>
+          <Chip label={t('Poll')} selected={polling} onPress={() => setPolling((now) => !now)} />
+        </Row>
+      ) : null}
+      <Input
+        value={text}
+        onChangeText={setText}
+        multiline={!poll}
+        maxLength={poll ? MAX_QUESTION : undefined}
+        placeholder={poll ? t('Ask something') : t('Write something')}
+        accessibilityLabel={poll ? t('Question') : undefined}
+        style={poll ? undefined : { minHeight: 110, textAlignVertical: 'top' }}
+      />
+      {poll ? (
+        <>
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 260 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
+            {options.map((option, i) => (
+              <Input
+                key={i}
+                value={option}
+                onChangeText={(next) => setOptions((now) => now.map((o, j) => (j === i ? next : o)))}
+                maxLength={MAX_OPTION}
+                placeholder={t('Option {n}', { n: i + 1 })}
+              />
+            ))}
+          </ScrollView>
+          <Row wrap>
+            {options.length < MAX_OPTIONS ? <TextButton title={t('Add an option')} onPress={() => setOptions((now) => [...now, ''])} /> : null}
+            <Chip label={t('More than one answer')} selected={multiple} onPress={() => setMultiple((now) => !now)} />
+          </Row>
+          <Text variant="caption" tone="muted">
+            {t('Open for')}
+          </Text>
+          <Row wrap>
+            {POLL_LASTS.map((seconds) => (
+              <Chip key={seconds} label={lastsLabel(seconds)} selected={lasts === seconds} onPress={() => setLasts(seconds)} />
+            ))}
+          </Row>
+        </>
+      ) : null}
+      {!matrix && !poll ? (
         <>
           {photos.length ? (
             <Row wrap>
@@ -455,9 +527,15 @@ function WriteSheet({ writing, onClose, onDone }: { writing: Writing | null; onC
         {matrix ? t('Everyone in the room can read it.') : t('This post is public and signed with the Nostr key of this space. Anyone can read it, and it shows it is yours.')}
       </Text>
       {said ? <Text tone="muted">{said}</Text> : null}
-      <Button title={t('Post')} loading={busy} onPress={() => void send()} />
+      <Button title={t('Post')} loading={busy} disabled={poll && !pollReady} onPress={() => void send()} />
     </Sheet>
   );
+}
+
+/** How long a poll is open, as its chip says: in days, or weeks. */
+function lastsLabel(seconds: number): string {
+  const days = Math.round(seconds / (24 * 3600));
+  return days % 7 === 0 ? plural(days / 7, '{n} week', '{n} weeks') : plural(days, '{n} day', '{n} days');
 }
 
 /** The sheet of how photos and link cards are fetched (SpaceData.publicImages, publicCards). */
@@ -766,12 +844,30 @@ function Header({ name, sub, time, onName, onMore }: { name: string; sub?: strin
   );
 }
 
-/** The words of a post: a long one shows its start until Show all; a content warning covers them until asked for. */
-function Words({ text, warning }: { text: string; warning?: string }) {
+/**
+ * A custom emoji of a post (NIP-30), in its words or as a reaction: its picture, fetched as the
+ * post's photos are (lib/public-fetch.ts), or until then its :shortcode:, which a tap fetches
+ * (`tappable`) when the feed does not by itself.
+ */
+function Emoji({ code, url, mode, size = 20, tappable = true }: { code: string; url: string; mode: PublicImages | null; size?: number; tappable?: boolean }) {
+  const { held, state, tap } = useHeld((why) => publicPhoto(url, mode ?? 'tap', why), mode !== null && fetchesByItself(mode), url);
+  if (held) return <Image source={{ uri: held.uri }} style={{ width: size, height: size }} resizeMode="contain" accessibilityLabel={`:${code}:`} />;
+  return (
+    <Text onPress={tappable && mode !== null && state !== 'loading' ? tap : undefined} variant={size < 20 ? 'caption' : undefined}>
+      {`:${code}:`}
+    </Text>
+  );
+}
+
+/** The words of a post: a long one shows its start until Show all; a content warning covers them until asked for. Its custom emoji show as pictures (`emoji`, by shortcode). */
+function Words({ text, warning, emoji, mode }: { text: string; warning?: string; emoji?: ReadonlyMap<string, string>; mode?: PublicImages | null }) {
   const [open, setOpen] = useState(warning === undefined);
   const [whole, setWhole] = useState(false);
   const long = text.length > LONG;
   const shownText = long && !whole ? `${text.slice(0, LONG)}…` : text;
+  // Pictures for EMOJI_MOST of them at most; the rest stay their :shortcode:.
+  let pictures = 0;
+  const parts = emoji?.size ? withEmoji(shownText, emoji) : null;
   if (!open) {
     return (
       <>
@@ -786,7 +882,19 @@ function Words({ text, warning }: { text: string; warning?: string }) {
   return (
     <>
       <Text selectable>
-        <LinkedText text={shownText} />
+        {parts
+          ? parts.map((part, i) =>
+              'code' in part ? (
+                (pictures += 1) <= EMOJI_MOST ? (
+                  <Emoji key={i} code={part.code} url={part.url} mode={mode ?? null} />
+                ) : (
+                  `:${part.code}:`
+                )
+              ) : (
+                <LinkedText key={i} text={part.text} />
+              ),
+            )
+          : <LinkedText text={shownText} />}
       </Text>
       {long && !whole ? <TextButton title={t('Show all')} onPress={() => setWhole(true)} /> : null}
     </>
@@ -798,6 +906,7 @@ function NostrRow({ post, ctx, borderColor }: { post: FeedPost; ctx: Ctx; border
   const name = ctx.nameOf(author);
   const event = post.event;
   const media = useMemo(() => mediaIn(shortMentions(post.text), event?.tags ?? []), [post.text, event]);
+  const emoji = useMemo(() => emojiOf(event?.tags ?? []), [event]);
   const done = event ? nostrDmDoneWith(event.id) : { liked: false, shared: false };
   const colors = useColors();
   return (
@@ -823,11 +932,13 @@ function NostrRow({ post, ctx, borderColor }: { post: FeedPost; ctx: Ctx; border
             </Text>
           ) : null}
           <Pressable onPress={ctx.onOpen ? () => ctx.onOpen?.(post) : undefined} disabled={!ctx.onOpen} accessibilityRole="button" style={{ gap: space.xs + 2 }}>
-            <Words text={media.text} warning={post.warning} />
+            <Words text={media.text} warning={post.warning} emoji={emoji} mode={ctx.images} />
           </Pressable>
           {post.warning === undefined ? <Media media={media} ctx={ctx} /> : null}
+          {post.poll && event ? <PollBox poll={post.poll} event={event} atOnce={!!ctx.pollsAtOnce} /> : null}
           <View style={styles.acts}>
-            <Act glyph="↩" label={t('Reply')} onPress={() => ctx.onAnswer({ kind: 'nostr', id: `nostr:${post.note}`, at: post.at, post })} />
+            {/* A poll is answered by its votes: NIP-10 answers are for posts. */}
+            {post.poll ? null : <Act glyph="↩" label={t('Reply')} onPress={() => ctx.onAnswer({ kind: 'nostr', id: `nostr:${post.note}`, at: post.at, post })} />}
             <Act glyph="⇄" label={t('Share again')} active={done.shared} onPress={() => event && ctx.onShareAgain(event)} />
             <Act glyph={done.liked ? '♥' : '♡'} label={t('Like')} active={done.liked} color={colors.danger} onPress={() => event && ctx.onLike(event)} />
             <Act glyph="↗" label={t('Share')} onPress={() => ctx.onShare({ kind: 'nostr', id: `nostr:${post.note}`, at: post.at, post })} />
@@ -883,6 +994,177 @@ function MatrixRow({ item, ctx, borderColor }: { item: Extract<PublicItem, { kin
           </View>
         </View>
       </View>
+    </View>
+  );
+}
+
+const whenOf = (seconds: number) => new Date(seconds * 1000).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * A poll in its post (NIP-88, lib/nostr-polls.ts): its options, a tap on one votes while it is open
+ * (on a poll of more than one choice, Vote sends those tapped), and how it stands, looked up when
+ * asked for (Results), once voted, or as it shows (`atOnce`); until when it is open, or that it ended.
+ */
+function PollBox({ poll, event, atOnce }: { poll: NonNullable<FeedPost['poll']>; event: NostrEvent; atOnce: boolean }) {
+  const colors = useColors();
+  const [count, setCount] = useState<PollCount | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [said, setSaid] = useState('');
+  const open = pollOpen(poll);
+
+  async function look(voted?: string[]) {
+    setBusy(true);
+    setSaid('');
+    try {
+      if (voted) await nostrDmVote(event, voted);
+      const got = await nostrDmPollCount(event);
+      // Just voted: so it shows, whether or not the relays asked have the vote yet.
+      setCount(voted ? withMyVote(got, poll, voted) : got);
+      setPicked([]);
+      if (!got.answered) setSaid(t('No relay answered. Try again in a while.'));
+    } catch (error) {
+      setSaid(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (atOnce) void look();
+  }, [atOnce, event.id]);
+
+  const mine = picked.length ? picked : (count?.mine ?? []);
+  const most = Math.max(1, ...(count?.counts ?? []));
+  const tap = (id: string) => {
+    if (!poll.multiple) return void look([id]);
+    setPicked((now) => (now.includes(id) ? now.filter((one) => one !== id) : [...now, id]));
+  };
+  return (
+    <View style={{ gap: space.xs }}>
+      <Text variant="caption" tone="muted">
+        {poll.multiple ? t('Poll · choose one or more') : t('Poll · choose one')}
+      </Text>
+      {poll.options.map((option, i) => {
+        const chosen = mine.includes(option.id);
+        const n = count?.counts[i];
+        return (
+          <Pressable
+            key={option.id}
+            onPress={() => tap(option.id)}
+            disabled={!open || busy}
+            accessibilityRole={poll.multiple ? 'checkbox' : 'radio'}
+            accessibilityState={{ checked: chosen, disabled: !open || busy }}
+            accessibilityLabel={n === undefined ? option.label : `${option.label}, ${n}`}
+            style={({ pressed }) => ({ gap: 3, paddingVertical: 6, paddingHorizontal: space.sm, borderRadius: radius.sm, backgroundColor: withAlpha(colors.text, pressed ? 0.14 : 0.06) })}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+              <Text>{poll.multiple ? (chosen ? '☑' : '☐') : chosen ? '◉' : '○'}</Text>
+              <Text style={{ flex: 1 }}>{option.label}</Text>
+              {n !== undefined ? <Text variant="bodyStrong">{n}</Text> : null}
+            </View>
+            {n !== undefined ? (
+              <View style={{ height: 3, borderRadius: 2, backgroundColor: withAlpha(colors.text, 0.08) }}>
+                <View style={{ height: 3, borderRadius: 2, width: `${(n / most) * 100}%`, backgroundColor: colors.primary }} />
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+      <Row wrap>
+        {poll.multiple && open && picked.length ? <Button title={t('Vote')} compact loading={busy} onPress={() => void look(picked)} /> : null}
+        {busy ? (
+          <Text variant="caption" tone="muted">
+            {t('Looking…')}
+          </Text>
+        ) : count ? (
+          <Text variant="caption" tone="muted">
+            {plural(count.voters, '{n} vote', '{n} votes')}
+          </Text>
+        ) : (
+          <TextButton title={t('Results')} onPress={() => void look()} />
+        )}
+        {poll.endsAt ? (
+          <Text variant="caption" tone="faint">
+            {open ? t('Open until {when}', { when: whenOf(poll.endsAt) }) : t('The poll has ended.')}
+          </Text>
+        ) : null}
+      </Row>
+      {open ? (
+        <Text variant="caption" tone="faint">
+          {t('Your vote is public: anyone can see what you chose.')}
+        </Text>
+      ) : null}
+      {said ? <Text tone="muted">{said}</Text> : null}
+    </View>
+  );
+}
+
+/**
+ * The reactions to a post on its own screen (app/public-post.tsx): each once with how many chose
+ * it, a custom emoji as its picture (NIP-30, fetched as the post's photos are), ours standing out.
+ * A tap adds the same, or takes ours back (NIP-09); + offers others. `onChange` is told how they stand after.
+ */
+export function PostReactions({ post, reactions, mode, onChange }: { post: NostrEvent; reactions: PostReaction[]; mode: PublicImages | null; onChange: (next: PostReaction[]) => void }) {
+  const colors = useColors();
+  const [more, setMore] = useState(false);
+  const [said, setSaid] = useState('');
+  const busy = useRef(false);
+
+  async function choose(sign: string, url?: string) {
+    if (busy.current) return;
+    busy.current = true;
+    setSaid('');
+    try {
+      const had = reactions.find((r) => r.sign === sign);
+      if (had?.mine.length) {
+        await nostrDmTakeBackReactions(post, had.mine);
+        onChange(withoutMine(reactions, sign));
+      } else {
+        const made = await nostrDmReactPost(post, sign, url);
+        onChange(withReaction(reactions, sign, made.id, url));
+      }
+      setMore(false);
+    } catch (error) {
+      setSaid(errorText(error));
+    } finally {
+      busy.current = false;
+    }
+  }
+
+  return (
+    <View style={{ gap: space.xs }}>
+      <Row wrap>
+        {reactions.map((r) => {
+          const ours = r.mine.length > 0;
+          return (
+            <Pressable
+              key={r.sign}
+              onPress={() => void choose(r.sign, r.url)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: ours }}
+              accessibilityLabel={ours ? t('Take back {emoji}', { emoji: r.sign }) : t('React with {emoji}', { emoji: r.sign })}
+              style={[styles.reaction, styles.chip, { borderColor: ours ? colors.primary : colors.border, backgroundColor: ours ? withAlpha(colors.primary, 0.16) : 'transparent' }]}
+            >
+              {r.url ? <Emoji code={r.sign.slice(1, -1)} url={r.url} mode={mode} size={18} tappable={false} /> : <Text variant="caption">{r.sign}</Text>}
+              <Text variant="caption">{r.count}</Text>
+            </Pressable>
+          );
+        })}
+        <Pressable onPress={() => setMore((now) => !now)} accessibilityRole="button" accessibilityLabel={t('More reactions')} style={[styles.reaction, { borderColor: colors.border }]}>
+          <Text variant="caption">+</Text>
+        </Pressable>
+      </Row>
+      {more ? (
+        <Row wrap>
+          {REACTIONS.map((emoji) => (
+            <Pressable key={emoji} onPress={() => void choose(emoji)} accessibilityRole="button" accessibilityLabel={t('React with {emoji}', { emoji })} style={({ pressed }) => [styles.emoji, pressed && { opacity: 0.6 }]}>
+              <Text style={{ fontSize: 24, lineHeight: 32 }}>{emoji}</Text>
+            </Pressable>
+          ))}
+        </Row>
+      ) : null}
+      {said ? <Text tone="muted">{said}</Text> : null}
     </View>
   );
 }
@@ -1146,6 +1428,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: space.sm,
     paddingVertical: 2,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   grid: {
     flexDirection: 'row',

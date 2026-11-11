@@ -11,7 +11,9 @@
 // back; someone who names no inbox gets nothing; the space's own other app reads both sides; a chat
 // survives the space closing and opening again, without anything twice; a group of three, each
 // getting a wrap of their own, with its name and reactions; a photo encrypted on the phone, put on
-// a Blossom server played here under a key made for the upload, and opened by the others.
+// a Blossom server played here under a key made for the upload, and opened by the others; what is
+// taken back in a wrap (NIP-09), only by its writer, and a reaction changed or taken back; pins and
+// deleting on this device; messages forwarded with their photo sent anew; a sticker sent as a photo.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -38,10 +40,12 @@ import {
   npubOf,
   nsecOf,
   otherInboxes,
+  pinHere,
   POSTS_AT_ONCE,
   postsOf,
   profileEvent,
   readKey,
+  removeHere,
   sameRelays,
   setInbox,
   shortMentions,
@@ -58,14 +62,18 @@ import { lookUpNip05, NostrRelay, setNostrOpen } from '../lib/nostr-dm-net';
 import { networkNotify, networkUnreadAt, onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import {
   nostrDmBring,
+  nostrDmDelete,
   nostrDmFile,
   nostrDmFollows,
+  nostrDmForward,
   nostrDmForgetChat,
   nostrDmMake,
   nostrDmNewGroup,
+  nostrDmPin,
   nostrDmPosts,
   nostrDmReact,
   nostrDmSendFile,
+  nostrDmSendSticker,
   nostrDmSetFileServers,
   nostrDmSetSubject,
   nostrDmNow,
@@ -76,6 +84,7 @@ import {
   nostrDmSetName,
   nostrDmStart,
   nostrDmUnread,
+  nostrDmUnreact,
   runNostrDm,
   sayFollowsReport,
   stopNostrDm,
@@ -243,6 +252,87 @@ test('a message to three people makes a group, one to too many is let be, a note
   const note = await wrapText(me, me.public, 'a note');
   assert.equal(await takeWrap(me, note.theirs), me.public);
   assert.equal(me.chats[me.public].messages[0].mine, true);
+});
+
+test("taking back in a wrap (NIP-09): only its writer's goes, and stays away should it come after; pins and deleting here are this device's", { skip: !coreReady }, async () => {
+  const me = await newNostrDm();
+  const ann = await newNostrDm();
+  const bob = await newNostrDm();
+  const key = groupKey([me.public, ann.public, bob.public]);
+  // A rumor of the group from one of us, wrapped for me: the same words at the same time are the same rumor, in a new wrap.
+  const wrapped = async (from: NostrDmState, kind: number, tags: string[][], content: string, at: number) => {
+    const others = [me, ann, bob].filter((p) => p !== from).map((p) => ['p', p.public]);
+    const made = await chatCore<{ rumor: { id: string }; wraps: { to: string; event: string }[] }>('wrap', {
+      secret: from.secret,
+      rumor: { kind, created_at: 1_700_000_000 + at, tags: [...others, ...tags], content },
+      to: [me.public],
+      now: 1_700_100_000,
+    });
+    return { id: made.rumor.id, wrap: JSON.parse(made.wraps[0].event) as unknown };
+  };
+  const chat = () => me.chats[key];
+  const texts = () => chat().messages.map((m) => m.text);
+
+  const hello = await wrapped(ann, 14, [], 'hello', 1);
+  const yo = await wrapped(bob, 14, [], 'yo', 2);
+  const mine = await wrapped(me, 14, [], 'mine', 3);
+  for (const one of [hello, yo, mine]) assert.equal(await takeWrap(me, one.wrap), key);
+  assert.equal(chat().unread, 2);
+
+  // Ann reacts with a custom emoji (NIP-30): kept as its :shortcode:, with its id and where its picture is.
+  const party = 'https://emoji.example/party.png';
+  const reacted = await wrapped(ann, 7, [['e', yo.id], ['k', '14'], ['emoji', 'party', party]], ':party:', 4);
+  assert.equal(await takeWrap(me, reacted.wrap), key);
+  const onYo = () => chat().messages.find((m) => m.id === yo.id)!;
+  assert.deepEqual([onYo().reactions, onYo().reactionIds, onYo().emoji], [{ [ann.public]: ':party:' }, { [ann.public]: reacted.id }, { ':party:': party }]);
+
+  // Bob cannot take back what Ann wrote, nor her reaction.
+  assert.equal(await takeWrap(me, (await wrapped(bob, 5, [['e', hello.id], ['e', reacted.id], ['k', '14']], '', 5)).wrap), null);
+  assert.deepEqual(texts(), ['hello', 'yo', 'mine']);
+  assert.deepEqual(onYo().reactions, { [ann.public]: ':party:' });
+  // She can: her reaction, then her message, which was not read.
+  assert.equal(await takeWrap(me, (await wrapped(ann, 5, [['e', reacted.id], ['k', '7']], '', 6)).wrap), key);
+  assert.deepEqual([onYo().reactions, onYo().reactionIds], [undefined, undefined]);
+  assert.equal(await takeWrap(me, (await wrapped(ann, 5, [['e', hello.id], ['k', '14']], '', 7)).wrap), key);
+  assert.deepEqual(texts(), ['yo', 'mine']);
+  assert.equal(chat().unread, 1);
+  // Her message in a wrap of its own, come late: it stays away.
+  assert.equal(await takeWrap(me, (await wrapped(ann, 14, [], 'hello', 1)).wrap), null);
+  assert.deepEqual(texts(), ['yo', 'mine']);
+
+  // Taken back before it came: a message, and a reaction.
+  const late = await wrapped(ann, 14, [], 'late', 8);
+  const lateLike = await wrapped(ann, 7, [['e', yo.id]], '+', 9);
+  await takeWrap(me, (await wrapped(ann, 5, [['e', late.id], ['e', lateLike.id]], '', 10)).wrap);
+  assert.equal(await takeWrap(me, late.wrap), null);
+  assert.equal(await takeWrap(me, lateLike.wrap), null);
+  assert.deepEqual([texts(), onYo().reactions], [['yo', 'mine'], undefined]);
+  // A reaction come before its message, taken back before the message came.
+  const later = await wrapped(bob, 14, [], 'later', 11);
+  const early = await wrapped(bob, 7, [['e', later.id]], '🎉', 12);
+  assert.equal(await takeWrap(me, early.wrap), null);
+  assert.equal(me.early?.length, 1);
+  await takeWrap(me, (await wrapped(bob, 5, [['e', early.id]], '', 13)).wrap);
+  assert.equal(me.early, undefined);
+  assert.equal(await takeWrap(me, later.wrap), key);
+  assert.equal(chat().messages.find((m) => m.id === later.id)!.reactions, undefined);
+
+  // Pins: on this device, the latest first, only of messages here; deleting a message takes its pin.
+  pinHere(me, key, mine.id, true);
+  pinHere(me, key, yo.id, true);
+  pinHere(me, key, hello.id, true);
+  assert.deepEqual(chat().pins, [yo.id, mine.id]);
+  pinHere(me, key, mine.id, true);
+  assert.deepEqual(chat().pins, [mine.id, yo.id]);
+  pinHere(me, key, mine.id, false);
+  assert.deepEqual(chat().pins, [yo.id]);
+  // Deleted here: Bob's message and the pin with it; it stays away should it come again.
+  const unread = chat().unread;
+  assert.deepEqual(removeHere(me, key, [yo.id, 'f'.repeat(64)]).map((m) => m.text), ['yo']);
+  assert.equal(chat().pins, undefined);
+  assert.equal(chat().unread, unread - 1);
+  assert.equal(await takeWrap(me, (await wrapped(bob, 14, [], 'yo', 2)).wrap), null);
+  assert.deepEqual(texts(), ['mine', 'later']);
 });
 
 const spaceKey = randomBytes(32);
@@ -635,6 +725,123 @@ test('a group of three, with its name and reactions, and a photo through a file 
     assert.equal(nostrDmNow().state!.chats[group].subjectOwed, undefined);
     await read(carol, carolInbox);
     assert.equal(carol.chats[group].subject, 'Εμείς');
+  } finally {
+    setNostrHttp(null);
+    stopNostrDm();
+    setCurrentSpace(null);
+  }
+});
+
+test('a reaction changed and taken back, a pin on this device alone, messages forwarded with their photo, and deleted for the others too', { skip: !coreReady }, async () => {
+  const bob: NostrDmState = await newNostrDm();
+  bob.inbox = [bobInbox.url];
+  const carol: NostrDmState = await newNostrDm();
+  carol.inbox = [carolInbox.url];
+  for (const person of [bob, carol]) {
+    const r = await NostrRelay.open(index.url, null);
+    assert.equal((await r.publish(await inboxEvent(person))).ok, true);
+    r.close();
+  }
+  const blobs = new Map<string, Uint8Array>();
+  setNostrHttp(async (method, url, _headers, body) => {
+    if (method === 'PUT' && body) {
+      const hash = toHex(sha256Bytes(body));
+      blobs.set(hash, body);
+      return { status: 201, bytes: utf8Encode(JSON.stringify({ url: `https://files.example/${hash}.bin`, sha256: hash, size: body.length })) };
+    }
+    const blob = method === 'GET' ? blobs.get(url.split('/').pop()!.replace(/\.bin$/, '')) : undefined;
+    return blob ? { status: 200, bytes: blob } : { status: 404, bytes: new Uint8Array(0) };
+  });
+  const read = async (person: NostrDmState, inbox: FakeRelay) => {
+    const r = await NostrRelay.open(inbox.url, null);
+    for (const wrap of await r.query([{ kinds: [1059], '#p': [person.public] }])) await takeWrap(person, wrap);
+    r.close();
+  };
+
+  setCurrentSpace(5, randomBytes(32));
+  try {
+    runNostrDm();
+    await until(() => nostrDmNow().loaded, 'the account to load');
+    await nostrDmMake();
+    await nostrDmSetInbox([aliceInbox.url]);
+    await nostrDmSetFileServers(['https://files.example/']);
+    const alice = nostrDmNow().state!;
+    await nostrDmStart(npubOf(bob.public), 'Bob');
+    await nostrDmStart(npubOf(carol.public), 'Carol');
+    await nostrDmSend(bob.public, 'hi Bob');
+    await read(bob, bobInbox);
+    const his = await wrapMessage(bob, alice.public, 14, [], 'hi Alice');
+    await takeWrap(bob, his.wraps[bob.public]);
+    const w = await NostrRelay.open(aliceInbox.url, null);
+    assert.equal((await w.publish(his.wraps[alice.public])).ok, true);
+    w.close();
+    const chat = () => nostrDmNow().state!.chats[bob.public];
+    await until(() => chat().messages.some((m) => m.id === his.id), 'his answer');
+    const onHis = () => chat().messages.find((m) => m.id === his.id)!;
+    const bobSees = () => bob.chats[alice.public].messages.find((m) => m.id === his.id)!;
+
+    // A like, then another reaction in its place: Bob's app sees the latest, the one before taken back.
+    await nostrDmReact(bob.public, his.id, '👍');
+    assert.deepEqual(onHis().reactions, { [alice.public]: '👍' });
+    const liked = onHis().reactionIds![alice.public];
+    await read(bob, bobInbox);
+    assert.deepEqual([bobSees().reactions, bobSees().reactionIds], [{ [alice.public]: '👍' }, { [alice.public]: liked }]);
+    await nostrDmReact(bob.public, his.id, '🎉');
+    assert.deepEqual(onHis().reactions, { [alice.public]: '🎉' });
+    assert.notEqual(onHis().reactionIds![alice.public], liked);
+    await read(bob, bobInbox);
+    assert.deepEqual(bobSees().reactions, { [alice.public]: '🎉' });
+    // The same again sends nothing.
+    const went = bobInbox.events.length;
+    await nostrDmReact(bob.public, his.id, '🎉');
+    assert.equal(bobInbox.events.length, went);
+    // Taken back: off here at once, and off his.
+    await nostrDmUnreact(bob.public, his.id);
+    assert.equal(onHis().reactions, undefined);
+    await read(bob, bobInbox);
+    assert.equal(bobSees().reactions, undefined);
+
+    // Pinned and unpinned here; nothing goes anywhere.
+    const sent = [bobInbox.events.length, aliceInbox.events.length];
+    await nostrDmPin(bob.public, his.id, true);
+    assert.deepEqual(chat().pins, [his.id]);
+    await nostrDmPin(bob.public, his.id, false);
+    assert.equal(chat().pins, undefined);
+    assert.deepEqual([bobInbox.events.length, aliceInbox.events.length], sent);
+
+    // His words and her photo forwarded to Carol as new messages: the photo opened here and put on the server again, under a key of its own.
+    const photo = randomBytes(4000);
+    await nostrDmSendFile(bob.public, { bytes: photo, name: 'cat.jpg', mime: 'image/jpeg', dim: '20x10' });
+    const photoId = chat().messages.at(-1)!.id;
+    const original = chat().messages.at(-1)!.file as NostrDmFile;
+    assert.equal(await nostrDmForward(bob.public, [photoId, his.id, 'f'.repeat(64)], carol.public), 2);
+    assert.equal(blobs.size, 2);
+    await read(carol, carolInbox);
+    const got = carol.chats[alice.public].messages;
+    assert.equal(got.length, 2);
+    assert.ok(got.some((m) => m.text === 'hi Alice' && !m.file && !m.mine));
+    const copy = got.find((m) => typeof m.file === 'object')!.file as NostrDmFile;
+    assert.notEqual(copy.x, original.x);
+    assert.deepEqual([copy.type, copy.dim, copy.name], ['image/jpeg', '20x10', 'cat.jpg']);
+    assert.deepEqual(openFile(copy, blobs.get(copy.x)!), photo);
+
+    // A sticker goes as a photo, its size and its words with it.
+    const sticker = randomBytes(900);
+    await nostrDmSendSticker(bob.public, { bytes: sticker, mime: 'image/png', w: 512, h: 512, label: 'a cat / waving' });
+    await read(bob, bobInbox);
+    const stuck = bob.chats[alice.public].messages.at(-1)!.file as NostrDmFile;
+    assert.deepEqual([stuck.type, stuck.dim, stuck.name], ['image/png', '512x512', 'a cat waving.png']);
+    assert.deepEqual(openFile(stuck, blobs.get(stuck.x)!), sticker);
+
+    // Deleted: both from here; hers the others are asked to delete too, and Bob's app does.
+    const hiBob = chat().messages.find((m) => m.text === 'hi Bob')!.id;
+    assert.equal(await nostrDmDelete(bob.public, [hiBob, his.id]), 1);
+    assert.deepEqual(chat().messages.map((m) => m.id), [photoId, chat().messages.at(-1)!.id]);
+    assert.ok(chat().messages.every((m) => typeof m.file === 'object'));
+    await read(bob, bobInbox);
+    const bobs = bob.chats[alice.public].messages.map((m) => m.id);
+    assert.ok(!bobs.includes(hiBob));
+    assert.ok(bobs.includes(his.id) && bobs.includes(photoId));
   } finally {
     setNostrHttp(null);
     stopNostrDm();
