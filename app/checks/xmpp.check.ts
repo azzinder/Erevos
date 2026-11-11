@@ -32,7 +32,7 @@ import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { envelope, openEnvelope } from '../lib/xmpp-omemo2';
 import { startSasl } from '../lib/xmpp-sasl';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
-import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppForward, xmppHeard, xmppNow, xmppPin, xmppRead, xmppSend, xmppSignIn, xmppStickerPlace, xmppUnread } from '../lib/xmpp-store';
+import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppForward, xmppHeard, xmppNow, xmppPin, xmppRead, xmppSend, xmppSendSticker, xmppSignIn, xmppStickerPlace, xmppUnread } from '../lib/xmpp-store';
 import { child, el, find, parseXml, render, textOf, XmlStream, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
 import { DOMAIN, PASSWORD, person, Server, settle, UPLOAD } from './xmpp-server';
 
@@ -276,6 +276,15 @@ test('a file forwarded to a chat written otherwise is fetched and put up again, 
     // The space's own stickers are what its chats send.
     assert.deepEqual(xmppStickerPlace(), { holder: 'space', space: 7, key });
     assert.equal(xmppStickerPlace('place'), null);
+    // A sticker goes as a photo, whatever made its picture; its label stays here.
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+    await xmppSendSticker(`ann@${DOMAIN}`, { bytes: png, mime: 'image/png', w: 512, h: 512, label: 'a cat' });
+    await settle([ann]);
+    const sticker = ann.state.chats[`ben@${DOMAIN}`].messages.at(-1)!;
+    assert.equal(sticker.file?.type, 'image/png');
+    assert.ok(!sticker.text.includes('a cat'));
+    assert.deepEqual(await downloadXmppFile(sticker.file!), png);
+    assert.equal(xmppNow().state!.chats[`ann@${DOMAIN}`].messages.at(-1)?.file?.name, 'sticker.png');
   } finally {
     stopXmpp();
     setXmppConnect(undefined);

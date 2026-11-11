@@ -19,9 +19,10 @@ import { Button, Row, Sheet, Text } from './ui';
 // The stickers an XMPP chat sends (app/xmpp-chat.tsx): only those made here from photos ("Mine",
 // lock/sticker-data.ts), the space's or, in a hidden place's chats, that place's own. One goes as a
 // photo goes (lib/xmpp-files.ts), encrypted as the chat is, and the other XMPP apps show it as a
-// photo. The built-in ones are Erevos's own drawings, which no other app has, so they are not
-// offered here. A sticker one of those apps sends (XEP-0449) names a pack on a server of theirs to
-// fetch it from, so it is not fetched: it shows as what the message says besides.
+// photo, through the one way a sticker goes there (lib/xmpp-store.ts xmppSendSticker), which takes
+// its picture alone, so a built-in one drawn as a still can go the same way. A sticker one of those
+// apps sends (XEP-0449) names a pack on a server of theirs to fetch it from, so it is not fetched:
+// it shows as what the message says besides.
 
 /** The place's stickers made from photos, to send one; and a new one made from a photo. */
 export function XmppStickerSheet({ visible, onClose, place, onPick }: {

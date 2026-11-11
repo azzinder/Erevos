@@ -677,6 +677,21 @@ export function xmppSendFile(jid: string, picked: XmppOutgoingFile): Promise<voi
   return sendUploaded(need(), jid, picked, false);
 }
 
+/**
+ * A sticker as the picture that goes: one made here from a photo (lock/sticker-data.ts), or a
+ * built-in one drawn as a still. Its size and label say nothing on the way: an XMPP file message is
+ * its link alone, and other apps show it as the photo it is.
+ */
+export type XmppSticker = { bytes: Uint8Array; mime: 'image/png' | 'image/jpeg'; w: number; h: number; label?: string };
+
+/**
+ * Sends a sticker to the chat `jid`, as a photo goes (xmppSendFile): encrypted when the chat is.
+ * Every sticker an XMPP chat sends goes through here, whichever made its picture.
+ */
+export function xmppSendSticker(jid: string, sticker: XmppSticker): Promise<void> {
+  return xmppSendFile(jid, { bytes: sticker.bytes, name: sticker.mime === 'image/png' ? 'sticker.png' : 'sticker.jpg', mime: sticker.mime });
+}
+
 // Puts a file on the server as the chat `jid` writes, and sends it there: as a copy from another chat when `forward`.
 async function sendUploaded(it: Live & { state: XmppState }, jid: string, picked: XmppOutgoingFile, forward: boolean): Promise<void> {
   let ready: Awaited<ReturnType<typeof prepareXmppFile>> | null = null;

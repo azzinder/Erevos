@@ -78,12 +78,14 @@ import {
   xmppReply,
   xmppSend,
   xmppSendFile,
+  xmppSendSticker,
   xmppSetLook,
   xmppSetNotify,
   xmppSetPlain,
   xmppStickerPlace,
   xmppTyped,
   type XmppOutgoingFile,
+  type XmppSticker,
 } from '../lib/xmpp-store';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { openOwnSticker, type OwnSticker } from '../lock/sticker-data';
@@ -173,8 +175,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [now, setNow] = useState(xmppNow(where));
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
-  // What could not be sent with OMEMO, a text or a file, kept while the person decides about writing without it.
-  const [unsent, setUnsent] = useState<{ text: string; to?: string } | { file: XmppOutgoingFile } | null>(null);
+  // What could not be sent with OMEMO, a text, a file or a sticker, kept while the person decides about writing without it.
+  const [unsent, setUnsent] = useState<{ text: string; to?: string } | { file: XmppOutgoingFile } | { sticker: XmppSticker } | null>(null);
   const [sending, setSending] = useState(false);
   // The message the next one answers or gives new words, and the one whose menu is open, by their IDs.
   const [replyId, setReplyId] = useState<string | null>(null);
@@ -306,21 +308,30 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     try {
       const picture = await openOwnSticker(sticker);
       if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
-      const { name, mime } = stickerMeta(picture);
-      await sendFile({ bytes: picture, name, mime });
+      const { mime, w, h } = stickerMeta(picture);
+      await sendSticker({ bytes: picture, mime: mime === 'image/png' ? 'image/png' : 'image/jpeg', w: w ?? 0, h: h ?? 0 });
     } catch (error) {
       fail(error);
     }
   }
 
-  async function sendFile(file: XmppOutgoingFile) {
+  // Sends a sticker's picture, whatever made it (lib/xmpp-store.ts xmppSendSticker).
+  function sendSticker(sticker: XmppSticker) {
+    return sendOut({ sticker });
+  }
+
+  function sendFile(file: XmppOutgoingFile) {
+    return sendOut({ file });
+  }
+
+  async function sendOut(held: { file: XmppOutgoingFile } | { sticker: XmppSticker }) {
     if (!jid) return;
     setNote('');
     setSending(true);
     try {
-      await xmppSendFile(jid, file);
+      await ('sticker' in held ? xmppSendSticker(jid, held.sticker) : xmppSendFile(jid, held.file));
     } catch (error) {
-      if (error instanceof NoOmemoError) setUnsent({ file });
+      if (error instanceof NoOmemoError) setUnsent(held);
       else fail(error);
     } finally {
       setSending(false);
@@ -687,7 +698,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                     setUnsent(null);
                     setNote('');
                     xmppSetPlain(jid, true)
-                      .then(() => ('text' in held ? send(held.text, held.to) : sendFile(held.file)))
+                      .then(() => ('text' in held ? send(held.text, held.to) : sendOut(held)))
                       .catch(fail);
                   }}
                 />
