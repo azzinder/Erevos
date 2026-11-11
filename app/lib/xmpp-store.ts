@@ -5,6 +5,7 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import type { Holder } from '../lock/sealed-file';
+import type { StickerPlace } from '../lock/sticker-data';
 import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { checkedLook, type Look } from '../theme/look';
@@ -24,8 +25,13 @@ import {
   changeXmppText,
   declineXmppRequest,
   forgetXmppChat,
+  forwardable,
+  forwardXmpp,
+  heardXmpp,
   lookUpDevices,
   markXmppRead,
+  pinXmpp,
+  plainIn,
   prepareXmppFile,
   reactXmpp,
   replyXmppText,
@@ -47,14 +53,16 @@ import {
   XmppConnection,
   XmppError,
   type Taken,
+  type XmppMessage,
   type XmppState,
 } from './xmpp';
 import { fetchXmppAvatar } from './xmpp-avatar';
-import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
+import { downloadXmppFile, linkFits, shownType, uploadXmppFile, type XmppFile } from './xmpp-files';
 import {
   addXmppGroupPeople,
   createXmppGroup,
   declineXmppInvite,
+  describeXmppGroup,
   groupPeople,
   joinXmppGroup,
   leaveXmppGroup,
@@ -657,25 +665,81 @@ export function xmppDelete(jid: string, id: string): Promise<void> {
   });
 }
 
-/** A photo or file as picked, to send. */
-export type XmppOutgoingFile = { bytes: Uint8Array; name: string; mime: string };
+/** A photo or file as picked, to send; a voice message recorded here says how long it lasts, in milliseconds, kept here only. */
+export type XmppOutgoingFile = { bytes: Uint8Array; name: string; mime: string; duration?: number };
 
 /**
  * Sends a photo or file: encrypted here when the chat is, put on the server's HTTP upload, and its
  * link in a message. The upload runs between two changes of the account, so what comes meanwhile
  * is not held back.
  */
-export async function xmppSendFile(jid: string, picked: XmppOutgoingFile): Promise<void> {
-  const it = need();
+export function xmppSendFile(jid: string, picked: XmppOutgoingFile): Promise<void> {
+  return sendUploaded(need(), jid, picked, false);
+}
+
+// Puts a file on the server as the chat `jid` writes, and sends it there: as a copy from another chat when `forward`.
+async function sendUploaded(it: Live & { state: XmppState }, jid: string, picked: XmppOutgoingFile, forward: boolean): Promise<void> {
   let ready: Awaited<ReturnType<typeof prepareXmppFile>> | null = null;
   await changeAccount(it, async () => {
     ready = await prepareXmppFile(it.state, online(it), jid);
   });
   const { encrypt, service } = ready!;
   const file = await uploadXmppFile(online(it), service, { bytes: picked.bytes, name: picked.name, type: picked.mime }, encrypt);
+  if (picked.duration && picked.duration > 0) file.duration = Math.round(picked.duration);
   await changeAccount(it, async () => {
-    await sendXmppFile(it.state, online(it), jid, file);
+    if (forward) await forwardXmpp(it.state, online(it), jid, { file });
+    else await sendXmppFile(it.state, online(it), jid, file);
   });
+}
+
+/**
+ * Sends copies of messages of another chat to the chat `to`, one after another, the oldest first,
+ * each marked as forwarded (lib/xmpp.ts forwardXmpp): words as new words; a file by its link when
+ * that chat is written as the file was (lib/xmpp-files.ts linkFits), or else fetched and put on the
+ * server again, encrypted as that chat is. One that cannot go (taken back, locked) is left out.
+ */
+export async function xmppForward(to: string, messages: XmppMessage[]): Promise<void> {
+  const it = need();
+  for (const message of [...messages].sort((a, b) => a.at - b.at)) {
+    if (!forwardable(message)) continue;
+    const file = message.file;
+    const target = it.state.chats[to];
+    const encrypt = !target || !plainIn(target);
+    if (!file) {
+      await changeAccount(it, async () => {
+        await forwardXmpp(it.state, online(it), to, { text: message.text });
+      });
+    } else if (linkFits(file, encrypt)) {
+      await changeAccount(it, async () => {
+        await forwardXmpp(it.state, online(it), to, { file: { ...file } });
+      });
+    } else {
+      const bytes = await xmppFile(file);
+      await sendUploaded(it, to, { bytes, name: file.name, mime: shownType(file), duration: file.duration }, true);
+    }
+  }
+}
+
+/** Pins a message of a chat on this device only, or unpins it. */
+export function xmppPin(jid: string, id: string, on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => pinXmpp(it.state, jid, id, on), true);
+}
+
+/** Keeps how long a sound of a chat lasts, once it was fetched and read (components/network-file.tsx). */
+export function xmppHeard(jid: string, id: string, ms: number): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => void heardXmpp(it.state, jid, id, ms), true);
+}
+
+/**
+ * Whose stickers made from photos the chats of an account send (lock/sticker-data.ts): the open
+ * space's, or with 'place' the open hidden place's own, as its hidden chats have them. Null while
+ * there is none.
+ */
+export function xmppStickerPlace(where: NetworkWhere = 'space'): StickerPlace | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped ? { holder: it.holder, space: it.space, key: it.key } : null;
 }
 
 // Files fetched while Erevos runs, so one looked at again is not fetched again (lib/file-cache.ts).
@@ -805,6 +869,12 @@ export function xmppDeclineInvite(room: string): Promise<void> {
 export function xmppSetSubject(room: string, subject: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => setXmppGroupSubject(it.state, online(it), room, subject));
+}
+
+/** Gives a group a new description, or takes it away with empty words (its owner). */
+export function xmppDescribeGroup(room: string, description: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => describeXmppGroup(it.state, online(it), room, description));
 }
 
 /** Renames a group (its owner). */

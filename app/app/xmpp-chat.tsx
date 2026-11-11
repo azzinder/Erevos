@@ -4,15 +4,17 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, Pressable, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
 import { Missing, ReactionChips } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { PlaceCard, PreviewCard, Quote } from '../components/message-parts';
+import { Pinned, PlaceCard, PreviewCard, Quote } from '../components/message-parts';
 import { PlaceSheet } from '../components/place-sheet';
+import { chosenStyle, SelectBar, selectAction, useSelection } from '../components/select-bar';
+import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
@@ -20,7 +22,7 @@ import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
-import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
+import { Button, Card, Chip, Input, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
 import { ask, confirm } from '../lib/alert';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
@@ -40,13 +42,14 @@ import { mimeOfName } from '../lib/matrix-media';
 import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { stickerMeta } from '../lib/own-stickers';
 import { rtc } from '../lib/webrtc';
-import { isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { forwardable, isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppChatList, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
 import { presenceText } from '../lib/net-presence';
-import { reactionsShown } from '../lib/xmpp-actions';
+import { pinsShown, reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
-import { XMPP_FILE_MOST } from '../lib/xmpp-files';
-import { groupPeople, type XmppRoom } from '../lib/xmpp-muc';
+import { isSound, shownType, XMPP_FILE_MOST } from '../lib/xmpp-files';
+import { DESCRIPTION_LONGEST, groupPeople, rankOf, type XmppRoom } from '../lib/xmpp-muc';
 import { xmppGroupCalls, xmppPlaceGroupCalls } from '../lib/xmpp-muji';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import {
@@ -60,12 +63,16 @@ import {
   xmppBlock,
   xmppChange,
   xmppDelete,
+  xmppDescribeGroup,
   xmppFile,
+  xmppForward,
+  xmppHeard,
   xmppAcceptDevice,
   xmppForgetChat,
   xmppLeaveGroup,
   xmppLookUpKeys,
   xmppNow,
+  xmppPin,
   xmppRead,
   xmppReact,
   xmppReply,
@@ -74,10 +81,12 @@ import {
   xmppSetLook,
   xmppSetNotify,
   xmppSetPlain,
+  xmppStickerPlace,
   xmppTyped,
   type XmppOutgoingFile,
 } from '../lib/xmpp-store';
 import { checkedChatNotify } from '../lock/chat-notify';
+import { openOwnSticker, type OwnSticker } from '../lock/sticker-data';
 import { radius, space } from '../theme/colors';
 import { softBubble, textSized } from '../theme/bubbles';
 import type { ChatLook } from '../theme/chat-theme';
@@ -106,11 +115,20 @@ import { checkedLook } from '../theme/look';
 // for its admin Add people; Leave the group leaves it on the account's other apps too.
 //
 // A message held down opens its menu (components/message-menu.tsx), as in a Matrix chat: react to
-// it, answer it, copy it, and for one of ours change its words or delete it for everyone
-// (lib/xmpp-actions.ts). An answer shows the message it is to above its words; a message changed
-// says so, and one taken back is only marked as such. The reactions are under it, tapped to react
-// the same or take ours back. While the other person writes, their app may say so, and it shows;
-// we are said to write only when the account says so, never in a group (components/say-typing.tsx).
+// it, answer it, copy it, forward it to another XMPP chat of the account, pin it for this device
+// only, choose it with others (components/select-bar.tsx: copy, forward or delete them together),
+// and for one of ours change its words or delete it for everyone (lib/xmpp-actions.ts). An answer
+// shows the message it is to above its words, which a tap goes to; a message changed says so, one
+// forwarded too, and one taken back is only marked as such. The reactions are under it, tapped to
+// react the same or take ours back. Messages pinned here show over the thread, one at a time, the
+// latest first; a tap goes to it and shows the next. While the other person writes, their app may
+// say so, and it shows; we are said to write only when the account says so, never in a group
+// (components/say-typing.tsx).
+//
+// A sound is a voice message, as the other apps send one, played here with how long it lasts
+// (components/network-file.tsx). Sticker sends one of the stickers made here from photos
+// (components/xmpp-stickers.tsx), as a photo. Who owns a group and who runs it is said beside them,
+// and its owner sets its description.
 //
 // A place goes as a geo: link in the words, as Conversations sends one, and one that comes so shows
 // as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
@@ -126,7 +144,7 @@ const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 function lineOf(message: XmppMessage): string {
   if (message.deleted) return t('Message deleted');
   if (message.locked) return t('Locked message');
-  if (message.file) return message.file.name;
+  if (message.file) return isSound(message.file) ? t('Voice message') : message.file.name;
   if (placeIn(message)) return `📍 ${t('Location')}`;
   return shownLine(message.text).trim().split('\n')[0] || t('Message');
 }
@@ -167,8 +185,13 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
-  const sendVoice = useRef<(audio: Uint8Array) => Promise<void>>(async () => undefined);
-  const voice = useVoiceCapture({ send: (audio) => sendVoice.current(audio), say: setNote });
+  const sendVoice = useRef<(audio: Uint8Array, ms: number) => Promise<void>>(async () => undefined);
+  const voice = useVoiceCapture({ send: (audio, ms) => sendVoice.current(audio, ms), say: setNote });
+  // Messages chosen together, by their IDs; those being forwarded, while their chat is picked; which pin shows.
+  const selection = useSelection<string>();
+  const [forwarding, setForwarding] = useState<string[] | null>(null);
+  const [pinShown, setPinShown] = useState(0);
+  const [stickering, setStickering] = useState(false);
   // Tells the contact we write, only when the account says so (app/xmpp.tsx); never in a group.
   const sayTyping = useSayTyping(!!now.state?.sayTyping && !!jid && !now.state.chats[jid]?.room, (typing) => jid && xmppTyped(jid, typing));
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
@@ -182,6 +205,16 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   }, [where]);
 
   useEffect(() => onGroupCallChange(() => setCalls((n) => n + 1)), []);
+  // Back ends the choosing, before it leaves the chat.
+  const { on: choosing, clear: unchoose } = selection;
+  useEffect(() => {
+    if (!choosing) return;
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      unchoose();
+      return true;
+    });
+    return () => back.remove();
+  }, [choosing, unchoose]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const off = onXmppTyping(() => {
@@ -210,7 +243,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
-  const { scroll, scrollProps, threadProps, endProps, place, withArrows } = useNetworkThread({
+  const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
     list: chat?.messages ?? [],
     idOf: (message) => message.id,
     mine: (message) => message.mine,
@@ -226,6 +259,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   useEffect(() => {
     if (jid && people && now.online) xmppLookUpKeys(jid).catch(() => undefined);
   }, [jid, people, now.online]);
+  // Whose stickers made from photos this chat sends: the space's, or its hidden place's own.
+  const account = now.state?.jid;
+  const stickerPlace = useMemo(() => (account ? xmppStickerPlace(where) : null), [where, account]);
 
   if (!state || !jid || !isXmppId(jid)) {
     return (
@@ -262,7 +298,20 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     }
   }
 
-  sendVoice.current = (audio) => sendFile({ bytes: audio, ...voiceNamed(audio) });
+  sendVoice.current = (audio, ms) => sendFile({ bytes: audio, ...voiceNamed(audio), duration: ms });
+
+  // Sends a sticker made from a photo, as a photo.
+  async function sendOwnSticker(sticker: OwnSticker) {
+    setStickering(false);
+    try {
+      const picture = await openOwnSticker(sticker);
+      if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
+      const { name, mime } = stickerMeta(picture);
+      await sendFile({ bytes: picture, name, mime });
+    } catch (error) {
+      fail(error);
+    }
+  }
 
   async function sendFile(file: XmppOutgoingFile) {
     if (!jid) return;
@@ -341,16 +390,43 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
   }
 
-  // Takes a message of ours back, for everyone in the chat, once asked.
-  async function remove(message: XmppMessage) {
-    if (!jid) return;
-    if (!(await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete')))) return;
-    try {
-      await xmppDelete(jid, message.id);
-    } catch (error) {
-      setNote(t('Not deleted. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+  // Takes messages of ours back, for everyone in the chat, once asked: one after another.
+  async function remove(messages: XmppMessage[]) {
+    if (!jid || !messages.length) return;
+    const asked =
+      messages.length === 1
+        ? await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete'))
+        : await confirm(t('Delete messages'), t('Delete these messages for everyone in the chat? They cannot be brought back.'), t('Delete'));
+    if (!asked) return;
+    selection.clear();
+    for (const message of messages) {
+      try {
+        await xmppDelete(jid, message.id);
+      } catch (error) {
+        setNote(t('Not deleted. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+        return;
+      }
     }
   }
+
+  // Goes to a message of the thread by its ID, as an answer's quote or a pin is tapped.
+  function reach(id: string) {
+    if (byId.has(id)) goTo(id);
+    else setNote(t('That message is not on this phone.'));
+  }
+
+  // Sends copies of the messages being forwarded to the chat `to`, the oldest first.
+  function forwardTo(to: string) {
+    const messages = (forwarding ?? []).map((id) => byId.get(id)).filter((m): m is XmppMessage => !!m);
+    setForwarding(null);
+    selection.clear();
+    if (!messages.length || !state) return;
+    setNote(t('Forwarding…'));
+    xmppForward(to, messages).then(() => setNote(t('Forwarded to {name}.', { name: nameOf(state, to) })), fail);
+  }
+
+  // Whether a message can be deleted for everyone: one of ours, which in a group the room named.
+  const deletable = (message: XmppMessage) => message.mine && menuable(message) && (!chat?.room || !!message.sid);
 
   // What can be done with a message, held down. In a group, reacting, answering and deleting wait
   // for the room's ID of it; changing and deleting are for our own, and changing for words only.
@@ -367,6 +443,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       });
     }
     if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+    if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
+    const pinned = pins.includes(message.id);
+    actions.push({ title: pinned ? t('Unpin') : t('Pin for me'), onPress: () => jid && void xmppPin(jid, message.id, !pinned).catch(fail) });
     if (message.mine && !message.file && !message.locked) {
       actions.push({
         title: t('Edit'),
@@ -377,7 +456,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         },
       });
     }
-    if (message.mine && named) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
+    actions.push(selectAction(() => selection.start(message.id)));
+    if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove([message]) });
     return actions;
   }
 
@@ -385,8 +465,17 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const answeredBy = (message: XmppMessage): Answer | null | undefined => {
     if (!message.replyTo) return undefined;
     const to = byId.get(message.replyTo);
-    return to ? { name: writerOf(to), line: lineOf(to) } : null;
+    return to ? { name: writerOf(to), line: lineOf(to), onPress: () => reach(to.id) } : null;
   };
+
+  // The messages chosen, the oldest first, and what can be done to them all.
+  const chosen = (chat?.messages ?? []).filter((message) => selection.chosen.has(message.id));
+  const copied = chosen.filter(copyable);
+  const forwarded = chosen.filter(forwardable);
+  // The pins that still show, the latest last; the one shown, the latest first.
+  const pins = pinsShown(chat?.pins, chat?.messages ?? []);
+  const pinAt = pins.length ? Math.min(pinShown, pins.length - 1) : 0;
+  const pinId = pins.length ? pins[pins.length - 1 - pinAt] : null;
 
   async function call(video: boolean) {
     if (!jid) return;
@@ -445,252 +534,318 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       : room
         ? t('XMPP group · encrypted with OMEMO for every member, not anonymous')
         : t('XMPP · encrypted with OMEMO, not anonymous');
-  return withArrows(
-    <KeyboardAwareScrollView
-      ref={scroll}
-      style={{ flex: 1, backgroundColor: colors.ground }}
-      // As Page (components/ui.tsx) has it.
-      contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
-      keyboardShouldPersistTaps="handled"
-      bottomOffset={space.xl}
-      {...scrollProps}
-    >
-      <Row>
-        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
-          {name}
-        </Text>
-        {room ? null : (
-          <>
-            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
-              <VideoSign />
-            </ShortcutTile>
-            <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
-              <PhoneSign />
-            </ShortcutTile>
-          </>
-        )}
-        {/* In a private group: a video call and a voice call; one going on is joined as it is, by its own tile alone. */}
-        {groupCalls ? (
-          going ? (
-            going.video ? (
-              <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void callGroup(true)}>
-                <VideoSign />
-              </ShortcutTile>
-            ) : (
-              <ShortcutTile label={t('A group call is going on · Join')} tint="green" onPress={() => void callGroup(false)}>
-                <PhoneSign />
-              </ShortcutTile>
-            )
-          ) : (
-            <>
-              <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void callGroup(true)}>
-                <VideoSign />
-              </ShortcutTile>
-              <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void callGroup(false)}>
-                <PhoneSign />
-              </ShortcutTile>
-            </>
-          )
-        ) : null}
-      </Row>
-      {presence ? (
-        <Text variant="caption" numberOfLines={2}>
-          {presence}
-        </Text>
-      ) : null}
-      <Text variant="caption" tone="muted">
-        {jid}
-      </Text>
-      <Text variant="caption" tone="muted">
-        {how}
-      </Text>
-      {going ? (
-        <TextButton
-          title={going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')}
-          onPress={() => void callGroup(going.video)}
+  // Where what is forwarded can go: the account's other chats, a group only once joined.
+  const targets = xmppChatList(state).filter((other) => other.jid !== jid && (!other.room || other.room.joined) && !isBlocked(state, other.jid));
+  return (
+    <View style={{ flex: 1 }}>
+      {selection.on ? (
+        <SelectBar
+          count={selection.chosen.size}
+          onCancel={selection.clear}
+          onAll={() => selection.set((chat?.messages ?? []).filter(menuable).map((message) => message.id))}
+          onCopy={
+            copied.length
+              ? () => {
+                  selection.clear();
+                  void copy(copied.map((message) => message.text).join('\n\n'));
+                }
+              : undefined
+          }
+          onForward={forwarded.length ? () => setForwarding(forwarded.map((message) => message.id)) : undefined}
+          onDelete={chosen.length && chosen.every(deletable) ? () => void remove(chosen) : undefined}
         />
       ) : null}
-      {plain ? <Button title={t('Encrypt again')} kind="secondary" compact onPress={() => xmppSetPlain(jid, false).catch(fail)} /> : null}
-      {room && !room.joined ? (
-        <Text variant="caption" tone="muted">
-          {room.problem || t('Not in this group yet: joining it.')}
-        </Text>
-      ) : null}
-      {room?.subject ? <Text selectable>{room.subject}</Text> : null}
-
-      <View style={{ gap: space.md }} {...threadProps}>
-        {(chat?.messages ?? []).map((message) => (
-          <Bubble
-            key={message.id}
-            message={message}
-            group={!!room}
-            me={me}
-            answered={answeredBy(message)}
-            onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
-            onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
-            onLayout={place(message.id)}
-          />
-        ))}
-      </View>
-      {!room && xmppTyping(jid) ? (
-        <Text variant="caption" tone="muted">
-          {name} · {t('typing…')}
-        </Text>
-      ) : null}
-
-      {unsent !== null ? (
-        <Card>
-          <Text>
-            {room
-              ? t('Nobody in this group has an app with OMEMO that Erevos can find. You can write without encryption: the XMPP servers, and anyone who can read what passes through them, can then read it.')
-              : t('{name} has no app with OMEMO that Erevos can find. You can write to them without encryption: the XMPP server, and anyone who can read what passes through it, can then read it.', { name })}
-          </Text>
-          <Row wrap>
-            <Button
-              title={t('Write without encryption')}
-              compact
-              onPress={() => {
-                const held = unsent;
-                setUnsent(null);
-                setNote('');
-                xmppSetPlain(jid, true)
-                  .then(() => ('text' in held ? send(held.text, held.to) : sendFile(held.file)))
-                  .catch(fail);
-              }}
-            />
-            <Button
-              title={t('Cancel')}
-              kind="secondary"
-              compact
-              onPress={() => {
-                if ('text' in unsent) setDraft(unsent.text);
-                setUnsent(null);
-                setNote('');
-              }}
-            />
+      {withArrows(
+        <KeyboardAwareScrollView
+          ref={scroll}
+          style={{ flex: 1, backgroundColor: colors.ground }}
+          // As Page (components/ui.tsx) has it.
+          contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={space.xl}
+          {...scrollProps}
+        >
+          <Row>
+            <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
+              {name}
+            </Text>
+            {room ? null : (
+              <>
+                <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+                  <VideoSign />
+                </ShortcutTile>
+                <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
+                  <PhoneSign />
+                </ShortcutTile>
+              </>
+            )}
+            {/* In a private group: a video call and a voice call; one going on is joined as it is, by its own tile alone. */}
+            {groupCalls ? (
+              going ? (
+                going.video ? (
+                  <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void callGroup(true)}>
+                    <VideoSign />
+                  </ShortcutTile>
+                ) : (
+                  <ShortcutTile label={t('A group call is going on · Join')} tint="green" onPress={() => void callGroup(false)}>
+                    <PhoneSign />
+                  </ShortcutTile>
+                )
+              ) : (
+                <>
+                  <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void callGroup(true)}>
+                    <VideoSign />
+                  </ShortcutTile>
+                  <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void callGroup(false)}>
+                    <PhoneSign />
+                  </ShortcutTile>
+                </>
+              )
+            ) : null}
           </Row>
-        </Card>
-      ) : null}
-
-      {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onClose={() => setReplyId(null)} /> : null}
-      {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
-      <Row>
-        <Input
-          style={{ flex: 1 }}
-          value={draft}
-          onChangeText={(text) => {
-            setDraft(text);
-            sayTyping.typed(text);
-          }}
-          multiline
-          placeholder={t('Message')}
-          accessibilityLabel={changed ? t('Edit message') : t('Message')}
-        />
-        <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
-      </Row>
-      <Row {...endProps}>
-        {voice.recording ? (
-          <RecordingLine />
-        ) : (
-          <>
-            <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
-            <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
-            <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => setPlacing(true)} />
-            {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
-          </>
-        )}
-        <MicButton voice={voice} disabled={sending || unsent !== null || !!changed} />
-      </Row>
-      {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
-      <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={channel ? t('Everyone in this group can see it, and the servers.') : t('Everyone in this chat can see it.')} />
-      {channel ? (
-        <Text variant="caption" tone="muted">
-          {t('A channel tells only of messages that name you.')}
-        </Text>
-      ) : null}
-      <Row wrap>
-        <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
-        <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
-      </Row>
-      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
-
-      {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
-      {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
-      {!room && devices.length ? (
-        <>
-          <SectionTitle title={t('Their keys')} />
-          <Card>
-            <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
-            <Keys jid={jid} devices={devices} fail={fail} />
-          </Card>
-        </>
-      ) : null}
-
-      {room ? null : blocked ? (
-        <>
+          {presence ? (
+            <Text variant="caption" numberOfLines={2}>
+              {presence}
+            </Text>
+          ) : null}
           <Text variant="caption" tone="muted">
-            {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
+            {jid}
           </Text>
-          <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
-        </>
-      ) : (
-        <Button
-          title={t('Block')}
-          kind="secondary"
-          onPress={() =>
-            ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
-              { text: t('Cancel'), style: 'cancel' },
-              { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
-            ])
-          }
-        />
+          <Text variant="caption" tone="muted">
+            {how}
+          </Text>
+          {going ? (
+            <TextButton
+              title={going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')}
+              onPress={() => void callGroup(going.video)}
+            />
+          ) : null}
+          {plain ? <Button title={t('Encrypt again')} kind="secondary" compact onPress={() => xmppSetPlain(jid, false).catch(fail)} /> : null}
+          {room && !room.joined ? (
+            <Text variant="caption" tone="muted">
+              {room.problem || t('Not in this group yet: joining it.')}
+            </Text>
+          ) : null}
+          {room?.subject ? <Text selectable>{room.subject}</Text> : null}
+          {room?.description ? (
+            <Text variant="caption" tone="muted" selectable>
+              {room.description}
+            </Text>
+          ) : null}
+          {pinId ? (
+            <Pinned
+              index={pinAt}
+              count={pins.length}
+              line={byId.get(pinId) ? lineOf(byId.get(pinId)!) : ''}
+              onPress={() => {
+                reach(pinId);
+                setPinShown((pinAt + 1) % pins.length);
+              }}
+            />
+          ) : null}
+
+          <View style={{ gap: space.md }} {...threadProps}>
+            {(chat?.messages ?? []).map((message) => {
+              // While messages are chosen, a tap or a hold on one adds it or takes it out.
+              const choose = selection.on && menuable(message) ? () => selection.toggle(message.id) : undefined;
+              return (
+                <Bubble
+                  key={message.id}
+                  message={message}
+                  group={!!room}
+                  me={me}
+                  answered={answeredBy(message)}
+                  chosen={selection.chosen.has(message.id)}
+                  onPress={choose}
+                  onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
+                  onMenu={selection.on ? choose : menuable(message) ? () => setMenuFor(message.id) : undefined}
+                  onDuration={(ms) => void xmppHeard(jid, message.id, ms).catch(() => undefined)}
+                  onLayout={place(message.id)}
+                />
+              );
+            })}
+          </View>
+          {!room && xmppTyping(jid) ? (
+            <Text variant="caption" tone="muted">
+              {name} · {t('typing…')}
+            </Text>
+          ) : null}
+
+          {unsent !== null ? (
+            <Card>
+              <Text>
+                {room
+                  ? t('Nobody in this group has an app with OMEMO that Erevos can find. You can write without encryption: the XMPP servers, and anyone who can read what passes through them, can then read it.')
+                  : t('{name} has no app with OMEMO that Erevos can find. You can write to them without encryption: the XMPP server, and anyone who can read what passes through it, can then read it.', { name })}
+              </Text>
+              <Row wrap>
+                <Button
+                  title={t('Write without encryption')}
+                  compact
+                  onPress={() => {
+                    const held = unsent;
+                    setUnsent(null);
+                    setNote('');
+                    xmppSetPlain(jid, true)
+                      .then(() => ('text' in held ? send(held.text, held.to) : sendFile(held.file)))
+                      .catch(fail);
+                  }}
+                />
+                <Button
+                  title={t('Cancel')}
+                  kind="secondary"
+                  compact
+                  onPress={() => {
+                    if ('text' in unsent) setDraft(unsent.text);
+                    setUnsent(null);
+                    setNote('');
+                  }}
+                />
+              </Row>
+            </Card>
+          ) : null}
+
+          {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onPress={() => reach(answered.id)} onClose={() => setReplyId(null)} /> : null}
+          {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
+          <Row>
+            <Input
+              style={{ flex: 1 }}
+              value={draft}
+              onChangeText={(text) => {
+                setDraft(text);
+                sayTyping.typed(text);
+              }}
+              multiline
+              placeholder={t('Message')}
+              accessibilityLabel={changed ? t('Edit message') : t('Message')}
+            />
+            <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
+          </Row>
+          {!voice.recording && !changed ? (
+            <Row wrap>
+              <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => setPlacing(true)} />
+              <Button title={t('Sticker')} kind="secondary" compact disabled={sending || unsent !== null || !stickerPlace} onPress={() => setStickering(true)} />
+            </Row>
+          ) : null}
+          <Row {...endProps}>
+            {voice.recording ? (
+              <RecordingLine />
+            ) : (
+              <>
+                <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
+                <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
+                {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
+              </>
+            )}
+            <MicButton voice={voice} disabled={sending || unsent !== null || !!changed} />
+          </Row>
+          {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
+          <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={channel ? t('Everyone in this group can see it, and the servers.') : t('Everyone in this chat can see it.')} />
+          <XmppStickerSheet visible={stickering} onClose={() => setStickering(false)} place={stickerPlace} onPick={(sticker) => void sendOwnSticker(sticker)} />
+          <Sheet visible={forwarding !== null} onClose={() => setForwarding(null)} title={t('Forward to')}>
+            <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
+              {targets.map((other) => (
+                <Button
+                  key={other.jid}
+                  // A copy into a chat not encrypted is read by its server: said beside its name.
+                  title={plainIn(other) ? `${nameOf(state, other.jid)} · ${t('not encrypted')}` : nameOf(state, other.jid)}
+                  kind="secondary"
+                  onPress={() => forwardTo(other.jid)}
+                />
+              ))}
+              {targets.length ? null : <Text tone="muted">{t('No chats yet')}</Text>}
+            </ScrollView>
+          </Sheet>
+          {channel ? (
+            <Text variant="caption" tone="muted">
+              {t('A channel tells only of messages that name you.')}
+            </Text>
+          ) : null}
+          <Row wrap>
+            <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
+            <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+          </Row>
+          <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
+
+          {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
+          {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
+          {!room && devices.length ? (
+            <>
+              <SectionTitle title={t('Their keys')} />
+              <Card>
+                <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
+                <Keys jid={jid} devices={devices} fail={fail} />
+              </Card>
+            </>
+          ) : null}
+
+          {room ? null : blocked ? (
+            <>
+              <Text variant="caption" tone="muted">
+                {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
+              </Text>
+              <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
+            </>
+          ) : (
+            <Button
+              title={t('Block')}
+              kind="secondary"
+              onPress={() =>
+                ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
+                  { text: t('Cancel'), style: 'cancel' },
+                  { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
+                ])
+              }
+            />
+          )}
+          {room ? (
+            <Button
+              title={t('Leave the group')}
+              kind="secondary"
+              onPress={() =>
+                ask(t('Leave this group?'), t('Its messages are removed from this phone, and the other XMPP apps of your account leave the group too.'), [
+                  { text: t('Cancel'), style: 'cancel' },
+                  {
+                    text: t('Leave'),
+                    style: 'destructive',
+                    onPress: () =>
+                      void xmppLeaveGroup(jid)
+                        .then(() => router.back())
+                        .catch(fail),
+                  },
+                ])
+              }
+            />
+          ) : (
+            <Button
+              title={t('Remove this chat')}
+              kind="secondary"
+              onPress={() =>
+                ask(t('Remove this chat?'), t('Its messages are removed from this phone. The contact stays in your XMPP account, and the other person keeps theirs.'), [
+                  { text: t('Cancel'), style: 'cancel' },
+                  {
+                    text: t('Remove'),
+                    style: 'destructive',
+                    onPress: () =>
+                      void xmppForgetChat(jid)
+                        .then(() => router.back())
+                        .catch(fail),
+                  },
+                ])
+              }
+            />
+          )}
+          <MessageMenu
+            visible={!!menuMessage && menuable(menuMessage) && shown}
+            onClose={() => setMenuFor(null)}
+            line={menuMessage ? lineOf(menuMessage) : ''}
+            reaction={menuMessage?.reacted?.[me]?.[0]}
+            onReact={menuMessage && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
+            actions={menuMessage ? actionsOf(menuMessage) : []}
+          />
+        </KeyboardAwareScrollView>,
       )}
-      {room ? (
-        <Button
-          title={t('Leave the group')}
-          kind="secondary"
-          onPress={() =>
-            ask(t('Leave this group?'), t('Its messages are removed from this phone, and the other XMPP apps of your account leave the group too.'), [
-              { text: t('Cancel'), style: 'cancel' },
-              {
-                text: t('Leave'),
-                style: 'destructive',
-                onPress: () =>
-                  void xmppLeaveGroup(jid)
-                    .then(() => router.back())
-                    .catch(fail),
-              },
-            ])
-          }
-        />
-      ) : (
-        <Button
-          title={t('Remove this chat')}
-          kind="secondary"
-          onPress={() =>
-            ask(t('Remove this chat?'), t('Its messages are removed from this phone. The contact stays in your XMPP account, and the other person keeps theirs.'), [
-              { text: t('Cancel'), style: 'cancel' },
-              {
-                text: t('Remove'),
-                style: 'destructive',
-                onPress: () =>
-                  void xmppForgetChat(jid)
-                    .then(() => router.back())
-                    .catch(fail),
-              },
-            ])
-          }
-        />
-      )}
-      <MessageMenu
-        visible={!!menuMessage && menuable(menuMessage) && shown}
-        onClose={() => setMenuFor(null)}
-        line={menuMessage ? lineOf(menuMessage) : ''}
-        reaction={menuMessage?.reacted?.[me]?.[0]}
-        onReact={menuMessage && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
-        actions={menuMessage ? actionsOf(menuMessage) : []}
-      />
-    </KeyboardAwareScrollView>,
+    </View>
   );
 }
 
@@ -733,11 +888,24 @@ function Keys({ jid, devices, fail }: { jid: string; devices: Devices; fail: (er
   );
 }
 
-// What a group's admin may do besides adding people: the subject, and for its owner the name; and
-// in a channel, the people in it now, each of whom can be put out.
+/** Whether someone owns the group or runs it, beside their name; nothing for anyone else. */
+function Rank({ room, address }: { room: XmppRoom; address: string }) {
+  const colors = useColors();
+  const rank = rankOf(room, address);
+  if (!rank) return null;
+  return (
+    <Text variant="caption" color={colors.accentText}>
+      {rank === 'owner' ? t('owner') : t('admin')}
+    </Text>
+  );
+}
+
+// What a group's admin may do besides adding people: the subject, and for its owner the name and
+// the description; and in a channel, the people in it now, each of whom can be put out.
 function GroupAdmin({ state, jid, room, fail }: { state: XmppState; jid: string; room: XmppRoom; fail: (error: unknown) => void }) {
   const [subject, setSubject] = useState(room.subject ?? '');
   const [name, setName] = useState(room.name ?? '');
+  const [description, setDescription] = useState(room.description ?? '');
   const [busy, setBusy] = useState(false);
   const run = (work: () => Promise<void>) => {
     setBusy(true);
@@ -758,6 +926,20 @@ function GroupAdmin({ state, jid, room, fail }: { state: XmppState; jid: string;
             <Button title={t('Rename')} compact disabled={busy || !name.trim() || name.trim() === (room.name ?? '')} onPress={() => run(() => xmppRenameGroup(jid, name))} />
           </Row>
         ) : null}
+        {room.owner ? (
+          <Row>
+            <Input
+              style={{ flex: 1 }}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              maxLength={DESCRIPTION_LONGEST}
+              placeholder={t('Description')}
+              accessibilityLabel={t('Description')}
+            />
+            <Button title={t('Save')} compact disabled={busy || description.trim() === (room.description ?? '')} onPress={() => run(() => xmppDescribeGroup(jid, description))} />
+          </Row>
+        ) : null}
         {room.owner ? null : (
           <Text variant="caption" tone="muted">
             {t('Only its owner can rename the group.')}
@@ -766,9 +948,12 @@ function GroupAdmin({ state, jid, room, fail }: { state: XmppState; jid: string;
       </Card>
       {nicks.map((nick) => (
         <Card key={nick}>
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {nick}
-          </Text>
+          <Row>
+            <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {nick}
+            </Text>
+            <Rank room={room} address={room.occupants[nick] ?? ''} />
+          </Row>
           <Button
             title={t('Take out')}
             kind="secondary"
@@ -819,9 +1004,12 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
         const devices = xmppDevices(state, member);
         return (
           <Card key={member}>
-            <Text variant="bodyStrong" numberOfLines={1}>
-              {nameOf(state, member)}
-            </Text>
+            <Row>
+              <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {nameOf(state, member)}
+              </Text>
+              <Rank room={room} address={member} />
+            </Row>
             <Text variant="caption" tone="muted" numberOfLines={1}>
               {member}
             </Text>
@@ -905,20 +1093,26 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
   );
 }
 
-/** The message an answer is to, as the answer quotes it. */
-type Answer = { name: string; line: string };
+/** The message an answer is to, as the answer quotes it, and going to it. */
+type Answer = { name: string; line: string; onPress: () => void };
 
-function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
+function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu, onDuration, onLayout }: {
   message: XmppMessage;
   group: boolean;
   /** The account's address, to see which reactions are ours. */
   me: string;
   /** The message it answers, or null when that is not here. */
   answered?: Answer | null;
+  /** Chosen among others (components/select-bar.tsx). */
+  chosen?: boolean;
+  /** Tapped, while messages are chosen: chooses it, or takes it out. */
+  onPress?: () => void;
   /** A reaction under it was tapped: reacts the same, or takes ours back. Not given when it cannot be reacted to yet. */
   onReact?: (emoji: string) => void;
   /** Held down: its menu. */
   onMenu?: () => void;
+  /** How long its sound lasts, read once it was fetched, to keep. */
+  onDuration?: (ms: number) => void;
   /** Where it sits in the thread, to scroll to it. */
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
@@ -943,43 +1137,55 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
         ? t('Not sent.')
         : [`${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
   const reactions = reactionsShown(message);
+  const file = message.file;
   return (
-    <View onLayout={onLayout} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', gap: 4 }}>
-      <Pressable
-        onLongPress={onMenu}
-        disabled={!onMenu}
-        // One with buttons in it (Save) stays apart from them for a screen reader.
-        accessible={!message.file}
-        accessibilityHint={onMenu ? t('Hold for more') : undefined}
-        style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
-      >
-        {group && !mine && message.by ? (
-          <Text variant="caption" tone="muted" numberOfLines={1}>
-            {message.by}
+    // Chosen, it is washed across the thread (components/select-bar.tsx).
+    <View onLayout={onLayout} style={chosen ? chosenStyle(colors) : undefined}>
+      <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', gap: 4 }}>
+        <Pressable
+          onPress={onPress}
+          onLongPress={onMenu}
+          disabled={!onMenu && !onPress}
+          // One with buttons in it (Save) stays apart from them for a screen reader.
+          accessible={!file}
+          accessibilityState={onPress ? { selected: !!chosen } : undefined}
+          accessibilityHint={onMenu && !onPress ? t('Hold for more') : undefined}
+          style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
+        >
+          {group && !mine && message.by ? (
+            <Text variant="caption" tone="muted" numberOfLines={1}>
+              {message.by}
+            </Text>
+          ) : null}
+          {message.forwarded && !message.deleted ? (
+            <Text variant="caption" tone="muted" style={{ fontStyle: 'italic' }}>
+              {t('Forwarded')}
+            </Text>
+          ) : null}
+          {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={onPress ? undefined : answered.onPress} /> : <Missing /> : null}
+          {message.deleted ? (
+            <Text tone="muted" style={{ fontStyle: 'italic' }}>
+              {t('Message deleted')}
+            </Text>
+          ) : message.locked ? (
+            <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
+          ) : file ? (
+            // A sound shows as a voice message, as the other apps send one.
+            <NetworkFile name={file.name} type={shownType(file)} size={file.size} duration={file.duration} fetch={() => xmppFile(file)} onMenu={onMenu} onDuration={onDuration} />
+          ) : (
+            // Not selectable when it has a menu: holding the words opens it, which can copy them.
+            <>
+              {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu} style={textSized(look.textSize, 16)}>{message.text}</Text>}
+              {message.preview ? <PreviewCard preview={message.preview} /> : null}
+            </>
+          )}
+          <Text variant="caption" tone="faint">
+            {status}
+            {!message.encrypted && !message.locked && !message.deleted ? ` · ${t('not encrypted')}` : ''}
           </Text>
-        ) : null}
-        {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} /> : <Missing /> : null}
-        {message.deleted ? (
-          <Text tone="muted" style={{ fontStyle: 'italic' }}>
-            {t('Message deleted')}
-          </Text>
-        ) : message.locked ? (
-          <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
-        ) : message.file ? (
-          <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} onMenu={onMenu} />
-        ) : (
-          // Not selectable when it has a menu: holding the words opens it, which can copy them.
-          <>
-            {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu} style={textSized(look.textSize, 16)}>{message.text}</Text>}
-            {message.preview ? <PreviewCard preview={message.preview} /> : null}
-          </>
-        )}
-        <Text variant="caption" tone="faint">
-          {status}
-          {!message.encrypted && !message.locked && !message.deleted ? ` · ${t('not encrypted')}` : ''}
-        </Text>
-      </Pressable>
-      {reactions ? <ReactionChips reactions={reactions} me={me} mine={mine} onReact={(emoji) => onReact?.(emoji)} /> : null}
+        </Pressable>
+        {reactions ? <ReactionChips reactions={reactions} me={me} mine={mine} onReact={(emoji) => onReact?.(emoji)} /> : null}
+      </View>
     </View>
   );
 }

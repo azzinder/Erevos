@@ -10,8 +10,8 @@
 // the archive, once; receipts and read marks; someone without OMEMO gets nothing unless the chat
 // chooses to write without it; OMEMO 2 to the apps that have it (as Kaidan), OMEMO 0.3 to those
 // that have only that (as Conversations), and an SCE envelope that names someone else is not read; photos and files both ways, through the server's upload service,
-// encrypted (aesgcm:// links) or as they are (out of band). The account survives being kept as JSON
-// between steps.
+// encrypted (aesgcm:// links) or as they are (out of band); a sound is a voice message, how long
+// it lasts read from its MP4, Ogg or WAV file. The account survives being kept as JSON between steps.
 // lib/xmpp.ts was also run against a real Prosody 0.12 (docs/xmpp.md).
 // Run with: npm run check
 /// <reference types="node" />
@@ -25,13 +25,14 @@ import { markRestore } from '../lock/restored';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
 import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
-import { addXmppContact, isXmppId, markXmppRead, prepareXmppFile, sendXmppFile, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, xmppDevices, type XmppState } from '../lib/xmpp';
-import { downloadXmppFile, fileOfText, setXmppHttp, textOfFile, uploadXmppFile } from '../lib/xmpp-files';
+import { addXmppContact, heardXmpp, isXmppId, markXmppRead, prepareXmppFile, sendXmppFile, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, xmppDevices, type XmppState } from '../lib/xmpp';
+import { downloadXmppFile, fileOfText, isSound, linkFits, setXmppHttp, shownType, textOfFile, typeOfName, uploadXmppFile } from '../lib/xmpp-files';
+import { soundLength } from '../lib/xmpp-voice';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { envelope, openEnvelope } from '../lib/xmpp-omemo2';
 import { startSasl } from '../lib/xmpp-sasl';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
-import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSend, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
+import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppForward, xmppHeard, xmppNow, xmppPin, xmppRead, xmppSend, xmppSignIn, xmppStickerPlace, xmppUnread } from '../lib/xmpp-store';
 import { child, el, find, parseXml, render, textOf, XmlStream, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
 import { DOMAIN, PASSWORD, person, Server, settle, UPLOAD } from './xmpp-server';
 
@@ -221,6 +222,67 @@ test('signed in, the archive from before tells of nothing; a message that comes 
     setXmppConnect(undefined);
     setCurrentSpace(null);
     ann.connection.close();
+  }
+});
+
+test('a file forwarded to a chat written otherwise is fetched and put up again, as that chat writes; pins and lengths are kept', { skip: !coreReady }, async () => {
+  const server = new Server();
+  server.upload = { most: 1024 * 1024 };
+  setXmppHttp(server.http);
+  const ann = await person(server, 'ann');
+  const cat = await person(server, 'cat');
+  const before = await person(server, 'ben');
+  for (const other of [ann, cat]) {
+    await addXmppContact(other.state, other.connection, `ben@${DOMAIN}`);
+    await settle([ann, cat, before]);
+    await addXmppContact(before.state, before.connection, other.state.jid);
+    await settle([ann, cat, before]);
+  }
+  before.connection.close();
+  const key = randomBytes(32);
+  setXmppConnect(server.connect);
+  setCurrentSpace(7, key);
+  try {
+    runXmpp();
+    await until(() => xmppNow().loaded, 'the account to load');
+    await xmppSignIn(`ben@${DOMAIN}`, PASSWORD);
+    await until(() => xmppNow().online, 'the connection');
+    // Ann sends Ben a file as it is, in a chat written without encryption.
+    ann.state.chats[`ben@${DOMAIN}`].plain = true;
+    const ready = await prepareXmppFile(ann.state, ann.connection, `ben@${DOMAIN}`);
+    const notes = utf8Encode('the minutes of Monday');
+    await sendXmppFile(ann.state, ann.connection, `ben@${DOMAIN}`, await uploadXmppFile(ann.connection, ready.service, { bytes: notes, name: 'minutes.txt', type: 'text/plain' }, ready.encrypt));
+    const came = () => xmppNow().state?.chats[`ann@${DOMAIN}`]?.messages.find((m) => m.file);
+    await until(() => !!came(), 'the file');
+    const file = came()!;
+    assert.equal(file.file?.fragment, undefined);
+
+    // Ben forwards it to Cat, whose chat is encrypted: it is fetched, encrypted and put on the server again.
+    const uploads = server.files.size;
+    await xmppForward(`cat@${DOMAIN}`, [file]);
+    assert.equal(server.files.size, uploads + 1);
+    await settle([ann, cat]);
+    const atCat = cat.state.chats[`ben@${DOMAIN}`].messages.at(-1)!;
+    assert.ok(atCat.encrypted && atCat.file?.fragment);
+    assert.deepEqual(await downloadXmppFile(atCat.file!), notes);
+    const copy = xmppNow().state!.chats[`cat@${DOMAIN}`].messages.at(-1)!;
+    assert.deepEqual([copy.forwarded, copy.file?.name, !!copy.file?.fragment], [true, 'minutes.txt', true]);
+
+    // A pin and a sound's length are kept with the account, here only.
+    await xmppPin(`ann@${DOMAIN}`, file.id, true);
+    assert.deepEqual(xmppNow().state!.chats[`ann@${DOMAIN}`].pins, [file.id]);
+    await xmppHeard(`ann@${DOMAIN}`, file.id, 1234);
+    assert.equal(xmppNow().state!.chats[`ann@${DOMAIN}`].messages.find((m) => m.id === file.id)?.file?.duration, 1234);
+    // The space's own stickers are what its chats send.
+    assert.deepEqual(xmppStickerPlace(), { holder: 'space', space: 7, key });
+    assert.equal(xmppStickerPlace('place'), null);
+  } finally {
+    stopXmpp();
+    setXmppConnect(undefined);
+    setCurrentSpace(null);
+    setXmppHttp(null);
+    ann.connection.close();
+    cat.connection.close();
   }
 });
 
@@ -426,6 +488,80 @@ test('a file is read from a message only as the apps that share files write it',
   assert.equal(fileOfText('http://example.org/cat.png', 'http://example.org/cat.png'), null);
   const file = { url: 'https://f.example.org/z.ogg', fragment: key, name: 'z.ogg', type: 'audio/ogg' };
   assert.deepEqual(fileOfText(textOfFile(file)), file);
+});
+
+// The pieces of a sound file, as recorders write them.
+const be32 = (n: number) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+const le32 = (n: number) => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+const box = (type: string, ...content: number[][]) => {
+  const inner = content.flat();
+  return [...be32(8 + inner.length), ...[...type].map((c) => c.charCodeAt(0)), ...inner];
+};
+const oggPage = (granule: number, serial: number, payload: number[]) => [
+  ...[...'OggS'].map((c) => c.charCodeAt(0)),
+  0,
+  0,
+  ...le32(granule),
+  ...le32(0),
+  ...le32(serial),
+  ...le32(0),
+  ...le32(0),
+  1,
+  payload.length,
+  ...payload,
+];
+
+test('a sound is a voice message, and how long it lasts is read from its file', () => {
+  // As Conversations names what it records, and the others.
+  assert.equal(typeOfName('RECORDING_20261111_101010.oga'), 'audio/ogg');
+  assert.equal(typeOfName('voice.m4a'), 'audio/mp4');
+  assert.equal(typeOfName('cat.png'), 'image/png');
+  assert.equal(fileOfText(`aesgcm://f.example.org/3f2a.oga#${'ab'.repeat(44)}`)?.type, 'audio/ogg');
+  // One kept before, by a type that said nothing, is known by its name now.
+  assert.equal(shownType({ name: 'x.opus', type: 'application/octet-stream' }), 'audio/ogg');
+  assert.ok(isSound({ name: 'x.aac', type: 'application/octet-stream' }));
+  assert.ok(!isSound({ name: 'notes.txt', type: 'text/plain' }));
+
+  // MP4 (.m4a), its movie header at the end, in both its versions.
+  const ftyp = box('ftyp', [...'M4A '].map((c) => c.charCodeAt(0)), be32(0));
+  const mvhd0 = box('mvhd', [0, 0, 0, 0], be32(0), be32(0), be32(1000), be32(4250), new Array(80).fill(0));
+  assert.equal(soundLength(new Uint8Array([...ftyp, ...box('mdat', new Array(300).fill(7)), ...box('moov', mvhd0)])), 4250);
+  const mvhd1 = box('mvhd', [1, 0, 0, 0], be32(0), be32(0), be32(0), be32(0), be32(44100), be32(0), be32(44100 * 3), new Array(80).fill(0));
+  assert.equal(soundLength(new Uint8Array([...ftyp, ...box('moov', mvhd1), ...box('mdat', [1, 2, 3])])), 3000);
+  // Cut short before its movie header: not known.
+  assert.equal(soundLength(new Uint8Array([...ftyp, ...box('mdat', new Array(300).fill(7))])), null);
+
+  // Ogg with Opus: the last page's granule, after the pre-skip, at 48 kHz; a page of another stream after it does not count.
+  const opusHead = [...[...'OpusHead'].map((c) => c.charCodeAt(0)), 1, 1, 312 & 255, 312 >> 8, ...le32(48000), 0, 0, 0];
+  const ogg = [...oggPage(0, 7, opusHead), ...oggPage(48000 * 5 + 312, 7, [1, 2, 3]), ...oggPage(999999, 8, [4])];
+  assert.equal(soundLength(new Uint8Array(ogg)), 5000);
+  // Ogg with Vorbis, at the rate its first header says.
+  const vorbisHead = [1, ...[...'vorbis'].map((c) => c.charCodeAt(0)), ...le32(0), 1, ...le32(22050), ...new Array(16).fill(0)];
+  assert.equal(soundLength(new Uint8Array([...oggPage(0, 3, vorbisHead), ...oggPage(22050 * 2, 3, [9])])), 2000);
+
+  // WAV: its sound's bytes over how many go to a second.
+  const fmt = [...[...'fmt '].map((c) => c.charCodeAt(0)), ...le32(16), 1, 0, 1, 0, ...le32(8000), ...le32(16000), 2, 0, 16, 0];
+  const wav = [...[...'RIFF'].map((c) => c.charCodeAt(0)), ...le32(0), ...[...'WAVE'].map((c) => c.charCodeAt(0)), ...fmt, ...[...'data'].map((c) => c.charCodeAt(0)), ...le32(32000), ...new Array(32000).fill(0)];
+  assert.equal(soundLength(new Uint8Array(wav)), 2000);
+
+  // Anything else says nothing.
+  assert.equal(soundLength(randomBytes(64)), null);
+  assert.equal(soundLength(new Uint8Array(4)), null);
+
+  // How long it lasts is kept with the message, once, here only.
+  const state = { chats: { 'ben@example.org': { jid: 'ben@example.org', unread: 0, lastAt: 0, messages: [{ id: 'm1', mine: false, text: '', at: 1, encrypted: true, file: { url: 'https://f.example.org/a.oga', name: 'a.oga', type: 'audio/ogg' } }] } } } as unknown as XmppState;
+  assert.equal(heardXmpp(state, 'ben@example.org', 'm1', 5000.4), true);
+  assert.equal(heardXmpp(state, 'ben@example.org', 'm1', 9000), false);
+  assert.equal(heardXmpp(state, 'ben@example.org', 'nothing', 9000), false);
+  assert.equal(state.chats['ben@example.org'].messages[0].file?.duration, 5000);
+  // It never goes in the message's link.
+  assert.equal(textOfFile(state.chats['ben@example.org'].messages[0].file!), 'https://f.example.org/a.oga');
+
+  // A file goes on by its link only to a chat written as it was.
+  assert.ok(linkFits({ fragment: 'ab' }, true));
+  assert.ok(linkFits({}, false));
+  assert.ok(!linkFits({ fragment: 'ab' }, false));
+  assert.ok(!linkFits({}, true));
 });
 
 test('photos and files go both ways, encrypted with the chat, or as they are when it is not', { skip: !coreReady }, async (t) => {

@@ -17,6 +17,7 @@ import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 // it cannot read. In a chat written without encryption the file goes as it is, its https:// link in
 // the message and in an out-of-band element (XEP-0066), as every app reads it. Files go and come
 // through Tor as the space's Tor way says, as the chats do; one that comes is fetched only when asked for.
+// A sound is a voice message, as other XMPP apps record and send one (lib/xmpp-voice.ts).
 
 export const NS_UPLOAD = 'urn:xmpp:http:upload:0';
 export const NS_OOB = 'jabber:x:oob';
@@ -38,6 +39,8 @@ export type XmppFile = {
   /** Its type, by its name. */
   type: string;
   size?: number;
+  /** How long a sound lasts, in milliseconds, as this device knows it: recorded here, or read from it once fetched. Never sent. */
+  duration?: number;
 };
 
 /** The server's upload service, as last found, and the largest file it takes. */
@@ -48,6 +51,35 @@ export type XmppAsk = { iq(type: 'get' | 'set', to: string | undefined, payload:
 
 const AESGCM = /^aesgcm:\/\/([^\s#]+)#([0-9a-fA-F]{88}|[0-9a-fA-F]{96})$/;
 const HTTPS = /^https:\/\/\S+$/;
+
+// The endings other XMPP apps record sounds with, which a voice message is: Conversations' .m4a
+// and .oga, Gajim's .ogg and .opus, and the like.
+const SOUNDS: Record<string, string> = { m4a: 'audio/mp4', aac: 'audio/aac', oga: 'audio/ogg', ogg: 'audio/ogg', opus: 'audio/ogg', mp3: 'audio/mpeg', wav: 'audio/wav', flac: 'audio/flac', weba: 'audio/webm', amr: 'audio/amr' };
+
+/** A file's type by its name: a sound by the endings apps record with, anything else as lib/matrix-media.ts knows it. */
+export function typeOfName(name: string): string {
+  const end = /\.([a-z0-9]+)$/i.exec(name)?.[1]?.toLowerCase() ?? '';
+  return SOUNDS[end] ?? mimeOfName(name);
+}
+
+/** The type a file shows as: one kept before its ending was known is known by its name now. */
+export function shownType(file: Pick<XmppFile, 'name' | 'type'>): string {
+  return file.type === 'application/octet-stream' ? typeOfName(file.name) : file.type;
+}
+
+/** Whether a file is a sound: other XMPP apps send a voice message as one, so it shows as one. */
+export function isSound(file: Pick<XmppFile, 'name' | 'type'>): boolean {
+  return shownType(file).startsWith('audio/');
+}
+
+/**
+ * Whether a file already on a server can go to another chat by its link alone (forwarded): only
+ * when that chat is written as the file was, encrypted (its key then goes encrypted in the new
+ * message) or as it is. Otherwise it is fetched and put on the server again, as that chat writes.
+ */
+export function linkFits(file: Pick<XmppFile, 'fragment'>, encrypt: boolean): boolean {
+  return Boolean(file.fragment) === encrypt;
+}
 
 function nameOfUrl(url: string): string {
   try {
@@ -68,11 +100,11 @@ export function fileOfText(text: string, oob?: string): XmppFile | null {
   if (sealed) {
     const url = `https://${sealed[1]}`;
     const name = nameOfUrl(url);
-    return { url, fragment: sealed[2].toLowerCase(), name, type: mimeOfName(name) };
+    return { url, fragment: sealed[2].toLowerCase(), name, type: typeOfName(name) };
   }
   if (oob && HTTPS.test(body) && oob.trim() === body && body.length <= 2048) {
     const name = nameOfUrl(body);
-    return { url: body, name, type: mimeOfName(name) };
+    return { url: body, name, type: typeOfName(name) };
   }
   return null;
 }

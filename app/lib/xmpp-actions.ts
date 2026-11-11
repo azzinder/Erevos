@@ -11,6 +11,9 @@ import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 // (XEP-0359 stanza-id, kept as `sid`), a change by the id its writer gave it; one-to-one, both by
 // the writer's id. Only its writer can change it or take it back.
 //
+// XMPP has no pins its apps share: a message is pinned on this device only (Pin for me), kept with
+// its chat in the account's sealed value, so a hidden place's pins stay in it.
+//
 // The words of a change and of an answer go encrypted as the chat is. Which message a reaction,
 // an answer, a change or a taking back is about, and a reaction's emoji, go as the other XMPP apps
 // send them: not encrypted, so the servers see them (docs/xmpp.md). Whether someone is writing
@@ -171,6 +174,23 @@ export function reactionsShown(message: Acted): Record<string, string[]> | undef
   const shown: Record<string, string[]> = {};
   for (const [by, emojis] of Object.entries(message.reacted)) for (const emoji of emojis) (shown[emoji] ??= []).push(by);
   return Object.keys(shown).length ? shown : undefined;
+}
+
+/** The most messages pinned in one chat. */
+export const MOST_PINS = 50;
+
+/** The pins of a chat that still show, the latest last: messages still here, not taken back. */
+export function pinsShown(pins: string[] | undefined, messages: Acted[]): string[] {
+  if (!pins?.length) return [];
+  const here = new Set(messages.filter((m) => !m.deleted && !m.call).map((m) => m.id));
+  return pins.filter((id) => here.has(id));
+}
+
+/** A chat's pins with `id` pinned last, or unpinned; those of messages no longer here go. */
+export function pinned(pins: string[] | undefined, messages: Acted[], id: string, on: boolean): string[] {
+  const kept = pinsShown(pins, messages).filter((p) => p !== id);
+  if (on && messages.some((m) => m.id === id && !m.deleted && !m.call)) kept.push(id);
+  return kept.slice(-MOST_PINS);
 }
 
 /** `ours` with `emoji` added, or taken out when it was there. */

@@ -10,6 +10,8 @@ import { playVoice } from '../lib/audio';
 import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import { saveBytes } from '../lib/save-file';
+import { voiceDuration } from '../lib/voice';
+import { soundLength } from '../lib/xmpp-voice';
 import { radius, space } from '../theme/colors';
 import { OpenPhoto } from './attachment';
 import { Button, Row, Text } from './ui';
@@ -17,7 +19,10 @@ import { Button, Row, Text } from './ui';
 // A photo, sound or file in a chat on XMPP or Nostr (app/xmpp-chat.tsx, app/nostr-chat.tsx):
 // fetched from its server only when asked for, then a photo shown (a tap opens it on the whole
 // screen, components/attachment.tsx OpenPhoto), a sound played, and any of them saved. What was
-// fetched stays in memory while Erevos runs (lib/file-cache.ts).
+// fetched stays in memory while Erevos runs (lib/file-cache.ts). A sound is a voice message, as
+// the other apps send one: Play and Stop, how long it lasts once that is known (as it was recorded
+// here, or read from the file once it was fetched, lib/xmpp-voice.ts), and how much is left while
+// it plays.
 
 /** The ending a sound's type is written with, for the phone's player. */
 function endingOf(type: string): string {
@@ -27,15 +32,36 @@ function endingOf(type: string): string {
   return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
 }
 
-export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: string; type: string; size?: number; dim?: string; fetch: () => Promise<Uint8Array>; onMenu?: () => void }) {
+export function NetworkFile({ name, type, size, dim, duration, fetch, onMenu, onDuration }: {
+  name: string;
+  type: string;
+  size?: number;
+  dim?: string;
+  /** How long a sound lasts, in milliseconds, when that is known. */
+  duration?: number;
+  fetch: () => Promise<Uint8Array>;
+  onMenu?: () => void;
+  /** Told how long a sound lasts, once it was fetched and its file says, to keep it. */
+  onDuration?: (ms: number) => void;
+}) {
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [playing, setPlaying] = useState(false);
+  // How long the sound lasts, as its file said, and how much of it has played.
+  const [read, setRead] = useState<number | null>(null);
+  const [played, setPlayed] = useState(0);
   const stop = useRef<(() => void) | null>(null);
+  const here = useRef(true);
   const image = type.startsWith('image/');
   const sound = type.startsWith('audio/');
-  useEffect(() => () => stop.current?.(), []);
+  useEffect(
+    () => () => {
+      here.current = false;
+      stop.current?.();
+    },
+    [],
+  );
 
   async function get(): Promise<Uint8Array | null> {
     if (bytes) return bytes;
@@ -44,6 +70,11 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
     try {
       const got = await fetch();
       setBytes(got);
+      const length = sound && !duration ? soundLength(got) : null;
+      if (length) {
+        setRead(length);
+        onDuration?.(length);
+      }
       return got;
     } catch (error) {
       setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
@@ -72,8 +103,10 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
       return;
     }
     const got = await get();
-    if (!got) return;
+    // Left the chat while it was fetched: nothing plays on.
+    if (!got || !here.current) return;
     try {
+      setPlayed(0);
       setPlaying(true);
       stop.current = playVoice(
         got,
@@ -81,7 +114,7 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
           stop.current = null;
           setPlaying(false);
         },
-        undefined,
+        setPlayed,
         endingOf(type),
       );
     } catch (error) {
@@ -90,6 +123,7 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
     }
   }
 
+  const lasts = duration ?? read ?? 0;
   const [w, h] = (dim ?? '').split('x').map(Number);
   const ratio = w && h ? w / h : 4 / 3;
   const uri = useMemo(() => (image && bytes ? `data:${type};base64,${toBase64(bytes)}` : null), [image, type, bytes]);
@@ -97,6 +131,17 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
     <View style={{ gap: space.xs }}>
       {uri && bytes ? (
         <OpenPhoto uri={uri} name={name} size={bytes.length} w={w} h={h} style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }} onSave={save} onMenu={onMenu} />
+      ) : sound ? (
+        <Row>
+          <Button title={playing ? t('Stop') : t('Play')} compact disabled={busy} onPress={() => void play()} />
+          <Text style={{ flexShrink: 1 }}>
+            {playing
+              ? t('Playing, {time}', { time: voiceDuration(lasts ? Math.max(0, lasts - played) : played) })
+              : lasts
+                ? t('Voice message, {time}', { time: voiceDuration(lasts) })
+                : t('Voice message')}
+          </Text>
+        </Row>
       ) : (
         <Text numberOfLines={2}>
           {name}
@@ -105,7 +150,6 @@ export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: st
       )}
       <Row>
         {image && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
-        {sound ? <Button title={playing ? t('Stop') : t('Play')} compact disabled={busy} onPress={() => void play()} /> : null}
         <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
       </Row>
       {busy ? (
