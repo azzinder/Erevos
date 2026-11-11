@@ -9,9 +9,9 @@ import java.nio.charset.Charset
 
 /**
  * The few MMS messages a phone exchanges with its carrier, in their binary form (OMA MMS
- * encapsulation over WSP): a picture or text to send (m-send-req), the notice that one waits
- * (m-notification-ind), the message once fetched (m-retrieve-conf), and the answer that says it
- * was fetched (m-notifyresp-ind). Plain Kotlin, no Android, so it runs in a JVM check too.
+ * encapsulation over WSP): a picture, a sound, a contact card or text to send (m-send-req), the
+ * notice that one waits (m-notification-ind), the message once fetched (m-retrieve-conf), and the
+ * answer that says it was fetched (m-notifyresp-ind). Plain Kotlin, no Android, so it runs in a JVM check too.
  */
 internal object MmsPdu {
   const val SEND_REQ = 0x80
@@ -145,7 +145,8 @@ internal object MmsPdu {
     parts.forEachIndexed { i, part ->
       val name = part.name.ifEmpty { if (part.isText) "text_$i.txt" else "part_$i" }
       val headers = Out()
-      headers.all(contentType(part.type, if (part.isText) UTF8 else 0, name))
+      // Text says it is UTF-8; another part says its own character set, if it has one (a contact card).
+      headers.all(contentType(part.type, if (part.isText) UTF8 else part.charset, name))
       headers.byte(PART_CONTENT_LOCATION); headers.text(name)
       headers.byte(PART_CONTENT_ID); headers.byte(0x22); headers.text("<$i>")
       val h = headers.toArray()

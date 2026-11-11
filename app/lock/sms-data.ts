@@ -17,8 +17,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // what SMS cost and tells the phone company who wrote to whom and when.
 // The space's own order of its SMS is sealed in ORDER_FILE, never in the phone's store, so no other
 // app and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put
-// in the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
-// spam or not, and the seconds an SMS waits before it goes, to be taken back. Backups hold that
+// in the Trash, what is typed in each and not sent, the messages pinned for the owner alone, the
+// spam filter's rules and the numbers marked spam or not, and the seconds an SMS waits before it goes, to be taken back. Backups hold that
 // file, and this one too from the version that holds photos and files on (lock/backup.ts): all of
 // it as it was, these switches with it. An SMS for later whose time came before the backup was
 // restored does not go by itself (lib/sms-later.ts): the phone the backup came from may have sent
@@ -50,6 +50,10 @@ export type SmsMark = { address: string; at: number };
 export type Trashed = { address: string; upTo: number; at: number };
 /** What is typed in a conversation and not sent yet. */
 export type SmsDraft = { address: string; text: string; at: number };
+/** A message pinned for the owner alone, in a conversation (by its address): SMS have no pins of
+ *  their own, so nobody else sees it. Its row in the phone's SMS ("sms:12", lib/sms-chat.ts smsLineId)
+ *  and its time, by which it is found again should the rows change (a backup put back). */
+export type SmsPin = { address: string; id: string; at: number };
 /** A number the owner said sends spam, or does not. */
 export type SpamMark = { number: string; spam: boolean; at: number };
 /** An SMS a linked device asked this phone to send (lib/sms-share.ts), by its id in the log: taken
@@ -80,6 +84,8 @@ export type SmsData = {
   archived: SmsMark[];
   trash: Trashed[];
   drafts: SmsDraft[];
+  /** Messages pinned over their conversation, for this phone's owner only (Pin for me). */
+  messagePins: SmsPin[];
   /** The spam filter: on unless turned off. With `spamLinks`, any number that is no contact and
    *  sends a link goes to Spam; with `spamWords`, any that writes one of them; with `spamFrom`, any
    *  sender a rule there names (lib/sms-folders.ts, senderRule); with `spamAbroad`, any number written
@@ -120,6 +126,7 @@ export const EMPTY_SMS: SmsData = {
   archived: [],
   trash: [],
   drafts: [],
+  messagePins: [],
   spam: true,
   spamLinks: false,
   spamWords: [],
@@ -154,6 +161,8 @@ export const MAX_PINS = 10;
 const MAX_ARCHIVED = 500;
 export const MAX_TRASH = 300;
 const MAX_DRAFTS = 100;
+/** The messages pinned for the owner, in all conversations together. */
+export const MAX_MESSAGE_PINS = 300;
 const MAX_MARKS = 500;
 export const MAX_WORDS = 50;
 export const WORD = 40;
@@ -216,6 +225,7 @@ function checked(value: unknown): SmsData {
     archived: list(v.archived, marked, MAX_ARCHIVED),
     trash: list(v.trash, (t) => (isAddress(t.address) && isTime(t.upTo) && isTime(t.at) ? { address: t.address, upTo: t.upTo, at: t.at } : null), MAX_TRASH),
     drafts: list(v.drafts, (d) => (isAddress(d.address) && isText(d.text) && d.text.length > 0 && d.text.length <= LATER_TEXT && isTime(d.at) ? { address: d.address, text: d.text, at: d.at } : null), MAX_DRAFTS),
+    messagePins: list(v.messagePins, (p) => (isAddress(p.address) && isText(p.id) && /^(sms|mms):\d{1,19}$/.test(p.id) && isTime(p.at) ? { address: p.address, id: p.id, at: p.at } : null), MAX_MESSAGE_PINS),
     spam: v.spam !== false,
     spamLinks: v.spamLinks === true,
     spamWords: words(v.spamWords),
@@ -245,7 +255,7 @@ export function fresh(data: SmsData, now: number): SmsData {
 // What ORDER_FILE holds of a space's SMS data; FILE holds the rest. `kept` is written with each
 // save: from then on the order is ORDER_FILE's, and what FILE kept of it before (as an Erevos before
 // ORDER_FILE did) is read no more.
-const ORDER = ['pinned', 'archived', 'trash', 'drafts', 'spam', 'spamLinks', 'spamWords', 'spamFrom', 'allowFrom', 'spamAbroad', 'home', 'marks', 'undo'] as const;
+const ORDER = ['pinned', 'archived', 'trash', 'drafts', 'messagePins', 'spam', 'spamLinks', 'spamWords', 'spamFrom', 'allowFrom', 'spamAbroad', 'home', 'marks', 'undo'] as const;
 type SmsOrder = Pick<SmsData, (typeof ORDER)[number]>;
 type KeptOrder = SmsOrder & { kept: boolean };
 

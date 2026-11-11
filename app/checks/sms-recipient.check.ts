@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-// The recipient of a new SMS, picked from the contacts (lib/sms-recipient.ts).
+// The recipient of a new SMS, picked from the contacts (lib/sms-recipient.ts), and the contact an
+// SMS conversation sends as a contact card.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { recipientRows, typedPart, withRecipient } from '../lib/sms-recipient';
+import { contactRows, recipientRows, typedPart, withRecipient } from '../lib/sms-recipient';
 
 const card = (key: string, name: string, phones: string[]) =>
   ({ key, name, phones: phones.map((value) => ({ kind: 'mobile', label: '', value })), emails: [], addresses: [], given: '', family: '', company: '', title: '', note: '', birthday: '' }) as unknown as Parameters<typeof recipientRows>[0][number];
@@ -32,4 +33,26 @@ test('contacts are found by name without accents, or by number; all of them with
   assert.deepEqual(recipientRows(cards, 'jose').map((r) => r.name), ['José']);
   assert.deepEqual(recipientRows(cards, '600111').map((r) => r.name), ['José']);
   assert.equal(recipientRows(cards, '').length, 3);
+});
+
+test('a contact to send as a card: one row each, with its first number or its email; none with neither', () => {
+  const mail = { ...card('d', 'Only Mail', []), emails: [{ kind: 'home', label: '', value: 'a@example.org' }] } as Parameters<typeof recipientRows>[0][number];
+  const cards = [card('a', 'Μαρία Παπά', ['+30 691 000 0001', '+30 210 000 0002']), card('b', 'José', ['+34 600 111 222']), card('c', 'No number', []), mail];
+  assert.deepEqual(
+    contactRows(cards, '').map((r) => [r.name, r.detail]),
+    [
+      ['Μαρία Παπά', '+30 691 000 0001'],
+      ['José', '+34 600 111 222'],
+      ['Only Mail', 'a@example.org'],
+    ],
+  );
+  assert.deepEqual(
+    contactRows(cards, 'μαρια').map((r) => r.card.key),
+    ['a'],
+  );
+  assert.deepEqual(
+    contactRows(cards, '600111').map((r) => r.key),
+    ['b'],
+  );
+  assert.equal(contactRows(cards, 'nobody').length, 0);
 });

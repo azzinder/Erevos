@@ -197,7 +197,7 @@ internal object SmsStore {
     val replied = (row?.get("replied") as Boolean? ?: false) || latest.getOrElse(5) { mine } == 1L
     if (row == null || (row["at"] as Double) < at.toDouble()) {
       if (row == null && seen.size >= limit) return
-      val (text, pictures) = MmsStore.parts(context, id)
+      val parts = MmsStore.parts(context, id)
       // A group's conversation is named by all its numbers, comma-separated.
       val address = MmsStore.recipients(context, thread).joinToString(",").ifEmpty {
         (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
@@ -206,7 +206,7 @@ internal object SmsStore {
       seen[thread] = mutableMapOf(
         "thread" to thread.toDouble(),
         "address" to address,
-        "text" to text.ifEmpty { if (pictures.isNotEmpty()) "Picture" else "MMS" },
+        "text" to parts.text.ifEmpty { parts.word() },
         "at" to at.toDouble(),
         "mine" to (mine == 1L),
         "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),

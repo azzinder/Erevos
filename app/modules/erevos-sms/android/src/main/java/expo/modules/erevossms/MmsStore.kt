@@ -174,6 +174,9 @@ internal object MmsStore {
       if (part.isText) {
         put(Telephony.Mms.Part.CHARSET, 106)
         put(Telephony.Mms.Part.TEXT, part.text())
+      } else if (part.charset > 0) {
+        // A contact card's own character set, for the app that reads it.
+        put(Telephony.Mms.Part.CHARSET, part.charset)
       }
     }
     val row = context.contentResolver.insert(Uri.parse("content://mms/$id/part"), values) ?: return
@@ -182,15 +185,52 @@ internal object MmsStore {
 
   // --- Sending ---------------------------------------------------------------------------------
 
-  /** Sends a picture, and text with it, to one number. Returns the MMS row, or -1. */
-  /** Sends to one number, or to a group's numbers given comma-separated. */
+  /** A part's type as kept and compared: lower case, without its parameters. */
+  private fun plainType(type: String): String = type.substringBefore(';').trim().lowercase()
+
+  /** Whether a part is a sound: a voice message, as phones send them (AMR, 3GP, AAC, MP3, Ogg). */
+  fun isVoice(type: String): Boolean = plainType(type).let { it.startsWith("audio/") || it == "application/ogg" }
+
+  /** Whether a part is a contact card. */
+  fun isCard(type: String): Boolean = plainType(type) in setOf("text/x-vcard", "text/vcard", "text/directory")
+
+  /** A part's type, or, for one some phone sent as mere bytes, what the ending of its name says. */
+  private fun typeOf(type: String, name: String): String =
+    if (type != "application/octet-stream") type
+    else when (name.substringAfterLast('.', "").lowercase()) {
+      "amr" -> "audio/amr"
+      "m4a" -> "audio/mp4"
+      "vcf" -> "text/x-vcard"
+      else -> type
+    }
+
+  /** The name a part to send goes by, from its type, as messaging apps name theirs. */
+  private fun partName(type: String): String =
+    when (plainType(type)) {
+      "image/png" -> "image.png"
+      "image/gif" -> "image.gif"
+      "audio/amr" -> "voice.amr"
+      "audio/amr-wb" -> "voice.awb"
+      "audio/3gpp" -> "voice.3gp"
+      "audio/mp4", "audio/aac", "audio/x-m4a" -> "voice.m4a"
+      "audio/mpeg" -> "voice.mp3"
+      "audio/ogg", "application/ogg" -> "voice.ogg"
+      else -> when {
+        isCard(type) -> "contact.vcf"
+        isVoice(type) -> "voice"
+        else -> "image.jpg"
+      }
+    }
+
+  /** Sends a part (a picture, a voice message or a contact card) and text with it, or text alone,
+   *  to one number, or to a group's numbers given comma-separated. Returns the MMS row, or -1. */
   fun send(context: Context, address: String, text: String, data: ByteArray?, type: String, sim: Int): Long {
     val to = SmsStore.numbers(address)
     if (to.isEmpty()) throw IllegalArgumentException("No number")
     val parts = ArrayList<MmsPdu.Part>()
     if (data != null && data.isNotEmpty()) {
-      val ending = when (type) { "image/png" -> "png"; "image/gif" -> "gif"; else -> "jpg" }
-      parts.add(MmsPdu.Part(type, data, "image.$ending"))
+      // A contact card is text: it says it is UTF-8, as writeVCard (lib/vcard.ts) writes it.
+      parts.add(MmsPdu.Part(type, data, partName(type), if (isCard(type)) 106 else 0))
     }
     if (text.isNotEmpty()) parts.add(MmsPdu.Part("text/plain", text.toByteArray(Charsets.UTF_8), "text.txt", 106))
     if (parts.isEmpty()) throw IllegalArgumentException("Nothing to send")
@@ -257,7 +297,8 @@ internal object MmsStore {
         if (c.getInt(5) == 130) continue
         val id = c.getLong(0)
         val box = c.getInt(2)
-        val (text, pictures) = parts(context, id)
+        val found = parts(context, id)
+        val text = found.text
         val subject = c.getString(6) ?: ""
         out.add(
           mapOf(
@@ -276,7 +317,9 @@ internal object MmsStore {
             "sim" to c.getInt(4).toDouble(),
             // Who wrote it, for a group's conversation.
             "from" to (if (box == Telephony.Mms.MESSAGE_BOX_INBOX) addressOf(context, id, false) else ""),
-            "pictures" to pictures,
+            "pictures" to found.pictures,
+            "voices" to found.voices,
+            "cards" to found.cards,
           ),
         )
       }
@@ -284,21 +327,38 @@ internal object MmsStore {
     return out
   }
 
-  /** A message's text and its pictures, as content addresses the app may read. */
-  fun parts(context: Context, id: Long): Pair<String, List<Map<String, Any?>>> {
+  /** A message's text, and its pictures, sounds and contact cards as content addresses the app may
+   *  read (partBytes). Destructured, the first two are its text and its pictures. */
+  data class Parts(val text: String, val pictures: List<Map<String, Any?>>, val voices: List<Map<String, Any?>>, val cards: List<Map<String, Any?>>) {
+    /** What the list says of one without text, in English: the app says it in the owner's language (lib/sms-rows.ts). */
+    fun word(): String = when {
+      pictures.isNotEmpty() -> "Picture"
+      voices.isNotEmpty() -> "Voice message"
+      cards.isNotEmpty() -> "Contact card"
+      else -> "MMS"
+    }
+  }
+
+  fun parts(context: Context, id: Long): Parts {
     val texts = ArrayList<String>()
     val pictures = ArrayList<Map<String, Any?>>()
-    val projection = arrayOf(Telephony.Mms.Part._ID, Telephony.Mms.Part.CONTENT_TYPE, Telephony.Mms.Part.TEXT)
+    val voices = ArrayList<Map<String, Any?>>()
+    val cards = ArrayList<Map<String, Any?>>()
+    val projection = arrayOf(Telephony.Mms.Part._ID, Telephony.Mms.Part.CONTENT_TYPE, Telephony.Mms.Part.TEXT, Telephony.Mms.Part.NAME, Telephony.Mms.Part.CONTENT_LOCATION)
     context.contentResolver.query(PARTS, projection, "${Telephony.Mms.Part.MSG_ID}=?", arrayOf(id.toString()), null)?.use { c ->
       while (c.moveToNext()) {
-        val type = c.getString(1) ?: continue
+        val name = listOf(c.getString(3), c.getString(4)).firstOrNull { !it.isNullOrBlank() } ?: ""
+        val type = typeOf(plainType(c.getString(1) ?: continue), name)
+        val part = mapOf("uri" to "content://mms/part/${c.getLong(0)}", "type" to type)
         when {
           type == "text/plain" -> c.getString(2)?.let { if (it.isNotEmpty()) texts.add(it) }
-          type.startsWith("image/") -> pictures.add(mapOf("uri" to "content://mms/part/${c.getLong(0)}", "type" to type))
+          type.startsWith("image/") -> pictures.add(part)
+          isVoice(type) -> voices.add(part)
+          isCard(type) -> cards.add(part)
         }
       }
     }
-    return texts.joinToString("\n") to pictures
+    return Parts(texts.joinToString("\n"), pictures, voices, cards)
   }
 
   /** The numbers of a conversation, as Android keeps them for its thread. */
@@ -390,8 +450,8 @@ internal object MmsStore {
       0
     }
 
-  /** Sends again one of ours that did not go: its text and first picture, to the numbers it was
-   *  for, as a new MMS in place of the old one. Returns the new row. */
+  /** Sends again one of ours that did not go: its text and first picture, sound or contact card, to
+   *  the numbers it was for, as a new MMS in place of the old one. Returns the new row. */
   fun resend(context: Context, id: Long, sim: Int): Long {
     val to = ArrayList<String>()
     context.contentResolver.query(Uri.parse("content://mms/$id/addr"), arrayOf(Telephony.Mms.Addr.ADDRESS), "${Telephony.Mms.Addr.TYPE}=?", arrayOf(TO.toString()), null)?.use { c ->
@@ -401,8 +461,9 @@ internal object MmsStore {
     context.contentResolver.query(Uri.withAppendedPath(MMS, id.toString()), arrayOf(Telephony.Mms.SUBSCRIPTION_ID), null, null, null)?.use { c ->
       if (c.moveToFirst() && !c.isNull(0)) was = c.getInt(0)
     }
-    val (text, pictures) = parts(context, id)
-    val picture = pictures.firstOrNull()
+    val found = parts(context, id)
+    val text = found.text
+    val picture = (found.pictures + found.voices + found.cards).firstOrNull()
     val data = picture?.let { partBytes(context, it["uri"] as String) }
     require(to.isNotEmpty() && (text.isNotEmpty() || data != null)) { "That MMS is no longer on the phone" }
     val sent = send(context, to.joinToString(","), text, data, (picture?.get("type") as String?) ?: "", if (sim >= 0) sim else was)
@@ -410,7 +471,8 @@ internal object MmsStore {
     return sent
   }
 
-  /** The bytes of an MMS's part, by the address parts() gives it; at most MAX_PART_BYTES. */
+  /** The bytes of an MMS's part (a picture, a sound, a contact card), by the address parts() gives
+   *  it; at most MAX_PART_BYTES. */
   fun partBytes(context: Context, uri: String): ByteArray {
     val id = uri.removePrefix("content://mms/part/").toLongOrNull()
     require(uri.startsWith("content://mms/part/") && id != null) { "Not a part of an MMS" }
@@ -421,11 +483,11 @@ internal object MmsStore {
         val n = input.read(chunk)
         if (n < 0) break
         out.write(chunk, 0, n)
-        require(out.size() <= MAX_PART_BYTES) { "That picture is too large" }
+        require(out.size() <= MAX_PART_BYTES) { "That part of the MMS is too large" }
       }
       out.toByteArray()
     }
-    return bytes ?: throw IllegalStateException("That picture is no longer on the phone")
+    return bytes ?: throw IllegalStateException("That part of the MMS is no longer on the phone")
   }
 
   fun markRead(context: Context, thread: Long) {

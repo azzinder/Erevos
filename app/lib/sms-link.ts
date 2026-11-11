@@ -11,7 +11,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
+import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -210,6 +210,20 @@ export class SmsLink {
   /** Takes a conversation out of the Trash: it is back, or it went from the phone. */
   untrash(address: string): Promise<void> {
     return this.update((d) => ({ ...d, trash: d.trash.filter((t) => !sameConversation(t.address, address)) }));
+  }
+
+  /** The messages of a conversation pinned for the owner alone, the latest pinned last. */
+  messagePins(address: string): SmsPin[] {
+    return this.data.messagePins.filter((p) => sameConversation(p.address, address));
+  }
+
+  /** Pins a message of a conversation for the owner alone (`id` its row, "sms:12", and `at` its
+   *  time), or takes the pin away. Past MAX_MESSAGE_PINS, the one pinned first goes. */
+  pinMessage(address: string, message: { id: string; at: number }, on: boolean): Promise<void> {
+    return this.update((d) => {
+      const others = d.messagePins.filter((p) => !(p.id === message.id && sameConversation(p.address, address)));
+      return { ...d, messagePins: on ? [...others, { address, id: message.id, at: message.at }].slice(-MAX_MESSAGE_PINS) : others };
+    });
   }
 
   /** What is typed in a conversation and not sent, or nothing. */

@@ -18,6 +18,7 @@ import { PhotoSticker, StickerView } from './stickers';
 import { PayCard } from './pay-card';
 import { PollCard } from './poll';
 import { smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
+import { SmsExtras } from './sms-parts';
 import { messageLine } from '../lib/message-line';
 import { mediaText } from '../lib/imports';
 import { isImportedSticker, isSound, isVoice } from '../lib/chat-media';
@@ -337,6 +338,7 @@ export const SmsLine = memo(function SmsLine({ sms: m, earlier, newDay, tail, li
             <LinkedText text={m.text} />
           </Text>
         ) : null}
+        <SmsExtras m={m} ink={ink} />
         {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
         <Text style={[ink, styles.time]}>
           {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}

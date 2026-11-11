@@ -26,12 +26,16 @@ export type SmsThread = { thread: number; address: string; text: string; at: num
  *  may show (empty when none). */
 export type ContactCard = { name: string; photo: string };
 
-/** A picture of an MMS, as an address the app may show. */
-export type SmsPicture = { uri: string; type: string };
+/** A part of an MMS besides its text, as an address the app may show or read (smsPictureBytes),
+ *  with its type: a picture, a sound, a contact card. */
+export type SmsPart = { uri: string; type: string };
+/** A picture of an MMS. */
+export type SmsPicture = SmsPart;
 
 /** `sim` is the SIM it came or went on (-1 if unknown); `kind` and `pictures` are missing in an app
- *  built before MMS. One of ours that went is `sent`, then `delivered` or `undelivered` when the
- *  network sends a delivery report (an older build says `done`). */
+ *  built before MMS, `voices` and `cards` in one built before voice messages and contact cards by
+ *  MMS. One of ours that went is `sent`, then `delivered` or `undelivered` when the network sends a
+ *  delivery report (an older build says `done`). */
 export type SmsMessage = {
   id: number;
   kind?: 'sms' | 'mms';
@@ -42,6 +46,10 @@ export type SmsMessage = {
   read: boolean;
   sim?: number;
   pictures?: SmsPicture[];
+  /** Its sounds: voice messages (audio/amr and the like). */
+  voices?: SmsPart[];
+  /** Its contact cards (text/x-vcard). */
+  cards?: SmsPart[];
   /** Who wrote it, in a group's conversation (an MMS that came). */
   from?: string;
 };
@@ -197,8 +205,9 @@ export function mmsReady(): boolean {
   return typeof own()?.sendMms === 'function';
 }
 
-/** Sends an MMS to one number, or to a group's numbers comma-separated: a picture with text, or
- *  text alone (a group's). As plain as an SMS. Returns its row, or -1. */
+/** Sends an MMS to one number, or to a group's numbers comma-separated: a part (a picture, a voice
+ *  message, a contact card) with text, or text alone (a group's). As plain as an SMS. Returns its
+ *  row, or -1. */
 export function sendMms(address: string, text: string, picture: { bytes: Uint8Array; mime: string } | null, sim = -1): Promise<number> {
   if (mirror && !picture) return mirror.send(address, text);
   if (mirror) return Promise.reject(new Error('A photo goes by MMS from the phone itself.'));
@@ -295,7 +304,7 @@ export function resendSms(message: Pick<SmsMessage, 'kind' | 'id'>, sim = -1): P
   return sms?.resend ? sms.resend(message.kind ?? 'sms', message.id, sim) : notInBuild();
 }
 
-/** The bytes of an MMS's picture, by its address (SmsPicture.uri). */
+/** The bytes of an MMS's picture, sound or contact card, by its address (SmsPart.uri). */
 export function smsPictureBytes(uri: string): Promise<Uint8Array> {
   const sms = own();
   return sms?.pictureBytes ? sms.pictureBytes(uri) : notInBuild();

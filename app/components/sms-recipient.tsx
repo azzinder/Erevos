@@ -20,7 +20,8 @@ import { Button, Card, Field, Input, Row, Sheet, Text } from './ui';
 // choose from all of them; each choice is added to the numbers. The contacts are the Phone's
 // search's (lib/contact-book.ts dialCards): the phone's, and with all of Erevos open those kept
 // only in Erevos and the Erevos contacts with a number; with only the SMS open (app/_layout.tsx),
-// the phone's alone. Never the names of hidden chats.
+// the phone's alone. Never the names of hidden chats. The same sheet chooses the contact an SMS
+// conversation sends as a contact card (app/sms.tsx), from the phone's contacts alone.
 
 const SUGGESTED = 4;
 
@@ -28,45 +29,20 @@ export function SmsRecipient({ value, onChange, onSubmit, autoFocus }: { value: 
   const styles = useStyles(makeStyles);
   const withSpace = useLock().only !== 'sms';
   const [cards, setCards] = useState<ContactCard[] | null>(null);
-  const [mayRead, setMayRead] = useState(true);
   const [choosing, setChoosing] = useState(false);
-  const [query, setQuery] = useState('');
-  const [note, setNote] = useState('');
   const findables = useMemo(() => new Map<string, Findable>(), [cards]);
-
-  // Read anew each time the contacts are looked at, so one added meanwhile is found.
-  const read = useCallback(() => {
-    setMayRead(contactsStatus().read);
-    dialCards(withSpace).then(setCards, () => setCards([]));
-  }, [withSpace]);
 
   const typed = typedPart(value);
   const typing = typed !== '' && !choosing;
   useEffect(() => {
-    if (typing && cards === null) read();
-  }, [typing, cards, read]);
-  useEffect(() => {
-    if (choosing) {
-      setNote('');
-      read();
-    }
-  }, [choosing, read]);
+    if (typing && cards === null) dialCards(withSpace).then(setCards, () => setCards([]));
+  }, [typing, cards, withSpace]);
 
   const suggestions = useMemo(() => (typing && cards ? recipientRows(cards, typed, findables, SUGGESTED) : []), [typing, cards, typed, findables]);
-  const listed = useMemo(() => (choosing && cards ? recipientRows(cards, query, findables, 200) : []), [choosing, cards, query, findables]);
-
-  async function allow() {
-    const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
-    if (answer === PermissionsAndroid.RESULTS.GRANTED) {
-      setNote('');
-      read();
-    } else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
-  }
-
-  const close = () => {
-    setChoosing(false);
-    setQuery('');
-  };
+  const listed = useCallback(
+    (all: ContactCard[], query: string, found: Map<string, Findable>) => recipientRows(all, query, found, 200).map((row) => ({ ...row, detail: `${row.kind} · ${row.number}`, label: `${row.name}, ${row.kind}, ${row.number}` })),
+    [],
+  );
 
   return (
     <>
@@ -95,35 +71,99 @@ export function SmsRecipient({ value, onChange, onSubmit, autoFocus }: { value: 
           <Line name={row.name} detail={`${row.kind} · ${row.number}`} />
         </Pressable>
       ))}
-      <Sheet visible={choosing} onClose={close} title={t('Choose from contacts')}>
-        <Input value={query} onChangeText={setQuery} placeholder={t('Search contacts')} accessibilityLabel={t('Search contacts')} autoCorrect={false} />
-        {mayRead ? null : (
-          <Card>
-            <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text>
-            <Button title={t('Allow the contacts')} onPress={() => void allow()} />
-            {note ? <Text tone="muted">{note}</Text> : null}
-          </Card>
-        )}
-        <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
-          {cards !== null && listed.length === 0 ? <Text tone="muted">{t('No contact with a number matches.')}</Text> : null}
-          {listed.map((row) => (
-            <Pressable
-              key={row.key}
-              // Added to the numbers there are, so a group's can be chosen one after the other.
-              onPress={() => {
-                onChange(withRecipient(value, row.number, false));
-                close();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${row.name}, ${row.kind}, ${row.number}`}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-            >
-              <Line name={row.name} detail={`${row.kind} · ${row.number}`} />
-            </Pressable>
-          ))}
-        </ScrollView>
-      </Sheet>
+      <ContactsSheet
+        visible={choosing}
+        onClose={() => {
+          setChoosing(false);
+          // Read anew the next time, so one added meanwhile is suggested.
+          setCards(null);
+        }}
+        rows={listed}
+        // Added to the numbers there are, so a group's can be chosen one after the other.
+        onPick={(row) => onChange(withRecipient(value, row.number, false))}
+      />
     </>
+  );
+}
+
+/** A row of the contacts sheet: a contact, or one of its numbers, what is said under its name, and
+ *  what a screen reader says of it (its name and that, unless given). */
+type ContactRow = { key: string; name: string; detail: string; label?: string };
+
+/**
+ * Choose from contacts: a sheet with a search, the rows `rows` makes of the contacts read and what
+ * is typed, and, while Erevos may not read the contacts, a way to allow it. The contacts are read
+ * anew each time it opens, so one added meanwhile is there. `phoneOnly`: the phone's contacts
+ * alone, never those kept only in Erevos. A row tapped is given to `onPick`, and the sheet closes.
+ */
+export function ContactsSheet<R extends ContactRow>({ visible, onClose, rows, onPick, phoneOnly }: {
+  visible: boolean;
+  onClose: () => void;
+  rows: (cards: ContactCard[], query: string, findables: Map<string, Findable>) => R[];
+  onPick: (row: R) => void;
+  phoneOnly?: boolean;
+}) {
+  const styles = useStyles(makeStyles);
+  const withSpace = useLock().only !== 'sms' && !phoneOnly;
+  const [cards, setCards] = useState<ContactCard[] | null>(null);
+  const [mayRead, setMayRead] = useState(true);
+  const [query, setQuery] = useState('');
+  const [note, setNote] = useState('');
+  const findables = useMemo(() => new Map<string, Findable>(), [cards]);
+
+  const read = useCallback(() => {
+    setMayRead(contactsStatus().read);
+    dialCards(withSpace).then(setCards, () => setCards([]));
+  }, [withSpace]);
+  useEffect(() => {
+    if (!visible) return;
+    setNote('');
+    read();
+  }, [visible, read]);
+
+  const listed = useMemo(() => (visible && cards ? rows(cards, query, findables) : []), [visible, cards, query, findables, rows]);
+
+  async function allow() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) {
+      setNote('');
+      read();
+    } else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+  }
+
+  const close = () => {
+    setQuery('');
+    onClose();
+  };
+
+  return (
+    <Sheet visible={visible} onClose={close} title={t('Choose from contacts')}>
+      <Input value={query} onChangeText={setQuery} placeholder={t('Search contacts')} accessibilityLabel={t('Search contacts')} autoCorrect={false} />
+      {mayRead ? null : (
+        <Card>
+          <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text>
+          <Button title={t('Allow the contacts')} onPress={() => void allow()} />
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </Card>
+      )}
+      <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+        {cards !== null && listed.length === 0 ? <Text tone="muted">{t('No contact with a number matches.')}</Text> : null}
+        {listed.map((row) => (
+          <Pressable
+            key={row.key}
+            onPress={() => {
+              onPick(row);
+              close();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={row.label ?? `${row.name}, ${row.detail}`}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          >
+            <Line name={row.name} detail={row.detail} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    </Sheet>
   );
 }
 
