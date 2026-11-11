@@ -710,4 +710,6 @@ export const whatsNew: Record<string, string> = {
     "**Les discussions s’enregistrent plus vite** : un message qui arrive, est lu ou est supprimé est enregistré en ne regardant que sa propre discussion, ce qui se voit surtout avec beaucoup de discussions ou après un gros import. L’écran de discussion n’est plus redessiné toutes les 5 secondes.",
   "**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file.":
     "**Les gros imports écrivent moins** : la note des fichiers qu’un import est encore en train d’écrire est gardée en petites parties, et non écrite en entier pour chaque fichier.",
+  "**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once.":
+    "**Un message n’attend plus les relais Nostr lents** : avec Nostr activé, un message attendait qu’un relais Nostr dise l’avoir pris, jusqu’à 20 secondes quand aucun ne répondait, avant de passer par le relais. Désormais, si aucun ne le dit en 4 secondes, il passe aussitôt aussi par le relais.",
 };

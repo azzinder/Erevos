@@ -710,4 +710,6 @@ export const whatsNew: Record<string, string> = {
     "**As conversas são guardadas mais depressa**: uma mensagem que chega, é lida ou é apagada é guardada olhando apenas para a sua própria conversa, o que se nota mais com muitas conversas ou depois de uma grande importação. O ecrã da conversa já não é redesenhado a cada 5 segundos.",
   "**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file.":
     "**As grandes importações escrevem menos**: a nota dos ficheiros que uma importação ainda está a escrever é guardada em pequenas partes, e não escrita inteira para cada ficheiro.",
+  "**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once.":
+    "**Uma mensagem já não espera por relays Nostr lentos**: com o Nostr ligado, uma mensagem esperava que um relay Nostr dissesse que a recebeu, até 20 segundos quando nenhum respondia, antes de ir pelo relay. Agora, se nenhum o disser em 4 segundos, vai logo também pelo relay.",
 };

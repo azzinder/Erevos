@@ -30,6 +30,7 @@ export const NEXT: Changes = {
   underTheHood: [
     mark("**Chats are saved faster**: a message that comes, is read or is deleted is saved by looking only at its own chat, which shows most with many chats or after a large import. The chat screen is no longer drawn again every 5 seconds."),
     mark("**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file."),
+    mark("**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once."),
   ],
 };
 

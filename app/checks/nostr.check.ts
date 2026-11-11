@@ -78,6 +78,8 @@ class NostrRelays {
   readonly asked: { url: string; sub: string; filters: Filter[] }[] = [];
   readonly down = new Set<string>();
   readonly refusing = new Set<string>();
+  /** Relays that take what they are given only this long after, ms. */
+  readonly late = new Map<string, number>();
   readonly lines = new Map<number, Line>();
   // How many connections were opened through Tor (the core's torTextOpen), and how many straight
   // (lib/nostr-dm-net.ts setNostrOpen, as a WebSocket of the phone's own would be).
@@ -151,17 +153,22 @@ class NostrRelays {
             this.say(line, ['OK', wrap.id, false, 'blocked: not here']);
             return new Uint8Array(0);
           }
-          const kept = this.kept.get(line.url) ?? new Map<string, Wrap>();
-          this.kept.set(line.url, kept);
-          const twice = kept.has(wrap.id);
-          kept.set(wrap.id, wrap);
-          this.say(line, ['OK', wrap.id, !twice, twice ? 'duplicate: have it' : '']);
-          if (!twice) {
-            for (const other of this.lines.values()) {
-              if (other.url !== line.url) continue;
-              for (const [sub, filters] of other.subs) if (filters.some((f) => NostrRelays.matches(f, wrap))) this.say(other, ['EVENT', sub, wrap]);
+          const take = () => {
+            const kept = this.kept.get(line.url) ?? new Map<string, Wrap>();
+            this.kept.set(line.url, kept);
+            const twice = kept.has(wrap.id);
+            kept.set(wrap.id, wrap);
+            this.say(line, ['OK', wrap.id, !twice, twice ? 'duplicate: have it' : '']);
+            if (!twice) {
+              for (const other of this.lines.values()) {
+                if (other.url !== line.url) continue;
+                for (const [sub, filters] of other.subs) if (filters.some((f) => NostrRelays.matches(f, wrap))) this.say(other, ['EVENT', sub, wrap]);
+              }
             }
-          }
+          };
+          const late = this.late.get(line.url);
+          if (late) setTimeout(take, late);
+          else take();
         } else if (said[0] === 'REQ') {
           const [, sub, ...filters] = said as [string, string, ...Filter[]];
           line.subs.set(sub, filters);
@@ -560,6 +567,42 @@ t('while Tor is not ready, or no Nostr relay takes it, a text goes through the r
   assert.equal(relays.keptAt(ONE).length, 1);
   assert.equal(await taken(), null, 'no bell');
   assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS)[0]?.quiet, false);
+}, true);
+
+t('a text no Nostr relay takes at once goes through the relay as well, and counts as gone through Nostr only should the relay fail', async (url) => {
+  const own: Relay = { url };
+  setNostr([ONE, TWO]);
+  const alice = await chat('space', 0, url);
+  const bob = await chat('space', 1, url);
+  const { toBob, toAlice } = await meet(alice, bob, url);
+  message(await tell(bob, toAlice, alice));
+  relays.late.set(ONE, 400);
+  relays.late.set(TWO, 400);
+  let viaRelay = 0;
+  const send = async (text: string, relayDown = false) => {
+    const sealed = await alice.e2e.seal(toBob, text, alice.from);
+    const went = await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+      viaRelay++;
+      if (relayDown) throw new Error('the relay is not reached');
+      await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
+    }, 50)();
+    return went;
+  };
+
+  // Slow relays: the relay carries it too, at once, and nothing is kept to go again.
+  const started = Date.now();
+  assert.equal(await send('slow Nostr'), undefined);
+  assert.ok(Date.now() - started < 400, 'it did not wait for the Nostr relays');
+  assert.equal(viaRelay, 1);
+  const packet = await receiveMessage(own, bob.recipient, false);
+  assert.equal(packet ? message(await bob.e2e.receive(packet)).text : null, 'slow Nostr');
+  await until(() => relays.keptAt(ONE).length === 1, 3000);
+  assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
+
+  // The relay down: Nostr took it in the end, so it went, and is kept to go through the relay later.
+  assert.equal(await send('relay down', true), 'nostr');
+  assert.equal(viaRelay, 2);
+  assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).length, 1);
 }, true);
 
 t('a reader that waits for Tor asks as soon as Tor is ready, and one whose keys come later as soon as they come', async () => {

@@ -39,6 +39,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A text no longer waits for slow Nostr relays**: with Nostr on, a text to a contact waited for one of the Nostr
+  relays to say it took it, up to 20 seconds when none answered, before it went through their relay. Now, when none
+  says so within 4 seconds, it goes through the relay as well at once; their phone shows it once.
 - **A change in a chat is saved faster**: only the chat that changed, and the pages that hold its messages, are looked
   at when a message comes, is read or is deleted, each message is unpacked once, and a page is no longer written out
   whole to measure it for every message put in it. With many chats, or after a large import, each change took

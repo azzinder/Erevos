@@ -7,7 +7,8 @@
 //
 // A text whose contact said they read on Nostr (lib/e2e.ts seal, `nostr`) goes to their Nostr
 // relays while it can (lib/nostr.ts nostrReady: straight with Tor off, through Tor while it is
-// ready), and is kept: should their phone not say it came within
+// ready), and is kept: should no Nostr relay take it within NOSTR_FIRST_WAIT, it goes through our
+// relay at once as well; should their phone not say it came within
 // NOSTR_BACKUP_MS, it goes through our relay as well (sendNostrBackups, with each look at the
 // relay), and their phone, which may have it from both, shows it once. Should no Nostr relay take
 // it, it goes through our relay at once, as it would have. To a contact that asked for a bell
@@ -39,6 +40,9 @@ export function onNostrWent(listener: (identity: string, tag: string) => void): 
   return () => wentListeners.delete(listener);
 }
 
+/** How long a text waits for a Nostr relay to take it before it goes through the relay as well, ms. */
+export const NOSTR_FIRST_WAIT = 4000;
+
 /** What a seal gives that a text needs to go through Nostr: its tag, and where they read there. */
 export type ForNostr = { tag?: string; nostr?: NostrTo | null };
 
@@ -48,18 +52,12 @@ export type ForNostr = { tag?: string; nostr?: NostrTo | null };
  * and when no Nostr relay took it, as `relay` sends it. `own` reaches their relay queue for a bell.
  * Says 'nostr' when a Nostr relay took it.
  */
-export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>): () => Promise<'nostr' | void> {
+export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>, firstWait = NOSTR_FIRST_WAIT): () => Promise<'nostr' | void> {
   const to = sealed.nostr;
   const tag = sealed.tag ?? '';
   const wraps = nostrWraps(packets);
   if (!to || !own || !tag || !wraps) return relay;
-  return async () => {
-    if (!nostrReady()) return relay();
-    try {
-      for (const wrap of wraps) await publishNostr(to, wrap);
-    } catch {
-      return relay();
-    }
+  const went = async (): Promise<'nostr'> => {
     wentListeners.forEach((listener) => listener(identity, tag));
     const length = wraps.reduce((sum, wrap) => sum + wrap.length, 0);
     const rang = to.b === true && (await ringBell(e2e, own, identity, length).then(
@@ -68,6 +66,29 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
     ));
     await e2e.nostrKeep(identity, tag, wraps, rang).catch(() => undefined);
     return 'nostr';
+  };
+  return async () => {
+    if (!nostrReady()) return relay();
+    const published = (async () => {
+      for (const wrap of wraps) await publishNostr(to, wrap);
+    })().then(
+      () => true,
+      () => false,
+    );
+    // A Nostr relay that is slow to connect or to answer does not hold the message back: after a
+    // short wait it goes through the relay as well, and their phone shows it once.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const took = await Promise.race([published, new Promise<null>((resolve) => (timer = setTimeout(() => resolve(null), firstWait)))]);
+    if (timer) clearTimeout(timer);
+    if (took === true) return went();
+    if (took === false) return relay();
+    try {
+      await relay();
+    } catch (error) {
+      // The relay could not take it either: a Nostr relay still may.
+      if (await published) return went();
+      throw error;
+    }
   };
 }
 

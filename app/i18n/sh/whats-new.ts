@@ -711,4 +711,6 @@ export const whatsNew: Record<string, string> = {
     "**Razgovori se spremaju brže**: poruka koja stigne, pročita se ili obriše sprema se gledajući samo njezin razgovor, što se najviše vidi uz mnogo razgovora ili nakon velikog uvoza. Zaslon razgovora više se ne crta iznova svakih 5 sekundi.",
   "**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file.":
     "**Veliki uvozi pišu manje**: bilješka o datotekama koje uvoz još piše čuva se u malim dijelovima, a ne piše se cijela za svaku datoteku.",
+  "**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once.":
+    "**Poruka više ne čeka spore Nostr releje**: s uključenim Nostrom, poruka je čekala da neki Nostr relej kaže da ju je primio, do 20 sekundi kad nijedan nije odgovarao, prije nego što ode preko releja. Sada, ako nijedan to ne kaže za 4 sekunde, odmah ide i preko releja.",
 };

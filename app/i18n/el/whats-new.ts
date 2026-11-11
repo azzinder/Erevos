@@ -710,4 +710,6 @@ export const whatsNew: Record<string, string> = {
     "**Οι συνομιλίες αποθηκεύονται πιο γρήγορα**: ένα μήνυμα που έρχεται, διαβάζεται ή διαγράφεται αποθηκεύεται κοιτάζοντας μόνο τη δική του συνομιλία, κάτι που φαίνεται περισσότερο με πολλές συνομιλίες ή μετά από μεγάλη εισαγωγή. Η οθόνη συνομιλίας δεν ξανασχεδιάζεται πια κάθε 5 δευτερόλεπτα.",
   "**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file.":
     "**Οι μεγάλες εισαγωγές γράφουν λιγότερο**: η σημείωση των αρχείων που μια εισαγωγή γράφει ακόμα κρατιέται σε μικρά κομμάτια, δεν γράφεται ολόκληρη για κάθε αρχείο.",
+  "**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once.":
+    "**Ένα μήνυμα δεν περιμένει πια τα αργά Nostr relay**: με το Nostr ανοιχτό, ένα μήνυμα περίμενε ένα Nostr relay να πει ότι το πήρε, έως 20 δευτερόλεπτα όταν κανένα δεν απαντούσε, πριν φύγει από το relay. Τώρα, αν κανένα δεν το πει μέσα σε 4 δευτερόλεπτα, φεύγει αμέσως και από το relay.",
 };

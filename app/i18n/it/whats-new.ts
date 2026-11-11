@@ -710,4 +710,6 @@ export const whatsNew: Record<string, string> = {
     "**Le chat si salvano più in fretta**: un messaggio che arriva, viene letto o viene eliminato è salvato guardando solo la sua chat, cosa che si nota di più con molte chat o dopo una grande importazione. La schermata della chat non viene più ridisegnata ogni 5 secondi.",
   "**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file.":
     "**Le grandi importazioni scrivono meno**: la nota dei file che un’importazione sta ancora scrivendo è tenuta in piccole parti, non scritta per intero per ogni file.",
+  "**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once.":
+    "**Un messaggio non aspetta più i relay Nostr lenti**: con Nostr attivo, un messaggio aspettava che un relay Nostr dicesse di averlo preso, fino a 20 secondi quando nessuno rispondeva, prima di passare dal relay. Ora, se nessuno lo dice entro 4 secondi, passa subito anche dal relay.",
 };
