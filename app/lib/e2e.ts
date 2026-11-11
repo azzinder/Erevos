@@ -411,8 +411,8 @@ function withGone(gone: OldMine[] | undefined, more: OldMine[]): OldMine[] | und
   return [...(gone ?? []).filter((g) => !more.some((m) => m.r === g.r)), ...more].slice(-MAX_GONE);
 }
 
-function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
-  return { ...whereOf(message), spare: message.spare ?? null };
+function placeOf(message: Message, known?: Partial<Where> | null): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
+  return { ...whereOf(message, known), spare: message.spare ?? null };
 }
 
 /** The ring queue sender id a message leaves a contact with: what it says (a sender id, or none for
@@ -446,10 +446,17 @@ function theirs(received: Received): Received {
   return received.kind === 'refused' && received.reason === 'unknown' ? { ...received, theirs: true } : received;
 }
 
-/** Where a link or a message says a queue is. A queue said without a relay is on the same relay. */
-function whereOf(said: { relay?: string; relayUrl?: string; relayKey?: string }): Where {
+/**
+ * Where a link or a message says a queue is. A queue said without a relay is on the same relay. A
+ * message that names the relay `known` names with no key for it, as a phone says while it has not
+ * had its relay's key yet, leaves the key known for it.
+ */
+function whereOf(said: { relay?: string; relayUrl?: string; relayKey?: string }, known?: Partial<Where> | null): Where {
   const relay = said.relay ?? said.relayUrl ?? '';
-  return isRelay(relay) ? { relay, relayKey: isRelayKey(said.relayKey) ? said.relayKey : '' } : { relay: '', relayKey: '' };
+  if (!isRelay(relay)) return { relay: '', relayKey: '' };
+  const key = isRelayKey(said.relayKey) ? said.relayKey : '';
+  const kept = !key && known?.relay && known.relayKey && sameRelay(known.relay, relay) ? known.relayKey : '';
+  return { relay, relayKey: key || kept };
 }
 
 /** A link's backup queue, as kept. */
@@ -830,7 +837,7 @@ function heardWay({ again: _again, ...way }: Way, at: number, opened: core.Opene
   const others = way.conversations.filter((_, j) => j !== at);
   return {
     ...way,
-    ...(message.from ? { sender: message.from, ...whereOf(message), spare: message.spare ?? null } : {}),
+    ...(message.from ? { sender: message.from, ...whereOf(message, way), spare: message.spare ?? null } : {}),
     conversations: [toBase64(opened.conversation), ...others].slice(0, MAX_CONVERSATIONS),
     first: '',
     sealTo: message.pk || way.sealTo,
@@ -3468,7 +3475,7 @@ export class E2E {
     const contact: Contact = {
       identity,
       sender: (takes && message.from) || known?.sender || message.from || '',
-      ...(message.from && takes ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
+      ...(message.from && takes ? placeOf(message, known) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
       conversations: (stale && known.conversations.length > 0 ? [known.conversations[0], toBase64(opened.conversation), ...known.conversations.slice(1)] : [toBase64(opened.conversation), ...(known?.conversations ?? [])]).slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
       name: known?.name ?? welcomed?.name ?? '',
@@ -3551,7 +3558,7 @@ export class E2E {
       id: contact.identity,
       bundle: '',
       sender: message.from || was?.sender || '',
-      ...(message.from ? whereOf(message) : { relay: was?.relay ?? '', relayKey: was?.relayKey ?? '' }),
+      ...(message.from ? whereOf(message, was) : { relay: was?.relay ?? '', relayKey: was?.relayKey ?? '' }),
       spare: message.from ? (message.spare ?? null) : (was?.spare ?? null),
       conversations: [toBase64(opened.conversation), ...(was?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: '',
@@ -3579,7 +3586,7 @@ export class E2E {
     const { again: _again, ...kept } = way;
     const moved: Way = {
       ...kept,
-      ...(message.from ? { sender: message.from, ...whereOf(message), spare: message.spare ?? null } : {}),
+      ...(message.from ? { sender: message.from, ...whereOf(message, way), spare: message.spare ?? null } : {}),
       conversations: [toBase64(opened.conversation), ...way.conversations].slice(0, MAX_CONVERSATIONS),
       seen: [...way.seen, id].slice(-MAX_SEEN_EACH),
       sealTo: message.pk || way.sealTo,
@@ -3630,7 +3637,7 @@ export class E2E {
     const { again: _again, ...kept } = way;
     const moved: Way = {
       ...kept,
-      ...(message.from ? { sender: message.from, ...whereOf(message), spare: message.spare ?? null } : {}),
+      ...(message.from ? { sender: message.from, ...whereOf(message, way), spare: message.spare ?? null } : {}),
       conversations: [toBase64(opened.conversation), ...way.conversations].slice(0, MAX_CONVERSATIONS),
       seen: [...way.seen, id].slice(-MAX_SEEN_EACH),
       sealTo: message.pk || way.sealTo,
@@ -3874,7 +3881,7 @@ export class E2E {
       updated = {
         ...contact,
         sender: (takes && message.from) || contact.sender,
-        ...(message.from && takes ? placeOf(message) : {}),
+        ...(message.from && takes ? placeOf(message, contact) : {}),
         ...(takes && message.qa ? { qa: message.qa } : {}),
         ...(heard && this.ownAge ? { onNew: this.ownAge } : {}),
         // Send in the one they last sent in. Their answer also means they have the first packet.

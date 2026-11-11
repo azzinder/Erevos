@@ -168,6 +168,57 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
   }
 });
 
+test('what came on Nostr, or kept from a phone nearby, and could not be said to have come then, is said with the next look at the relay', { skip: !coreReady || !relayReady }, async () => {
+  files.clear();
+  blobs.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const queue = async () => {
+    const ids = await createQueue(relay);
+    return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  };
+  setCurrentSpace(0, randomBytes(32));
+  const bobQueue = await queue();
+  await updateCurrentSpaceData({ url, ownQueue: bobQueue });
+  const bob = await spaceChats();
+  const alice = await E2E.open('space', 1, randomBytes(32));
+  const aliceQueue = await queue();
+  const where = { relay: url, relayKey: '' };
+  const { identity: bobId } = await alice.addContact({ senderHex: bobQueue.senderHex, key: toBase64Url(bob.e2e.bundle), relayUrl: url }, aliceQueue.senderHex, where);
+  // What Alice sends opens on Bob's phone as what came on Nostr does (lib/receiver.ts openNostr),
+  // before his receiver's first look: it knows no relay yet, and Nostr is off, so what came cannot
+  // be said then.
+  await openNearby(null, alice.pending()[0].first);
+  await alice.firstSent(bobId);
+  await bob.e2e.acceptRequest(bob.e2e.contacts()[0].identity);
+  const sealed = await alice.seal(bobId, 'through Nostr', aliceQueue.senderHex, { at: where });
+  await openNearby(null, sealed.packet);
+  assert.equal(bob.history.messages().at(-1)?.text, 'through Nostr');
+  const got = async () => {
+    for (;;) {
+      const bytes = await receiveMessage(relay, fromHex(aliceQueue.recipientHex));
+      if (!bytes) return [];
+      const said = await alice.receive(bytes);
+      if (said.kind === 'message' && said.got.length > 0) return said.got;
+    }
+  };
+  assert.deepEqual(await got(), []);
+
+  // The receiver's looks say it, though nothing more comes on Nostr.
+  const stop = startReceiver(30);
+  try {
+    let told: string[] = [];
+    await until(async () => (told = await got()).length > 0);
+    assert.deepEqual(told, [sealed.tag]);
+  } finally {
+    stop();
+    (await holdReceiver())();
+    forgetSpaceMover();
+    forgetSpaceChats();
+    setCurrentSpace(null);
+  }
+});
+
 test('what comes from a phone nearby while no chat is open is kept, and the mark goes back on that link', { skip: !coreReady }, async () => {
   files.clear();
   blobs.clear();

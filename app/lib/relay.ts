@@ -1028,6 +1028,35 @@ export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
   return key;
 }
 
+/** How long, ms, before a relay that could not be reached is asked for its key again (askRelayKey): twice as long each time after, up to five minutes. */
+export const KEY_AGAIN_MS = 5_000;
+const KEY_AGAIN_MOST = 5 * 60_000;
+
+/**
+ * Asks `relay` for its key (`ask`, relayKey) until it answers, again after a longer wait each time
+ * it cannot be reached: `take` hears the key, or null for a relay with none. Stops when the
+ * function it gives is called.
+ */
+export function askRelayKey(relay: Relay, take: (key: Uint8Array | null) => void, wait = KEY_AGAIN_MS, ask: (relay: Relay) => Promise<Uint8Array | null> = relayKey): () => void {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const once = (next: number) => {
+    ask(relay).then(
+      (key) => {
+        if (!stopped) take(key);
+      },
+      () => {
+        if (!stopped) timer = setTimeout(() => once(Math.min(next * 2, KEY_AGAIN_MOST)), next);
+      },
+    );
+  };
+  once(wait);
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+  };
+}
+
 /** What a send carries: a message someone reads, word between phones, or a call that rings (see Marks above). */
 export type Mark = keyof typeof MARKS;
 

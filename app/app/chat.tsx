@@ -149,6 +149,7 @@ import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/grou
 import { groupCallSignal, onGroupCallChange } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import {
+  askRelayKey,
   borrowPlace,
   callRelay,
   carryTo,
@@ -1917,19 +1918,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return () => clearInterval(timer);
   }, [shown, gated, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue, linked]);
 
-  // Asks our relay for its key once its address is known. A relay without one, or an app whose core
+  // Asks our relay for its key once its address is known, and again while it cannot be reached:
+  // until then what goes from here names it with no key. A relay without one, or an app whose core
   // cannot seal, leaves the key out of our link: then only contacts on our relay can reach us.
   useEffect(() => {
     const url = relayUrl.trim();
     setOwnRelayKey('');
     if (!url || !canRelaySeal()) return;
-    let active = true;
-    relayKey({ url, token: relayToken.trim() || undefined })
-      .then((key) => active && key && setOwnRelayKey(toBase64Url(key)))
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
+    return askRelayKey({ url, token: relayToken.trim() || undefined }, (key) => key && setOwnRelayKey(toBase64Url(key)));
   }, [relayUrl, relayToken]);
 
   // Once a place is chosen for the link, asks our relay for a ticket for one, so whoever adds us
@@ -1970,7 +1966,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [sharePlace, canSharePlace, relayUrl, relayToken]);
 
   // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
-  // could open it, so the queue is left alone, and its messages wait on the relay.
+  // could open it, so the queue is left alone, and its messages wait on the relay. Started again
+  // once our relay's key is known, so what its looks seal, the marks too, says it (here).
   useEffect(() => {
     const url = relayUrl.trim();
     if (!url || !ownQueue || !e2e) return;
@@ -2180,7 +2177,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       stopCopies();
       if (timer) clearTimeout(timer);
     };
-  }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
+  }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e, ownRelayKey]);
 
   // To each contact with no queue of their own, added here or accepted, once: an invite to this
   // phone's relay, sent by itself in a message with nothing to show, whatever way the two first met

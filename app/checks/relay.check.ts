@@ -19,6 +19,7 @@ import { after, before, test } from 'node:test';
 import { sealPublic, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import {
+  askRelayKey,
   BadRelayAddressError,
   callRelay,
   canTellNewsAt,
@@ -208,6 +209,38 @@ test('many messages go on one connection to each relay, each answered as when se
     return got;
   };
   assert.deepEqual([await all({ url: far }, a.recipientId), await all({ url: far }, b.recipientId), await all({ url: near }, there.recipientId)], [[1, 4], [2, 6], [5]]);
+});
+
+test('a relay that cannot be reached is asked for its key again, a while longer each time, until it answers', async () => {
+  const relay = { url: 'wss://relay.example.org' };
+  const key = randomBytes(32);
+  const asked: number[] = [];
+  let down = 2;
+  const ask = async (r: Relay) => {
+    assert.equal(r, relay);
+    asked.push(Date.now());
+    if (down-- > 0) throw new RelayUnreachableError('not reached');
+    return key;
+  };
+  const taken: (Uint8Array | null)[] = [];
+  askRelayKey(relay, (k) => taken.push(k), 20, ask);
+  for (let i = 0; i < 100 && taken.length === 0; i++) await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(taken, [key]);
+  assert.equal(asked.length, 3);
+  assert.ok(asked[2] - asked[1] >= asked[1] - asked[0], 'the wait grows');
+  // A relay with no key says so once; one stopped is asked no more.
+  const none: (Uint8Array | null)[] = [];
+  askRelayKey(relay, (k) => none.push(k), 20, async () => null);
+  let tries = 0;
+  const stop = askRelayKey(relay, () => assert.fail('it never answered'), 20, async () => {
+    tries++;
+    throw new RelayUnreachableError('not reached');
+  });
+  await new Promise((r) => setTimeout(r, 30));
+  stop();
+  const then = tries;
+  await new Promise((r) => setTimeout(r, 150));
+  assert.deepEqual([none, then > 0, tries], [[null], true, then]);
 });
 
 test('a relay without a key refuses two-hop sending instead of sending straight', { skip: !ready }, async () => {
