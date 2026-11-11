@@ -3411,7 +3411,7 @@ compartas.
   stickers; toca una foto o un archivo para verlo por separado y guardarlo (**Guardar**). Los mensajes de voz y las
   canciones se reproducen en el propio chat con un toque; un vídeo se reproduce en la app propia del teléfono una vez
   guardado. Mantén pulsado un mensaje importado para copiarlo (**Copiar**) o abrir su archivo (**Abrir**). **Buscar en
-  este chat** también encuentra los mensajes importados. Los archivos de más de 1 GB, y los que la exportación no
+  este chat** también encuentra los mensajes importados. Los archivos de más de 4 GB, y los que la exportación no
   contiene, se quedan fuera, y el chat dice dónde había uno.
 - **Espacio en el teléfono:** mientras entra un .zip, el teléfono necesita libre más o menos el doble de su tamaño, ya
   que Erevos lee una copia y guarda los archivos sellados. Los archivos importados también están en las copias de
@@ -3430,24 +3430,31 @@ compartas.
 **Detalles** de su chat, bajo **Chats importados**, toca **Compartir con** y su nombre; en **Ajustes** → **Datos y
 dispositivos** → **Chats importados**, un chat que continúa con alguien tiene el mismo botón, que abre su chat. Erevos
 dice cuántos mensajes y cuántos MB van, y pregunta primero. Luego todos los chats importados con esa persona van juntos,
-cada mensaje con cada foto, vídeo, mensaje de voz y archivo guardado, solo a ella, cifrados de extremo a extremo por tu
-relay, y el chat dice que lo compartiste.
+sea cual sea su tamaño, cada mensaje con cada foto, vídeo, mensaje de voz y archivo guardado, solo a ella, cifrados de
+extremo a extremo por tu relay, y el chat dice que lo compartiste.
 
-- **Por su lado** no hay nada que hacer: su Erevos lo guarda enseguida, con sus archivos, dice en el chat quién lo
-  compartió, de dónde y cuántos mensajes, y los muestra antes de los nuevos, solo para leer, como un chat importado. Los
-  lados se cambian: lo que escribiste aparece como tuyo, a su izquierda, y en un chat de dos lo que escribió esa persona
-  aparece como suyo, a la derecha; en un grupo, cada uno conserva su nombre. Se guarda solo en vuestro chat allí, y
-  puede eliminarlo en sus **Detalles**.
+- **Por su lado** no hay nada que hacer: su Erevos guarda los mensajes enseguida, dice en el chat quién los compartió,
+  de dónde y cuántos, y los muestra antes de los nuevos, solo para leer, como un chat importado. Las fotos y los
+  archivos se completan a medida que llegan, y bajo esa línea dice cuántos llegaron, **Archivos: 3 de 10**. Los lados se
+  cambian: lo que escribiste aparece como tuyo, a su izquierda, y en un chat de dos lo que escribió esa persona aparece
+  como suyo, a la derecha; en un grupo, cada uno conserva su nombre. Se guarda solo en vuestro chat allí, y puede
+  eliminarlo en sus **Detalles**. Sus dispositivos vinculados guardan solo los mensajes.
 - **Compartido de nuevo**, ocupa el lugar de la copia que tenía, así que nunca está dos veces. Un chat que alguien
   compartió contigo no se comparte más allá.
 - **Solo con esa persona:** solo con un contacto de Erevos con el que continúa el chat, nunca con un grupo, y no se
   puede reenviar. En los chats ocultos funciona igual, y por su lado se queda en el lugar donde está vuestro chat,
   también en los ocultos.
-- **Espacio:** las fotos y los archivos esperan en tu relay hasta que se recogen, 14 días como mucho, y un relay tiene
-  sitio para 1 GB de archivos en total si no se configura otra cosa, así que un chat muy grande puede no caber: entonces
-  no va nada, y Erevos dice por qué. Un archivo borrado de este teléfono desde entonces se nombra como uno que se quedó
-  atrás.
-- **Un Erevos anterior** recibe en su lugar un archivo, **Chat de Telegram.json**, con los mensajes dentro como texto.
+- **Por rondas:** las fotos y los archivos van después de los mensajes, unas decenas de MB cada vez: cada ronda espera
+  en tu relay hasta que su teléfono la recoge y la borra allí, y entonces va la siguiente. Así va un chat de cualquier
+  tamaño, cada archivo de hasta 4 GB, y necesita poco del espacio del relay, que comparten otros archivos; cuando el
+  relay está lleno, Erevos espera y vuelve a preguntar, un poco más tarde cada vez. Sigue siempre que los dos teléfonos
+  tengan Erevos en marcha, también después de que uno estuviera apagado o sin conexión un tiempo; una ronda que no se
+  recoge en 12 días se vuelve a poner en el relay antes de que caduque. Un archivo borrado de este teléfono desde
+  entonces se nombra como uno que se quedó atrás.
+- **Hasta dónde va** se ve bajo tu línea en el chat, **Compartiendo, 40 %**. Tócala para **Dejar de compartir**: lo que
+  espera en el relay se quita, y su Erevos borra lo que llegó. Si esa persona borra los chats, se detiene igual.
+- **Un Erevos anterior** recibe en su lugar un archivo, **Chat de Telegram.json**, con los mensajes dentro como texto, y
+  ninguna de las fotos ni de los archivos.
 
 > El archivo de chats importados crece con lo que traes, así que su tamaño dice más o menos cuánto se importó, pero no a
 > qué espacio.
@@ -4017,7 +4024,7 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Los contactos del teléfono** | En los contactos propios de Android, sin sellar por Erevos, como con cualquier app de contactos: cualquier app con permiso para leerlos los ve, y una cuenta (Google) puede sincronizarlos. Erevos no los envía a ninguna parte. Un archivo .vcf guardado a partir de ellos está fuera de Erevos, sin sellar. Las llamadas y los SMS de un contacto se leen del propio registro de llamadas y de los SMS del teléfono solo para mostrar su historial, y no se guardan en ninguna parte. | |
 | **Contactos guardados solo en Erevos** | Sellados con la clave del espacio, o con la de los chats ocultos para los suyos, en un archivo para todos los espacios cuyo tamaño muestra más o menos cuántos hay en total, no de quién son; sus fotos, cada una en un archivo propio. Nunca en los contactos de Android. Un archivo .vcf guardado a partir de ellos, también de los chats ocultos, está fuera de Erevos, sin cifrar. Las llamadas y los SMS a ellos van por el teléfono, y aparecen en su registro de llamadas y en sus SMS. | |
 | **Llamadas telefónicas** | Llamadas telefónicas normales: las lleva la compañía telefónica, que puede escucharlas, como con cualquier app de teléfono. Android guarda el historial de llamadas, sin sellar por Erevos, como para cualquier app de teléfono; Erevos lo lee, y los favoritos, para mostrarlos, elimina de él solo las llamadas que eliminas, y no guarda ninguna copia. La SIM elegida para cada número se sella en el espacio; las respuestas rápidas, y lo que se bloquea (solo prefijos, ids de grupos y horas, lo mismo para todos los espacios), se guardan en el teléfono, sin sellar. | |
-| **Chats importados** | Sellados en el espacio al que se trajeron, también sus fotos y archivos, cada uno en sus trozos como el archivo de un chat. El tamaño del archivo, y cuántos trozos hay, dicen más o menos cuánto se importó, no dónde. | Las fotos y los archivos de Viber, y archivos de más de 1 GB. |
+| **Chats importados** | Sellados en el espacio al que se trajeron, también sus fotos y archivos, cada uno en sus trozos como el archivo de un chat. El tamaño del archivo, y cuántos trozos hay, dicen más o menos cuánto se importó, no dónde. | Las fotos y los archivos de Viber, y archivos de más de 4 GB. |
 | **Historial de mensajes** | Guardado en el teléfono, sellado en su espacio, sin límite, en páginas del mismo tamaño mezcladas para todos los espacios. Solo se ve cuánto ocupa todo, no a qué espacio pertenece. Eliminar en los dos teléfonos, y los mensajes temporales, dependen del Erevos del otro teléfono. | |
 | **Mensajes de cerca** | Solo se abren en el espacio que tiene el contacto. Uno para otro espacio espera en memoria, seis horas como mucho, hasta que ese espacio se abra. Uno para chats ocultos solo se abre mientras están abiertos, o reciben cerrados, y el espacio nunca sabe que uno de sus contactos está cerca. | |
 | **Mensajes de voz** | Cifrados de extremo a extremo por el relay o de cerca, en trozos: el relay, o quien escuche cerca, puede saber más o menos cuánto dura cada uno. Cada sonido se sella en un archivo propio; cuántos archivos hay, y sus tamaños, muestran más o menos cuántos se guardan, no en qué espacio. Sin sellar en la caché solo mientras se reproduce. | Archivos de sonido todos del mismo tamaño. |

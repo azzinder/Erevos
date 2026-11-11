@@ -19,6 +19,7 @@ import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBack
 import { keepOffer, offerOf } from './relay-offer';
 import { takeIntro, type IntroSend } from './intros';
 import { keepPieceFrom } from './pieces-kept';
+import { driveShares, packCame, roundsCame } from './share-rounds';
 import {
   ackTaken,
   canReadManyAt,
@@ -709,6 +710,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   await expireTextInvites(place.own).catch(() => undefined);
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
+  // Imported chats shared, going and coming in rounds while Erevos runs (lib/share-rounds.ts).
+  if (!failed) driveShares({ chats, own: here.own, send: (identity, rounds) => tell(chats, here, identity, { more: { rounds } }), stopped: stop });
   lookWhenDue(nextDue(chats.history));
   await sendReceipts(chats, place, withNearby(state));
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
@@ -797,6 +800,10 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
     if (whole && !twice) await add({ voice: await saveClip(whole.audio, whole.ms) });
   }
   if (received.file) await add({ file: offerRef(received.file) });
+  // Imported chats a contact shared: kept with the next round of shares (lib/share-rounds.ts), as
+  // what they say of a share's rounds is taken in then.
+  if (received.file?.history && !twice) await packCame(chats, identity, tag).catch(() => undefined);
+  if (received.more.rounds && !received.twice) await roundsCame(chats, identity, received.more.rounds).catch(() => undefined);
   if (received.text) await add({ text: received.text });
   if (received.got.length > 0 && (await history.mark(peer, true, 1, at, received.got)).length > 0) changed = true;
   if (received.read.length > 0 && (await history.mark(peer, true, 2, at, received.read)).length > 0) changed = true;

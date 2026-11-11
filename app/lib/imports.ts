@@ -32,8 +32,11 @@ export type ImportedMessage = {
 };
 export type ImportedChat = { source: Source; title: string; skipped: number; messages: ImportedMessage[] };
 
-/** The largest file brought in with a chat: a video can be larger than one sent (lib/attachments.ts MAX_FILE). */
-export const MAX_IMPORTED_FILE = 1000 * 1000 * 1000;
+/**
+ * The largest file brought in with a chat: a video can be much larger than one sent (lib/attachments.ts
+ * MAX_FILE). Its chunks fit in HISTORY_CHUNKS (lock/attachment-files.ts).
+ */
+export const MAX_IMPORTED_FILE = 4 * 1000 * 1000 * 1000;
 // The chat's own text in a zip, read whole.
 const MAX_TEXT = 256 * 1024 * 1024;
 

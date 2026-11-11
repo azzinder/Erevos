@@ -101,7 +101,8 @@ import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
-import { keepShared, packMeta, sharable, shareChats, shareSize, takeAskToShare, unshare } from '../lib/chat-share';
+import { packMeta, sharable, shareSize, takeAskToShare } from '../lib/chat-share';
+import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, type ReadyShare, type ShareWay } from '../lib/share-rounds';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
 import { ChatRow, MyselfRow } from '../components/chat-row';
@@ -791,6 +792,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The chats whose messages show at once while the chat opens, only to read (held): what is read
   // then is marked read in their history at once, the one the home screen counts from.
   const openingChats = useRef<SpaceChats | null>(null);
+  // The chats once open, whose imported chats shared go and come in rounds (lib/share-rounds.ts)
+  // while the screen shows: `sharesClosed` once it no longer does.
+  const sharedChats = useRef<SpaceChats | null>(null);
+  const sharesClosed = useRef(false);
   // The panel under the message bar ("+"): what to send and how it goes, and choosing when it goes.
   const [attaching, setAttaching] = useState(false);
   const [choosingLater, setChoosingLater] = useState(false);
@@ -1622,6 +1627,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (!active) return;
         voiceParts.current = shared.voiceParts;
         history.current = kept;
+        sharedChats.current = shared;
         // What disappeared while the chat was closed goes first.
         await kept.expire(Date.now());
         if (!active) return;
@@ -2121,6 +2127,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         await sendReceipts(sends);
         await sendKeys(sends);
         await relayOffers.current(own, sends);
+        // Imported chats shared, going and coming in rounds (lib/share-rounds.ts).
+        shareDrive.current(own);
         // Texts that went through Nostr, not said to have come in time, through the relay as well.
         await sendNostrBackups(e2e, sends);
         // To contacts Nostr is the only way to, what is due there again (lib/nostr-chats.ts).
@@ -2339,7 +2347,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // Taken from the relay by the effect that watches for files waiting.
       const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, placed, parts);
       receipt(peer, 'got', [tag]);
+      // Imported chats shared: kept with the next round of shares (lib/share-rounds.ts).
+      if (received.file.history && sharedChats.current) void packCame(sharedChats.current, received.identity, tag).then(() => shareDrive.current(ownRelay()), () => undefined);
     }
+    // How far a share is, said by the other phone: taken in with the next round.
+    if (received.more.rounds && !received.twice && sharedChats.current) void roundsCame(sharedChats.current, received.identity, received.more.rounds).then(() => shareDrive.current(ownRelay()), () => undefined);
     if (received.text && !twice) {
       addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, placed, parts);
       if (received.tag) receipt(peer, 'got', [received.tag]);
@@ -4236,52 +4248,105 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }, [loaded, relayUrl, relayToken, messages, pieceTick]);
 
-  // Chats a contact shared (lib/chat-share.ts) are kept at once, whatever their size, with all their
-  // files, among this place's imported chats: from a contact taken, not a message request. Only where
-  // the sharer chose straight waits for a tap, as any file does (takesItself).
+  // Imported chats shared with a contact (lib/chat-share.ts) go and come in rounds (lib/share-rounds.ts):
+  // their words at once, their files as the other phone takes them, each look at the relay driving
+  // a round, here as beside the other screens (lib/receiver.ts). Through this chat's relay, its
+  // contacts told as any quiet word is; what hidden chats take stays on the relay while their own
+  // devices still take it, as a message's file does.
+  function shareWay(own: Relay | null): ShareWay | null {
+    const chats = sharedChats.current;
+    if (!chats || !e2e) return null;
+    return {
+      chats,
+      own,
+      send: (identity, rounds) => sendToContact(relayTarget(), identity, '', { more: { rounds } }).then(() => undefined),
+      stopped: () => sharesClosed.current,
+      leave: hiddenKey ? (placeLinked() ?? false) : undefined,
+    };
+  }
+  const shareDrive = useRef((_own: Relay | null) => undefined as void);
+  shareDrive.current = (own) => {
+    const way = shareWay(own);
+    if (way) driveShares(way);
+  };
   useEffect(() => {
-    const own = ownRelay();
-    if (!loaded || !archive) return;
+    sharesClosed.current = false;
+    return () => {
+      sharesClosed.current = true;
+    };
+  }, []);
+
+  // Chats a contact shared are kept at once, whatever their size, among this place's imported
+  // chats, their files coming after: from a contact taken, not a message request. One kept by
+  // nothing yet, as one that came to an Erevos from before, is noted for the next round.
+  useEffect(() => {
+    const chats = sharedChats.current;
+    if (!loaded || !archive || !chats) return;
     const accepted = new Set(contacts.filter((c) => !c.request).map((c) => `${CONTACT_PREFIX}${c.identity}`));
+    const noted: Promise<void>[] = [];
     for (const m of messages) {
       if (!m.file?.history || !m.file.from || m.mine || !accepted.has(m.peer) || tried.current.has(`${m.peer}|${m.tag}`)) continue;
-      if (!takesItself(own, m.file.from)) continue;
-      void keepSharedChats(own, m, true);
+      tried.current.add(`${m.peer}|${m.tag}`);
+      noted.push(packCame(chats, m.peer.slice(CONTACT_PREFIX.length), m.tag).catch(() => undefined));
     }
+    if (noted.length > 0) void Promise.all(noted).then(() => shareDrive.current(ownRelay()));
   }, [loaded, archive, relayUrl, relayToken, messages, contacts]);
 
-  // Keeps the chats a contact shared, from the file their message brought: taken as a file is, then
-  // their files, all into this place's imported chats (lib/chat-share.ts). The file itself is not
-  // kept: its chats are, in the imported chats, whence they can be deleted. Tried again with a tap.
-  async function keepSharedChats(own: Relay | null, message: Message, itself = false) {
-    const { peer, tag, file } = message;
-    const key = `${peer}|${tag}`;
-    if (!file?.from || !archive || takingNow.current.has(key)) return;
-    takingNow.current.add(key);
-    tried.current.add(key);
-    setTaking((now) => ({ ...now, [key]: '0%' }));
-    // As a message's file: what hidden chats take stays on the relay while their own devices still take it.
-    const leave = hiddenKey ? (placeLinked() ?? false) : undefined;
-    try {
-      const pack = await takeFile(own, file, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), leave, contactsPlace, itself);
-      const bytes = await readFile(pack);
-      if (!bytes) throw new FileGoneError();
-      await keepShared(own, bytes, archive, { by: peer.slice(CONTACT_PREFIX.length), name: label(peer, contacts) }, {
-        leave,
-        itself,
-        progress: (percent) => setTaking((now) => ({ ...now, [key]: `${percent}%` })),
+  // How far the shares are, on the lines of the messages they went or came in ('Sharing, 40%',
+  // 'Files: 3 of 10'), read again a moment after they change; and what changed shown: chats kept,
+  // files whole, shares ended.
+  const [shareShown, setShareShown] = useState<Record<string, string>>({});
+  const [filesTick, setFilesTick] = useState(0);
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const place = sharedChats.current?.pieces;
+    if (!loaded || !place) return;
+    let on = true;
+    // A file came whole since: the photos not shown yet are read again.
+    let whole = false;
+    const read = () => {
+      shareTimer.current = null;
+      if (whole) setFilesTick((n) => n + 1);
+      whole = false;
+      void shareLines(place).then((lines) => {
+        if (on) setShareShown((now) => (JSON.stringify(now) === JSON.stringify(lines) ? now : lines));
       });
-      await deleteChunks(pack.id, pack.count).catch(() => undefined);
-      setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: pack } : m)));
-      await history.current?.setFile(peer, tag, pack);
-      setArchiveTick((n) => n + 1);
-      setTaking(({ [key]: _done, ...rest }) => rest);
-    } catch (error) {
-      setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
-      setNote(t('A file did not come. {error}', { error: errorText(error) }));
-    } finally {
-      takingNow.current.delete(key);
-    }
+    };
+    read();
+    const off = onShares((change) => {
+      if (change.holder !== place.holder || change.space !== place.space) return;
+      const { peer, tag, file } = change;
+      if (peer && tag) {
+        const key = `${peer}|${tag}`;
+        if (file) {
+          // Kept: its chats among the imported ones, the file itself no longer on the relay.
+          setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file } : m)));
+          setTaking(({ [key]: _done, ...rest }) => rest);
+        } else setTaking((now) => ({ ...now, [key]: 'gone' }));
+      }
+      if (change.chats) void archive?.reload().then(() => on && setArchiveTick((n) => n + 1), () => undefined);
+      else if (peer && !tag) whole = true;
+      if (!shareTimer.current) shareTimer.current = setTimeout(read, 1000);
+    });
+    return () => {
+      on = false;
+      off();
+      if (shareTimer.current) clearTimeout(shareTimer.current);
+      shareTimer.current = null;
+    };
+  }, [loaded, archive]);
+
+  // Our share still going with a message, by its line: stopped once the owner says so, its chunks
+  // taken off the relay, and the contact's Erevos deletes what came of it.
+  async function stopSharing(message: Message) {
+    const place = sharedChats.current?.pieces;
+    const identity = message.peer.slice(CONTACT_PREFIX.length);
+    const now = place ? await sharingNow(place, identity, message.tag) : null;
+    if (!now) return;
+    const name = label(message.peer, contacts);
+    if (!(await choose(t('Stop sharing'), t('{name} gets no more of it, and their Erevos deletes what came of it.', { name }), t('Cancel'), t('Stop sharing')))) return;
+    const way = shareWay(ownRelay());
+    if (way) await stopShare(way, now.s).catch((error) => setNote(errorText(error)));
   }
 
   // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
@@ -4526,9 +4591,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function openFile(message: Message) {
     const file = message.file;
     if (!file) return;
-    // Chats shared: theirs are kept, tried again with a tap; the file itself is not one to open.
+    // Chats shared: theirs are kept, tried again with a tap; ours, while their files still go, can
+    // stop. The file itself is not one to open.
     if (file.history) {
-      if (file.from && !message.mine) void keepSharedChats(ownRelay(), message);
+      const way = file.from && !message.mine ? shareWay(ownRelay()) : null;
+      if (way) {
+        setTaking(({ [`${message.peer}|${message.tag}`]: _again, ...rest }) => rest);
+        void takePack(way, message.peer.slice(CONTACT_PREFIX.length), message.tag);
+      } else if (message.mine) void stopSharing(message);
       return;
     }
     if (file.from) {
@@ -5443,7 +5513,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Shares the chats imported here that go on with this contact with them alone (lib/chat-share.ts),
   // once the owner says so: all of them together, every message and every file they kept, through
-  // our relay, end-to-end encrypted. Their Erevos keeps them at once. Never to a group.
+  // our relay, end-to-end encrypted. Their Erevos keeps the messages at once; the files follow in
+  // rounds while both phones run Erevos (lib/share-rounds.ts), whatever their size. Never to a group.
   async function shareImported() {
     const peer = selected;
     const identity = selectedIdentity;
@@ -5472,20 +5543,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const chatsHere = e2e;
     const target = relayTarget();
     const sealedAs = newTag();
-    let put: FileOffer[] = [];
+    const rounds = shareWay(own);
+    let ready: ReadyShare | null = null;
     let packed: { ref: FileRef; offer: FileOffer } | null = null;
+    let begun = false;
     try {
       setNote(t('Sharing, {percent}%', { percent: 0 }));
-      const shared = await shareChats(own, chats, (percent) => setNote(t('Sharing, {percent}%', { percent })));
-      put = shared.offers;
-      packed = await sendFile(own, bytesSource(shared.bytes), packMeta(shared.mark));
+      ready = await readyShare(identity, chats);
+      packed = await sendFile(own, bytesSource(ready.bytes), packMeta(ready.mark));
+      // Its files go from now on, as their Erevos takes them, which may say so at once: begun
+      // before the words go.
+      if (rounds) begun = await beginShare(rounds, ready, sealedAs).then(() => true, () => false);
       const sealed = await chatsHere.sealFile(identity, packed.offer, ownQueue?.senderHex ?? '', { at: here(), tag: sealedAs });
       const way = await handOver(chatsHere, target, identity, sealed, [sealed.packet], 'message', false, !!hiddenKey);
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, packed.ref, 0, Date.now(), wayParts(way));
       setContacts(chatsHere.contacts());
       setNote(t('Shared with {name}, end-to-end encrypted.', { name }));
     } catch (error) {
-      if (error instanceof OwedError && packed) {
+      if (error instanceof OwedError && packed && ready) {
         // In hidden chats, owed to their phone should it take it only later.
         const given = packed.offer;
         addMessage(peer, '', true, sealedAs, timerOf(peer), undefined, packed.ref, 0, Date.now());
@@ -5496,12 +5571,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setNote(owedNote(peer, error));
       } else {
         if (packed) await takeOffRelay(own, packed.offer.ids).catch(() => undefined);
-        await unshare(own, put);
+        // Nothing went: neither do its files, of which the contact knows nothing.
+        if (rounds && ready && begun) await stopShare(rounds, ready.s, false).catch(() => undefined);
         setNote(notSent(error));
       }
     } finally {
       // Its file is not kept here: the chats are, as they were.
       if (packed) await deleteChunks(packed.ref.id, packed.ref.count).catch(() => undefined);
+      if (ready && !begun) await dropReady(ready);
     }
   }
   // Sorted out only while the details or the lists show.
@@ -5603,8 +5680,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
   if (viewing?.file?.kind === 'photo' && !viewing.file.from) shownPhotos.push(viewing.file);
   if (viewingImported?.kind === 'photo') shownPhotos.push(viewingImported);
-  // Each read into memory to show it (components/attachment.tsx).
-  const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })));
+  // Each read into memory to show it (components/attachment.tsx), and read again once a file of
+  // chats shared came whole (lib/share-rounds.ts).
+  const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })), filesTick);
   // The chat on the screen, or the hidden place open: what comes there only sounds (lib/background.ts).
   const focused = useIsFocused();
   // Where the link says this chat reads on Nostr, so that who adds it with no relay between the two
@@ -7570,7 +7648,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   lit={lit === message.id}
                   played={playingId === message.id ? played : null}
                   photo={message.file ? photos[message.file.id] : undefined}
-                  taking={taking[`${message.peer}|${message.tag}`]}
+                  taking={taking[`${message.peer}|${message.tag}`] ?? (message.file?.history ? shareShown[`${message.peer}|${message.tag}`] : undefined)}
                   plays={lines.length - i <= PLAYS_LAST}
                   canAnswer={theyHave(message)}
                   waits={scheduled(message)}

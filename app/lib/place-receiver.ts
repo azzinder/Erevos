@@ -46,6 +46,7 @@ import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from '
 import { relayFor, type SpaceChats } from './space-chats';
 import { hiddenSpare, lookAtSpare, spareBackup, type SpareStore } from './spare';
 import { sendWaiting } from './waiting';
+import { driveShares } from './share-rounds';
 
 // Hidden chats that receive while they are closed (their switch, lock/hidden-keep.ts): while their
 // space is open, whatever screen shows, and with Erevos in the background (lib/background.ts), each
@@ -536,6 +537,9 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
       .catch(() => null);
     // What waited to go, now that the relay answers (lib/waiting.ts).
     await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true, hidden: true, near: state.near }).catch(() => []);
+    // Imported chats shared, going and coming in rounds (lib/share-rounds.ts): shared chats that
+    // came are kept once the place's chat screen opens, which knows its own devices.
+    driveShares({ chats, own, send: (identity, rounds) => tell(chats, here, identity, { more: { rounds } }, state.near), stopped: stop, packs: false });
   }
   await sendReceipts(chats, here, state);
   await sendCopies(chats.e2e, here.sends).catch(() => 0);
