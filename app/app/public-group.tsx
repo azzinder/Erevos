@@ -8,12 +8,13 @@ import { View } from 'react-native';
 
 import { askThread } from '../components/group-messages';
 import { KeyFace } from '../components/key-face';
+import { LinkedText } from '../components/linked-text';
 import { messageLine, shareGroupLink } from '../components/public-group';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
-import type { GroupInfo } from '../lib/groups';
+import { MAX_GROUP_DESC, type GroupInfo } from '../lib/groups';
 import { t } from '../lib/i18n';
 import type { PublicGroups, PublicInfo, PublicMember } from '../lib/public-groups';
 import { publicName } from '../lib/public-rules';
@@ -25,7 +26,8 @@ import { useTheme } from '../theme/context';
 // its QR code for anyone to join by, who asks and waits, the members with who owns the group and
 // who are its admins, the bans, and the latest messages, to delete for everyone. What each may do
 // shows only to whoever may do it: the owner names admins, changes the link, chooses whether an
-// admin lets in each who asks, and hands the group over; admins mute, take out, ban and delete.
+// admin lets in each who asks, and hands the group over; admins mute, take out, ban and delete, and
+// say what the group is about (its description, which every member sees here).
 // Search in this chat and Export chat go to the group's thread and do it there
 // (components/group-messages.tsx).
 
@@ -42,6 +44,8 @@ export default function PublicGroupScreen() {
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [chosen, setChosen] = useState('');
   const [rename, setRename] = useState('');
+  // What the group is about, as an admin types it.
+  const [about, setAbout] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
@@ -60,6 +64,7 @@ export default function PublicGroupScreen() {
         if (!active) return;
         setGroups(from);
         setRename(from.list().find((g) => g.id === id)?.name ?? '');
+        setAbout(from.list().find((g) => g.id === id)?.desc ?? '');
         void load(from);
         stop = from.onChange(() => void load(from));
       })
@@ -118,6 +123,25 @@ export default function PublicGroupScreen() {
               ? t('A public group you are an admin of.')
               : t('A public group. Anyone with its link can ask to join.')}
       </Text>
+      {group.desc && !(info.admin && !out) ? (
+        <Text>
+          <LinkedText text={group.desc} />
+        </Text>
+      ) : null}
+      {!out && info.admin ? (
+        <Card>
+          <Field label={t('Description')}>
+            <Input value={about} onChangeText={setAbout} maxLength={MAX_GROUP_DESC} multiline />
+          </Field>
+          <Button
+            title={t('Save')}
+            kind="secondary"
+            compact
+            disabled={busy || about.trim() === group.desc}
+            onPress={() => void run((from) => from.describe(id, about, spaceGroupTransport))}
+          />
+        </Card>
+      ) : null}
 
       {!out && info.link ? (
         <Card>

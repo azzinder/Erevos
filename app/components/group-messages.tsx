@@ -4,18 +4,21 @@
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
 import { bytesSource, takeOffRelay } from '../lib/attachments';
+import { cardWords } from '../lib/card-share';
 import { chatText, exportName } from '../lib/chat-export';
-import { choose as chooseOption, editableWords, placeWords, pollWords, stillEditable, type Place, type Poll } from '../lib/chat-parts';
+import { choose as chooseOption, editableWords, joinedText, placeWords, pollOpen, pollWords, stillEditable, threadRoots, threadSizes, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
+import type { Among } from '../lib/contact-book';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
 import { sendGroupFile } from '../lib/group-media';
 import { asChatMessage, seenMark, type Marked } from '../lib/group-parts';
 import { memberName, type GroupInfo } from '../lib/groups';
-import { t } from '../lib/i18n';
+import { useOpenHiddenPlace } from '../lib/hidden-contacts';
+import { plural, t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn } from '../lib/mentions';
@@ -34,12 +37,14 @@ import { openOwnSticker, type OwnSticker } from '../lock/sticker-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { CardBubble, CardSheet, saveCard } from './card-share';
 import type { Answering, ComposerTile, DraftBox, Editing } from './composer';
 import { useGroupsWhere } from './groups-at';
 import { MessageMenu, type MenuAction } from './message-menu';
 import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PlaceSheet } from './place-sheet';
 import { PollCard, PollSheet } from './poll';
+import { SelectBar, selectAction, useSelection } from './select-bar';
 import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 import { WhoRead } from './who-read';
@@ -55,6 +60,11 @@ import { WhoRead } from './who-read';
 // Ours, in a group that is not public, are marked as a contact's chat marks them: ✓ sent, ✓✓ once
 // it reached the phone of every member who was in the group then, ✓✓✓ once every one read it
 // (lib/group-parts.ts seenMark); held down, Who read it lists each member, and when.
+// A message answered shows how many answers its thread has (answer after answer, lib/chat-parts.ts
+// threadRoots); tapped, or Reply in thread, the thread shows alone, and what is sent there answers
+// its first message, or the one answered: an Erevos from before shows them as answers. Select, in
+// the menu, chooses several messages to copy, forward or delete together (components/select-bar.tsx).
+// Its sender ends a poll (End poll), and a contact card goes under "+" (components/card-share.tsx).
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -96,12 +106,21 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [replying, setReplying] = useState<GroupMessage | null>(null);
   // The message of ours the bar gives new words, while it does.
   const [editing, setEditing] = useState<GroupMessage | null>(null);
-  const [forwarding, setForwarding] = useState<GroupMessage | null>(null);
+  // The messages being forwarded (one, or those chosen), while where is picked.
+  const [forwarding, setForwarding] = useState<GroupMessage[] | null>(null);
   // One of ours whose readers are shown.
   const [readers, setReaders] = useState<GroupMessage | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
   const [polling, setPolling] = useState(false);
+  // A contact's card being chosen to send: among the space's contacts, or the hidden chats'.
+  const [sharingCard, setSharingCard] = useState(false);
+  const hiddenLent = useOpenHiddenPlace();
+  const among: Among = where.at.hidden ? hiddenLent : 'space';
+  // The thread shown alone, by the tag of its first message (null: the whole group).
+  const [thread, setThread] = useState<string | null>(null);
+  // The messages chosen to copy, forward or delete together, by tag.
+  const selection = useSelection<string>();
   const [placing, setPlacing] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [previews, setPreviews] = useState(false);
@@ -182,6 +201,36 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const who = (m: GroupMessage) => (m.from ? name(m.from) : t('You'));
   const lineOf = (m: GroupMessage) => messageLine(asChatMessage(m));
 
+  // Each message's thread, by tag, and how many answers each thread has.
+  const roots = useMemo(() => threadRoots(messages.filter((m) => !m.note && m.tag)), [messages]);
+  const sizes = useMemo(() => threadSizes(roots), [roots]);
+  // A thread whose first message is gone shows no more; another group shown leaves it, and the choosing.
+  useEffect(() => {
+    if (thread && !roots.has(thread)) setThread(null);
+  }, [thread, roots]);
+  useEffect(() => {
+    setThread(null);
+    selection.clear();
+  }, [id]);
+  // Back ends the choosing, then leaves the thread.
+  useEffect(() => {
+    if (!selection.on && !thread) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (selection.on) selection.clear();
+      else setThread(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [selection.on, thread]);
+
+  // Shows a thread alone, from its first message.
+  function openThread(root: string) {
+    selection.clear();
+    setReplying(null);
+    setThread(root);
+    stays.current = false;
+  }
+
   // Goes to one of the group's messages, by its tag, and lights it a moment.
   function goTo(tag: string) {
     const y = placed.current.get(tag);
@@ -209,8 +258,14 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   }
 
   function vote(m: GroupMessage, option: number) {
-    if (!m.poll) return;
+    if (!m.poll || !pollOpen(m)) return;
     void mark({ t: 'vote', tag: m.tag, chose: chooseOption(m.votes?.[''] ?? [], option, !!m.poll.m) });
+  }
+
+  // Ends a poll of ours, for every member: it takes no more votes. An Erevos from before shows it still open.
+  function endPoll(m: GroupMessage) {
+    if (m.from || !pollOpen(m)) return;
+    void mark({ t: 'close', tag: m.tag });
   }
 
   function star(m: GroupMessage) {
@@ -226,30 +281,78 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
 
   // Deletes a message here, or, ours, for every member: then its file leaves our relay too.
   function remove(m: GroupMessage) {
-    const here = () =>
-      void groupsAt
-        .groups()
-        .then((groups) => groups.deleteHere(id, m.tag))
-        .catch((error) => onNote(errorText(error)));
-    const everyone = async () => {
-      const gone = await mark({ t: 'erase', tag: m.tag });
-      if (gone?.put) await takeOffRelay(await groupsAt.relay(), gone.put).catch(() => undefined);
-    };
     ask(t('Delete message'), t('Delete this message? It cannot be brought back.'), [
       { text: t('Cancel'), style: 'cancel' },
-      { text: t('This phone'), onPress: here },
-      ...(!m.from && !out ? [{ text: t('Everyone'), style: 'destructive' as const, onPress: () => void everyone() }] : []),
+      { text: t('This phone'), onPress: () => void deleteHere([m]) },
+      ...(!m.from && !out ? [{ text: t('Everyone'), style: 'destructive' as const, onPress: () => void eraseForEveryone([m]) }] : []),
     ]);
   }
 
+  // Deletes messages from this phone only.
+  async function deleteHere(list: GroupMessage[]) {
+    try {
+      const groups = await groupsAt.groups();
+      for (const m of list) await groups.deleteHere(id, m.tag);
+    } catch (error) {
+      onNote(errorText(error));
+    }
+  }
+
+  // Deletes messages of ours for every member, one by one as one alone goes: each one's file leaves our relay too.
+  async function eraseForEveryone(list: GroupMessage[]) {
+    for (const m of list) {
+      const gone = await mark({ t: 'erase', tag: m.tag });
+      if (!gone) return;
+      if (gone.put) await takeOffRelay(await groupsAt.relay(), gone.put).catch(() => undefined);
+    }
+  }
+
+  // Deletes the messages chosen, after one question, each as Delete does it alone: for every member
+  // too when all of them are ours.
+  function removeChosen(list: GroupMessage[]) {
+    if (list.length === 0) return;
+    const ours = !out && list.every((m) => !m.from);
+    ask(t('Delete messages'), plural(list.length, 'Delete this message? It cannot be brought back.', 'Delete these {n} messages? They cannot be brought back.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('This phone'),
+        onPress: () => {
+          selection.clear();
+          void deleteHere(list);
+        },
+      },
+      ...(ours
+        ? [
+            {
+              text: t('Everyone'),
+              style: 'destructive' as const,
+              onPress: () => {
+                selection.clear();
+                void eraseForEveryone(list);
+              },
+            },
+          ]
+        : []),
+    ]);
+  }
+
+  // Copies the words of the messages chosen, one after the other: of several, each with when and who wrote it.
+  async function copyChosen(list: GroupMessage[]) {
+    selection.clear();
+    const lines = list.map((m) => ({ at: m.at, who: who(m), text: m.text && !m.sticker && !m.place && !m.poll && !m.file ? m.text : lineOf(m) }));
+    onNote((await copyText(joinedText(lines))) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  }
+
   const forwardable = (m: GroupMessage): Forwardable => {
-    const { text, file, ms, sticker, place, poll, preview } = m;
-    return { text, file, ms, sticker, place, poll, preview };
+    const { text, file, ms, sticker, place, poll, preview, card } = m;
+    return { text, file, ms, sticker, place, poll, preview, card };
   };
 
-  // Asks where a message goes: to a contact's chat, or another group, of the space or the hidden place.
-  async function startForward(m: GroupMessage) {
-    setForwarding(m);
+  // Asks where messages go (one, or those chosen, in the order they were sent): to a contact's chat,
+  // or another group, of the space or the hidden place.
+  async function startForward(chosen: GroupMessage[]) {
+    const list = [...chosen].sort((a, b) => a.at - b.at);
+    setForwarding(list);
     setTargets([]);
     const [chats, groups] = await Promise.all([groupsAt.chats().catch(() => null), groupsAt.groups().catch(() => null)]);
     const contacts: Target[] = (chats?.e2e.contacts() ?? [])
@@ -258,7 +361,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
         key: `contact:${c.identity}`,
         name: memberName(c.identity, [c]),
         go: async () => {
-          handForward(`contact:${c.identity}`, forwardable(m));
+          for (const m of list) handForward(`contact:${c.identity}`, forwardable(m));
           where.openContact(c.identity);
         },
       }));
@@ -269,7 +372,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
         name: t('{name} (group)', { name: g.name }),
         go: async () => {
           onNote(t('Forwarding…'));
-          await forwardToGroup(g.id, forwardable(m), groupsAt);
+          for (const m of list) await forwardToGroup(g.id, forwardable(m), groupsAt);
           onNote('');
           if (g.id !== id) where.openGroup(g.id);
         },
@@ -295,15 +398,18 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   function menuActions(m: GroupMessage): MenuAction[] {
     const actions: MenuAction[] = [];
     if (!out) actions.push({ title: t('Reply'), onPress: () => setReplying(m) });
-    if (canForward(m)) actions.push({ title: t('Forward'), onPress: () => void startForward(m) });
+    if (!thread && !out) actions.push({ title: t('Reply in thread'), onPress: () => openThread(roots.get(m.tag) ?? m.tag) });
+    if (canForward(m)) actions.push({ title: t('Forward'), onPress: () => void startForward([m]) });
     actions.push({ title: m.starred ? t('Unstar') : t('Star'), onPress: () => star(m) });
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
     if (canEdit(m)) actions.push({ title: t('Edit'), onPress: () => startEditing(m) });
+    if (!out && !m.from && !m.unsent && pollOpen(m)) actions.push({ title: t('End poll'), onPress: () => endPoll(m) });
     if (markOf(m)) actions.push({ title: t('Who read it'), onPress: () => setReaders(m) });
     if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
     // A photo or file that is here goes into the Collection of the group's place too: the space's, or the hidden place's the group lives in.
     if (m.file && !m.file.sticker && !m.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(m.file!) });
+    actions.push(selectAction(() => selection.start(m.tag)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;
   }
@@ -339,7 +445,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     const groups = await groupsAt.groups();
     // The members named with @ and their whole name (lib/mentions.ts): told in a muted group too.
     const named = parts ? [] : mentionsIn(text, (await groups.members(id).catch(() => [])).flatMap((m) => (m.about && !m.me ? [{ identity: m.about.id, name: name(m.about.id) }] : [])));
-    const carried = parts ?? { ...(replying ? { re: replying.tag } : {}), ...(await previewOf(text)), ...(named.length > 0 ? { named } : {}) };
+    // In a thread, what goes answers the one answered, or else its first message.
+    const re = replying?.tag ?? thread ?? undefined;
+    const carried = parts ? { ...(thread && !parts.re ? { re: thread } : {}), ...parts } : { ...(re ? { re } : {}), ...(await previewOf(text)), ...(named.length > 0 ? { named } : {}) };
     await groups.send(id, text, groupsAt.transport, carried);
     stays.current = false;
     if (!parts) setReplying(null);
@@ -356,7 +464,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       const picture = await openOwnSticker(sticker);
       if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
       onNote(t('Sending the sticker…'));
-      await sendGroupFile(await groupsAt.groups(), id, await groupsAt.relay(), bytesSource(picture), stickerMeta(picture), undefined, groupsAt.transport);
+      await sendGroupFile(await groupsAt.groups(), id, await groupsAt.relay(), bytesSource(picture), stickerMeta(picture), undefined, groupsAt.transport, undefined, thread ? { re: thread } : {});
       stays.current = false;
       onNote('');
     } catch (error) {
@@ -413,6 +521,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     }
   }
 
+  // The messages chosen, in the thread's order, those still here.
+  const chosenNow = selection.on ? messages.filter((m) => !m.note && m.tag && selection.chosen.has(m.tag)) : [];
   const pins = messages.filter((m) => !m.note && m.pinned).sort((a, b) => b.pinned! - a.pinned!);
   const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
   const findable: Findable[] = messages.filter((m) => !m.note).map((m) => ({ ...asChatMessage(m), peer: `group:${id}`, mine: !m.from }));
@@ -456,16 +566,52 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       const quoted = byTag(m.re);
       return <Quote name={quoted ? who(quoted) : ''} line={quoted ? lineOf(quoted) : ''} ink={ink} onPress={() => goTo(m.re!)} />;
     },
-    /** A sticker, a place or a poll, in place of the words; null for others. */
+    /** A sticker, a place, a poll or a contact card, in place of the words; null for others. */
     body: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => {
       if (m.sticker) return <StickerView name={m.sticker} fallback={m.text} play={playing.has(m.tag)} tap onLongPress={() => setMenuFor(m)} />;
       if (m.place) return <PlaceCard place={m.place} ink={ink} />;
       if (m.poll) {
         const voters = Object.entries(m.votes ?? {}).map(([member, chose]) => ({ name: member ? name(member) : t('You'), chose }));
-        return <PollCard poll={m.poll} voters={voters} mine={m.votes?.[''] ?? []} onChoose={out ? undefined : (option) => vote(m, option)} ink={ink} />;
+        return <PollCard poll={m.poll} voters={voters} mine={m.votes?.[''] ?? []} onChoose={out ? undefined : (option) => vote(m, option)} ink={ink} ended={!!m.closed} />;
       }
+      if (m.card) return <CardBubble card={m.card} ink={ink} onSave={() => saveCard(m.card!, where.at.hidden)} />;
       return null;
     },
+    /** Under a message answered, outside a thread: how many answers its thread has, to show it. */
+    threadCount: (m: GroupMessage): ReactNode => {
+      const n = thread || m.note ? 0 : (sizes.get(m.tag) ?? 0);
+      if (!n) return null;
+      return (
+        <View style={{ alignSelf: m.from ? 'flex-start' : 'flex-end', paddingHorizontal: space.sm }}>
+          <TextButton title={plural(n, '{n} answer in the thread', '{n} answers in the thread')} onPress={() => openThread(m.tag)} />
+        </View>
+      );
+    },
+    /** The thread shown alone, by the tag of its first message, or null. */
+    thread,
+    /** Whether a message shows: in the thread shown, or any while none is. */
+    inThread: (m: GroupMessage): boolean => !thread || (!m.note && roots.get(m.tag) === thread),
+    /** Shows the whole group again. */
+    closeThread: () => setThread(null),
+    /** Messages are being chosen: a tap on one adds it or takes it out. */
+    choosing: selection.on,
+    /** Whether a message is one of those chosen. */
+    chosen: (m: GroupMessage): boolean => selection.on && selection.chosen.has(m.tag),
+    /** Adds a message to those chosen, or takes it out. */
+    choose: (m: GroupMessage) => {
+      if (!m.note && m.tag) selection.toggle(m.tag);
+    },
+    /** The bar over the thread while messages are chosen, in place of the group's. */
+    selectBar: selection.on ? (
+      <SelectBar
+        count={chosenNow.length}
+        onCancel={selection.clear}
+        onAll={() => selection.set(messages.filter((m) => !m.note && m.tag && (!thread || roots.get(m.tag) === thread)).map((m) => m.tag))}
+        onCopy={CAN_COPY && chosenNow.length > 0 ? () => void copyChosen(chosenNow) : undefined}
+        onForward={chosenNow.length > 0 && chosenNow.every(canForward) ? () => void startForward(chosenNow) : undefined}
+        onDelete={chosenNow.length > 0 ? () => removeChosen(chosenNow) : undefined}
+      />
+    ) : null,
     /** A link's preview, under the words. */
     preview: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => (m.preview && !m.file ? <PreviewCard preview={m.preview} ink={ink} /> : null),
     /** What goes beside a message's time: that it was forwarded or edited, its star, and, on a linked device, that the phone could not send it. */
@@ -523,11 +669,12 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     send,
     /** Opens the stickers, from the message bar's button. */
     openStickers: () => setStickering(true),
-    /** The panel's tiles after the photos and files: a sticker, where you are, a poll. */
+    /** The panel's tiles after the photos and files: a sticker, where you are, a poll, a contact card. */
     attachMore: (afterPanel: (then: () => void) => void): ComposerTile[] => [
       { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterPanel(() => setStickering(true)) },
       ...(CAN_PLACE ? [{ key: 'place', title: t('Location'), icon: 'place' as const, onPress: () => afterPanel(() => setPlacing(true)) }] : []),
       { key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterPanel(() => setPolling(true)) },
+      { key: 'card', title: t('Contact card'), icon: 'contact', onPress: () => afterPanel(() => setSharingCard(true)) },
     ],
     sheets: (
       <>
@@ -543,7 +690,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
           {forwarding ? (
             <>
               <Text variant="caption" tone="muted" numberOfLines={2}>
-                {lineOf(forwarding)}
+                {forwarding.map(lineOf).join(' · ')}
               </Text>
               {targets.map((target) => (
                 <TextButton
@@ -551,6 +698,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
                   title={target.name}
                   onPress={() => {
                     setForwarding(null);
+                    selection.clear();
                     setTimeout(() => void target.go().catch((error) => onNote(t('Not sent. {reason}', { reason: errorText(error) }))), Platform.OS === 'web' ? 0 : 300);
                   }}
                 />
@@ -580,6 +728,15 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
           onSend={(poll: Poll) => {
             setPolling(false);
             sendParts(pollWords(poll), { poll });
+          }}
+        />
+        <CardSheet
+          visible={sharingCard}
+          onClose={() => setSharingCard(false)}
+          among={among}
+          onSend={(card) => {
+            setSharingCard(false);
+            sendParts(cardWords(card), { card });
           }}
         />
         <PlaceSheet

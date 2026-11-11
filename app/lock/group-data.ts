@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
+import { checkedCard, checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import type { Mark } from '../lib/relay';
 import { isFileRef, type FileRef } from './attachment-files';
 import { checkedChatNotify, type ChatNotify } from './chat-notify';
@@ -39,13 +39,15 @@ export type About = {
 export type GroupMessage = { at: number; from: string; text: string; tag: string; note?: boolean } & GroupMedia & GroupParts & GroupMarks;
 
 /** What a message is or carries beyond its words or its file, as its sender sent it (lib/group-parts.ts):
- *  the tag of the message it answers, a sticker, a place, a poll, a link's preview, or that it was
- *  forwarded, and the members its words name with @ (`named`, lib/mentions.ts). A sticker's, a place's or a
- *  poll's words are its text, for an Erevos from before. */
-export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; named?: string[] };
+ *  the tag of the message it answers, a sticker, a place, a poll, a contact card (a vCard,
+ *  lib/card-share.ts), a link's preview, or that it was forwarded, and the members its words name
+ *  with @ (`named`, lib/mentions.ts). A sticker's, a place's, a poll's or a card's words are its
+ *  text, for an Erevos from before. */
+export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: Poll; card?: string; preview?: Preview; forwarded?: true; named?: string[] };
 
 /** What was done to a message since: each member's reaction and vote, by identity ('' for this
- *  phone's), when it was pinned for everyone, when its sender last edited its words, and, on this
+ *  phone's), when it was pinned for everyone, when its sender last edited its words or ended its
+ *  poll (`closed`), and, on this
  *  phone only, its star. Of our own photo, file or voice message, `put` is its chunks' ids on our
  *  relay, to take them off when it is deleted for everyone. On a linked device (lib/devices.ts),
  *  `unsent` marks one of ours that the phone could not send. Of our own, each member's phone says
@@ -56,6 +58,7 @@ export type GroupMarks = {
   votes?: Record<string, number[]>;
   pinned?: number;
   edited?: number;
+  closed?: number;
   starred?: true;
   put?: string;
   unsent?: true;
@@ -113,6 +116,9 @@ export type Group = {
   /** The group's own look here (theme/look.ts, theme/chat-theme.tsx), on this phone only too.
    *  Missing while it takes the space's. */
   look?: Look;
+  /** What the group is about, as its admin last said it (lib/groups.ts `describe`), and when, by
+   *  the admin's clock: an empty text is one taken off. Missing while none was said. */
+  desc?: { text: string; at: number };
 };
 
 export type GroupData = {
@@ -157,6 +163,18 @@ export const MAX_GIVEN = 50;
 export const MAX_CONTACT_ASKS = 100;
 /** The longest key a member gives with its contact link, base64url: its bundle is about 1.8 KB. */
 export const MAX_CONTACT_KEY = 4096;
+/** The longest description of a group, in characters. */
+export const MAX_GROUP_DESC = 500;
+
+/** A group's description as it is kept: its lines, without the marks that change how text runs, no more than MAX_GROUP_DESC. */
+export function cleanGroupDesc(text: string): string {
+  const lines = text
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, ' ')
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim());
+  return [...lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()].slice(0, MAX_GROUP_DESC).join('').trim();
+}
+
 // The most members a message keeps a reaction or a vote of.
 const MAX_MARKS = 100;
 
@@ -203,6 +221,7 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
   const place = checkedPlace(v.place);
   const poll = checkedPoll(v.poll);
   const preview = checkedPreview(v.preview);
+  const card = checkedCard(v.card);
   const reactions = byMember(v.reactions, (emoji) => (isReactionEmoji(emoji) ? emoji : null));
   const votes = poll ? byMember(v.votes, (chose) => checkedChoices(chose, poll.o.length, !!poll.m)) : undefined;
   return {
@@ -210,12 +229,14 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
     ...(isStickerName(v.sticker) ? { sticker: v.sticker } : {}),
     ...(place ? { place } : {}),
     ...(poll ? { poll } : {}),
+    ...(card ? { card } : {}),
     ...(preview ? { preview } : {}),
     ...(v.forwarded === true ? { forwarded: true as const } : {}),
     ...(reactions ? { reactions } : {}),
     ...(votes ? { votes } : {}),
     ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
     ...(isTime(v.edited) && v.edited > 0 ? { edited: v.edited } : {}),
+    ...(poll && isTime(v.closed) && v.closed > 0 ? { closed: v.closed } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
     ...(mine && isText(v.put) && /^(?:[0-9a-f]{48})+$/.test(v.put) ? { put: v.put } : {}),
     ...(mine && v.unsent === true ? { unsent: true as const } : {}),
@@ -291,7 +312,13 @@ export function checkedGroup(value: unknown): Group | null {
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
     ...(checkedChatNotify(v.notify) ? { notify: checkedChatNotify(v.notify)! } : {}),
     ...(v.look && typeof v.look === 'object' && !Array.isArray(v.look) ? { look: checkedLook(v.look) } : {}),
+    ...checkedDesc(v.desc),
   };
+}
+
+function checkedDesc(value: unknown): Pick<Group, 'desc'> {
+  const v = (value ?? {}) as { text?: unknown; at?: unknown };
+  return isText(v.text) && isTime(v.at) && v.at > 0 ? { desc: { text: cleanGroupDesc(v.text), at: v.at } } : {};
 }
 
 /** What a group store holds, checked, as kept or as handed from another device (lib/groups.ts HeldGroups). */

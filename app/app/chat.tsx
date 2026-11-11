@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, BackHandler, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
@@ -69,8 +69,11 @@ import { SwipeBack } from '../components/swipe-back';
 import { Pinned } from '../components/message-parts';
 import { PLAYS_LAST, StickerPicker } from '../components/stickers';
 import { PlaceSheet } from '../components/place-sheet';
+import { CardSheet, saveCard } from '../components/card-share';
+import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, placeWords, pollWords, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { cardWords } from '../lib/card-share';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE } from '../lib/place';
@@ -700,6 +703,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [playingFile, setPlayingFile] = useState<string | null>(null);
   const rowDo = useRef<RowActs | null>(null);
   const rowActs = useMemo(() => steadyActs(rowDo), []);
+  // The chat's messages chosen to copy, forward or delete together (components/select-bar.tsx), by id.
+  const selection = useSelection<number>();
+  // Another chat shown ends the choosing, and so does Back.
+  useEffect(() => selection.clear(), [selected]);
+  useEffect(() => {
+    if (!selection.on) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      selection.clear();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [selection.on]);
   // How far above the chat's bottom its thread ends, where Undo shows (components/undo-bar.tsx).
   const edges = useRef({ height: 0, end: 0 });
   const [undoAt, setUndoAt] = useState(0);
@@ -781,11 +796,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [choosingSafety, setChoosingSafety] = useState(false);
   const [stickering, setStickering] = useState(false);
   // A message to forward, while its chat is picked, and the space's groups it can go to.
-  const [forwarding, setForwarding] = useState<Message | null>(null);
+  const [forwarding, setForwarding] = useState<Message[] | null>(null);
   const [forwardGroups, setForwardGroups] = useState<GroupInfo[]>([]);
   // Where the phone was found, to send once it is looked at.
   const [placing, setPlacing] = useState(false);
   const [polling, setPolling] = useState(false);
+  // A contact's card being chosen to send (components/card-share.tsx).
+  const [sharingCard, setSharingCard] = useState(false);
   // Until when each contact shows typing, and when this phone last said it is typing to each.
   const [typing, setTyping] = useState<Record<string, number>>({});
   const typingSaid = useRef(new Map<string, number>());
@@ -2367,12 +2384,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (vote) {
       setMessages((list) =>
         list.map((m) => {
-          if (m.peer !== peer || m.tag !== vote.tag || !m.poll) return m;
+          if (m.peer !== peer || m.tag !== vote.tag || !m.poll || m.closed) return m;
           const chose = checkedChoices(vote.chose, m.poll.o.length, !!m.poll.m);
           return chose ? { ...m, theirVote: chose } : m;
         }),
       );
       history.current?.vote(peer, vote.tag, false, vote.chose).catch(() => undefined);
+    }
+    // They ended one of their polls: it shows how the votes stood, and takes no more.
+    const { close } = received.more;
+    if (close) {
+      const at = Date.now();
+      history.current
+        ?.close(peer, close.tag, false, at)
+        .then((changed) => {
+          if (changed) setMessages((list) => list.map((m) => (m.peer === peer && m.tag === close.tag && !m.mine && m.poll ? { ...m, closed: at } : m)));
+        })
+        .catch(() => undefined);
     }
     // They paid one of our payment requests, as they marked it (lib/pay.ts): once.
     const { settled } = received.more;
@@ -2541,39 +2569,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   function deleteMessage(message: Message) {
-    // One a relay holds for later is taken back from it, if it did not go yet: where it is held as
-    // kept, should it have been held anew since the chat showed it.
+    // One a relay holds for later is taken back from it, if it did not go yet (takeBackHeld).
     if (message.held && message.at > Date.now()) {
-      // Where it is held as kept when taken back, in turn with a safety message being held anew
-      // (lib/safety.ts), which then never is again.
-      const heldNow = () => history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.held ?? message.held!;
       ask(t('Delete message'), t('Delete this message before it goes? The relay that keeps it drops it.'), [
         { text: t('Cancel'), style: 'cancel' },
-        {
-          text: t('Delete'),
-          style: 'destructive',
-          onPress: () =>
-            void inTurn(message.tag, async () => {
-              const dropped = await takeBack(relayTarget(), heldNow());
-              if (dropped) stopSafety(message.tag);
-              // And its copies for the endpoints of their account, now or with a later look (lib/fanout.ts).
-              if (dropped && e2e && message.peer.startsWith(CONTACT_PREFIX)) {
-                await e2e.letGoCopies(message.peer.slice(CONTACT_PREFIX.length), message.tag).catch(() => undefined);
-                void dropHeld(e2e, relayTarget()).catch(() => undefined);
-              }
-              return dropped;
-            })
-              .then((dropped) => {
-                if (dropped) {
-                  forgetHere(message);
-                  setNote(t('Deleted. It will not go.'));
-                } else {
-                  setNote(t('It went already. Delete it again to delete it on both phones.'));
-                  setMessages((list) => list.map((m) => (m.id === message.id ? { ...m, at: Math.min(m.at, Date.now()) } : m)));
-                }
-              })
-              .catch((error) => setNote(t('Not deleted: the relay could not be asked. {reason}', { reason: errorText(error) }))),
-        },
+        { text: t('Delete'), style: 'destructive', onPress: () => takeBackHeld(message) },
       ]);
       return;
     }
@@ -2584,6 +2584,70 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       { text: t('This phone'), onPress: () => forgetHere(message) },
       ...(both
         ? [{ text: t('Both phones'), style: 'destructive' as const, onPress: () => void eraseOnBoth(message.peer, { tag: message.tag }, () => forgetMessage(message)) }]
+        : []),
+    ]);
+  }
+
+  // Takes one a relay holds for later back from it, if it did not go yet, and deletes it then: where
+  // it is held as kept, should it have been held anew since the chat showed it, in turn with a
+  // safety message being held anew (lib/safety.ts), which then never is again.
+  function takeBackHeld(message: Message) {
+    const heldNow = () => history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.held ?? message.held!;
+    void inTurn(message.tag, async () => {
+      const dropped = await takeBack(relayTarget(), heldNow());
+      if (dropped) stopSafety(message.tag);
+      // And its copies for the endpoints of their account, now or with a later look (lib/fanout.ts).
+      if (dropped && e2e && message.peer.startsWith(CONTACT_PREFIX)) {
+        await e2e.letGoCopies(message.peer.slice(CONTACT_PREFIX.length), message.tag).catch(() => undefined);
+        void dropHeld(e2e, relayTarget()).catch(() => undefined);
+      }
+      return dropped;
+    })
+      .then((dropped) => {
+        if (dropped) {
+          forgetHere(message);
+          setNote(t('Deleted. It will not go.'));
+        } else {
+          setNote(t('It went already. Delete it again to delete it on both phones.'));
+          setMessages((list) => list.map((m) => (m.id === message.id ? { ...m, at: Math.min(m.at, Date.now()) } : m)));
+        }
+      })
+      .catch((error) => setNote(t('Not deleted: the relay could not be asked. {reason}', { reason: errorText(error) })));
+  }
+
+  // Deletes the messages chosen, after one question, each as Delete does it alone: one a relay holds
+  // for later is taken back from it, whichever is chosen; on both phones, those that reached theirs.
+  function deleteChosen(list: Message[]) {
+    if (list.length === 0) return;
+    const held = list.filter((m) => m.held && m.at > Date.now());
+    const rest = list.filter((m) => !held.includes(m));
+    const both = rest.filter((m) => m.peer.startsWith(CONTACT_PREFIX) && m.tag && m.mark !== WAITING);
+    const takeBackAll = () => {
+      selection.clear();
+      for (const m of held) takeBackHeld(m);
+    };
+    ask(t('Delete messages'), plural(list.length, 'Delete this message? It cannot be brought back.', 'Delete these {n} messages? They cannot be brought back.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('This phone'),
+        onPress: () => {
+          takeBackAll();
+          for (const m of rest) forgetHere(m);
+        },
+      },
+      ...(both.length > 0
+        ? [
+            {
+              text: t('Both phones'),
+              style: 'destructive' as const,
+              onPress: () => {
+                takeBackAll();
+                for (const m of rest) if (!both.includes(m)) forgetHere(m);
+                // One by one, as one alone goes: an Erevos from before deletes each.
+                void both.reduce((before, m) => before.then(() => eraseOnBoth(m.peer, { tag: m.tag }, () => void forgetMessage(m))), Promise.resolve());
+              },
+            },
+          ]
         : []),
     ]);
   }
@@ -2751,16 +2815,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function menuActions(message: Message): MenuAction[] {
     const actions: MenuAction[] = [];
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
-    if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => startForward(message) });
+    if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => startForward([message]) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
     if (canEdit(message)) actions.push({ title: t('Edit'), onPress: () => startEditing(message) });
+    if (message.mine && pollOpen(message) && theyHave(message)) actions.push({ title: t('End poll'), onPress: () => void endPoll(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     // A photo or file that is here goes into this chat's own Collection too: the space's, or these hidden chats'.
     if (message.file && !message.file.sticker && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
+    if (!message.sending) actions.push(selectAction(() => selection.start(message.id)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
+  }
+
+  // Copies the words of the messages chosen, one after the other: of several, each with when and whose.
+  function copyChosen(list: Message[]) {
+    const lines = list.map((m) => ({
+      at: m.at,
+      who: m.mine ? t('You') : label(m.peer, shownContacts),
+      text: m.text && !m.sticker && !m.place && !m.poll && !isCallLine(m.text) ? shownLine(m.text) : messageLine(m),
+    }));
+    selection.clear();
+    void copy(joinedText(lines));
   }
 
   // Copies a photo or file of the chat, as the same bytes, into the Collection of this chat's place.
@@ -2919,9 +2996,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const forwardable = (message: Message) =>
     message.peer.startsWith(CONTACT_PREFIX) && !!message.tag && !message.lasts && !message.until && !isCallLine(message.text) && canForward(message);
 
-  // Asks where a message goes: to a contact of this place, or to one of its groups.
-  function startForward(message: Message) {
-    setForwarding(message);
+  // Asks where messages go (one, or those chosen): to a contact of this place, or to one of its groups.
+  function startForward(list: Message[]) {
+    setForwarding(list);
     setForwardGroups([]);
     (placeGroups ? placeGroups.groups() : spaceGroups()).then(
       (groups) => setForwardGroups(groups.list().filter((group) => group.status === 'in')),
@@ -2951,15 +3028,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await send(0, false, { ...content, forwarded: true, text: message.text }, peer);
   }
 
-  // A group's message handed over to forward here (lib/forward.ts), or a photo or file shared from
+  // Forwards messages to a contact's chat, one after the other, in the order they were sent.
+  async function forwardAllTo(list: Message[], peer: string) {
+    selection.clear();
+    for (const message of [...list].sort((a, b) => a.at - b.at)) await forwardTo(message, peer);
+  }
+
+  // A group's messages handed over to forward here (lib/forward.ts), or a photo or file shared from
   // another app (lib/share-in.ts), once the chat can send.
   useEffect(() => {
     if (!e2e || !initial) return;
-    const message = takeForward(initial);
-    if (message) void forwardTo(message, initial);
+    // Each one after the other, in the order handed over.
+    let handedOn = Promise.resolve();
+    for (let message = takeForward(initial); message; message = takeForward(initial)) {
+      const one = message;
+      handedOn = handedOn.then(() => forwardTo(one, initial));
+    }
     const pay = takePay(initial);
     if (pay) void sendPay(pay, initial);
-    // Each one after the other, in the order handed over.
     let sending = Promise.resolve();
     for (let shared = takeShared(initial); shared; shared = takeShared(initial)) {
       const one = shared;
@@ -2981,12 +3067,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }, [e2e, selected, arrival]);
 
-  // Forwards a message to a group, then shows the group once it went.
-  async function forwardToGroupChat(message: Message, id: string) {
+  // Forwards messages to a group, one after the other, then shows the group once they went.
+  async function forwardToGroupChat(list: Message[], id: string) {
     setForwarding(null);
+    selection.clear();
     setNote(t('Forwarding…'));
     try {
-      await forwardToGroup(id, message, placeGroups ?? undefined);
+      for (const message of [...list].sort((a, b) => a.at - b.at)) await forwardToGroup(id, message, placeGroups ?? undefined);
     } catch (error) {
       setNote(notSent(error));
       return;
@@ -3005,8 +3092,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Chooses an option of a poll, or takes the choice back, on both phones, as a reaction goes.
   async function vote(message: Message, option: number) {
-    if (!message.poll) return;
-    const chose = chooseOption(message.myVote ?? [], option, !!message.poll.m);
+    if (!pollOpen(message)) return;
+    const chose = chooseOption(message.myVote ?? [], option, !!message.poll!.m);
     try {
       await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { vote: { tag: message.tag, chose } } });
     } catch (error) {
@@ -3017,6 +3104,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     history.current?.vote(message.peer, message.tag, true, chose).catch(() => {
       // Shown, but gone when the chat next opens.
     });
+  }
+
+  // Ends a poll of ours, on both phones: it takes no more votes. An Erevos from before shows it still open.
+  async function endPoll(message: Message) {
+    if (!message.mine || !pollOpen(message)) return;
+    try {
+      await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { close: { tag: message.tag } } });
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    const at = Date.now();
+    setMessages((list) => list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, closed: at } : m)));
+    history.current?.close(message.peer, message.tag, true, at).catch(() => {
+      // Shown, but open again when the chat next opens.
+    });
+  }
+
+  // Sends a contact's card, with its name, numbers and emails as its words for an Erevos from before.
+  function sendCard(card: string) {
+    setSharingCard(false);
+    void send(undefined, false, { text: cardWords(card), card });
   }
 
   // Marks their payment request paid, on both phones, once it is said: it cannot be taken back.
@@ -3077,8 +3186,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const peer = `${CONTACT_PREFIX}${identity}`;
     setShownGroup(null);
     setSelected(peer);
-    const message = takeForward(peer);
-    if (message) void forwardTo(message, peer);
+    // Each one after the other, in the order handed over.
+    let sending = Promise.resolve();
+    for (let message = takeForward(peer); message; message = takeForward(peer)) {
+      const one = message;
+      sending = sending.then(() => forwardTo(one, peer));
+    }
   };
   // Where the group screens find these hidden chats' groups (components/groups-at.tsx): shown here.
   const placeWhere = useMemo<GroupsWhere | null>(
@@ -5162,6 +5275,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     for (const m of visible) if (m.tag && !named.has(m.tag)) named.set(m.tag, m);
     return named;
   }, [visible]);
+  // The messages chosen (components/select-bar.tsx), in the thread's order, those still here.
+  const chosenMessages = selection.on ? visible.filter((m) => selection.chosen.has(m.id) && !m.sending) : [];
   // What the thread's lines do (MessageLine, SmsLine), with this render's state: the lines keep
   // one object, so one line draws again only when what it shows changes.
   rowDo.current = {
@@ -5203,6 +5318,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     importedMenu: setImportedMenuFor,
     importedOpen: setViewingImported,
     importedPlay: (file) => void playImported(file),
+    choose: (message) => !message.sending && selection.toggle(message.id),
+    saveCard: (card) => saveCard(card, !!hiddenKey),
   };
   // The SMS with their number, among the messages by time (lib/sms-chat.ts): never in hidden chats.
   const smsWith = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
@@ -5677,6 +5794,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   );
   if (CAN_PLACE) tiles.push({ key: 'place', title: t('Location'), icon: 'place', onPress: () => afterSheet(() => setPlacing(true)) });
   tiles.push({ key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterSheet(() => setPolling(true)) });
+  tiles.push({ key: 'card', title: t('Contact card'), icon: 'contact', onPress: () => afterSheet(() => setSharingCard(true)) });
   const ways: ComposerWay[] = selectedContact
     ? [
         {
@@ -6698,71 +6816,82 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               {t('Hidden chats')}
             </Text>
           ) : null}
-          <View style={styles.header}>
-            <BackButton onPress={goBack} />
-            {selected ? (
-              <Pressable
-                style={({ pressed }) => [styles.who, pressed && styles.pressed]}
-                onPress={() => setDetails(true)}
-                accessibilityRole="button"
-                accessibilityLabel={selectedContact ? `${selectedName}, ${subtitle}` : selectedName}
-                accessibilityHint={t('Chat details')}
-              >
-                <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
-                <View style={styles.grow}>
-                  <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
-                    {selectedName}
-                  </Text>
-                  {selectedContact ? (
-                    <View style={styles.subtitle}>
-                      {selectedOnline ? (
-                        <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
-                      ) : !selectedTyping && !narrow ? (
-                        <ShieldIcon color={colors.success} size={11} />
-                      ) : null}
-                      {selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
-                      <Text variant="caption" numberOfLines={1} color={selectedTyping ? colors.accentText : colors.textMuted} style={styles.grow}>
-                        {headerSays}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            ) : (
-              <Text variant="title" style={styles.grow}>
-                {hiddenKey ? t('Hidden chats') : t('New chat')}
-              </Text>
-            )}
-            {selectedContact ? (
-              <>
-                {dialTo ? <DialTile number={dialTo} onFailed={setNote} /> : null}
-                <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void startCall(true)}>
-                  <VideoSign />
-                </ShortcutTile>
-                <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void startCall(false)}>
-                  <PhoneSign />
-                </ShortcutTile>
-              </>
-            ) : null}
-            {selected ? (
-              // Apart from the calls, so a slip calls no one; upright on Android, as its apps have it.
-              <View style={styles.moreGap}>
-                <IconButton label={t('Chat details')} onPress={() => setDetails(true)}>
-                  <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
-                </IconButton>
-              </View>
-            ) : hiddenKey && onChangePassword ? (
-              <View style={styles.headerLinks}>
-                {modules.has('collection') ? (
-                  <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection?hidden=1')}>
-                    <CollectionSign tint="blue" />
+          {selected && selection.on ? (
+            <SelectBar
+              count={chosenMessages.length}
+              onCancel={selection.clear}
+              onAll={() => selection.set(visible.filter((m) => !m.sending).map((m) => m.id))}
+              onCopy={CAN_COPY && chosenMessages.length > 0 ? () => copyChosen(chosenMessages) : undefined}
+              onForward={chosenMessages.length > 0 && chosenMessages.every(forwardable) ? () => startForward(chosenMessages) : undefined}
+              onDelete={chosenMessages.length > 0 ? () => deleteChosen(chosenMessages) : undefined}
+            />
+          ) : (
+            <View style={styles.header}>
+              <BackButton onPress={goBack} />
+              {selected ? (
+                <Pressable
+                  style={({ pressed }) => [styles.who, pressed && styles.pressed]}
+                  onPress={() => setDetails(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={selectedContact ? `${selectedName}, ${subtitle}` : selectedName}
+                  accessibilityHint={t('Chat details')}
+                >
+                  <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
+                  <View style={styles.grow}>
+                    <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
+                      {selectedName}
+                    </Text>
+                    {selectedContact ? (
+                      <View style={styles.subtitle}>
+                        {selectedOnline ? (
+                          <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                        ) : !selectedTyping && !narrow ? (
+                          <ShieldIcon color={colors.success} size={11} />
+                        ) : null}
+                        {selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
+                        <Text variant="caption" numberOfLines={1} color={selectedTyping ? colors.accentText : colors.textMuted} style={styles.grow}>
+                          {headerSays}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Pressable>
+              ) : (
+                <Text variant="title" style={styles.grow}>
+                  {hiddenKey ? t('Hidden chats') : t('New chat')}
+                </Text>
+              )}
+              {selectedContact ? (
+                <>
+                  {dialTo ? <DialTile number={dialTo} onFailed={setNote} /> : null}
+                  <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void startCall(true)}>
+                    <VideoSign />
                   </ShortcutTile>
-                ) : null}
-                <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
-                <TextButton title={t('Change PIN')} onPress={onChangePassword} />
-              </View>
-            ) : null}
-          </View>
+                  <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void startCall(false)}>
+                    <PhoneSign />
+                  </ShortcutTile>
+                </>
+              ) : null}
+              {selected ? (
+                // Apart from the calls, so a slip calls no one; upright on Android, as its apps have it.
+                <View style={styles.moreGap}>
+                  <IconButton label={t('Chat details')} onPress={() => setDetails(true)}>
+                    <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
+                  </IconButton>
+                </View>
+              ) : hiddenKey && onChangePassword ? (
+                <View style={styles.headerLinks}>
+                  {modules.has('collection') ? (
+                    <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection?hidden=1')}>
+                      <CollectionSign tint="blue" />
+                    </ShortcutTile>
+                  ) : null}
+                  <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
+                  <TextButton title={t('Change PIN')} onPress={onChangePassword} />
+                </View>
+              ) : null}
+            </View>
+          )}
         </View>
         {!selected ? (
           <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
@@ -7321,6 +7450,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   plays={lines.length - i <= PLAYS_LAST}
                   canAnswer={theyHave(message)}
                   waits={scheduled(message)}
+                  choosing={selection.on}
+                  chosen={selection.on && selection.chosen.has(message.id)}
                   styles={styles}
                   b={b}
                   colors={colors}
@@ -7483,6 +7614,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }}
         />
         <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
+        <CardSheet visible={sharingCard && shown} onClose={() => setSharingCard(false)} onSend={sendCard} among={among} />
         <PlaceSheet
           visible={placing && shown}
           onClose={() => setPlacing(false)}
@@ -7509,12 +7641,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           {forwarding ? (
             <>
               <Text variant="caption" tone="muted" numberOfLines={2}>
-                {messageLine(forwarding)}
+                {forwarding.map((m) => messageLine(m)).join(' · ')}
               </Text>
               {shownContacts
                 .filter((c) => !c.request)
                 .map((c) => (
-                  <TextButton key={c.identity} title={label(`${CONTACT_PREFIX}${c.identity}`, shownContacts)} onPress={() => void forwardTo(forwarding, `${CONTACT_PREFIX}${c.identity}`)} />
+                  <TextButton key={c.identity} title={label(`${CONTACT_PREFIX}${c.identity}`, shownContacts)} onPress={() => void forwardAllTo(forwarding, `${CONTACT_PREFIX}${c.identity}`)} />
                 ))}
               {forwardGroups.map((group) => (
                 <TextButton key={group.id} title={t('{name} (group)', { name: group.name })} onPress={() => void forwardToGroupChat(forwarding, group.id)} />

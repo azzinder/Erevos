@@ -4,7 +4,7 @@
 
 import type { FileRef } from '../lock/attachment-files';
 import { cleanName } from '../lock/e2e-data';
-import { checkedAbout, type About, type Group, type GroupData, type GroupMessage, type GroupParts } from '../lock/group-data';
+import { checkedAbout, cleanGroupDesc, type About, type Group, type GroupData, type GroupMessage, type GroupParts } from '../lock/group-data';
 import {
   MAX_ASKING,
   MAX_EPOCHS,
@@ -483,6 +483,8 @@ export class PublicGroups extends Groups {
     await this.deliver(id, before, made.commit, transport, true);
     const after = new Set((await this.seats(id)).map((s) => s.key));
     for (const w of add) if (after.has(w.key)) await this.note(id, 'joined', w.key);
+    // Who came in reads nothing from before: what the group is about, said again.
+    if (add.some((w) => after.has(w.key))) await this.describeAgain(id, transport).catch(() => undefined);
     // Those an admin took out have a note of that already.
     for (const s of seats) if (!after.has(s.key) && !gone.has(s.key)) await this.note(id, 'left', s.key);
     await this.refresh(id, transport);
@@ -590,6 +592,12 @@ export class PublicGroups extends Groups {
     if (kept.again.includes(from.id) && this.find(id)?.admin) await this.spokeAnew(id, from, transport).catch(() => undefined);
     // Nothing from a member who is muted, banned or taken out, nor what was deleted for everyone.
     if (marked(kept.mutes, from.id) || marked(kept.bans, from.id) || kept.outs.includes(from.id)) return true;
+    if (said.t === 'desc') {
+      // The owner and the admins say what the group is about, as admins in the epoch it was said in.
+      const at = typeof said.at === 'number' && Number.isFinite(said.at) && said.at > 0 ? said.at : 0;
+      if (at && typeof said.text === 'string' && epoch && (epoch.keeper === from.id || epoch.admins.includes(from.id))) await this.described(id, { text: cleanGroupDesc(said.text), at });
+      return true;
+    }
     if (typeof said.tag === 'string' && kept.deleted.includes(`${from.id}|${said.tag}`)) return true;
     if (kept.names[from.id] !== from.name) await this.keepGroup({ ...kept, names: trimNames({ ...kept.names, [from.id]: from.name }) });
     return false;
@@ -877,6 +885,11 @@ export class PublicGroups extends Groups {
     });
   }
 
+  // The owner and the admins say what a public group is about.
+  protected mayDescribe(id: string): boolean {
+    return this.isPublic(id) ? this.publicInfo(id)?.admin === true : super.mayDescribe(id);
+  }
+
   // A member muted in a public group sends nothing there.
   private mutedHere(id: string): boolean {
     const kept = this.record(id);
@@ -891,6 +904,12 @@ export class PublicGroups extends Groups {
   sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, parts: GroupParts = {}, tag?: string): Promise<void> {
     if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
     return super.sendFile(id, ref, offer, ms, transport, parts, tag);
+  }
+
+  // Nor what the group is about: the others' phones drop it too.
+  describe(id: string, text: string, transport: GroupTransport): Promise<void> {
+    if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
+    return super.describe(id, text, transport);
   }
 
   // Nor a reaction, a vote, a pin or deleting for everyone: the others' phones drop them too.

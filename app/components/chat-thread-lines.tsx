@@ -17,6 +17,8 @@ import { PlaceCard, PreviewCard, Quote, Reactions } from './message-parts';
 import { PhotoSticker, StickerView } from './stickers';
 import { PayCard } from './pay-card';
 import { PollCard } from './poll';
+import { CardBubble } from './card-share';
+import { chosenStyle } from './select-bar';
 import { smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
 import { SmsExtras } from './sms-parts';
 import { messageLine } from '../lib/message-line';
@@ -161,6 +163,10 @@ export type RowActs = {
   importedMenu: (message: LinkedMessage) => void;
   importedOpen: (file: FileRef) => void;
   importedPlay: (file: FileRef) => void;
+  /** While messages are chosen (components/select-bar.tsx): adds it, or takes it out. */
+  choose: (message: Message) => void;
+  /** Opens a new contact filled with a contact card's (components/card-share.tsx). */
+  saveCard: (card: string) => void;
 };
 
 /** One RowActs that stays the same, doing what the latest render's does. */
@@ -183,6 +189,8 @@ export function steadyActs(latest: RefObject<RowActs | null>): RowActs {
     importedMenu: (message) => now().importedMenu(message),
     importedOpen: (file) => now().importedOpen(file),
     importedPlay: (file) => now().importedPlay(file),
+    choose: (message) => now().choose(message),
+    saveCard: (card) => now().saveCard(card),
   };
 }
 
@@ -190,7 +198,7 @@ export type LineLook = { styles: ReturnType<typeof makeStyles>; b: ReturnType<ty
 
 // A message of the thread. It draws again only when what it shows changes, not each time the
 // chat does (a voice message playing, a note), which keeps a long thread light to scroll.
-export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, plays, canAnswer, waits, styles, b, colors, acts }: LineLook & {
+export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, plays, canAnswer, waits, choosing = false, chosen = false, styles, b, colors, acts }: LineLook & {
   message: Message;
   /** The message it answers, when here. */
   quoted?: Message;
@@ -209,6 +217,10 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   canAnswer: boolean;
   /** Ours sent for later, its time not come yet (scheduled): it says when it goes, until then. */
   waits: boolean;
+  /** Messages are being chosen (components/select-bar.tsx): a tap adds it or takes it out, and nothing in it acts. */
+  choosing?: boolean;
+  /** It is one of those chosen. */
+  chosen?: boolean;
 }) {
   useLang();
   const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
@@ -222,78 +234,95 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
         </Text>
       ) : null}
       <Pressable
-        onPress={message.voice ? () => acts.play(message) : message.file ? () => acts.open(message) : undefined}
-        onLongPress={() => {
-          press();
-          acts.menu(message);
-        }}
-        accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
-        style={[
-          styles.bubble,
-          message.mine ? b.mine : b.theirs,
-          message.file?.kind === 'photo' && !stuck && styles.photoBubble,
-          tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-          stuck && styles.stickerBubble,
-          (message.myReaction || message.theirReaction) && styles.reacted,
-          lit && styles.lit,
-        ]}
+        disabled={!choosing}
+        accessible={choosing}
+        focusable={choosing}
+        onPress={() => acts.choose(message)}
+        onLongPress={() => acts.choose(message)}
+        accessibilityRole={choosing ? 'checkbox' : undefined}
+        accessibilityState={choosing ? { checked: chosen } : undefined}
+        accessibilityLabel={choosing ? messageLine(message) : undefined}
+        style={chosen ? chosenStyle(colors) : undefined}
       >
-        {message.re ? (
-          <Quote
-            name={quoted ? (quoted.mine ? t('You') : name) : ''}
-            line={quoted ? messageLine(quoted) : ''}
-            ink={ink}
-            onPress={() => acts.goTo(message.peer, message.re!)}
-          />
-        ) : null}
-        {message.sticker ? (
-          <StickerView name={message.sticker} fallback={message.text} play={plays} tap onLongPress={() => acts.menu(message)} />
-        ) : message.file?.sticker ? (
-          <PhotoSticker uri={photo} status={comingText(message.file, taking)} />
-        ) : message.place ? (
-          <PlaceCard place={message.place} ink={ink} />
-        ) : message.pay ? (
-          <PayCard
-            pay={message.pay}
-            mine={message.mine}
-            paid={message.paid}
-            onPaid={canAnswer ? () => acts.paid(message) : undefined}
-            onFasouli={message.pay.r ? () => acts.fasouli(message) : undefined}
-            ink={ink}
-          />
-        ) : message.poll ? (
-          <PollCard
-            poll={message.poll}
-            voters={[
-              { name: t('You'), chose: message.myVote ?? [] },
-              { name, chose: message.theirVote ?? [] },
+        <View pointerEvents={choosing ? 'none' : 'auto'}>
+          <Pressable
+            onPress={message.voice ? () => acts.play(message) : message.file ? () => acts.open(message) : undefined}
+            onLongPress={() => {
+              press();
+              acts.menu(message);
+            }}
+            accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
+            style={[
+              styles.bubble,
+              message.mine ? b.mine : b.theirs,
+              message.file?.kind === 'photo' && !stuck && styles.photoBubble,
+              tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+              stuck && styles.stickerBubble,
+              (message.myReaction || message.theirReaction) && styles.reacted,
+              lit && styles.lit,
             ]}
-            mine={message.myVote ?? []}
-            onChoose={canAnswer ? (option) => acts.vote(message, option) : undefined}
-            ink={ink}
+          >
+            {message.re ? (
+              <Quote
+                name={quoted ? (quoted.mine ? t('You') : name) : ''}
+                line={quoted ? messageLine(quoted) : ''}
+                ink={ink}
+                onPress={() => acts.goTo(message.peer, message.re!)}
+              />
+            ) : null}
+            {message.sticker ? (
+              <StickerView name={message.sticker} fallback={message.text} play={plays} tap onLongPress={() => acts.menu(message)} />
+            ) : message.file?.sticker ? (
+              <PhotoSticker uri={photo} status={comingText(message.file, taking)} />
+            ) : message.place ? (
+              <PlaceCard place={message.place} ink={ink} />
+            ) : message.pay ? (
+              <PayCard
+                pay={message.pay}
+                mine={message.mine}
+                paid={message.paid}
+                onPaid={canAnswer ? () => acts.paid(message) : undefined}
+                onFasouli={message.pay.r ? () => acts.fasouli(message) : undefined}
+                ink={ink}
+              />
+            ) : message.poll ? (
+              <PollCard
+                poll={message.poll}
+                voters={[
+                  { name: t('You'), chose: message.myVote ?? [] },
+                  { name, chose: message.theirVote ?? [] },
+                ]}
+                mine={message.myVote ?? []}
+                onChoose={canAnswer ? (option) => acts.vote(message, option) : undefined}
+                ink={ink}
+                ended={!!message.closed}
+              />
+            ) : message.card ? (
+              <CardBubble card={message.card} ink={ink} onSave={() => acts.saveCard(message.card!)} />
+            ) : message.file ? (
+              <Attachment file={message.file} uri={photo} state={taking} ink={ink} />
+            ) : (
+              <Text style={ink}>
+                {message.voice
+                  ? played !== null
+                    ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
+                    : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
+                  : <LinkedText text={shownLine(message.text)} />}
+              </Text>
+            )}
+            {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
+            <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
+              {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', message.edited ? t('Edited') : '', caption(message)].filter(Boolean).join('  ·  ')}
+            </Text>
+          </Pressable>
+          <Reactions
+            signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
+            mine={message.myReaction}
+            mineSide={message.mine}
+            onPress={() => acts.menu(message)}
           />
-        ) : message.file ? (
-          <Attachment file={message.file} uri={photo} state={taking} ink={ink} />
-        ) : (
-          <Text style={ink}>
-            {message.voice
-              ? played !== null
-                ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
-                : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
-              : <LinkedText text={shownLine(message.text)} />}
-          </Text>
-        )}
-        {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
-        <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
-          {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', message.edited ? t('Edited') : '', caption(message)].filter(Boolean).join('  ·  ')}
-        </Text>
+        </View>
       </Pressable>
-      <Reactions
-        signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
-        mine={message.myReaction}
-        mineSide={message.mine}
-        onPress={() => acts.menu(message)}
-      />
     </View>
   );
 });

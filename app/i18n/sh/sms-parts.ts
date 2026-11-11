@@ -6,7 +6,7 @@
 // several SMS (lib/sms-parts.ts, app/sms.tsx) (i18n/sh/index.ts).
 export const smsParts: Record<string, string> = {
   'Pin for me': 'Prikvači samo za mene',
-  'Contact card': 'Kontakt kartica',
+  'Contact card': 'Kartica kontakta',
   '{what} · {size} KB · remove': '{what} · {size} KB · ukloni',
   '{n} message goes from the phone.': '{n} poruka se briše s telefona.',
   '{n} messages go from the phone.': '{n} poruka se briše s telefona. | {n} poruke se brišu s telefona. | {n} poruka se briše s telefona.',

@@ -5,7 +5,8 @@
 // What a message can carry besides its words, in a chat with a contact (lib/e2e.ts carries it,
 // lock/history.ts keeps it) and in a group (lib/groups.ts): a poll and the votes on it, a place, a
 // sticker by its name (components/stickers.tsx draws it), and the preview of a link, which only the
-// sender's phone makes (lib/link-preview.ts). Each is checked when it comes and when it is read
+// sender's phone makes (lib/link-preview.ts), and a contact card (a vCard of a name, its numbers and
+// emails, lib/card-share.ts). Each is checked when it comes and when it is read
 // from the phone: what is not of its shape is none, so an Erevos from before it, or a changed one,
 // cannot make the chat show more than these.
 
@@ -26,6 +27,9 @@ export type Pin = { tag: string; on: boolean };
 
 /** A vote on the poll with this tag: the options chosen, by number; none takes the vote back. */
 export type Vote = { tag: string; chose: number[] };
+
+/** The sender's own poll with this tag ended: it takes no more votes, and shows how they stood. */
+export type Close = { tag: string };
 
 /** New words for the sender's own message with this tag, which then shows as edited. */
 export type Edit = { tag: string; text: string };
@@ -70,7 +74,9 @@ export function checkedIntro(value: unknown): IntroSignal | null {
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
  * words are where it is, or a poll, whose words are its question and options; and the preview of
  * a link in the words, which show as they are. With words, a voice message or a photo or file: that
- * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, new words for one
+ * it was forwarded from another chat (`forwarded`). With words too, a contact card (`card`, a vCard),
+ * whose words are its name, numbers and emails. With no words: a pin, a vote, the end of one of the
+ * sender's own polls (`close`), new words for one
  * of the sender's own messages (`edit`), that they are typing to us now (`typing`), or an invite to
  * their relay, which a phone with a relay sends by itself to a contact with none (`ri`, app/chat.tsx).
  * An introduction's ask goes with words, which an Erevos from before shows as they are; its other
@@ -79,13 +85,13 @@ export function checkedIntro(value: unknown): IntroSignal | null {
  * piece is not kept with the message on either phone. A payment request goes with words that say
  * it (`pay`, lib/pay.ts), and that it was paid with none (`settled`).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal; piece?: string; pay?: Pay; settled?: Paid };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal; piece?: string; pay?: Pay; settled?: Paid; card?: string; close?: Close };
 
 /** A backup piece's text (lib/backup-pieces.ts), as it is carried. */
 export const isPieceText = (v: unknown): v is string => typeof v === 'string' && /^erevos-piece:[A-Za-z0-9_-]{447}$/.test(v);
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
-export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview' | 'pay'> & { forwarded?: boolean };
+export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview' | 'pay' | 'card'> & { forwarded?: boolean };
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -124,6 +130,8 @@ export function carriedOf(value: Record<string, unknown>): Carried {
   const intro = checkedIntro(value.intro);
   const pay = checkedPay(value.pay);
   const settled = checkedPaid(value.settled);
+  const card = checkedCard(value.card);
+  const close = value.close as { tag?: unknown } | null | undefined;
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
@@ -139,24 +147,26 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(isPieceText(value.piece) ? { piece: value.piece } : {}),
     ...(pay ? { pay } : {}),
     ...(settled ? { settled } : {}),
+    ...(card ? { card } : {}),
+    ...(isTag(close?.tag) ? { close: { tag: close.tag } } : {}),
   };
 }
 
 /** What a kept message carries with its words, as it goes again. */
-export function contentOf({ sticker, place, poll, preview, pay, forwarded }: Content): Carried {
-  return carriedOf({ sticker, place, poll, preview, pay, forwarded });
+export function contentOf({ sticker, place, poll, preview, pay, forwarded, card }: Content): Carried {
+  return carriedOf({ sticker, place, poll, preview, pay, forwarded, card });
 }
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro, piece, pay, settled } = carriedOf(carried);
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro, piece, pay, settled, card, close } = carriedOf(carried);
   const asks = intro?.s === 'ask';
-  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}), ...(piece ? { piece } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(settled ? { settled } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}) };
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(card ? { card } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}), ...(piece ? { piece } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(close ? { close } : {}), ...(settled ? { settled } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
-export const acts = (carried: Carried) => !!carried.pin || !!carried.vote || !!carried.edit || !!carried.settled;
+export const acts = (carried: Carried) => !!carried.pin || !!carried.vote || !!carried.close || !!carried.edit || !!carried.settled;
 
 /** What a message carries, but a link's preview: what goes over LoRa, which takes only a little (lib/lora.ts). */
 export function withoutPreview({ preview: _, ...rest }: Carried): Carried {
@@ -182,8 +192,8 @@ export function checkedEdit(value: unknown): Edit | null {
  * place's or a poll's, which are what they are, nor words forwarded from another chat, which are
  * someone else's.
  */
-export function editableWords(m: { text: string; sticker?: string; place?: Place; poll?: Poll; pay?: Pay; forwarded?: boolean; voice?: unknown; file?: unknown }): boolean {
-  return !!m.text && !m.sticker && !m.place && !m.poll && !m.pay && !m.forwarded && !m.voice && !m.file;
+export function editableWords(m: { text: string; sticker?: string; place?: Place; poll?: Poll; pay?: Pay; card?: string; forwarded?: boolean; voice?: unknown; file?: unknown }): boolean {
+  return !!m.text && !m.sticker && !m.place && !m.poll && !m.pay && !m.card && !m.forwarded && !m.voice && !m.file;
 }
 
 /** Whether ours sent at `at` can still be edited `now` (EDIT_FOR). */
@@ -230,6 +240,9 @@ export function choose(before: number[], option: number, multiple: boolean): num
   if (before.includes(option)) return before.filter((c) => c !== option);
   return multiple ? [...before, option].sort((a, b) => a - b) : [option];
 }
+
+/** Whether a vote can still be given on a message's poll: it is one, and its sender has not ended it. */
+export const pollOpen = (m: { poll?: Poll; closed?: number }): boolean => !!m.poll && !m.closed;
 
 /** How many chose each option, from each voter's choices. */
 export function tally(poll: Poll, votes: (number[] | undefined)[]): number[] {
@@ -284,4 +297,77 @@ export function checkedPreview(value: unknown): Preview | null {
   const image = typeof v.image === 'string' && v.image.length <= MAX_PREVIEW_IMAGE && /^\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(v.image) ? v.image : undefined;
   if (!title && !text) return null;
   return { url: v.url, title, text, ...(image ? { image } : {}) };
+}
+
+/** The longest contact card, as its vCard goes (lib/card-share.ts makes and reads it). */
+export const MAX_CARD = 4096;
+
+/**
+ * A contact card as it may come, or null: a vCard, short enough, and only text. What it says is
+ * read where it shows (lib/card-share.ts cardShown), and only its name, numbers and emails.
+ */
+export function checkedCard(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > MAX_CARD || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) return null;
+  return /^BEGIN:VCARD\r?\n[\s\S]*\r?\nEND:VCARD\r?\n?$/i.test(value) ? value : null;
+}
+
+/**
+ * Messages chosen to copy, as one text in the order they were sent: one alone, its words; several,
+ * each on its own line with when it was sent and who wrote it (`who`), the day too when they are
+ * not all of one day.
+ */
+export function joinedText(lines: { at: number; who: string; text: string }[]): string {
+  const sorted = [...lines].sort((a, b) => a.at - b.at);
+  if (sorted.length === 1) return sorted[0].text;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const day = (at: number) => {
+    const d = new Date(at);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  const clock = (at: number) => {
+    const d = new Date(at);
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const oneDay = new Set(sorted.map((l) => day(l.at))).size <= 1;
+  return sorted.map((l) => `[${oneDay ? '' : `${day(l.at)} `}${clock(l.at)}] ${l.who}: ${l.text}`).join('\n');
+}
+
+/**
+ * The thread each message is in, by tag (a group's, components/group-messages.tsx): the message at
+ * the top of what it answers, answer after answer, as far as those are here; one that answers none
+ * here starts its own. Threads are only answers (`re`), as any Erevos sends them.
+ */
+export function threadRoots(messages: { tag: string; re?: string }[]): Map<string, string> {
+  const answers = new Map<string, string | undefined>();
+  for (const m of messages) if (m.tag && !answers.has(m.tag)) answers.set(m.tag, m.re);
+  const roots = new Map<string, string>();
+  for (const tag of answers.keys()) {
+    const path: string[] = [];
+    let at = tag;
+    let root = tag;
+    for (;;) {
+      const known = roots.get(at);
+      if (known) {
+        root = known;
+        break;
+      }
+      path.push(at);
+      const re = answers.get(at);
+      // One that answers itself, round and round, starts its thread where that shows.
+      if (!re || !answers.has(re) || path.includes(re)) {
+        root = at;
+        break;
+      }
+      at = re;
+    }
+    for (const step of path) roots.set(step, root);
+  }
+  return roots;
+}
+
+/** How many answers each thread has, by the tag of the message at its top: none for one alone. */
+export function threadSizes(roots: Map<string, string>): Map<string, number> {
+  const sizes = new Map<string, number>();
+  for (const [tag, root] of roots) if (tag !== root) sizes.set(root, (sizes.get(root) ?? 0) + 1);
+  return sizes;
 }

@@ -443,6 +443,34 @@ test('a new link stops the old one, and handing over moves the door to the new o
   assert.ok(texts(alice, id).includes('hello'));
 });
 
+test('the owner and the admins say what a public group is about, for every member, and one who joins is told it', live, async () => {
+  const net = network();
+  const bob = await net.phone('Bob', two);
+  const carol = await net.phone('Carol', one);
+  const { alice, id } = await club(net, [bob, carol]);
+  const about = (p: Phone) => p.groups.list().find((g) => g.id === id)?.desc;
+  await alice.groups.describe(id, 'Tea on Fridays', alice.transport);
+  await net.settle();
+  for (const p of [alice, bob, carol]) assert.equal(about(p), 'Tea on Fridays', p.name);
+  // Bob may once he is an admin.
+  await assert.rejects(bob.groups.describe(id, 'Coffee', bob.transport), /admins/);
+  await alice.groups.setAdmin(id, await keyOf(alice, id, 'Bob'), true, alice.transport);
+  await net.settle();
+  await bob.groups.describe(id, 'Coffee on Mondays', bob.transport);
+  await net.settle();
+  for (const p of [alice, bob, carol]) assert.equal(about(p), 'Coffee on Mondays', p.name);
+  // A member's phone that says it anyway counts nowhere.
+  await forge(carol, id, utf8Encode(JSON.stringify({ t: 'desc', text: 'Mine now', at: Date.now() + 60_000 })), [alice, bob]);
+  await net.settle([alice, bob]);
+  for (const p of [alice, bob]) assert.equal(about(p), 'Coffee on Mondays', p.name);
+  // One who joins by the link reads nothing from before, but is told what the group is about.
+  const dave = await net.phone('Dave', one);
+  await dave.groups.ask(linkOf(alice, id), 'Dave');
+  await net.settle();
+  assert.equal(status(dave, id), 'in');
+  assert.equal(about(dave), 'Coffee on Mondays');
+});
+
 test('the owner leaving closes the group for everyone', live, async () => {
   const net = network();
   const bob = await net.phone('Bob', two);
