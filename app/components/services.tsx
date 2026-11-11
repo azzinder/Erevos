@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '../lock/gate';
@@ -191,11 +191,12 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} onPress={close} accessibilityLabel={t('Close')} />
-        <View style={[styles.panel, { top, width: panel, left: (width - panel) / 2 }]}>
+        <View style={[styles.panel, { top, width: panel, left: (width - panel) / 2, maxHeight: height - top - insets.bottom - space.md }]}>
           <Text variant="heading" style={styles.panelTitle}>
             {t('Services')}
           </Text>
-          <View style={styles.grid}>
+          {/* Many services: the cards scroll, and the window stays on the screen. */}
+          <ScrollView style={styles.cards} contentContainerStyle={styles.grid} keyboardShouldPersistTaps="handled">
             {services.map((s) => {
               const on = s.key === current;
               return (
@@ -253,7 +254,7 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </ScrollView>
           {heldOne ? (
             // The card held: one place earlier or later, or hidden from home.
             <View style={styles.heldRow}>
@@ -427,6 +428,10 @@ const makeStyles = (colors: Colors) =>
     panelTitle: {
       paddingHorizontal: space.xs,
       paddingBottom: space.sm,
+    },
+    cards: {
+      flexGrow: 0,
+      flexShrink: 1,
     },
     grid: {
       flexDirection: 'row',

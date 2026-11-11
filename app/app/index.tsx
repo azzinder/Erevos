@@ -568,7 +568,9 @@ function Home() {
     link: linkOf(tab),
   }));
   function linkOf(tab: InboxShow): Service['link'] {
-    if (tab === 'erevos') return relay === 'ready' ? 'on' : 'off';
+    // Erevos's relay: a dot while it is ready; none while it is read or when none is set (the line
+    // above says so), so the button never says Erevos is offline only because it is still starting.
+    if (tab === 'erevos') return relay === 'ready' ? 'on' : null;
     if (tab === 'matrix') return matrix ? (matrixNow().problem ? 'off' : 'on') : null;
     if (tab === 'xmpp') {
       const now = xmppNow();
