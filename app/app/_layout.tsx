@@ -42,6 +42,7 @@ import { ownerTouched } from '../lib/safety';
 import { awakeWhile } from '../lib/sleep-look';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
+import { StickerImageHost } from '../lib/sticker-image';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats, shareLastSeen } from '../lib/space-chats';
 import { forgetPlaceChats } from '../lib/place-chats';
@@ -625,6 +626,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
   const headerColor = !spec ? colors.sheet : spec.kind === 'wall' ? colors.sheet : 'transparent';
   return (
     <LockContext.Provider value={lockState}>
+      <StickerImageHost />
       <Stack
         key={`${phase.space}-${lang}`}
         // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx), and goes back by a
