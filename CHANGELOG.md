@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **A new computer links to the end**: a computer that had no relay before linking now reads the queue it makes for the
+  link at once, so it takes the phone's answer: linking with the small code finishes by itself, and with the full code
+  **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more, as it
+  looked only at the relay it had when Erevos started, until a chat was opened or Erevos started again.
+
 ### Under the hood
 
 ## 7.0.0-rc.9 (2026-11-11)

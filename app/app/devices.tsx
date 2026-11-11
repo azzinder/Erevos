@@ -19,6 +19,7 @@ import { checkLinkCode, linkCodeLink } from '../lib/link-code';
 import { canQuickLink } from '../lib/link-nostr';
 import { checkQuick, type QuickCode } from '../lib/link-quick';
 import { matrixWaiting } from '../lib/linked-accounts';
+import { placeChanged } from '../lib/receiver';
 import { createQueue, toHex } from '../lib/relay';
 import { ownToken } from '../lib/relay-signin';
 import { SHELL } from '../lib/shell';
@@ -207,6 +208,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
       if (!hasQueue) {
         const ids = await createQueue({ url, token: relayToken.trim() || undefined });
         await updateCurrentSpaceData({ url, token: relayToken.trim(), ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } });
+        // Read from at once: the phone answers on it.
+        placeChanged();
         setHasQueue(true);
       }
       setOffer(await links.makeOffer(name));
@@ -219,6 +222,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     setRelayToken(token);
     try {
       await updateCurrentSpaceData({ url, token, ownToken: ownToken(url, token) });
+      placeChanged();
       setNote(t('Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.', { name: who }));
     } catch (error) {
       setNote(errorText(error));

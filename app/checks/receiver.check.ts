@@ -18,7 +18,7 @@ import { randomBytes } from '../lib/crypto';
 import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
 import { forgetSpaceMover } from '../lib/queue-move';
-import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, setAppShown, startReceiver, takeNearby } from '../lib/receiver';
+import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, placeChanged, setAppShown, startReceiver, takeNearby } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { setCurrentSpace } from '../lock/keys';
@@ -162,6 +162,46 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     stopListening();
     stopOpened();
     // Its moves go too, and the waits on its contacts' queues with them.
+    forgetSpaceMover();
+    forgetSpaceChats();
+    setCurrentSpace(null);
+  }
+});
+
+test('a queue made outside a chat, as Linked devices makes one on a new computer, is read from at once', { skip: !coreReady || !relayReady }, async () => {
+  files.clear();
+  blobs.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const queue = async () => {
+    const ids = await createQueue(relay);
+    return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  };
+  // A new computer: its space is open with no relay yet, and the receiver has looked already.
+  setCurrentSpace(0, randomBytes(32));
+  const bob = await spaceChats();
+  const stop = startReceiver(30);
+  try {
+    await sleep(150);
+    // Linking makes its queue (app/devices.tsx, components/quick-link.tsx), with no chat opened.
+    const bobQueue = await queue();
+    await updateCurrentSpaceData({ url, ownQueue: bobQueue });
+    placeChanged();
+    // The phone writes to it: taken, not left on the relay until a chat opens.
+    const alice = await E2E.open('space', 1, randomBytes(32));
+    const aliceQueue = await queue();
+    const where = { relay: url, relayKey: '' };
+    const { identity: bobId } = await alice.addContact({ senderHex: bobQueue.senderHex, key: toBase64Url(bob.e2e.bundle), relayUrl: url }, aliceQueue.senderHex, where);
+    const [first] = alice.pending();
+    await sendMessage(relay, fromHex(first.sender), first.first);
+    await alice.firstSent(bobId);
+    const sealed = await alice.seal(bobId, 'hi new computer', aliceQueue.senderHex, { at: where });
+    await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+    await until(() => bob.history.messages().length === 1);
+    assert.equal(bob.history.messages()[0].text, 'hi new computer');
+  } finally {
+    stop();
+    (await holdReceiver())();
     forgetSpaceMover();
     forgetSpaceChats();
     setCurrentSpace(null);

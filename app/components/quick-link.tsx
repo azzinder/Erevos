@@ -11,6 +11,7 @@ import { t } from '../lib/i18n';
 import { cleanDeviceName } from '../lib/link-code';
 import { canQuickLink, QuickChannel, quickSecret } from '../lib/link-nostr';
 import { QUICK_LASTS, quickLink, type QuickCode, type QuickGrant, type QuickMessage } from '../lib/link-quick';
+import { placeChanged } from '../lib/receiver';
 import { createQueue, makeInvite, redeemInvite, toHex } from '../lib/relay';
 import { oldToken, ownToken } from '../lib/relay-signin';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
@@ -152,6 +153,8 @@ async function queueFrom(grant: QuickGrant): Promise<void> {
     ...(grant.code ? { ownToken: ownToken(url, token) } : {}),
     ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) },
   });
+  // Read from at once: the phone answers on it, and the code to compare comes with that answer.
+  placeChanged();
 }
 
 /**

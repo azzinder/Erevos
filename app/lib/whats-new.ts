@@ -21,7 +21,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**A new computer links to the end**: a computer with no relay before linking now takes the phone's answer at once, so linking with the small code finishes by itself, and with the full code **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more until Erevos started again. See [Linked devices](#devices)."),
+  ],
   underTheHood: [],
 };
 

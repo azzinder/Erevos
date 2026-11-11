@@ -118,7 +118,8 @@ export function receiveState(): ReceiveState {
 }
 
 let holds = 0;
-// Bumped each time a hold ends: the chat may have changed the relay or the queue meanwhile.
+// Bumped each time a hold ends, as the chat may have changed the relay or the queue meanwhile, and
+// each time a screen with no hold changed them (placeChanged): the next look reads them again.
 let released = 0;
 let look: Promise<unknown> = Promise.resolve();
 const listeners = new Set<() => void>();
@@ -142,6 +143,16 @@ export { lookNow };
 export function lookSoon(): void {
   endWaits();
   hurry?.();
+}
+
+/**
+ * The space's relay, token or queue changed on a screen that does not hold the receiver, as Linked
+ * devices makes a new computer's queue to link with: the next look, at once, reads them again, so
+ * what the phone answers on that queue is taken, not left on the relay until a chat opens.
+ */
+export function placeChanged(): void {
+  released++;
+  lookSoon();
 }
 
 // A safety message is put off only while the owner looks (lib/safety.ts).
