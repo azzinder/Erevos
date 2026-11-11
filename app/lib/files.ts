@@ -174,3 +174,28 @@ export async function deleteFile(name: string): Promise<void> {
   memory.delete(name);
   blobs.delete(name);
 }
+
+/**
+ * How many bytes are still free where these files are kept: on a phone its own storage, in a
+ * browser what the browser still gives this site. Null where it is not told (the desktop app, a
+ * browser that does not say): there a write finds it full.
+ */
+export async function freeRoom(): Promise<number | null> {
+  const fs = fileSystem();
+  if (fs) {
+    try {
+      const free = fs.Paths.availableDiskSpace;
+      return typeof free === 'number' && Number.isFinite(free) && free >= 0 ? free : null;
+    } catch {
+      return null;
+    }
+  }
+  if (SHELL || Platform.OS !== 'web') return null;
+  const storage = (globalThis as { navigator?: { storage?: { estimate?: () => Promise<{ quota?: number; usage?: number }> } } }).navigator?.storage;
+  try {
+    const { quota, usage } = (await storage?.estimate?.()) ?? {};
+    return typeof quota === 'number' && typeof usage === 'number' ? Math.max(0, quota - usage) : null;
+  } catch {
+    return null;
+  }
+}

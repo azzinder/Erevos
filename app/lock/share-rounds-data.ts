@@ -25,7 +25,9 @@ export const ID_HEX = 48;
  * (`r`) of the chunks put there after those, not taken yet, ID_HEX each, zeros for a chunk of a
  * file no longer here; `said`, how many of them the other phone was told. `put`, when the first of
  * them went up; `heard`, when the other phone last said how far it is; `again`, when they were last
- * said again for want of word; `at`, when it began.
+ * said again for want of word; `at`, when it began. `came`, when its message was first found to
+ * have come to the other phone, before that phone said it keeps it; `full` while the other phone
+ * says it has no room for more.
  */
 export type OutShare = {
   s: string;
@@ -42,6 +44,8 @@ export type OutShare = {
   heard: number;
   again?: number;
   at: number;
+  came?: number;
+  full?: true;
 };
 
 /**
@@ -52,7 +56,9 @@ export type OutShare = {
  * their ids). `skip`: the files, by their place, whose chunks are taken off the relay but not kept,
  * their chat deleted meanwhile or a chunk changed on the way. `told`: `taken` as the sharer was
  * last told (-1 before they heard it keeps it), and when (`toldAt`). `chats`: the ids its chats have
- * among the imported ones here.
+ * among the imported ones here. `waits`: why its next chunks wait here, beyond the sharer: no room
+ * on this phone, or Tor (from a place lent on a relay, only through Tor); `toldRoom` once the
+ * sharer was told of the first.
  */
 export type InShare = {
   s: string;
@@ -68,12 +74,16 @@ export type InShare = {
   told: number;
   toldAt: number;
   chats: string[];
+  waits?: 'room' | 'tor';
+  toldRoom?: true;
 };
 
 /**
  * The shares going and coming; what the other phones said of them, not taken in yet (`heard`, by
- * whom); the shared chats that came, to keep (`packs`: who, and the tag of the message); and the
- * shares kept whole lately, to say so again to a sharer who did not hear it (`done`).
+ * whom); the shared chats that came, to keep (`packs`: who, and the tag of the message); the
+ * shares kept whole lately, to say so again to a sharer who did not hear it (`done`); and the shares
+ * from here that ended as the other phone never said it keeps them (`old`: to whom, the tag of the
+ * message their words went in, '' once that phone said it after all, and the share's id).
  */
 export type RoundsData = {
   out: OutShare[];
@@ -81,13 +91,14 @@ export type RoundsData = {
   heard: [identity: string, rounds: Rounds][];
   packs: [identity: string, tag: string][];
   done: [identity: string, s: string, total: number][];
+  old: [identity: string, tag: string, s: string][];
 };
 
-export const EMPTY: RoundsData = { out: [], in: [], heard: [], packs: [], done: [] };
+export const EMPTY: RoundsData = { out: [], in: [], heard: [], packs: [], done: [], old: [] };
 
 const FILE = 'erevos-share-rounds';
 const BLOCK = 2048;
-// The most kept of what was heard, of the shared chats to keep, and of the shares done.
+// The most kept of what was heard, of the shared chats to keep, and of the shares done or ended as old.
 const MOST_HEARD = 500;
 const MOST_PACKS = 100;
 export const MOST_DONE = 20;
@@ -122,6 +133,8 @@ function checkedOut(value: unknown): OutShare | null {
     heard: count(v.heard) ? v.heard : 0,
     ...(count(v.again) && v.again > 0 ? { again: v.again } : {}),
     at: count(v.at) ? v.at : 0,
+    ...(v.ready !== true && count(v.came) && v.came > 0 ? { came: v.came } : {}),
+    ...(v.full === true ? { full: true as const } : {}),
   };
 }
 
@@ -146,6 +159,8 @@ function checkedIn(value: unknown): InShare | null {
     told: Number.isSafeInteger(v.told) && (v.told as number) >= -1 ? (v.told as number) : -1,
     toldAt: count(v.toldAt) ? v.toldAt : 0,
     chats: Array.isArray(v.chats) ? v.chats.filter((id): id is string => text(id, 64)) : [],
+    ...(v.waits === 'room' || v.waits === 'tor' ? { waits: v.waits } : {}),
+    ...(v.toldRoom === true ? { toldRoom: true as const } : {}),
   };
 }
 
@@ -166,6 +181,9 @@ function checked(value: unknown): RoundsData {
       .slice(-MOST_PACKS),
     done: list(v.done)
       .filter((d): d is [string, string, number] => Array.isArray(d) && text(d[0]) && IDENTITY.test(d[0]) && text(d[1]) && ID.test(d[1]) && count(d[2]))
+      .slice(-MOST_DONE),
+    old: list(v.old)
+      .filter((o): o is [string, string, string] => Array.isArray(o) && text(o[0]) && IDENTITY.test(o[0]) && text(o[1]) && (o[1] === '' || TAG.test(o[1])) && text(o[2]) && ID.test(o[2]))
       .slice(-MOST_DONE),
   };
 }

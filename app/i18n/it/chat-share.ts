@@ -19,4 +19,8 @@ export const chatShare: Record<string, string> = {
   'Files: {done} of {count}': 'File: {done} di {count}',
   'Stop sharing': 'Interrompi la condivisione',
   '{name} gets no more of it, and their Erevos deletes what came of it.': '{name} non riceve altro, e il suo Erevos elimina quello che è già arrivato.',
+  'Files: {done} of {count} · waiting for free space on this phone': 'File: {done} di {count} · in attesa di spazio libero su questo telefono',
+  'Files: {done} of {count} · waiting for Tor (Everything)': 'File: {done} di {count} · in attesa di Tor (Tutto)',
+  'Sharing, {percent}% · waiting for free space on their phone': 'Condivisione, {percent}% · in attesa di spazio libero sul suo telefono',
+  'Their Erevos is too old for the files; the messages went as a file': 'Il suo Erevos è troppo vecchio per i file; i messaggi sono andati come file',
 };

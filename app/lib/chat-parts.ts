@@ -74,9 +74,11 @@ export function checkedIntro(value: unknown): IntroSignal | null {
  * all the share's chunks, on the relay `r`, by their ids there (`ids`, hex, one after another; all
  * zeros for one of a file that stays behind). The one it was shared with says how many it took, in
  * order (`took`), and that the ones after those are gone from the relay (`gone`), to be put there
- * again. Either says that it ends (`drop`).
+ * again, or that its phone has no room for more now (`full`). Either says that it ends (`drop`); the
+ * one who shares, that no more of its files come, its words staying (`end`). An Erevos before
+ * `full` and `end` reads the first as `took` alone and leaves the second.
  */
-export type Rounds = { s: string; at?: number; r?: string; ids?: string; took?: number; gone?: true; drop?: true };
+export type Rounds = { s: string; at?: number; r?: string; ids?: string; took?: number; gone?: true; full?: true; drop?: true; end?: true };
 
 /** The most chunk ids one round says. */
 export const ROUND_IDS = 64;
@@ -90,11 +92,12 @@ export function checkedRounds(value: unknown): Rounds | null {
   const v = value as Record<string, unknown> | null;
   if (!v || typeof v !== 'object' || typeof v.s !== 'string' || !ROUND_ID.test(v.s)) return null;
   if (v.drop === true) return { s: v.s, drop: true };
+  if (v.end === true) return { s: v.s, end: true };
   if (typeof v.ids === 'string') {
     const relay = typeof v.r === 'string' && v.r.length <= 512 && /^wss?:\/\/\S+$/.test(v.r) ? v.r : '';
     return ROUND_CHUNKS.test(v.ids) && isCount(v.at) && relay ? { s: v.s, at: v.at, r: relay, ids: v.ids } : null;
   }
-  return isCount(v.took) ? { s: v.s, took: v.took, ...(v.gone === true ? { gone: true as const } : {}) } : null;
+  return isCount(v.took) ? { s: v.s, took: v.took, ...(v.gone === true ? { gone: true as const } : {}), ...(v.full === true ? { full: true as const } : {}) } : null;
 }
 
 /**
