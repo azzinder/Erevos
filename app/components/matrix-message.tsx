@@ -47,7 +47,7 @@ export function lineOf(message: MatrixMessage): string {
 /** The message an answer is to, as the answer quotes it. */
 export type Answered = { name: string; line: string; onPress: () => void };
 
-export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout, mark, chosen, onChoose }: {
+export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout, mark, starred, chosen, onChoose }: {
   message: MatrixMessage;
   /** Our Matrix ID, to see which reactions are ours. */
   me: string;
@@ -70,6 +70,8 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   onLayout?: (event: LayoutChangeEvent) => void;
   /** Of ours, how far it went: ✓ taken by the homeserver, ✓✓✓ read by every other member. */
   mark?: string;
+  /** Starred on this device (components/keep-actions.tsx): a ★ beside when it was written. */
+  starred?: boolean;
   /** It is among the messages chosen. */
   chosen?: boolean;
   /** While messages are chosen: tapped or held, chooses it or takes it out. */
@@ -80,7 +82,7 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   // The words in the chat's text size (theme/look.ts).
   const words = textSized(look.textSize, 16);
   const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', message.unverified ? t('Not verified') : '', mark ?? ''].filter(Boolean).join('  ·  ');
+  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', message.unverified ? t('Not verified') : '', mark ?? '', starred ? '★' : ''].filter(Boolean).join('  ·  ');
   const side = mine ? 'flex-end' : 'flex-start';
   const shownPoll = message.poll && !message.deleted ? pollShown(message.poll) : null;
   const ended = message.poll ? pollOver(message.poll) : false;

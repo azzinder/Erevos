@@ -4,7 +4,7 @@
 
 import { addToCollection, MAX_COLLECTION_FILE, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import { cleanFileName, cleanMime, mimeOf, type FileRef } from '../lock/attachment-files';
-import { readFile, refSource, type Source } from './attachments';
+import { bytesSource, readFile, refSource, type Source } from './attachments';
 import { bitmapOf } from './bitmap.web';
 import { photoSize } from './photo';
 import { pickPieces } from './pick-file.web';
@@ -103,6 +103,13 @@ async function keepSource(place: CollectionPlace, folder: string, file: { name: 
 }
 
 export const importShared = (_place: CollectionPlace, _shared: SharedFile, _folder: string, _progress?: Progress): Promise<CollectionItem> => unavailable();
+
+/** Copies a photo, video, sound or file of a chat on another network, or of an MMS, into the Collection, from its bytes, as on the phone. */
+export function importFromBytes(place: CollectionPlace, file: { name: string; mime: string; bytes: Uint8Array }, folder = '', progress?: Progress): Promise<CollectionItem> {
+  const name = cleanFileName(file.name);
+  const said = cleanMime(file.mime);
+  return keepSource(place, folder, { name, mime: said === 'application/octet-stream' ? mimeOf(name) : said, source: bytesSource(file.bytes) }, progress);
+}
 
 /** Copies a photo or file of a chat into the Collection, as the same bytes, encrypted anew with a key of its own. */
 export async function importFromChat(place: CollectionPlace, ref: FileRef, folder = '', progress?: Progress): Promise<CollectionItem> {

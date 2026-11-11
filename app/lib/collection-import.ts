@@ -19,7 +19,7 @@ import { collectionNative } from '../modules/erevos-collection';
 
 // Bringing photos and files into the Collection (lock/collection-data.ts), on the phone: a photo
 // taken with the camera, a file picked from the phone's files, a photo or file another app shared,
-// and a photo or file of a chat. Each goes straight into the Collection, encrypted a piece at a
+// and a photo or file of a chat, Erevos's, one on another network or an MMS. Each goes straight into the Collection, encrypted a piece at a
 // time, with a small picture of a photo. A file picked from the phone's files is read from
 // Android's link by modules/erevos-collection and encrypted as it is read, with no copy anywhere,
 // up to the Collection's 4 GB. A photo or file another app shared comes already encrypted the same
@@ -223,6 +223,15 @@ export async function importShared(place: CollectionPlace, shared: SharedFile, f
   } finally {
     read.close();
   }
+}
+
+/**
+ * Copies a photo, video, sound or file of a chat on another network (Matrix, XMPP, Nostr) or of
+ * an MMS into the Collection, from its bytes as they were fetched and opened: encrypted with a key
+ * of its own, a photo with its small picture.
+ */
+export function importFromBytes(place: CollectionPlace, file: { name: string; mime: string; bytes: Uint8Array }, folder = '', progress?: Progress): Promise<CollectionItem> {
+  return keepSource(place, folder, { ...typed(file), source: bytesSource(file.bytes) }, progress);
 }
 
 /** Copies a photo or file of a chat into the Collection, as the same bytes, encrypted anew with a key of its own. */

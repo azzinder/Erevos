@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { canDial, DialTile } from '../components/dial-tile';
 import { IconButton, SendDisc } from '../components/composer';
+import { keptName, ownStickerPart, useKeep } from '../components/keep-actions';
 import { MoreIcon, PlusIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
@@ -60,6 +61,7 @@ import { restoredAt } from '../lock/restored';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
+import { spaceStarPlace } from '../lock/stars-data';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
 import {
   blockedNumbers,
@@ -73,6 +75,7 @@ import {
   smsMessages,
   smsSims,
   smsMirrored,
+  smsPictureBytes,
   smsStatus,
   type Sim,
   type SmsMessage,
@@ -109,6 +112,10 @@ import { useStyles, useTheme } from '../theme/context';
 // ⋮ pins, archives, marks as spam, blocks or deletes the conversation (components/sms-actions.tsx);
 // the part of it in the Trash does not show here. A sender that writes with a name instead of a
 // number (a bank, say) shows its SMS, and cannot be answered.
+// Held down, a message can be starred too, on this phone only, its picture kept as one of the
+// owner's stickers, and its picture, voice message or contact card saved into the Collection
+// (components/keep-actions.tsx); the stickers made from photos go as an MMS, as the built-in ones
+// do. Opened at a message (`at`, a starred one), the conversation goes to it.
 
 /** What an MMS carries besides its words: a picture, a voice message or a contact card (`name`, whose). */
 type Part = { bytes: Uint8Array; mime: string; name?: string };
@@ -182,7 +189,7 @@ async function invite(to: string, space: number) {
 }
 
 export default function Sms() {
-  const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
+  const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string; at?: string }>();
   // With only the SMS open (app/_layout.tsx), a number of a contact stays a plain SMS conversation,
   // and nothing names the space's contacts.
   const smsOnly = useLock().only === 'sms';
@@ -257,6 +264,13 @@ export default function Sms() {
   // Where each SMS begins in the thread, and where the conversation was left: the first SMS that
   // came and was not read when it opened, taken before it is marked read.
   const placed = useRef(new Map<string, number>());
+  // Opened at a message (a starred one): gone to once it is laid out.
+  const goal = useRef(typeof params.at === 'string' ? params.at : '');
+  // Star, Add to my stickers and Save to the Collection, in a message's menu, and the space's own
+  // stickers among those to send (components/keep-actions.tsx).
+  const keepPlace = useMemo(spaceStarPlace, []);
+  const live = useMemo(() => messages.map((m) => ({ id: smsLineId(m), at: m.at })), [messages]);
+  const keep = useKeep({ service: 'sms', place: keepPlace, account: '', chat: to, group, messages: live, say: setNote });
   const taking = useRef<{ to: string; left: Promise<string | null> } | null>(null);
   const left = useRef<string | null>(null);
   const markRead = useCallback(() => {
@@ -845,7 +859,17 @@ export default function Sms() {
             const id = smsLineId(m);
             const isChosen = selection.chosen.has(id);
             return (
-              <View key={id} onLayout={(event) => placed.current.set(id, event.nativeEvent.layout.y)} style={isChosen ? [styles.chosenRow, chosenStyle(colors)] : undefined}>
+              <View
+                key={id}
+                onLayout={(event) => {
+                  placed.current.set(id, event.nativeEvent.layout.y);
+                  if (id !== goal.current) return;
+                  goal.current = '';
+                  keepsPlace.current = true;
+                  setTimeout(() => goTo(id), 300);
+                }}
+                style={isChosen ? [styles.chosenRow, chosenStyle(colors)] : undefined}
+              >
                 <Pressable
                   // While messages are chosen, a tap adds this one or takes it out.
                   onPress={selection.on ? () => selection.toggle(id) : smsFailed(m) ? () => sendAgain(m) : undefined}
@@ -875,6 +899,7 @@ export default function Sms() {
                     {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
                     {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
                     {isPinned(pins, m) ? ` · ${t('Pinned')}` : ''}
+                    {keep.starred.has(id) ? ' · ★' : ''}
                   </Text>
                   {smsFailed(m) ? (
                     <Text variant="caption" color={colors.danger}>
@@ -1039,6 +1064,26 @@ export default function Sms() {
                 <Text variant="bodyStrong">{isPinned(pins, chosen) ? t('Unpin') : t('Pin for me')}</Text>
               </Pressable>
             ) : null}
+            {keep
+              .actions({
+                star: chosen.id >= 0 ? { id: smsLineId(chosen), at: chosen.at, mine: chosen.mine, line: lineOf(chosen) } : null,
+                // An MMS's parts are read on the phone that has it, not on a device given its SMS.
+                sticker: !smsMirrored() && chosen.pictures?.[0] ? () => smsPictureBytes(chosen.pictures![0].uri) : null,
+                file: !smsMirrored() && partsOf(chosen)[0] ? { name: keptName(undefined, partsOf(chosen)[0].type), mime: partsOf(chosen)[0].type, fetch: () => smsPictureBytes(partsOf(chosen)[0].uri) } : null,
+              })
+              .map((action) => (
+                <Pressable
+                  key={action.title}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setChosen(null);
+                    action.onPress();
+                  }}
+                  style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+                >
+                  <Text variant="bodyStrong">{action.title}</Text>
+                </Pressable>
+              ))}
             {smsFailed(chosen) ? (
               <Pressable accessibilityRole="button" onPress={() => sendAgain(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
                 <Text variant="bodyStrong">{t('Send again')}</Text>
@@ -1107,7 +1152,20 @@ export default function Sms() {
         ) : null}
       </Sheet>
       <Sheet visible={stickering} onClose={() => setStickering(false)} title={t('Send a sticker')}>
-        <StickerPicker onPick={(name) => void sendSticker(name)} />
+        <StickerPicker
+          onPick={(name) => void sendSticker(name)}
+          mine={
+            keepPlace
+              ? {
+                  place: keepPlace,
+                  onPick: (sticker) => {
+                    setStickering(false);
+                    void ownStickerPart(sticker).then((picture) => go('', picture), (error: unknown) => setNote(errorText(error)));
+                  },
+                }
+              : undefined
+          }
+        />
         {stickerNote ? (
           <Text variant="caption" tone="muted">
             {stickerNote}

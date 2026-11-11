@@ -8,6 +8,7 @@ import { BackHandler, Pressable, ScrollView, View, type LayoutChangeEvent } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
+import { StarredHere, useKeep } from '../components/keep-actions';
 import { Missing, ReactionChips } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -136,6 +137,11 @@ import { checkedLook } from '../theme/look';
 // as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
 // a chat written without encryption, and only when this phone makes previews (as for contacts);
 // one that comes so shows under the words.
+//
+// A message held down can be starred too, on this device only, a photo that came kept as one of
+// the owner's stickers, and a photo, sound or file saved into the Collection
+// (components/keep-actions.tsx); Starred messages lists the chat's, and the chat opened at one
+// (`at`) goes to it.
 
 /** The place a message is, when its words are only a geo: link, as Conversations sends one. */
 const placeIn = (message: XmppMessage) => (/^geo:\S+$/i.test(message.text.trim()) ? placeOfGeo(message.text.trim()) : null);
@@ -169,7 +175,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { jid: given, hidden } = useLocalSearchParams<{ jid?: string; hidden?: string }>();
+  const { jid: given, hidden, at } = useLocalSearchParams<{ jid?: string; hidden?: string; at?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const jid = given?.toLowerCase();
   const [now, setNow] = useState(xmppNow(where));
@@ -250,6 +256,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     idOf: (message) => message.id,
     mine: (message) => message.mine,
     unread: chat?.unread ?? 0,
+    // Opened at a starred message: there.
+    at,
+    onAt: (found) => found || setNote(t('That message is not on this phone.')),
   });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!jid ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen());
@@ -264,6 +273,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // Whose stickers made from photos this chat sends: the space's, or its hidden place's own.
   const account = now.state?.jid;
   const stickerPlace = useMemo(() => (account ? xmppStickerPlace(where) : null), [where, account]);
+  // Star, Add to my stickers and Save to the Collection, in a message's menu (components/keep-actions.tsx).
+  const keep = useKeep({ service: 'xmpp', place: stickerPlace, account: account ?? '', chat: jid ?? '', group: !!chat?.room, messages: chat?.messages, say: setNote });
 
   if (!state || !jid || !isXmppId(jid)) {
     return (
@@ -467,6 +478,15 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         },
       });
     }
+    const file = message.file && !message.locked ? message.file : undefined;
+    actions.push(
+      ...keep.actions({
+        star: message.locked ? null : { id: message.id, at: message.at, mine: message.mine, line: lineOf(message) },
+        sticker: file && shownType(file).startsWith('image/') ? () => xmppFile(file) : null,
+        file: file ? { name: file.name, mime: shownType(file), fetch: () => xmppFile(file) } : null,
+        remote: true,
+      }),
+    );
     actions.push(selectAction(() => selection.start(message.id)));
     if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove([message]) });
     return actions;
@@ -672,6 +692,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   onMenu={selection.on ? choose : menuable(message) ? () => setMenuFor(message.id) : undefined}
                   onDuration={(ms) => void xmppHeard(jid, message.id, ms).catch(() => undefined)}
                   onLayout={place(message.id)}
+                  starred={keep.starred.has(message.id)}
                 />
               );
             })}
@@ -784,6 +805,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <Row wrap>
             <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+            <StarredHere stars={keep.stars} who={name} onGo={reach} />
           </Row>
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
@@ -1116,7 +1138,7 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
 /** The message an answer is to, as the answer quotes it, and going to it. */
 type Answer = { name: string; line: string; onPress: () => void };
 
-function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu, onDuration, onLayout }: {
+function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu, onDuration, onLayout, starred }: {
   message: XmppMessage;
   group: boolean;
   /** The account's address, to see which reactions are ours. */
@@ -1135,6 +1157,8 @@ function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu
   onDuration?: (ms: number) => void;
   /** Where it sits in the thread, to scroll to it. */
   onLayout?: (event: LayoutChangeEvent) => void;
+  /** Starred on this device (components/keep-actions.tsx). */
+  starred?: boolean;
 }) {
   const { colors, look } = useTheme();
   const mine = message.mine;
@@ -1155,7 +1179,7 @@ function Bubble({ message, group, me, answered, chosen, onPress, onReact, onMenu
       ? t('Sending…')
       : message.state === 'failed'
         ? t('Not sent.')
-        : [`${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
+        : [`${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`, message.edited ? t('Edited') : '', starred ? '★' : ''].filter(Boolean).join('  ·  ');
   const reactions = reactionsShown(message);
   const file = message.file;
   return (
