@@ -4,11 +4,11 @@
 
 import { earlierParts, hardBackupKey, isBackupPassword, makeBackup, newBackupHard, unneededFiles, type BackupKey, type MakeOptions, type PartMade } from '../lock/backup';
 
-import { cloudFiles, loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
+import { cloudFiles, loadCloudBackup, saveCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
 import { phoneCallsForBackup } from './backup-calls';
 import { folderPlace, loadLedger, saveLedger, serverPlace, type Book, type Ledger } from './backup-ledger';
 import { phoneSettingsForBackup } from './backup-native';
-import { AUTO_SAMPLE, checkBackup, checkListed, checkServer, HAND_SAMPLE, loadChecks, newestIn, saveCheck, type CheckProgress, type Checks } from './backup-check';
+import { AUTO_SAMPLE, checkBackup, checkListed, checkProblem, checkServer, HAND_SAMPLE, loadChecks, newestIn, saveCheck, type Checked, type CheckProgress, type Checks } from './backup-check';
 import { backupFilesIn, deleteBackupFiles, listBackupFiles, writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
 import { t } from './i18n';
@@ -216,8 +216,11 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
         try {
           const book = bookOf(ledger, folderPlace(auto.folder));
           await intoFolder(auto.folder, key, { phoneSms, phoneCalls, native, skip }, now, book);
-          auto = { ...auto, last: now, error: '' };
-          await checkFolder(auto.folder, key, book, AUTO_SAMPLE, now);
+          // One the check after it does not find whole counts as failed: it says why, and the
+          // next comes as after a failed one, making again what is missing.
+          const checked = await checkFolder(auto.folder, key, book, AUTO_SAMPLE, now);
+          const problem = checked ? checkProblem(checked) : '';
+          auto = problem ? { ...auto, error: problem } : { ...auto, last: now, error: '' };
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
@@ -225,14 +228,23 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
       }
       if (cloud && cloudDue) {
         const book = bookOf(ledger, serverPlace(cloud.url));
+        const before = cloud.last;
         cloud = await sendToCloud(cloud, (parts, reuse) => makeBackup(key, { parts, phoneSms, phoneCalls, native, bare: true, skip, ...reuse }), KEEP, now, book);
         const sent = cloud.names[cloud.names.length - 1];
         if (!cloud.error && sent) {
           // What the server lists of it: nothing is downloaded after each one.
+          let checked: Checked;
           try {
-            await saveCheck('server', checkListed((await cloudFiles(cloud)).sizes, sent, book.get(sent) ?? [], now));
+            checked = checkListed((await cloudFiles(cloud)).sizes, sent, book.get(sent) ?? [], now);
           } catch (error) {
-            await saveCheck('server', { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) });
+            checked = { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) };
+          }
+          await saveCheck('server', checked);
+          // Not whole there: failed, as one that did not go, and sent again next time.
+          const problem = checkProblem(checked);
+          if (problem) {
+            cloud = { ...cloud, last: before, error: problem };
+            await saveCloudBackup(cloud);
           }
         }
       }
@@ -251,14 +263,19 @@ export function runAutoBackup(force = false, now = Date.now(), { checking = fals
 
 // Checks the newest backup in the folder (lib/backup-check.ts), reading `sample` of its parts
 // whole, and keeps what it found. A check that fails says so there, not as the backup's error.
-async function checkFolder(folder: string, key: BackupKey, book: Book | undefined, sample: number | 'all', now: number, how: CheckProgress = {}): Promise<void> {
+async function checkFolder(folder: string, key: BackupKey, book: Book | undefined, sample: number | 'all', now: number, how: CheckProgress = {}): Promise<Checked | null> {
   try {
+    // Where the folder's files cannot be listed (Sailfish OS, a browser), nothing is checked.
     const files = await backupFilesIn(folder);
-    if (!files) return;
+    if (!files) return null;
     const name = newestIn(files.sizes.keys(), book);
-    await saveCheck('folder', name ? await checkBackup(files, name, key, sample, now, Math.random, how) : { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: t('There is no backup there.') });
+    const checked = name ? await checkBackup(files, name, key, sample, now, Math.random, how) : { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: t('There is no backup there.') };
+    await saveCheck('folder', checked);
+    return checked;
   } catch (error) {
-    await saveCheck('folder', { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) });
+    const checked = { at: now, parts: 0, read: 0, missing: 0, damaged: 0, opened: false, error: errorText(error) };
+    await saveCheck('folder', checked);
+    return checked;
   }
 }
 

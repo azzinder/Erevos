@@ -213,4 +213,8 @@ export const cloudBackup: Record<string, string> = {
     "Controllo completo della cartella",
   "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.":
     "Il controllo completo legge per intero ogni parte nella cartella e la confronta con lo SHA-256 che il backup ha annotato per essa. Con molti GB richiede qualche minuto, e nulla lascia il telefono.",
+  "The check after it found a problem: {error}":
+    "Il controllo successivo ha trovato un problema: {error}",
+  "The check after it found {missing} of its {parts} parts missing and {damaged} damaged.":
+    "Il controllo successivo ha trovato che delle sue {parts} parti ne mancano {missing} e {damaged} sono danneggiate.",
 };

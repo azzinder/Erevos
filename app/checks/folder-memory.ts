@@ -21,9 +21,16 @@ export class File {
   readonly folder: string;
   readonly name: string;
 
-  constructor(folder: string, name: string) {
-    this.folder = folder;
-    this.name = name;
+  // As Android's documents are named, alone, by the uri a folder's listing gives (device-memory.ts).
+  constructor(folder: string, name?: string) {
+    if (name === undefined) {
+      const at = folder.lastIndexOf('#');
+      this.folder = folder.slice(0, at);
+      this.name = decodeURIComponent(folder.slice(at + 1));
+    } else {
+      this.folder = folder;
+      this.name = name;
+    }
   }
 
   get exists(): boolean {

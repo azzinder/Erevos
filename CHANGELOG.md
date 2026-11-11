@@ -102,6 +102,8 @@ On main, not released yet:
   also downloads the server's newest backup and ten of its parts, and reads ten in the folder. A part missing or
   damaged shows in red, with how many. **Full check of the folder** reads every part there through on Android's side,
   off the screen's thread, and compares it with the SHA-256 the backup wrote down for it, with its progress and Cancel.
+  A backup the check after it does not find whole counts as failed: Backups say why, and it is made again an hour
+  later, with what was missing or cut short.
 
 ### Under the hood
 

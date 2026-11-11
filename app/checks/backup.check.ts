@@ -102,6 +102,7 @@ import type { XmppState } from '../lib/xmpp';
 import { cloudRequest as browserRequest } from '../lib/backup-http.web';
 import { changeAutoBackup, CHECK_MS, checkAutoBackup, isAutoBackupPassword, KEEP, loadAutoBackup, runAutoBackup, startAutoBackup } from '../lib/backup-folder';
 import { phoneCallsEntry } from '../lib/backup-calls';
+import { checkedWhole, loadChecks } from '../lib/backup-check';
 import { folderPlace, loadLedger, saveLedger, serverPlace, type Ledger } from '../lib/backup-ledger';
 import { phoneSettingsForBackup, putPhoneSettings } from '../lib/backup-native';
 import { deleteBackupFiles, listBackupFiles, partsIn, writeBackup } from '../lib/backup-place';
@@ -2301,6 +2302,43 @@ t('a part deleted or cut short in the folder or on the server is not named again
     setCloudHttp(null);
     await stopCloudBackup();
     folders.clear();
+  }
+});
+
+t('a backup the check after it does not find whole counts as failed: it says why, waits an hour, then makes again what is missing', async () => {
+  const uri = 'content://com.android.externalstorage.documents/tree/primary%3AErevos';
+  folders.set(uri, new Map());
+  const folder = folders.get(uri)!;
+  // The folder keeps only the start of the first part written into it, once.
+  const set = folder.set.bind(folder);
+  let cut = true;
+  folder.set = (name: string, bytes: Uint8Array) => {
+    if (cut && /\.part1\./.test(name)) {
+      cut = false;
+      return set(name, bytes.subarray(0, 100));
+    }
+    return set(name, bytes);
+  };
+  try {
+    await phone();
+    photos(2);
+    const HOUR = 3600_000;
+    const start = new Date(2026, 5, 1, 3, 12).getTime();
+    await startAutoBackup(0.25, uri, await backupKey('auto-pass'));
+    const looks = (at: number) => runAutoBackup(false, at, { checking: true });
+    const failed = await looks(start);
+    assert.match(failed.auto!.error, /1 damaged/);
+    assert.equal(failed.auto!.last, 0);
+    const checked = (await loadChecks()).folder!;
+    assert.deepEqual([checked.damaged, checkedWhole(checked)], [1, false]);
+    // The looks between leave it for an hour, as after any that failed.
+    assert.match((await looks(start + HOUR - 1000)).auto!.error, /1 damaged/);
+    const again = await looks(start + HOUR);
+    assert.equal(again.auto!.error, '');
+    assert.equal(again.auto!.last, start + HOUR);
+    assert.ok(checkedWhole((await loadChecks()).folder!));
+  } finally {
+    folders.delete(uri);
   }
 });
 

@@ -316,6 +316,12 @@ export async function startCloudBackup(address: string, user: string, password: 
 }
 
 /** Sends no more backups to the server; those there stay. */
+/** Keeps the server's settings as they are now: as when a check after a backup sent there finds
+ *  it not whole, which then counts as failed (lib/backup-folder.ts). */
+export async function saveCloudBackup(cloud: CloudBackup): Promise<void> {
+  await secureSet(CLOUD, JSON.stringify(cloud));
+}
+
 export async function stopCloudBackup(): Promise<void> {
   await secureDelete(CLOUD);
 }

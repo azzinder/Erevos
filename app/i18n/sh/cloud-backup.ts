@@ -213,4 +213,8 @@ export const cloudBackup: Record<string, string> = {
     "Potpuna provjera mape",
   "The full check reads every part in the folder through and compares it with the SHA-256 the backup wrote down for it. It takes a few minutes for many GB, and nothing leaves the phone.":
     "Potpuna provjera čita cijeli svaki dio u mapi i uspoređuje ga sa SHA-256 koji je kopija za njega zapisala. Za mnogo GB traje nekoliko minuta, i ništa ne napušta telefon.",
+  "The check after it found a problem: {error}":
+    "Provjera nakon nje našla je problem: {error}",
+  "The check after it found {missing} of its {parts} parts missing and {damaged} damaged.":
+    "Provjera nakon nje našla je da od njenih {parts} dijelova nedostaje {missing}, a {damaged} je oštećeno.",
 };

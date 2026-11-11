@@ -5,6 +5,7 @@
 // The phone's own module (modules/erevos-device) for checks under Node: it keeps the reminders of
 // Chat with myself asked of it, by their ids, until they are forgotten, and those said to be seen.
 import { folders, writes } from './folder-memory';
+import { sha256Bytes, toHex } from '../lib/crypto';
 
 export const reminders = new Map<string, number>();
 export const seen = new Set<string>();
@@ -54,7 +55,16 @@ const folderDelete = async (uris: string[]): Promise<number> => {
   return gone;
 };
 
+// Each file's size and SHA-256 by its uri, as Folders.kt reads them through.
+const folderSha256 = async (uris: string[]): Promise<{ size: number; sha: string }[]> =>
+  uris.map((uri) => {
+    const at = uri.lastIndexOf('#');
+    const bytes = folders.get(uri.slice(0, at))?.get(decodeURIComponent(uri.slice(at + 1)));
+    return bytes ? { size: bytes.length, sha: toHex(sha256Bytes(bytes)) } : { size: -1, sha: '' };
+  });
+
 Object.defineProperties(device, {
+  folderSha256: { get: () => (nativeFolders.on ? folderSha256 : undefined) },
   folderFiles: { get: () => (nativeFolders.on ? folderFiles : undefined) },
   folderWrite: { get: () => (nativeFolders.on ? folderWrite : undefined) },
   folderDelete: { get: () => (nativeFolders.on ? folderDelete : undefined) },

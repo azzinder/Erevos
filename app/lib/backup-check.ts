@@ -58,6 +58,22 @@ export const HAND_SAMPLE = 10;
 export const checkedWhole = (checked: Checked): boolean =>
   !checked.error && checked.missing === 0 && checked.damaged === 0;
 
+/** What a check that did not find the backup whole says, as an automatic backup that failed says
+ *  why: the screen shows it, and the next one comes after an hour (lib/backup-folder.ts). '' when whole. */
+export function checkProblem(checked: Checked): string {
+  if (checkedWhole(checked)) return "";
+  return checked.error
+    ? t("The check after it found a problem: {error}", { error: checked.error })
+    : t(
+        "The check after it found {missing} of its {parts} parts missing and {damaged} damaged.",
+        {
+          missing: checked.missing,
+          parts: checked.parts,
+          damaged: checked.damaged,
+        },
+      );
+}
+
 function checkedOf(value: unknown): Checked | null {
   const v = value as Partial<Checked> | null;
   if (!v || typeof v !== "object") return null;
