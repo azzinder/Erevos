@@ -27,6 +27,11 @@ import { spaceCalls } from './space-calls';
 // when the space has one, else the homeserver's (/voip/turnServer), and only through it, so the
 // other side learns no address of this phone.
 //
+// Video is added to a voice call, and a camera turned on in a video call answered without it, with
+// a new description of the call (m.call.negotiate), which the other side's app takes without
+// asking, as Element and FluffyChat do; so is theirs here: their picture added to a voice call
+// shows, and our camera stays off until it is turned on. Only with an app of version 1, which has it.
+//
 // Only in a room we are in, with only the two of us in it, and only an invite to us, or to nobody
 // named. A hidden place's own account calls and is called the same way while its hidden chats are
 // open; while they are closed, a call to it is told as missed.
@@ -35,6 +40,8 @@ export const MATRIX_VOIP_PREFIX = 'matrix-voip:';
 const VERSION = '1';
 /** How long an invite of ours rings, milliseconds, as Element asks. */
 const LIFETIME = 60_000;
+/** How long a new description of ours waits for their app's answer, which needs no one, milliseconds. */
+const NEGOTIATE_MS = 30_000;
 /** The events of these calls, as lib/matrix.ts hands them over. */
 export const LEGACY = new Set(['m.call.invite', 'm.call.candidates', 'm.call.answer', 'm.call.select_answer', 'm.call.hangup', 'm.call.reject', 'm.call.negotiate']);
 
@@ -52,6 +59,8 @@ type Session = {
   place?: true;
   /** Their addresses that came before the call was there. */
   early?: { candidate: string; sdpMid: string }[];
+  /** Our new description (m.call.negotiate), waiting for their answer; null when none came. */
+  adding?: (sdp: string | null) => void;
 };
 
 /** The accounts the calls are of: the space's, and the open hidden place's. */
@@ -95,6 +104,8 @@ function endOf(type: string, reason: unknown, answered: boolean): CallEnd {
 }
 
 const isSdp = (value: unknown): value is string => typeof value === 'string' && value.startsWith('v=0') && value.length <= 20_000;
+/** Whether their app takes a new description of the call (m.call.negotiate): one of version 1. */
+const negotiates = (content: Json): { reoffer?: true } => (String(content.version) === VERSION ? { reoffer: true } : {});
 
 /** The homeserver's TURN server (/voip/turnServer), when it has one. */
 async function homeserverTurn(state: MatrixState): Promise<CallRelay | null> {
@@ -163,6 +174,30 @@ function callsOf(place: boolean): CallPlace {
       const state = accountOf(place)?.now();
       return state?.rooms[roomId]?.name || roomId;
     },
+
+    // Our new description of the call, and their app's answer to it.
+    async addMedia(roomId, id, sdp) {
+      const s = sessions.get(id);
+      if (!s || s.roomId !== roomId || !s.theirs || s.adding) throw new Error(t('The call ended.'));
+      const came = new Promise<string | null>((resolve) => (s.adding = resolve));
+      const timer = setTimeout(() => s.adding?.(null), NEGOTIATE_MS);
+      try {
+        await send(place, roomId, 'm.call.negotiate', { call_id: id, party_id: s.party, lifetime: NEGOTIATE_MS, description: { type: 'offer', sdp } });
+        const answer = await came;
+        if (!answer) throw new Error('No answer came.');
+        return answer;
+      } finally {
+        clearTimeout(timer);
+        s.adding = undefined;
+      }
+    },
+
+    // Our answer to theirs. These calls have no no: one not taken is left unanswered.
+    async answerMedia(roomId, id, sdp) {
+      const s = sessions.get(id);
+      if (!s || s.roomId !== roomId || sdp === null) return;
+      await send(place, roomId, 'm.call.negotiate', { call_id: id, party_id: s.party, lifetime: NEGOTIATE_MS, description: { type: 'answer', sdp } });
+    },
   };
 }
 
@@ -223,7 +258,7 @@ async function onEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
       const ours: Session = { id, roomId, outgoing: false, video, party: toHex(randomBytes(8)), theirs: party, ...(place ? { place: true as const } : {}) };
       sessions.set(id, ours);
       const stamp = callNow() - age;
-      void callSignal(place ? matrixPlaceVoip : matrixVoip, `${MATRIX_VOIP_PREFIX}${roomId}`, { id, kind: 'offer', video, sdp: offer, at: stamp }, false, rtcNow)
+      void callSignal(place ? matrixPlaceVoip : matrixVoip, `${MATRIX_VOIP_PREFIX}${roomId}`, { id, kind: 'offer', video, sdp: offer, at: stamp, ...negotiates(content) }, false, rtcNow)
         .then(() => {
           const call = calling(id);
           if (!call) sessions.delete(id);
@@ -250,8 +285,27 @@ async function onEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
       // The first device of theirs to answer is the one, as their others hear. Sent after the sync's
       // change of the account, which this runs inside.
       void send(!!s.place, roomId, 'm.call.select_answer', { call_id: id, party_id: s.party, selected_party_id: party }).catch(() => undefined);
-      calling(id)?.receive({ id, kind: 'answer', sdp: answer });
+      calling(id)?.receive({ id, kind: 'answer', sdp: answer, ...negotiates(content) });
       if (s.early?.length) calling(id)?.addCandidates(s.early.splice(0));
+      return false;
+    }
+    case 'm.call.negotiate': {
+      // A new description of the call, from their device in it.
+      if (!s?.theirs || (party && party !== s.theirs)) return false;
+      const description = content.description as Json | undefined;
+      const sdp = description?.sdp;
+      if (!isSdp(sdp)) return false;
+      if (description?.type === 'answer') {
+        s.adding?.(sdp);
+        return false;
+      }
+      if (description?.type !== 'offer') return false;
+      // Both at once: as Matrix's apps settle it, the caller's goes on, and the one called takes it.
+      if (s.adding) {
+        if (s.outgoing) return false;
+        s.adding(null);
+      }
+      takeTheirs(id, sdp);
       return false;
     }
     case 'm.call.select_answer': {
@@ -271,6 +325,14 @@ async function onEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
     }
   }
   return false;
+}
+
+// Their new description, taken at once once ours, if one was waiting, is taken back.
+function takeTheirs(id: string, sdp: string, tries = 30): void {
+  const call = calling(id);
+  if (!call) return;
+  if (call.addingVideo && tries > 0) setTimeout(() => takeTheirs(id, sdp, tries - 1), 100);
+  else call.videoAsked(sdp, false);
 }
 
 /** Hears these calls for the space's account and the open hidden place's. Returns how to stop. */

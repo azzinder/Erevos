@@ -7,7 +7,8 @@
 // WebRTC: Bob's app is played here, writing m.call.* as FluffyChat writes them. His call rings,
 // is answered encrypted, takes his addresses that come apart, and ends with his hang-up; ours
 // rings him, takes his answer and picks it, and ends with ours; an invite not encrypted in an
-// encrypted room, or in a room of three, does not ring.
+// encrypted room, or in a room of three, does not ring; a voice call answered with video turns the
+// camera on with a new description (m.call.negotiate), and his are taken without asking.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -161,4 +162,76 @@ test('an invite not encrypted in an encrypted room, or in a room of three, does 
   await wait();
   assert.equal(currentCall(), null);
   await assert.rejects(startMatrixVoip(group.id, false, rtc), /one person/);
+});
+
+const WITH_VIDEO = `${OFFER}m=video 9 UDP/TLS/RTP/SAVPF 96\r\n`;
+
+test('a voice call answered with video turns the camera on with a new description his app answers; his are taken without asking', { skip: !coreReady }, async (t) => {
+  const { alice, bob, roomId } = await pair('alice-voip4', 'bob-voip4');
+  const { rtc, connections } = rtcOf();
+  const stop = watchMatrixVoip(rtc, accountOf(() => alice));
+  t.after(stop);
+  const sent: Json[] = [];
+  setLegacyCallHandler(async (state, event) => {
+    if (state !== bob) return matrixVoipEvent(state, event);
+    sent.push({ type: event.type, ...event.content, sealed: event.sealed });
+    return false;
+  });
+  // What Bob's app has of `type`, once it came.
+  const came = async (type: string, count = 1) => {
+    for (let i = 0; i < 40 && sent.filter((e) => e.type === type).length < count; i++) {
+      await wait();
+      await sync(bob, 0);
+    }
+    return sent.filter((e) => e.type === type)[count - 1];
+  };
+  await sendEvent(bob, roomId, 'm.call.invite', { call_id: 'fluffy4', party_id: 'bobparty', version: '1', lifetime: 60000, offer: { type: 'offer', sdp: OFFER } });
+  await sync(alice, 0);
+  await wait();
+  const call = currentCall()!;
+  assert.deepEqual([call.video, call.canAnswerWithVideo], [false, true]);
+  await call.answer(true);
+  connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+  const offer = (await came('m.call.negotiate'))!;
+  assert.equal(offer.sealed, true);
+  assert.equal(offer.call_id, 'fluffy4');
+  assert.equal((offer.description as Json).type, 'offer');
+  assert.equal(call.addingVideo, true);
+  await sendEvent(bob, roomId, 'm.call.negotiate', { call_id: 'fluffy4', party_id: 'bobparty', version: '1', lifetime: 30000, description: { type: 'answer', sdp: ANSWER } });
+  await sync(alice, 0);
+  await wait();
+  assert.deepEqual(connections[0].remote, { type: 'answer', sdp: ANSWER });
+  assert.deepEqual([call.video, call.hasCamera, call.addingVideo], [true, true, false]);
+  // Bob changes the call himself: taken at once, and answered.
+  await sendEvent(bob, roomId, 'm.call.negotiate', { call_id: 'fluffy4', party_id: 'bobparty', version: '1', lifetime: 30000, description: { type: 'offer', sdp: WITH_VIDEO } });
+  await sync(alice, 0);
+  await wait(60);
+  assert.deepEqual(connections[0].remote, { type: 'offer', sdp: WITH_VIDEO });
+  assert.equal(((await came('m.call.negotiate', 2))!.description as Json).type, 'answer');
+  call.hangUp();
+  await wait();
+
+  // Answered with voice only, his picture added to it shows, and the camera here stays off until turned on.
+  await sendEvent(bob, roomId, 'm.call.invite', { call_id: 'fluffy5', party_id: 'bobparty', version: '1', lifetime: 60000, offer: { type: 'offer', sdp: OFFER } });
+  await sync(alice, 0);
+  await wait();
+  const voice = currentCall()!;
+  await voice.answer(false);
+  connections[1].connect(new FakeStream([new FakeTrack('audio')]));
+  await sendEvent(bob, roomId, 'm.call.negotiate', { call_id: 'fluffy5', party_id: 'bobparty', version: '1', lifetime: 30000, description: { type: 'offer', sdp: WITH_VIDEO } });
+  await sync(alice, 0);
+  await wait(60);
+  assert.equal(voice.askingVideo, false);
+  assert.deepEqual([voice.video, voice.hasCamera, voice.cameraOff, voice.canTurnCameraOn], [true, false, true, true]);
+  voice.hangUp();
+  await wait();
+
+  // An app of the first version has no new descriptions: its voice call is answered with voice only.
+  await sendEvent(bob, roomId, 'm.call.invite', { call_id: 'fluffy6', party_id: 'bobparty', version: 0, lifetime: 60000, offer: { type: 'offer', sdp: OFFER } });
+  await sync(alice, 0);
+  await wait();
+  const old = currentCall()!;
+  assert.equal(old.canAnswerWithVideo, false);
+  old.decline();
+  await wait();
 });

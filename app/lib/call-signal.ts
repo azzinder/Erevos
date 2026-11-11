@@ -21,13 +21,19 @@ export type CallEnd = 'hangup' | 'decline' | 'busy' | 'missed' | 'failed' | 'tak
 
 export type CallSignal =
   // `at`: when the call was made, milliseconds, so a phone that only sees it later does not ring.
-  | { id: string; kind: 'offer'; video: boolean; sdp: string; at: number }
-  | { id: string; kind: 'answer'; sdp: string }
+  // `reoffer`: the phone that offers, or answers, takes a new description of the call once it goes
+  // on (below); one from before says nothing of it, and is sent none.
+  | { id: string; kind: 'offer'; video: boolean; sdp: string; at: number; reoffer?: true }
+  | { id: string; kind: 'answer'; sdp: string; reoffer?: true }
   // Ringing on their phone now: the caller hears it ring rather than wait in silence.
   | { id: string; kind: 'ringing' }
   // `by`: from the caller, which device of the account called answered (`taken`) or turned it down:
   // its endpoint (hex), or '' for the account itself. The others stop ringing; that one goes on.
-  | { id: string; kind: 'end'; reason: CallEnd; by?: string };
+  | { id: string; kind: 'end'; reason: CallEnd; by?: string }
+  // While the call goes on, a new description of it from either side, as video is added to it or a
+  // camera turned on (lib/call.ts); and the other side's answer, or with no `sdp`, its no.
+  | { id: string; kind: 'reoffer'; sdp: string }
+  | { id: string; kind: 'reanswer'; sdp?: string };
 
 /** Longest session description sent: it must fit in one message with room to spare. */
 export const MAX_SDP = 12_000;
@@ -50,10 +56,15 @@ export function decodeCall(value: unknown): CallSignal | null {
   switch (v.kind) {
     case 'offer':
       return isSdp(v.sdp) && typeof v.at === 'number' && Number.isFinite(v.at) && v.at > 0
-        ? { id, kind: 'offer', video: v.video === true, sdp: v.sdp, at: v.at }
+        ? { id, kind: 'offer', video: v.video === true, sdp: v.sdp, at: v.at, ...(v.reoffer === true ? { reoffer: true as const } : {}) }
         : null;
     case 'answer':
-      return isSdp(v.sdp) ? { id, kind: 'answer', sdp: v.sdp } : null;
+      return isSdp(v.sdp) ? { id, kind: 'answer', sdp: v.sdp, ...(v.reoffer === true ? { reoffer: true as const } : {}) } : null;
+    case 'reoffer':
+      return isSdp(v.sdp) ? { id, kind: 'reoffer', sdp: v.sdp } : null;
+    case 'reanswer':
+      if (v.sdp === undefined) return { id, kind: 'reanswer' };
+      return isSdp(v.sdp) ? { id, kind: 'reanswer', sdp: v.sdp } : null;
     case 'ringing':
       return { id, kind: 'ringing' };
     case 'end':

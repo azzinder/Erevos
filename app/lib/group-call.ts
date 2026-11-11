@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
+import { cameraCount, callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, RING_MS, turnCamera, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 import { t } from './i18n';
@@ -18,6 +18,9 @@ import { t } from './i18n';
 // the group, and each member already in it offers a connection to them: so two members never
 // offer to each other, but for two joining at once, when the one with the lower identity's offer
 // counts. A phone has one call at a time, a group's or a contact's.
+//
+// A video call can be joined with voice only: the camera is not opened, the others' pictures come,
+// and ours does not go for the rest of the call, as a connection, once set up, is never changed.
 //
 // An XMPP private group's call is the same mesh, with Jingle for its signals (lib/xmpp-muji.ts).
 
@@ -54,6 +57,9 @@ export type GroupCallOptions = {
   /** Answers through the call relay too, whether or not the offer has an address of one: an XMPP
    *  app's offer tells its addresses after it (lib/xmpp-muji.ts). */
   relayAlways?: boolean;
+  /** Joined without the camera, each connection still says video goes both ways, as other XMPP
+   *  apps expect (lib/xmpp-muji.ts); else only theirs comes. */
+  bothWays?: boolean;
   rtc: Rtc;
   events: GroupCallEvents;
 };
@@ -94,6 +100,8 @@ export class GroupCall {
   local: Stream | null = null;
   muted = false;
   cameraOff = false;
+  /** How many cameras the phone or computer has, once one was opened; 0 while not known. */
+  cameras = 0;
   /** When this phone joined, milliseconds, or 0. */
   joinedAt = 0;
   private readonly peerMap = new Map<string, Peer>();
@@ -144,11 +152,16 @@ export class GroupCall {
     return [...this.peerMap.values()].map(({ identity, state, remote }) => ({ identity, state, remote }));
   }
 
-  /** Answers the call that rings here. */
-  async answer(): Promise<void> {
+  /** Whether our camera's picture goes to the others: not in a video call joined with voice only. */
+  get hasCamera(): boolean {
+    return (this.local?.getVideoTracks().length ?? 0) > 0;
+  }
+
+  /** Answers the call that rings here: in a video call with the camera (`video`), or with voice only. */
+  async answer(video = this.video): Promise<void> {
     if (this.state !== 'incoming') return;
     this.stopRinging();
-    await this.enter({ id: this.id, kind: 'join' }).catch(() => undefined);
+    await this.enter({ id: this.id, kind: 'join' }, video).catch(() => undefined);
   }
 
   /** Turns down the call that rings here. */
@@ -196,9 +209,15 @@ export class GroupCall {
     this.changed();
   }
 
-  /** Front camera to back, or back. */
+  /** Front camera to back, or back; in a browser, the next camera there is, to each member. */
   switchCamera(): void {
-    this.local?.getVideoTracks().forEach((track) => track._switchCamera?.());
+    const connections = [...this.peerMap.values()].map((peer) => peer.connection);
+    void turnCamera(this.options.rtc, this.local, connections, () => this.state !== 'ended').then((turned) => {
+      if (!turned) return;
+      this.changed();
+      // The phone says which way it faces once it turned: its picture is mirrored only facing us.
+      setTimeout(() => this.state !== 'ended' && this.changed(), 600);
+    });
   }
 
   /** A video call with too many in it for pictures: only the sound goes on. */
@@ -240,15 +259,21 @@ export class GroupCall {
     }
   }
 
-  // The microphone, then into the call, saying `signal` to the group.
-  private async enter(signal: GroupCallSignal): Promise<void> {
+  // The microphone, and in a video call the camera unless `camera` is false, then into the call, saying `signal` to the group.
+  private async enter(signal: GroupCallSignal, camera = this.video): Promise<void> {
     try {
-      const local = await this.options.rtc.media({ audio: true, video: this.video });
+      const local = await this.options.rtc.media({ audio: true, video: this.video && camera });
       if (this.state === 'ended') {
         local.getTracks().forEach((track) => track.stop());
         return;
       }
       this.local = local;
+      if (this.video && !camera) this.cameraOff = true;
+      if (this.hasCamera) void cameraCount(this.options.rtc).then((count) => {
+        if (count === this.cameras || this.state === 'ended') return;
+        this.cameras = count;
+        this.changed();
+      });
       local.getAudioTracks().forEach((track) => (track.enabled = !this.muted));
       this.state = 'in';
       this.joinedAt = Date.now();
@@ -272,6 +297,14 @@ export class GroupCall {
     this.peerMap.set(identity, peer);
     const local = this.local!;
     local.getTracks().forEach((track) => connection.addTrack(track, local));
+    // In a video call without our camera: their picture still comes, to an offer of ours too.
+    if (offered && this.video && !this.hasCamera) {
+      try {
+        connection.addTransceiver?.('video', { direction: this.options.bothWays ? 'sendrecv' : 'recvonly' });
+      } catch {
+        // Their sound only.
+      }
+    }
     connection.addEventListener('track', ({ streams }) => {
       if (streams[0] && peer.remote !== streams[0]) {
         peer.remote = streams[0];
@@ -301,6 +334,14 @@ export class GroupCall {
     try {
       await peer.connection.setRemoteDescription({ type: 'offer', sdp: offer });
       this.described(peer);
+      if (this.video && !this.hasCamera && this.options.bothWays) {
+        const idle = peer.connection.getTransceivers?.().find((t) => t.receiver.track?.kind === 'video' && !t.sender.track);
+        try {
+          if (idle) idle.direction = 'sendrecv';
+        } catch {
+          // As it came: their picture only.
+        }
+      }
       await peer.connection.setLocalDescription(await peer.connection.createAnswer());
       const sdp = await describedSdp(peer.connection);
       if (this.peerMap.get(identity) !== peer) return;

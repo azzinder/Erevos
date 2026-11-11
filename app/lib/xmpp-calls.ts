@@ -27,7 +27,10 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // Video is added to a voice call as Conversations adds it (content-add, XEP-0166): the side that
 // adds it sends the new content, the other side's screen asks, and a yes (content-accept) turns its
 // camera on too; a no (content-reject) leaves the call as it was. Each side's description of the
-// call as it is now is put together from the contents said so far (Session.theirs).
+// call as it is now is put together from the contents said so far (Session.theirs). A voice call
+// answered with video asks so once it connects. A video call answered with voice only still says
+// video goes both ways, as the other apps expect, with nothing of ours on it until the camera is
+// turned on, which then needs nothing more said.
 //
 // What is not the same: the descriptions, the key fingerprint of the call's encryption
 // (DTLS-SRTP) included, pass through the XMPP servers as they are, not end-to-end encrypted, so
@@ -312,6 +315,11 @@ function callsOf(place: boolean): CallPlace {
       }
       return jingleToSdp(s.initiate, 'initiator', s.id);
     },
+
+    // Content-add adds media, and changes none: a video call answered without the camera says
+    // video goes both ways all the same, as the apps here expect, and the camera goes on it later.
+    addsOnly: true,
+    bothWays: true,
   };
 }
 
@@ -379,7 +387,8 @@ function ring(state: XmppState, s: Session, at: number): void {
   if (!rtc || !mayRing(state, s.jid)) return missed();
   // By the relay's clock, as lib/calls.ts judges an offer fresh.
   const stamp = callNow() - (Date.now() - at);
-  void callSignal(callsFor(s.place), `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp }, false, rtc)
+  // Video is added to it, or asked to be, with content-add (reoffer).
+  void callSignal(callsFor(s.place), `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp, reoffer: true }, false, rtc)
     .then(() => {
       const call = calling(s.id);
       // Not rung here (missed, or busy with another call): lib/calls.ts said so, and kept its line.
@@ -514,7 +523,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
       }
       await reply();
       settle(s, jingle, setupOf(sdp));
-      calling(sid)?.receive({ id: sid, kind: 'answer', sdp });
+      calling(sid)?.receive({ id: sid, kind: 'answer', sdp, reoffer: true });
       return;
     }
     case 'content-add': {

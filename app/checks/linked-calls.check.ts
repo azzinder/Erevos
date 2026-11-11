@@ -4,8 +4,9 @@
 
 // Calls on the account's linked devices (lib/linked-calls.ts): where the phone sends each call
 // signal, so a contact's call rings everywhere, the first to answer takes it and the others stop,
-// and a device calls through the account. Then a call stopped here because another device took it
-// (lib/call.ts), and its line (lib/calls.ts, lib/call-lines.ts).
+// a new description of the call (video added) goes only between the contact and the device that
+// has it, and a device calls through the account. Then a call stopped here because another device
+// took it (lib/call.ts), and its line (lib/calls.ts, lib/call-lines.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -51,6 +52,21 @@ test('a contact calls: it rings on every device, the first to answer takes it, t
   assert.deepEqual(calls.contact(C, end('hangup'), [DELL, MAC], false), [{ to: 'devices', c: C, ids: [DELL], signal: end('hangup') }]);
   assert.equal(calls.busy(), false);
   assert.deepEqual(calls.contact(C, end('hangup'), [DELL, MAC], false), []);
+});
+
+test('a new description of the call, as video is added to it, goes between the contact and the device that has it only', () => {
+  const calls = new LinkedCalls();
+  calls.contact(C, offer, [DELL, MAC], false);
+  calls.device(DELL, C, answer, false);
+  const reoffer: CallSignal = { id: ID, kind: 'reoffer', sdp: 'v=0\r\nvideo' };
+  const reanswer: CallSignal = { id: ID, kind: 'reanswer', sdp: 'v=0\r\nyes' };
+  assert.deepEqual(calls.device(DELL, C, reoffer, false), [{ to: 'contact', c: C, signal: reoffer }]);
+  assert.deepEqual(calls.device(MAC, C, reoffer, false), []);
+  assert.deepEqual(calls.contact(C, reanswer, [DELL, MAC], false), [{ to: 'devices', c: C, ids: [DELL], signal: reanswer }]);
+  assert.deepEqual(calls.contact(C, reoffer, [DELL, MAC], false), [{ to: 'devices', c: C, ids: [DELL], signal: reoffer }]);
+  assert.deepEqual(calls.device(DELL, C, { id: ID, kind: 'reanswer' }, false), [{ to: 'contact', c: C, signal: { id: ID, kind: 'reanswer' } }]);
+  // Of a call nobody has here: nowhere.
+  assert.deepEqual(calls.device(DELL, C, { ...reoffer, id: 'ffffffffffffffff' }, false), []);
 });
 
 test('the phone answers first, or turns it down, or it is missed', () => {
