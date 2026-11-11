@@ -11,7 +11,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
+import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, SMS_TITLE, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -224,6 +224,12 @@ export class SmsLink {
       const others = d.messagePins.filter((p) => !(p.id === message.id && sameConversation(p.address, address)));
       return { ...d, messagePins: on ? [...others, { address, id: message.id, at: message.at }].slice(-MAX_MESSAGE_PINS) : others };
     });
+  }
+
+  /** Gives a group's conversation a name of the owner's own, or takes it away with an empty one. */
+  setTitle(address: string, name: string): Promise<void> {
+    const named = name.trim().slice(0, SMS_TITLE);
+    return this.update((d) => ({ ...d, titles: [...d.titles.filter((n) => !sameConversation(n.address, address)), ...(named ? [{ address, name: named }] : [])] }));
   }
 
   /** What is typed in a conversation and not sent, or nothing. */

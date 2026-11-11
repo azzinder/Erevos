@@ -249,6 +249,11 @@ export function spamWhy(reason: SpamReason): string {
   }
 }
 
+/** A group's conversation's name of the owner's own (lib/sms-link.ts setTitle), or ''. */
+export function smsTitle(data: Pick<SmsData, 'titles'> | null | undefined, address: string): string {
+  return data?.titles?.find((n) => sameConversation(n.address, address))?.name ?? '';
+}
+
 /** The Trash's entry for a conversation, if some of it is there. */
 export function trashOf(address: string, data: SmsData): Trashed | null {
   return data.trash.find((t) => sameConversation(t.address, address)) ?? null;

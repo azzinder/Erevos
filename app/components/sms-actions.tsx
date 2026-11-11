@@ -10,20 +10,22 @@ import { ask } from '../lib/alert';
 import { isContactNumber } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
 import { t } from '../lib/i18n';
-import { isBlocked, smsOrderChanged, spamMark, type SmsFolder } from '../lib/sms-folders';
-import { sameConversation, smsNumbers } from '../lib/sms-group';
+import { isBlocked, smsOrderChanged, smsTitle, spamMark, type SmsFolder } from '../lib/sms-folders';
+import { groupName, sameConversation, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
-import { MAX_PINS, TRASH_DAYS } from '../lock/sms-data';
+import { MAX_PINS, SMS_TITLE, TRASH_DAYS } from '../lock/sms-data';
 import { blockedNumbers, blockNumber, canBlockNumbers, smsMirrored, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
+import { OwnName } from './own-name';
 import { Sheet, Text } from './ui';
 import { offerUndo } from './undo-bar';
 
 // What can be done to an SMS conversation, from the list (held down), a folder, or the conversation
-// itself (⋮): add its number to the contacts when it is none, pin it at the top, archive it, say it
-// is spam or not, block its number in Android's own list, or put it in the Trash. Each but pinning shows Undo for a few seconds after
+// itself (⋮): add its number to the contacts when it is none, give a group's a name of its own here,
+// pin it at the top, archive it, say it is spam or not, block its number in Android's own list, or
+// put it in the Trash. Each but pinning and naming shows Undo for a few seconds after
 // (components/undo-bar.tsx). Pins, the Archive, the Trash and spam marks are this space's own,
 // sealed in it (lock/sms-data.ts); the blocked numbers are Android's, the same in every space.
 
@@ -101,11 +103,14 @@ export function SmsActions({ target, onClose, onTrashed, more }: {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const [state, setState] = useState<State | null>(null);
+  // Naming a group's conversation: its field shows in place of the actions.
+  const [naming, setNaming] = useState(false);
   const numbers = target ? smsNumbers(target.address) : [];
   const one = numbers.length === 1 ? numbers[0] : null;
 
   useEffect(() => {
     setState(null);
+    setNaming(false);
     if (!target) return;
     let active = true;
     const { space: current, key } = currentSpace();
@@ -182,6 +187,8 @@ export function SmsActions({ target, onClose, onTrashed, more }: {
     },
   }));
   if (one && state?.known === false) rows.push({ label: t('Add to contacts'), run: addContact });
+  // A group MMS has no name of its own: one can be given here, for this space's eyes only.
+  if (numbers.length > 1) rows.push({ label: t('Name it here'), run: () => setNaming(true) });
   if (target.folder === 'list') rows.push({ label: pinned ? t('Unpin') : t('Pin to the top'), run: pin });
   if (target.folder !== 'spam') rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });
   if (one && state?.blocked !== true) rows.push({ label: spam ? t('Not spam') : t('Mark as spam'), run: markSpam });
@@ -191,7 +198,22 @@ export function SmsActions({ target, onClose, onTrashed, more }: {
 
   return (
     <Sheet visible onClose={onClose} title={target.name}>
-      {rows.map((row) => (
+      {naming && state ? (
+        <OwnName
+          open
+          label={t('Name it here')}
+          current={smsTitle(data, address)}
+          placeholder={groupName(numbers)}
+          max={SMS_TITLE}
+          hint={t('Only on this device: nobody is told. Empty, its usual name shows again.')}
+          onSave={async (name) => {
+            await state.link.setTitle(address, name);
+            smsOrderChanged();
+            onClose();
+          }}
+        />
+      ) : null}
+      {naming ? null : rows.map((row) => (
         <Pressable
           key={row.label}
           accessibilityRole="button"

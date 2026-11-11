@@ -106,6 +106,12 @@ coup serait lent, surtout sur les téléphones anciens. Les discussions masquée
 d’accueil pour que l’écran d’accueil ait le même aspect, qu’un espace en ait ou non : leurs messages ne peuvent être lus
 que tant que leur code PIN les tient ouvertes.
 
+**Épinglées et archivées :** garde le doigt sur n’importe quelle discussion de l’écran d’accueil, d’un contact ou d’un
+groupe, sur Matrix, XMPP, Nostr ou en SMS, pour **Épingler en haut**, **Archiver** et, sur Android, **Mettre cette
+discussion en sourdine**. Au plus 10 discussions restent épinglées. Une discussion archivée quitte la liste jusqu’à ce
+qu’un nouveau message en vienne ; touche **Archivées** en haut pour voir ce que tu as archivé, SMS compris, et
+touche-le encore pour revenir. Les discussions masquées ont leurs propres discussions épinglées et archivées.
+
 - **L’image** est dessinée à partir de la clé du contact : la même clé donne toujours les mêmes couleurs et la même lune
   (en verts sous Matrix), si bien que tu reconnais une discussion d’un coup d’œil sans aucune photo. Ce n’est pas une
   vérification de la clé ; le [numéro de sécurité](#relay) en est une.
@@ -2085,6 +2091,11 @@ discussions Matrix restent donc à part et marquées, pour les personnes que tu 
   **Afficher**, avec **Ajouter aux contacts** ; une vidéo part sans les parties qui disent où elle a été filmée ou
   avec quel téléphone. Un message que tu transfères est marqué **Transféré** sur ton téléphone seulement, donc les
   autres n’apprennent jamais d’où il vient.
+- **Épinglés, en dernier et nommés :** épingler un salon en fait ton favori sur Matrix, donc tes autres apps Matrix le
+  montrent épinglé aussi, et les salons de faible priorité viennent en dernier. Dans la liste de l’écran d’accueil,
+  ton dernier message montre ✓✓✓ dès que tout le monde dans le salon l’a lu. **Lui donner un nom ici** (une personne)
+  ou **Donner un nom ici** (un groupe), au pied de la discussion, donne à un salon un nom à toi, sur ce téléphone
+  seulement ; personne n’est prévenu.
 
 ## XMPP {#xmpp}
 
@@ -2249,6 +2260,9 @@ discussions XMPP restent donc à part et marquées, pour les personnes que tu ne
   discussion Matrix, avec **Appareil photo**, **Vidéo**, **Carte de contact** et **Qualité de la photo** (voir
   [Matrix](#matrix)). Dans un groupe, taper @ propose ses membres, et un appui écrit le nom de celui-ci dans le
   groupe, comme le fait Conversations.
+- **Un nom à toi :** **Lui donner un nom ici**, au pied de la discussion d’un contact, garde un nom à toi pour lui
+  dans tes contacts sur ton serveur XMPP, donc tes autres apps XMPP le montrent aussi. Il n’est pas prévenu. Laisse-le
+  vide pour montrer de nouveau son adresse.
 
 ## Discussions avec d’autres applis Nostr {#nostr-chats}
 
@@ -2553,6 +2567,8 @@ dernier chemin, et seulement quand tu le choisis.
   une retourner à sa place.
 - **Conversations archivées :** hors de la liste, sous **Archivées** en haut de l’écran d’accueil. Une conversation
   revient toute seule dans la liste quand un nouveau SMS en arrive, ou avec **Désarchiver**.
+- **Noms des MMS de groupe :** garde le doigt sur un MMS de groupe et choisis **Donner un nom ici** pour lui donner un
+  nom à toi, sur ce téléphone seulement.
 - **Corbeille :** une conversation supprimée attend 30 jours dans la **Corbeille**, puis Erevos la supprime des SMS du
   téléphone. D’ici là, **Récupérer** la remet dans la liste ; **Supprimer maintenant** et **Vider la corbeille**
   suppriment aussitôt, pour de bon. Un SMS qui arrive après qu’elle est partie dans la corbeille s’affiche de nouveau

@@ -45,7 +45,7 @@ import { spaceLinkSender } from '../lib/queue-move';
 import { appShown, onAppShown } from '../lib/receiver';
 import { relayKey } from '../lib/relay';
 import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
-import { onSmsOrderChanged, shownMessages, smsFolder, spamReason, spamWhy, trashOf } from '../lib/sms-folders';
+import { onSmsOrderChanged, shownMessages, smsFolder, smsTitle, spamReason, spamWhy, trashOf } from '../lib/sms-folders';
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { MMS_MAX, pickMmsPhoto } from '../lib/pick-mms-photo';
@@ -480,7 +480,7 @@ export default function Sms() {
   spot.current = () => (left.current && shown.some((m) => smsLineId(m) === left.current) ? (placed.current.get(left.current) ?? null) : undefined);
   // The one-time code of each SMS that came with one, found once for the conversation as read.
   const codes = useMemo(() => new Map(messages.filter((m) => !m.mine && m.text).map((m) => [smsLineId(m), oneTimeCode(m.text)] as const)), [messages]);
-  const title = group ? groupName(numbers, names) : names[to] || to;
+  const title = group ? smsTitle(order, to) || groupName(numbers, names) : names[to] || to;
   // Where the conversation is, by its latest message: in the list, archived, in Spam, or in the
   // Trash with nothing after.
   const last = messages[messages.length - 1] ?? null;

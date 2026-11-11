@@ -99,6 +99,12 @@ odjednom bilo bi sporo, naročito na starijim telefonima. Skriveni razgovori izo
 ekrana kako bi početni ekran izgledao isto, imao prostor skrivene razgovore ili ne: njihove poruke mogu se čitati samo
 dok ih njihov PIN drži otvorenima.
 
+**Prikvačeni i arhivirani:** na početnom ekranu zadržite bilo koji razgovor, s kontaktom ili grupom, na Matrixu,
+XMPP-u, Nostru ili u SMS-u, za **Prikvači na vrh**, **Arhiviraj** i, na Androidu, **Utišaj ovaj razgovor**. Najviše 10
+razgovora ostaje prikvačeno. Arhivirani razgovor napušta popis dok iz njega ne stigne nova poruka; dodirnite
+**Arhivirano** na vrhu da vidite šta ste arhivirali, i SMS, i dodirnite ponovo da se vratite. Skriveni razgovori imaju
+svoje prikvačene i arhivirane razgovore.
+
 - **Slika** se iscrtava iz ključa kontakta: isti ključ uvijek daje iste boje i isti mjesec (u zelenim tonovima pod
   Matrixom), pa razgovor prepoznajete na prvi pogled, bez ikakve fotografije. To nije provjera ključa; to je
   [sigurnosni broj](#relay).
@@ -1900,6 +1906,10 @@ razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko
   prikazuje se kao kartica čim dodirnete **Prikaži**, s **Dodaj u kontakte**; video ide bez dijelova koji govore gdje
   je snimljen ili kojim telefonom. Poruka koju proslijedite označena je kao **Proslijeđeno** samo na vašem telefonu,
   pa drugi nikad ne saznaju odakle je došla.
+- **Prikvačene, na kraju i imenovane:** prikvačivanje sobe čini je vašom omiljenom na Matrixu, pa je i vaše druge
+  Matrix aplikacije prikazuju prikvačenom, a sobe niskog prioriteta dolaze na kraj. Na popisu početnog ekrana vaša
+  posljednja poruka pokazuje ✓✓✓ čim je svi u sobi pročitaju. **Imenujte ih ovdje** (osoba) ili **Imenujte ga ovdje**
+  (grupa), na dnu razgovora, daje sobi vaše ime, samo na ovom telefonu; nikome se ne javlja.
 
 ## XMPP {#xmpp}
 
@@ -2047,6 +2057,9 @@ odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 - **Šta poruka nosi:** oznake za izgled riječi i web adrese koje se mogu dodirnuti, kao u razgovoru na Matrixu, s
   **Kamera**, **Video**, **Kartica kontakta** i **Kvalitet fotografije** (pogledajte [Matrix](#matrix)). U grupi, kad
   upišete @, vidite njene članove, a dodir upisuje ime tog člana u grupu, kao što to radi Conversations.
+- **Vaše ime za kontakt:** **Imenujte ih ovdje**, na dnu razgovora s kontaktom, čuva vaše ime za njega u vašim
+  kontaktima na vašem XMPP serveru, pa ga prikazuju i vaše druge XMPP aplikacije. Kontakt to ne saznaje. Ostavite
+  prazno da se ponovo prikaže njegova adresa.
 
 ## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
 
@@ -2323,6 +2336,8 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
 - **Prikvačeno:** do 10 SMS razgovora ostaje na vrhu popisa, prikvačeno. **Otkvači** vraća jedan na njegovo mjesto.
 - **Arhivirani razgovori:** izvan popisa, pod **Arhivirano** na vrhu početnog ekrana. Razgovor se sam vraća na popis
   kad od te osobe stigne novi SMS, ili s **Vrati iz arhive**.
+- **Imena grupnih MMS-ova:** zadržite grupni MMS i izaberite **Imenujte ga ovdje** da mu date vaše ime, samo na ovom
+  telefonu.
 - **Otpad:** obrisani razgovor čeka u **Otpad** 30 dana, a zatim ga Erevos briše iz SMS poruka telefona. Do tada ga
   **Vrati** vraća na popis; **Obriši sada** i **Isprazni otpad** brišu odmah, zauvijek. SMS koji stigne nakon što je
   razgovor otišao u otpad ponovo se prikazuje na popisu. Samo SMS aplikacija smije brisati SMS poruke.

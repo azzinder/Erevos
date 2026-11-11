@@ -96,6 +96,11 @@ the lower arrow, goes back to the end.
 on older phones most of all. Hidden chats are left out of the home screen's search so that the home screen looks the
 same whether a space has any or not: their messages can be read only while their PIN has them open.
 
+**Pinned and archived:** hold any chat down on the home screen, a contact's or a group's, on Matrix, XMPP, Nostr or
+SMS, for **Pin to the top**, **Archive** and, on Android, **Mute this chat**. At most 10 chats stay pinned. An
+archived chat leaves the list until a new message comes from it; tap **Archived** at the top to see what you archived,
+SMS too, and tap it again to go back. Hidden chats keep their own pinned and archived chats.
+
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
@@ -1818,6 +1823,10 @@ marked, for the people you would otherwise reach only on Matrix.
   any app opens, and one that comes shows as a card once you tap **Show**, with **Add to contacts**; a video goes
   without the parts that say where it was filmed or on which phone. A message you forward is marked **Forwarded** on
   your phone only, so the others never learn where it came from.
+- **Pinned, last and named:** pinning a room makes it your favourite on Matrix, so your other Matrix apps show it
+  pinned too, and rooms of low priority come last. On the home list your last message shows ✓✓✓ once everyone in the
+  room has read it. **Name them here** (a person) or **Name it here** (a group), at the foot of the chat, gives a room
+  a name of your own, only on this phone; nobody is told.
 
 ## XMPP {#xmpp}
 
@@ -1964,6 +1973,9 @@ the people you would otherwise reach only on XMPP.
 - **What a message carries:** the marks for how words look and tappable web addresses, as in a Matrix chat, with
   **Camera**, **Video**, **Contact card** and **Photo quality** (see [Matrix](#matrix)). In a group, typing @ offers
   its members, and a tap writes that one's name in the group, as Conversations does.
+- **A name of your own:** **Name them here**, at the foot of a contact's chat, keeps a name of your own for them in
+  your contacts on your XMPP server, so your other XMPP apps show it too. They are not told. Leave it empty to show
+  their address again.
 
 ## Chats with other Nostr apps {#nostr-chats}
 
@@ -2226,6 +2238,8 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
   place.
 - **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to
   the list by itself when a new SMS comes from them, or with **Unarchive**.
+- **Group MMS names:** hold a group MMS down and choose **Name it here** to give it a name of your own, only on this
+  phone.
 - **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
   then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
   SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.

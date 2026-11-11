@@ -104,6 +104,12 @@ zeichnen wäre langsam, vor allem auf älteren Telefonen. Versteckte Chats sind 
 ausgenommen, damit der Startbildschirm gleich aussieht, ob ein Bereich welche hat oder nicht: Ihre Nachrichten lassen
 sich nur lesen, solange ihre PIN sie geöffnet hat.
 
+**Angeheftet und archiviert:** Halte auf dem Startbildschirm einen beliebigen Chat gedrückt, den eines Kontakts oder
+einer Gruppe, bei Matrix, XMPP, Nostr oder SMS, für **Oben anheften**, **Archivieren** und, auf Android, **Diesen Chat
+stummschalten**. Höchstens 10 Chats bleiben angeheftet. Ein archivierter Chat verlässt die Liste, bis eine neue
+Nachricht von dort kommt; tippe oben auf **Archiviert**, um zu sehen, was du archiviert hast, auch SMS, und tippe noch
+einmal, um zurückzugehen. Versteckte Chats haben ihre eigenen angehefteten und archivierten Chats.
+
 - **Das Bild** wird aus dem Schlüssel des Kontakts gezeichnet: Derselbe Schlüssel ergibt immer dieselben Farben und
   denselben Mond (in Grüntönen unter Matrix), sodass du einen Chat auf einen Blick erkennst, ohne Foto. Es ist keine
   Prüfung des Schlüssels; das ist die [Sicherheitsnummer](#relay).
@@ -2112,6 +2118,11 @@ Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Ma
   kommt, zeigt sich als Karte, sobald du **Zeigen** tippst, mit **Zu Kontakten hinzufügen**; ein Video geht ohne die
   Teile, die sagen, wo es gefilmt wurde oder mit welchem Telefon. Eine Nachricht, die du weiterleitest, ist nur auf
   deinem Telefon als **Weitergeleitet** markiert, sodass die anderen nie erfahren, woher sie kam.
+- **Angeheftet, zuletzt und benannt:** Einen Raum anzuheften macht ihn zu deinem Favoriten bei Matrix, sodass deine
+  anderen Matrix-Apps ihn auch angeheftet zeigen, und Räume mit niedriger Priorität kommen zuletzt. In der Liste des
+  Startbildschirms zeigt deine letzte Nachricht ✓✓✓, sobald alle im Raum sie gelesen haben. **Hier benennen** (eine
+  Person) oder **Hier einen Namen geben** (eine Gruppe), unten im Chat, gibt einem Raum einen eigenen Namen, nur auf
+  diesem Telefon; niemand erfährt es.
 
 ## XMPP {#xmpp}
 
@@ -2277,6 +2288,9 @@ getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
   Matrix-Chat, mit **Kamera**, **Video**, **Kontaktkarte** und **Fotoqualität** (siehe [Matrix](#matrix)). In einer
   Gruppe zeigt @ ihre Mitglieder, und ein Tippen schreibt den Namen des Mitglieds in die Gruppe, wie Conversations es
   tut.
+- **Ein eigener Name:** **Hier benennen**, unten im Chat eines Kontakts, behält einen eigenen Namen für ihn in deinen
+  Kontakten auf deinem XMPP-Server, sodass deine anderen XMPP-Apps ihn auch zeigen. Er erfährt es nicht. Lass es leer,
+  um wieder seine Adresse zu zeigen.
 
 ## Chats mit anderen Nostr-Apps {#nostr-chats}
 
@@ -2579,6 +2593,8 @@ wenn du ihn wählst.
   ihren Platz zurück.
 - **Archivierte Unterhaltungen:** aus der Liste heraus, unter **Archiviert** oben auf dem Startbildschirm. Eine kommt
   von selbst in die Liste zurück, wenn eine neue SMS von dort kommt, oder mit **Aus dem Archiv holen**.
+- **Namen für Gruppen-MMS:** Halte eine Gruppen-MMS gedrückt und wähle **Hier einen Namen geben**, um ihr einen
+  eigenen Namen zu geben, nur auf diesem Telefon.
 - **Papierkorb:** Eine gelöschte Unterhaltung wartet 30 Tage im **Papierkorb**, dann löscht Erevos sie aus den SMS des
   Telefons. Bis dahin legt **Zurückholen** sie zurück in die Liste; **Jetzt löschen** und **Papierkorb leeren** löschen
   sofort, endgültig. Eine SMS, die kommt, nachdem die Unterhaltung im Papierkorb gelandet ist, erscheint wieder in der

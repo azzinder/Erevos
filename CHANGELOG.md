@@ -50,6 +50,14 @@ On main, not released yet:
   the message, and a chat's own lists its stars. A held photo, video, voice message or file, or an MMS's picture, has
   **Save to the Collection**, and a sticker or photo that came has **Add to my stickers**; the SMS sticker picker
   offers your own stickers to send as MMS. Stars are in backups. Not yet: stars in an Erevos contact's SMS.
+- **Pin and archive any chat**: hold any chat down on the home list, an Erevos contact or group, Matrix, XMPP or
+  Nostr, not only SMS, for **Pin to the top**, **Archive** and, on Android, **Mute this chat**. At most 10 pins; an
+  archived chat comes back when a new message comes from it, and **Archived** shows them all, SMS too, in place. A
+  Matrix pin is m.favourite on the server, so other Matrix apps show it pinned; m.lowpriority rooms come last;
+  archiving is local only. Matrix rooms (on this phone only), XMPP contacts (in the roster on the server, RFC 6121)
+  and group MMS take names of one's own. A Matrix row shows ✓✓✓ once everyone has read the last message. Pins and
+  archive are kept encrypted and are in backups; hidden places keep their own. Fixed: SMS pins were lost when network
+  rows were merged into the list.
 
 ### Under the hood
 

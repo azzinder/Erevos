@@ -37,6 +37,7 @@ import {
   replyXmppText,
   retractXmpp,
   publishOmemo,
+  renameXmppContact,
   renewDevice,
   sendKeepAlive,
   sendXmppFile,
@@ -809,6 +810,12 @@ export function xmppRead(jid: string): Promise<void> {
 export function xmppAddContact(jid: string, name?: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => addXmppContact(it.state, online(it), jid, name));
+}
+
+/** Names a contact as we see them, in the account's contacts on its server (lib/xmpp.ts renameXmppContact). */
+export function xmppRenameContact(jid: string, name: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => renameXmppContact(it.state, online(it), jid, name));
 }
 
 export function xmppDecline(jid: string): Promise<void> {

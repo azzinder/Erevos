@@ -6,6 +6,7 @@ import type { SmsData } from '../lock/sms-data';
 import { blockedNumbers, contactCards, smsMirrored, smsThreads, type ContactCard } from '../modules/erevos-sms';
 import { sealedNamer } from './contact-book';
 import type { InboxSms } from './inbox';
+import { smsTitle } from './sms-folders';
 import { groupName, smsNumbers } from './sms-group';
 import { SmsLink } from './sms-link';
 import { mirroredNames } from './sms-mirror';
@@ -35,12 +36,12 @@ export async function smsRows(space: number, key: Uint8Array): Promise<SmsList> 
     const name = cards[number]?.name || sealed(number);
     if (name) names[number] = name;
   }
-  // A group's MMS conversation: named by all its numbers.
+  // A group's MMS conversation: named as the owner named it here, else by all its numbers.
   const rows = threads.map((t) => {
     const numbers = smsNumbers(t.address);
     const one = numbers[0] ?? t.address;
     const card = numbers.length > 1 ? undefined : cards[one];
-    return { ...t, text: listWords(t.text), name: numbers.length > 1 ? groupName(numbers, names) : names[one], photo: card?.photo || undefined };
+    return { ...t, text: listWords(t.text), name: numbers.length > 1 ? smsTitle(link?.state, t.address) || groupName(numbers, names) : names[one], photo: card?.photo || undefined };
   });
   return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers(), names: naming };
 }

@@ -13,13 +13,13 @@ import { UndoBar } from '../components/undo-bar';
 import { confirm } from '../lib/alert';
 import { lang, plural, t } from '../lib/i18n';
 import { rowTime, type InboxSms } from '../lib/inbox';
-import { emptyTrash, onSmsOrderChanged, smsOrderChanged, sortSms, spamReason, spamWhy, trashGoesAt } from '../lib/sms-folders';
+import { emptyTrash, onSmsOrderChanged, smsOrderChanged, smsTitle, sortSms, spamReason, spamWhy, trashGoesAt } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
-import { TRASH_DAYS, type Trashed } from '../lock/sms-data';
+import { TRASH_DAYS, type SmsTitle, type Trashed } from '../lock/sms-data';
 import { blockedNumbers, contactNames, deleteSmsThread, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -45,6 +45,8 @@ export default function SmsFolderScreen() {
   const [why, setWhy] = useState<Record<string, string>>({});
   const [trash, setTrash] = useState<Trashed[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  // The names given here to groups' conversations.
+  const [titles, setTitles] = useState<SmsTitle[]>([]);
   const [target, setTarget] = useState<SmsTarget | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -70,6 +72,7 @@ export default function SmsFolderScreen() {
         if (reason) reasons[th.address] = spamWhy(reason);
       }
       setNames(found);
+      setTitles(link.state.titles);
       setWhy(reasons);
       setRows(folder === 'spam' ? sorted.spam : sorted.archived);
       setTrash([...link.state.trash].sort((a, b) => b.at - a.at));
@@ -87,7 +90,7 @@ export default function SmsFolderScreen() {
   // A conversation's name: as the phone's contacts name its numbers, when allowed.
   function nameOf(address: string): string {
     const numbers = smsNumbers(address);
-    if (numbers.length > 1) return groupName(numbers, names);
+    if (numbers.length > 1) return smsTitle({ titles }, address) || groupName(numbers, names);
     return names[numbers[0] ?? address] || address;
   }
 

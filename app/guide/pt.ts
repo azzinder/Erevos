@@ -100,6 +100,12 @@ sobretudo em celulares mais antigos. As conversas ocultas ficam fora da busca da
 pareça igual, quer um espaço tenha alguma ou não: as mensagens delas só podem ser lidas enquanto o PIN delas as mantém
 abertas.
 
+**Fixadas e arquivadas:** segure qualquer conversa na tela inicial, de um contato ou de um grupo, no Matrix, XMPP,
+Nostr ou SMS, para **Fixar no topo**, **Arquivar** e, no Android, **Silenciar esta conversa**. No máximo 10 conversas
+ficam fixadas. Uma conversa arquivada sai da lista até chegar uma mensagem nova dela; toque em **Arquivadas** no topo
+para ver o que você arquivou, SMS também, e toque de novo para voltar. As conversas ocultas têm suas próprias
+conversas fixadas e arquivadas.
+
 - **A imagem** é desenhada a partir da chave do contato: a mesma chave dá sempre as mesmas cores e a mesma lua (em tons
   de verde no Matrix), para você reconhecer uma conversa de relance sem nenhuma foto. Não é uma verificação da chave; o
   [número de segurança](#relay) é.
@@ -1966,6 +1972,10 @@ conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcan�
   chega aparece como cartão assim que você toca em **Mostrar**, com **Adicionar aos contatos**; um vídeo vai sem as
   partes que dizem onde foi filmado ou com qual celular. Uma mensagem que você encaminha fica marcada **Encaminhada**
   só no seu celular, então os outros nunca sabem de onde veio.
+- **Fixadas, por último e com nome:** fixar uma sala a torna sua favorita no Matrix, então seus outros apps do Matrix
+  também a mostram fixada, e as salas de prioridade baixa vêm por último. Na lista da tela inicial sua última mensagem
+  mostra ✓✓✓ assim que todos na sala a leram. **Dar um nome aqui** (uma pessoa) ou **Nomear aqui** (um grupo), no pé
+  da conversa, dá a uma sala um nome seu, só neste celular; ninguém fica sabendo.
 
 ## XMPP {#xmpp}
 
@@ -2121,6 +2131,9 @@ conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcança
 - **O que uma mensagem leva:** as marcas de como as palavras aparecem e endereços web para tocar, como numa conversa
   do Matrix, com **Câmera**, **Vídeo**, **Cartão de contato** e **Qualidade da foto** (veja [Matrix](#matrix)). Num
   grupo, digitar @ mostra seus membros, e um toque escreve o nome desse membro no grupo, como faz o Conversations.
+- **Um nome seu:** **Dar um nome aqui**, no pé da conversa de um contato, guarda um nome seu para ele nos seus
+  contatos do seu servidor XMPP, então seus outros apps de XMPP também o mostram. Ele não fica sabendo. Deixe vazio
+  para mostrar o endereço dele de novo.
 
 ## Conversas com outros apps Nostr {#nostr-chats}
 
@@ -2407,6 +2420,8 @@ escolhe.
   lugar.
 - **Conversas arquivadas:** fora da lista, em **Arquivadas** no topo da tela inicial. Uma volta à lista sozinha quando
   chega um novo SMS daquele número, ou com **Desarquivar**.
+- **Nomes de MMS em grupo:** segure um MMS em grupo e escolha **Nomear aqui** para dar a ele um nome seu, só neste
+  celular.
 - **Lixeira:** uma conversa apagada espera na **Lixeira** 30 dias, e depois o Erevos a apaga dos SMS do celular. Até
   lá, **Recuperar** a põe de volta na lista; **Apagar agora** e **Esvaziar a lixeira** apagam na hora, de vez. Um SMS
   que chega depois de ela ir para a Lixeira aparece na lista de novo. Só o app de SMS pode apagar SMS.

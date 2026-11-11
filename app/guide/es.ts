@@ -102,6 +102,12 @@ sería lento, sobre todo en teléfonos antiguos. Los chats ocultos quedan fuera 
 para que se vea igual tanto si un espacio tiene alguno como si no: sus mensajes solo se pueden leer mientras su PIN los
 tiene abiertos.
 
+**Fijados y archivados:** mantén pulsado cualquier chat en la pantalla de inicio, de un contacto o de un grupo, de
+Matrix, XMPP, Nostr o SMS, para **Fijar arriba**, **Archivar** y, en Android, **Silenciar este chat**. Como mucho 10
+chats quedan fijados. Un chat archivado sale de la lista hasta que llega un mensaje nuevo de él; toca **Archivadas**
+arriba para ver lo que archivaste, SMS también, y tócalo otra vez para volver. Los chats ocultos tienen sus propios
+chats fijados y archivados.
+
 - **La imagen** se dibuja a partir de la clave del contacto: la misma clave da siempre los mismos colores y la misma luna
   (en verdes con Matrix), así que reconoces un chat de un vistazo sin ninguna foto. No es una comprobación de la clave;
   el [número de seguridad](#relay) sí lo es.
@@ -1980,6 +1986,11 @@ chats de Matrix van aparte y marcados, para las personas a las que solo llegarí
   que llega se ve como tarjeta en cuanto tocas **Mostrar**, con **Añadir a contactos**; un vídeo va sin las partes que
   dicen dónde se grabó o con qué teléfono. Un mensaje que reenvías se marca **Reenviado** solo en tu teléfono, así los
   demás nunca saben de dónde vino.
+- **Fijadas, al final y con nombre:** fijar una sala la hace tu favorita en Matrix, así que tus otras apps de Matrix
+  también la muestran fijada, y las salas de prioridad baja van al final. En la lista de la pantalla de inicio tu
+  último mensaje muestra ✓✓✓ en cuanto todos en la sala lo han leído. **Ponerle un nombre aquí** (una persona) o
+  **Darle un nombre aquí** (un grupo), al pie del chat, da a una sala un nombre tuyo, solo en este teléfono; nadie se
+  entera.
 
 ## XMPP {#xmpp}
 
@@ -2136,6 +2147,9 @@ de XMPP van aparte y marcados, para las personas a las que solo llegarías por X
   un chat de Matrix, con **Cámara**, **Vídeo**, **Tarjeta de contacto** y **Calidad de la foto** (ver
   [Matrix](#matrix)). En un grupo, al escribir @ ves sus miembros, y un toque escribe el nombre de ese miembro en el
   grupo, como hace Conversations.
+- **Un nombre tuyo:** **Ponerle un nombre aquí**, al pie del chat de un contacto, guarda un nombre tuyo para él en tus
+  contactos de tu servidor XMPP, así que tus otras apps de XMPP también lo muestran. No se le avisa. Déjalo vacío para
+  volver a mostrar su dirección.
 
 ## Chats con otras apps de Nostr {#nostr-chats}
 
@@ -2426,6 +2440,8 @@ cuando tú lo eliges.
   una a su sitio.
 - **Conversaciones archivadas:** fuera de la lista, en **Archivadas** arriba de la pantalla de inicio. Una vuelve sola
   a la lista cuando llega un SMS nuevo de ese número, o con **Desarchivar**.
+- **Nombres de MMS de grupo:** mantén pulsado un MMS de grupo y elige **Darle un nombre aquí** para darle un nombre
+  tuyo, solo en este teléfono.
 - **Papelera:** una conversación eliminada espera en la **Papelera** 30 días, y luego Erevos la elimina de los SMS del
   teléfono. Hasta entonces **Recuperar** la devuelve a la lista; **Eliminar ahora** y **Vaciar la papelera** eliminan al
   instante, para siempre. Un SMS que llega después de que fuera a la Papelera aparece de nuevo en la lista. Solo la app

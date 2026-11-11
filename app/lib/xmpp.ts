@@ -1970,6 +1970,32 @@ export async function addXmppContact(state: XmppState, connection: XmppConnectio
   chatOf(state, who);
 }
 
+/** The most characters of a name we give a contact. */
+export const XMPP_CONTACT_NAME = 64;
+
+/**
+ * Names a contact as we see them, or takes our name away with an empty one: the name of their item in
+ * the account's contacts on its server (RFC 6121, roster), so the account's other apps show it too,
+ * and they are not told. The contacts are asked for first, so the item goes back with its groups as
+ * they are: a change carries all of an item, and groups left out would be taken off it.
+ */
+export async function renameXmppContact(state: XmppState, connection: XmppConnection, jid: string, name: string): Promise<void> {
+  const who = bare(jid);
+  const answer = await connection.iq('get', undefined, el('query', { xmlns: NS.roster }));
+  const query = child(answer, 'query', NS.roster);
+  takeRoster(state, query, true);
+  const item = children(query, 'item', NS.roster).find((i) => bare(i.attrs.jid ?? '') === who);
+  if (!item) throw new XmppError(t('They are not in your XMPP contacts.'));
+  const named = name.trim().slice(0, XMPP_CONTACT_NAME);
+  const groups = children(item, 'group').map((g) => textOf(g));
+  await connection.iq('set', undefined, el('query', { xmlns: NS.roster }, el('item', { jid: who, name: named || undefined }, ...groups.map((g) => el('group', {}, g)))));
+  // The server tells every app of the account the item changed; this one now.
+  if (state.roster[who]) {
+    if (named) state.roster[who].name = named;
+    else delete state.roster[who].name;
+  }
+}
+
 /** Says no to someone who asked to add us. */
 export async function declineXmppRequest(state: XmppState, connection: XmppConnection, jid: string): Promise<void> {
   await connection.send(el('presence', { to: jid, type: 'unsubscribed' }));

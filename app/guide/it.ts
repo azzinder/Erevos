@@ -102,6 +102,12 @@ lento, soprattutto sui telefoni più vecchi. Le chat nascoste restano fuori dall
 così che la schermata principale appaia uguale che uno spazio ne abbia o no: i loro messaggi si possono leggere solo
 mentre il loro PIN le tiene aperte.
 
+**Fissate e archiviate:** tieni premuta una chat qualsiasi nella schermata principale, di un contatto o di un gruppo,
+su Matrix, XMPP, Nostr o SMS, per **Fissa in alto**, **Archivia** e, su Android, **Silenzia questa chat**. Al massimo
+10 chat restano fissate. Una chat archiviata lascia l’elenco finché non ne arriva un nuovo messaggio; tocca
+**Archiviate** in alto per vedere ciò che hai archiviato, SMS compresi, e toccalo di nuovo per tornare. Le chat
+nascoste hanno le proprie chat fissate e archiviate.
+
 - **L’immagine** è disegnata dalla chiave del contatto: la stessa chiave dà sempre gli stessi colori e la stessa luna
   (nei verdi con Matrix), così riconosci una chat a colpo d’occhio senza nessuna foto. Non è una verifica della chiave;
   il [codice di sicurezza](#relay) lo è.
@@ -1993,6 +1999,11 @@ parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.
   e una che arriva si vede come scheda appena tocchi **Mostra**, con **Aggiungi ai contatti**; un video parte senza le
   parti che dicono dove è stato girato o con quale telefono. Un messaggio che inoltri è segnato **Inoltrato** solo sul
   tuo telefono, così gli altri non sanno mai da dove viene.
+- **Fissate, in fondo e con un nome:** fissare una stanza la rende la tua preferita su Matrix, così anche le tue altre
+  app Matrix la mostrano fissata, e le stanze a bassa priorità vengono per ultime. Nell’elenco della schermata
+  principale il tuo ultimo messaggio mostra ✓✓✓ appena tutti nella stanza l’hanno letto. **Dagli un nome qui** (una
+  persona) o **Dalle un nome qui** (un gruppo), in fondo alla chat, dà a una stanza un nome tuo, solo su questo
+  telefono; nessuno viene avvisato.
 
 ## XMPP {#xmpp}
 
@@ -2148,6 +2159,9 @@ segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
 - **Cosa porta un messaggio:** i segni per l’aspetto delle parole e indirizzi web da toccare, come in una chat Matrix,
   con **Fotocamera**, **Video**, **Scheda contatto** e **Qualità della foto** (vedi [Matrix](#matrix)). In un gruppo,
   scrivere @ mostra i suoi membri, e un tocco scrive il nome di quel membro nel gruppo, come fa Conversations.
+- **Un nome tuo:** **Dagli un nome qui**, in fondo alla chat di un contatto, tiene un nome tuo per lui nei tuoi
+  contatti sul tuo server XMPP, così anche le tue altre app XMPP lo mostrano. Non viene avvisato. Lascialo vuoto per
+  mostrare di nuovo il suo indirizzo.
 
 ## Chat con altre app Nostr {#nostr-chats}
 
@@ -2432,6 +2446,8 @@ la scegli tu.
   rimanda una al suo posto.
 - **Conversazioni archiviate:** fuori dall’elenco, sotto **Archiviate** in cima alla schermata principale. Una torna
   da sola nell’elenco quando arriva un nuovo SMS da quel numero, o con **Annulla archiviazione**.
+- **Nomi degli MMS di gruppo:** tieni premuto un MMS di gruppo e scegli **Dalle un nome qui** per dargli un nome tuo,
+  solo su questo telefono.
 - **Cestino:** una conversazione eliminata aspetta nel **Cestino** 30 giorni, poi Erevos la elimina dagli SMS del
   telefono. Fino ad allora **Recupera** la rimette nell’elenco; **Elimina ora** e **Svuota il cestino** eliminano
   subito, per sempre. Un SMS che arriva dopo che è finita nel Cestino la fa riapparire nell’elenco. Solo l’app per gli
