@@ -1225,6 +1225,20 @@ t('contacts on different relays learn where to reach each other', async () => {
   const again = await bob.e2e.seal(hello.identity, '', bob.from);
   assert.deepEqual([again.relay, again.relayKey], [moved.relay, moved.relayKey]);
 
+  // What her phone says while it has not had her relay's key yet names the relay with no key: the
+  // key Bob knows for it stays, or nothing he says, not even that it came, would reach her there.
+  const toBobNow = async (at: { relay: string; relayKey: string }, text = '') => {
+    message(await bob.e2e.receive((await alice.e2e.seal(identity, text, alice.from, { at })).packet));
+    const said = await bob.e2e.seal(hello.identity, '', bob.from);
+    return [said.relay, said.relayKey];
+  };
+  assert.deepEqual(await toBobNow({ relay: moved.relay, relayKey: '' }, 'no key yet'), [moved.relay, moved.relayKey]);
+  assert.deepEqual(await toBobNow({ relay: `${moved.relay}/`, relayKey: '' }), [`${moved.relay}/`, moved.relayKey], 'the same relay, however written');
+  // A new key for it takes its place; another relay with none has none.
+  const rekeyed = toBase64Url(randomBytes(32));
+  assert.deepEqual(await toBobNow({ relay: moved.relay, relayKey: rekeyed }), [moved.relay, rekeyed]);
+  assert.deepEqual(await toBobNow({ relay: 'wss://other.example.org', relayKey: '' }), ['wss://other.example.org', '']);
+
   // A link with a broken relay key is not a contact link.
   assert.equal(parseContact(contactLink({ ...code, relayKey: 'short' })), null);
 });

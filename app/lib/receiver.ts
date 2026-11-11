@@ -325,6 +325,16 @@ let nearbyTurn: Promise<unknown> = Promise.resolve();
 // What opens what comes on Nostr for the space's chats while their chat screen shows (takeNostr).
 let nostrTaker: ((packet: Uint8Array) => Promise<void>) | null = null;
 const nearbyState: State = { place: null, seen: -1, receipts: {}, answers: new Set(), waited: false, failures: 0 };
+
+// A look's receipts, with what came on Nostr or nearby and could not be said to have come then
+// (openHere): said with the look, not only once something more comes so.
+function withNearby(state: State): State {
+  for (const [peer, got] of Object.entries(nearbyState.receipts)) {
+    delete nearbyState.receipts[peer];
+    state.receipts[peer] = [...(state.receipts[peer] ?? []), ...got];
+  }
+  return state;
+}
 // How long to wait before the next look, asked each time.
 let pace = () => EVERY;
 
@@ -543,6 +553,8 @@ async function openHere(link: string | null, packet: Uint8Array, nostr = false):
   }
   if (changed) listeners.forEach((listener) => listener());
   await sendReceipts(chats, lastPlace, nearbyState);
+  // What could not be said now goes with the next look (withNearby), which does not wait at the relay first.
+  if (Object.keys(nearbyState.receipts).length > 0) lookNow();
 }
 
 async function placeNow(): Promise<Place | null> {
@@ -698,7 +710,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
   lookWhenDue(nextDue(chats.history));
-  await sendReceipts(chats, place, state);
+  await sendReceipts(chats, place, withNearby(state));
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
   await flushGroups().catch(() => undefined);
   return changed;
@@ -898,7 +910,7 @@ async function nostrLook(state: State): Promise<boolean> {
   await sendKeys(chats, null);
   await sendNostrAgain(chats.e2e);
   const went = await sendWaiting(chats, sendPlace(null, false)).catch(() => []);
-  await sendReceipts(chats, null, state);
+  await sendReceipts(chats, null, withNearby(state));
   return went.length > 0;
 }
 
