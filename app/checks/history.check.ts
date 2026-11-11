@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { FILE, History, newTag, PAGE, PAGE_PREFIX, pageSize, SIZE, WAITING } from '../lock/history';
+import { EARLY_LASTS, FILE, History, newTag, PAGE, PAGE_PREFIX, pageSize, SIZE, WAITING } from '../lock/history';
 import { sealedFile, sealedSize } from '../lock/sealed-file';
 import { splitVoice, VoiceAssembler, PART_SIZE, MAX_PARTS } from '../lib/voice';
 import { loadClip, saveClip } from '../lock/voice-clips';
@@ -437,6 +437,41 @@ t('marks what came and was read, and a disappearing message starts its time once
   const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
   await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'old', one, 0, 0, 7]] } });
   assert.deepEqual((await History.open('space', 1, key)).messages().map((m) => [m.mark, m.until, m.lasts]), [[0, 0, 0]]);
+});
+
+t('ours their phone said came, or read, before it was kept here is kept so, for a while', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [read, came, late, theirs] = [newTag(), newTag(), newTag(), newTag()];
+  const now = Date.now();
+  // Said while they went (through Nostr, their phone may have them first): none is kept yet.
+  assert.deepEqual(await history.mark('contact:aa', true, 2, now, [read]), []);
+  assert.deepEqual(await history.mark('contact:aa', true, 1, now, [read, came]), []);
+  assert.deepEqual(await history.mark('contact:aa', true, 1, now - EARLY_LASTS, [late]), []);
+  assert.deepEqual(await history.mark('contact:aa', false, 2, now, [theirs]), []);
+  assert.deepEqual(history.markedEarly('contact:aa', read), { mark: 2, at: now });
+  assert.equal(history.markedEarly('contact:bb', read), null, 'in their chat only');
+
+  await history.add({ peer: 'contact:bb', text: 'another chat', mine: true, at: 1, tag: read });
+  await history.add({ peer: 'contact:aa', text: 'read', mine: true, at: 2, tag: read, lasts: 60 });
+  await history.add({ peer: 'contact:aa', text: 'came', mine: true, at: 3, tag: came });
+  await history.add({ peer: 'contact:aa', text: 'long ago', mine: true, at: 4, tag: late });
+  await history.add({ peer: 'contact:aa', text: 'theirs', mine: false, at: 5, tag: theirs });
+  assert.deepEqual(
+    (await History.open('space', 0, key)).messages().map((m) => [m.text, m.mark, m.until, m.lasts]),
+    [
+      ['another chat', 0, 0, 0],
+      ['read', 2, now + 60_000, 0],
+      ['came', 1, 0, 0],
+      ['long ago', 0, 0, 0],
+      ['theirs', 0, 0, 0],
+    ],
+  );
+  // Once kept, it is kept no more: the same tag again starts as it is.
+  assert.equal(history.markedEarly('contact:aa', read), null);
+  await history.remove('contact:aa', came);
+  await history.add({ peer: 'contact:aa', text: 'came again', mine: true, at: 6, tag: came });
+  assert.equal(history.messages().find((m) => m.text === 'came again')?.mark, 0);
 });
 
 t('a voice message keeps its sound sealed in a file of its own, deleted with the message', async () => {

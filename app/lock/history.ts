@@ -457,9 +457,27 @@ function sealPage(key: Uint8Array, entries: Entry[]): Uint8Array {
 // Names a message within its chat, to find it again in the pages after a change: its tag and time.
 const entryKey = (peer: string, kept: Kept) => `${peer}|${kept[3]}|${kept[0]}`;
 
+/**
+ * A message with its mark raised to `mark`, as of `now`: a disappearing one marked read starts its
+ * time then. One marked so already stays as it is.
+ */
+export function withMark<M extends { mark?: Mark; until?: number; lasts?: number }>(m: M, mark: Mark, now: number): M {
+  if ((m.mark ?? 0) >= mark) return m;
+  const starts = mark === 2 && !m.until && m.lasts;
+  return { ...m, mark, ...(starts ? { until: now + m.lasts! * 1000, lasts: 0 } : {}) };
+}
+
+/** How long, ms, and for how many messages at most, a mark that came for one of ours not kept yet waits for it (History.markedEarly). */
+export const EARLY_LASTS = 10 * 60_000;
+const EARLY_MOST = 200;
+
 /** One chat's history, kept as messages come and go. */
 export class History {
   private data: HistoryData = { chats: {} };
+  // Marks that came for messages of ours not kept yet, by chat and tag, with when: a chat keeps what
+  // it sends once it went, and their phone, which may have it from Nostr before the Nostr relay
+  // said it took it, may say it came, or read it, before then. In memory, for a while.
+  private readonly early = new Map<string, { mark: Mark; at: number }>();
   // Every message unpacked and in order, made again only after a change: the receiver and an open
   // chat look at them every few seconds. Shared by those who ask, who never change it.
   private all: Message[] | null = null;
@@ -658,9 +676,21 @@ export class History {
     for (const [id, count] of goneFiles) await deleteChunks(id, count).catch(() => undefined);
   }
 
+  /** Ours, kept: raised to the mark their phone gave it before (markedEarly). */
   add({ peer, ...message }: Message): Promise<void> {
-    const list = [...(this.data.chats[peer] ?? []), pack(message)];
+    const early = message.mine ? this.markedEarly(peer, message.tag) : null;
+    if (early) this.early.delete(`${peer} ${message.tag}`);
+    const list = [...(this.data.chats[peer] ?? []), pack(early ? withMark(message, early.mark, early.at) : message)];
     return this.save({ chats: { ...this.data.chats, [peer]: list } });
+  }
+
+  /**
+   * The mark their phone gave one of ours (`tag`, in `peer`'s chat) before it was kept here, and
+   * when it came, which `add` raises it to: null when none came, or long ago (EARLY_LASTS).
+   */
+  markedEarly(peer: string, tag: string, now = Date.now()): { mark: Mark; at: number } | null {
+    const early = tag ? this.early.get(`${peer} ${tag}`) : undefined;
+    return early && now - early.at < EARLY_LASTS ? early : null;
   }
 
   /** Ours a relay holds for later that has not gone by `now`, by its time. */
@@ -802,7 +832,7 @@ export class History {
   /**
    * Raises the mark of a chat's messages, ours (`mine`) or theirs, to `mark`: all of them, or
    * those with `tags`. A disappearing one marked read starts its time `now`. Returns the tags of
-   * the messages whose mark went up.
+   * the messages whose mark went up. Ours with a tag not kept yet get it as they are (add).
    */
   async mark(peer: string, mine: boolean, mark: Mark, now: number, tags: string[] | null = null): Promise<string[]> {
     const raised: string[] = [];
@@ -811,11 +841,25 @@ export class History {
       // Theirs that came before its time (lib/later.ts, showsAt) is not read before it shows.
       if (m.mine !== mine || m.mark! >= mark || (tags && !tags.includes(m.tag)) || (!mine && m.at > now)) return kept;
       raised.push(m.tag);
-      const starts = mark === 2 && !m.until && m.lasts;
-      return pack({ ...m, mark, ...(starts ? { until: now + m.lasts! * 1000, lasts: 0 } : {}) });
+      return pack(withMark(m, mark, now));
     });
+    if (mine && tags) this.markEarly(peer, tags, mark, now);
     if (raised.length > 0) await this.save({ chats: { ...this.data.chats, [peer]: list } });
     return raised;
+  }
+
+  // Keeps the mark that came for those of `tags` no message of ours in `peer`'s chat has, for when
+  // it is kept (add): the newest EARLY_MOST, for EARLY_LASTS.
+  private markEarly(peer: string, tags: string[], mark: Mark, now: number): void {
+    const ours = new Set((this.data.chats[peer] ?? []).filter((m) => m[1] === 1).map((m) => m[3]));
+    for (const tag of tags) {
+      if (!isTag(tag) || ours.has(tag)) continue;
+      const key = `${peer} ${tag}`;
+      const was = this.early.get(key);
+      this.early.delete(key);
+      this.early.set(key, was && was.mark >= mark ? was : { mark, at: now });
+    }
+    for (const [key, { at }] of this.early) if (this.early.size > EARLY_MOST || now - at >= EARLY_LASTS) this.early.delete(key);
   }
 
   /** Deletes the messages whose time to disappear is `now` or before. Says whether there were any. */

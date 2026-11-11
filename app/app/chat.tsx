@@ -142,7 +142,7 @@ import { setOpenHiddenPlace, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { giveLinkedName } from '../lib/linked-name';
 import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/sealed-contacts';
 import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
-import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
+import { History, isTag, newTag, WAITING, withMark, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { changedRelaySettings, loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, relaySettingsOf, updateCurrentSpaceData, updateHiddenData, updateSpaceData, watchHiddenData, watchSpaceData, type Queue, type RelaySettings, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
@@ -2449,7 +2449,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const lasts = contact ? timer : 0;
-    const message = { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file, ...more };
+    // Ours their phone said came, or read, before it went from here (through Nostr): shown so, as kept (History.add).
+    const early = mine && contact ? (history.current?.markedEarly(peer, kept) ?? null) : null;
+    const marked = early ? withMark({ until: 0, lasts, mark }, early.mark, early.at) : { until: 0, lasts, mark };
+    const message = { id: nextId.current++, peer, text, mine, tag: kept, ...marked, at, voice, file, ...more };
     setMessages((list) => {
       const later = list.findIndex((m) => m.at > at);
       return later < 0 ? [...list, message] : [...list.slice(0, later), message, ...list.slice(later)];
