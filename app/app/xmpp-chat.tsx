@@ -17,6 +17,7 @@ import { chosenStyle, SelectBar, selectAction, useSelection } from '../component
 import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -28,6 +29,7 @@ import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
+import { xmppHistory } from '../lib/chat-history-adapters';
 import type { Place } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
@@ -184,6 +186,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // Whether the chat's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
+  const history = useHistoryTools();
   // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
@@ -566,6 +570,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           onDelete={chosen.length && chosen.every(deletable) ? () => void remove(chosen) : undefined}
         />
       ) : null}
+      <ChatHistory
+        tools={history}
+        name={name}
+        messages={() => xmppHistory(chat?.messages ?? [], me, (address) => nameOf(state, address), !!room)}
+        goTo={(id) => {
+          goTo(id);
+          return true;
+        }}
+        exportable={where === 'space'}
+        shown={shown}
+        say={setNote}
+      />
       {withArrows(
         <KeyboardAwareScrollView
           ref={scroll}
@@ -785,6 +801,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
           </Row>
+          <HistoryButtons tools={history} exportable={where === 'space'} />
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
           {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}

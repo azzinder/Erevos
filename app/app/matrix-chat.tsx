@@ -16,6 +16,7 @@ import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { ChatHistory, HistoryButtons, useHistoryTools } from '../components/chat-history';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
@@ -27,6 +28,7 @@ import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { WhoRead } from '../components/who-read';
 import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
+import { matrixHistory } from '../lib/chat-history-adapters';
 import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
@@ -189,6 +191,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [lit, setLit] = useState<string | null>(null);
   // Whether the room's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
+  const history = useHistoryTools();
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
@@ -695,6 +699,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
         </Row>
       ) : null}
+      {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} /> : null}
       {!room.direct && !room.invitedBy ? <MatrixRoomInfo visible={info} onClose={() => setInfo(false)} room={room} me={me} /> : null}
       <MatrixStickers
         visible={stickering}
@@ -779,6 +784,20 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           onDelete={chosen.every(deletable) ? () => void deleteChosen() : undefined}
         />
       ) : null}
+      <ChatHistory
+        tools={history}
+        name={room.name}
+        messages={() => matrixHistory(shownMessages, me, (who) => room.members[who]?.name || who, !room.direct)}
+        goTo={(id) => {
+          goTo(id);
+          setLit(id);
+          return true;
+        }}
+        earlier={room.before && !room.start ? loadEarlier : undefined}
+        exportable={where === 'space'}
+        shown={shown}
+        say={setNote}
+      />
       {screen}
     </View>
   );

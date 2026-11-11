@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatHistory, historyRows, useHistoryTools } from '../components/chat-history';
 import { canDial, DialTile } from '../components/dial-tile';
 import { IconButton, SendDisc } from '../components/composer';
 import { MoreIcon, PlusIcon } from '../components/icons';
@@ -29,6 +30,7 @@ import { showOnScreen, showSmsOnScreen } from '../lib/background';
 import type { Place } from '../lib/chat-parts';
 import { isContactNumber, sealedNamer, type Card as PhoneCard } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
+import { SMS_BEFORE, SMS_DRAWN, SMS_KEPT, smsHistory } from '../lib/chat-history-adapters';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canRelaySeal } from '../lib/core';
 import { fromBase64, randomBytes } from '../lib/crypto';
@@ -196,6 +198,10 @@ export default function Sms() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<SmsMessage[]>([]);
+  // How many of the latest SMS show: more once an older one is gone to. Search in this chat, its
+  // media, Go to a day and Export chat (components/chat-history.tsx) read all the phone keeps.
+  const drawn = useRef(SMS_DRAWN);
+  const history = useHistoryTools();
   // A message passed on to this conversation from another (lib/forward.ts).
   const [forwarded] = useState<Forwarded | null>(() => forwardedTo(to, sameConversation));
   const [draft, setDraft] = useState(forwarded?.text ?? (typeof params.text === 'string' ? params.text : ''));
@@ -284,7 +290,7 @@ export default function Sms() {
   // away stays unread, and its notice with it, until it comes back to it (SmsStore.kt markRead).
   const focusedNow = useRef(false);
   const load = useCallback(() => {
-    smsMessages(to)
+    smsMessages(to, drawn.current)
       .then((loaded) => {
         setMessages(loaded);
         return loaded;
@@ -760,6 +766,19 @@ export default function Sms() {
           }
         />
       ) : null}
+      <ChatHistory
+        tools={history}
+        name={title}
+        messages={() => smsHistory(shown, group ? whose : undefined)}
+        kept={() => smsMessages(to, SMS_KEPT).then((all) => smsHistory(shownMessages(all, trashed).filter((m) => !hidden.has(smsLineId(m))), group ? whose : undefined))}
+        goTo={(id) => placed.current.has(id) && (goTo(id), true)}
+        drawMore={(count) => {
+          drawn.current = Math.max(drawn.current, count + SMS_BEFORE);
+          load();
+        }}
+        exportable
+        say={setNote}
+      />
       {!selection.on && pinnedNow.length > 0 ? (
         <View style={styles.pinned}>
           <Pinned
@@ -1116,7 +1135,7 @@ export default function Sms() {
       </Sheet>
       <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Plain SMS: not encrypted. The phone company can read these messages.')} />
       <ContactsSheet<CardRow> visible={choosingCard} onClose={() => setChoosingCard(false)} rows={contactRows} onPick={(row) => void pickCard(row.card)} phoneOnly />
-      <SmsActions target={menu} onClose={() => setMenu(null)} onTrashed={() => router.canGoBack() && router.back()} />
+      <SmsActions target={menu} onClose={() => setMenu(null)} onTrashed={() => router.canGoBack() && router.back()} more={historyRows(history, true)} />
     </KeyboardPaddedView>
   );
 }

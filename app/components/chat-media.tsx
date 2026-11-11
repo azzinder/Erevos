@@ -31,7 +31,9 @@ import { Chip, Sheet, Text } from './ui';
 // lists, under their months, the newest first. A photo or file opens to look at or save, a sound
 // plays here, a link opens after asking; held, each goes to where it is in the chat. The calendar
 // goes to a day that has any (DayCalendar, also the chat's own Go to a day). Photos are read only
-// while they show, as in the chat, and let go of when they no longer do or this closes.
+// while they show, as in the chat, and let go of when they no longer do or this closes. A chat on
+// Matrix, XMPP, Nostr or SMS shows its own here too (components/chat-history.tsx): its files open
+// in the chat, where one on its network's server is fetched only when tapped, as before.
 
 const KIND_LABELS: Record<MediaKind, string> = {
   photo: mark('Photos'),
@@ -229,10 +231,11 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
   }
 
   // A tap: a photo or file opens, a sound plays, a link opens after asking. One not taken from
-  // the relay yet is gone to in the chat, where a tap takes it.
+  // the relay yet is gone to in the chat, where a tap takes it; so is one of a chat on another
+  // network, which opens there.
   function open(item: MediaItem) {
     if (item.kind === 'link' && item.url) openLink(item.url);
-    else if (item.file?.from) show(item);
+    else if (item.file?.from || item.outside) show(item);
     else if (item.kind === 'voice' || item.kind === 'music') void play(item);
     else if (item.file) setViewing(item.file);
   }
@@ -279,14 +282,15 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
       const ms = item.voice?.ms ?? item.ms;
       return ms !== undefined ? `${t('Voice message')} · ${voiceDuration(ms)}` : t('Voice message');
     }
-    return item.file?.name ?? '';
+    return item.file?.name ?? item.outside?.name ?? '';
   }
 
   function lineText(item: MediaItem): string {
     if (playing === item.key) return `■  ${t('Playing, {time}', { time: voiceDuration(played) })}`;
-    if (item.file?.from) return t('Not on this phone yet: tap to go to it in the chat.');
+    if (item.file?.from || (item.outside && !item.outside.uri)) return t('Not on this phone yet: tap to go to it in the chat.');
     if (item.kind === 'link') return item.url ?? '';
-    return [item.file ? fileSize(item.file.size) : '', who(item)].filter(Boolean).join(' · ');
+    const size = item.file?.size ?? item.outside?.size;
+    return [size !== undefined ? fileSize(size) : '', who(item)].filter(Boolean).join(' · ');
   }
 
   const sign = (kind: MediaKind) => {
@@ -312,7 +316,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
       return (
         <View style={styles.cells}>
           {row.items.map((item) => {
-            const uri = item.file ? photos[item.file.id] : undefined;
+            const uri = item.outside?.uri ?? (item.file ? photos[item.file.id] : undefined);
             return (
               <Pressable
                 key={item.key}
@@ -326,7 +330,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
                 {uri ? (
                   <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" resizeMethod="resize" blurRadius={item.file?.hidden ? 40 : undefined} />
                 ) : (
-                  <PhotoIcon color={withAlpha(colors.text, item.file?.from ? 0.25 : 0.4)} size={Math.min(28, cell / 3)} />
+                  <PhotoIcon color={withAlpha(colors.text, item.file?.from || item.outside ? 0.25 : 0.4)} size={Math.min(28, cell / 3)} />
                 )}
               </Pressable>
             );
