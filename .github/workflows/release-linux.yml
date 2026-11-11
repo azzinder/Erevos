@@ -1,0 +1,199 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+name: release-linux
+
+# Adds the Linux packages (Arch Linux / CachyOS pacman, and the AppImage) to a release that went
+# out without them, as its linux job failed (7.0.0-rc.9: the runner could not resolve Ubuntu's
+# package mirror for libarchive-tools): on this repository and on the public download repository,
+# with the release's SHA256SUMS and notes made to list them. Built from the release's own commit,
+# version and build number, the way the release workflow's linux job builds them (release.yml).
+# Only by hand: Actions, release-linux, Run workflow.
+#
+# Its add job waits for a release-macos or release-android run under way (the same concurrency
+# group), as they all rewrite the release's SHA256SUMS and notes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release that has no Linux packages, e.g. 7.0.0-rc.9.
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-linux
+  cancel-in-progress: false
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  # The release's commit and build number.
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      build: ${{ steps.check.outputs.build }}
+      commit: ${{ steps.check.outputs.commit }}
+    steps:
+      - name: Check the release is there and has no Linux packages
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WANTED: ${{ inputs.version }}
+        run: |
+          version=${WANTED#v}
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $version. It looks like 3.0.0, or 4.0.0-rc.1."; exit 1
+          fi
+          gh release view "v$version" --json assets --jq '.assets[].name' > /dev/null || {
+            echo "::error::There is no release v$version"; exit 1; }
+          # Packages its SHA256SUMS does not list came from a run cut short: they are made again.
+          sums=$(gh release download "v$version" -p SHA256SUMS -O - 2>/dev/null || true)
+          if grep -q '  erevos-linux-x86_64.pacman$' <<< "$sums" && grep -q '  erevos-linux-x86_64.AppImage$' <<< "$sums"; then
+            echo "::error::v$version already has the Linux packages"; exit 1
+          fi
+          build=$(gh release download "v$version" -p version.json -O - | jq -er .build)
+          commit=$(gh api "repos/$GH_REPO/commits/v$version" --jq .sha)
+          echo "v$version: build $build, commit ${commit::7}."
+          { echo "version=$version"; echo "build=$build"; echo "commit=$commit"; } >> "$GITHUB_OUTPUT"
+
+  # The same steps as the release workflow's linux job, with the release's build number, without
+  # the web app it hands to the other jobs, and the packages handed on as an artifact kept one day.
+  linux:
+    needs: release
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      EREVOS_BUILD: ${{ needs.release.outputs.build }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.release.outputs.commit }}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core
+        working-directory: app
+        env:
+          EXPO_PUBLIC_SHELL: electron
+        run: |
+          npm ci
+          node scripts/build-web-core.mjs
+          npx expo export --clear --platform web --output-dir ../desktop/web
+          test -f ../desktop/web/core/erevos_ffi_bg.wasm
+          # Element Call, for Matrix calls, served apart at app://element-call (desktop/main.js).
+          node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call
+      - run: npm ci
+        working-directory: desktop
+      - name: Start it and wait for its first screen
+        working-directory: desktop
+        run: xvfb-run -a npx electron . --smoke --no-sandbox --plain-secrets
+      # Ubuntu's mirror cannot always be reached from the runner: tried four times.
+      - name: Install what the pacman package needs
+        run: |
+          for wait in 15 30 60 0; do
+            sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools && exit 0
+            [ "$wait" = 0 ] && break; echo "::warning::apt-get failed; again in $wait s"; sleep "$wait"
+          done
+          exit 1
+      - name: Build the Arch Linux package and AppImage
+        working-directory: desktop
+        run: npx electron-builder --linux pacman AppImage --x64 --publish never -c.extraMetadata.version=$EREVOS_VERSION
+      - name: Name the packages as the release does
+        run: |
+          mkdir up
+          cp desktop/dist/*.pacman up/erevos-linux-x86_64.pacman
+          cp desktop/dist/*.AppImage up/erevos-linux-x86_64.AppImage
+          ls -l up
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: erevos-linux
+          path: up/*
+          retention-days: 1
+
+  add:
+    needs: [release, linux]
+    runs-on: ubuntu-latest
+    # Not at the same time as release-macos's or release-android's run, which rewrite the same files.
+    concurrency:
+      group: release-macos
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: azzinder/erevos-releases
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: erevos-linux
+          path: files
+
+      - name: Add the packages to the release, its SHA256SUMS and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release download "v$EREVOS_VERSION" -D files -p SHA256SUMS --clobber ||
+            again gh release download "v$EREVOS_VERSION" --repo "$RELEASES_REPO" -D files -p SHA256SUMS --clobber
+          (cd files && { grep -v '  erevos-linux-x86_64\.\(pacman\|AppImage\)$' SHA256SUMS || true; } > sums &&
+            sha256sum erevos-linux-x86_64.pacman erevos-linux-x86_64.AppImage >> sums &&
+            sort -k2,2 sums > SHA256SUMS && rm sums && cat SHA256SUMS)
+          gh release view "v$EREVOS_VERSION" --json body --jq .body > notes-before.md
+          # The two Linux lines after Android's, where the release workflow puts them; and Linux out
+          # of "Not in this release", or that line out when nothing else is missing.
+          python3 - notes-before.md notes.md <<'PY'
+          import re, sys
+          lines = ["- **Arch Linux / CachyOS** (x86_64): `sudo pacman -U erevos-linux-x86_64.pacman`",
+                   "- **Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."]
+          rows = open(sys.argv[1]).read().split('\n')
+          if not any(r.startswith('- **Arch Linux') for r in rows):
+              packages = [i for i, r in enumerate(rows) if r.startswith('- **')]
+              android = [i for i, r in enumerate(rows) if r.startswith('- **Android**')]
+              at = android[0] + 1 if android else (packages[0] if packages else 2)
+              rows[at:at] = lines
+          out = []
+          for r in rows:
+              m = re.match(r'Not in this release: (.*?) \((.*)$', r)
+              if m:
+                  rest = [p.strip() for p in m.group(1).split(',') if p.strip() != 'Linux']
+                  if not rest:
+                      continue
+                  r = f"Not in this release: {', '.join(rest)} ({m.group(2)}"
+              out.append(r)
+          open(sys.argv[2], 'w').write('\n'.join(out))
+          PY
+          diff notes-before.md notes.md || true
+          again gh release upload "v$EREVOS_VERSION" files/erevos-linux-x86_64.pacman files/erevos-linux-x86_64.AppImage files/SHA256SUMS --clobber
+          again gh release edit "v$EREVOS_VERSION" --notes-file notes.md
+
+      - name: Add them to the public download repository
+        if: ${{ env.RELEASES_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release upload "v$EREVOS_VERSION" files/erevos-linux-x86_64.pacman files/erevos-linux-x86_64.AppImage files/SHA256SUMS --repo "$RELEASES_REPO" --clobber
+          again gh release edit "v$EREVOS_VERSION" --repo "$RELEASES_REPO" --notes-file notes.md

@@ -323,11 +323,18 @@ jobs:
       - name: Start it and wait for its first screen
         working-directory: desktop
         run: xvfb-run -a npx electron . --smoke --no-sandbox --plain-secrets
+      # Ubuntu's mirror cannot always be reached from the runner (7.0.0-rc.9 went out without Linux
+      # for it): tried four times.
+      - name: Install what the pacman package needs
+        run: |
+          for wait in 15 30 60 0; do
+            sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools && exit 0
+            [ "$wait" = 0 ] && break; echo "::warning::apt-get failed; again in $wait s"; sleep "$wait"
+          done
+          exit 1
       - name: Build the Arch Linux package and AppImage
         working-directory: desktop
-        run: |
-          sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools
-          npx electron-builder --linux pacman AppImage --x64 --publish never -c.extraMetadata.version=$EREVOS_VERSION
+        run: npx electron-builder --linux pacman AppImage --x64 --publish never -c.extraMetadata.version=$EREVOS_VERSION
       - name: Hand the packages to the publish job
         env:
           GH_TOKEN: ${{ github.token }}
