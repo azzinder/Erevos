@@ -20,7 +20,8 @@ On main, not released yet:
   **Sticker** sends one by MMS. A sticker with words carries them in the app's language.
 - **One button for all your services**: the home screen's line of chips is now one button under the search, which
   says which service shows, the messages not read and any service not connected now, and opens a window with every
-  service as a card, each with its number and a dot for its connection, plus **Add**. With no search the chats with
+  service as a card, each with its number and a dot for its connection, plus **Add**. Hold a card to move it or hide
+  it; a hidden service still shows under All messages and notifies. With no search the chats with
   messages not read come first, under Unread, then the rest under Recent.
 - **Voice messages in Opus**: voice messages are recorded as Ogg/Opus on Android 10 and later and in the web and desktop
   apps, at half the size (about 240 KB a minute) and as clear. Older phones and Safari before 18.4 keep AAC. Every

@@ -12,4 +12,8 @@ export const servicesText: Record<string, string> = {
   "{n} services": "{n} usluga | {n} usluge | {n} usluga",
   "Unread · {n}": "Nepročitano · {n}",
   "Recent": "Nedavno",
+  "Move earlier": "Pomjeri naprijed",
+  "Move later": "Pomjeri nazad",
+  "Hidden · tap one to show it again": "Skriveno · dodirnite jednu da se ponovo prikaže",
+  "Hold a card to move or hide it": "Držite karticu da je pomjerite ili sakrijete",
 };

@@ -150,10 +150,12 @@ que tant que leur code PIN les tient ouvertes.
   dont le dernier message était un SMS ; elle indique si Erevos n’est pas encore l’app SMS), **Erevos** seulement les
   conversations Erevos, celles de chaque contact, quoi qu’il soit arrivé en dernier, et **Matrix**, **XMPP**,
   **Public** et **Nostr** les leurs. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
-  lit la partie affichée. Les conversations et groupes en **En sourdine** ne comptent pas, comme pour le nombre sur
-  l’icône d’Erevos, et ce qui est tapé dans la recherche ne change pas les nombres. Sous le bouton, sans recherche,
-  viennent d’abord les conversations avec des messages non lus, sous **Non lus**, avec **Tout marquer comme lu** à
-  côté, puis les autres sous **Récents**.
+  lit la partie affichée. Maintiens une carte appuyée pour l’avancer, la reculer ou la masquer avec **Masquer** : un
+  service masqué reste activé, ses conversations restent dans **Tous** et il notifie toujours, et il attend au pied de
+  la fenêtre, où un appui le réaffiche. Les conversations et groupes en **En sourdine** ne comptent pas, comme pour le
+  nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche ne change pas les nombres. Sous le bouton, sans
+  recherche, viennent d’abord les conversations avec des messages non lus, sous **Non lus**, avec **Tout marquer comme
+  lu** à côté, puis les autres sous **Récents**.
 - **Le widget**, sur Android : ajoute Erevos depuis les widgets de ton écran d’accueil. Ses quatre boutons ouvrent
   **Téléphone**, les **SMS**, les **Messages** d’Erevos et **Contacts**, après le mot de passe comme tout lien (le
   Téléphone sans lui, si tu le permets). Au-dessus des trois premiers, il montre combien il y a d’appels manqués, de SMS

@@ -94,12 +94,17 @@ const count99 = (n: number) => (n > 99 ? '99+' : String(n));
  * where services are turned on (Settings → General → Modules); `onReadAll`, when the part shown
  * has messages not read, marks them read (lib/read-all.ts).
  */
-export function Services({ services, current, onPick, onAdd, onReadAll }: {
+export function Services({ services, hidden = [], current, onPick, onAdd, onReadAll, onMove, onHide }: {
   services: Service[];
+  /** The services hidden from home (lib/service-order.ts), offered at the window's foot to show again. */
+  hidden?: Pick<Service, 'key' | 'label'>[];
   current: string;
   onPick: (key: string) => void;
   onAdd: () => void;
   onReadAll?: () => void;
+  /** A card held down moves one place earlier (-1) or later (1), or is hidden (true) or shown again (false). */
+  onMove?: (key: string, by: -1 | 1) => void;
+  onHide?: (key: string, hidden: boolean) => void;
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -109,6 +114,12 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
   // Where the window opens: under the button, as long as it has room there.
   const [at, setAt] = useState(0);
   const button = useRef<View>(null);
+  // The card held down: what can be done with it shows under the cards, until Done.
+  const [held, setHeld] = useState<string | null>(null);
+  const close = () => {
+    setOpen(false);
+    setHeld(null);
+  };
 
   const chosen = services.find((s) => s.key === current) ?? services[0];
   const others = services.filter((s) => s.key !== 'all');
@@ -128,13 +139,21 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
     });
   };
   const pick = (key: string) => {
-    setOpen(false);
+    if (held) {
+      // While a card is held, a tap chooses which card the moves are for.
+      setHeld(key === 'all' ? null : key);
+      return;
+    }
+    close();
     onPick(key);
   };
+  const movable = services.filter((s) => s.key !== 'all');
+  const heldAt = held ? movable.findIndex((s) => s.key === held) : -1;
+  const heldOne = heldAt >= 0 ? movable[heldAt] : null;
   // Four to a row on a phone; on a wide screen the window is no wider than 520.
   const panel = Math.min(width - space.md * 2, 520);
   const rows = Math.ceil((services.length + 1) / 4);
-  const tall = 64 + rows * 98 + 44;
+  const tall = 64 + rows * 98 + 44 + (hidden.length ? 56 : 0) + (heldOne ? 56 : 0);
   const top = at && at + tall < height - insets.bottom ? at : Math.max(insets.top + space.lg, (height - tall) / 2);
 
   return (
@@ -170,8 +189,8 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
         ) : null}
         <Chevron color={colors.textMuted} />
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} statusBarTranslucent>
-        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} onPress={() => setOpen(false)} accessibilityLabel={t('Close')} />
+      <Modal visible={open} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} onPress={close} accessibilityLabel={t('Close')} />
         <View style={[styles.panel, { top, width: panel, left: (width - panel) / 2 }]}>
           <Text variant="heading" style={styles.panelTitle}>
             {t('Services')}
@@ -183,10 +202,18 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
                 <View key={s.key} style={styles.cell}>
                   <Pressable
                     onPress={() => pick(s.key)}
+                    onLongPress={
+                      s.key !== 'all' && onMove
+                        ? () => {
+                            tap();
+                            setHeld(s.key);
+                          }
+                        : undefined
+                    }
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={`${s.label}${s.count ? `, ${plural(s.count, '{n} unread message', '{n} unread messages')}` : ''}${s.link === 'off' ? `, ${t('Offline')}` : ''}`}
-                    style={({ pressed }) => [styles.card, on && styles.cardOn, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.card, on && styles.cardOn, held === s.key && styles.cardHeld, pressed && styles.pressed]}
                   >
                     {s.link ? <View style={[styles.link, { backgroundColor: s.link === 'on' ? colors.success : colors.danger }]} /> : null}
                     {s.count ? (
@@ -212,7 +239,7 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
             <View style={styles.cell}>
               <Pressable
                 onPress={() => {
-                  setOpen(false);
+                  close();
                   onAdd();
                 }}
                 accessibilityRole="button"
@@ -227,10 +254,56 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
               </Pressable>
             </View>
           </View>
-          {onReadAll ? (
+          {heldOne ? (
+            // The card held: one place earlier or later, or hidden from home.
+            <View style={styles.heldRow}>
+              <Text variant="label" numberOfLines={1} style={styles.heldName}>
+                {heldOne.label}
+              </Text>
+              <SmallButton label="‹" hint={t('Move earlier')} disabled={heldAt === 0} onPress={() => onMove?.(heldOne.key, -1)} />
+              <SmallButton label="›" hint={t('Move later')} disabled={heldAt === movable.length - 1} onPress={() => onMove?.(heldOne.key, 1)} />
+              <SmallButton
+                label={t('Hide')}
+                onPress={() => {
+                  onHide?.(heldOne.key, true);
+                  setHeld(null);
+                }}
+              />
+              <SmallButton label={t('Done')} strong onPress={() => setHeld(null)} />
+            </View>
+          ) : null}
+          {hidden.length > 0 ? (
+            <View style={styles.hiddenRow}>
+              <Text variant="caption" tone="muted">
+                {t('Hidden · tap one to show it again')}
+              </Text>
+              <View style={styles.hiddenList}>
+                {hidden.map((s) => (
+                  <Pressable
+                    key={s.key}
+                    onPress={() => onHide?.(s.key, false)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${s.label}, ${t('Hidden · tap one to show it again')}`}
+                    style={({ pressed }) => [styles.hiddenChip, pressed && styles.pressed]}
+                  >
+                    <ServiceSign service={s} size={20} />
+                    <Text variant="caption" numberOfLines={1}>
+                      {s.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {!heldOne && onMove ? (
+            <Text variant="caption" tone="faint" style={styles.holdHint}>
+              {t('Hold a card to move or hide it')}
+            </Text>
+          ) : null}
+          {onReadAll && !heldOne ? (
             <Pressable
               onPress={() => {
-                setOpen(false);
+                close();
                 onReadAll();
               }}
               accessibilityRole="button"
@@ -245,6 +318,28 @@ export function Services({ services, current, onPick, onAdd, onReadAll }: {
         </View>
       </Modal>
     </>
+  );
+}
+
+function SmallButton({ label, hint, onPress, disabled, strong }: { label: string; hint?: string; onPress: () => void; disabled?: boolean; strong?: boolean }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={hint ?? label}
+      hitSlop={4}
+      style={({ pressed }) => [styles.small, strong && { backgroundColor: colors.primary }, disabled && { opacity: 0.35 }, pressed && styles.pressed]}
+    >
+      <Text variant="label" color={strong ? colors.onPrimary : colors.text} style={label.length === 1 ? { fontSize: 20, lineHeight: 22 } : null}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -397,6 +492,60 @@ const makeStyles = (colors: Colors) =>
       borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    cardHeld: {
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors.accentText,
+    },
+    heldRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs + 2,
+      marginTop: space.sm,
+      paddingTop: space.sm,
+      borderTopWidth: 1,
+      borderTopColor: withAlpha(colors.border, 0.7),
+    },
+    heldName: {
+      flex: 1,
+      minWidth: 0,
+    },
+    small: {
+      minWidth: 38,
+      height: 36,
+      paddingHorizontal: space.sm + 2,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceAlt,
+    },
+    hiddenRow: {
+      gap: space.xs + 2,
+      marginTop: space.sm,
+      paddingTop: space.sm,
+      borderTopWidth: 1,
+      borderTopColor: withAlpha(colors.border, 0.7),
+    },
+    hiddenList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: space.xs + 2,
+    },
+    hiddenChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+      paddingLeft: 4,
+      paddingRight: space.sm + 2,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceAlt,
+      opacity: 0.85,
+    },
+    holdHint: {
+      paddingTop: space.sm,
+      paddingHorizontal: space.xs,
     },
     readAll: {
       alignSelf: 'flex-end',

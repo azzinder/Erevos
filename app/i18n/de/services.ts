@@ -12,4 +12,8 @@ export const servicesText: Record<string, string> = {
   "{n} services": "{n} Dienste",
   "Unread · {n}": "Ungelesen · {n}",
   "Recent": "Zuletzt",
+  "Move earlier": "Nach vorn",
+  "Move later": "Nach hinten",
+  "Hidden · tap one to show it again": "Ausgeblendet · tippe einen an, um ihn wieder zu zeigen",
+  "Hold a card to move or hide it": "Halte eine Karte gedrückt, um sie zu verschieben oder auszublenden",
 };

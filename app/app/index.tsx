@@ -35,6 +35,7 @@ import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-no
 import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { askReadAll, toReadIn } from '../lib/read-all';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
+import { arrangeServices, hideService, moveService, useServiceOrder } from '../lib/service-order';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { directOther, matrixPresence } from '../lib/matrix';
 import { isOn } from '../lib/net-presence';
@@ -535,7 +536,11 @@ function Home() {
     nostr: modules.has('nostr'),
     feed: !!nostr || publicRooms,
   });
-  const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
+  // The parts in the order chosen in the Services window, those hidden there left out (lib/service-order.ts):
+  // a hidden part's chats still show under All messages. One opened by an icon or the widget shows even so.
+  const serviceOrder = useServiceOrder();
+  const arranged = arrangeServices(['all', ...parts] as InboxShow[], serviceOrder);
+  const tabs: InboxShow[] = [...arranged.shown, ...(show !== 'all' && !arranged.shown.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Where New chat goes: on Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one
   // (app/xmpp.tsx); on Nostr's, one with another Nostr app (app/nostr-chats.tsx); otherwise an
@@ -693,7 +698,21 @@ function Home() {
       ) : null}
       {/* The services: one button, which opens them all in a window (components/services.tsx), so
           however many there are, the list starts at once under it. */}
-      {mixed ? <Services services={services} current={show} onPick={(key) => setShow(key as InboxShow)} onAdd={() => router.push('/modules')} onReadAll={readAll} /> : null}
+      {mixed || arranged.hidden.length > 0 ? (
+        <Services
+          services={services}
+          hidden={arranged.hidden.map((key) => ({ key, label: SHOW_LABELS[key]() }))}
+          current={show}
+          onPick={(key) => setShow(key as InboxShow)}
+          onAdd={() => router.push('/modules')}
+          onReadAll={readAll}
+          onMove={(key, by) => void moveService(tabs, key, by)}
+          onHide={(key, hide) => {
+            void hideService(key, hide);
+            if (hide && show === key) setShow('all');
+          }}
+        />
+      ) : null}
       {hasSmsRows && !smsMirrored() && (show === 'all' || show === 'sms') ? (
         <Row wrap>
           <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} />
