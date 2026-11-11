@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { dropPost, postShown, PublicRow, usePublicActions } from '../components/public-feed';
+import { dropPost, PostReactions, postShown, PublicRow, usePublicActions } from '../components/public-feed';
 import { Button, Page, Row, Text } from '../components/ui';
 import { plural, t } from '../lib/i18n';
 import { nostrDmPostTalk, onNostrDmChange, runNostrDm, type PostTalk } from '../lib/nostr-dm-store';
@@ -14,8 +14,9 @@ import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // One post of the Public tab (components/public-feed.tsx) on its own: the post, how many liked it
-// and shared it again, and the answers to it, each as a row of the feed, with Answer to write one.
-// What it says is looked up when the screen opens (lib/nostr-dm-store.ts nostrDmPostTalk), as the
+// and shared it again, its reactions, each tapped to add the same or take ours back, and the
+// answers to it, each as a row of the feed, with Answer to write one; a poll, how it stands. What
+// it says is looked up when the screen opens (lib/nostr-dm-store.ts nostrDmPostTalk), as the
 // space's Tor way says, and never kept. The post is handed over in memory, not in the address
 // (showPost), and let go as the screen closes.
 
@@ -66,7 +67,7 @@ export default function PublicPostScreen() {
     );
   }
 
-  const ctx = actions.ctx(Date.now(), null);
+  const ctx = { ...actions.ctx(Date.now(), null), pollsAtOnce: true };
   const answer = (of: FeedPost) => <PublicRow key={of.id} item={{ kind: 'nostr', id: `nostr:${of.note}`, at: of.at, post: of }} ctx={ctx} borderColor={colors.border} />;
   return (
     <Page>
@@ -83,7 +84,9 @@ export default function PublicPostScreen() {
           </>
         ) : null}
       </Row>
-      <Button title={t('Reply')} onPress={() => actions.write(post.event)} />
+      {talk && post.event ? <PostReactions post={post.event} reactions={talk.reactions} mode={ctx.images} onChange={(reactions) => setTalk((now) => now && { ...now, reactions })} /> : null}
+      {/* A poll is answered by its votes. */}
+      {post.poll ? null : <Button title={t('Reply')} onPress={() => actions.write(post.event)} />}
       <Text variant="overline" tone="muted">
         {t('Answers')}
       </Text>

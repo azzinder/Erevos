@@ -4,19 +4,21 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, Pressable, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
 import { Missing, type Answered } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Quote } from '../components/message-parts';
+import { Pinned, Quote, Reactions } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
-import { Button, Input, Page, Row, Text } from '../components/ui';
+import { NostrStickers } from '../components/nostr-stickers';
+import { chosenStyle, SelectBar, selectAction, useSelection } from '../components/select-bar';
+import { Button, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { voiceNamed } from '../lib/group-media';
@@ -26,25 +28,33 @@ import { messageLine } from '../lib/message-line';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
 import {
+  canForwardNostr,
+  nostrDmDelete,
   nostrDmFile,
   nostrDmForgetChat,
+  nostrDmForward,
   nostrDmFreshen,
   nostrDmNow,
+  nostrDmPin,
   nostrDmReact,
   nostrDmRead,
   nostrDmRename,
   nostrDmRetry,
   nostrDmSend,
   nostrDmSendFile,
+  nostrDmSendSticker,
   nostrDmSetLook,
   nostrDmSetNotify,
   nostrDmSetSubject,
+  nostrDmStickerPlace,
+  nostrDmUnreact,
   NostrFileTooLargeError,
   onNostrDmChange,
   runNostrDm,
   type NostrOutgoingFile,
 } from '../lib/nostr-dm-store';
 import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
+import { stickerMeta } from '../lib/own-stickers';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { checkedChatNotify } from '../lock/chat-notify';
@@ -61,7 +71,15 @@ import { checkedLook } from '../theme/look';
 // given here shows in place of theirs; a group's name goes to all its members with the next
 // message. Photos and files go encrypted to a file server (lib/nostr-files.ts); one that comes is
 // fetched only when tapped. A message held down opens its menu (components/message-menu.tsx): react
-// to it, answer it, copy it. An answer shows the message it is to above its words, which scrolls to
+// to it, answer it, copy it, forward it, pin it, choose it among others, delete it. The reactions
+// show under a message, each tapped to add the same or, ours, to take it back (NIP-09, in a wrap,
+// as NIP-17 allows); a custom emoji (NIP-30) shows as its :shortcode:, its picture never fetched in
+// a chat. A pin is this device's only (NIP-17 has none), kept with the chat, over the thread. A
+// forward goes as a new message to another Nostr chat of the same account, a file sent again.
+// Messages chosen together (components/select-bar.tsx) are copied, forwarded or deleted at once;
+// deleting removes them from this device, and of ours asks the others' apps to remove them too
+// (NIP-09). A sticker is one of those made from photos, sent as a photo (components/nostr-stickers.tsx).
+// An answer shows the message it is to above its words, which scrolls to
 // it when tapped, and the message being answered shows over the field until sent or let go. The
 // microphone beside the field records a voice message while it is held (components/matrix-voice.tsx),
 // which the others play with Play: a sound with its length (a duration tag) is one. While the chat
@@ -88,8 +106,6 @@ const voiceFile = (audio: Uint8Array, ms: number): NostrOutgoingFile => ({ ...vo
 
 // Whether a message can be copied: it has words of its own.
 const copyable = (message: NostrDmMessage) => CAN_COPY && !!message.text && !message.file;
-// Whether it has a menu: one that did not go has nobody to answer or react to, only words to copy.
-const menuable = (message: NostrDmMessage) => message.state !== 'failed' || copyable(message);
 
 /** A Nostr chat's screen, in the chat's own look or the space's (components/chat-look.tsx). */
 export default function NostrChatScreen() {
@@ -118,12 +134,29 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // Whether the chat's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  // The messages being forwarded, while the chats to forward them to show; the stickers' sheet;
+  // which pin the bar over the thread shows.
+  const [forwarding, setForwarding] = useState<string[] | null>(null);
+  const [stickering, setStickering] = useState(false);
+  const [pinShown, setPinShown] = useState(0);
+  const selection = useSelection<string>();
 
   useEffect(() => {
     runNostrDm();
     setNow(nostrDmNow(where));
     return onNostrDmChange(() => setNow(nostrDmNow(where)));
   }, [where]);
+
+  // Another chat chooses anew; Back ends the choosing before it leaves the chat.
+  useEffect(() => selection.clear(), [key]);
+  useEffect(() => {
+    if (!selection.on) return;
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      selection.clear();
+      return true;
+    });
+    return () => back.remove();
+  }, [selection.on]);
 
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
@@ -155,6 +188,11 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
   // A photo, file or voice message goes as an answer too, to the message chosen while it is still there.
   async function sendPicked(pick: () => Promise<NostrOutgoingFile | null>) {
+    await sendWith(pick, nostrDmSendFile);
+  }
+
+  // Sends what was picked, a file or a sticker, answering the message chosen to answer.
+  async function sendWith<T>(pick: () => Promise<T | null>, send: (key: string, picked: T, replyTo?: string) => Promise<void>) {
     if (!key || sending) return;
     setNote('');
     setSending(true);
@@ -163,7 +201,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       if (!file) return;
       const to = replyId && chat?.messages.some((m) => m.id === replyId) ? replyId : undefined;
       setReplyId(null);
-      await nostrDmSendFile(key, file, to);
+      await send(key, file, to);
     } catch (error) {
       fail(error instanceof TooLargeError ? new NostrFileTooLargeError() : error);
     } finally {
@@ -214,10 +252,56 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const name = self ? t('Chat with myself') : nameOf(state, key) || shortNpub(npub);
   const whoOf = (message: NostrDmMessage) => (message.mine ? t('You') : message.from ? personName(state, message.from) : name);
 
-  const react = (id: string, emoji: string) => nostrDmReact(key, id, emoji).catch(fail);
+  // A reaction chosen: ours again takes it back, another one goes in its place.
+  const mineOn = (message: NostrDmMessage) => message.reactions?.[state.public];
+  const react = (message: NostrDmMessage, emoji: string) => (emoji === mineOn(message) ? nostrDmUnreact(key, message.id) : nostrDmReact(key, message.id, emoji)).catch(fail);
 
   async function copy(text: string) {
     setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  }
+
+  const pins = (chat.pins ?? []).filter((id) => byId.has(id));
+  const pinAt = Math.min(pinShown, Math.max(0, pins.length - 1));
+
+  // Deletes from this device, after asking; of ours, the others are asked to delete them too.
+  function remove(ids: string[]) {
+    ask(t('Delete messages'), t('They are removed from this phone. Of your own, the others are asked to remove them too: their Nostr apps may or may not do so.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Delete'),
+        style: 'destructive',
+        onPress: () => {
+          selection.clear();
+          void nostrDmDelete(key!, ids).catch(fail);
+        },
+      },
+    ]);
+  }
+
+  // The words of the messages chosen, oldest first: of several, each with who wrote it.
+  function copyChosen() {
+    const chosen = chat!.messages.filter((m) => selection.chosen.has(m.id) && copyable(m));
+    selection.clear();
+    if (!chosen.length) return setNote(t('Not copied.'));
+    void copy(chosen.length === 1 ? chosen[0].text : chosen.map((m) => `${whoOf(m)}: ${m.text}`).join('\n'));
+  }
+
+  function forwardTo(to: string, toName: string) {
+    const ids = forwarding ?? [];
+    setForwarding(null);
+    selection.clear();
+    setNote(t('Sending…'));
+    nostrDmForward(key!, ids, to).then(() => setNote(t('Forwarded to {name}.', { name: toName })), fail);
+  }
+
+  const stickerPlace = nostrDmStickerPlace(where);
+  // One of the place's own stickers, made from a photo: as every sticker, through nostrDmSendSticker.
+  function sendSticker(picture: Uint8Array) {
+    setStickering(false);
+    void sendWith(async () => {
+      const { mime, w, h } = stickerMeta(picture);
+      return { bytes: picture, mime, w: w ?? 0, h: h ?? 0 };
+    }, nostrDmSendSticker);
   }
 
   // What can be done with a message, held down: answering is for one that went.
@@ -225,8 +309,18 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     const actions: MenuAction[] = [];
     if (message.state !== 'failed') actions.push({ title: t('Reply'), onPress: () => setReplyId(message.id) });
     if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+    if (canForwardNostr(message)) actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
+    const pinned = pins.includes(message.id);
+    actions.push({ title: pinned ? t('Unpin') : t('Pin for me'), onPress: () => void nostrDmPin(key!, message.id, !pinned).then(() => setPinShown(0), fail) });
+    actions.push(selectAction(() => selection.start(message.id)));
+    actions.push({ title: t('Delete'), danger: true, onPress: () => remove([message.id]) });
     return actions;
   }
+
+  const others = Object.values(state.chats)
+    .filter((other) => other.key !== key)
+    .sort((a, b) => b.lastAt - a.lastAt);
+  const chatName = (other: string) => (other === state.public ? t('Chat with myself') : nameOf(state, other) || shortNpub(npubOf(other)));
 
   // The message an answer is to, as the answer quotes it: null when it is not on this phone.
   const answeredBy = (message: NostrDmMessage): Answered | null | undefined => {
@@ -235,7 +329,22 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     return to ? { name: whoOf(to), line: lineOf(to), onPress: () => goTo(to.id) } : null;
   };
 
-  return withArrows(
+  const chosenCount = chat.messages.filter((m) => selection.chosen.has(m.id)).length;
+  const bar = selection.on ? (
+    <SelectBar
+      count={chosenCount}
+      onCancel={selection.clear}
+      onAll={() => selection.set(chat.messages.map((m) => m.id))}
+      onCopy={CAN_COPY ? copyChosen : undefined}
+      onForward={() => {
+        const ids = chat.messages.filter((m) => selection.chosen.has(m.id) && canForwardNostr(m)).map((m) => m.id);
+        if (ids.length) setForwarding(ids);
+      }}
+      onDelete={() => remove([...selection.chosen])}
+    />
+  ) : null;
+
+  const thread = withArrows(
     <KeyboardAwareScrollView
       ref={scroll}
       style={{ flex: 1, backgroundColor: colors.ground }}
@@ -272,6 +381,17 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           ) : null}
         </>
       )}
+      {pins.length ? (
+        <Pinned
+          index={pinAt}
+          count={pins.length}
+          line={lineOf(byId.get(pins[pinAt])!)}
+          onPress={() => {
+            goTo(pins[pinAt]);
+            setPinShown((pinAt + 1) % pins.length);
+          }}
+        />
+      ) : null}
 
       <View style={{ gap: space.md }} {...threadProps}>
         {chat.messages.map((message) => (
@@ -282,7 +402,10 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             group={group}
             answered={answeredBy(message)}
             onRetry={() => nostrDmRetry(key, message.id).catch(fail)}
-            onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
+            onMenu={() => setMenuFor(message.id)}
+            onSign={message.state !== 'failed' ? (sign) => void react(message, sign) : undefined}
+            chosen={selection.chosen.has(message.id)}
+            onChoose={selection.on ? () => selection.toggle(message.id) : undefined}
             onLayout={place(message.id)}
           />
         ))}
@@ -300,7 +423,8 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <>
             <Button title={t('Photo')} kind="secondary" compact disabled={sending} onPress={() => void sendPhoto()} />
             <Button title={t('File')} kind="secondary" compact disabled={sending} onPress={() => void sendAnyFile()} />
-            {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
+            {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
+            {sending ?<Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
           </>
         )}
         <MicButton voice={voice} disabled={sending} />
@@ -369,17 +493,37 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         }
       />
       <MessageMenu
-        visible={!!menuMessage && menuable(menuMessage) && shown}
+        visible={!!menuMessage && shown}
         onClose={() => setMenuFor(null)}
         line={menuMessage ? lineOf(menuMessage) : ''}
-        onReact={menuMessage && menuMessage.state !== 'failed' ? (emoji) => void react(menuMessage.id, emoji) : undefined}
+        reaction={menuMessage ? mineOn(menuMessage) : undefined}
+        onReact={menuMessage && menuMessage.state !== 'failed' ? (emoji) => void react(menuMessage, emoji) : undefined}
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
+      <Sheet visible={forwarding !== null && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
+        <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
+          {others.map((other) => (
+            <Button key={other.key} title={chatName(other.key)} kind="secondary" onPress={() => forwardTo(other.key, chatName(other.key))} />
+          ))}
+        </ScrollView>
+      </Sheet>
+      {stickerPlace ? (
+        <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
+          <NostrStickers place={stickerPlace} onPick={sendSticker} />
+        </Sheet>
+      ) : null}
     </KeyboardAwareScrollView>,
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      {bar}
+      {thread}
+    </View>
   );
 }
 
-function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: {
+function Bubble({ state, message, group, answered, onRetry, onMenu, onSign, chosen, onChoose, onLayout }: {
   state: NostrDmState;
   message: NostrDmMessage;
   group: boolean;
@@ -387,7 +531,12 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
   answered?: Answered | null;
   onRetry: () => void;
   /** Held down: its menu. */
-  onMenu?: () => void;
+  onMenu: () => void;
+  /** A reaction under it tapped: ours takes it back, another adds the same. */
+  onSign?: (sign: string) => void;
+  /** It is among those chosen; while choosing, a tap adds it or takes it out. */
+  chosen: boolean;
+  onChoose?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const { colors, look } = useTheme();
@@ -395,48 +544,43 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // NIP-17 says nothing back: one tick once a relay of theirs took it, no more.
   const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : `${when}${mine ? ' ✓' : ''}`;
-  // Each reaction once, with how many chose it.
-  const reactions = Object.values(message.reactions ?? {}).reduce<Record<string, number>>((all, emoji) => ({ ...all, [emoji]: (all[emoji] ?? 0) + 1 }), {});
   const file = typeof message.file === 'object' ? message.file : undefined;
   return (
-    <Pressable
-      onLongPress={onMenu}
-      disabled={!onMenu}
-      onLayout={onLayout}
-      // One with buttons in it (Play, Save) stays apart from them for a screen reader.
-      accessible={!file}
-      accessibilityHint={onMenu ? t('Hold for more') : undefined}
-      style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
-    >
-      {group && !mine && message.from ? (
-        <Text variant="caption" tone="muted" numberOfLines={1}>
-          {personName(state, message.from)}
-        </Text>
-      ) : null}
-      {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
-      {file ? (
-        isVoice(file) ? (
-          <VoiceClip type={file.type} duration={file.duration} fetch={() => nostrDmFile(file)} />
+    <View onLayout={onLayout} style={chosen ? [{ padding: 2 }, chosenStyle(colors)] : undefined}>
+      <Pressable
+        onPress={onChoose}
+        onLongPress={onChoose ?? onMenu}
+        // One with buttons in it (Play, Save) stays apart from them for a screen reader.
+        accessible={!file}
+        accessibilityState={onChoose ? { selected: chosen } : undefined}
+        accessibilityHint={onChoose ? undefined : t('Hold for more')}
+        style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
+      >
+        {group && !mine && message.from ? (
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {personName(state, message.from)}
+          </Text>
+        ) : null}
+        {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} onPress={answered.onPress} /> : <Missing /> : null}
+        {file ? (
+          isVoice(file) ? (
+            <VoiceClip type={file.type} duration={file.duration} fetch={() => nostrDmFile(file)} />
+          ) : (
+            <NetworkFile name={file.name ?? (file.type.startsWith('image/') ? t('Photo') : t('File'))} type={file.type} size={file.size} dim={file.dim} fetch={() => nostrDmFile(file)} onMenu={onChoose ?? onMenu} />
+          )
+        ) : message.file ? (
+          <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>
         ) : (
-          <NetworkFile name={file.name ?? (file.type.startsWith('image/') ? t('Photo') : t('File'))} type={file.type} size={file.size} dim={file.dim} fetch={() => nostrDmFile(file)} onMenu={onMenu} />
-        )
-      ) : message.file ? (
-        <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>
-      ) : (
-        // Not selectable: holding the words opens the menu, which can copy them. In the chat's text size (theme/look.ts).
-        <Text style={textSized(look.textSize, 16)}>{message.text}</Text>
-      )}
-      {Object.keys(reactions).length ? (
-        <Text variant="caption">
-          {Object.entries(reactions)
-            .map(([emoji, n]) => (n > 1 ? `${emoji} ${n}` : emoji))
-            .join('  ')}
+          // Not selectable: holding the words opens the menu, which can copy them. In the chat's text size (theme/look.ts).
+          <Text style={textSized(look.textSize, 16)}>{message.text}</Text>
+        )}
+        <Text variant="caption" tone="faint">
+          {status}
         </Text>
-      ) : null}
-      <Text variant="caption" tone="faint">
-        {status}
-      </Text>
-      {message.state === 'failed' ? <Button title={t('Try again')} kind="secondary" compact onPress={onRetry} /> : null}
-    </Pressable>
+        {message.state === 'failed' ? <Button title={t('Try again')} kind="secondary" compact onPress={onRetry} /> : null}
+      </Pressable>
+      {/* Each reaction once, with how many chose it; ours stands out. A custom emoji (NIP-30) shows as its :shortcode:. */}
+      <Reactions signs={Object.values(message.reactions ?? {})} mine={message.reactions?.[state.public]} mineSide={mine} onSign={onChoose ? undefined : onSign} onPress={onChoose} />
+    </View>
   );
 }

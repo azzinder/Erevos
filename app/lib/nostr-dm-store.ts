@@ -6,6 +6,7 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
 import type { Holder } from '../lock/sealed-file';
+import type { StickerPlace } from '../lock/sticker-data';
 import { checkedLook, type Look } from '../theme/look';
 import { canNostrChat } from './core';
 import { sha256Bytes, toHex } from './crypto';
@@ -19,6 +20,7 @@ import {
   authEvent,
   chatOf,
   DEFAULT_INBOX,
+  dropReaction,
   FOLLOWS_RELAYS,
   followsLook,
   forgetChat,
@@ -40,17 +42,23 @@ import {
   postParts,
   postsOf,
   profileEvent,
+  pinHere,
   profileFieldsOf,
+  putReaction,
+  reactionContent,
   reactionOf,
   readersOf,
   readKey,
   readRelays,
   nip65Of,
+  removeHere,
   sameRelays,
   setInbox,
   shortNpub,
   signed,
   signedOnce,
+  TAKE_BACK_MOST,
+  takeBack,
   takeWrap,
   verified,
   wrapMessage,
@@ -60,8 +68,10 @@ import {
   type NostrPost,
 } from './nostr-dm';
 import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
+import { emojiTag } from './nostr-emoji';
 import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFile, uploadBlob, type NostrDmFile } from './nostr-files';
-import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, type FeedAnswer, type FeedPost } from './nostr-feed';
+import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, tallyReactions, type FeedAnswer, type FeedPost, type PostReaction } from './nostr-feed';
+import { POLL_KIND, POLL_RELAYS_MOST, pollCount, pollOf, pollOpen, pollTags, VOTE_KIND, voteTags, type PollCount } from './nostr-polls';
 
 // The open space's Nostr chats as the screens use them (app/nostr-chats.tsx, app/nostr-chat.tsx):
 // loaded from their sealed value (lock/nostr-dm-data.ts), reading the space's inbox relays while
@@ -1039,7 +1049,7 @@ async function askFeed(it: Live, url: string, authors: string[], until?: number)
   }
   const filters: Record<string, unknown>[] = [];
   for (let i = 0; i < authors.length; i += NAMES_AT_ONCE) {
-    filters.push({ kinds: [1, 6], authors: authors.slice(i, i + NAMES_AT_ONCE), limit: FEED_AT_ONCE, ...(until !== undefined ? { until } : {}) });
+    filters.push({ kinds: [1, 6, POLL_KIND], authors: authors.slice(i, i + NAMES_AT_ONCE), limit: FEED_AT_ONCE, ...(until !== undefined ? { until } : {}) });
   }
   const answers: FeedAnswer[] = [];
   let answered = false;
@@ -1132,8 +1142,9 @@ const THEIRS_MOST = 3;
 /** The most people an answer names (p tags): those of the post answered, and its writer. */
 const NAMED_MOST = 20;
 
-// What this space's key did with posts while Erevos runs (liked, shared again), to show it; never kept.
-const doneWith = { liked: new Set<string>(), shared: new Set<string>() };
+// What this space's key did with posts while Erevos runs, to show it, never kept: liked (with the
+// like's id, to take it back) and shared again, by post.
+const doneWith = { liked: new Map<string, string>(), shared: new Set<string>() };
 
 /** Whether the space's key liked, or shared again, this post while Erevos runs. */
 export function nostrDmDoneWith(note: string): { liked: boolean; shared: boolean } {
@@ -1157,16 +1168,16 @@ async function writesFor(it: Live, key: string): Promise<string[]> {
 }
 
 /**
- * Signs a public event with the space's key and sends it to where its posts go, and to a few of
- * the relays `about` (the writer of the post it is about) writes on. Answers it; throws when no
- * relay took it.
+ * Signs a public event with the space's key and sends it to where its posts go, to a few of the
+ * relays `about` (the writer of the post it is about) writes on, and to `also` (a poll's). Answers
+ * it; throws when no relay took it.
  */
-async function postPublic(kind: number, tags: string[][], content: string, about?: string): Promise<NostrEvent> {
+async function postPublic(kind: number, tags: string[][], content: string, about?: string, also: string[] = []): Promise<NostrEvent> {
   const it = spaceLive();
   const state = it.state;
   const ours = await writesFor(it, state.public);
   const theirs = about && about !== state.public ? (await writesFor(it, about)).slice(0, THEIRS_MOST) : [];
-  const where = [...new Set([...(ours.length ? ours : PUBLIC_RELAYS), ...theirs].map((url) => url.replace(/\/+$/, '')))];
+  const where = [...new Set([...(ours.length ? ours : PUBLIC_RELAYS), ...theirs, ...also].map((url) => url.replace(/\/+$/, '')))];
   const event = await signed(state, kind, tags, content);
   const took = await publish(it, where, event);
   if (!took) throw new Error(t('No Nostr relay took it. Try again in a while.'));
@@ -1208,14 +1219,35 @@ export async function nostrDmWritePost(text: string, photos: PublicPhoto[] = [],
 
 /** Likes a post (NIP-25, "+"). */
 export async function nostrDmLike(post: NostrEvent): Promise<void> {
-  await postPublic(7, [['e', post.id], ['p', post.pubkey], ['k', String(post.kind)]], '+', post.pubkey);
-  doneWith.liked.add(post.id);
+  await nostrDmReactPost(post, '👍');
+}
+
+/** Takes back the space's like of a post (NIP-09): the relays that keep it are asked to drop it. */
+export async function nostrDmUnlike(post: NostrEvent): Promise<void> {
+  const id = doneWith.liked.get(post.id);
+  if (id) await nostrDmTakeBackReactions(post, [id]);
+}
+
+/** Reacts to a post (NIP-25) with `sign`: an emoji, or a custom one (its :shortcode:) whose picture is at `url` (NIP-30). Answers the reaction. */
+export async function nostrDmReactPost(post: NostrEvent, sign: string, url?: string): Promise<NostrEvent> {
+  const made = await postPublic(7, [['e', post.id], ['p', post.pubkey], ['k', String(post.kind)], ...emojiTag(sign, url)], reactionContent(sign), post.pubkey);
+  if (sign !== '👎') doneWith.liked.set(post.id, made.id);
+  told();
+  return made;
+}
+
+/** Takes back these reactions of the space's key to a post, by id (NIP-09, kind 5 naming kind 7). */
+export async function nostrDmTakeBackReactions(post: NostrEvent, ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await postPublic(5, [...ids.map((id) => ['e', id]), ['k', '7']], '', post.pubkey);
+  if (ids.includes(doneWith.liked.get(post.id) ?? '')) doneWith.liked.delete(post.id);
   told();
 }
 
-/** Shares a post again (NIP-18, kind 6), with the post in it. */
+/** Shares a post again (NIP-18): a post with kind 6, anything else (a poll) with kind 16, the event in it. */
 export async function nostrDmRepost(post: NostrEvent): Promise<void> {
-  await postPublic(6, [['e', post.id, ''], ['p', post.pubkey]], JSON.stringify(post), post.pubkey);
+  const generic = post.kind !== 1;
+  await postPublic(generic ? 16 : 6, [['e', post.id, ''], ['p', post.pubkey], ...(generic ? [['k', String(post.kind)]] : [])], JSON.stringify(post), post.pubkey);
   doneWith.shared.add(post.id);
   told();
 }
@@ -1233,6 +1265,8 @@ export type PostTalk = {
   answers: FeedPost[];
   likes: number;
   shares: number;
+  /** The reactions, each sign once, the most chosen first (lib/nostr-feed.ts tallyReactions). */
+  reactions: PostReaction[];
   names: Record<string, string>;
   answered: boolean;
 };
@@ -1254,17 +1288,22 @@ export async function nostrDmPostTalk(post: NostrEvent): Promise<PostTalk> {
   const answers: FeedPost[] = [];
   const likers = new Set<string>();
   const sharers = new Set<string>();
+  const reacted: NostrEvent[] = [];
+  let liked = '';
   const latest = seconds() + 600;
   for (const event of found.events.sort((a, b) => a.created_at - b.created_at)) {
     if (seen.has(event.id) || event.created_at > latest || !event.tags.some((tag) => tag[0] === 'e' && tag[1] === post.id)) continue;
     if (!(await verified(event))) continue;
     seen.add(event.id);
     if (event.kind === 7) {
-      if (reactionOf(event.content) !== '👎') likers.add(event.pubkey);
+      reacted.push(event);
+      if (reactionOf(event.content) === '👎') continue;
+      likers.add(event.pubkey);
+      if (event.pubkey === state.public) liked = event.id;
     } else if (event.kind === 6) sharers.add(event.pubkey);
     else if (answers.length < ANSWERS_MOST) answers.push({ id: event.id, note: event.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(event), event });
   }
-  if (likers.has(state.public)) doneWith.liked.add(post.id);
+  if (liked) doneWith.liked.set(post.id, liked);
   if (sharers.has(state.public)) doneWith.shared.add(post.id);
   const people = [...new Set(answers.map((answer) => answer.by))];
   const names: Record<string, string> = {};
@@ -1274,7 +1313,50 @@ export async function nostrDmPostTalk(post: NostrEvent): Promise<PostTalk> {
     const name = key === state.public ? t('You') : (!state.chats[key]?.members && state.chats[key]?.name) || feedKnown?.names.get(key) || (await nameIn(key, profiles.get(key) ?? [])) || state.people[key]?.name;
     if (name) names[key] = name;
   }
-  return { answers, likes: likers.size, shares: sharers.size, names, answered: found.relays.some((relay) => relay.how === 'all') };
+  return { answers, likes: likers.size, shares: sharers.size, reactions: tallyReactions(reacted, state.public), names, answered: found.relays.some((relay) => relay.how === 'all') };
+}
+
+/**
+ * Writes a poll (kind 1068, NIP-88, lib/nostr-polls.ts): `question` as its words, `options`, one
+ * or more choices, open until `endsAt` (seconds). Its votes are to go to the relays the space's
+ * posts go to. Answers the poll.
+ */
+export async function nostrDmWritePoll(question: string, options: string[], multiple: boolean, endsAt: number): Promise<NostrEvent> {
+  const it = spaceLive();
+  const words = question.trim();
+  const named = options.map((o) => o.trim()).filter(Boolean);
+  if (!words || named.length < 2) throw new Error(t('Write something first.'));
+  const ours = await writesFor(it, it.state.public);
+  const relays = (ours.length ? ours : PUBLIC_RELAYS).slice(0, POLL_RELAYS_MOST);
+  return postPublic(POLL_KIND, pollTags(named, multiple, endsAt, relays), words);
+}
+
+// The relays a poll's votes are sent to and asked of: those it names, else where its writer writes.
+async function pollRelays(it: Live, poll: NostrEvent): Promise<string[]> {
+  const named = pollOf(poll)?.relays ?? [];
+  return named.length ? named : (await writesFor(it, poll.pubkey)).slice(0, POLL_RELAYS_MOST);
+}
+
+/** Votes on a poll (kind 1018) for the options `chosen`, by id: to the relays it names, and where the space's posts go. A later vote takes the place of one before. */
+export async function nostrDmVote(poll: NostrEvent, chosen: string[]): Promise<void> {
+  const it = spaceLive();
+  const read = pollOf(poll);
+  if (!read) return;
+  if (!pollOpen(read)) throw new Error(t('This poll has ended.'));
+  const tags = voteTags(poll.id, read, chosen);
+  if (!tags) return;
+  await postPublic(VOTE_KIND, tags, '', poll.pubkey, await pollRelays(it, poll));
+}
+
+/** How a poll stands, as its relays and those for look-ups have its votes now (lib/nostr-polls.ts pollCount), and whether any answered. */
+export async function nostrDmPollCount(poll: NostrEvent): Promise<PollCount & { answered: boolean }> {
+  const it = spaceLive();
+  const read = pollOf(poll);
+  if (!read) return { counts: [], voters: 0, mine: [], answered: false };
+  const where = [...new Set([...(await pollRelays(it, poll)), ...LOOKUP_RELAYS.filter((url) => !GATHERERS.includes(url))])];
+  const found = await lookUpEach(it, where, [{ kinds: [VOTE_KIND], '#e': [poll.id], limit: 1000, ...(read.endsAt ? { until: read.endsAt } : {}) }]);
+  const count = await pollCount(poll.id, read, found.events, it.state.public, verified);
+  return { ...count, answered: found.relays.some((relay) => relay.how === 'all') };
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */
@@ -1289,8 +1371,8 @@ export function nostrDmFreshen(key: string): void {
 /**
  * Sends a message of `kind` to the chat `key`: to the relays each of its readers reads on, a wrap
  * for each, and a copy to the space's own. `shown` makes the message as the chat shows it, from its
- * id and time; `changed` changes the chat as it goes (a reaction). It went once one relay of one
- * reader took it.
+ * id and time; `changed` changes the chat as it goes (a reaction), given its id. It went once one
+ * relay of one reader took it. Answers its id.
  */
 async function sendTo(
   it: Live & { state: NostrDmState },
@@ -1299,8 +1381,8 @@ async function sendTo(
   tags: string[][],
   content: string,
   shown?: (id: string, at: number) => NostrDmMessage,
-  changed?: () => void,
-): Promise<void> {
+  changed?: (id: string) => void,
+): Promise<string> {
   const state = it.state;
   const readers = readersOf(state, key);
   const where = await Promise.all(readers.map(async (reader) => [reader, await relaysOf(it, reader)] as const));
@@ -1317,7 +1399,7 @@ async function sendTo(
   const message = shown?.(made.id, made.at);
   await changeAccount(it, async () => {
     if (message) addMessage(state, key, message);
-    changed?.();
+    changed?.(made.id);
     state.seen.push(ours.id);
   });
   // Our own copy, for the space's other apps with this key (in notes to oneself, the message
@@ -1334,6 +1416,7 @@ async function sendTo(
     });
   }
   if (!took) throw new Error(t('None of their relays took the message. Try again later.'));
+  return made.id;
 }
 
 /** Sends `text` to `key`, answering the message `replyTo` when given: to the relays they read on,
@@ -1369,16 +1452,116 @@ async function sendFile(it: Live & { state: NostrDmState }, key: string, file: N
   await sendTo(it, key, 15, [...(replyTo ? [['e', replyTo, '', 'reply']] : []), ...fileTags(file)], file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file, ...answers }));
 }
 
-/** Reacts to a message with `emoji`, as NIP-25 says, to everyone in the chat. */
+/** A sticker to send, as a picture: a PNG or JPEG, its width and height, and the words it stands for, if any. */
+export type NostrSticker = { bytes: Uint8Array; mime: string; w: number; h: number; label?: string };
+
+/**
+ * Sends a sticker to `key`, answering `replyTo` when given. NIP-17 has no stickers, so it goes as
+ * a photo does (kind 15), encrypted, with its size, and its words as the file's name: other Nostr
+ * apps show it as a photo. Every sticker sent in a Nostr chat goes through here, whatever made its
+ * picture (one of the space's own from a photo, lib/own-stickers.ts, or any other drawn to one).
+ */
+export async function nostrDmSendSticker(key: string, sticker: NostrSticker, replyTo?: string): Promise<void> {
+  const end = sticker.mime === 'image/png' ? '.png' : '.jpg';
+  const words = [...(sticker.label ?? '')].map((c) => (c < ' ' || '\\/:*?"<>|'.includes(c) ? ' ' : c)).join('').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const dim = sticker.w > 0 && sticker.h > 0 ? { dim: `${Math.round(sticker.w)}x${Math.round(sticker.h)}` } : {};
+  await nostrDmSendFile(key, { bytes: sticker.bytes, name: `${words || 'sticker'}${end}`, mime: sticker.mime, ...dim }, replyTo);
+}
+
+/** The kind a message of a chat went as (k tags, NIP-25 and NIP-09). */
+const kindOf = (message: NostrDmMessage) => (message.file ? '15' : '14');
+
+/**
+ * Reacts to a message with `emoji`, as NIP-25 says, to everyone in the chat: one of ours before
+ * it is taken back (NIP-09) for the apps that show each. A custom emoji goes with the picture it
+ * came with (NIP-30), for the other apps to show.
+ */
 export async function nostrDmReact(key: string, id: string, emoji: string): Promise<void> {
   const it = need();
   const state = it.state;
   const target = state.chats[key]?.messages.find((m) => m.id === id);
   if (!target) return;
   const reaction = reactionOf(emoji);
-  await sendTo(it, key, 7, [['e', id], ['k', target.file ? '15' : '14']], reaction, undefined, () => {
-    target.reactions = { ...target.reactions, [state.public]: reaction };
+  if (target.reactions?.[state.public] === reaction) return;
+  const before = target.reactionIds?.[state.public];
+  const url = target.emoji?.[reaction];
+  await sendTo(it, key, 7, [['e', id], ['k', kindOf(target)], ...emojiTag(reaction, url)], reactionContent(reaction), undefined, (made) => putReaction(target, state.public, reaction, made));
+  if (before) await sendTo(it, key, 5, [['e', before], ['k', '7']], '', undefined, () => takeBack(state, key, state.public, [before])).catch(() => undefined);
+}
+
+/** Takes back the space's reaction to a message (NIP-09, kind 5 in a wrap, as NIP-17 allows): off here at once, and the others' apps that do so take it off too. */
+export async function nostrDmUnreact(key: string, id: string): Promise<void> {
+  const it = need();
+  const state = it.state;
+  const target = state.chats[key]?.messages.find((m) => m.id === id);
+  const sent = target?.reactionIds?.[state.public];
+  if (!target?.reactions?.[state.public]) return;
+  // One from before reactions kept their ids goes from here only.
+  if (!sent) {
+    await changeAccount(it, async () => dropReaction(target, state.public));
+    return;
+  }
+  await changeAccount(it, async () => {
+    takeBack(state, key, state.public, [sent]);
   });
+  await sendTo(it, key, 5, [['e', sent], ['k', '7']], '');
+}
+
+/**
+ * Deletes these messages of a chat from this device. Of the space's own that went, the others are
+ * asked to delete them too (NIP-09, kind 5 in a wrap, as NIP-17 allows), TAKE_BACK_MOST in each
+ * ask: their apps that do so delete them, others keep them. Answers how many of ours were asked for.
+ */
+export async function nostrDmDelete(key: string, ids: string[]): Promise<number> {
+  const it = need();
+  const state = it.state;
+  let removed: NostrDmMessage[] = [];
+  await changeAccount(it, async () => {
+    removed = removeHere(state, key, ids);
+  });
+  // What did not go, and the old private messages (NIP-04), which no wrap can take back, go from here only.
+  const ours = removed.filter((m) => m.mine && m.state !== 'failed' && m.state !== 'sending' && !m.old);
+  for (let i = 0; i < ours.length; i += TAKE_BACK_MOST) {
+    const some = ours.slice(i, i + TAKE_BACK_MOST);
+    const kinds = [...new Set(some.map(kindOf))].sort();
+    await sendTo(it, key, 5, [...some.map((m) => ['e', m.id]), ...kinds.map((kind) => ['k', kind])], '');
+  }
+  return ours.length;
+}
+
+/** Pins a message of a chat on this device only, or takes its pin off: NIP-17 has no pins, so nothing goes. */
+export function nostrDmPin(key: string, id: string, on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => pinHere(it.state, key, id, on));
+}
+
+/** Whether a message can be forwarded: it has words, or a file Erevos can open. */
+export const canForwardNostr = (message: NostrDmMessage): boolean => (message.file ? typeof message.file === 'object' : !!message.text);
+
+/**
+ * Forwards these messages of the chat `from` to the chat `to`, oldest first, each as a new message:
+ * its words, or its file fetched and opened here and sent again, encrypted with a key of its own,
+ * so nothing ties the copy to the message it came from. Answers how many went.
+ */
+export async function nostrDmForward(from: string, ids: string[], to: string): Promise<number> {
+  const it = need();
+  const chosen = (it.state.chats[from]?.messages ?? []).filter((m) => ids.includes(m.id) && canForwardNostr(m));
+  let went = 0;
+  for (const message of chosen) {
+    const file = message.file;
+    if (typeof file === 'object') {
+      const bytes = await nostrDmFile(file);
+      await nostrDmSendFile(to, { bytes, name: file.name ?? '', mime: file.type, ...(file.dim ? { dim: file.dim } : {}), ...(file.duration ? { durationMs: file.duration } : {}) });
+    } else await nostrDmSend(to, message.text);
+    went += 1;
+  }
+  return went;
+}
+
+/** Whose stickers made from photos the chats of `where` send (lock/sticker-data.ts): the space's, or its open hidden place's; null while it has none. */
+export function nostrDmStickerPlace(where: NetworkWhere = 'space'): StickerPlace | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped ? { holder: it.holder, space: it.space, key: it.key } : null;
 }
 
 /** Sends a message that failed once more, as a new one. */

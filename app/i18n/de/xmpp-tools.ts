@@ -4,7 +4,6 @@
 
 // The German of the XMPP chats' own tools: pins for this device, forwarding, choosing several messages, stickers and a group's description (app/xmpp-chat.tsx) (i18n/de/index.ts).
 export const xmppTools: Record<string, string> = {
-  'Pin for me': 'Für mich anheften',
   'Description': 'Beschreibung',
   'This group server does not let a group have a description.': 'Dieser Gruppenserver erlaubt keine Beschreibung einer Gruppe.',
   'Delete these messages for everyone in the chat? They cannot be brought back.': 'Diese Nachrichten für alle im Chat löschen? Sie lassen sich nicht wiederherstellen.',

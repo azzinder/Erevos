@@ -8,7 +8,8 @@
 // followed shows once, as shared), checked, the people not followed, posts from the future and
 // shares with nothing in them let be; paging with until, which stops at what a relay that sent all
 // it was asked for may still keep, so that no post is skipped, and never stops on a crowded
-// second. Then, with the real core built to WebAssembly and relays played here
+// second. Polls (NIP-88): read, made, voted on and counted; the reactions to a post, and custom
+// emoji (NIP-30). Then, with the real core built to WebAssembly and relays played here
 // (checks/nostr-relay.ts): the space's follow list, where those it follows write (NIP-65), their
 // posts asked in batches where they are, two pages, the names of those shown only, nothing kept.
 // Run with: npm run check
@@ -21,10 +22,12 @@ import { after, before, mock, test } from 'node:test';
 import { setCurrentSpace } from '../lock/keys';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
-import { FOLLOWS_RELAYS, LOOKUP_RELAYS, newNostrDm, signed, type NostrDmState } from '../lib/nostr-dm';
+import { FOLLOWS_RELAYS, LOOKUP_RELAYS, newNostrDm, reactionContent, reactionOf, signed, type NostrDmState } from '../lib/nostr-dm';
 import { setNostrOpen, type NostrEvent, type NostrLink, type NostrOpen } from '../lib/nostr-dm-net';
 import { nostrDmFeed, nostrDmFeedDone, nostrDmMake, nostrDmNow, runNostrDm, stopNostrDm, type NostrFeedPage } from '../lib/nostr-dm-store';
-import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, morePosts, type FeedAnswer } from '../lib/nostr-feed';
+import { EMOJI_MOST, emojiOf, emojiTag, emojiUrlOf, withEmoji } from '../lib/nostr-emoji';
+import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, morePosts, tallyReactions, withoutMine, withReaction, type FeedAnswer } from '../lib/nostr-feed';
+import { optionId, POLL_KIND, pollCount, pollOf, pollOpen, pollTags, reachableRelay, VOTE_KIND, voteTags, withMyVote, type NostrPoll } from '../lib/nostr-polls';
 import { FakeRelay } from './nostr-relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -145,6 +148,183 @@ test('paging with until stops at what a relay that sent all it was asked for may
   assert.equal(cut.older, true);
 });
 
+test('a poll (NIP-88): what is read of one, the one made here as it is read back, and a vote on it', () => {
+  const tags = [
+    ['option', 'a1', ' Yes '],
+    ['option', 'b2', 'No'],
+    // An id once, one as NIP-88 has none, an option with no words.
+    ['option', 'a1', 'Again'],
+    ['option', 'bad id', 'Spaces'],
+    ['option', 'c3', '   '],
+    ['relay', 'wss://votes.example/'],
+    // On the home network, twice, not a relay.
+    ['relay', 'wss://192.168.1.2'],
+    ['relay', 'wss://votes.example'],
+    ['relay', 'https://not.a.relay.example'],
+    ['polltype', 'multiplechoice'],
+    ['endsAt', '2000000000'],
+  ];
+  const poll = pollOf(event(ann, POLL_KIND, 1000, 'Lunch?', tags));
+  assert.deepEqual(poll, { options: [{ id: 'a1', label: 'Yes' }, { id: 'b2', label: 'No' }], multiple: true, endsAt: 2_000_000_000, relays: ['wss://votes.example'] });
+  assert.equal(pollOf(event(ann, 1, 1000, 'not a poll', tags)), null);
+  assert.equal(pollOf(event(ann, POLL_KIND, 1000, 'no options', [['polltype', 'singlechoice']])), null);
+  // One choice unless it says more, and no end unless it says one that is a time.
+  assert.deepEqual(pollOf(event(ann, POLL_KIND, 1000, '', [['option', 'x', 'X'], ['endsAt', 'soon']])), { options: [{ id: 'x', label: 'X' }], multiple: false, relays: [] });
+  assert.ok(pollOpen({ endsAt: 2_000_000_000 }, 1_999_999_999_000));
+  assert.ok(!pollOpen({ endsAt: 2_000_000_000 }, 2_000_000_000_000));
+  assert.ok(pollOpen({}, now));
+  assert.ok(reachableRelay('wss://relay.example') && reachableRelay(`ws://${'a'.repeat(56)}.onion`));
+  assert.ok(!reachableRelay('wss://localhost') && !reachableRelay('wss://10.0.0.1') && !reachableRelay('ws://relay.example') && !reachableRelay('wss://printer'));
+
+  // Made here: an id each option once, the words trimmed and none empty, each relay once, the end in whole seconds.
+  const ids = ['same', 'same', 'other'];
+  let n = 0;
+  const made = pollTags([' Tea ', '', 'Coffee'], false, 1234.7, ['wss://one.example/', 'wss://one.example'], () => ids[n++]);
+  assert.deepEqual(made, [['option', 'same', 'Tea'], ['option', 'other', 'Coffee'], ['relay', 'wss://one.example'], ['polltype', 'singlechoice'], ['endsAt', '1234']]);
+  const back = pollOf(event(bob, POLL_KIND, 1000, 'Drink?', made));
+  assert.deepEqual(back, { options: [{ id: 'same', label: 'Tea' }, { id: 'other', label: 'Coffee' }], multiple: false, endsAt: 1234, relays: ['wss://one.example'] });
+  assert.match(optionId(), /^[a-z0-9]{9}$/);
+
+  // A vote names the poll and the options chosen, in the poll's order: one on a poll of one choice, none of another poll.
+  assert.deepEqual(voteTags('p1', back!, ['other', 'same']), [['e', 'p1'], ['response', 'same']]);
+  assert.deepEqual(voteTags('p1', poll!, ['b2', 'zz', 'a1']), [['e', 'p1'], ['response', 'a1'], ['response', 'b2']]);
+  assert.equal(voteTags('p1', poll!, ['zz']), null);
+});
+
+test("a poll's votes: each key once, its latest checked vote before the end, as the poll allows, and one's own at once", async () => {
+  const options = [
+    { id: 'a', label: 'A' },
+    { id: 'b', label: 'B' },
+    { id: 'c', label: 'C' },
+  ];
+  const single: NostrPoll = { options, multiple: false, endsAt: 2000, relays: [] };
+  const vote = (pubkey: string, at: number, chosen: string[], poll = 'p1', sig = 'ok'): NostrEvent => ({
+    ...event(pubkey, VOTE_KIND, at, '', [['e', poll], ...chosen.map((id) => ['response', id])]),
+    sig,
+  });
+  const [dan, erin] = [key('dan'), key('erin')];
+  const first = vote(ann, 1000, ['a']);
+  const events = [
+    first,
+    // Ann's latest counts.
+    vote(ann, 1500, ['b']),
+    // On a poll of one choice, only the first.
+    vote(bob, 1200, ['c', 'a']),
+    // Carol's latest does not check: the one before it counts.
+    vote(carol, 1300, ['a']),
+    vote(carol, 1400, ['b'], 'p1', 'bad'),
+    // After the end.
+    vote(dan, 2001, ['c']),
+    // Of no option of the poll, and on another poll.
+    vote(erin, 1100, ['zz']),
+    vote(erin, 1050, ['a'], 'p2'),
+    // Not a vote.
+    event(dan, 7, 1000, '+', [['e', 'p1']]),
+  ];
+  const count = await pollCount('p1', single, [...events, first], ann, check, 3_000_000);
+  assert.deepEqual(count, { counts: [1, 1, 1], voters: 3, mine: ['b'] });
+
+  // On a poll of more choices each option once; one more than ten minutes ahead is let be.
+  const multi: NostrPoll = { options, multiple: true, relays: [] };
+  const many = await pollCount('p1', multi, [vote(ann, 1000, ['a', 'c', 'a', 'zz']), vote(bob, 1000, ['b']), vote(carol, 1700, ['a'])], bob, check, 1_000_000);
+  assert.deepEqual(many, { counts: [1, 1, 1], voters: 2, mine: ['b'] });
+
+  // Voting here shows at once, in place of the vote before, and again changes nothing more.
+  const changed = withMyVote(count, single, ['c']);
+  assert.deepEqual(changed, { counts: [1, 0, 2], voters: 3, mine: ['c'] });
+  assert.deepEqual(withMyVote(changed, single, ['c']), changed);
+  assert.deepEqual(withMyVote({ counts: [0, 0, 0], voters: 0, mine: [] }, single, ['c', 'b']), { counts: [0, 1, 0], voters: 1, mine: ['b'] });
+  assert.deepEqual(withMyVote(many, multi, ['a', 'c']), { counts: [2, 0, 2], voters: 2, mine: ['a', 'c'] });
+});
+
+test('a poll shows in the feed as a post, its question as its words; one with no option is let be', async () => {
+  const poll = event(ann, POLL_KIND, 1200, 'Lunch?', [['option', 'x', 'Soup'], ['option', 'y', 'Bread'], ['endsAt', '5000']]);
+  const empty = event(ann, POLL_KIND, 1201, 'Nothing to choose', [['polltype', 'singlechoice']]);
+  const post = event(bob, 1, 1100, 'a post');
+  const page = await feedPage(new Set([ann, bob]), [{ events: [empty, poll, post], full: false }], [], undefined, now, check);
+  assert.deepEqual(
+    page.posts.map((p) => [p.text, p.poll?.options.map((o) => o.label) ?? null, p.poll?.endsAt ?? null]),
+    [
+      ['Lunch?', ['Soup', 'Bread'], 5000],
+      ['a post', null, null],
+    ],
+  );
+});
+
+test('the reactions to a post: each sign once with how many chose it, the space\'s own marked, taken back and added at once', () => {
+  const me = key('me');
+  const party = 'https://emoji.example/party.png';
+  const reactions = tallyReactions(
+    [
+      event(ann, 7, 1000, '+'),
+      event(bob, 7, 1001, '👍'),
+      // Ann twice counts once.
+      event(ann, 7, 1002, ''),
+      event(carol, 7, 1003, ':party:', [['emoji', 'party', party]]),
+      event(me, 7, 1004, ':party:'),
+      event(me, 7, 1005, '-'),
+      // Not a reaction.
+      event(bob, 1, 1006, '+'),
+    ],
+    me,
+  );
+  assert.deepEqual(
+    reactions.map((r) => [r.sign, r.count, r.url ?? null, r.mine.length]),
+    [
+      ['👍', 2, null, 0],
+      [':party:', 2, party, 1],
+      ['👎', 1, null, 1],
+    ],
+  );
+  // Taken back: one that was the space's alone goes; one others chose too counts one less.
+  assert.deepEqual(withoutMine(reactions, '👎').map((r) => r.sign), ['👍', ':party:']);
+  assert.deepEqual(withoutMine(reactions, ':party:').find((r) => r.sign === ':party:'), { sign: ':party:', url: party, count: 1, mine: [] });
+  assert.deepEqual(withoutMine(reactions, '👍'), reactions);
+  // Added: to a sign others chose, one more; again with the same, no more people; a new sign at the end.
+  const liked = withReaction(reactions, '👍', 'l1');
+  assert.deepEqual(liked[0], { sign: '👍', count: 3, mine: ['l1'] });
+  assert.deepEqual(withReaction(liked, '👍', 'l2')[0], { sign: '👍', count: 3, mine: ['l1', 'l2'] });
+  assert.deepEqual(withReaction(reactions, ':cat:', 'c1', 'https://emoji.example/cat.png').at(-1), { sign: ':cat:', url: 'https://emoji.example/cat.png', count: 1, mine: ['c1'] });
+  // What a reaction says as it goes, as NIP-25 writes 👍 and 👎, and as it reads back.
+  assert.deepEqual(['👍', '👎', '🎉', ':party:'].map(reactionContent), ['+', '-', '🎉', ':party:']);
+  assert.deepEqual(['+', '', '-', ':party:', ' 🎉 ', ':a b:', '123456789'].map(reactionOf), ['👍', '👍', '👎', ':party:', '🎉', ':a b:', '12345678']);
+});
+
+test('custom emoji (NIP-30): where their pictures are, https only and each once, and the words split where they name one', () => {
+  const party = 'https://emoji.example/party.png';
+  const emoji = emojiOf([
+    ['emoji', 'party', party],
+    ['emoji', 'party', 'https://emoji.example/other.png'],
+    ['emoji', 'plain', 'http://emoji.example/plain.png'],
+    ['emoji', 'bad code', 'https://emoji.example/bad.png'],
+    ['emoji', 'long', `https://emoji.example/${'x'.repeat(2048)}`],
+    ['emoji', 'cat'],
+    ['p', 'party', party],
+    ['emoji', 'cat', 'https://emoji.example/cat.png'],
+  ]);
+  assert.deepEqual([...emoji], [
+    ['party', party],
+    ['cat', 'https://emoji.example/cat.png'],
+  ]);
+  const lots = emojiOf(Array.from({ length: EMOJI_MOST + 5 }, (_, i) => ['emoji', `e${i}`, `https://emoji.example/${i}.png`]));
+  assert.equal(lots.size, EMOJI_MOST);
+
+  // A :word: with no picture stays words, and its second colon may begin one with.
+  assert.deepEqual(withEmoji('at 10:30:party: now :dog: :cat:', emoji), [
+    { text: 'at 10:30' },
+    { code: 'party', url: party },
+    { text: ' now :dog: ' },
+    { code: 'cat', url: 'https://emoji.example/cat.png' },
+  ]);
+  assert.deepEqual(withEmoji(':party:', new Map()), [{ text: ':party:' }]);
+  assert.deepEqual(withEmoji('', emoji), []);
+
+  assert.equal(emojiUrlOf(':party:', [['emoji', 'party', party]]), party);
+  assert.equal(emojiUrlOf('🎉', [['emoji', 'party', party]]), undefined);
+  assert.deepEqual(emojiTag(':party:', party), [['emoji', 'party', party]]);
+  assert.deepEqual([emojiTag('🎉', party), emojiTag(':party:', undefined), emojiTag(':party:', 'http://emoji.example/p.png')], [[], [], []]);
+});
+
 // The relays the space looks things up on, played here: the one that gathers lists keeps them, the
 // others keep posts; those that gather lists besides are away. Ann writes on a relay of her own.
 const relays = new Map<string, FakeRelay>();
@@ -187,7 +367,7 @@ async function until(done: () => boolean, what: string, ms = 5000): Promise<void
 
 // The asks for posts each relay heard: the authors of each.
 const postAsks = (r: FakeRelay) =>
-  r.heard.filter((f) => f[0] === 'REQ').flatMap((f) => (f.slice(2) as Record<string, unknown>[]).filter((x) => JSON.stringify(x.kinds) === '[1,6]').map((x) => x.authors as string[]));
+  r.heard.filter((f) => f[0] === 'REQ').flatMap((f) => (f.slice(2) as Record<string, unknown>[]).filter((x) => JSON.stringify(x.kinds) === JSON.stringify([1, 6, POLL_KIND])).map((x) => x.authors as string[]));
 
 test("the posts of the people the space's key follows, from where they write, two pages, the names of those shown only", { skip: !coreReady }, async () => {
   const people: NostrDmState[] = await Promise.all([newNostrDm(), newNostrDm(), newNostrDm()]);
