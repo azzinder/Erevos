@@ -9,6 +9,10 @@
 // computer without them keeps app.json's version and has no build number.
 // EREVOS_DISTRIBUTION=fdroid makes the F-Droid build: F-Droid updates it, so it has no Check for
 // updates (lib/distribution.ts) and may not install packages. The release workflow does not set it.
+// EREVOS_EDITION picks the edition (docs/editions.md): `plus` (the default) is Erevos+, with every
+// module; `lite` is the plain Erevos, with only Erevos's own chats, the Phone, the SMS and the
+// Collection, its core built without the other networks. Same package: one or the other is on a
+// phone, and moving between them keeps everything. Kept in `extra.edition` (lib/edition.ts).
 const INSTALL_PACKAGES = 'android.permission.REQUEST_INSTALL_PACKAGES';
 
 module.exports = ({ config }) => {
@@ -16,6 +20,8 @@ module.exports = ({ config }) => {
   const distribution = process.env.EREVOS_DISTRIBUTION || '';
   if (distribution && distribution !== 'fdroid') throw new Error(`EREVOS_DISTRIBUTION is "${distribution}": only "fdroid" is known`);
   const fdroid = distribution === 'fdroid';
+  const edition = process.env.EREVOS_EDITION || 'plus';
+  if (edition !== 'plus' && edition !== 'lite') throw new Error(`EREVOS_EDITION is "${edition}": only "plus" and "lite" are known`);
   return {
     ...config,
     version: process.env.EREVOS_VERSION || config.version,
@@ -29,7 +35,7 @@ module.exports = ({ config }) => {
           }
         : {}),
     },
-    extra: { ...config.extra, ...(build > 0 ? { build } : {}), ...(fdroid ? { distribution } : {}) },
+    extra: { ...config.extra, ...(build > 0 ? { build } : {}), ...(fdroid ? { distribution } : {}), ...(edition === 'lite' ? { edition } : {}) },
     plugins: [...(config.plugins || []), './plugins/with-release-signing', './plugins/with-native-programs', './plugins/with-no-gms-entry', './plugins/with-launcher-icons', './plugins/with-movable-views', './plugins/with-latest-intent'],
   };
 };

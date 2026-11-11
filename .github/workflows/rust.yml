@@ -33,6 +33,7 @@ jobs:
       - run: cargo audit
       - run: cargo clippy --all-targets -- -D warnings
       # The app's two ways into the core: JNI on Android and WebAssembly.
+      - run: cargo clippy -p erevos-ffi --features android,tor,networks --all-targets -- -D warnings
       - run: cargo clippy -p erevos-ffi --features android,tor --all-targets -- -D warnings
-      - run: cargo clippy -p erevos-ffi --features web --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo clippy -p erevos-ffi --features web,networks --target wasm32-unknown-unknown -- -D warnings
       - run: cargo test

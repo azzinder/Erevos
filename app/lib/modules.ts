@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { EDITION, inEdition, type Edition } from './edition';
 import type { CheckId } from './permission-checks';
 import { secureGet, secureSet } from './secure';
 import { SHELL } from './shell';
@@ -35,14 +36,20 @@ function platform(): string {
   }
 }
 
+/** The modules of `edition` (lib/edition.ts): every one in Erevos+, Erevos's own chats, the Phone,
+ *  the SMS and the Collection in the plain Erevos. */
+export function editionModules(edition: Edition = EDITION): Module[] {
+  return MODULES.filter((m) => inEdition(m, edition));
+}
+
 /**
- * The modules this device can run: the phone and the SMS only on Android; the Collection on
- * Android and in the web build: in the desktop app and on Sailfish OS (`shell` 'electron' or
- * 'sailfish') its chunks are files in the shell's own folder, in a plain browser they are kept in
- * the browser's storage (lib/web-store.ts), as much as it gives.
+ * The modules this device can run, of this build's edition (lib/edition.ts): the phone and the SMS
+ * only on Android; the Collection on Android and in the web build: in the desktop app and on
+ * Sailfish OS (`shell` 'electron' or 'sailfish') its chunks are files in the shell's own folder,
+ * in a plain browser they are kept in the browser's storage (lib/web-store.ts), as much as it gives.
  */
-export function modulesHere(os: string = platform(), _shell: typeof SHELL = SHELL): Module[] {
-  return MODULES.filter((m) => {
+export function modulesHere(os: string = platform(), _shell: typeof SHELL = SHELL, edition: Edition = EDITION): Module[] {
+  return editionModules(edition).filter((m) => {
     if (m === 'phone' || m === 'sms') return os === 'android';
     if (m === 'collection') return os === 'android' || os === 'web';
     return true;
@@ -78,12 +85,14 @@ export function parseModules(raw: string | null, here: readonly Module[] = modul
   }
 }
 
-/** What is kept for `chosen`: the modules this device can run, at least one, with every module
- *  there is now; null when none is. */
-export function keptModules(chosen: Iterable<Module>, here: readonly Module[] = modulesHere()): string | null {
+// `known` is the edition's modules: one the plain Erevos does not have is not part of a choice
+// made there, so it is on, as a new module is, when the same phone moves to Erevos+.
+/** What is kept for `chosen`: the modules this device can run, at least one, with the modules
+ *  of this edition; null when none is. */
+export function keptModules(chosen: Iterable<Module>, here: readonly Module[] = modulesHere(), edition: Edition = EDITION): string | null {
   const wanted = new Set(chosen);
   const list = here.filter((m) => wanted.has(m));
-  return usable(list) ? JSON.stringify({ on: list, known: MODULES }) : null;
+  return usable(list) ? JSON.stringify({ on: list, known: editionModules(edition) }) : null;
 }
 
 // Every module is on until the owner chooses, as for everyone before modules came.

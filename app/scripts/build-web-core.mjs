@@ -20,5 +20,5 @@ const remap = [`--remap-path-prefix=${cargoHome}=/cargo`, `--remap-path-prefix=$
 const env = { ...process.env, CARGO_ENCODED_RUSTFLAGS: remap.join('\x1f') };
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit', env });
 
-run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', 'web']);
+run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', 'web,networks']);
 run('wasm-bindgen', ['--target', 'web', '--no-typescript', '--out-dir', out, 'target/wasm32-unknown-unknown/release/erevos_ffi.wasm']);

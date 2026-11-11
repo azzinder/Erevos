@@ -13,6 +13,7 @@ import { rowOn } from '../lib/inbox';
 import { afterSteps, checkOwner, checksAt, parseSetupAfter } from '../lib/setup-after';
 import {
   checkWanted,
+  editionModules,
   keptModules,
   loadModules,
   moduleList,
@@ -216,4 +217,22 @@ test('each permission is asked on the first screen whose module needs it; later 
   assert.deepEqual(ids(phone.own), ['notices', 'fullScreen', 'contacts']);
   assert.deepEqual(ids(checksAt('collection', ['phone', 'collection'], checks).own), ['camera']);
   assert.deepEqual(ids(checksAt('collection', ['phone', 'collection'], checks).earlier), ['notices']);
+});
+
+test('the plain Erevos has only Erevos, the Phone, the SMS and the Collection; moving to Erevos+ turns the others on', () => {
+  assert.deepEqual(editionModules('lite'), ['erevos', 'phone', 'sms', 'collection']);
+  assert.deepEqual(editionModules('plus'), MODULES);
+  assert.deepEqual(modulesHere('android', null, 'lite'), ['erevos', 'phone', 'sms', 'collection']);
+  assert.deepEqual(modulesHere('web', null, 'lite'), ['erevos', 'collection']);
+  assert.deepEqual(modulesHere('ios', null, 'lite'), ['erevos']);
+  // A choice made in Erevos+ read in the plain Erevos: only its own modules.
+  const LITE_HERE = modulesHere('android', null, 'lite');
+  assert.deepEqual([...(parseModules('{"on":["erevos","sms","matrix"],"known":["erevos","phone","sms","nostr","matrix","xmpp","collection"]}', LITE_HERE) ?? [])], ['erevos', 'sms']);
+  // A choice made in the plain Erevos (SMS off) read in Erevos+: SMS stays off, the networks it
+  // did not have are on.
+  const kept = keptModules(['erevos', 'phone', 'collection'], LITE_HERE, 'lite');
+  assert.ok(kept);
+  assert.deepEqual([...(parseModules(kept, ANDROID) ?? [])], ['erevos', 'phone', 'nostr', 'matrix', 'xmpp', 'collection']);
+  // Only Matrix-like modules chosen in Erevos+ leave nothing usable in the plain Erevos: every one of its own is on.
+  assert.equal(parseModules('{"on":["matrix"],"known":["erevos","phone","sms","nostr","matrix","xmpp","collection"]}', LITE_HERE), null);
 });

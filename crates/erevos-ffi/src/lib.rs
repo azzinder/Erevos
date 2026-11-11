@@ -503,19 +503,61 @@ pub mod nostr {
 /// Matrix accounts in Erevos (crates/erevos-matrix, docs/matrix.md): one JSON request in, its
 /// JSON answer out, for all of Matrix's encryption.
 pub fn matrix(request: &[u8]) -> Result<Vec<u8>> {
-    erevos_matrix::call(request)
+    networks::matrix(request)
 }
 
 /// XMPP accounts in Erevos (crates/erevos-xmpp, docs/xmpp.md): one JSON request in, its JSON
 /// answer out, for OMEMO.
 pub fn xmpp(request: &[u8]) -> Result<Vec<u8>> {
-    erevos_xmpp::call(request)
+    networks::xmpp(request)
 }
 
 /// Chats with other Nostr apps (crates/erevos-nostr chat, docs/nostr-chats.md): one JSON request
 /// in, its JSON answer out, for NIP-17's messages and NIP-19's keys.
 pub fn nostr_chat(request: &[u8]) -> Result<Vec<u8>> {
-    erevos_nostr::chat::call(request)
+    networks::nostr_chat(request)
+}
+
+/// Matrix, XMPP and chats with other Nostr apps, in Erevos+ (the `networks` feature).
+#[cfg(feature = "networks")]
+mod networks {
+    use super::Result;
+
+    pub fn matrix(request: &[u8]) -> Result<Vec<u8>> {
+        erevos_matrix::call(request)
+    }
+
+    pub fn xmpp(request: &[u8]) -> Result<Vec<u8>> {
+        erevos_xmpp::call(request)
+    }
+
+    pub fn nostr_chat(request: &[u8]) -> Result<Vec<u8>> {
+        erevos_nostr::chat::call(request)
+    }
+}
+
+/// The plain Erevos (built without the `networks` feature, docs/editions.md) has no Matrix, XMPP
+/// nor chats with other Nostr apps: their modules are not offered there, so nothing asks; if
+/// something does, it is told so instead of the app stopping.
+#[cfg(not(feature = "networks"))]
+mod networks {
+    use super::Result;
+
+    fn not_here(what: &str) -> Result<Vec<u8>> {
+        Err(format!("{what} is in Erevos+, not in this Erevos"))
+    }
+
+    pub fn matrix(_request: &[u8]) -> Result<Vec<u8>> {
+        not_here("Matrix")
+    }
+
+    pub fn xmpp(_request: &[u8]) -> Result<Vec<u8>> {
+        not_here("XMPP")
+    }
+
+    pub fn nostr_chat(_request: &[u8]) -> Result<Vec<u8>> {
+        not_here("Nostr chats")
+    }
 }
 
 /// The safety number of two identity keys.

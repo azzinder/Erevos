@@ -15,7 +15,7 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const out = fileURLToPath(new URL('./.core', import.meta.url));
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' });
 
-run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', 'web']);
+run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', 'web,networks']);
 run('wasm-bindgen', [
   '--target',
   'nodejs',
