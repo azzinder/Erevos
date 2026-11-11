@@ -7,11 +7,12 @@
 // relay side (answering an invite, opening an answer, accepting the first message that follows);
 // this keeps the state, sealed in the space (lock/sms-data.ts).
 
+import { withTimer } from './chat-rules';
 import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
+import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_VANISH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -298,6 +299,20 @@ export class SmsLink {
   setSpamAbroad(on: boolean, home: string): Promise<void> {
     const code = home.replace(/\D/g, '');
     return this.update((d) => ({ ...d, spamAbroad: on, home: /^[1-9][0-9]{0,2}$/.test(code) ? code : d.home }));
+  }
+
+  /** Sets a conversation's timer for disappearing messages (lib/sms-rules.ts), in seconds (0:
+   *  messages stay), for messages from `now` on. False, and nothing changed, when MAX_VANISH
+   *  conversations have one already. */
+  async setVanish(address: string, after: number, now = Date.now()): Promise<boolean> {
+    let done = true;
+    await this.update((d) => {
+      const others = d.vanish.filter((v) => !sameConversation(v.address, address));
+      const steps = withTimer({ vanish: d.vanish.find((v) => sameConversation(v.address, address))?.steps }, after, now)?.vanish ?? [];
+      done = !steps.length || others.length < MAX_VANISH;
+      return done ? { ...d, vanish: [...others, ...(steps.length ? [{ address, steps }] : [])] } : d;
+    });
+    return done;
   }
 
   /** Seconds an SMS waits before it goes, to be taken back. */

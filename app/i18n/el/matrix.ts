@@ -49,7 +49,6 @@ export const matrix: Record<string, string> = {
   "Message deleted": "Το μήνυμα διαγράφηκε",
   "A message from before": "Ένα παλιότερο μήνυμα",
   "Load earlier messages": "Φόρτωση παλιότερων μηνυμάτων",
-  "Delete this message for everyone in the chat? It cannot be brought back.": "Διαγραφή αυτού του μηνύματος για όλους στη συνομιλία; Δεν μπορεί να επανέλθει.",
   "No earlier messages came this time. Try again to look further back.": "Δεν ήρθαν παλιότερα μηνύματα αυτή τη φορά. Δοκίμασε ξανά για να ψάξεις πιο πίσω.",
   "Only a message of yours that went can be changed.": "Μπορείς να αλλάξεις μόνο ένα δικό σου μήνυμα που έχει ήδη σταλεί.",
   "Checked by emoji": "Ελέγχθηκε με emoji",

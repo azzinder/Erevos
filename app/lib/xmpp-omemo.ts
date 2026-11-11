@@ -83,6 +83,8 @@ export type OmemoDevice = {
   failedAt?: number;
   /** In the device list the account last published. */
   listed: boolean;
+  /** The identity key checked in person by its QR code (lib/xmpp-rules.ts): it counts while it is still the device's. */
+  checked?: string;
 };
 
 export type OmemoPeople = Record<string, { fetchedAt: number; devices: Record<string, OmemoDevice> }>;

@@ -76,6 +76,8 @@ import {
 } from './xmpp-muc';
 import type { connectXmpp, XmppServer } from './xmpp-net';
 import { keepXmppPush, startXmppPush, stopXmppPush } from './xmpp-push';
+import { onRulesTick } from './chat-rules';
+import { sweepXmppRules, xmppRulesDue } from './xmpp-rules';
 
 // The open space's XMPP account as the screens use it (app/xmpp.tsx, app/xmpp-chat.tsx): loaded
 // from its sealed value (lock/xmpp-data.ts), connected to its server while the space is open, and
@@ -198,6 +200,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quiet = false): Pr
       try {
         return await change();
       } finally {
+        // What is gone by the chats' rules goes from here, before anything tells of it (lib/xmpp-rules.ts).
+        if (it.state) sweepXmppRules(it.state);
         // A hidden place's tell only of its place (hearing).
         if (!it.stopped) it.heard.hear(unreadAt(it.state), hush);
       }
@@ -207,6 +211,20 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quiet = false): Pr
     keepSoon(it);
     told();
   });
+}
+
+// While nothing comes, the accounts that run look for what is gone now and then: the space's, its
+// open hidden place's, and one of the places receiving while closed each time.
+onRulesTick(() => {
+  const due = (it: Live | null): it is Live & { state: XmppState } => !!it && !it.stopped && !!it.state && xmppRulesDue(it.state);
+  const closed = places.closed((it) => due(it))?.it ?? null;
+  for (const it of new Set([live, places.shown(), closed])) if (due(it)) void changeAccount(it, async () => undefined).catch(() => undefined);
+});
+
+/** Changes the account the screen on top acts on, connected or not, after what was asked before, then keeps it and tells the screens (lib/xmpp-rules.ts). */
+export function xmppAct<T>(use: (state: XmppState, connection: XmppConnection | null) => Promise<T>): Promise<T> {
+  const it = need();
+  return changeAccount(it, () => use(it.state, it.connection?.isOpen ? it.connection : null));
 }
 
 /** Takes what waits in the connection's inbox; `quiet`, telling of none of it. */

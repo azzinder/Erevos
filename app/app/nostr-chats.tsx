@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { BlockedList } from '../components/chat-rules';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -17,6 +18,7 @@ import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-
 import { INBOX_MOST, nameOf, npubOf, nsecOf, shortNpub, type NostrDmChat, type NostrDmState } from '../lib/nostr-dm';
 import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
 import {
+  nostrDmAct,
   nostrDmBring,
   nostrDmFollows,
   nostrDmForget,
@@ -34,6 +36,7 @@ import {
   type NostrFollowsReport,
 } from '../lib/nostr-dm-store';
 import { FILE_SERVERS } from '../lib/nostr-files';
+import { setBlocked } from '../lib/nostr-rules';
 import { askReadAll, toRead } from '../lib/read-all';
 import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
@@ -247,6 +250,18 @@ export default function NostrChatsScreen() {
       {chats.map((chat) => (
         <ChatCard key={chat.key} state={state} chat={chat} onOpen={() => open(chat.key)} />
       ))}
+
+      {state.blocked?.length ? (
+        <>
+          <SectionTitle title={t('Blocked contacts')} />
+          <Card>
+            <BlockedList
+              people={state.blocked.map((key) => ({ key, name: nameOf(state, key) || shortNpub(npubOf(key)) }))}
+              onUnblock={(key) => void run(() => nostrDmAct(async (s) => setBlocked(s, key, false)))}
+            />
+          </Card>
+        </>
+      ) : null}
 
       <NameCard state={state} busy={busy} run={run} />
       <InboxCard state={state} busy={busy} run={run} where={where} />

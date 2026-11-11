@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatTimer, useGoneAt } from '../components/chat-rules';
 import { canDial, DialTile } from '../components/dial-tile';
 import { IconButton, SendDisc } from '../components/composer';
 import { MoreIcon, PlusIcon } from '../components/icons';
@@ -49,6 +50,8 @@ import { MMS_MAX, pickMmsPhoto } from '../lib/pick-mms-photo';
 import { CAN_PLACE } from '../lib/place';
 import { cancelLater as cancelSmsLater, laterChanged, onLaterSent, waitsForOwner } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
+import { goneSms, nextSmsGoes, smsRulesOf, sweepSpaceSms } from '../lib/sms-rules';
+import { vanishTimer } from '../lib/chat-rules';
 import { CARD_MIME, chosenText, contactVCard, forwardOf, isPinned, partsOf, partWord, pinnedShown, placeSms, VOICE_MIME } from '../lib/sms-parts';
 import { stickerImage } from '../lib/sticker-image';
 import { stickerToSend } from '../lib/sticker-send';
@@ -72,6 +75,7 @@ import {
   sendSmsData,
   smsMessages,
   smsSims,
+  smsToolsReady,
   smsMirrored,
   smsStatus,
   type Sim,
@@ -446,6 +450,18 @@ export default function Sms() {
     return () => clearInterval(timer);
   }, [waiting.length]);
 
+  // What the conversation's timer took leaves the screen at its time, and the phone then (lib/sms-rules.ts).
+  const rules = order && to ? smsRulesOf(order, to) : undefined;
+  const timedOut = goneSms(rules, messages);
+  useGoneAt(nextSmsGoes(rules, messages));
+  useEffect(() => {
+    if (!timedOut.length) return;
+    const { space, key } = currentSpace();
+    void sweepSpaceSms(space, key, true)
+      .then((went) => went > 0 && load())
+      .catch(() => undefined);
+  }, [timedOut.length, load]);
+
   if (!to) {
     return (
       <Page>
@@ -456,7 +472,7 @@ export default function Sms() {
 
   const trashed = order ? trashOf(to, order) : null;
   const hidden = new Set(going.filter((g) => sameConversation(g.item.to, to)).map((g) => g.item.id));
-  const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)));
+  const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)) && !timedOut.includes(m));
   spot.current = () => (left.current && shown.some((m) => smsLineId(m) === left.current) ? (placed.current.get(left.current) ?? null) : undefined);
   // The one-time code of each SMS that came with one, found once for the conversation as read.
   const codes = useMemo(() => new Map(messages.filter((m) => !m.mine && m.text).map((m) => [smsLineId(m), oneTimeCode(m.text)] as const)), [messages]);
@@ -817,6 +833,22 @@ export default function Sms() {
             <Text variant="caption" color={colors.warning}>
               {t('Plain SMS: not encrypted. The phone company can read these messages.')}
             </Text>
+            {order && !smsMirrored() && smsToolsReady() ? (
+              <Row>
+                <ChatTimer
+                  seconds={vanishTimer(rules)}
+                  note={t('New messages, sent or received, go from this phone that long after they were sent, or as soon as Erevos runs again. The other phone keeps them: an SMS cannot be deleted there. Messages already here stay.')}
+                  onChoose={(after) => {
+                    const kept = link.current;
+                    if (!kept) return;
+                    void kept
+                      .setVanish(to, after)
+                      .then((done) => (done ? setOrder(kept.state) : setNote(t('Not done'))))
+                      .catch(() => setNote(t('Not done')));
+                  }}
+                />
+              </Row>
+            ) : null}
             {contacts.length > 0 && !group && mayAnswer ? (
               choosing ? (
                 <>

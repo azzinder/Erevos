@@ -41,6 +41,7 @@ export const onSmsEvent = (name: string, listener: (event: unknown) => void) => 
 };
 export const smsSpamFilter = (_on: boolean): void => undefined;
 export const smsToolsReady = () => false;
+export const deleteSmsMessages = async (_ids: string[]): Promise<number> => 0;
 export const exportPhoneSms = async (): Promise<Uint8Array | null> => null;
 export type SmsPacketPart = { n: number; from: string; data: string; at: number };
 export const smsPacketsReady = () => false;

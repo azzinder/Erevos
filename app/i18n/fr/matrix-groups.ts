@@ -9,6 +9,4 @@ export const matrixGroups: Record<string, string> = {
   "invited": "invité",
   "Make {name} an admin? They may then do all you may in this group, and you cannot undo it.": "Nommer {name} admin ? Cette personne pourra alors faire tout ce que tu peux faire dans ce groupe, et tu ne pourras pas l’annuler.",
   "Write a Matrix ID to start a chat, or a name to look for it on your Matrix server, which then learns who you looked for.": "Écris un identifiant Matrix pour commencer une discussion, ou un nom pour le chercher sur ton serveur Matrix, qui apprend alors qui tu as cherché.",
-  "Delete {n} message for everyone in the chat? It cannot be brought back.": "Supprimer {n} message pour tout le monde dans la discussion ? Il ne pourra pas être récupéré.",
-  "Delete {n} messages for everyone in the chat? They cannot be brought back.": "Supprimer {n} messages pour tout le monde dans la discussion ? Ils ne pourront pas être récupérés.",
 };

@@ -6,6 +6,5 @@
 export const xmppTools: Record<string, string> = {
   'Description': 'Opis',
   'This group server does not let a group have a description.': 'Ovaj grupni server ne dopušta da grupa ima opis.',
-  'Delete these messages for everyone in the chat? They cannot be brought back.': 'Obrisati ove poruke za sve u razgovoru? Ne mogu se vratiti.',
   'A sticker goes as a photo, encrypted as the chat is. Other XMPP apps show it as a photo.': 'Naljepnica ide kao fotografija, šifrirana ako je i razgovor šifriran. Druge XMPP aplikacije je prikazuju kao fotografiju.',
 };

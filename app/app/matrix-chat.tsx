@@ -16,6 +16,7 @@ import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { askDelete, ChatTimer, useGoneAt, useVanishOnce, VanishStrip } from '../components/chat-rules';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
@@ -25,13 +26,14 @@ import { SelectBar, selectAction, useSelection } from '../components/select-bar'
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { WhoRead } from '../components/who-read';
-import { ask, confirm } from '../lib/alert';
+import { ask } from '../lib/alert';
+import { vanishTimer } from '../lib/chat-rules';
 import { callPermissions } from '../lib/call-permissions';
 import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
-import { plural, t } from '../lib/i18n';
+import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
@@ -40,9 +42,11 @@ import { presenceText } from '../lib/net-presence';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { pollOver, pollShown } from '../lib/matrix-parts';
 import { mayRedactOthers } from '../lib/matrix-power';
+import { hideIn, idsIn, isIgnored, markSent, nextGoesIn, rulesOf, setIgnored, setTimerIn, shownIn } from '../lib/matrix-rules';
 import { canMatrixVoip, startMatrixVoip } from '../lib/matrix-voip';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import {
+  matrixAct,
   matrixChange,
   matrixDelete,
   matrixDeleteMany,
@@ -191,6 +195,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [styling, setStyling] = useState(false);
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
+  // The next message to disappear, if it is to (components/chat-rules.tsx).
+  const vanish = useVanishOnce();
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
   // older messages come in above (`keepAt`: how tall it was, with how many messages).
   const scrolled = useRef({ y: 0, height: 0 });
@@ -243,7 +249,9 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const lookChat = useMemo<ChatLook | null>(() => (roomId ? { look: ownLook, save: (look) => matrixSetLook(roomId, look) } : null), [ownLook, roomId]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
   // The room's thread holds what is not in a thread; a thread's own screen, its first message and what is in it.
-  const shownMessages = room ? room.messages.filter((m) => (thread ? m.id === thread || m.thread === thread : !m.thread)) : [];
+  const shownMessages = room ? shownIn(room).filter((m) => (thread ? m.id === thread || m.thread === thread : !m.thread)) : [];
+  // What is gone by the room's rules leaves the screen at its time (lib/matrix-rules.ts).
+  useGoneAt(room ? nextGoesIn(room) : 0);
   const count = shownMessages.length;
   const counted = useRef(count);
   counted.current = count;
@@ -349,9 +357,13 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setReplyId(null);
     const named = mentionsIn(text, nameable);
     const answers = answered?.id;
+    const lasts = vanish.lasts();
     void (async () => {
       const preview = await previewOf(text);
+      // One to disappear has its own time once it went (lib/matrix-rules.ts markSent).
+      const before = lasts ? await matrixAct(async (state) => idsIn(state, roomId)) : null;
       await (thread ? matrixSendInThread(roomId, thread, text, answers, named, preview) : answers ? matrixReply(roomId, text, answers, named, preview) : matrixSend(roomId, text, named, preview));
+      if (before) await matrixAct(async (state) => markSent(state, roomId, before, lasts));
     })().catch(fail);
     return true;
   }
@@ -455,15 +467,23 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
   }
 
-  // Takes a message back, for everyone in the room, once asked: ours, or another's where our level lets us.
-  async function remove(message: MatrixMessage) {
-    if (!roomId) return;
-    if (!(await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete')))) return;
-    try {
-      await matrixDelete(roomId, message.id);
-    } catch (error) {
-      setNote(t('Not deleted. {reason}', { reason: errorText(error) }));
-    }
+  // Deletes messages from this phone only, for good (lib/matrix-rules.ts hideIn).
+  const hideHere = (ids: string[]) => {
+    selection.clear();
+    matrixAct(async (state) => hideIn(state, roomId, ids)).catch(fail);
+  };
+
+  // Deletes a message, once asked: from this phone, or taken back for everyone in the room, ours or
+  // another's where our level lets us.
+  function remove(message: MatrixMessage) {
+    askDelete(
+      1,
+      () => hideHere([message.id]),
+      deletable(message)
+        ? () =>
+            void matrixDelete(roomId!, message.id).catch((error) => setNote(t('Not deleted. {reason}', { reason: errorText(error) })))
+        : undefined,
+    );
   }
 
   // What can be done with a message, held down. Answering, changing and deleting need its ID on the
@@ -501,7 +521,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     }
     if (ours && !message.call) actions.push({ title: t('Who read it'), onPress: () => setReadersFor(message.id) });
     if (choosable(message)) actions.push(selectAction(() => selection.start(message.id)));
-    if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
+    if (!message.call && message.state !== 'sending') actions.push({ title: t('Delete'), danger: true, onPress: () => remove(message) });
     return actions;
   }
 
@@ -516,16 +536,17 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     selection.clear();
     await copy(chosen.map((message) => (one ? message.text : `${nameOf(message)}: ${message.text}`)).join('\n\n'));
   };
-  const deleteChosen = async () => {
+  const deleteChosen = () => {
     const ids = chosen.map((message) => message.id);
-    const asked = plural(ids.length, 'Delete {n} message for everyone in the chat? It cannot be brought back.', 'Delete {n} messages for everyone in the chat? They cannot be brought back.');
-    if (!(await confirm(t('Delete messages'), asked, t('Delete')))) return;
-    selection.clear();
-    try {
-      await matrixDeleteMany(roomId, ids);
-    } catch (error) {
-      setNote(t('Not deleted. {reason}', { reason: errorText(error) }));
-    }
+    const everyone = async () => {
+      selection.clear();
+      try {
+        await matrixDeleteMany(roomId, ids);
+      } catch (error) {
+        setNote(t('Not deleted. {reason}', { reason: errorText(error) }));
+      }
+    };
+    askDelete(ids.length, () => hideHere(ids), chosen.every(deletable) ? () => void everyone() : undefined);
   };
 
   // Who of the room's members read one of ours, and when, as they said; who has not, the first
@@ -666,12 +687,16 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       ) : null}
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
+      {vanish.on && !changed ? (
+        <VanishStrip seconds={vanish.seconds} note={t('It goes from this phone at its time, and is deleted for everyone in the chat then, or as soon as Erevos runs again.')} onChoose={vanish.choose} onClose={vanish.off} />
+      ) : null}
       <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} onTyped={sayTyping.typed} onSent={sayTyping.sent} />
       {!voice.recording && !changed ? (
         <Row wrap>
           {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}
           <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
           {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
+          {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={vanish.toggle} />}
         </Row>
       ) : null}
       <Row {...endProps}>
@@ -693,8 +718,14 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
           <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
           {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
+          <ChatTimer
+            seconds={vanishTimer(rulesOf(room))}
+            note={t('New messages, sent or received, go from this phone that long after they were sent. Yours are also deleted for everyone in the chat then, or as soon as Erevos runs again: their apps show them as deleted. What the others sent stays with them. Messages already here stay.')}
+            onChoose={(after) => void matrixAct(async (state) => setTimerIn(state, roomId, after)).catch(fail)}
+          />
         </Row>
       ) : null}
+      {other && !room.invitedBy ? <MatrixBlock other={other} name={room.members[other]?.name || other} blocked={isIgnored(state, other)} fail={fail} /> : null}
       {!room.direct && !room.invitedBy ? <MatrixRoomInfo visible={info} onClose={() => setInfo(false)} room={room} me={me} /> : null}
       <MatrixStickers
         visible={stickering}
@@ -776,11 +807,35 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                 }
               : undefined
           }
-          onDelete={chosen.every(deletable) ? () => void deleteChosen() : undefined}
+          onDelete={deleteChosen}
         />
       ) : null}
       {screen}
     </View>
+  );
+}
+
+// Blocks the one person of a chat on every app of the account (m.ignored_user_list), once asked, or lets them through again.
+function MatrixBlock({ other, name, blocked, fail }: { other: string; name: string; blocked: boolean; fail: (error: unknown) => void }) {
+  const set = (on: boolean) => void matrixAct((state) => setIgnored(state, other, on)).catch(fail);
+  return blocked ? (
+    <>
+      <Text variant="caption" tone="muted">
+        {t('Blocked: nothing of theirs reaches your Matrix account, in any of its apps.')}
+      </Text>
+      <Button title={t('Unblock')} kind="secondary" onPress={() => set(false)} />
+    </>
+  ) : (
+    <Button
+      title={t('Block')}
+      kind="secondary"
+      onPress={() =>
+        ask(t('Block {name}?', { name }), t('Their messages and invites no longer reach your Matrix account, in any of its apps. They are not told.'), [
+          { text: t('Cancel'), style: 'cancel' },
+          { text: t('Block'), style: 'destructive', onPress: () => set(true) },
+        ])
+      }
+    />
   );
 }
 

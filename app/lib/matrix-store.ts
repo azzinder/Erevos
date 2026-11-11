@@ -56,6 +56,8 @@ import { fetchFile, fetchPicture, sendFile, sendSticker, uploadPicture, type Out
 import { learnRule, removeMember, renameRoom, roomMembers, searchPeople, setAdmin, setTopic, type FoundPerson, type RoomMember } from './matrix-members';
 import { listDevices, register, renameDevice, signOutDevices, type AccountDevice, type AuthAsk } from './matrix-account';
 import { pollShown, previewContent } from './matrix-parts';
+import { onRulesTick } from './chat-rules';
+import { matrixRulesDue, sweepMatrixRules } from './matrix-rules';
 import { learnJoins, leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
 import type { Place, Poll, Preview } from './chat-parts';
 import type { GivenMatrix } from './link-wire';
@@ -209,6 +211,23 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
   });
 }
 
+// What is gone by the rooms' rules goes from the account, ours taken back for everyone first (lib/matrix-rules.ts).
+const sweep = (state: MatrixState) => sweepMatrixRules(state, (roomId, id) => deleteMessage(state, roomId, id)).catch(() => false);
+
+// While nothing comes, the accounts that run look for what is gone now and then: the space's, its
+// open hidden place's, and one of the places receiving while closed each time.
+onRulesTick(() => {
+  const due = (it: Live | null): it is Live & { state: MatrixState } => !!it && !it.stopped && !!it.state && matrixRulesDue(it.state);
+  const closed = places.closed((it) => due(it))?.it ?? null;
+  for (const it of new Set([live, places.shown(), closed])) if (due(it)) void changeAccount(it, () => sweep(it.state)).catch(() => undefined);
+});
+
+/** Changes the account the screen on top acts on, after what was asked before, then keeps it and tells the screens (lib/matrix-rules.ts). */
+export function matrixAct<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
+  const it = need();
+  return changeAccount(it, () => use(it.state));
+}
+
 // The accounts told they are offline this run (loop).
 const toldOffline = new WeakSet<MatrixState>();
 
@@ -230,6 +249,7 @@ async function loop(it: Live): Promise<void> {
             await restoreLocked(it.state, it.asked).catch(() => 0);
             await backUpKeys(it.state).catch(() => 0);
           }
+          await sweep(it.state);
         });
         if (it.problem) {
           it.problem = '';

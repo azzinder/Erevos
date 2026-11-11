@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
+import { BlockedList } from '../components/chat-rules';
 import { MatrixDevices } from '../components/matrix-devices';
 import { MatrixFind, MatrixNewChat } from '../components/matrix-find';
 import { lineOf } from '../components/matrix-message';
@@ -22,8 +23,10 @@ import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { matrixInboxRows } from '../lib/inbox';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
+import { refreshIgnored, setIgnored } from '../lib/matrix-rules';
 import { sortedRooms } from '../lib/matrix-rooms';
 import {
+  matrixAct,
   matrixCreateGroup,
   matrixForget,
   matrixJoin,
@@ -90,6 +93,12 @@ export default function MatrixScreen() {
       stopTor();
     };
   }, [where]);
+
+  // Whom the account blocks, as its other apps may have changed it (lib/matrix-rules.ts).
+  const signedIn = !!now.state;
+  useEffect(() => {
+    if (signedIn) void matrixAct(refreshIgnored).catch(() => undefined);
+  }, [signedIn, where]);
 
   if (!canMatrix()) {
     return (
@@ -336,6 +345,15 @@ export default function MatrixScreen() {
       <Card>
         <SayOnlineSwitch on={!!state.sayOnline} server="Matrix" onChange={(on) => void run(() => matrixSetSayOnline(on))} />
       </Card>
+
+      {state.ignored?.length ? (
+        <>
+          <SectionTitle title={t('Blocked contacts')} />
+          <Card>
+            <BlockedList people={state.ignored.map((id) => ({ key: id, name: id }))} onUnblock={(id) => void run(() => matrixAct((s) => setIgnored(s, id, false)))} />
+          </Card>
+        </>
+      ) : null}
 
       <SectionTitle title={t('Security Key')} />
       <RecoveryCard state={state} />

@@ -68,6 +68,8 @@ import {
   type NostrPost,
 } from './nostr-dm';
 import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
+import { onRulesTick } from './chat-rules';
+import { goesAtIn, nostrRulesDue, sweepNostrRules, timerOf } from './nostr-rules';
 import { emojiTag } from './nostr-emoji';
 import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFile, uploadBlob, type NostrDmFile } from './nostr-files';
 import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, tallyReactions, type FeedAnswer, type FeedPost, type PostReaction } from './nostr-feed';
@@ -201,6 +203,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quietly = false): 
       try {
         return await change();
       } finally {
+        // What is gone by the chats' rules goes from here, before anything tells of it (lib/nostr-rules.ts).
+        if (it.state) sweepNostrRules(it.state);
         // A hidden place's tell only of its place (hearing).
         if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
       }
@@ -210,6 +214,20 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quietly = false): 
     keepSoon(it);
     told();
   });
+}
+
+// While nothing comes, the keys that run look for what is gone now and then: the space's, its open
+// hidden place's, and one of the places receiving while closed each time.
+onRulesTick(() => {
+  const due = (it: Live | null): it is Live & { state: NostrDmState } => !!it && !it.stopped && !!it.state && nostrRulesDue(it.state);
+  const closed = places.closed((it) => due(it))?.it ?? null;
+  for (const it of new Set([live, places.shown(), closed])) if (due(it)) void changeAccount(it, async () => undefined).catch(() => undefined);
+});
+
+/** Changes the account the screen on top acts on, after what was asked before, then keeps it and tells the screens (lib/nostr-rules.ts). */
+export function nostrDmAct<T>(use: (state: NostrDmState) => Promise<T>): Promise<T> {
+  const it = need();
+  return changeAccount(it, () => use(it.state));
 }
 
 // Connections that only send or look up, by relay, kept a minute after their last use.
@@ -1400,7 +1418,8 @@ export function nostrDmFreshen(key: string): void {
  * Sends a message of `kind` to the chat `key`: to the relays each of its readers reads on, a wrap
  * for each, and a copy to the space's own. `shown` makes the message as the chat shows it, from its
  * id and time; `changed` changes the chat as it goes (a reaction), given its id. It went once one
- * relay of one reader took it. Answers its id.
+ * relay of one reader took it. A text or a file disappears `lasts` seconds after it went, or as
+ * the chat's timer says (NIP-40, lib/nostr-rules.ts). Answers its id.
  */
 async function sendTo(
   it: Live & { state: NostrDmState },
@@ -1410,6 +1429,7 @@ async function sendTo(
   content: string,
   shown?: (id: string, at: number) => NostrDmMessage,
   changed?: (id: string) => void,
+  lasts = 0,
 ): Promise<string> {
   const state = it.state;
   const readers = readersOf(state, key);
@@ -1422,11 +1442,15 @@ async function sendTo(
         : t('None of their Nostr apps says where it takes private messages (NIP-17), so they cannot get one yet.'),
     );
   }
-  const made = await wrapMessage(state, key, kind, tags, content);
+  const now = Date.now();
+  const going = kind === 14 || kind === 15 ? lasts || timerOf(state.chats[key]) : 0;
+  const expires = going > 0 ? seconds(now) + going : 0;
+  const made = await wrapMessage(state, key, kind, tags, content, now, expires);
   const ours = made.wraps[state.public];
   const message = shown?.(made.id, made.at);
   await changeAccount(it, async () => {
     if (message) addMessage(state, key, message);
+    if (message && expires) goesAtIn(chatOf(state, key), made.id, expires * 1000);
     changed?.(made.id);
     state.seen.push(ours.id);
   });
@@ -1448,11 +1472,11 @@ async function sendTo(
 }
 
 /** Sends `text` to `key`, answering the message `replyTo` when given: to the relays they read on,
- *  and a copy to the space's own. */
-export async function nostrDmSend(key: string, text: string, replyTo?: string): Promise<void> {
+ *  and a copy to the space's own. With `lasts`, it disappears that many seconds after it went (NIP-40). */
+export async function nostrDmSend(key: string, text: string, replyTo?: string, lasts = 0): Promise<void> {
   const it = need();
   const answers = replyTo ? { replyTo } : {};
-  await sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }));
+  await sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }), undefined, lasts);
 }
 
 /** A photo, file or voice message as picked, to send; a voice message says how long it lasts. */
@@ -1536,17 +1560,19 @@ export async function nostrDmUnreact(key: string, id: string): Promise<void> {
 }
 
 /**
- * Deletes these messages of a chat from this device. Of the space's own that went, the others are
- * asked to delete them too (NIP-09, kind 5 in a wrap, as NIP-17 allows), TAKE_BACK_MOST in each
- * ask: their apps that do so delete them, others keep them. Answers how many of ours were asked for.
+ * Deletes these messages of a chat from this device. With `everyone`, of the space's own that went,
+ * the others are asked to delete them too (NIP-09, kind 5 in a wrap, as NIP-17 allows),
+ * TAKE_BACK_MOST in each ask: their apps that do so delete them, others keep them. Answers how many
+ * of ours were asked for.
  */
-export async function nostrDmDelete(key: string, ids: string[]): Promise<number> {
+export async function nostrDmDelete(key: string, ids: string[], everyone = true): Promise<number> {
   const it = need();
   const state = it.state;
   let removed: NostrDmMessage[] = [];
   await changeAccount(it, async () => {
     removed = removeHere(state, key, ids);
   });
+  if (!everyone) return 0;
   // What did not go, and the old private messages (NIP-04), which no wrap can take back, go from here only.
   const ours = removed.filter((m) => m.mine && m.state !== 'failed' && m.state !== 'sending' && !m.old);
   for (let i = 0; i < ours.length; i += TAKE_BACK_MOST) {

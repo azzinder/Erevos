@@ -17,16 +17,18 @@ import { chosenStyle, SelectBar, selectAction, useSelection } from '../component
 import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { askDelete, ChatTimer, CheckInPerson, SwitchLine, useGoneAt, useVanishOnce, VanishStrip } from '../components/chat-rules';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
-import { ask, confirm } from '../lib/alert';
+import { ask } from '../lib/alert';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
+import { vanishTimer } from '../lib/chat-rules';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import type { Place } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
@@ -52,9 +54,11 @@ import { isSound, shownType, XMPP_FILE_MOST } from '../lib/xmpp-files';
 import { DESCRIPTION_LONGEST, groupPeople, rankOf, type XmppRoom } from '../lib/xmpp-muc';
 import { xmppGroupCalls, xmppPlaceGroupCalls } from '../lib/xmpp-muji';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
+import { checkByCode, hideIn, idsIn, markSent, nextGoesIn, ownCode, rulesOf, setTimerIn, setUnseen, shownIn, uncheck, unseenBy, type CheckResult } from '../lib/xmpp-rules';
 import {
   onXmppChange,
   runXmpp,
+  xmppAct,
   xmppAddToGroup,
   xmppRemoveFromGroup,
   xmppRenameGroup,
@@ -176,7 +180,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   // What could not be sent with OMEMO, a text, a file or a sticker, kept while the person decides about writing without it.
-  const [unsent, setUnsent] = useState<{ text: string; to?: string } | { file: XmppOutgoingFile } | { sticker: XmppSticker } | null>(null);
+  const [unsent, setUnsent] = useState<{ text: string; to?: string; lasts?: number } | { file: XmppOutgoingFile } | { sticker: XmppSticker } | null>(null);
+  // The next message to disappear, if it is to (components/chat-rules.tsx).
+  const vanish = useVanishOnce();
   const [sending, setSending] = useState(false);
   // The message the next one answers or gives new words, and the one whose menu is open, by their IDs.
   const [replyId, setReplyId] = useState<string | null>(null);
@@ -243,10 +249,13 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const lookChat = useMemo<ChatLook | null>(() => (jid && isXmppId(jid) ? { look: ownLook, save: (look) => xmppSetLook(jid, look) } : null), [ownLook, jid]);
   useEffect(() => onLook(lookChat), [onLook, lookChat]);
   const count = chat?.messages.length ?? 0;
+  // What is gone by the chat's rules leaves the screen at its time (lib/xmpp-rules.ts).
+  const shownList = shownIn(chat);
+  useGoneAt(nextGoesIn(chat));
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
   const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
-    list: chat?.messages ?? [],
+    list: shownList,
     idOf: (message) => message.id,
     mine: (message) => message.mine,
     unread: chat?.unread ?? 0,
@@ -287,15 +296,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     return made ? fitPreview(text, made) : null;
   }
 
-  async function send(text: string, to?: string) {
+  // One to disappear (`lasts` seconds after it went) has its own time once it went (lib/xmpp-rules.ts markSent).
+  async function send(text: string, to?: string, lasts = 0) {
     if (!jid) return;
     setNote('');
     try {
+      const before = lasts ? await xmppAct(async (s) => idsIn(s, jid)) : null;
       await (to ? xmppReply(jid, text, to) : xmppSend(jid, text, to ? null : await previewOf(text)));
+      if (before) await xmppAct(async (s) => markSent(s, jid, before, lasts));
     } catch (error) {
       // Their apps have no OMEMO: the text waits for the person to say whether to write without it,
       // which the card below explains.
-      if (error instanceof NoOmemoError) setUnsent({ text, ...(to ? { to } : {}) });
+      if (error instanceof NoOmemoError) setUnsent({ text, ...(to ? { to } : {}), ...(lasts ? { lasts } : {}) });
       else fail(error);
     }
   }
@@ -385,7 +397,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setDraft('');
     setReplyId(null);
     sayTyping.sent();
-    void send(text, answered?.id);
+    void send(text, answered?.id, vanish.lasts());
   }
 
   function sendPlace(place: Place) {
@@ -401,23 +413,27 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
   }
 
-  // Takes messages of ours back, for everyone in the chat, once asked: one after another.
-  async function remove(messages: XmppMessage[]) {
+  // Deletes messages, once asked: from this phone only (lib/xmpp-rules.ts hideIn), or, all of them
+  // ours, taken back for everyone in the chat, one after another.
+  function remove(messages: XmppMessage[]) {
     if (!jid || !messages.length) return;
-    const asked =
-      messages.length === 1
-        ? await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete'))
-        : await confirm(t('Delete messages'), t('Delete these messages for everyone in the chat? They cannot be brought back.'), t('Delete'));
-    if (!asked) return;
-    selection.clear();
-    for (const message of messages) {
-      try {
-        await xmppDelete(jid, message.id);
-      } catch (error) {
-        setNote(t('Not deleted. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
-        return;
+    const ids = messages.map((message) => message.id);
+    const here = () => {
+      selection.clear();
+      xmppAct(async (s) => hideIn(s, jid, ids)).catch(fail);
+    };
+    const everyone = async () => {
+      selection.clear();
+      for (const message of messages) {
+        try {
+          await xmppDelete(jid, message.id);
+        } catch (error) {
+          setNote(t('Not deleted. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+          return;
+        }
       }
-    }
+    };
+    askDelete(messages.length, here, messages.every(deletable) ? () => void everyone() : undefined);
   }
 
   // Goes to a message of the thread by its ID, as an answer's quote or a pin is tapped.
@@ -468,7 +484,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       });
     }
     actions.push(selectAction(() => selection.start(message.id)));
-    if (deletable(message)) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove([message]) });
+    actions.push({ title: t('Delete'), danger: true, onPress: () => remove([message]) });
     return actions;
   }
 
@@ -563,7 +579,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
               : undefined
           }
           onForward={forwarded.length ? () => setForwarding(forwarded.map((message) => message.id)) : undefined}
-          onDelete={chosen.length && chosen.every(deletable) ? () => void remove(chosen) : undefined}
+          onDelete={chosen.length ? () => remove(chosen) : undefined}
         />
       ) : null}
       {withArrows(
@@ -656,7 +672,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           ) : null}
 
           <View style={{ gap: space.md }} {...threadProps}>
-            {(chat?.messages ?? []).map((message) => {
+            {shownList.map((message) => {
               // While messages are chosen, a tap or a hold on one adds it or takes it out.
               const choose = selection.on && menuable(message) ? () => selection.toggle(message.id) : undefined;
               return (
@@ -698,7 +714,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                     setUnsent(null);
                     setNote('');
                     xmppSetPlain(jid, true)
-                      .then(() => ('text' in held ? send(held.text, held.to) : sendOut(held)))
+                      .then(() => ('text' in held ? send(held.text, held.to, held.lasts) : sendOut(held)))
                       .catch(fail);
                   }}
                 />
@@ -718,6 +734,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
           {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onPress={() => reach(answered.id)} onClose={() => setReplyId(null)} /> : null}
           {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
+          {vanish.on && !changed ? <VanishStrip seconds={vanish.seconds} note={t('It goes from this phone only: they keep it.')} onChoose={vanish.choose} onClose={vanish.off} /> : null}
           <Row>
             <Input
               style={{ flex: 1 }}
@@ -736,6 +753,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <Row wrap>
               <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => setPlacing(true)} />
               <Button title={t('Sticker')} kind="secondary" compact disabled={sending || unsent !== null || !stickerPlace} onPress={() => setStickering(true)} />
+              {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={vanish.toggle} />}
             </Row>
           ) : null}
           <Row {...endProps}>
@@ -784,6 +802,11 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           <Row wrap>
             <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+            <ChatTimer
+              seconds={vanishTimer(rulesOf(chat))}
+              note={t('New messages, sent or received, go from this phone only, that long after they were sent. The other side keeps them: XMPP has no way to delete them there. Messages already here stay.')}
+              onChoose={(after) => void xmppAct(async (s) => setTimerIn(s, jid, after)).catch(fail)}
+            />
           </Row>
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
@@ -795,10 +818,25 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
               <Card>
                 <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
                 <Keys jid={jid} devices={devices} fail={fail} />
+                <CheckInPerson
+                  checked={devices.some((d) => d.checked) && devices.every((d) => d.checked || !d.identity || !d.listed)}
+                  code={ownCode(state)}
+                  about={t('Their XMPP app shows a code of their address and keys, as Conversations does: take a photo of it here, and each of their devices whose key matches is marked checked. Let their app take a photo of this code too. Nothing is sent.')}
+                  check={async (text) => checkedSaid(await xmppAct(async (s) => checkByCode(s, jid, text)))}
+                  onUncheck={() => void xmppAct(async (s) => uncheck(s, jid)).catch(fail)}
+                />
               </Card>
             </>
           ) : null}
 
+          {room || blocked ? null : (
+            <SwitchLine
+              title={t('Appear offline')}
+              on={unseenBy(state, jid)}
+              note={t('Your XMPP account shows them offline, whatever it shows everyone else, and tells them nothing of what you read or type, nor that their messages arrived. A group you share still shows you.')}
+              onPress={() => void xmppAct((s, connection) => setUnseen(s, connection, jid, !unseenBy(s, jid))).catch(fail)}
+            />
+          )}
           {room ? null : blocked ? (
             <>
               <Text variant="caption" tone="muted">
@@ -871,6 +909,16 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
 type Devices = ReturnType<typeof xmppDevices>;
 
+/** What a photo of their code showed (lib/xmpp-rules.ts checkByCode). */
+function checkedSaid(result: CheckResult): string {
+  if (result.kind === 'checked') return t('It matches: no one is in between. Now let them take a photo of the code on this phone, so their phone checks you too.');
+  if (result.kind === 'differs') return t('A key in the code is not the one this phone has for them. Someone may be in between, or they changed their app: ask them. Nothing was marked.');
+  if (result.kind === 'unknown') return t('None of the keys in the code is one this phone knows for them yet. Write to them once, then take the photo again.');
+  if (result.kind === 'other') return t('That is the code of {address}, not of this chat.', { address: result.jid });
+  if (result.kind === 'own') return t('That is the code this phone shows. Take a photo of the code on their phone.');
+  return t('That QR code is not a code to check a contact by.');
+}
+
 // A person's devices, each with its key to compare, whether it changed, and whether it is still
 // listed. One that came with another key gets nothing written to it until that key is accepted
 // here, after comparing it (lib/xmpp.ts acceptXmppDevice).
@@ -892,6 +940,7 @@ function Keys({ jid, devices, fail }: { jid: string; devices: Devices; fail: (er
               {t('This key changed since it was first seen.')}
             </Text>
           ) : null}
+          {device.checked ? <Text variant="caption">✓ {t('Checked in person')}</Text> : null}
           {device.pending ? (
             <Row>
               <Button title={t('Accept')} kind="secondary" compact onPress={() => xmppAcceptDevice(jid, device.id, !!device.two).catch(fail)} />

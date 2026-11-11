@@ -36,6 +36,7 @@
 
 import type { ChatNotify } from '../lock/chat-notify';
 import type { Look } from '../theme/look';
+import type { ChatRules } from './chat-rules';
 import { deviceLine } from './call-lines';
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
@@ -188,6 +189,8 @@ export type MatrixRoom = {
   power?: MatrixPower;
   /** In a room of version 12 on, those who made it, above every level (m.room.create). */
   creators?: string[];
+  /** Its disappearing messages and those deleted on this device only (lib/matrix-rules.ts), kept here only. */
+  rules?: ChatRules;
 };
 
 /** The most members a room keeps how far they read. */
@@ -251,6 +254,8 @@ export type MatrixState = {
   sayOnline?: true;
   /** Our profile picture, an mxc:// address, as last set or fetched. */
   avatar?: string;
+  /** Those the account blocks (m.ignored_user_list), as the homeserver last said (lib/matrix-rules.ts). */
+  ignored?: string[];
 };
 
 // The homeserver's answer to one request.
@@ -691,6 +696,7 @@ export async function syncApply(state: MatrixState, news: MatrixNews): Promise<b
   for (const user of users(lists?.changed)) if (!state.outdated.includes(user)) state.outdated.push(user);
   for (const user of users(lists?.left)) delete state.devices[user];
   takePresence(state, news);
+  takeIgnored(state, news);
   const direct = directRooms(news);
   const rooms = (news.rooms as Json | undefined) ?? {};
   for (const [id, room] of Object.entries((rooms.join as Record<string, Json> | undefined) ?? {})) {
@@ -805,6 +811,22 @@ export function readByAll(room: Pick<MatrixRoom, 'messages' | 'readBy' | 'member
   if (others.length === 0) return false;
   const readers = readersOf(room, message, me);
   return others.every(([user]) => readers[user] !== undefined);
+}
+
+/** Those an m.ignored_user_list names: whom the account blocks. */
+export function ignoredOf(content: unknown): string[] {
+  const users = (content as Json | undefined)?.ignored_users;
+  return typeof users === 'object' && users !== null ? Object.keys(users).filter(isMatrixId).slice(0, 1000) : [];
+}
+
+/** Whom the account blocks, when a sync's account data says it anew (lib/matrix-rules.ts). */
+function takeIgnored(state: MatrixState, news: Json): void {
+  const events = ((news.account_data as Json | undefined)?.events as Json[] | undefined) ?? [];
+  const list = events.filter((e) => e.type === 'm.ignored_user_list').at(-1);
+  if (!list) return;
+  const ignored = ignoredOf(list.content);
+  if (ignored.length) state.ignored = ignored;
+  else delete state.ignored;
 }
 
 function directRooms(news: Json): Set<string> | null {
@@ -1023,6 +1045,8 @@ const inRoom = (roomId: string, event: Json, type: string, content: Json): Verif
 async function takeEvent(state: MatrixState, roomId: string, event: Json, older: boolean): Promise<boolean> {
   const room = roomOf(state, roomId);
   const base: { id: string; sender: string; ts: number; unverified?: true } = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
+  // Nothing of one the account blocks, nor a message deleted on this device that comes again (lib/matrix-rules.ts).
+  if (state.ignored?.includes(base.sender) || (Array.isArray(room.rules?.hidden) && room.rules.hidden.includes(base.id))) return false;
   let type = String(event.type);
   let content = (event.content as Json) ?? {};
   const unsigned = event.unsigned as Json | undefined;
