@@ -25,7 +25,7 @@ import type { SpaceChats } from './space-chats';
 //
 // 1. The contact's Erevos keeps the chats at once, its files named but not here yet, and says it
 //    keeps them: "took 0" in a message with no words (Rounds, lib/chat-parts.ts), which an Erevos
-//    from before never sends, so to one nothing more goes, and the share ends (TOO_OLD).
+//    from before never sends, so to one nothing more goes, and the share ends (PACK_KEPT).
 // 2. The sharer's Erevos puts the next chunks on its relay, in order, file after file, while what
 //    the share keeps there stays under WINDOW, and tells the contact where they wait, ROUND_IDS of
 //    them a message.
@@ -80,14 +80,15 @@ const TELL_EVERY = 32;
 // the wait is over (PAUSE, then longer each time, PAUSE_MOST at most) and there is room again.
 const ROOM_KEPT = 500 * 1000 * 1000;
 // A share the contact's Erevos never says it keeps went to an Erevos from before rounds, which
-// shows its words as a file, a .json, and takes none of its files: it ends TOO_OLD after their
-// phone said its message came, as nothing tells which Erevos a contact has. A later Erevos says it
-// keeps them in the same look at the relay that brings the message; three days leave room for its
-// phone to have been off or away while a linked device of theirs, which takes no files, said the
-// message came, or for a tap it waits for. Never said to have come, the share ends once the relay
-// no longer keeps the message's file (14 days, and a day for clocks): no Erevos can keep its words
-// then. Should a later Erevos still say it keeps one ended, it hears that no files come (`end`).
-const TOO_OLD = 3 * 24 * 60 * 60_000;
+// shows its words as a file, a .json, and takes none of its files; or to a later one that keeps
+// them only later: hidden chats keep them once their chat screen opens, which may be days after
+// their phone said the message came, and a chat lent on a contact's relay waits for a tap or for
+// Tor. Nothing tells which Erevos a contact has, so the share waits for either, its line saying so
+// UNTAKEN after their phone said the message came, and ends once the relay no longer keeps the
+// message's file (14 days, and a day for clocks): no Erevos can keep its words then. Should a later
+// Erevos still say it keeps one ended, it hears that no files come (`end`), and names them as ones
+// that stayed behind.
+const UNTAKEN = 24 * 60 * 60_000;
 const PACK_KEPT = 15 * 24 * 60 * 60_000;
 // A chunk of a file that stays behind: none on the relay.
 const ZERO = '0'.repeat(ID_HEX);
@@ -228,16 +229,22 @@ const percentOf = (out: OutShare) => Math.floor((out.took / Math.max(1, out.tota
 /**
  * How far the place's shares are, by the chat line of the message their words went or came in
  * (`contact:<identity>|<tag>`): going, how much the contact took; coming, how many files are whole;
- * and why they wait, or that a share ended as the contact's Erevos is too old for its files.
+ * and why they wait, or that a share ended with only its messages taken.
  */
 export async function shareLines(place: RoundsPlace): Promise<Record<string, string>> {
   const data = await loadRounds(place).catch(() => EMPTY);
   const lines: Record<string, string> = {};
-  for (const [to, tag] of data.old) if (tag) lines[`${CONTACT_PREFIX}${to}|${tag}`] = t('Their Erevos is too old for the files; the messages went as a file');
+  const now = Date.now();
+  for (const [to, tag] of data.old) if (tag) lines[`${CONTACT_PREFIX}${to}|${tag}`] = t('Their Erevos did not take the files; only the messages went');
   for (const out of data.out) {
     if (!out.tag || ended.has(out.s)) continue;
     const percent = percentOf(out);
-    lines[`${CONTACT_PREFIX}${out.to}|${out.tag}`] = out.full ? t('Sharing, {percent}% · waiting for free space on their phone', { percent }) : t('Sharing, {percent}%', { percent });
+    const untaken = !out.ready && (out.came ?? 0) > 0 && now - out.came! > UNTAKEN;
+    lines[`${CONTACT_PREFIX}${out.to}|${out.tag}`] = out.full
+      ? t('Sharing, {percent}% · waiting for free space on their phone', { percent })
+      : untaken
+        ? t('Sharing, {percent}% · waiting for their Erevos to take it; an older one takes only the messages', { percent })
+        : t('Sharing, {percent}%', { percent });
   }
   for (const share of data.in) {
     if (!share.tag) continue;
@@ -366,11 +373,9 @@ async function takeHeard(way: ShareWay, data: RoundsData): Promise<RoundsData> {
         insEnd.push(...ins.filter((i) => i.s === r.s && i.by === identity));
         ins = ins.filter((i) => !(i.s === r.s && i.by === identity));
       } else if (r.took !== undefined) {
-        // One ended as their Erevos said nothing: it keeps it after all, and hears no files come.
-        if (!out.some((o) => o.s === r.s && o.to === identity) && old.some(([to, , s]) => to === identity && s === r.s)) {
-          noFiles.push([identity, r.s]);
-          old = old.map((o) => (o[0] === identity && o[2] === r.s ? [o[0], '', o[2]] : o));
-        }
+        // One ended as their Erevos said nothing: it keeps it after all, and hears no files come;
+        // its line here still says that only the messages went.
+        if (!out.some((o) => o.s === r.s && o.to === identity) && old.some(([to, , s]) => to === identity && s === r.s)) noFiles.push([identity, r.s]);
         out = out.map((o) => {
           if (o.s !== r.s || o.to !== identity) return o;
           const next = tookOut(o, r.took!, r.gone === true, r.full === true, again);
@@ -454,10 +459,9 @@ async function endIn(way: ShareWay, share: InShare, tell: boolean): Promise<void
   if (tell) await way.send(share.by, { s: share.s, drop: true }).catch(() => undefined);
 }
 
-// The shares going from here that the contact's Erevos never said it keeps (TOO_OLD): when their
-// phone first said the message came is kept; three days after, or with no such word once the relay
-// no longer keeps its file, the share ends, its list deleted, its line saying why when that phone
-// had the message.
+// The shares going from here that the contact's Erevos never said it keeps: when their phone first
+// said the message came is kept, for the line (UNTAKEN); once the relay no longer keeps its file
+// (PACK_KEPT), the share ends, its list deleted, its line saying why when that phone had the message.
 async function endUnanswered(way: ShareWay, outs: OutShare[]): Promise<void> {
   const place = way.chats.pieces!;
   const now = Date.now();
@@ -472,8 +476,7 @@ async function endUnanswered(way: ShareWay, outs: OutShare[]): Promise<void> {
         await updateOut(place, share.s, (one) => (one.ready || one.came ? null : { ...one, came: now }));
       }
     }
-    const over = came > 0 ? now - came > TOO_OLD : share.at > 0 && now - share.at > PACK_KEPT;
-    if (!over) continue;
+    if (!(share.at > 0 && now - share.at > PACK_KEPT)) continue;
     let gone: OutShare | undefined;
     await changeRounds(place, (data) => {
       gone = data.out.find((one) => one.s === share.s && !one.ready);
@@ -487,7 +490,8 @@ async function endUnanswered(way: ShareWay, outs: OutShare[]): Promise<void> {
 }
 
 // A share coming here whose sharer said no more of its files come: its chats stay, with the files
-// that came whole; what came of the one under way is deleted, as is the list.
+// that came whole; what came of the one under way is deleted, as is the list, and the others are
+// named as ones that stayed behind.
 async function filesEnd(way: ShareWay, share: InShare): Promise<void> {
   const place = way.chats.pieces!;
   const refs = await inList(share, new Set()).catch(() => null);
@@ -495,9 +499,21 @@ async function filesEnd(way: ShareWay, share: InShare): Promise<void> {
     const [file, n] = chunkAt(startsOf(refs.map((ref) => ref.count)), share.taken);
     if (n > 0 && !share.skip.includes(file)) await deleteChunks(refs[file].id, n).catch(() => undefined);
   }
+  if (refs) await leftBehind(place, share, refs);
   await deleteChunks(share.list.id, share.list.count).catch(() => undefined);
   lists.delete(share.list.id);
-  told(place, { peer: `${CONTACT_PREFIX}${share.by}` });
+  told(place, { peer: `${CONTACT_PREFIX}${share.by}`, chats: true });
+}
+
+// Names the files of a share coming here that are not whole, and will not be, as ones that stayed
+// behind in its chats: those after the chunks taken, and those skipped. Returns whether any were.
+async function leftBehind(place: RoundsPlace, share: InShare, refs: FileRef[]): Promise<boolean> {
+  const starts = startsOf(refs.map((ref) => ref.count));
+  const gone = new Set(refs.flatMap((ref, file) => (share.skip.includes(file) || starts[file] + ref.count > share.taken ? [ref.id] : [])));
+  if (gone.size === 0) return false;
+  const archive = await Archive.open(place.holder, place.space, place.key).catch(() => null);
+  await archive?.leaveBehind(share.chats, gone).catch(() => undefined);
+  return true;
 }
 
 // Takes chunks off our relay, by their ids (hex, one after another), those of files that stayed
@@ -921,6 +937,9 @@ async function sayTook(way: ShareWay, share: InShare): Promise<InShare> {
 // A share whose chunks all came: kept as done, to say so again should the sharer ask, its list deleted.
 async function doneIn(way: ShareWay, share: InShare): Promise<void> {
   const place = way.chats.pieces!;
+  // Files that did not come whole (skipped) stayed behind.
+  const refs = share.skip.length > 0 ? await inList(share, new Set()).catch(() => null) : null;
+  const left = refs ? await leftBehind(place, share, refs) : false;
   await changeRounds(place, (now) => ({
     ...now,
     in: now.in.filter((one) => !(one.s === share.s && one.by === share.by)),
@@ -928,7 +947,7 @@ async function doneIn(way: ShareWay, share: InShare): Promise<void> {
   }));
   await deleteChunks(share.list.id, share.list.count).catch(() => undefined);
   lists.delete(share.list.id);
-  told(place, { peer: `${CONTACT_PREFIX}${share.by}` });
+  told(place, { peer: `${CONTACT_PREFIX}${share.by}`, ...(left ? { chats: true as const } : {}) });
 }
 
 const forgetPack = (place: RoundsPlace, identity: string, tag: string) =>

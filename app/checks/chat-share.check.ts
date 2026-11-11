@@ -723,7 +723,7 @@ t(
 );
 
 t(
-  'a share to an Erevos from before ends three days after its message came, its list deleted, its line saying why; a later one that says it keeps it after all keeps the words, and hears no files come',
+  'a share its contact’s Erevos does not take waits, its line saying why a day after its message came, and ends once the relay no longer keeps its words; a later one that keeps it after all keeps the words, hears no files come, and names them as ones that stayed behind',
   async () => {
     forgetRounds();
     const alice = await phone(0, small);
@@ -732,6 +732,7 @@ t(
     const { archive } = await aliceChats(alice, bob);
     const clock = fakeClock();
     try {
+      const began = clock.now;
       const tag = await share(alice, bob, archive);
       const peer = `contact:${bob.id}`;
       await alice.chats.history.add({ peer, text: '', mine: true, at: clock.now, tag, mark: 0 });
@@ -742,32 +743,54 @@ t(
       clock.now += 5 * DAY;
       await drive(alice);
       assert.deepEqual(await sharingNow(alice.place, bob.id, tag), { s: out.s, percent: 0 });
-      // Their phone says it came, as an Erevos from before does too, and nothing more: three days on, it ends.
+      // Their phone says it came, as an Erevos from before does too, and nothing more: a day on, its
+      // line says what it waits for; it goes on, as a later Erevos may keep it only later.
       await alice.chats.history.mark(peer, true, 1, clock.now, [tag]);
       await drive(alice);
-      clock.now += 3 * DAY - 60_000;
+      clock.now += DAY - 60_000;
       await drive(alice);
-      assert.ok(await sharingNow(alice.place, bob.id, tag));
       assert.equal((await shareLines(alice.place))[`${peer}|${tag}`], 'Sharing, 0%');
+      clock.now += 2 * 60_000;
+      await drive(alice);
+      assert.equal((await shareLines(alice.place))[`${peer}|${tag}`], 'Sharing, 0% · waiting for their Erevos to take it; an older one takes only the messages');
+      clock.now = began + 15 * DAY - 60_000;
+      await drive(alice);
+      assert.deepEqual(await sharingNow(alice.place, bob.id, tag), { s: out.s, percent: 0 });
+      assert.ok(listHere());
+      // The relay no longer keeps the words: it ends, its list deleted, its line saying so.
       clock.now += 2 * 60_000;
       await drive(alice);
       assert.equal(await sharingNow(alice.place, bob.id, tag), null);
       assert.deepEqual((await loadRounds(alice.place)).out, []);
       assert.equal(listHere(), false);
-      assert.deepEqual(await shareLines(alice.place), { [`${peer}|${tag}`]: 'Their Erevos is too old for the files; the messages went as a file' });
+      const only = { [`${peer}|${tag}`]: 'Their Erevos did not take the files; only the messages went' };
+      assert.deepEqual(await shareLines(alice.place), only);
       assert.equal(bob.inbox.length, 0);
 
-      // Bob's was a later Erevos, its phone away: it keeps the words and says so, hears that no
-      // files come, and ends its share with its chats kept.
+      // Bob's was a later Erevos that kept them only now: it keeps the words and says so, hears
+      // that no files come, and ends its share with its chats kept, their files named as ones that
+      // stayed behind; Alice's line still says so.
       await drive(bob);
       assert.equal((await loadRounds(bob.place)).in.length, 1);
       await deliver(alice);
       await drive(alice);
-      assert.deepEqual(await shareLines(alice.place), {});
+      assert.deepEqual(await shareLines(alice.place), only);
       await deliver(bob);
       await drive(bob);
       assert.deepEqual((await loadRounds(bob.place)).in, []);
-      assert.equal((await Archive.open('space', 1, bob.key)).linked(alice.id).length, 5);
+      const kept = (await Archive.open('space', 1, bob.key)).linked(alice.id);
+      assert.equal(kept.length, 5);
+      assert.ok(kept.every((m) => m.files.length === 0));
+      assert.deepEqual(
+        kept.map((m) => [m.text, m.media]),
+        [
+          ['look', 'photo'],
+          ['nice', 'video'],
+          ['the film and the notes', 'file,file,photo'],
+          ['more', 'photo,photo'],
+          ['and on Viber', ''],
+        ],
+      );
       assert.deepEqual(await shareLines(bob.place), {});
 
       // Never said to have come: it ends once the relay no longer keeps the message's file, with nothing to say.
@@ -778,6 +801,42 @@ t(
       clock.now += 2 * 60_000;
       await drive(alice);
       assert.equal(await sharingNow(alice.place, bob.id, again), null);
+      assert.deepEqual(await shareLines(alice.place), only);
+    } finally {
+      clock.stop();
+    }
+  },
+  !ready || !coreReady,
+);
+
+t(
+  'a share kept days after its message came, as hidden chats keep theirs only once their chat screen opens, goes on to the end',
+  async () => {
+    forgetRounds();
+    const alice = await phone(0, small);
+    const bob = await phone(1, theirs);
+    await meet(alice, bob);
+    const { archive, film, photos } = await aliceChats(alice, bob);
+    const clock = fakeClock();
+    try {
+      const tag = await share(alice, bob, archive);
+      const peer = `contact:${bob.id}`;
+      await alice.chats.history.add({ peer, text: '', mine: true, at: clock.now, tag, mark: 0 });
+      await alice.chats.history.mark(peer, true, 1, clock.now, [tag]);
+      await drive(alice);
+      clock.now += 4 * DAY;
+      await drive(alice);
+      assert.equal((await shareLines(alice.place))[`${peer}|${tag}`], 'Sharing, 0% · waiting for their Erevos to take it; an older one takes only the messages');
+      // Bob's Erevos keeps them now, and all their files come.
+      await rounds(
+        alice,
+        bob,
+        async () => (await loadRounds(alice.place)).out.length === 0 && (await loadRounds(bob.place)).in.length === 0,
+        async () => void (clock.now += 61_000),
+      );
+      const kept = (await Archive.open('space', 1, bob.key)).linked(alice.id);
+      assert.deepEqual(await readFile(kept[0].files[0]), photos[0]);
+      assert.deepEqual(await readFile(kept[2].files[0]), film);
       assert.deepEqual(await shareLines(alice.place), {});
     } finally {
       clock.stop();

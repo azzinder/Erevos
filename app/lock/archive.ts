@@ -252,6 +252,28 @@ export class Archive {
     return added.map((chat) => chat.id);
   }
 
+  /**
+   * Names the files `gone` (by their id) in the chats `ids` as ones that stayed behind, as an import
+   * names those it did not have: of a share whose files no longer come (lib/share-rounds.ts).
+   */
+  leaveBehind(ids: readonly string[], gone: ReadonlySet<string>): Promise<void> {
+    if (ids.length === 0 || gone.size === 0) return Promise.resolve();
+    return this.change((data) => ({
+      chats: data.chats.map((chat) => {
+        if (!ids.includes(chat.id)) return chat;
+        const messages = chat.messages.map((message): ArchivedMessage => {
+          const [at, sender, text, media, files = []] = message;
+          const left = files.filter((ref) => gone.has(ref.id));
+          if (left.length === 0) return message;
+          const kept = files.filter((ref) => !gone.has(ref.id));
+          const kinds = [media, ...left.map((ref) => ref.kind)].filter(Boolean).join(',');
+          return kept.length > 0 ? [at, sender, text, kinds, kept] : [at, sender, text, kinds];
+        });
+        return { ...chat, messages };
+      }),
+    }));
+  }
+
   /** Deletes a chat from the phone, with its files. */
   async remove(id: string): Promise<void> {
     const files = new Map<string, number>();

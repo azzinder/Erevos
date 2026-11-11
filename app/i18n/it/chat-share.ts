@@ -22,5 +22,6 @@ export const chatShare: Record<string, string> = {
   'Files: {done} of {count} · waiting for free space on this phone': 'File: {done} di {count} · in attesa di spazio libero su questo telefono',
   'Files: {done} of {count} · waiting for Tor (Everything)': 'File: {done} di {count} · in attesa di Tor (Tutto)',
   'Sharing, {percent}% · waiting for free space on their phone': 'Condivisione, {percent}% · in attesa di spazio libero sul suo telefono',
-  'Their Erevos is too old for the files; the messages went as a file': 'Il suo Erevos è troppo vecchio per i file; i messaggi sono andati come file',
+  'Their Erevos did not take the files; only the messages went': 'Il suo Erevos non ha preso i file; sono andati solo i messaggi',
+  'Sharing, {percent}% · waiting for their Erevos to take it; an older one takes only the messages': 'Condivisione, {percent}% · in attesa che il suo Erevos la prenda; uno più vecchio prende solo i messaggi',
 };

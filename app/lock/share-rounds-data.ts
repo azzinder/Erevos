@@ -83,7 +83,7 @@ export type InShare = {
  * whom); the shared chats that came, to keep (`packs`: who, and the tag of the message); the
  * shares kept whole lately, to say so again to a sharer who did not hear it (`done`); and the shares
  * from here that ended as the other phone never said it keeps them (`old`: to whom, the tag of the
- * message their words went in, '' once that phone said it after all, and the share's id).
+ * message their words went in, '' when that phone never had it, and the share's id).
  */
 export type RoundsData = {
   out: OutShare[];
