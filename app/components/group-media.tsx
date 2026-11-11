@@ -43,9 +43,10 @@ type Picked = { name: string; mime: string; source: Source; w?: number; h?: numb
  * the panel under the message bar (`panel`, shown while `attaching`), the microphone (`voice`),
  * what goes on now (`said`, for under the messages), the sheets (`sheets`), and a message's photo,
  * file or voice message for its bubble (`content`). `more` gives the panel's other tiles
- * (components/group-messages.tsx), each opened once the panel has closed.
+ * (components/group-messages.tsx), each opened once the panel has closed. `thread`: the tag of the
+ * message whose thread shows, which what is sent then answers.
  */
-export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterPanel: (then: () => void) => void) => ComposerTile[]) {
+export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterPanel: (then: () => void) => void) => ComposerTile[], thread?: string | null) {
   const { at: groupsAt } = useGroupsWhere();
   const [own, setOwn] = useState<Relay | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
@@ -145,11 +146,21 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
       if (source.size > MAX_FILE) throw new TooLargeError();
       const relay = own ?? (await groupsAt.relay());
       if (what !== 'voice') say(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'), true);
-      await sendGroupFile(await groupsAt.groups(), id, relay, source, meta, ms, groupsAt.transport, (done, count) => {
-        if (count < 2 || what === 'voice') return;
-        const percent = Math.floor((done / count) * 100);
-        say(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }), true);
-      });
+      await sendGroupFile(
+        await groupsAt.groups(),
+        id,
+        relay,
+        source,
+        meta,
+        ms,
+        groupsAt.transport,
+        (done, count) => {
+          if (count < 2 || what === 'voice') return;
+          const percent = Math.floor((done / count) * 100);
+          say(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }), true);
+        },
+        thread ? { re: thread } : {},
+      );
       say('');
     } catch (error) {
       say('');

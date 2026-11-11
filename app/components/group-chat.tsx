@@ -21,6 +21,7 @@ import { PasswordSheet } from './PasswordSheet';
 import { KeyFace } from './key-face';
 import { LinkedText } from './linked-text';
 import { usePublicGroup } from './public-group';
+import { chosenStyle } from './select-bar';
 import { PhoneSign, ShortcutTile, VideoSign } from './shortcut-tile';
 import { ThreadArrows, useThreadAway } from './thread-arrows';
 import { Button, Card, Chip, Field, Input, Row, Sheet, Text, TextButton } from './ui';
@@ -33,7 +34,7 @@ import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
-import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
+import { ASK_AGAIN, MAX_GROUP_DESC, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
 import { leftOff } from '../lib/left-off';
 import { namesFor, typingMention, withMention } from '../lib/mentions';
 import { takeShared } from '../lib/share-in';
@@ -58,13 +59,14 @@ import { groupMedia } from '../lib/chat-media';
 
 // A group chat (lib/groups.ts), of the space or of a hidden place (components/groups-at.tsx): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the message bar to write in (components/composer.tsx). Its members sheet,
-// under ⋯, lists who is in it; the admin adds contacts, takes members out and renames it, and
-// anyone can leave. The call button at the top starts a call in the group (lib/group-calls.ts), and
+// under ⋯, lists who is in it and what the group is about (its description); the admin adds
+// contacts, takes members out, renames it and says what it is about, and anyone can leave. The call button at the top starts a call in the group (lib/group-calls.ts), and
 // the members sheet a video call; the call going on shows above the messages, to join. "+" and the
 // microphone in the bar send photos, files and voice messages (components/group-media.tsx).
 // A message held down opens its menu, and its bubble shows what it answers, a sticker, a place, a
-// poll or a link's preview, and its reactions (components/group-messages.tsx). `at`: the tag of a
-// message to go to, starred or found.
+// poll, a contact card or a link's preview, its reactions, and how many answers its thread has; a
+// thread shows alone, and messages chosen together have the top bar (components/group-messages.tsx).
+// `at`: the tag of a message to go to, starred or found.
 // In a group that is not public, the members sheet asks a member who is not a contact for their
 // contact link (Add as contact), and names a contact who has no name yet; a member who asks for
 // this phone's shows as a card over the messages, to Send or not (lib/groups.ts `askContact`),
@@ -166,7 +168,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
   }, [naming, id, groupsAt]);
   const nameable = typedName === null ? [] : namesFor(typedName, others.map((identity) => ({ identity, name: name(identity) })));
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
-  const media = useGroupMedia(id, shown, setNote, parts.attachMore);
+  const media = useGroupMedia(id, shown, setNote, parts.attachMore, parts.thread);
 
   // A photo or file shared from another app goes as the group opens (lib/share-in.ts).
   useEffect(() => {
@@ -388,15 +390,18 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
     }
   }
 
-  // The bar at the top, on the bars' glass from the top of the screen, behind the status bar.
+  // The bar at the top, on the bars' glass from the top of the screen, behind the status bar: while
+  // messages are chosen, what can be done to them. Back leaves a thread shown alone, then the group.
   const bar = (children: ReactNode) => (
     <View style={[styles.topBar, { marginTop: -insets.top, paddingTop: insets.top + 2 }, barBlur]}>
-      <View style={styles.header}>
-        <IconButton label={t('Back')} onPress={onBack}>
-          <BackIcon color={colors.text} size={24} />
-        </IconButton>
-        {children}
-      </View>
+      {parts.selectBar ?? (
+        <View style={styles.header}>
+          <IconButton label={t('Back')} onPress={parts.thread ? parts.closeThread : onBack}>
+            <BackIcon color={colors.text} size={24} />
+          </IconButton>
+          {children}
+        </View>
+      )}
     </View>
   );
 
@@ -412,6 +417,8 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
   }
 
   const out = info.status !== 'in';
+  // The messages shown: those of the thread shown alone, or all.
+  const lines = parts.thread ? shown.filter(parts.inThread) : shown;
   const going = out ? null : groupCallGoingOn(id);
   // Who asks for this phone's contact link, but a contact here already: the first, the rest wait
   // in the members sheet.
@@ -438,7 +445,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
             <KeyFace identity={id} name={info.name} size={narrow ? 36 : 40} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text variant="heading" numberOfLines={1} style={styles.name}>
-                {info.name}
+                {parts.thread ? t('Thread · {name}', { name: info.name }) : info.name}
               </Text>
               <View style={styles.subtitle}>
                 {out || narrow ? null : <ShieldIcon color={colors.success} size={11} />}
@@ -517,7 +524,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
           onScroll={onScroll}
           scrollEventThrottle={100}
         >
-          {shown.map((m, i) => {
+          {lines.map((m, i) => {
             if (m.note) {
               return (
                 <Text key={i} variant="caption" tone="muted" style={styles.noteLine}>
@@ -526,38 +533,55 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
               );
             }
             const mine = !m.from;
-            const before = shown[i - 1];
+            const before = lines[i - 1];
             const first = !before || before.note || before.from !== m.from;
             const ink = mine ? b.mineText : b.theirsText;
             const caption = parts.caption(m);
             // A sticker, built in or made from a photo, shows on its own, with no bubble.
             const stuck = !!m.sticker || !!m.file?.sticker;
+            const chosen = parts.chosen(m);
             return (
               <View key={i} onLayout={parts.placedAt(m)}>
+                {/* While messages are chosen, a tap adds it or takes it out, and nothing in it acts. */}
                 <Pressable
-                  onLongPress={() => {
-                    press();
-                    parts.hold(m);
-                  }}
-                  accessibilityHint={t('Hold for more')}
-                  style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
+                  disabled={!parts.choosing}
+                  accessible={parts.choosing}
+                  focusable={parts.choosing}
+                  onPress={() => parts.choose(m)}
+                  onLongPress={() => parts.choose(m)}
+                  accessibilityRole={parts.choosing ? 'checkbox' : undefined}
+                  accessibilityState={parts.choosing ? { checked: chosen } : undefined}
+                  accessibilityLabel={parts.choosing ? `${mine ? t('You') : name(m.from)}: ${m.text}` : undefined}
+                  style={chosen ? chosenStyle(colors) : undefined}
                 >
-                  {!mine && first ? (
-                    <Text variant="label" color={colors.accentText}>
-                      {name(m.from)}
-                    </Text>
-                  ) : null}
-                  {parts.quote(m, ink)}
-                  {media.content(m, ink, () => parts.hold(m)) ??
-                    parts.body(m, ink) ?? (
-                      <Text style={ink}>
-                        <LinkedText text={shownLine(m.text)} />
-                      </Text>
-                    )}
-                  {parts.preview(m, ink)}
-                  <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
+                  <View pointerEvents={parts.choosing ? 'none' : 'auto'}>
+                    <Pressable
+                      onLongPress={() => {
+                        press();
+                        parts.hold(m);
+                      }}
+                      accessibilityHint={t('Hold for more')}
+                      style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
+                    >
+                      {!mine && first ? (
+                        <Text variant="label" color={colors.accentText}>
+                          {name(m.from)}
+                        </Text>
+                      ) : null}
+                      {parts.quote(m, ink)}
+                      {media.content(m, ink, () => parts.hold(m)) ??
+                        parts.body(m, ink) ?? (
+                          <Text style={ink}>
+                            <LinkedText text={shownLine(m.text)} />
+                          </Text>
+                        )}
+                      {parts.preview(m, ink)}
+                      <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
+                    </Pressable>
+                    {parts.reactions(m)}
+                    {parts.threadCount(m)}
+                  </View>
                 </Pressable>
-                {parts.reactions(m)}
               </View>
             );
           })}
@@ -764,6 +788,8 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   const [adding, setAdding] = useState<Contact[] | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [rename, setRename] = useState('');
+  // What the group is about, as the admin types it.
+  const [about, setAbout] = useState('');
   const [busy, setBusy] = useState(false);
   // The contact being named, and the name typed for it.
   const [naming, setNaming] = useState('');
@@ -774,12 +800,13 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
     setAdding(null);
     setChosen(new Set());
     setRename(info.name);
+    setAbout(info.desc);
     setNaming('');
     void groupsAt
       .groups()
       .then((groups) => groups.members(info.id))
       .then(setMembers, () => setMembers([]));
-  }, [visible, info.id, info.name, groupsAt]);
+  }, [visible, info.id, info.name, info.desc, groupsAt]);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -913,6 +940,11 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
           </>
         ) : (
           <>
+            {info.desc && !(info.admin && !out && !linked) ? (
+              <Text>
+                <LinkedText text={info.desc} />
+              </Text>
+            ) : null}
             <Text variant="caption" tone="muted">
               {out
                 ? t('You are no longer in this group. Its messages stay here until you delete it.')
@@ -1006,6 +1038,20 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
                   />
                   <Button title={t('Add members')} kind="secondary" compact disabled={busy} onPress={() => void startAdding()} />
                 </Row>
+              </Card>
+            ) : null}
+            {info.admin && !out && !linked ? (
+              <Card>
+                <Field label={t('Description')}>
+                  <Input value={about} onChangeText={setAbout} maxLength={MAX_GROUP_DESC} multiline />
+                </Field>
+                <Button
+                  title={t('Save')}
+                  kind="secondary"
+                  compact
+                  disabled={busy || about.trim() === info.desc}
+                  onPress={() => void run(async () => (await groupsAt.groups()).describe(info.id, about, groupsAt.transport))}
+                />
               </Card>
             ) : null}
             <Row wrap>

@@ -50,22 +50,25 @@ export function forwardedTo(to: string, same: (a: string, b: string) => boolean 
  * What a message to forward is made of, in a contact's chat (lock/history.ts) or a group's
  * (lock/group-data.ts), where a voice message is a file with how long it lasts (`ms`).
  */
-export type Forwardable = { text: string; voice?: VoiceRef; file?: FileRef; ms?: number; sticker?: string; place?: Place; poll?: Poll; preview?: Preview };
+export type Forwardable = { text: string; voice?: VoiceRef; file?: FileRef; ms?: number; sticker?: string; place?: Place; poll?: Poll; preview?: Preview; card?: string };
 
-// A message forwarded from a group to a contact, handed to their chat in memory as it opens.
-let handed: { to: string; message: Forwardable; until: number } | null = null;
+// Messages forwarded from a group to a contact, handed to their chat in memory as it opens: several
+// chosen together go one after the other.
+let handed: { to: string; messages: Forwardable[]; until: number } | null = null;
 
-/** Hands a message to the chat of `to` (`contact:` and a contact's identity) about to open (app/chat.tsx), to forward it there. */
+/** Hands a message to the chat of `to` (`contact:` and a contact's identity) about to open (app/chat.tsx), to forward it there, after those handed to it just before. */
 export function handForward(to: string, message: Forwardable, now = Date.now()): void {
-  handed = { to, message, until: now + FRESH };
+  if (handed && handed.to === to && handed.until > now) handed.messages.push(message);
+  else handed = { to, messages: [message], until: now + FRESH };
 }
 
-/** The message handed to forward to `to`, once: it is let go as it is read, so it goes only once. */
+/** The next message handed to forward to `to`, once: it is let go as it is read, so it goes only once. */
 export function takeForward(to: string, now = Date.now()): Forwardable | null {
   const kept = handed;
   if (!kept || kept.until <= now || kept.to !== to) return null;
-  handed = null;
-  return kept.message;
+  const message = kept.messages.shift() ?? null;
+  if (kept.messages.length === 0) handed = null;
+  return message;
 }
 
 /**
@@ -113,6 +116,6 @@ export async function forwardToGroup(id: string, message: Forwardable, at: Group
     await sendGroupFile(groups, id, await at.relay(), source, meta, undefined, at.transport, undefined, forwarded);
     return;
   }
-  const { sticker, place, poll, preview } = message;
-  await groups.send(id, message.text, at.transport, { sticker, place, poll, preview, ...forwarded });
+  const { sticker, place, poll, preview, card } = message;
+  await groups.send(id, message.text, at.transport, { sticker, place, poll, preview, ...(card ? { card } : {}), ...forwarded });
 }

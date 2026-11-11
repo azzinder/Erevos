@@ -4911,8 +4911,8 @@ export class Links implements Link, TakenFiles {
       } else {
         const lasts = typeof m.lasts === 'number' && m.lasts > 0 ? m.lasts : typeof m.timer === 'number' ? m.timer : 0;
         // With what it answers, and what it is beyond words (lib/chat-parts.ts): a sticker, a place, a poll, a payment request, a preview.
-        const { sticker, place, poll, preview, forwarded, pay } = carriedOf(m);
-        const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
+        const { sticker, place, poll, preview, forwarded, pay, card } = carriedOf(m);
+        const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(card ? { card } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
         // At when the phone sealed it, as a place closed here takes it only as it opens.
         const base: Message = { peer, text: '', mine: true, at: cameAt(0, isTime(m.st) ? m.st : 0, now), tag, lasts, mark: mark ?? 0, ...parts };
         const voice = voiceOf(m.voice);
@@ -4933,9 +4933,10 @@ export class Links implements Link, TakenFiles {
     const { history } = this.chats;
     const react = isObject(m.react) && isTag(m.react.tag) && (m.react.emoji === '' || isReactionEmoji(m.react.emoji)) ? { tag: m.react.tag, emoji: m.react.emoji as string } : null;
     if (react) await history.react(peer, react.tag, true, react.emoji);
-    const { pin, vote, edit, settled } = carriedOf(m);
+    const { pin, vote, edit, settled, close } = carriedOf(m);
     if (pin) await history.pin(peer, pin.tag, pin.on ? now : 0);
     if (vote) await history.vote(peer, vote.tag, true, vote.chose);
+    if (close) await history.close(peer, close.tag, true, now);
     if (edit) await history.edit(peer, edit.tag, true, edit.text, now);
     if (settled) await history.paid(peer, settled.tag, true, now);
   }

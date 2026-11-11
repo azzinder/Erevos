@@ -8,10 +8,12 @@ import type { ChatPin } from '../lock/chat-pin';
 import {
   checkedAbout,
   checkedGroupData,
+  cleanGroupDesc,
   EMPTY_GROUPS,
   MAX_CONTACT_ASKS,
   MAX_CONTACT_KEY,
   MAX_GIVEN,
+  MAX_GROUP_DESC,
   MAX_GROUP_MESSAGES,
   MAX_HELD_GROUPS,
   MAX_LATER,
@@ -70,9 +72,14 @@ import { MAX_VOICE_MS } from './voice';
 // it does not know) and goes on with the next. When a message leaves the group here, however it
 // goes, its chunks on this phone go too.
 //
-// Replies, stickers, places, polls, link previews and forwarding ride in a message's own fields,
-// and reactions, votes, pins and deleting for everyone are kinds of their own (lib/group-parts.ts):
-// a phone from before shows the words and leaves the rest.
+// Replies, stickers, places, polls, contact cards, link previews and forwarding ride in a message's
+// own fields, and reactions, votes, pins, ending a poll and deleting for everyone are kinds of their
+// own (lib/group-parts.ts): a phone from before shows the words and leaves the rest.
+//
+// What the group is about (its description) is the admin's to say, as its name is, in a kind of its
+// own (`desc`) with when it was said: the latest counts, so every phone keeps the same whatever
+// order they come in. The admin's phone says it again after it adds a member, who reads nothing
+// from before. A phone from before leaves it alone.
 //
 // Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
 // anything it made is handed back.
@@ -134,7 +141,7 @@ export const MAX_ASKS = 20;
 export const GOT_AFTER = 2000;
 /** The most group messages this phone sends to some members only before one goes to all of them. */
 export const APART_MOST = 300;
-export { MAX_CONTACT_KEY };
+export { MAX_CONTACT_KEY, MAX_GROUP_DESC };
 
 /** How group messages leave this phone: to a member's queue, saying what it carries (`mark`, none
  *  for what rings), and to a contact inside their chat. With `contacts`, members can be asked for
@@ -195,6 +202,8 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   notify?: ChatNotify;
   /** Its own look here (theme/look.ts); missing while it takes the space's. */
   look?: Look;
+  /** What the group is about, as its admin said it: '' while none was. */
+  desc: string;
 };
 
 // What members say inside the group's messages. A `file` with `ms` is a voice message's sound. A
@@ -206,11 +215,21 @@ type Said =
   | { t: 'call'; call: GroupCallSignal }
   | ({ t: 'file'; file: FileOffer; tag: string; ms?: number } & GroupParts)
   | { t: 'renew'; kp: string }
+  | DescSaid
   | ContactSaid
   | Marked
   | Seen;
 
 type ContactSaid = { t: 'contact'; to: string; key: string; back?: true };
+
+/** What the group is about, said by an admin `at`, by its clock ('' takes it off). */
+type DescSaid = { t: 'desc'; text: string; at: number };
+
+/** A group's description once `said` came: the later one, and of two said at once, the one whose words sort first. Null when it changes nothing. */
+export function laterDesc(kept: Group['desc'], said: { text: string; at: number }): Group['desc'] | null {
+  if (kept && (said.at < kept.at || (said.at === kept.at && said.text >= kept.text))) return null;
+  return { text: said.text, at: said.at };
+}
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -223,6 +242,7 @@ function decodeSaid(bytes: Uint8Array): Said | null {
       return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '', ...groupPartsOf(v, true) };
     }
     if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
+    if (v.t === 'desc' && typeof v.text === 'string' && typeof v.at === 'number' && Number.isFinite(v.at) && v.at > 0) return { t: 'desc', text: cleanGroupDesc(v.text), at: v.at };
     if (v.t === 'renew' && typeof v.kp === 'string' && v.kp.length <= MAX_RENEWAL && /^[A-Za-z0-9+/]+={0,2}$/.test(v.kp)) return { t: 'renew', kp: v.kp };
     if (v.t === 'contact' && typeof v.to === 'string' && /^[0-9a-f]{64}$/.test(v.to) && typeof v.key === 'string' && v.key.length <= MAX_CONTACT_KEY && /^[A-Za-z0-9_-]+$/.test(v.key)) {
       if (v.back === undefined) return { t: 'contact', to: v.to, key: v.key };
@@ -555,7 +575,7 @@ export class Groups {
           .sort((a, b) => a.at - b.at);
         const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length + asks.filter((a) => a.at > g.readAt).length;
         const wants = freshWants(g, now).map(({ id, at }) => ({ id, at }));
-        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin, ...(g.notify ? { notify: g.notify } : {}), ...(g.look ? { look: g.look } : {}) };
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin, desc: g.desc?.text ?? '', ...(g.notify ? { notify: g.notify } : {}), ...(g.look ? { look: g.look } : {}) };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
   }
@@ -1158,6 +1178,43 @@ export class Groups {
     });
   }
 
+  /** Whether this phone may say what a group is about: its admin's. */
+  protected mayDescribe(id: string): boolean {
+    return this.find(id)?.admin === true;
+  }
+
+  /** Says what a group this phone is the admin of is about, for every member; '' takes it off. */
+  describe(id: string, text: string, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in' || !this.mayDescribe(id)) throw new Error(t('Only the group’s admins do that.'));
+      if (this.through()) throw new Error(t('Make or join groups on the phone that holds this account.'));
+      const clean = cleanGroupDesc(text);
+      if (clean === (group.desc?.text ?? '')) return;
+      const at = Math.max(Date.now(), (group.desc?.at ?? 0) + 1);
+      await this.broadcast(id, encodeSaid({ t: 'desc', text: clean, at }), transport);
+      await this.save(this.withGroup({ ...this.find(id)!, desc: { text: clean, at } }));
+      this.changed();
+    });
+  }
+
+  // Says the group's description again, as it was said, for a member just let in, who read nothing
+  // from before: those who have it already keep theirs.
+  protected async describeAgain(id: string, transport: GroupTransport): Promise<void> {
+    const desc = this.find(id)?.desc;
+    if (!desc?.text) return;
+    await this.broadcast(id, encodeSaid({ t: 'desc', text: desc.text, at: desc.at }), transport);
+  }
+
+  // A group's description as an admin said it, kept if it is the latest.
+  protected async described(id: string, said: { text: string; at: number }): Promise<void> {
+    const group = this.find(id);
+    const desc = group && laterDesc(group.desc, said);
+    if (!group || !desc) return;
+    await this.save(this.withGroup({ ...group, desc }));
+    this.changed();
+  }
+
   /** Takes a member out of a group this phone is the admin of. */
   remove(id: string, leaf: number, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
@@ -1500,6 +1557,7 @@ export class Groups {
         await transport.signal(identity, { group: group.id, kind: 'welcome', data: added.welcome, name: group.name });
         await this.deliver(group.id, before, added.commit, transport);
         await this.note(group.id, 'joined', identity);
+        await this.describeAgain(group.id, transport).catch(() => undefined);
         return;
       }
       // A welcome: only from the contact this phone gave a key package for the group.
@@ -1631,13 +1689,18 @@ export class Groups {
         this.changed();
         return;
       }
-      if (said.t === 'react' || said.t === 'pin' || said.t === 'vote' || said.t === 'edit' || said.t === 'erase') {
+      if (said.t === 'react' || said.t === 'pin' || said.t === 'vote' || said.t === 'close' || said.t === 'edit' || said.t === 'erase') {
         const messages = withMarked(now.messages, from, said, Date.now());
         if (!messages) return;
         await this.save(this.withGroup({ ...now, messages }));
         const unread = (list: GroupMessage[]) => list.filter((m) => m.from && !m.note && m.at > now.readAt).length;
         if (said.t === 'erase' && unread(messages) < unread(now.messages)) this.goneListeners.forEach((listener) => listener(id));
         this.changed();
+        return;
+      }
+      if (said.t === 'desc') {
+        // Only the admin says what the group is about.
+        if (opened.sender === (await this.keeperLeaf(id))) await this.described(id, said);
         return;
       }
       if (said.t === 'name') {

@@ -17,9 +17,9 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
 import { asChatMessage, groupPartsOf, markedOf, MAX_SEEN_TAGS, seenMark, seenOf, withMarked, withSeen } from '../lib/group-parts';
-import { Groups, type GroupTransport } from '../lib/groups';
+import { Groups, laterDesc, MAX_GROUP_DESC, type GroupTransport } from '../lib/groups';
 import { groupFindables, searchMessages, starredOf } from '../lib/message-search';
-import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData, type GroupMessage } from '../lock/group-data';
+import { cleanGroupDesc, EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData, type GroupMessage } from '../lock/group-data';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 if (existsSync(built)) {
@@ -129,6 +129,56 @@ test('a group keeps its messages’ parts and marks, and drops what is not of th
     { at: 5, from: A, text: 'y', tag: 'cccccccccccc' },
   ]);
   assert.deepEqual([kept.seenAt, kept.apart], [7, 3]);
+});
+
+test('only its sender ends a poll, once, and it takes no votes after', () => {
+  const tag = '0123456789ab';
+  const poll = { q: 'Tea?', o: ['Yes', 'No'] };
+  assert.deepEqual(markedOf({ t: 'close', tag }), { t: 'close', tag });
+  assert.equal(markedOf({ t: 'close', tag: 'x' }), null);
+  let messages: GroupMessage[] = [{ at: 1, from: A, text: '📊 Tea?', tag, poll }];
+  messages = withMarked(messages, B, { t: 'vote', tag, chose: [0] }, 2)!;
+  assert.equal(withMarked(messages, B, { t: 'close', tag }, 3), null, 'not his to end');
+  assert.equal(withMarked([{ at: 1, from: A, text: 'x', tag }], A, { t: 'close', tag }, 3), null, 'only a poll ends');
+  messages = withMarked(messages, A, { t: 'close', tag }, 4)!;
+  assert.equal(messages[0].closed, 4);
+  assert.equal(withMarked(messages, A, { t: 'close', tag }, 5), null, 'ended once');
+  assert.equal(withMarked(messages, B, { t: 'vote', tag, chose: [1] }, 6), null, 'no votes after');
+  assert.deepEqual(messages[0].votes, { [B]: [0] });
+});
+
+test('a contact card goes in a member’s message, checked, and is kept with it', async () => {
+  const card = 'BEGIN:VCARD\r\nVERSION:3.0\r\nN:Lovelace;Ada;;;\r\nFN:Ada Lovelace\r\nTEL;TYPE=CELL:+302101234567\r\nEND:VCARD\r\n';
+  assert.deepEqual(groupPartsOf({ card }, true), { card });
+  assert.deepEqual(groupPartsOf({ card: 'Ada, +302101234567' }, true), {});
+  const key = randomBytes(32);
+  const tag = '0123456789ab';
+  const messages = [
+    { at: 1, from: A, text: '👤 Ada Lovelace', tag, card },
+    { at: 2, from: A, text: '📊 Tea?', tag: 'ba9876543210', poll: { q: 'Tea?', o: ['Yes', 'No'] }, closed: 3 },
+    { at: 3, from: A, text: 'x', tag: 'aaaaaaaaaaaa', card: 'not a card', closed: 4 },
+  ];
+  const data = { ...EMPTY_GROUPS, groups: [{ id: 'cd'.repeat(16), name: 'G', admin: true, status: 'in', asked: [], later: [], outbox: [], messages, readAt: 0, desc: { text: 'Tea, Fridays', at: 9 } }] };
+  await saveGroupData(0, key, data as unknown as GroupData);
+  const [kept] = (await loadGroupData(0, key)).groups;
+  assert.deepEqual(kept.messages, [messages[0], messages[1], { at: 3, from: A, text: 'x', tag: 'aaaaaaaaaaaa' }]);
+  assert.deepEqual(kept.desc, { text: 'Tea, Fridays', at: 9 });
+  await saveGroupData(0, key, { ...data, groups: [{ ...data.groups[0], desc: { text: 'x', at: 'soon' } }] } as unknown as GroupData);
+  assert.equal((await loadGroupData(0, key)).groups[0].desc, undefined);
+});
+
+test('what a group is about: the latest said counts, the same on every phone whatever order it came in', () => {
+  const first = { text: 'Tea', at: 10 };
+  const later = { text: 'Coffee', at: 20 };
+  assert.deepEqual(laterDesc(undefined, first), first);
+  assert.deepEqual(laterDesc(first, later), later);
+  assert.equal(laterDesc(later, first), null);
+  assert.equal(laterDesc(later, later), null);
+  // Said at once: the words that sort first, on every phone.
+  assert.deepEqual(laterDesc({ text: 'b', at: 5 }, { text: 'a', at: 5 }), { text: 'a', at: 5 });
+  assert.equal(laterDesc({ text: 'a', at: 5 }, { text: 'b', at: 5 }), null);
+  assert.equal(cleanGroupDesc('  Tea‮  on   Fridays \n\n\n\nbring\u0007 cups '), 'Tea on Fridays\n\nbring cups');
+  assert.equal(cleanGroupDesc('x'.repeat(MAX_GROUP_DESC + 50)).length, MAX_GROUP_DESC);
 });
 
 test('a member says which of our messages came and were read, each member once, and a read one came', () => {
@@ -348,4 +398,55 @@ test('replies, stickers, polls, reactions, votes, pins, edits and deleting go to
   await bob.groups.deleteHere(id, asked.tag);
   assert.equal(said(bob, id).length, 0);
   assert.equal(said(alice, id).length, 1);
+});
+
+test('a poll ended, a contact card and what the group is about go to every member, the last from its admin only', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone();
+  const bob = net.phone();
+  const id = await alice.groups.create('Friends', [bob.identity], alice.transport);
+  await net.settle();
+  const about = (p: Phone) => p.groups.list().find((g) => g.id === id)?.desc;
+
+  // Bob's poll: only he ends it, for everyone, and no vote counts after.
+  await bob.groups.send(id, '📊 Tea?\n1. Yes\n2. No', bob.transport, { poll: { q: 'Tea?', o: ['Yes', 'No'] } });
+  await net.settle();
+  const poll = said(alice, id)[0];
+  assert.equal(await alice.groups.mark(id, { t: 'close', tag: poll.tag }, alice.transport), null);
+  await alice.groups.mark(id, { t: 'vote', tag: poll.tag, chose: [0] }, alice.transport);
+  await net.settle();
+  await bob.groups.mark(id, { t: 'close', tag: poll.tag }, bob.transport);
+  await net.settle();
+  assert.ok(said(alice, id)[0].closed);
+  assert.ok(said(bob, id)[0].closed);
+  assert.deepEqual(said(bob, id)[0].votes, { [alice.identity]: [0] });
+  assert.equal(await alice.groups.mark(id, { t: 'vote', tag: poll.tag, chose: [1] }, alice.transport), null);
+
+  // A contact card goes with its words.
+  const card = 'BEGIN:VCARD\r\nVERSION:3.0\r\nN:Lovelace;Ada;;;\r\nFN:Ada Lovelace\r\nTEL;TYPE=CELL:+302101234567\r\nEND:VCARD\r\n';
+  await alice.groups.send(id, '👤 Ada Lovelace\n+302101234567', alice.transport, { card });
+  await net.settle();
+  assert.deepEqual([said(bob, id).at(-1)!.card, said(bob, id).at(-1)!.text], [card, '👤 Ada Lovelace\n+302101234567']);
+
+  // What it is about: the admin says it, for every member; Bob may not.
+  assert.equal(about(bob), '');
+  await alice.groups.describe(id, '  Tea on   Fridays ', alice.transport);
+  await net.settle();
+  assert.deepEqual([about(alice), about(bob)], ['Tea on Fridays', 'Tea on Fridays']);
+  await assert.rejects(bob.groups.describe(id, 'Coffee', bob.transport));
+  // Said by Bob's phone anyway, as only a changed Erevos could: the others leave it.
+  (bob.groups as unknown as { mayDescribe: () => boolean }).mayDescribe = () => true;
+  await bob.groups.describe(id, 'Coffee', bob.transport);
+  await net.settle();
+  assert.equal(about(alice), 'Tea on Fridays');
+
+  // One who joins later reads nothing from before, but is told what the group is about.
+  const carol = net.phone();
+  await alice.groups.add(id, [carol.identity], alice.transport);
+  await net.settle();
+  assert.equal(carol.groups.list().find((g) => g.id === id)?.status, 'in');
+  assert.equal(about(carol), 'Tea on Fridays');
+  await alice.groups.describe(id, '', alice.transport);
+  await net.settle();
+  assert.deepEqual([about(alice), about(carol)], ['', '']);
 });

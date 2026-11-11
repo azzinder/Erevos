@@ -13,29 +13,33 @@ import { useColors } from '../theme/context';
 import { Button, Chip, Field, Input, Row, Sheet, Text, TextButton } from './ui';
 
 // A poll, in a contact's chat (app/chat.tsx) and in a group (components/group-chat.tsx): the sheet to make one,
-// and the poll in its bubble, where a tap on an option chooses it, or takes the choice back.
+// and the poll in its bubble, where a tap on an option chooses it, or takes the choice back. One its
+// sender ended (End poll) shows how the votes stood, and takes no more.
 
 /** One who voted: their name, as the chat shows it, and the options they chose. */
 export type Voter = { name: string; chose: number[] };
 
 /**
  * A poll in its bubble: its question, then each option with how many chose it and who. `mine`: the
- * options we chose. Without `onChoose` (ours waiting to go, or a group we left), nothing is chosen.
+ * options we chose. Without `onChoose` (ours waiting to go, or a group we left), nothing is chosen;
+ * `ended`, its sender ended it: nothing is chosen either, and it says so.
  */
-export function PollCard({ poll, voters, mine, onChoose, ink }: {
+export function PollCard({ poll, voters, mine, onChoose: choosing, ink, ended = false }: {
   poll: Poll;
   voters: Voter[];
   mine: number[];
   onChoose?: (option: number) => void;
   ink?: StyleProp<TextStyle>;
+  ended?: boolean;
 }) {
   const colors = useColors();
+  const onChoose = ended ? undefined : choosing;
   const counts = tally(poll, voters.map((voter) => voter.chose));
   const most = Math.max(1, ...counts);
   return (
     <View style={{ gap: space.xs, minWidth: 220 }}>
       <Text style={[ink, { fontWeight: '700' }]}>{poll.q}</Text>
-      <Text style={[ink, { fontSize: 12, opacity: 0.8 }]}>{poll.m ? t('Poll · choose one or more') : t('Poll · choose one')}</Text>
+      <Text style={[ink, { fontSize: 12, opacity: 0.8 }]}>{ended ? t('Poll ended') : poll.m ? t('Poll · choose one or more') : t('Poll · choose one')}</Text>
       {poll.o.map((option, i) => {
         const chosen = mine.includes(i);
         const who = voters.filter((voter) => voter.chose.includes(i)).map((voter) => voter.name);

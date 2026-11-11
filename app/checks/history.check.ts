@@ -351,6 +351,39 @@ t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async
   assert.equal((await History.open('space', 0, key)).messages()[0].myVote, undefined);
 });
 
+t('keeps that a poll was ended, once, by its sender only, and takes no votes on it after', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [ours, theirs] = [newTag(), newTag()];
+  const poll = { q: 'Which?', o: ['a', 'b'] };
+  await history.add({ peer: 'contact:aa', text: 'q', mine: true, at: 1, tag: ours, poll });
+  await history.add({ peer: 'contact:aa', text: 'q', mine: false, at: 2, tag: theirs, poll });
+  await history.add({ peer: 'contact:aa', text: 'no poll', mine: true, at: 3, tag: newTag() });
+  assert.equal(await history.vote('contact:aa', ours, false, [1]), true);
+  // Theirs is not ours to end, nor ours theirs; words are no poll.
+  assert.equal(await history.close('contact:aa', theirs, true, 10), false);
+  assert.equal(await history.close('contact:aa', ours, false, 10), false);
+  assert.equal(await history.close('contact:aa', history.messages()[2].tag, true, 10), false);
+  assert.equal(await history.close('contact:aa', ours, true, 10), true);
+  assert.equal(await history.close('contact:aa', ours, true, 20), false);
+  assert.equal(await history.close('contact:aa', theirs, false, 30), true);
+  assert.equal(await history.vote('contact:aa', ours, false, [0]), false);
+  assert.equal(await history.vote('contact:aa', theirs, true, [0]), false);
+  const [mine, their] = (await History.open('space', 0, key)).messages();
+  assert.deepEqual([mine.closed, mine.theirVote, their.closed, their.myVote], [10, [1], 30, undefined]);
+});
+
+t('keeps a contact card with its words, and leaves one of the wrong shape', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const card = 'BEGIN:VCARD\r\nVERSION:3.0\r\nN:Lovelace;Ada;;;\r\nFN:Ada Lovelace\r\nTEL;TYPE=CELL:+302101234567\r\nEND:VCARD\r\n';
+  await history.add({ peer: 'contact:aa', text: '👤 Ada Lovelace\n+302101234567', mine: false, at: 1, tag: newTag(), card });
+  assert.equal((await History.open('space', 0, key)).messages()[0].card, card);
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { j: 'not a card' }]] } });
+  assert.equal((await History.open('space', 1, key)).messages()[0].card, undefined);
+});
+
 t('keeps a payment request, and that it was paid, once, by the one asked', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

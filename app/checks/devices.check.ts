@@ -268,6 +268,13 @@ test('what goes between devices: parts put together, messages sorted, contacts k
   const poll = { q: 'When?', o: ['Mon', 'Tue'] };
   const parted = { ...entry, parts: { re: '112233445566', myReaction: '👍', theirReaction: 'no', pinned: 9, starred: true, poll, myVote: [1], theirVote: [7] } };
   assert.deepEqual(readPack(writePack([parted as never])), [{ ...entry, parts: { re: '112233445566', myReaction: '👍', pinned: 9, starred: true, poll, myVote: [1] } }]);
+  // A poll its sender ended goes ended, and a contact card goes with it; an end with no poll, or a card of the wrong shape, does not.
+  const card = 'BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Ada\r\nTEL:+301234\r\nEND:VCARD\r\n';
+  assert.deepEqual(readPack(writePack([{ ...entry, parts: { poll, closed: 7 } } as never, { ...entry, parts: { card } } as never])), [
+    { ...entry, parts: { poll, closed: 7 } },
+    { ...entry, parts: { card } },
+  ]);
+  assert.deepEqual(readPack(writePack([{ ...entry, parts: { closed: 7, card: 'Ada' } } as never])), [entry]);
 });
 
 type Phone = { chats: SpaceChats; queue: Queue; links: Links; space: number; key: Uint8Array };

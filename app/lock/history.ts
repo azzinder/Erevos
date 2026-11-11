@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
+import { checkedCard, checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { checkedPay, type Pay } from '../lib/pay';
@@ -80,9 +80,11 @@ export type Kept = [
  * its words, as its sender made it; `d` 1 when it was forwarded from another chat; `t` 1 when it
  * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
  * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr; `m`, the
- * payment request it is (lib/pay.ts; its text says it), with `u`, when it was marked paid.
+ * payment request it is (lib/pay.ts; its text says it), with `u`, when it was marked paid; `x`,
+ * when its sender ended the poll it is (this phone's clock); `j`, the contact card it is (a vCard,
+ * lib/card-share.ts; its text says it).
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend; m?: Pay; u?: number };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend; m?: Pay; u?: number; x?: number; j?: string };
 
 /**
  * A safety message as sealed once (lib/safety.ts): the packets and where they go (the contact's
@@ -157,10 +159,13 @@ export type Parts = {
   sticker?: string;
   /** The place it is, sent once (lib/chat-parts.ts). */
   place?: Place;
-  /** The poll it is, and the options we chose on it, and they did. */
+  /** The poll it is, and the options we chose on it, and they did; and when its sender ended it (milliseconds, this phone's clock). */
   poll?: Poll;
   myVote?: number[];
   theirVote?: number[];
+  closed?: number;
+  /** The contact card it is: a vCard of a name, its numbers and emails (lib/card-share.ts). */
+  card?: string;
   /** The preview of the link in its words, made by the phone that sent it (lib/link-preview.ts). */
   preview?: Preview;
   /** Forwarded from another chat: its sender's, or this phone's. */
@@ -183,7 +188,7 @@ export type Parts = {
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety, resend, pay, paid }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, closed, card, preview, forwarded, nostr, route, edited, safety, resend, pay, paid }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -195,6 +200,8 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(poll ? { k: poll } : {}),
     ...(poll && myVote?.length ? { a: myVote } : {}),
     ...(poll && theirVote?.length ? { b: theirVote } : {}),
+    ...(poll && closed ? { x: closed } : {}),
+    ...(card ? { j: card } : {}),
     ...(preview ? { w: preview } : {}),
     ...(forwarded ? { d: 1 as const } : {}),
     ...(nostr ? { t: 1 as const } : {}),
@@ -219,6 +226,8 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.k ? { poll: more.k } : {}),
     ...(more?.a ? { myVote: more.a } : {}),
     ...(more?.b ? { theirVote: more.b } : {}),
+    ...(more?.k && more.x ? { closed: more.x } : {}),
+    ...(more?.j ? { card: more.j } : {}),
     ...(more?.w ? { preview: more.w } : {}),
     ...(more?.d ? { forwarded: true } : {}),
     ...(more?.t ? { nostr: true } : {}),
@@ -264,12 +273,13 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown ; m?: unknown; u?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown ; m?: unknown; u?: unknown; x?: unknown; j?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
   const preview = checkedPreview(v.w);
   const pay = checkedPay(v.m);
+  const card = checkedCard(v.j);
   const votes = (chose: unknown) => (poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null);
   const [ours, theirs] = [votes(v.a), votes(v.b)];
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
@@ -286,6 +296,8 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(poll ? { k: poll } : {}),
     ...(ours?.length ? { a: ours } : {}),
     ...(theirs?.length ? { b: theirs } : {}),
+    ...(poll && count(v.x) ? { x: count(v.x) } : {}),
+    ...(card ? { j: card } : {}),
     ...(preview ? { w: preview } : {}),
     ...(v.d === 1 ? { d: 1 as const } : {}),
     ...(v.t === 1 ? { t: 1 as const } : {}),
@@ -732,10 +744,23 @@ export class History {
    */
   vote(peer: string, tag: string, ours: boolean, chose: number[]): Promise<boolean> {
     const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
-    const poll = kept ? unpack(kept).poll : undefined;
-    const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
+    const m = kept ? unpack(kept) : null;
+    const poll = m?.poll;
+    const checked = poll && !m.closed ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
     if (!checked) return Promise.resolve(false);
     return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
+  }
+
+  /**
+   * Ends a chat's poll, by its tag, `at` (milliseconds): ours (`ours`) or theirs, as only its
+   * sender ends it. It takes no more votes after. Once: false if the message is gone, is not a poll
+   * of that side's, or ended already.
+   */
+  close(peer: string, tag: string, ours: boolean, at: number): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    const m = kept ? unpack(kept) : null;
+    if (!m?.poll || m.mine !== ours || m.closed || !(at > 0)) return Promise.resolve(false);
+    return this.change(peer, tag, { closed: Math.round(at) });
   }
 
   /**

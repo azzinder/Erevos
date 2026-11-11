@@ -5,7 +5,8 @@
 // What a chat's messages can do beyond words: what they carry (lib/chat-parts.ts), their line
 // (lib/message-line.ts), finding them again (lib/message-search.ts), writing a chat out
 // (lib/chat-export.ts), what a link's preview reads from its page (lib/link-preview.ts), and a
-// group's message handed to a contact's chat to forward (lib/forward.ts).
+// group's message handed to a contact's chat to forward (lib/forward.ts); a contact card
+// (lib/card-share.ts), copying messages chosen together, and a group's threads.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -14,7 +15,9 @@ import { test } from 'node:test';
 import { chatText, exportName } from '../lib/chat-export';
 import { handForward, takeForward } from '../lib/forward';
 import { firstLink, fitPreview, pageInfo } from '../lib/link-preview';
-import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, EDIT_FOR, editableWords, geoLink, MAX_EDIT, placeWords, pollOf, pollWords, stillEditable, tally, toCarry } from '../lib/chat-parts';
+import { acts, carriedOf, checkedCard, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, EDIT_FOR, editableWords, geoLink, joinedText, MAX_CARD, MAX_EDIT, placeWords, pollOf, pollOpen, pollWords, stillEditable, tally, threadRoots, threadSizes, toCarry } from '../lib/chat-parts';
+import { cardFields, cardOf, cardShown, cardWords, MAX_CARD_ENTRIES } from '../lib/card-share';
+import { EMPTY_FIELDS } from '../lib/contacts';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
@@ -252,4 +255,109 @@ test("a group's message to forward is handed to that contact's chat only, once, 
   assert.equal(takeForward(A, 61_000), null);
   assert.equal(takeForward(A, 2000), message);
   assert.equal(takeForward(A, 2000), null);
+});
+
+test("several of a group's messages chosen to forward go to that contact's chat one after the other, and another chat starts anew", () => {
+  const first = { text: 'one' };
+  const second = { text: 'two' };
+  handForward(A, first, 1000);
+  handForward(A, second, 1000);
+  assert.equal(takeForward(A, 2000), first);
+  assert.equal(takeForward(A, 2000), second);
+  assert.equal(takeForward(A, 2000), null);
+  handForward(A, first, 1000);
+  handForward(B, second, 1000);
+  assert.equal(takeForward(A, 2000), null);
+  assert.equal(takeForward(B, 2000), second);
+});
+
+test('a poll ended by its sender travels with no words, says the phone is open, and one of the wrong shape is none', () => {
+  const close = { tag: '0123456789ab' };
+  assert.deepEqual(carriedOf({ close }), { close });
+  assert.deepEqual(carriedOf({ close: { tag: 'x' } }), {});
+  assert.deepEqual(carriedOf({ close: 'yes' }), {});
+  assert.deepEqual(toCarry({ close }, false), { close });
+  assert.deepEqual(toCarry({ close }, true), {});
+  assert.equal(acts({ close }), true);
+  const poll = { q: 'q', o: ['a', 'b'] };
+  assert.equal(pollOpen({ poll }), true);
+  assert.equal(pollOpen({ poll, closed: 5 }), false);
+  assert.equal(pollOpen({}), false);
+});
+
+test('a contact card goes as a vCard of its name, numbers and emails only, with its words for an Erevos from before', () => {
+  const mobile = { value: '+30 210 1234567', kind: 'mobile' as const, label: '' };
+  const contact = {
+    ...EMPTY_FIELDS,
+    given: 'Ada',
+    family: 'Lovelace',
+    company: 'Engines',
+    note: 'not for anyone',
+    birthday: '1815-12-10',
+    phones: [mobile, mobile],
+    emails: [{ value: 'ada@example.org', kind: 'home' as const, label: '' }],
+    addresses: [{ value: '12 St James Square', kind: 'home' as const, label: '' }],
+  };
+  const card = cardOf({ ...contact, name: 'Ada Lovelace' })!;
+  assert.match(card, /^BEGIN:VCARD\r?\n/);
+  for (const kept of ['Engines', 'not for anyone', '1815', 'St James']) assert.equal(card.includes(kept), false, kept);
+  assert.deepEqual(cardShown(card), { name: 'Ada Lovelace', phones: ['+30 210 1234567'], emails: ['ada@example.org'] });
+  assert.equal(cardWords(card), '👤 Ada Lovelace\n+30 210 1234567\nada@example.org');
+  const filled = cardFields(card)!;
+  assert.deepEqual([filled.given, filled.family, filled.company, filled.note], ['Ada', 'Lovelace', '', '']);
+  assert.deepEqual(filled.phones.map((p) => p.value), ['+30 210 1234567']);
+  assert.equal(messageLine({ text: cardWords(card) }), '👤 Ada Lovelace');
+  // It goes with its words, is checked as it comes, and its words are not edited.
+  assert.deepEqual(toCarry({ card }, true), { card });
+  assert.deepEqual(toCarry({ card }, false), {});
+  assert.deepEqual(carriedOf({ card }), { card });
+  assert.deepEqual(contentOf({ card }), { card });
+  assert.deepEqual(carriedOf({ card: 'Ada, +30 210 1234567' }), {});
+  assert.deepEqual(carriedOf({ card: card.replace('Ada', 'A\u0007da') }), {});
+  assert.equal(checkedCard(`BEGIN:VCARD\nFN:${'a'.repeat(MAX_CARD)}\nEND:VCARD`), null);
+  assert.equal(editableWords({ text: cardWords(card), card }), false);
+  // One with too many numbers keeps the first of them; a nameless one does not go.
+  const many = cardOf({ ...EMPTY_FIELDS, name: 'Many', given: 'Many', phones: Array.from({ length: 12 }, (_, i) => ({ value: `+3069000000${String(i).padStart(2, '0')}`, kind: 'mobile' as const, label: '' })) })!;
+  assert.equal(cardShown(many).phones.length, MAX_CARD_ENTRIES);
+  assert.equal(cardShown('not a card').name, '');
+  assert.equal(cardFields('not a card'), null);
+});
+
+test('messages chosen are copied as one text: one alone its words, several each with its time and who wrote it', () => {
+  const at = Date.UTC(2026, 10, 11, 9, 5);
+  assert.equal(joinedText([{ at, who: 'You', text: 'only this' }]), 'only this');
+  assert.equal(
+    joinedText([
+      { at: at + 60_000, who: 'Ada', text: 'second' },
+      { at, who: 'You', text: 'first' },
+    ]),
+    '[09:05] You: first\n[09:06] Ada: second',
+  );
+  assert.equal(
+    joinedText([
+      { at, who: 'You', text: 'today' },
+      { at: at - 86_400_000, who: 'Ada', text: 'yesterday' },
+    ]),
+    '[2026-11-10 09:05] Ada: yesterday\n[2026-11-11 09:05] You: today',
+  );
+});
+
+test("a group's threads: each answer is in the thread of the first message it answers, answer after answer", () => {
+  const roots = threadRoots([
+    { tag: 'a' },
+    { tag: 'b', re: 'a' },
+    { tag: 'c', re: 'b' },
+    { tag: 'd' },
+    { tag: 'e', re: 'gone' },
+    { tag: 'f', re: 'e' },
+    // Answering each other, round and round, as only a changed Erevos could send.
+    { tag: 'x', re: 'y' },
+    { tag: 'y', re: 'x' },
+  ]);
+  assert.deepEqual(['a', 'b', 'c', 'd', 'e', 'f'].map((tag) => roots.get(tag)), ['a', 'a', 'a', 'd', 'e', 'e']);
+  assert.equal(roots.get('x'), roots.get('y'));
+  const sizes = threadSizes(roots);
+  assert.equal(sizes.get('a'), 2);
+  assert.equal(sizes.get('e'), 1);
+  assert.equal(sizes.has('d'), false);
 });
