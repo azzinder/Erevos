@@ -26,6 +26,7 @@ import { takeHeldXmppCall, watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFI
 import { xmppGroupCalls } from '../lib/xmpp-muji';
 import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
+import { shownRoomName } from '../lib/matrix';
 import { matrixCallAccount, matrixNow } from '../lib/matrix-store';
 import { t } from '../lib/i18n';
 import { forgetPublicMedia } from '../lib/public-fetch';
@@ -279,7 +280,7 @@ export function CallHost() {
     };
     return (
       <Modal visible animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
-        <MatrixRingScreen call={matrix} name={room?.name || matrix.from || t('Matrix')} onAnswer={answerMatrix} onDecline={() => declineMatrixCall(matrix)} />
+        <MatrixRingScreen call={matrix} name={(room && shownRoomName(room)) || matrix.from || t('Matrix')} onAnswer={answerMatrix} onDecline={() => declineMatrixCall(matrix)} />
       </Modal>
     );
   }

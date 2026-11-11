@@ -21,7 +21,7 @@ import { doorIsOpen } from '../lib/closed-notices';
 import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { matrixInboxRows } from '../lib/inbox';
-import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
+import { isMatrixId, matrixThroughTor, roomList, shownRoomName, type MatrixRoom, type MatrixState } from '../lib/matrix';
 import { sortedRooms } from '../lib/matrix-rooms';
 import {
   matrixCreateGroup,
@@ -365,7 +365,7 @@ export default function MatrixScreen() {
 
       {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
 
-      <Sheet visible={!!optionsRoom} onClose={() => setOptionsFor(null)} title={optionsRoom?.name}>
+      <Sheet visible={!!optionsRoom} onClose={() => setOptionsFor(null)} title={optionsRoom ? shownRoomName(optionsRoom) : undefined}>
         <Button
           title={optionsRoom?.tags?.favourite ? t('Not a favourite any more') : t('Make a favourite')}
           kind="secondary"
@@ -470,13 +470,13 @@ function RoomRow({ room, onOpen, onMore, onJoin, onDecline }: { room: MatrixRoom
     );
   }
   return (
-    <Pressable onPress={onOpen} onLongPress={onMore} accessibilityRole="button" accessibilityLabel={room.name} accessibilityHint={t('Hold for more')}>
+    <Pressable onPress={onOpen} onLongPress={onMore} accessibilityRole="button" accessibilityLabel={shownRoomName(room)} accessibilityHint={t('Hold for more')}>
       <Card>
         <Row>
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="bodyStrong" numberOfLines={1}>
               {room.tags?.favourite ? '★ ' : ''}
-              {room.name}
+              {shownRoomName(room)}
             </Text>
             {last ? (
               <Text tone="muted" numberOfLines={1}>

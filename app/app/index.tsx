@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatActions, useArrangedChats } from '../components/chat-actions';
 import { ChatRow, MyselfRow } from '../components/chat-row';
 import { NewSmsSheet } from '../components/new-sms-sheet';
 import { FoundRow } from '../components/found-row';
@@ -28,6 +29,7 @@ import { againNote, copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { press } from '../lib/haptics';
+import type { ChatListPlace } from '../lib/chat-list';
 import { lang, mark, plural, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
@@ -97,6 +99,15 @@ const MENU: { title: string; detail: string; href: Href; links?: boolean; erevos
   },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
 ];
+
+// The open space, or none for a moment as it closes.
+function openSpace(): { space: number; key: Uint8Array } | null {
+  try {
+    return currentSpace();
+  } catch {
+    return null;
+  }
+}
 
 // The spaces whose Trash was looked at since Erevos started: what was there long enough goes from
 // the phone once each time.
@@ -308,8 +319,12 @@ function Home() {
       };
     }, []),
   );
-  // The SMS conversation held down, whose actions show.
+  // The SMS conversation held down, whose actions show; and any other chat held down (components/chat-actions.tsx).
   const [target, setTarget] = useState<SmsTarget | null>(null);
+  const [chatTarget, setChatTarget] = useState<InboxRow | null>(null);
+  // The SMS conversations archived, and whether the list shows what is archived instead of itself.
+  const [smsArchived, setSmsArchived] = useState<InboxSms[]>([]);
+  const [archiveShown, setArchiveShown] = useState(false);
   const smsRead = useRef(false);
   // Whether the list read now shows, or still the copy kept from last time (lock/inbox-cache.ts).
   const readShown = useRef(false);
@@ -380,6 +395,7 @@ function Home() {
             const merged = mergeRows(buildInbox(contacts, messages, imported, at, smsListed.current), groupRows(groups, name, (text) => noteText(text, name)));
             const list = order ? arrangeRows(merged, order.pinned, order.drafts) : merged;
             setFolders({ archived: sorted?.archived.length ?? 0, spam: sorted?.spam.length ?? 0, trash: order?.trash.length ?? 0 });
+            setSmsArchived(sorted?.archived ?? []);
             if (sorted && sorted.back.length > 0) void SmsLink.open(current, key).then((link) => link.unarchive(sorted.back)).catch(() => undefined);
             // Not "No chats yet", nor the kept copy without its SMS, while the SMS are still being
             // read the first time.
@@ -485,7 +501,7 @@ function Home() {
   const xmpp = modules.has('xmpp') ? xmppNow().state : null;
   const nostrAccount = nostrDmNow();
   const nostr = modules.has('nostr') ? nostrAccount.state : null;
-  const everyRow = useMemo(() => {
+  const mergedRows = useMemo(() => {
     if (!rows) return rows;
     // The copy kept from last time may still have a module's rows that is off now.
     let all = rows.filter((row) => rowOn(row, modules));
@@ -494,6 +510,17 @@ function Home() {
     if (nostr) all = mergeRows(all, nostrInboxRows(nostr));
     return all;
   }, [rows, modules, matrix, matrixTick, xmpp, xmppTick, nostr, nostrTick]);
+  // The space's order of its chats (lib/chat-list.ts): pinned ones at the top of the list, archived
+  // ones out of it, under Archived with the archived SMS conversations, until a message comes from them.
+  const here = openSpace();
+  const listPlace = useMemo((): ChatListPlace | null => (here ? { holder: 'space', space: here.space, key: here.key } : null), [here?.space, here?.key]);
+  const ordered = useArrangedChats(mergedRows, listPlace);
+  const everyRow = ordered?.list ?? null;
+  const archivedRows = useMemo(
+    () => (ordered ? mergeRows(ordered.archived, buildInbox([], [], [], now, smsArchived)).filter((row) => showsIn(row, show)) : []),
+    [ordered, smsArchived, now, show],
+  );
+  const archiveOn = archiveShown && show !== 'public';
   // Who shows online: Erevos contacts (lookOnline), and Matrix and XMPP ones as their servers say.
   const xmppConnected = modules.has('xmpp') && xmppNow().online;
   const allOnline = useMemo(() => {
@@ -515,19 +542,20 @@ function Home() {
     return everyRow.filter((row) => !serviceOrder.hidden.includes(servicePart(row)));
   }, [everyRow, serviceOrder]);
   const shown = useMemo(() => {
+    if (archiveOn) return filterInbox(archivedRows, query);
     const found = filterInbox((show === 'all' && !query.trim() ? allRows : everyRow) ?? [], query);
     return found.filter((row) => showsIn(row, show));
-  }, [everyRow, allRows, query, show]);
+  }, [everyRow, allRows, query, show, archiveOn, archivedRows]);
   // With no search, the chats with messages not read come first, under Unread, and the rest under
   // Recent, each in the order they had (an SMS conversation pinned stays first of its own). A muted
   // chat's messages wait under Recent, as its number is left out of the service's.
   const listed = useMemo((): (InboxRow | Section)[] => {
-    if (query.trim()) return shown;
+    if (query.trim() || archiveOn) return shown;
     const waiting = shown.filter((row) => row.unread > 0 && !row.muted);
     if (waiting.length === 0) return shown;
     const rest = shown.filter((row) => !(row.unread > 0 && !row.muted));
     return [{ section: 'unread' }, ...waiting, ...(rest.length ? [{ section: 'recent' } as Section, ...rest] : [])];
-  }, [shown, query]);
+  }, [shown, query, archiveOn]);
   // The chats of the part shown with messages not read, whatever the search says, for Mark all as
   // read in the menu (lib/read-all.ts): none in the public feed.
   const unreadShown = useMemo(() => toReadIn((show === 'all' ? allRows : everyRow) ?? [], show), [everyRow, allRows, show]);
@@ -727,16 +755,22 @@ function Home() {
         </Row>
       ) : null}
       {feedShown ? feed.intro : null}
-      {folders.archived + folders.spam + folders.trash > 0 ? (
+      {archiveOn ? (
+        <Text variant="caption" tone="muted">
+          {t('Chats you archived. One comes back to the list when a new message comes from them. Hold one down for more.')}
+        </Text>
+      ) : null}
+      {archivedRows.length + folders.spam + folders.trash > 0 || archiveOn ? (
         <Row wrap>
-          {folders.archived ? <Chip label={t('Archived · {n}', { n: folders.archived })} onPress={() => router.push('/sms-folder?folder=archived')} /> : null}
+          {/* What is archived, every chat's of the part shown, in place of the list until tapped again. */}
+          {archivedRows.length || archiveOn ? <Chip label={t('Archived · {n}', { n: archivedRows.length })} selected={archiveOn} onPress={() => setArchiveShown(!archiveOn)} /> : null}
           {folders.spam ? <Chip label={t('Spam · {n}', { n: folders.spam })} onPress={() => router.push('/sms-folder?folder=spam')} /> : null}
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}
       {/* A new Erevos, then Chat with myself, stay first, whatever comes in, but for one network alone and a search. */}
-      {release && !query.trim() && (show === 'all' || show === 'erevos') ? <ReleaseRow release={release} /> : null}
-      {erevosOn && notes !== null && !query.trim() && (show === 'all' || show === 'erevos') ? <MyselfRow notes={notes} /> : null}
+      {release && !query.trim() && !archiveOn && (show === 'all' || show === 'erevos') ? <ReleaseRow release={release} /> : null}
+      {erevosOn && notes !== null && !query.trim() && !archiveOn && (show === 'all' || show === 'erevos') ? <MyselfRow notes={notes} /> : null}
     </View>
   );
 
@@ -765,9 +799,10 @@ function Home() {
             ) : isPublicItem(item) ? (
               feed.render(item)
             ) : item.sms ? (
-              <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
+              <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: archiveOn ? 'archived' : 'list' })} />
             ) : (
-              <ChatRow row={item} now={now} online={allOnline.has(item.identity)} />
+              // Held down, what can be done to it: an invitation is answered on its own screen.
+              <ChatRow row={item} now={now} online={allOnline.has(item.identity)} onLong={item.invited ? undefined : () => setChatTarget(item)} />
             )
           }
           extraData={feedShown ? feed.extra : allOnline}
@@ -775,7 +810,11 @@ function Home() {
           onEndReached={feed.more}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            feedShown ? feed.empty : rows === null || hits.length > 0 ? null : query ? (
+            feedShown ? feed.empty : everyRow === null || hits.length > 0 ? null : archiveOn && !query ? (
+              <Text tone="muted" style={styles.emptyText}>
+                {t('Nothing archived.')}
+              </Text>
+            ) : query ? (
               <Text tone="muted" style={styles.emptyText}>
                 {t('No chat has “{query}” in it.', { query: query.trim() })}
               </Text>
@@ -924,6 +963,7 @@ function Home() {
       <NewSmsSheet visible={writingSms} onClose={() => setWritingSms(false)} />
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
+      <ChatActions target={chatTarget} place={listPlace} where="space" undo onClose={() => setChatTarget(null)} onChanged={() => reload.current()} />
       {feed.sheet}
       <Sheet visible={door} onClose={closeDoor}>
         <Input

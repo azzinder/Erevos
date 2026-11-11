@@ -15,7 +15,7 @@
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
 
-import { roomAvatar, type MatrixState } from './matrix';
+import { readByAll, roomAvatar, shownRoomName, type MatrixState } from './matrix';
 import type { Module } from './modules';
 import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
 import { bare, nameOf, type XmppState } from './xmpp';
@@ -74,8 +74,10 @@ export type InboxRow = {
   lastSms: boolean;
   /** The last message disappears (or will, once read), so its text is never kept elsewhere. */
   fades?: boolean;
-  /** An SMS conversation pinned at the top (lib/sms-folders.ts). */
+  /** Pinned at the top: an SMS conversation (lib/sms-folders.ts), any other chat (lib/chat-list.ts), or a Matrix room our favourite. */
   pinned?: boolean;
+  /** A Matrix room of low priority, at the end of the list (lib/chat-list.ts). */
+  low?: true;
   /** What is typed in an SMS conversation and not sent yet. */
   draft?: string;
   /** The picture the phone's contacts have for an SMS number, as an address the app may show. */
@@ -239,10 +241,11 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
     const mine = !room.invitedBy && !!last && last.sender === state.userId;
     return {
       identity: `matrix:${room.id}`,
-      name: room.name,
+      name: shownRoomName(room),
       last: text,
       mine,
-      mark: mine && last?.state ? -1 : 0,
+      // Waiting while it goes, then ✓, and ✓✓✓ once every other member read it, as in the chat.
+      mark: !mine || !last ? 0 : last.state ? -1 : !last.call && !last.deleted && readByAll(room, last, state.userId) ? 2 : 0,
       at: room.invitedBy ? now : (last?.ts ?? 0),
       unread: room.invitedBy ? 1 : room.unread,
       timer: 0,
@@ -254,6 +257,8 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       ...(roomAvatar(state, room) ? { picture: roomAvatar(state, room) } : {}),
       ...(mutedNow(room.notify, now) ? { muted: true } : {}),
       ...(room.invitedBy ? { invited: true } : {}),
+      // Our favourites at the top, those of low priority at the end (m.tag), as our other Matrix apps sort them.
+      ...(room.tags?.favourite ? { pinned: true } : room.tags?.low ? { low: true as const } : {}),
     };
   });
 }

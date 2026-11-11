@@ -17,6 +17,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote } from '../components/message-parts';
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { OwnName } from '../components/own-name';
 import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
 import { PollSheet } from '../components/poll';
@@ -35,7 +36,7 @@ import { plural, t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
-import { directOther, isMatrixId, MATRIX_TYPING_SHOWS, matrixPresence, matrixTyping, onMatrixTyping, readByAll, readersOf, type MatrixMessage } from '../lib/matrix';
+import { directOther, isMatrixId, MATRIX_TYPING_SHOWS, matrixPresence, matrixTyping, onMatrixTyping, OWN_ROOM_NAME, readByAll, readersOf, shownRoomName, type MatrixMessage } from '../lib/matrix';
 import { presenceText } from '../lib/net-presence';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { pollOver, pollShown } from '../lib/matrix-parts';
@@ -65,6 +66,7 @@ import {
   matrixSendSticker,
   matrixSetLook,
   matrixSetNotify,
+  matrixSetOwnName,
   matrixStickerPlace,
   matrixTyped,
   matrixVerifications,
@@ -578,7 +580,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     >
       <Row>
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
-          {thread ? t('Thread · {name}', { name: room.name }) : room.name}
+          {thread ? t('Thread · {name}', { name: shownRoomName(room) }) : shownRoomName(room)}
         </Text>
         {(canElementCall() || canMatrixVoip(state, roomId)) && !room.invitedBy ? (
           <>
@@ -695,6 +697,17 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
         </Row>
       ) : null}
+      {/* A name of our own for it, on this device only: nobody is told. */}
+      {!room.invitedBy && !thread ? (
+        <OwnName
+          label={room.direct ? t('Name them here') : t('Name it here')}
+          current={room.own ?? ''}
+          placeholder={room.name}
+          max={OWN_ROOM_NAME}
+          hint={t('Only on this device: nobody is told. Empty, its usual name shows again.')}
+          onSave={(name) => matrixSetOwnName(roomId, name)}
+        />
+      ) : null}
       {!room.direct && !room.invitedBy ? <MatrixRoomInfo visible={info} onClose={() => setInfo(false)} room={room} me={me} /> : null}
       <MatrixStickers
         visible={stickering}
@@ -705,7 +718,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           matrixSendSticker(roomId, sticker, thread).catch(fail);
         }}
       />
-      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={room.name} chat={lookChat} />
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={shownRoomName(room)} chat={lookChat} />
       <Button
         title={t('Leave')}
         kind="secondary"

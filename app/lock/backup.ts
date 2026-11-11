@@ -9,6 +9,7 @@ import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { t } from '../lib/i18n';
 
 import { FILE as ARCHIVE } from './archive';
+import { FILE as CHAT_LIST } from './chat-list-data';
 import { PREFIX as ATTACHMENT } from './attachment-files';
 import { ITER, PANIC_KEY } from './config';
 import { FILE as COLLECTION } from './collection-data';
@@ -223,8 +224,9 @@ const LATER_KEYS = [PANIC_KEY, ...SETTINGS, AUTO, CLOUD];
 // leaves them out of what it restores. So are the pieces of photos that came through Nostr and
 // wait for their message, each place's (lock/nostr-pieces-data.ts), with their pages. And the
 // Collections' catalogues (lock/collection-data.ts), which name their files among the chunks:
-// without them a restored phone would hold the chunks and nothing to open them by.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES, COLLECTION];
+// without them a restored phone would hold the chunks and nothing to open them by. And the order of
+// the lists of chats, pinned and archived (lock/chat-list-data.ts), the space's and each place's.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CHAT_LIST, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES, COLLECTION];
 // The sealed files no backup holds, whose values may lie in pages too: the linked devices and the
 // account's log (lock/devices-data.ts, lock/sync-data.ts). Restoring deletes every page the backup
 // does not hold, theirs among them, so they go with their pages: a restored space links anew, its

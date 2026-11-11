@@ -7,7 +7,7 @@ import type { CallEnd } from './call-signal';
 import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './calls';
 import { randomBytes, toHex } from './crypto';
 import { t } from './i18n';
-import { addMatrixCallLine, call as ask, sendEvent, setLegacyCallHandler, type CallEvent, type Json, type MatrixState } from './matrix';
+import { addMatrixCallLine, call as ask, sendEvent, setLegacyCallHandler, shownRoomName, type CallEvent, type Json, type MatrixState } from './matrix';
 import type { MatrixCallsAccount } from './matrix-calls';
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
@@ -171,8 +171,8 @@ function callsOf(place: boolean): CallPlace {
 
     name(peer) {
       const roomId = roomOfPeer(peer);
-      const state = accountOf(place)?.now();
-      return state?.rooms[roomId]?.name || roomId;
+      const room = accountOf(place)?.now()?.rooms[roomId];
+      return (room && shownRoomName(room)) || roomId;
     },
 
     // Our new description of the call, and their app's answer to it.

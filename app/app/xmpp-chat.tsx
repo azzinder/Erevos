@@ -18,6 +18,7 @@ import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { OwnName } from '../components/own-name';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
@@ -44,7 +45,7 @@ import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { stickerMeta } from '../lib/own-stickers';
 import { rtc } from '../lib/webrtc';
-import { forwardable, isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppChatList, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { forwardable, isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, XMPP_CONTACT_NAME, xmppChatList, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
 import { presenceText } from '../lib/net-presence';
 import { pinsShown, reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
@@ -57,6 +58,7 @@ import {
   runXmpp,
   xmppAddToGroup,
   xmppRemoveFromGroup,
+  xmppRenameContact,
   xmppRenameGroup,
   xmppSetGroupAdmin,
   xmppSetSubject,
@@ -786,6 +788,17 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
           </Row>
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
+          {/* A contact's name of our own: their item's in the account's contacts, which its other apps show too. */}
+          {!room && state.roster[jid] ? (
+            <OwnName
+              label={t('Name them here')}
+              current={state.roster[jid].name ?? ''}
+              placeholder={jid}
+              max={XMPP_CONTACT_NAME}
+              hint={t('Kept in your contacts on your XMPP server, so your other XMPP apps show it too. They are not told. Empty, their address shows again.')}
+              onSave={(named) => xmppRenameContact(jid, named)}
+            />
+          ) : null}
 
           {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
           {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}

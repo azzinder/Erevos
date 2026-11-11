@@ -105,13 +105,15 @@ import { packMeta, sharable, shareSize, takeAskToShare } from '../lib/chat-share
 import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, type ReadyShare, type ShareWay } from '../lib/share-rounds';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
+import { ChatActions, useArrangedChats } from '../components/chat-actions';
 import { ChatRow, MyselfRow } from '../components/chat-row';
 import { MyselfChat } from '../components/myself-chat';
 import { GroupChat } from '../components/group-chat';
 import { GroupsWhereProvider, type GroupsWhere } from '../components/groups-at';
 import { NewGroupForm } from '../components/new-group';
 import { armPlaceReminders, myNotes, onNotesChanged, type Note, type NotesAt } from '../lib/myself';
-import { buildInbox, groupRows, matrixInboxRows, mergeRows, nostrInboxRows, xmppInboxRows, type InboxGroup } from '../lib/inbox';
+import { dropChat, type ChatListPlace } from '../lib/chat-list';
+import { buildInbox, groupRows, matrixInboxRows, mergeRows, nostrInboxRows, xmppInboxRows, type InboxGroup, type InboxRow } from '../lib/inbox';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
@@ -4851,6 +4853,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // Its imported chats go along, into the place's own.
       const hiddenArchive = await Archive.open(hiddenHolder(pocket), space, key);
       await moveChat(identity, { e2e, history: history.current, archive }, { e2e: hiddenChats, history: hiddenHistory, archive: hiddenArchive });
+      await dropChat(chatListPlace, identity).catch(() => undefined);
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setPinDraft('');
@@ -4910,6 +4913,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const here = currentSpace();
       const spaceArchive = await Archive.open('space', here.space, here.key);
       await moveChat(identity, { e2e, history: history.current, archive }, { e2e: space.e2e, history: space.history, archive: spaceArchive });
+      await dropChat(chatListPlace, identity).catch(() => undefined);
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setOpened(null);
@@ -4994,6 +4998,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const theirHistory = await History.open('space', other.space, other.key);
       const theirArchive = await Archive.open('space', other.space, other.key);
       await moveChat(identity, { e2e, history: history.current, archive }, { e2e: theirs, history: theirHistory, archive: theirArchive });
+      await dropChat(chatListPlace, identity).catch(() => undefined);
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setPasswordDraft('');
@@ -5759,6 +5764,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (placeNostr) all = mergeRows(all, nostrInboxRows(placeNostr));
     return all;
   }, [hiddenKey, shownContacts, messages, archive, archiveTick, now, placeGroupList, placeMatrix, placeXmpp, placeNostr, placeNetTick]);
+  // The order of these chats' list, or of the space's, kept where they are (lib/chat-list.ts): in
+  // hidden chats, pinned ones at the top and archived ones apart, as home has the space's.
+  const chatListPlace = useMemo<ChatListPlace>(() => {
+    const { space, key } = currentSpace();
+    return hiddenKey ? { holder: hiddenHolder(pocket), space, key: hiddenKey, pocket } : { holder: 'space', space, key };
+  }, [hiddenKey, pocket]);
+  const placeOrdered = useArrangedChats(hiddenKey ? placeRows : null, hiddenKey ? chatListPlace : null);
+  const [placeArchive, setPlaceArchive] = useState(false);
+  const [placeTarget, setPlaceTarget] = useState<InboxRow | null>(null);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   // Photos and files picked in the Collection for this chat ("+" → Collection, app/collection.tsx
   // with `to`), sent one after the other as the chat shows again.
@@ -7100,14 +7114,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             {hiddenKey ? (
               // As home lists the space's chats (app/index.tsx), Chat with myself first.
               <View>
-                {placeNotes !== null ? <MyselfRow notes={placeNotes} onOpen={() => setMyselfShown(true)} /> : null}
-                {placeRows.map((row) => (
+                {/* What is archived, in place of the list until tapped again. */}
+                {placeOrdered?.archived.length || placeArchive ? (
+                  <Row wrap>
+                    <Chip label={t('Archived · {n}', { n: placeOrdered?.archived.length ?? 0 })} selected={placeArchive} onPress={() => setPlaceArchive(!placeArchive)} />
+                  </Row>
+                ) : null}
+                {placeNotes !== null && !placeArchive ? <MyselfRow notes={placeNotes} onOpen={() => setMyselfShown(true)} /> : null}
+                {((placeArchive ? placeOrdered?.archived : placeOrdered?.list) ?? []).map((row) => (
                   <ChatRow
                     key={row.identity}
                     row={row}
                     now={now}
                     online={!!e2e && contacts.some((c) => c.identity === row.identity && !c.hide) && e2e.onlineUntil(row.identity, now) > 0}
                     hidden
+                    onLong={row.invited ? undefined : () => setPlaceTarget(row)}
                     // A network's chat opens its own screen, for the place's account (components/chat-row.tsx).
                     onOpen={
                       row.network
@@ -7116,7 +7137,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     }
                   />
                 ))}
+                {placeArchive && placeOrdered?.archived.length === 0 ? <Text tone="muted">{t('Nothing archived.')}</Text> : null}
                 {placeRows.length === 0 ? <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text> : null}
+                <ChatActions target={placeTarget} place={chatListPlace} where="place" onClose={() => setPlaceTarget(null)} onChanged={() => e2e && setContacts(e2e.contacts())} />
                 {(placeWhere && canGroup()) || canMatrix() || canXmpp() || canNostrChat() || hasCore() ? (
                   // The place's own accounts on the networks (lib/place-networks.ts), apart from the space's,
                   // and its own linked devices (app/devices.tsx), which the space's know nothing of. On a

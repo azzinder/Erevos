@@ -27,6 +27,7 @@ import {
   loadEarlier,
   markRead,
   MatrixError,
+  OWN_ROOM_NAME,
   sendChange,
   sendInThread,
   sendLocation,
@@ -991,6 +992,18 @@ export function matrixSetLook(roomId: string, look: Look | null): Promise<void> 
     if (!room) return;
     if (look) room.look = checkedLook(look);
     else delete room.look;
+  });
+}
+
+/** A name of our own for a room, kept on this device only; empty, its own shows again. */
+export function matrixSetOwnName(roomId: string, name: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const room = it.state.rooms[roomId];
+    if (!room) return;
+    const own = name.trim().slice(0, OWN_ROOM_NAME);
+    if (own) room.own = own;
+    else delete room.own;
   });
 }
 

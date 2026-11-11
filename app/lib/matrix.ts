@@ -159,6 +159,8 @@ export type MatrixRoom = {
   notify?: ChatNotify;
   /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
   look?: Look;
+  /** A name of our own for it, given here and kept on this device only (shownRoomName): nobody is told. */
+  own?: string;
   /** Reactions by their own event ID, so one taken back comes off its message. */
   reactionsBy?: Record<string, { target: string; key: string; sender: string }>;
   /** Where its older messages are to be fetched from (/messages), once the homeserver said. */
@@ -822,6 +824,14 @@ function roomOf(state: MatrixState, id: string): MatrixRoom {
 /** An mxc:// address as one can be, or none. */
 function mxcOf(value: unknown): string | undefined {
   return typeof value === 'string' && /^mxc:\/\/[^/]+\/[^/?#]+$/.test(value) ? value : undefined;
+}
+
+/** The most characters of a name of our own for a room. */
+export const OWN_ROOM_NAME = 64;
+
+/** A room's name as we see it: the one of our own given here, else its own (or its person's). */
+export function shownRoomName(room: Pick<MatrixRoom, 'name' | 'own'>): string {
+  return (typeof room.own === 'string' && room.own.trim()) || room.name;
 }
 
 /** A room's picture: its own, or in a chat with one person, theirs. */
