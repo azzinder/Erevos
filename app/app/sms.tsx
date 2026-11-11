@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RemindSheet, remindPlace, type RemindOf } from '../components/chat-writing';
 import { canDial, DialTile } from '../components/dial-tile';
 import { IconButton, SendDisc } from '../components/composer';
 import { MoreIcon, PlusIcon } from '../components/icons';
@@ -105,7 +106,8 @@ import { useStyles, useTheme } from '../theme/context';
 // SMS another app writes, while it is the SMS app, show as Erevos hears of them, or as it comes back.
 // Held down, a message can also be pinned over the conversation for the owner alone (SMS have no
 // pins), kept with the space's SMS data, or chosen with others (Select), to copy, forward or delete
-// them together.
+// them together, or written into Chat with myself to remind at a time chosen (Remind me,
+// components/chat-writing.tsx).
 // ⋮ pins, archives, marks as spam, blocks or deletes the conversation (components/sms-actions.tsx);
 // the part of it in the Trash does not show here. A sender that writes with a name instead of a
 // number (a bank, say) shows its SMS, and cannot be answered.
@@ -224,6 +226,8 @@ export default function Sms() {
   const [now, setNow] = useState(Date.now());
   // The message held down, the one being passed on, and the conversation's own actions (⋮).
   const [chosen, setChosen] = useState<SmsMessage | null>(null);
+  // The message a reminder is being set for: it goes into Chat with myself (components/chat-writing.tsx).
+  const [reminding, setReminding] = useState<RemindOf | null>(null);
   const [forwarding, setForwarding] = useState<SmsMessage | null>(null);
   const [menu, setMenu] = useState<SmsTarget | null>(null);
   // The sheet of what an MMS can carry, where you are being found, a contact being chosen to send.
@@ -1039,6 +1043,18 @@ export default function Sms() {
                 <Text variant="bodyStrong">{isPinned(pins, chosen) ? t('Unpin') : t('Pin for me')}</Text>
               </Pressable>
             ) : null}
+            {remindPlace('space') ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setReminding({ from: `SMS · ${title}`, text: chosen.text || t('Picture') });
+                  setChosen(null);
+                }}
+                style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              >
+                <Text variant="bodyStrong">{t('Remind me')}</Text>
+              </Pressable>
+            ) : null}
             {smsFailed(chosen) ? (
               <Pressable accessibilityRole="button" onPress={() => sendAgain(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
                 <Text variant="bodyStrong">{t('Send again')}</Text>
@@ -1055,6 +1071,7 @@ export default function Sms() {
         ) : null}
       </Sheet>
       <SmsForward message={forwarding} contacts={contacts} onClose={() => setForwarding(null)} onNote={setNote} />
+      <RemindSheet of={reminding} where="space" onClose={() => setReminding(null)} say={setNote} />
       <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Attach and more')}>
         {canPart ? (
           <Pressable

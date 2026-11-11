@@ -15,6 +15,7 @@ import { plural, t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
 import { PlaceLives, type PlaceKey } from './place-lives';
+import { checkedWriting, sentOrShown, type WritingAccount } from './chat-writing';
 import {
   addMessage,
   authEvent,
@@ -1450,9 +1451,52 @@ async function sendTo(
 /** Sends `text` to `key`, answering the message `replyTo` when given: to the relays they read on,
  *  and a copy to the space's own. */
 export async function nostrDmSend(key: string, text: string, replyTo?: string): Promise<void> {
-  const it = need();
+  await sendText(need(), key, text, replyTo);
+}
+
+// Sends words from the account `it`: the screen's, or one that runs unseen, as a message held for later goes.
+async function sendText(it: Live & { state: NostrDmState }, key: string, text: string, replyTo?: string): Promise<void> {
   const answers = replyTo ? { replyTo } : {};
   await sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }));
+}
+
+// An account's drafts and messages held for later (lib/chat-writing.ts), changed in turn with the
+// rest of it, telling of nothing. A message held goes as typed then, answering what is still here.
+function writingOf(it: Live): WritingAccount {
+  return {
+    now: () => checkedWriting(it.state?.writing),
+    change: (use) =>
+      changeAccount(
+        it,
+        async () => {
+          if (it.state) it.state.writing = use(checkedWriting(it.state.writing));
+        },
+        true,
+      ),
+    keep: async () => {
+      if (it.state) await saveNostrDm(it.space, it.key, it.state, it.holder);
+    },
+    ready: () => !it.stopped && !!it.state,
+    has: (chat) => !!it.state?.chats[chat],
+    send: async (held) => {
+      if (!it.state) throw new Error(t('There are no Nostr chats in this space.'));
+      const live = it as Live & { state: NostrDmState };
+      const messages = () => live.state.chats[held.chat]?.messages;
+      const replyTo = held.replyTo && messages()?.some((m) => m.id === held.replyTo && m.state !== 'failed') ? held.replyTo : undefined;
+      await sentOrShown(messages, (m) => m.mine && m.state === 'failed', () => sendText(live, held.chat, held.text, replyTo));
+    },
+  };
+}
+
+/** The drafts and messages held of the open space's account, or of the open hidden place's own; null with none. */
+export function nostrDmWriting(where: NetworkWhere = 'space'): WritingAccount | null {
+  const it = where === 'place' ? places.shown() : live;
+  return it && !it.stopped && it.state ? writingOf(it) : null;
+}
+
+/** Those of every account that runs: the space's, and its hidden places' (lib/chat-later.ts). */
+export function nostrDmWritings(): WritingAccount[] {
+  return [live, ...places.all()].filter((it): it is Live => !!it && !it.stopped && !!it.state).map(writingOf);
 }
 
 /** A photo, file or voice message as picked, to send; a voice message says how long it lasts. */

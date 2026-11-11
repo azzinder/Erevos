@@ -9,6 +9,7 @@ import type { Look } from '../theme/look';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { deviceLine } from './call-lines';
 import type { Preview } from './chat-parts';
+import type { ChatWriting } from './chat-writing';
 import { t } from './i18n';
 import { cleanStatus, isOn, type NetPresence } from './net-presence';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
@@ -239,6 +240,8 @@ export type XmppState = {
   avatars?: Record<string, XmppAvatar>;
   /** Where the server pushes while the space is closed, once asked to (lib/xmpp-push.ts). */
   push?: XmppPushTo;
+  /** Each chat's draft, and the messages held to go later, on this device only (lib/chat-writing.ts). */
+  writing?: ChatWriting;
 };
 
 export class XmppError extends Error {

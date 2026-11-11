@@ -42,6 +42,7 @@ import type { MatrixBackup } from './matrix-backup';
 import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Place, Poll, Preview } from './chat-parts';
+import type { ChatWriting } from './chat-writing';
 import { t } from './i18n';
 import { cleanStatus, type NetPresence } from './net-presence';
 import {
@@ -251,6 +252,8 @@ export type MatrixState = {
   sayOnline?: true;
   /** Our profile picture, an mxc:// address, as last set or fetched. */
   avatar?: string;
+  /** Each room's draft, and the messages held to go later, on this device only (lib/chat-writing.ts). */
+  writing?: ChatWriting;
 };
 
 // The homeserver's answer to one request.

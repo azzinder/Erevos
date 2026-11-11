@@ -17,6 +17,7 @@ import { chosenStyle, SelectBar, selectAction, useSelection } from '../component
 import { XmppStickerSheet } from '../components/xmpp-stickers';
 
 import { ChatLookSheet, ChatScreen } from '../components/chat-look';
+import { HeldBubbles, keepForLater, LaterSheet, RemindSheet, remindPlace, useKeptDraft, type RemindOf } from '../components/chat-writing';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -29,6 +30,7 @@ import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import type { Place } from '../lib/chat-parts';
+import { heldIn } from '../lib/chat-writing';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { geoUri, placeOfGeo } from '../lib/matrix-parts';
@@ -64,6 +66,7 @@ import {
   xmppChange,
   xmppDelete,
   xmppDescribeGroup,
+  xmppDropUnsent,
   xmppFile,
   xmppForward,
   xmppHeard,
@@ -77,6 +80,7 @@ import {
   xmppReact,
   xmppReply,
   xmppSend,
+  xmppSendAgain,
   xmppSendFile,
   xmppSendSticker,
   xmppSetLook,
@@ -84,6 +88,7 @@ import {
   xmppSetPlain,
   xmppStickerPlace,
   xmppTyped,
+  xmppWriting,
   type XmppOutgoingFile,
   type XmppSticker,
 } from '../lib/xmpp-store';
@@ -136,6 +141,11 @@ import { checkedLook } from '../theme/look';
 // as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
 // a chat written without encryption, and only when this phone makes previews (as for contacts);
 // one that comes so shows under the words.
+//
+// What is typed and not sent is kept as the chat's draft, encrypted with the account, and shows on
+// its row; Send held down holds it to go later from this phone, shown after the thread until then
+// (components/chat-writing.tsx, lib/chat-writing.ts). One of ours that did not go is sent again, or
+// deleted, from its menu; any message can be written into Chat with myself to remind (Remind me).
 
 /** The place a message is, when its words are only a geo: link, as Conversations sends one. */
 const placeIn = (message: XmppMessage) => (/^geo:\S+$/i.test(message.text.trim()) ? placeOfGeo(message.text.trim()) : null);
@@ -154,6 +164,8 @@ function lineOf(message: XmppMessage): string {
 // Whether it has a menu: not one taken back, a call's line, or one still going or that did not go.
 const menuable = (message: XmppMessage) => !message.deleted && !message.call && message.state !== 'sending' && message.state !== 'failed';
 const copyable = (message: XmppMessage) => CAN_COPY && !!message.text && !message.file && !message.locked && !message.call && !message.deleted;
+// One of ours that did not go: its menu sends it again, or deletes it here, where only it is.
+const notSent = (message: XmppMessage) => message.mine && message.state === 'failed' && !message.deleted && !message.call;
 
 /** An XMPP chat's screen, in the chat's own look or the space's (components/chat-look.tsx). */
 export default function XmppChatScreen() {
@@ -184,6 +196,9 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // Whether the chat's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  // Choosing when what is typed goes, and the message a reminder is being set for (components/chat-writing.tsx).
+  const [choosingLater, setChoosingLater] = useState(false);
+  const [reminding, setReminding] = useState<RemindOf | null>(null);
   // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
@@ -238,6 +253,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
   const state = now.state;
   const chat = jid && state ? state.chats[jid] : undefined;
+  // What is typed is kept as the chat's draft, and comes back in the field when it opens again.
+  const kept = useKeptDraft(state ? xmppWriting(where) : null, jid && isXmppId(jid) ? jid : undefined, (text) => setDraft((typed) => (typed.trim() ? typed : text)));
   // The chat's own look, told to the screen that draws it.
   const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
   const lookChat = useMemo<ChatLook | null>(() => (jid && isXmppId(jid) ? { look: ownLook, save: (look) => xmppSetLook(jid, look) } : null), [ownLook, jid]);
@@ -367,9 +384,10 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const me = state.jid;
   const writerOf = (message: XmppMessage) => (message.mine ? t('You') : chat?.room ? message.by || jid : nameOf(state, jid));
 
+  // The words typed before the change come back in the field.
   const stopEditing = () => {
     setEditId(null);
-    setDraft('');
+    setDraft(kept.initial());
   };
 
   // What is typed goes as a new message, as an answer to the one chosen, or as the new words of the
@@ -383,9 +401,22 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       return;
     }
     setDraft('');
+    kept.sent();
     setReplyId(null);
     sayTyping.sent();
     void send(text, answered?.id);
+  }
+
+  // Holds what is typed to go at `at` from this phone (lib/chat-writing.ts), as an answer to the one chosen.
+  async function sendLater(at: number) {
+    setChoosingLater(false);
+    const text = draft.trim();
+    if (!text || !jid) return;
+    if (await keepForLater(xmppWriting(where), { chat: jid, text, at, ...(answered ? { replyTo: answered.id } : {}) }, setNote)) {
+      setDraft('');
+      kept.sent();
+      setReplyId(null);
+    }
   }
 
   function sendPlace(place: Place) {
@@ -443,6 +474,12 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // for the room's ID of it; changing and deleting are for our own, and changing for words only.
   function actionsOf(message: XmppMessage): MenuAction[] {
     const actions: MenuAction[] = [];
+    if (notSent(message)) {
+      if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+      actions.push({ title: t('Send again'), onPress: () => jid && void xmppSendAgain(jid, message.id).catch(fail) });
+      actions.push({ title: t('Delete'), danger: true, onPress: () => jid && void xmppDropUnsent(jid, message.id).catch(fail) });
+      return actions;
+    }
     const named = !chat?.room || !!message.sid;
     if (named) {
       actions.push({
@@ -457,6 +494,11 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => setForwarding([message.id]) });
     const pinned = pins.includes(message.id);
     actions.push({ title: pinned ? t('Unpin') : t('Pin for me'), onPress: () => jid && void xmppPin(jid, message.id, !pinned).catch(fail) });
+    if (remindPlace(where) && state && jid) {
+      const from = chat?.room ? `XMPP · ${nameOf(state, jid)} · ${writerOf(message)}` : `XMPP · ${nameOf(state, jid)}`;
+      const text = message.text && !message.file && !message.locked && !placeIn(message) ? message.text : lineOf(message);
+      actions.push({ title: t('Remind me'), onPress: () => setReminding({ from, text }) });
+    }
     if (message.mine && !message.file && !message.locked) {
       actions.push({
         title: t('Edit'),
@@ -669,13 +711,14 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   chosen={selection.chosen.has(message.id)}
                   onPress={choose}
                   onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
-                  onMenu={selection.on ? choose : menuable(message) ? () => setMenuFor(message.id) : undefined}
+                  onMenu={selection.on ? choose : menuable(message) || notSent(message) ? () => setMenuFor(message.id) : undefined}
                   onDuration={(ms) => void xmppHeard(jid, message.id, ms).catch(() => undefined)}
                   onLayout={place(message.id)}
                 />
               );
             })}
           </View>
+          <HeldBubbles held={heldIn(state.writing, jid)} account={() => xmppWriting(where)} say={setNote} />
           {!room && xmppTyping(jid) ? (
             <Text variant="caption" tone="muted">
               {name} · {t('typing…')}
@@ -707,7 +750,10 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   kind="secondary"
                   compact
                   onPress={() => {
-                    if ('text' in unsent) setDraft(unsent.text);
+                    if ('text' in unsent) {
+                      setDraft(unsent.text);
+                      kept.typed(unsent.text);
+                    }
                     setUnsent(null);
                     setNote('');
                   }}
@@ -725,13 +771,24 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
               onChangeText={(text) => {
                 setDraft(text);
                 sayTyping.typed(text);
+                // A message being changed is not a draft: its words stay with it.
+                if (!changed) kept.typed(text);
               }}
               multiline
               placeholder={t('Message')}
               accessibilityLabel={changed ? t('Edit message') : t('Message')}
             />
-            <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
+            <Button
+              title={changed ? t('Save') : t('Send')}
+              compact
+              disabled={!draft.trim() || unsent !== null}
+              onPress={submit}
+              // Held down: what is typed goes later.
+              onLongPress={!changed && draft.trim() && unsent === null ? () => setChoosingLater(true) : undefined}
+            />
           </Row>
+          <LaterSheet visible={choosingLater} where={where} onClose={() => setChoosingLater(false)} onPick={(at) => void sendLater(at)} />
+          <RemindSheet of={reminding} where={where} onClose={() => setReminding(null)} say={setNote} />
           {!voice.recording && !changed ? (
             <Row wrap>
               <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => setPlacing(true)} />
@@ -856,11 +913,11 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             />
           )}
           <MessageMenu
-            visible={!!menuMessage && menuable(menuMessage) && shown}
+            visible={!!menuMessage && (menuable(menuMessage) || notSent(menuMessage)) && shown}
             onClose={() => setMenuFor(null)}
             line={menuMessage ? lineOf(menuMessage) : ''}
             reaction={menuMessage?.reacted?.[me]?.[0]}
-            onReact={menuMessage && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
+            onReact={menuMessage && menuable(menuMessage) && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
             actions={menuMessage ? actionsOf(menuMessage) : []}
           />
         </KeyboardAwareScrollView>,
