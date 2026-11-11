@@ -20,6 +20,7 @@ import { ask } from '../lib/alert';
 import { doorIsOpen } from '../lib/closed-notices';
 import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
+import { matrixInboxRows } from '../lib/inbox';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
 import { sortedRooms } from '../lib/matrix-rooms';
 import {
@@ -48,6 +49,7 @@ import {
   runMatrix,
 } from '../lib/matrix-store';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
+import { askReadAll, toRead } from '../lib/read-all';
 import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -218,6 +220,9 @@ export default function MatrixScreen() {
 
   // Chats only: the spaces are in Find a group. Favourites first, those of low priority last.
   const rooms = sortedRooms(roomList(state).filter((room) => !room.space));
+  // Those of them with messages not read, to read at once (lib/read-all.ts); an invite is answered instead.
+  const listed = new Set(rooms.map((room) => `matrix:${room.id}`));
+  const unread = toRead(matrixInboxRows(state).filter((row) => listed.has(row.identity)));
   const optionsRoom = optionsFor ? state.rooms[optionsFor] : undefined;
   const openRoom = (id: string) => router.push({ pathname: '/matrix-chat', params: { room: id, ...whereParams(where) } });
   // Checks between this device and another of ours go to-device, without a chat.
@@ -360,6 +365,11 @@ export default function MatrixScreen() {
 
       <SectionTitle title={t('Chats')} />
       {rooms.length === 0 ? <Text tone="muted">{t('No Matrix chats yet.')}</Text> : null}
+      {unread.length > 0 ? (
+        <Row>
+          <Button title={t('Mark all as read')} kind="secondary" compact disabled={busy} onPress={() => askReadAll(ask, unread)} />
+        </Row>
+      ) : null}
       {rooms.map((room) => (
         <RoomRow
           key={room.id}

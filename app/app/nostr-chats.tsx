@@ -12,6 +12,7 @@ import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canNostrChat, canTor } from '../lib/core';
 import { plural, t } from '../lib/i18n';
+import { nostrInboxRows } from '../lib/inbox';
 import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-place';
 import { INBOX_MOST, nameOf, npubOf, nsecOf, shortNpub, type NostrDmChat, type NostrDmState } from '../lib/nostr-dm';
 import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
@@ -33,6 +34,7 @@ import {
   type NostrFollowsReport,
 } from '../lib/nostr-dm-store';
 import { FILE_SERVERS } from '../lib/nostr-files';
+import { askReadAll, toRead } from '../lib/read-all';
 import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -167,6 +169,8 @@ export default function NostrChatsScreen() {
 
   const npub = npubOf(state.public);
   const chats = Object.values(state.chats).sort((a, b) => b.lastAt - a.lastAt);
+  // Those with messages not read, to read at once (lib/read-all.ts).
+  const unread = toRead(nostrInboxRows(state));
   const open = (key: string) => router.push({ pathname: '/nostr-chat', params: { key, ...whereParams(where) } });
   return (
     <Page>
@@ -235,6 +239,11 @@ export default function NostrChatsScreen() {
 
       <SectionTitle title={t('Chats')} />
       {chats.length === 0 ? <Text tone="muted">{t('No Nostr chats yet.')}</Text> : null}
+      {unread.length > 0 ? (
+        <Row>
+          <Button title={t('Mark all as read')} kind="secondary" compact disabled={busy} onPress={() => askReadAll(ask, unread)} />
+        </Row>
+      ) : null}
       {chats.map((chat) => (
         <ChatCard key={chat.key} state={state} chat={chat} onOpen={() => open(chat.key)} />
       ))}
