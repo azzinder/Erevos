@@ -29,7 +29,8 @@ import { useModules } from '../lib/modules';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { CAN_PLACE } from '../lib/place';
 import { throughTor } from '../lib/relay';
-import { ipGate } from './ip-warning';
+import { IpStop } from '../lib/ip-warning';
+import { groupIpGate } from './ip-warning';
 import { saveText } from '../lib/save-file';
 import { stickerOf } from '../lib/stickers';
 import type { FileRef } from '../lock/attachment-files';
@@ -447,11 +448,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       setEditing(null);
       return;
     }
-    // A group's messages go without Tor unless the space's way is Everything: that the relays that
-    // carry them see this phone's internet address is said once for the group, before (lib/ip-warning.ts).
-    if (!throughTor() && !(await ipGate({ network: 'Erevos', act: 'send', of: `group ${id.slice(0, 48)}` }))) {
-      throw new Error(t('Not sent. {reason}', { reason: t('Your internet address can be seen') }));
-    }
+    // That the relays that carry it see this phone's internet address is said once for the group,
+    // before (components/ip-warning.tsx). Cancel there sends nothing, and says nothing more.
+    if (!(await groupIpGate(id, groupsAt.hidden))) throw new IpStop();
     const groups = await groupsAt.groups();
     // The members named with @ and their whole name (lib/mentions.ts): told in a muted group too.
     const named = parts ? [] : mentionsIn(text, (await groups.members(id).catch(() => [])).flatMap((m) => (m.about && !m.me ? [{ identity: m.about.id, name: name(m.about.id) }] : [])));
@@ -464,7 +463,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   }
 
   function sendParts(text: string, parts: GroupParts) {
-    send(text, parts).catch((error) => onNote(errorText(error)));
+    send(text, parts).catch((error) => {
+      if (!(error instanceof IpStop)) onNote(errorText(error));
+    });
   }
 
   // Sends a sticker made from a photo: as a photo goes, marked as a sticker (lib/own-stickers.ts).

@@ -65,13 +65,15 @@ export function callStatus(call: Call, now: number): string {
   }
 }
 
-export function CallScreen({ call, identity, name, encryption, speaker, onSpeaker, onAnswer, onClose }: {
+export function CallScreen({ call, identity, name, encryption, notice, speaker, onSpeaker, onAnswer, onClose }: {
   call: Call;
   /** The contact's identity key, hex, for their face. */
   identity: string;
   name: string;
   /** What the call's encryption is, when not Erevos's own end-to-end one (an XMPP call's). */
   encryption?: string;
+  /** Said under the call while it rings here: who will see this phone's internet address once it is answered (lib/ip-warning.ts). */
+  notice?: string;
   speaker: boolean;
   onSpeaker: (on: boolean) => void;
   /** Answers the call that rings here, with the camera or (false) voice only, once they may be used. */
@@ -138,6 +140,11 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         {state === 'connected' || state === 'connecting' ? (
           <Text variant="caption" color="rgba(255,255,255,0.6)" style={styles.shadow}>
             {encryption ?? t('End-to-end encrypted')}
+          </Text>
+        ) : null}
+        {state === 'incoming' && notice ? (
+          <Text variant="caption" color="rgba(255,255,255,0.8)" style={[styles.shadow, styles.notice]}>
+            {notice}
           </Text>
         ) : null}
       </View>
@@ -243,6 +250,7 @@ const styles = StyleSheet.create({
   ownWhole: { top: 0, right: 0, left: 0, bottom: 0, width: undefined, height: undefined, borderRadius: 0, opacity: 0.55, zIndex: 0 },
   top: { alignItems: 'center', gap: 8, paddingHorizontal: 24 },
   shadow: { textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 6 },
+  notice: { textAlign: 'center', maxWidth: 420, marginTop: 8 },
   buttons: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, paddingHorizontal: 16 },
   asking: { width: '100%', alignItems: 'center', gap: 10, marginBottom: 6 },
   row: { flexDirection: 'row', gap: 14 },

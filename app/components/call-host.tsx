@@ -29,8 +29,10 @@ import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, 
 import { shownRoomName } from '../lib/matrix';
 import { matrixCallAccount, matrixNow } from '../lib/matrix-store';
 import { t } from '../lib/i18n';
+import { ipGoneOn, ipSaid, ipWarningText, type IpWarning } from '../lib/ip-warning';
 import { forgetPublicMedia } from '../lib/public-fetch';
 import { CallScreen } from './call-screen';
+import { callIpWarning } from './ip-warning';
 import { GroupCallScreen } from './group-call-screen';
 import { MatrixRingScreen } from './matrix-ring';
 
@@ -152,6 +154,9 @@ export function CallHost() {
   const [, setShown] = useState(0);
   const [speaker, setSpeaker] = useState(false);
   const known = useRef<Call | null>(null);
+  // A contact's call ringing here through a call relay, before its warning was said (lib/ip-warning.ts):
+  // said under it while it rings, and kept as said once it is answered.
+  const [ringWarning, setRingWarning] = useState<{ call: Call; warning: IpWarning } | null>(null);
   const knownGroup = useRef<GroupCall | null>(null);
   const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[]; said?: Readonly<Record<string, string>> }>({ group: '', contacts: [] });
 
@@ -202,6 +207,15 @@ export function CallHost() {
       if (call && call !== known.current) {
         known.current = call;
         setSpeaker(call.video);
+        // An Erevos contact's call, of the space or of hidden chats (their own place keeps it), through a call relay.
+        const ours = shown?.place === spaceCalls || !!shown?.place.ipKeep;
+        if (call.state === 'incoming' && call.throughRelay && ours && call.peer.startsWith(CONTACT_PREFIX)) {
+          const keep = shown?.place === spaceCalls ? undefined : (shown?.place.ipKeep?.() ?? 'memory');
+          const warning = callIpWarning(call.peer.slice(CONTACT_PREFIX.length), keep);
+          void ipSaid(warning).then((said) => {
+            if (!said && known.current === call) setRingWarning({ call, warning });
+          });
+        }
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
         // A hidden call just opened by its PIN on the ring screen (lib/hidden-ring.ts): the owner
         // already chose to answer it, so it is answered at once. Never a call of the space's; of a
@@ -289,6 +303,8 @@ export function CallHost() {
   if (!shown) return null;
   const { call, place } = shown;
 
+  const warned = ringWarning?.call === call ? ringWarning.warning : null;
+
   // With the camera, or voice only: a voice call answered with it asks for video once it connects.
   function answer(video: boolean) {
     void callPermissions(video).then((granted) => {
@@ -296,6 +312,8 @@ export function CallHost() {
         call.decline();
         return;
       }
+      // Answered with its warning said: not said again for that chat.
+      if (warned) void ipGoneOn(warned).catch(() => undefined);
       setSpeaker(video);
       callAudio?.start(video);
       void call.answer(video);
@@ -314,6 +332,7 @@ export function CallHost() {
         identity={call.peer.startsWith(XMPP_PREFIX) ? toHex(sha256Bytes(utf8Encode(call.peer))) : call.peer.slice(CONTACT_PREFIX.length)}
         name={place.name(call.peer)}
         encryption={call.peer.startsWith(XMPP_PREFIX) ? t('Encrypted, but its key passes through the XMPP servers') : undefined}
+        notice={warned ? ipWarningText(warned).message : undefined}
         speaker={speaker}
         onSpeaker={changeSpeaker}
         onAnswer={answer}

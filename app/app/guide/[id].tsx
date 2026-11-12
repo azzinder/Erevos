@@ -3,17 +3,21 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { GuideBlockView } from '../../components/guide';
 import { Card, Page, Row, Text } from '../../components/ui';
 import { GUIDE_UI, guideFor, guideLang } from '../../guide';
+import { guideShown } from '../../lib/guide-shown';
 import { space } from '../../theme/colors';
 import { useColors } from '../../theme/context';
 
 /** One section of the user guide, with the previous and next ones at its end. */
 export default function GuideSectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // What waits for the guide to be read and closed (lib/guide-shown.ts).
+  useEffect(() => guideShown(), []);
   const lang = guideLang();
   const ui = GUIDE_UI[lang];
   const sections = guideFor(lang);

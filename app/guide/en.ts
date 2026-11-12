@@ -1722,6 +1722,10 @@ Erevos warns once before each of these, with the title **Your internet address c
 opens this section and, where it can, a button that fixes it, such as **Through Tor for this chat**. **Go on** goes
 on; for a chat it is said once, and not again for that chat.
 
+After the guide, the same question comes back, and what you were sending, such as a voice message or a file, waits
+for it. A call that rings here says it under the call, and answering goes on. Hidden chats keep what was said with
+them, apart from the space.
+
 Nearby phones, LoRa and SMS do not use the internet, so they show no internet address.
 
 ## Matrix {#matrix}

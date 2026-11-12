@@ -12,9 +12,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { IP_GUIDE, ipGoneOn, ipKey, ipSaid, ipWarningText, type IpAct } from '../lib/ip-warning';
+import { afterGuide, guideShown } from '../lib/guide-shown';
+import { IP_GUIDE, ipGoneOn, ipKey, ipSaid, ipWarningText, IpStop, type IpAct } from '../lib/ip-warning';
 import { setCurrentSpace } from '../lock/keys';
-import { IP_SEEN_MOST, loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { IP_SEEN_MOST, loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 import './secure-memory';
 
 test('a warning is kept by its network, what happens and what of; its words name the network, and each act has its own', () => {
@@ -32,6 +33,14 @@ test('a warning is kept by its network, what happens and what of; its words name
   }
   assert.match(ipWarningText({ network: 'Matrix', act: 'send', of: '' }).message, /^On Matrix,/);
   assert.match(ipWarningText({ network: 'XMPP', act: 'join', of: '' }).message, /^On XMPP,/);
+  // On a network where only one's own server sees it, the words say so, and not the contact's.
+  const own = ipWarningText({ network: 'Signal', act: 'send', of: '', own: true }).message;
+  assert.match(own, /Your Signal server/);
+  assert.doesNotMatch(own, /contact/);
+  assert.match(ipWarningText({ network: 'Erevos', act: 'send', of: '' }).message, /your contact's/);
+  assert.equal(ipKey({ network: 'Signal', act: 'send', of: 'a', own: true }), ipKey({ network: 'Signal', act: 'send', of: 'a' }));
+  // Cancel is no failure: nothing to say of it.
+  assert.equal(new IpStop().message, '');
 });
 
 test('a warning is said once in a space: kept as said once gone on from, the latest ones kept, each space its own', async () => {
@@ -61,4 +70,48 @@ test('a warning is said once in a space: kept as said once gone on from, the lat
   await updateCurrentSpaceData({ ipSeen: ['', 7, 'erevos|link|', 'erevos|link|'] as unknown as string[] });
   assert.deepEqual((await loadCurrentSpaceData()).ipSeen, ['erevos|link|']);
   setCurrentSpace(null);
+});
+
+test("a hidden place's warnings are kept in its own data, never the space's; one whose place is not known only in memory", async () => {
+  const space = randomBytes(32);
+  setCurrentSpace(23, space);
+  const place = { space: 23, pocket: 2, key: randomBytes(32) };
+  const hidden = { network: 'Erevos', act: 'send' as const, of: 'hidden-contact', keep: place };
+  assert.equal(await ipSaid(hidden), false);
+  await ipGoneOn(hidden);
+  assert.equal(await ipSaid(hidden), true, 'said once in the hidden place');
+  assert.deepEqual((await loadHiddenData(23, 2, place.key)).ipSeen, [ipKey(hidden)], 'kept with it');
+  assert.equal((await loadCurrentSpaceData()).ipSeen, undefined, "nothing of it in the space's data, which the space's password opens");
+  const { keep: _keep, ...inSpace } = hidden;
+  assert.equal(await ipSaid(inSpace), false, 'the space has not gone on from it');
+  // Another hidden place, or the same with another key, knows nothing of it.
+  assert.equal(await ipSaid({ ...hidden, keep: { ...place, pocket: 3 } }), false);
+  const memory = { network: 'Erevos', act: 'send' as const, of: 'group somewhere', keep: 'memory' as const };
+  assert.equal(await ipSaid(memory), false);
+  await ipGoneOn(memory);
+  assert.equal(await ipSaid(memory), true);
+  assert.equal((await loadCurrentSpaceData()).ipSeen, undefined, 'nor of what is kept in memory');
+  setCurrentSpace(null);
+});
+
+test('what waits for the guide goes on once it has opened and closed again, or should it never open', async () => {
+  let done = false;
+  const waited = afterGuide().then(() => {
+    done = true;
+  });
+  const gone = guideShown();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(done, false, 'not while it shows');
+  // One section replaces another: still the guide.
+  const next = guideShown();
+  gone();
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(done, false, 'not while another section shows');
+  next();
+  await waited;
+  assert.equal(done, true);
+  // A guide that never opened is not waited for long.
+  const began = Date.now();
+  await afterGuide();
+  assert.ok(Date.now() - began < 4500);
 });

@@ -360,6 +360,11 @@ export class Call {
     return call;
   }
 
+  /** Whether the call goes through a call relay, which sees this phone's internet address: not one straight between two phones on the same network. */
+  get throughRelay(): boolean {
+    return this.options.relay !== null;
+  }
+
   /** Whether our camera is on its way to them: not in a call answered with voice only, until it is turned on. */
   get hasCamera(): boolean {
     return (this.local?.getVideoTracks().length ?? 0) > 0;

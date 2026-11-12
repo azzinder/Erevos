@@ -1995,6 +1995,10 @@ Erevos warnt vor jedem davon einmal, mit dem Titel **Deine Internetadresse kann 
 **Anleitung**, der diesen Abschnitt öffnet, und, wo es geht, einem Knopf, der es behebt, etwa **Über Tor für diesen
 Chat**. Mit **Weiter** geht es weiter; für einen Chat wird es einmal gesagt und für diesen Chat nicht wieder.
 
+Nach der Anleitung kommt dieselbe Frage wieder, und was du gerade sendest, etwa eine Sprachnachricht oder eine Datei,
+wartet darauf. Ein Anruf, der hier klingelt, sagt es unter dem Anruf, und Annehmen geht weiter. Versteckte Chats
+bewahren das Gesagte bei sich auf, getrennt vom Bereich.
+
 Telefone in der Nähe, LoRa und SMS nutzen das Internet nicht, also zeigen sie keine Internetadresse.
 
 ## Matrix {#matrix}

@@ -1870,6 +1870,10 @@ Erevos avisa una vez antes de cada uno de ellos, con el título **Tu dirección 
 **Guía** que abre esta sección y, donde puede, un botón que lo arregla, como **Por Tor para este chat**. **Seguir**
 continúa; para un chat se dice una vez y no se repite para ese chat.
 
+Después de la guía vuelve la misma pregunta, y lo que estabas enviando, como un mensaje de voz o un archivo, la
+espera. Una llamada que suena aquí lo dice debajo de la llamada, y contestar sigue adelante. Los chats ocultos guardan
+lo dicho consigo, aparte del espacio.
+
 Los teléfonos cercanos, LoRa y los SMS no usan internet, así que no muestran ninguna dirección de internet.
 
 ## Matrix {#matrix}

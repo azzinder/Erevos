@@ -186,7 +186,8 @@ import {
 import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, lookNow, openNearby, shownPace, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrOwnTor, nostrReady, readNostr } from '../lib/nostr';
 import { netThroughTor } from '../lib/net-http';
-import { ipGate } from '../components/ip-warning';
+import { callIpWarning, ipGate } from '../components/ip-warning';
+import type { IpKeep } from '../lib/ip-warning';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
 import { useNfcShare } from '../lib/nfc-share';
@@ -761,7 +762,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const stopPlaying = useRef<(() => void) | null>(null);
   // Where this chat's calls belong (lib/calls.ts): the space's, or these hidden chats', which
   // seal with this chat's own keys and keep their lines here. Its functions use this render's state.
-  const latest = useRef({ send: async (_identity: string, _extra: Extra) => undefined as unknown, line: (_message: Kept) => undefined as void, name: (peer: string) => peer, relay: () => Promise.resolve(null as CallRelay | null), me: (): string => '' });
+  const latest = useRef({ send: async (_identity: string, _extra: Extra) => undefined as unknown, line: (_message: Kept) => undefined as void, name: (peer: string) => peer, relay: () => Promise.resolve(null as CallRelay | null), me: (): string => '', ipKeep: (): IpKeep | undefined => undefined });
   const hiddenCalls = useRef<CallPlace>({
     send: async (identity, signal) => {
       await latest.current.send(identity, { call: signal });
@@ -770,6 +771,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     line: (peer, mine, text) => latest.current.line(callLineMessage(peer, mine, text, 0)),
     name: (peer) => latest.current.name(peer),
     me: async () => latest.current.me(),
+    ipKeep: () => latest.current.ipKeep(),
   });
   const callPlace = hiddenKey ? hiddenCalls.current : spaceCalls;
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
@@ -3344,6 +3346,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   latest.current = {
     me: () => e2e?.endpoint()?.id ?? '',
+    ipKeep: () => ipKeep().keep,
     send: async (identity, extra) => {
       const target = relayTarget();
       if (!target) throw new Error(t('No relay.'));
@@ -3404,7 +3407,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     // Calls never go through Tor: that the call relay sees this phone's internet address is said
     // once for the chat, before (lib/ip-warning.ts). Nearby, the call stays on the same network.
-    if (!near && !(await ipGate({ network: 'Erevos', act: 'call', of: circuitOf(identity) }))) return;
+    if (!near && !(await ipGate(callIpWarning(identity, ipKeep().keep)))) return;
     if (!(await callPermissions(video))) {
       setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
@@ -4232,7 +4235,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // A file on a server the contact chose, fetched without Tor, shows it this phone's internet
     // address: said once for the chat, before (lib/ip-warning.ts). Taken by itself, it never goes straight.
     const exposed = !itself && !!ref.from.url && !isTorChat(peer) && !nostrOwnTor() && !netThroughTor();
-    if (exposed && !(await ipGate({ network: 'Erevos', act: 'file', of: peer.startsWith(CONTACT_PREFIX) ? circuitOf(peer.slice(CONTACT_PREFIX.length)) : peer.slice(0, 64) }))) return;
+    if (exposed && !(await ipGate({ network: 'Erevos', act: 'file', of: peer.startsWith(CONTACT_PREFIX) ? circuitOf(peer.slice(CONTACT_PREFIX.length)) : peer.slice(0, 64), ...ipKeep() }))) return;
     takingNow.current.add(key);
     tried.current.add(key);
     setTaking((now) => ({ ...now, [key]: '0%' }));
@@ -4790,7 +4793,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // chat, that this phone's internet address can be seen, offering Tor for the chat (lib/ip-warning.ts).
   function ipBeforeSend(peer: string): Promise<boolean> {
     if (!peer.startsWith(CONTACT_PREFIX) || isTorChat(peer) || throughTor()) return Promise.resolve(true);
-    return ipGate({ network: 'Erevos', act: 'send', of: circuitOf(peer.slice(CONTACT_PREFIX.length)) }, { label: t('Through Tor for this chat'), run: () => changeTor(peer, true) });
+    return ipGate({ network: 'Erevos', act: 'send', of: circuitOf(peer.slice(CONTACT_PREFIX.length)), ...ipKeep() }, { label: t('Through Tor for this chat'), run: () => changeTor(peer, true) });
+  }
+
+  // Where the hidden chats keep that a warning was said: in their own data, never the space's,
+  // which would name their contacts to the space's password (lib/ip-warning.ts IpKeep).
+  function ipKeep(): { keep?: IpKeep } {
+    return hiddenKey ? { keep: { space: currentSpace().space, pocket, key: hiddenKey } } : {};
   }
 
   // The chat goes only through Tor, on circuits of its own, whatever the space's way (lib/tor-chats.ts).

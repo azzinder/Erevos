@@ -8,6 +8,7 @@ import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
 import { newTag, type Message } from '../lock/history';
 import { t } from './i18n';
+import type { IpKeep } from './ip-warning';
 
 // The call on this phone, whatever screen shows: the chat starts it, and a contact's call rings
 // from the chat or from the receiver beside the other screens (lib/receiver.ts), so it rings
@@ -29,6 +30,8 @@ export type CallPlace = {
   line(peer: string, mine: boolean, text: string, id: string): void;
   /** The contact's name as the chat shows it. */
   name(peer: string): string;
+  /** Where the hidden chats keep that a call's warning was said (lib/ip-warning.ts IpKeep): their own data, not the space's. */
+  ipKeep?(): IpKeep | undefined;
   /** The offer of their call that rang before it came, once it is answered here (lib/xmpp-calls.ts). */
   offer?(identity: string): Promise<string>;
   /** Video added to a voice call, both ways (lib/xmpp-calls.ts, lib/matrix-voip.ts): as Call's

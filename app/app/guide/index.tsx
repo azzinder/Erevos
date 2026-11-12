@@ -4,13 +4,14 @@
 
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Divider } from '../../components/guide';
 import { Card, Input, Page, SectionTitle, Text } from '../../components/ui';
 import { GUIDE_UI, guideFor, guideLang } from '../../guide';
 import { searchGuide, type GuideSection } from '../../lib/guide';
+import { guideShown } from '../../lib/guide-shown';
 import { space, withAlpha } from '../../theme/colors';
 import { useColors } from '../../theme/context';
 
@@ -21,6 +22,7 @@ export default function GuideScreen() {
   const ui = GUIDE_UI[lang];
   const sections = guideFor(lang);
   const [query, setQuery] = useState('');
+  useEffect(() => guideShown(), []);
   const hits = useMemo(() => searchGuide(sections, query), [sections, query]);
   const searching = query.trim().length > 0;
   const open = (id: string) => router.push({ pathname: '/guide/[id]', params: { id } });

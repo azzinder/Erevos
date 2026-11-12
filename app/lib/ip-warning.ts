@@ -8,10 +8,12 @@
 // it is not said again; turning Tor on instead says nothing is kept, so it is said again should
 // Tor be turned off. They are the same for every network of the app: Erevos says them before its
 // chats, calls and files, and any other network says its own, by its name. What asks is
-// components/ip-warning.tsx; what is kept is the space's (SpaceData.ipSeen), each space its own.
+// components/ip-warning.tsx; what is kept is the space's (SpaceData.ipSeen), each space its own,
+// and a hidden place's in its own data (IpKeep), never the space's: what a warning is of names a
+// contact or a group, and the space's password alone opens the space's data.
 
 import { t } from './i18n';
-import { IP_SEEN_MOST, loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { IP_SEEN_MOST, loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData } from '../lock/space-data';
 
 /**
  * What is about to happen that may show this phone's internet address: something sent in a chat
@@ -21,8 +23,29 @@ import { IP_SEEN_MOST, loadCurrentSpaceData, updateCurrentSpaceData } from '../l
  */
 export type IpAct = 'send' | 'call' | 'file' | 'link' | 'preview' | 'join';
 
-/** One warning: the network's name as shown (Erevos, Matrix…), what is about to happen, and what of (a chat, an account, a server), so each is said once. */
-export type IpWarning = { network: string; act: IpAct; of: string };
+/**
+ * Where a warning that was said is kept: in the open space's data when none is given; in a hidden
+ * place's own data, for what is of its chats, groups or accounts; or, for something of a hidden
+ * place that cannot say which (`memory`), only while Erevos runs.
+ */
+export type IpKeep = { space: number; pocket: number; key: Uint8Array } | 'memory';
+
+/**
+ * One warning: the network's name as shown (Erevos, Matrix…), what is about to happen, and what of
+ * (a chat, an account, a server), so each is said once; and, for a hidden place's, where it is kept.
+ * `own`: only this phone's own server of that network (or the service's) sees the address, never
+ * the contact's, as on Matrix, XMPP, Telegram, Signal, Messenger and Session; Erevos's relays
+ * carry what goes to the contact's too.
+ */
+export type IpWarning = { network: string; act: IpAct; of: string; keep?: IpKeep; own?: boolean };
+
+/** Thrown where the owner chose not to go on at a warning: nothing failed, so nothing is said of it. */
+export class IpStop extends Error {
+  constructor() {
+    super('');
+    this.name = 'IpStop';
+  }
+}
 
 /** A way to go on without showing the address, offered with a warning: its button, and what it does. */
 export type IpFix = { label: string; run: () => Promise<unknown> | unknown };
@@ -41,6 +64,7 @@ export function ipWarningText(warning: IpWarning): { title: string; message: str
   const title = t('Your internet address can be seen');
   switch (warning.act) {
     case 'send':
+      if (warning.own) return { title, message: t("On {network}, what you send here can go without Tor. Your {network} server then sees this phone's internet address (IP address), though not what you wrote.", { network }) };
       return { title, message: t("On {network}, what you send here can go without Tor. The servers that carry it, yours and your contact's, can then see this phone's internet address (IP address), though not what you wrote.", { network }) };
     case 'call':
       return { title, message: t("Calls never go through Tor. The call relay that carries the sound and picture, yours or your contact's, sees this phone's internet address (IP address), though not what is said.") };
@@ -55,17 +79,29 @@ export function ipWarningText(warning: IpWarning): { title: string; message: str
   }
 }
 
-/** Whether `warning` was said and gone on from already, in the open space. */
+// Warnings gone on from that are kept in memory only (IpKeep 'memory').
+const seenHere = new Set<string>();
+
+/** Whether `warning` was said and gone on from already: in the open space, or where it is kept. */
 export async function ipSaid(warning: IpWarning): Promise<boolean> {
-  const data = await loadCurrentSpaceData().catch(() => null);
-  return !!data?.ipSeen?.includes(ipKey(warning));
+  const key = ipKey(warning);
+  const { keep } = warning;
+  if (keep === 'memory') return seenHere.has(key);
+  const data = await (keep ? loadHiddenData(keep.space, keep.pocket, keep.key) : loadCurrentSpaceData()).catch(() => null);
+  return !!data?.ipSeen?.includes(key);
 }
 
 /** Keeps that `warning` was said and gone on from, so it is not said again. */
 export async function ipGoneOn(warning: IpWarning): Promise<void> {
   const key = ipKey(warning);
-  const data = await loadCurrentSpaceData();
+  const { keep } = warning;
+  if (keep === 'memory') {
+    seenHere.add(key);
+    return;
+  }
+  const data = await (keep ? loadHiddenData(keep.space, keep.pocket, keep.key) : loadCurrentSpaceData());
   const seen = data.ipSeen ?? [];
   if (seen.includes(key)) return;
-  await updateCurrentSpaceData({ ipSeen: [...seen, key].slice(-IP_SEEN_MOST) });
+  const patch = { ipSeen: [...seen, key].slice(-IP_SEEN_MOST) };
+  await (keep ? updateHiddenData(keep.space, keep.pocket, keep.key, patch) : updateCurrentSpaceData(patch));
 }

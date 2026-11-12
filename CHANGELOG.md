@@ -68,10 +68,13 @@ On main, not released yet:
   opens the new guide section **Who sees your internet address** and, where there is one, a button that fixes it:
   before the first message, voice message or file in an Erevos chat that can go without Tor (**Through Tor for this
   chat** turns that chat's switch on and sends; **Go on** sends and the chat is not warned again); before the first
-  message in an Erevos group that can go without Tor; before a call, which never goes through Tor, unless the contact
-  is nearby on the same network; before fetching a file a contact put on a file server they chose; and in every **Open
-  this link?** question, which now says the site sees the address and that Tor Browser hides it. Before, none of these
-  said so.
+  message, photo, file or voice message in an Erevos group that can go without Tor (**Cancel** keeps the words typed);
+  before a call, which never goes through Tor, unless the contact is nearby on the same network, and under a call that
+  rings through a call relay, answered as it is; before fetching a file a contact put on a file server they chose; and
+  in every **Open this link?** question, which now says the site sees the address and that Tor Browser hides it. After
+  **Guide**, the same question comes back once the guide is closed, and a voice message recorded or a file shared waits
+  for it, not lost. Hidden chats keep what was said with them, never in the space's data. Before, none of these said
+  so.
 - **A Tor switch of their own**: backups to a server, the Collection's server copy, radio and TV lists, link previews
   and updates each have a **Through Tor** switch in their own screen (in a server's card and in the form that adds or
   restores from one, in the Collection's settings, under **Radio and TV lists**, under **Link previews**, in

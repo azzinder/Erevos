@@ -1801,6 +1801,10 @@ Erevos upozorava jednom prije svakog od ovih slučajeva, s naslovom **Vaša IP a
 **Vodič** koje otvara ovaj odjeljak i, gdje može, dugmetom koje to popravlja, poput **Preko Tora za ovaj razgovor**.
 **Nastavi** ide dalje; za razgovor se kaže jednom i ne ponavlja se za taj razgovor.
 
+Nakon vodiča isto pitanje se vraća, a ono što ste slali, poput glasovne poruke ili datoteke, čeka na njega. Poziv
+koji ovdje zvoni to kaže ispod poziva, a javljanje ide dalje. Skriveni razgovori čuvaju ono što je rečeno kod sebe,
+odvojeno od prostora.
+
 Obližnji telefoni, LoRa i SMS ne koriste internet, pa ne pokazuju nikakvu IP adresu.
 
 ## Matrix {#matrix}

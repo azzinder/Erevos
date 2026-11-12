@@ -1970,6 +1970,10 @@ Erevos prévient une fois avant chacun de ces cas, avec le titre **Ton adresse i
 discussion**. **Continuer** poursuit ; pour une discussion, c’est dit une fois, et pas de nouveau pour cette
 discussion.
 
+Après le guide, la même question revient, et ce que tu envoyais, comme un message vocal ou un fichier, l’attend. Un
+appel qui sonne ici le dit sous l’appel, et répondre continue. Les discussions masquées gardent ce qui a été dit avec
+elles, à part de l’espace.
+
 Les téléphones proches, LoRa et les SMS n’utilisent pas internet, donc ils ne montrent aucune adresse internet.
 
 ## Matrix {#matrix}

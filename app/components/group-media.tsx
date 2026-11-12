@@ -21,6 +21,7 @@ import type { GroupMessage } from '../lock/group-data';
 import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, type ComposerTile, type VoiceControl } from './composer';
 import { useGroupsWhere } from './groups-at';
+import { groupIpGate } from './ip-warning';
 import { PhotoSticker } from './stickers';
 import { Text } from './ui';
 
@@ -169,6 +170,8 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   }
 
   async function sendPicked(kind: 'photo' | 'file', get: () => Promise<Picked | null>) {
+    // Said once for the group before anything of it goes, before the photo or file is picked.
+    if (!(await groupIpGate(id, groupsAt.hidden))) return;
     let picked: Picked | null;
     try {
       picked = await get();
@@ -270,6 +273,8 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
         say(t('Hold to record, and let go to send.'));
         return;
       }
+      // Kept while the guide is read, should it be: Cancel lets it go.
+      if (!(await groupIpGate(id, groupsAt.hidden))) return;
       await send('voice', bytesSource(recorded.audio), { name: 'voice', mime: voiceMime(recorded.audio), kind: 'file' }, recorded.ms);
     } catch (error) {
       onError(t('Not sent. {reason}', { reason: errorText(error) }));

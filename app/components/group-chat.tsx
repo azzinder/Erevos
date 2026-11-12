@@ -56,6 +56,7 @@ import type { ChatLook } from '../theme/chat-theme';
 import { ContactPicker, groupableContacts } from './contact-picker';
 import { ChatMedia } from './chat-media';
 import { groupMedia } from '../lib/chat-media';
+import { IpStop } from '../lib/ip-warning';
 
 // A group chat (lib/groups.ts), of the space or of a hidden place (components/groups-at.tsx): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the message bar to write in (components/composer.tsx). Its members sheet,
@@ -340,7 +341,8 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
       await parts.send(text);
     } catch (error) {
       draft.set(text);
-      setNote(error instanceof Error ? error.message : String(error));
+      // Not sent at the owner's own Cancel (components/ip-warning.tsx): the words stay, and nothing is said.
+      if (!(error instanceof IpStop)) setNote(error instanceof Error ? error.message : String(error));
     }
   }
 

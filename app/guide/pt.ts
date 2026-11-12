@@ -1855,6 +1855,10 @@ O Erevos avisa uma vez antes de cada um desses casos, com o título **Seu endere
 botão **Guia** que abre esta seção e, onde pode, um botão que resolve, como **Pelo Tor para esta conversa**.
 **Prosseguir** segue em frente; para uma conversa isso é dito uma vez e não de novo para essa conversa.
 
+Depois do guia, a mesma pergunta volta, e o que você estava enviando, como uma mensagem de voz ou um arquivo, espera
+por ela. Uma chamada que toca aqui diz isso embaixo da chamada, e atender segue em frente. As conversas ocultas
+guardam o que foi dito com elas, separado do espaço.
+
 Celulares próximos, LoRa e SMS não usam a internet, então não mostram endereço de internet.
 
 ## Matrix {#matrix}

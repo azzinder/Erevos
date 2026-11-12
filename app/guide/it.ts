@@ -1881,6 +1881,10 @@ Erevos avvisa una volta prima di ciascuno di questi casi, con il titolo **Il tuo
 visto**, un pulsante **Guida** che apre questa sezione e, dove può, un pulsante che lo risolve, come **Tramite Tor per
 questa chat**. **Vai avanti** prosegue; per una chat viene detto una volta e non di nuovo per quella chat.
 
+Dopo la guida torna la stessa domanda, e quello che stavi inviando, come un messaggio vocale o un file, la aspetta.
+Una chiamata che squilla qui lo dice sotto la chiamata, e rispondere va avanti. Le chat nascoste tengono ciò che è
+stato detto con sé, separato dallo spazio.
+
 I telefoni vicini, LoRa e gli SMS non usano internet, quindi non mostrano nessun indirizzo internet.
 
 ## Matrix {#matrix}
