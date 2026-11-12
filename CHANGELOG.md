@@ -34,6 +34,14 @@ On main, not released yet:
   Nostr never holds a text back. Before, it went to the Nostr relays first, and through your relay only when none took
   it within four seconds; a text that goes through Nostr still goes through your relay again should their phone not
   say it came within five minutes.
+- **One chat only through Tor** (Android): an Erevos chat's **Details** has **Through Tor**, off unless turned on. On,
+  that chat's messages and files go only through Tor, on Tor circuits of their own, whatever the space's Tor way, so
+  the relay does not see the phone's address for it and no Tor exit carries it with another chat; they wait while Tor
+  starts. Calls do not go through Tor. Hidden chats have it too.
+- **Bare web addresses open too**: t.me/name, example.org/page and other names with a known web ending are underlined
+  and tappable in every chat, as Telegram and Signal show them, opened with https:// once shown whole. E-mail
+  addresses and file names (photo.jpg) are not links. Before, only addresses starting with http://, https:// or www.
+  were.
 - **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
   (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
   posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were

@@ -897,8 +897,10 @@ Markierungen.
   geschlossenen Platzes versteckter Chats mit eingeschaltetem **Melden, wenn eine Nachricht kommt** und eines
   geschlossenen Bereichs mit **Auch, wenn ein anderer Bereich offen ist**: Diese fragen das Relay nur, wie viele kamen,
   und es kann eine ohne Ton nicht von einer anderen unterscheiden, da nur die verschlüsselte Nachricht das sagt.
-- **Links:** Eine Webadresse in einer Nachricht ist unterstrichen. Tippe darauf, und Erevos zeigt sie vollständig, um
-  sie im Browser zu öffnen, nur wenn sie dorthin führt, wo du hinwillst. Vorher wird nichts abgerufen.
+- **Links:** Eine Webadresse in einer Nachricht ist unterstrichen, auch eine bloße wie t.me/name oder
+  example.org/page, so wie Telegram und Signal sie zeigen; eine E-Mail-Adresse oder der Name einer Datei (photo.jpg)
+  nicht. Tippe darauf, und Erevos zeigt sie vollständig, um sie im Browser zu öffnen, nur wenn sie dorthin führt, wo
+  du hinwillst. Vorher wird nichts abgerufen.
 - **Aus einer anderen App teilen** (Android): Wähle im **Teilen** einer anderen App, etwa dem des Browsers für eine
   Seite, **Erevos**. Sobald ein Bereich offen ist, listet **Senden an** die Chats, Gruppen und SMS-Unterhaltungen, die
   der Startbildschirm zuletzt zeigte, dann jeden anderen Chat und jede Gruppe und die Chats deiner Konten bei Matrix,
@@ -1824,6 +1826,12 @@ und Sprachnachrichten, die groß sind, direkt und damit schneller gehen.
 
 - **Tor einschalten:** Von **Nichts** auf **Nachrichten** oder **Alles** fragt Erevos zuerst **Tor einschalten?** und
   sagt, dass Nachrichten langsamer werden; **Abbrechen** behält **Nichts**.
+
+- **Ein Chat nur über Tor:** In einem Erevos-Chat schickt **Details** → **Über Tor** die Nachrichten und Dateien
+  dieses Chats nur über Tor, auf eigenen Tor-Verbindungen, egal was dieser Bereich gewählt hat; es ist aus, solange du
+  es nicht einschaltest. Das Relay sieht dann für diesen Chat nicht die IP-Adresse deines Telefons, und kein
+  Tor-Ausgang trägt ihn zusammen mit einem anderen Chat. Es ist langsamer, und was gesendet wird, wartet, während Tor
+  startet. Anrufe gehen nicht über Tor. Versteckte Chats haben es auch, jeder in seinen eigenen **Details**.
 
 - **Was es verbirgt:** Das Relay sieht nicht mehr die IP-Adresse deines Telefons, nur einen Tor-Ausgang (oder nichts,
   bei einem Relay mit \`.onion\`-Adresse). Deine Telefongesellschaft oder das WLAN sieht nur, dass du Tor nutzt, nicht

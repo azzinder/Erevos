@@ -837,8 +837,9 @@ resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a ques
   arriva un messaggio** attivo, e di uno spazio chiuso con **Anche mentre è aperto un altro spazio**: questi chiedono
   al relay solo quanti ne sono arrivati, e il relay non sa distinguere uno senza suono da un altro, perché solo il
   messaggio crittografato lo dice.
-- **Link:** un indirizzo web in un messaggio è sottolineato. Toccalo ed Erevos lo mostra intero, da aprire nel browser
-  solo se è dove vuoi andare. Prima di allora non viene scaricato nulla.
+- **Link:** un indirizzo web in un messaggio è sottolineato, anche uno nudo come t.me/name o example.org/page, come lo
+  mostrano Telegram e Signal; un indirizzo e-mail o il nome di un file (photo.jpg) no. Toccalo ed Erevos lo mostra
+  intero, da aprire nel browser solo se è dove vuoi andare. Prima di allora non viene scaricato nulla.
 - **Condividi da un’altra app** (Android): nel menu **Condividi** di un’altra app, come quello del browser per una
   pagina, scegli **Erevos**. Appena uno spazio è aperto, **Invia a** elenca le chat, i gruppi e le conversazioni SMS
   che la schermata principale ha mostrato per ultimi, poi ogni altra chat e gruppo, e le chat dei tuoi account Matrix,
@@ -1717,6 +1718,12 @@ vocali, che sono grandi, vanno direttamente e quindi più veloci.
 
 - **Attivare Tor:** da **Niente** a **Messaggi** o **Tutto**, Erevos chiede prima **Attivare Tor?** e dice che i
   messaggi saranno più lenti; **Annulla** mantiene **Niente**.
+
+- **Una sola chat tramite Tor:** in una chat di Erevos, **Dettagli** → **Tramite Tor** invia i messaggi e i file di
+  quella chat solo tramite Tor, su circuiti Tor propri, qualunque sia la scelta di questo spazio; è disattivato finché
+  non lo attivi. Il relay allora non vede l’indirizzo IP del tuo telefono per quella chat, e nessuna uscita Tor la
+  porta insieme a un’altra chat. È più lento, e quello che parte aspetta mentre Tor si avvia. Le chiamate non passano
+  tramite Tor. Anche le chat nascoste lo hanno, ciascuna nei propri **Dettagli**.
 
 - **Che cosa nasconde:** il relay non vede più l’indirizzo IP del tuo telefono, solo un’uscita Tor (o niente, per un
   relay con un indirizzo \`.onion\`). Il tuo operatore telefonico o la rete Wi-Fi vedono solo che usi Tor, non quale

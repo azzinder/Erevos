@@ -774,8 +774,9 @@ message stays at **✓**. Public groups have no marks. A computer linked to this
   app, whose notice comes from the browser. So does the notice of a place of hidden chats that is closed, with **Say
   when a message comes** on, and of a closed space with **Also while another space is open**: these only ask the relay
   how many came, and it cannot tell one without sound from another, as only the encrypted message says so.
-- **Links:** a web address in a message is underlined. Tap it and Erevos shows it whole, to open in the browser
-  only if it is where you want to go. Nothing is fetched before that.
+- **Links:** a web address in a message is underlined, also a bare one such as t.me/name or example.org/page, as
+  Telegram and Signal show them; an e-mail address or a file's name (photo.jpg) is not. Tap it and Erevos shows it
+  whole, to open in the browser only if it is where you want to go. Nothing is fetched before that.
 - **Share from another app** (Android): in another app's **Share**, such as the browser's for a page, pick
   **Erevos**. Once a space is open, **Send to** lists the chats, groups and SMS conversations the home screen showed
   last, then every other chat and group, and the chats of your Matrix, XMPP and Nostr accounts, with a search; never
@@ -1567,6 +1568,12 @@ are large, go straight and so faster.
 
 - **Turning Tor on:** from **Nothing** to **Messages** or **Everything**, Erevos first asks **Turn Tor on?** and says
   that messages get slower; **Cancel** keeps **Nothing**.
+
+- **One chat only through Tor:** in an Erevos chat, **Details** → **Through Tor** sends that chat's messages and files
+  only through Tor, on Tor circuits of its own, whatever this space's choice; it is off unless you turn it on. The
+  relay then does not see your phone's IP address for that chat, and no Tor exit carries it together with another
+  chat. It is slower, and what goes waits while Tor starts. Calls do not go through Tor. Hidden chats have it too,
+  each in its own **Details**.
 
 - **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
   with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.

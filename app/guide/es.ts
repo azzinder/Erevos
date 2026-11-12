@@ -836,8 +836,10 @@ marcas. Un ordenador vinculado a este teléfono muestra las mismas marcas.
   llega un mensaje** activado, y el de un espacio cerrado con **También mientras otro espacio está abierto**: estos
   solo preguntan al relay cuántos llegaron, y el relay no puede distinguir uno sin sonido de otro, ya que solo lo dice
   el mensaje cifrado.
-- **Enlaces:** una dirección web en un mensaje aparece subrayada. Tócala y Erevos la muestra entera, para abrirla en el
-  navegador solo si es adonde quieres ir. Antes de eso no se descarga nada.
+- **Enlaces:** una dirección web en un mensaje aparece subrayada, también una sin más, como t.me/name o
+  example.org/page, tal como la muestran Telegram y Signal; una dirección de correo o el nombre de un archivo
+  (photo.jpg) no. Tócala y Erevos la muestra entera, para abrirla en el navegador solo si es adonde quieres ir. Antes
+  de eso no se descarga nada.
 - **Compartir desde otra app** (Android): en **Compartir** de otra app, como el del navegador para una página, elige
   **Erevos**. En cuanto hay un espacio abierto, **Enviar a** lista los chats, grupos y conversaciones SMS que mostró por
   última vez la pantalla de inicio, luego todos los demás chats y grupos, y los chats de tus cuentas de Matrix, XMPP y
@@ -1708,6 +1710,12 @@ imágenes, los archivos y los mensajes de voz, que son grandes, van directos y p
 
 - **Activar Tor:** de **Nada** a **Mensajes** o **Todo**, Erevos pregunta antes **¿Activar Tor?** y dice que los
   mensajes irán más lentos; **Cancelar** mantiene **Nada**.
+
+- **Un solo chat por Tor:** en un chat de Erevos, **Detalles** → **Por Tor** envía los mensajes y archivos de ese chat
+  solo por Tor, por circuitos de Tor propios, sea cual sea la elección de este espacio; está desactivado salvo que lo
+  actives. El relay entonces no ve la dirección IP de tu teléfono para ese chat, y ninguna salida de Tor lo lleva
+  junto con otro chat. Es más lento, y lo que sale espera mientras Tor arranca. Las llamadas no van por Tor. Los chats
+  ocultos también lo tienen, cada uno en sus propios **Detalles**.
 
 - **Lo que oculta:** el relay ya no ve la dirección IP de tu teléfono, solo una salida de Tor (o nada, para un relay con
   una dirección \`.onion\`). Tu compañía telefónica o la Wi-Fi solo ven que usas Tor, no qué relay.

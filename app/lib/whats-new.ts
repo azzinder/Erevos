@@ -35,6 +35,8 @@ export const NEXT: Changes = {
     mark("**Choose where a call's sound goes**: with a Bluetooth or wired headset connected, **Speaker** in a call becomes **Audio output**, to choose the phone, the speaker or the headset, a Bluetooth one by its own name. A headset connected as a call starts, or during it, takes the sound, as in a phone call. On Android. See [Chat through a relay](#relay)."),
     mark("**Nothing goes through Tor unless you turn it on**: on Android, **Automatically from your relay** under **Home relay** is now off in a new space, so a space no longer takes its relay's paired relay as a home relay through Tor by itself; turn it on there if you want it. Turning it off now also lets go of the home relay it took, so Tor does not run for it. See [Home relay](#home-relay)."),
     mark("**Your relays first, Nostr only after them**: a text to a contact who reads on Nostr now goes through your relay, then their home relays, then your home relay, and through the public Nostr relays only when none of them took it. Before, it went to the Nostr relays first and through your relay only when they were slow or did not take it. See [Through Nostr](#nostr)."),
+    mark("**One chat only through Tor**: on Android, **Through Tor** in an Erevos chat's **Details** sends that chat's messages and files only through Tor, on circuits of its own, whatever the space's Tor setting. It is off unless you turn it on, and calls do not go through Tor. See [Through Tor](#tor)."),
+    mark("**Bare web addresses open too**: t.me/name, example.org/page and the like are now tappable in every chat, as in Telegram and Signal, and show whole before they open; e-mail addresses and file names are not. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };

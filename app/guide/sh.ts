@@ -815,8 +815,9 @@ ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom 
   web-aplikacija, čija obavijest dolazi iz preglednika. Isto tako i obavijest zatvorenog mjesta skrivenih razgovora s
   uključenim **Javi kad stigne poruka**, i zatvorenog prostora s **I dok je otvoren drugi prostor**: oni relay pitaju
   samo koliko ih je stiglo, a on ne može razlikovati poruku bez zvuka od druge, jer to kaže samo šifrirana poruka.
-- **Linkovi:** web adresa u poruci je podvučena. Dodirnite je i Erevos je prikazuje cijelu, da je otvorite u
-  pregledniku samo ako je to mjesto na koje želite ići. Prije toga se ništa ne preuzima.
+- **Linkovi:** web adresa u poruci je podvučena, i gola adresa poput t.me/name ili example.org/page, kako ih prikazuju
+  Telegram i Signal; e-mail adresa ili ime datoteke (photo.jpg) nije. Dodirnite je i Erevos je prikazuje cijelu, da je
+  otvorite u pregledniku samo ako je to mjesto na koje želite ići. Prije toga se ništa ne preuzima.
 - **Dijeljenje iz druge aplikacije** (Android): u opciji **Dijeli** druge aplikacije, kao u pregledniku za stranicu,
   izaberite **Erevos**. Kad je prostor otvoren, **Pošalji u** navodi razgovore, grupe i SMS razgovore koje je početni
   ekran posljednje prikazao, zatim sve ostale razgovore i grupe, i razgovore vaših naloga na Matrixu, XMPP-u i
@@ -1641,6 +1642,12 @@ idu direktno, pa time i brže.
 
 - **Uključivanje Tora:** s **Ništa** na **Poruke** ili **Sve**, Erevos prvo pita **Uključiti Tor?** i kaže da će poruke
   biti sporije; **Otkaži** zadržava **Ništa**.
+
+- **Jedan razgovor samo preko Tora:** u Erevos razgovoru, **Detalji** → **Preko Tora** šalje poruke i datoteke tog
+  razgovora samo preko Tora, vlastitim Tor krugovima, bez obzira na izbor ovog prostora; isključeno je dok ga ne
+  uključite. Relay tada za taj razgovor ne vidi IP adresu vašeg telefona, i nijedan Tor izlaz ga ne nosi zajedno s
+  drugim razgovorom. Sporije je, a ono što ide čeka dok se Tor pokreće. Pozivi ne idu preko Tora. Skriveni razgovori
+  ga također imaju, svaki u svojim **Detaljima**.
 
 - **Šta skriva:** relay više ne vidi IP adresu vašeg telefona, samo izlaz iz Tora (ili ništa, za relay s
   \`.onion\` adresom). Vaša telefonska kompanija ili Wi-Fi mreža vide samo da koristite Tor, ali ne i koji relay.

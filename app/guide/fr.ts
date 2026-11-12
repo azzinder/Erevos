@@ -888,8 +888,10 @@ dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous 
   avec **Prévenir quand un message arrive** activé, et d’un espace fermé avec **Aussi quand un autre espace est
   ouvert** : celles-ci demandent seulement au relais combien sont arrivés, et il ne peut pas distinguer un message sans
   son d’un autre, car seul le message chiffré le dit.
-- **Liens :** une adresse web dans un message est soulignée. Appuie dessus et Erevos la montre en entier, pour l’ouvrir
-  dans le navigateur seulement si c’est là que tu veux aller. Rien n’est chargé avant cela.
+- **Liens :** une adresse web dans un message est soulignée, même une adresse nue comme t.me/name ou example.org/page,
+  comme Telegram et Signal les montrent ; une adresse e-mail ou le nom d’un fichier (photo.jpg) ne l’est pas. Appuie
+  dessus et Erevos la montre en entier, pour l’ouvrir dans le navigateur seulement si c’est là que tu veux aller. Rien
+  n’est chargé avant cela.
 - **Partager depuis une autre app** (Android) : dans **Partager** d’une autre app, comme celui du navigateur pour une
   page, choisis **Erevos**. Dès qu’un espace est ouvert, **Envoyer à** liste les discussions, groupes et conversations
   SMS que l’écran d’accueil a montrés en dernier, puis toutes les autres discussions et tous les autres groupes, et les
@@ -1799,6 +1801,13 @@ messages vocaux, qui sont gros, passent en direct et donc plus vite.
 
 - **Activer Tor :** de **Rien** à **Messages** ou **Tout**, Erevos demande d’abord **Activer Tor ?** et dit que les
   messages seront plus lents ; **Annuler** garde **Rien**.
+
+- **Une seule discussion par Tor :** dans une discussion Erevos, **Détails** → **Par Tor** envoie les messages et
+  fichiers de cette discussion uniquement par Tor, sur des circuits Tor à elle, quel que soit le choix de cet espace ;
+  c’est désactivé tant que tu ne l’actives pas. Le relais ne voit alors pas l’adresse IP de ton téléphone pour cette
+  discussion, et aucune sortie Tor ne la porte avec une autre discussion. C’est plus lent, et ce qui part attend
+  pendant le démarrage de Tor. Les appels ne passent pas par Tor. Les discussions cachées l’ont aussi, chacune dans
+  ses propres **Détails**.
 
 - **Ce qu’il cache :** le relais ne voit plus l’adresse IP de ton téléphone, seulement une sortie Tor (ou rien, pour un
   relais avec une adresse \`.onion\`). Ton opérateur téléphonique ou le Wi-Fi voit seulement que tu utilises Tor, pas
