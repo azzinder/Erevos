@@ -41,7 +41,7 @@ import { xmppHistory } from '../lib/chat-history-adapters';
 import type { Place } from '../lib/chat-parts';
 import { heldIn } from '../lib/chat-writing';
 import { pinOf, shotsBlocked } from '../lib/chat-protect';
-import { firstLink, fitPreview } from '../lib/link-preview';
+import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { geoUri, placeOfGeo } from '../lib/matrix-parts';
 import { throughTor } from '../lib/relay';
@@ -251,11 +251,18 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // How photos go, and whose contacts a contact card is chosen from (components/network-carry.tsx).
   const photos = usePhotoQuality();
   const among = useNetworkAmong(where);
-  // Whether this phone makes the preview of a link it sends (the space's setting).
+  // Whether this phone makes the preview of a link it sends, and whether only through Tor (the space's settings).
   const [previews, setPreviews] = useState(false);
+  const [previewsTor, setPreviewsTor] = useState(false);
   useEffect(() => {
     if (where !== 'space') return;
-    loadCurrentSpaceData().then((data) => setPreviews(data.previews), () => setPreviews(false));
+    loadCurrentSpaceData().then(
+      (data) => {
+        setPreviews(data.previews);
+        setPreviewsTor(data.previewsTor === true);
+      },
+      () => setPreviews(false),
+    );
   }, [where]);
 
   useEffect(() => onGroupCallChange(() => setCalls((n) => n + 1)), []);
@@ -352,12 +359,14 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
 
   // The preview of the first link in words typed: only in a chat without encryption (the preview
-  // would tell the servers what the link is), when this phone makes them, never through Tor.
+  // would tell the servers what the link is), when this phone makes them; only through Tor with
+  // their own Tor switch on, else never while the space sends everything through Tor.
   async function previewOf(text: string) {
-    const link = previews && where === 'space' && CAN_PREVIEW && !throughTor() && chat && plainIn(chat) ? firstLink(text) : null;
+    const way = where === 'space' && CAN_PREVIEW && chat && plainIn(chat) ? previewWay(previews, previewsTor, throughTor()) : 'none';
+    const link = way !== 'none' ? firstLink(text) : null;
     if (!link) return null;
     setNote(t('Making the link’s preview…'));
-    const made = await makePreview(link);
+    const made = await makePreview(link, way === 'tor');
     setNote('');
     return made ? fitPreview(text, made) : null;
   }

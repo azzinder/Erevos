@@ -371,8 +371,10 @@ async function tell(from: Chat, identity: string, to: Chat) {
 }
 
 t("the Nostr setting is on unless changed, with the first three relays, whatever the Tor way, and reads nowhere in a build without Nostr", async () => {
-  assert.deepEqual(NOSTR_DEFAULT, { on: true, relays: NOSTR_RELAYS });
+  assert.deepEqual(NOSTR_DEFAULT, { on: true, relays: NOSTR_RELAYS }, "Nostr's own Tor switch is off unless turned on");
   assert.equal(NOSTR_RELAYS.length, 3);
+  assert.deepEqual(checkedNostr({ on: true, relays: [ONE], tor: true }), { on: true, relays: [ONE], tor: true });
+  assert.deepEqual(checkedNostr({ on: true, relays: [ONE], tor: 'yes' }), { on: true, relays: [ONE] });
   assert.deepEqual(checkedNostr(undefined), NOSTR_DEFAULT);
   assert.deepEqual(checkedNostr({ on: false, relays: [ONE, 'https://not.a.relay', ONE, 'ws://plain.example.org', 'ws://x.onion'] }), { on: false, relays: [ONE] });
   const onion = `ws://${'a'.repeat(56)}.onion`;
@@ -883,6 +885,69 @@ t("with Tor off, the space's texts go to the Nostr relays and are read there str
     assert.equal(open(false), 0);
   } finally {
     stop();
+  }
+});
+
+t("with Tor off, a chat that goes only through Tor sends through Tor alone, its key is read through Tor alone, the others straight; Nostr's own switch takes all of it through Tor", async () => {
+  setThroughTor('off');
+  setNostrOpen(relays.opener());
+  setNostr([ONE]);
+  const bob = await chat('space', 1);
+  const alice = await chat('space', 0);
+  const bobsLink = (await bob.e2e.linkNostr())!;
+  const code = parseContact(contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(bob.e2e.bundle), nostr: bobsLink }))!;
+  const { identity: toBob } = await alice.e2e.addContact(code, '');
+  const came: string[] = [];
+  const stop = readNostr(
+    nostrReaderOf(
+      () => bob.e2e,
+      async (packet) => {
+        const received = await bob.e2e.receive(packet);
+        if (received.kind === 'message') came.push(received.text);
+      },
+    ),
+  );
+  try {
+    await until(() => relays.straight === 1);
+    // Alice's chat with Bob goes only through Tor: what she sends there never goes straight.
+    await alice.e2e.setTor(toBob, true);
+    assert.equal(nostrReady(alice.e2e.torChat(toBob)), true);
+    const sealed = await alice.e2e.seal(toBob, 'only through Tor', '', {});
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, sealed, [sealed.packet])!(), 'nostr');
+    await until(() => came.includes('only through Tor'));
+    assert.equal(relays.straight, 1, "only Bob's reading went straight");
+    assert.ok(relays.throughTor >= 1, "Alice's text went through Tor");
+  } finally {
+    stop();
+  }
+
+  // What is read: the keys of chats that go only through Tor on connections through Tor, the others straight.
+  const keys = [
+    { s: toHex(randomBytes(32)), p: 'a'.repeat(64) },
+    { s: toHex(randomBytes(32)), p: 'b'.repeat(64) },
+  ];
+  const tor = new Set<string>();
+  const reading = readNostr({ keys: () => keys, tor: () => tor, since: () => 0, caught: () => undefined, take: async () => undefined });
+  const asked = (straight: boolean) =>
+    [...relays.lines.entries()]
+      .filter(([id, line]) => !line.closed && relays.straightIds.has(id) === straight)
+      .flatMap(([, line]) => [...line.subs.values()].flat().flatMap((filter) => filter['#p'] ?? []))
+      .sort()
+      .join();
+  try {
+    await until(() => asked(true) === `${keys[0].p},${keys[1].p}`);
+    tor.add(keys[1].p);
+    nostrKeysChanged();
+    await until(() => asked(true) === keys[0].p && asked(false) === keys[1].p);
+    // Nostr's own switch on: all through Tor, none straight, with the space's Tor way Nothing.
+    setNostr([ONE], true);
+    assert.equal(nostrReady(), true);
+    await until(() => asked(true) === '' && asked(false) === `${keys[0].p},${keys[1].p}`);
+    // Off again: the chat's key still through Tor alone.
+    setNostr([ONE], false);
+    await until(() => asked(true) === keys[0].p && asked(false) === keys[1].p);
+  } finally {
+    reading();
   }
 });
 

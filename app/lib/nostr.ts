@@ -14,7 +14,12 @@
 // Nothing, the default, its connections go straight over WebSocket, and the relays see this
 // phone's internet address; with another way they go through Tor, and texts go there only while
 // Tor is ready (lib/relay.ts torFor), as messages never wait for it. As the way changes, the
-// connections opened the way before close and open again the new way.
+// connections opened the way before close and open again the new way. Nostr's own switch
+// (NostrSetting.tor, off unless turned on) takes all of it through Tor with the way Nothing too,
+// starting Tor and waiting for it: never less Tor than the space's way. A chat that goes only
+// through Tor (lib/e2e.ts Contact.tor) goes through it whatever either says, never straight: what
+// it sends, on connections of its own while Nostr would go straight, which start Tor and wait for
+// it, and what is read for its key, on readings of their own then (`Way` 'tor').
 //
 // Sending (publishNostr): the wrap to each of the contact's relays, one connection to each, done
 // once one of them took it. A connection that only sent closes after a minute.
@@ -33,7 +38,7 @@ import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
 import { isPiece, keepPiece, type PiecePlace } from './nostr-pieces';
 import { openNostrStraight, type NostrLink } from './nostr-dm-net';
-import { onTorReady, onTorWay, relayStopped, torFor, torOff } from './relay';
+import { onTorReady, onTorWay, relayStopped, torFor, torForChat, torOff } from './relay';
 import { stayAwakeWhen } from './sleep-look';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
@@ -171,13 +176,24 @@ export function nostrOf(setting: NostrSetting): string[] | null {
 }
 
 let relays: string[] | null = null;
+// Nostr's own Tor switch (NostrSetting.tor).
+let ownTor = false;
 
-/** Reads on these relays from now on, and says so to contacts (lib/e2e.ts), or on none: then the connections that send close too. */
-export function setNostr(next: string[] | null): void {
+/**
+ * Reads on these relays from now on, and says so to contacts (lib/e2e.ts), or on none: then the
+ * connections that send close too. `tor`: Nostr's own Tor switch, through Tor whatever the space's way.
+ */
+export function setNostr(next: string[] | null, tor = false): void {
   // A stopped space (lib/forget-me.ts) reads and sends nowhere.
   const list = next && canNostr() && !relayStopped() ? [...new Set(next.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) : [];
   const now = list.length > 0 ? list : null;
   if (!now) closeSenders();
+  // As with another Tor way: what was opened the way before closes and opens again the new way.
+  if (tor !== ownTor) {
+    ownTor = tor;
+    closeSenders();
+    for (const reading of readings.values()) reading.reopen();
+  }
   if (now?.join(' ') === relays?.join(' ')) return;
   relays = now;
   readAgain();
@@ -188,15 +204,30 @@ export function nostrRelays(): string[] | null {
   return relays;
 }
 
-// Whether Nostr is reached now: straight with the Tor way Nothing, else through Tor while it is
-// ready, as messages never wait for it.
-function nostrNow(): boolean {
-  return torOff() || torFor(false);
+/** Whether Nostr's own Tor switch is on (NostrSetting.tor): its files go through Tor too (lib/nostr-send-files.ts). */
+export function nostrOwnTor(): boolean {
+  return ownTor;
 }
 
-/** Whether a text can go through Nostr now: the space reads there, straight with Tor off, or through Tor while it is ready. */
-export function nostrReady(): boolean {
-  return relays !== null && nostrNow();
+// Whether Nostr goes straight now: the space's Tor way Nothing, and its own switch off.
+function nostrStraight(): boolean {
+  return torOff() && !ownTor;
+}
+
+// Whether Nostr is reached now: straight, or through Tor by its own switch, which waits for Tor,
+// or by the space's way while Tor is ready, as messages never wait for it then.
+function nostrNow(): boolean {
+  return nostrStraight() || ownTor || torFor(false);
+}
+
+/**
+ * Whether a text can go through Nostr now: the space reads there, straight with Tor off, through Tor
+ * by Nostr's own switch, or by the space's way while Tor is ready. `torChat`, for a chat that goes
+ * only through Tor: whenever the space reads there, as its texts go through Tor whatever either
+ * says, and wait for it.
+ */
+export function nostrReady(torChat = false): boolean {
+  return relays !== null && (torChat || nostrNow());
 }
 
 // A number as 8 bytes, big-endian, as the core takes times and waits.
@@ -212,7 +243,8 @@ function be8(n: number): Uint8Array {
 const seconds = () => Math.floor(Date.now() / 1000);
 
 // One connection to a Nostr relay: through Tor (crates/erevos-tor text_open), or straight over
-// WebSocket when the space's Tor way is Nothing (lib/nostr-dm-net.ts). JSON both ways.
+// WebSocket while Nostr goes straight (the space's Tor way Nothing, and its own switch off), unless
+// it is for a chat that goes only through Tor (`tor`). JSON both ways.
 class Line {
   /** Whether it went straight, without Tor: it no longer goes the space's way once that changes. */
   readonly straight: boolean;
@@ -225,14 +257,16 @@ class Line {
     this.straight = link !== null;
   }
 
-  static async open(url: string): Promise<Line> {
-    if (torOff()) return new Line(null, await openNostrStraight(url));
+  static async open(url: string, tor = false): Promise<Line> {
+    if (nostrStraight() && !tor) return new Line(null, await openNostrStraight(url));
+    // Through Tor with the space's way Nothing: Tor started for it, and waited for.
+    if (torOff()) await torForChat();
     return new Line(await nostrCore().torTextOpen(url), null);
   }
 
-  /** Whether it goes the way the space's Tor way says now. */
+  /** Whether it goes the way Nostr goes now. */
   goesTheWay(): boolean {
-    return this.straight === torOff();
+    return this.straight === nostrStraight();
   }
 
   async send(frame: string): Promise<void> {
@@ -272,15 +306,18 @@ class Line {
 type Sender = { line: Promise<Line>; turn: Promise<unknown>; idle: ReturnType<typeof setTimeout> | null };
 const senders = new Map<string, Sender>();
 
-function senderFor(url: string): Sender {
-  const known = senders.get(url);
+// The connection that sends to `url`, the way Nostr goes now, or, for a chat that goes only through
+// Tor (`tor`) while Nostr goes straight, one of its own through Tor: those of the way before closed
+// as it changed.
+function senderFor(url: string, tor: boolean): Sender {
+  const key = tor && nostrStraight() ? `tor ${url}` : url;
+  const known = senders.get(key);
   if (known) return known;
-  // Opened the way the space's Tor way says now: those of the way before closed as it changed.
-  const sender: Sender = { line: Line.open(url), turn: Promise.resolve(), idle: null };
+  const sender: Sender = { line: Line.open(url, tor), turn: Promise.resolve(), idle: null };
   sender.line.catch(() => {
-    if (senders.get(url) === sender) senders.delete(url);
+    if (senders.get(key) === sender) senders.delete(key);
   });
-  senders.set(url, sender);
+  senders.set(key, sender);
   return sender;
 }
 
@@ -299,8 +336,10 @@ function closeSenders(): void {
 
 // Gives one relay the wrap `event` (its id `id`) and waits until it says it took it: also when it
 // says it has it already. Throws when it refused it, or said nothing in time; that connection goes.
-function sendOn(url: string, event: string, id: string): Promise<void> {
-  const sender = senderFor(url);
+// `tor`: through Tor only, for a chat that goes only through it.
+function sendOn(url: string, event: string, id: string, tor: boolean): Promise<void> {
+  const sender = senderFor(url, tor);
+  const key = tor && nostrStraight() ? `tor ${url}` : url;
   const run = sender.turn.then(async () => {
     if (sender.idle) clearTimeout(sender.idle);
     sender.idle = null;
@@ -309,6 +348,8 @@ function sendOn(url: string, event: string, id: string): Promise<void> {
     let sent = 0;
     try {
       line = await sender.line;
+      // Never straight for a chat that goes only through Tor, should the way have changed meanwhile.
+      if (tor && line.straight) throw new Error(t('Tor is not ready.'));
       await line.send(`["EVENT",${event}]`);
       sent = Date.now();
       const until = sent + ANSWER_WAIT;
@@ -321,17 +362,17 @@ function sendOn(url: string, event: string, id: string): Promise<void> {
         throw new Error(typeof answer[3] === 'string' && answer[3] ? t('It refused it: "{reason}"', { reason: answer[3].slice(0, 200) }) : t('It refused it.'));
       }
     } catch (error) {
-      if (senders.get(url) === sender) senders.delete(url);
+      if (senders.get(key) === sender) senders.delete(key);
       line?.close();
       said(url, { sent: { at: Date.now(), took: false, ms: Date.now() - began, why: sent ? whyOf(error) : t('Not reached: {reason}', { reason: whyOf(error) }) } });
       throw error;
     }
     said(url, { sent: { at: Date.now(), took: true, ms: Date.now() - sent } });
-    if (senders.get(url) !== sender) return;
+    if (senders.get(key) !== sender) return;
     const done = line;
     sender.idle = setTimeout(() => {
-      if (senders.get(url) !== sender) return;
-      senders.delete(url);
+      if (senders.get(key) !== sender) return;
+      senders.delete(key);
       done.close();
     }, IDLE_CLOSE);
   });
@@ -356,22 +397,27 @@ function firstOf(tries: Promise<void>[]): Promise<void> {
 /**
  * Sends `bytes` to a contact's Nostr key (`k`, hex) on its relays (`r`), the space's way, wrapped for
  * that key alone: done once one relay took it, the others still trying. Throws when none did.
+ * `torChat`: for a chat that goes only through Tor, through Tor whatever the space's way.
  */
-export async function publishNostr(to: { k: string; r: string[] }, bytes: Uint8Array): Promise<void> {
+export async function publishNostr(to: { k: string; r: string[] }, bytes: Uint8Array, torChat = false): Promise<void> {
   if (bytes.length > NOSTR_MOST) throw new Error('too large');
   const event = await nostrCore().nostrWrap(fromHex(to.k), bytes, be8(seconds()));
   const { id } = JSON.parse(event) as { id: string };
-  await firstOf(to.r.filter(isNostrRelay).map((url) => sendOn(url, event, id)));
+  await firstOf(to.r.filter(isNostrRelay).map((url) => sendOn(url, event, id, torChat)));
 }
 
 /**
  * What reads on Nostr: a chat's keys, until when it read (seconds, 0 for never), told when it read
  * until a time, and what to do with what came for one of its keys (a packet, as from the relay),
  * and where the place it reads for keeps pieces of photos (lib/nostr-pieces.ts): none, while it
- * cannot say, holds them in memory.
+ * cannot say, holds them in memory. While Nostr goes straight (the space's Tor way Nothing, and
+ * Nostr's own switch off), the keys of chats that go only through Tor (`tor`) are read on
+ * connections of their own, through Tor, never straight.
  */
 export type NostrReader = {
   keys(): NostrKey[];
+  /** The public keys (hex) of `keys` that are of chats that go only through Tor: read through Tor alone. */
+  tor?(): ReadonlySet<string>;
   since(): number;
   caught(at: number): void;
   take(bytes: Uint8Array): Promise<void>;
@@ -379,13 +425,43 @@ export type NostrReader = {
 };
 
 const readers = new Set<NostrReader>();
+// By relay, `tor ` before it for a reading through Tor of the keys of chats that go only through it.
 const readings = new Map<string, Reading>();
+
+// The ways a relay is read: the space's, and, while Nostr goes straight, through Tor for the keys of
+// chats that go only through it.
+type Way = 'space' | 'tor';
+const WAYS: readonly Way[] = ['space', 'tor'];
+
+// The keys of `reader` read on `way`: while Nostr goes straight, those of chats that go only through
+// Tor on the way 'tor' alone, the others on the space's; else all on the space's, through Tor then.
+function keysOn(reader: NostrReader, way: Way): string[] {
+  const keys = [...new Set(reader.keys().map((key) => key.p))];
+  if (!nostrStraight()) return way === 'space' ? keys : [];
+  const tor = reader.tor?.() ?? new Set<string>();
+  return keys.filter((p) => tor.has(p) === (way === 'tor'));
+}
+
+// Whether `way` reads now: the space's as nostrNow says, the one through Tor while Nostr goes straight.
+const wayNow = (way: Way): boolean => (way === 'tor' ? nostrStraight() : nostrNow());
+
+// Until when each reader read on each way (seconds): it is told the earlier, once each way it reads
+// on said, so what came while one of them could not read is asked for again there.
+const caughtOf = new Map<NostrReader, Partial<Record<Way, number>>>();
+
+function caughtOn(reader: NostrReader, way: Way, at: number): void {
+  const ways = { ...caughtOf.get(reader), [way]: at };
+  caughtOf.set(reader, ways);
+  const ats = WAYS.filter((one) => keysOn(reader, one).length > 0).map((one) => ways[one]);
+  if (ats.length === 0 || ats.some((one) => one === undefined)) return;
+  reader.caught(Math.min(...(ats as number[])));
+}
 // The wraps taken this run, by id, as each comes from every relay it went to.
 const seen = new Set<string>();
 
 // The look of the battery mode Sleep (lib/sleep-look.ts) cannot tell when Nostr's relays have said
 // all they have: while something is read there, the phone stays awake as long as the alarm holds it.
-stayAwakeWhen(() => readers.size > 0 && relays !== null && nostrNow() && wanted().of.length > 0);
+stayAwakeWhen(() => readers.size > 0 && relays !== null && WAYS.some((way) => wayNow(way) && wanted(way).of.length > 0));
 
 /** Reads for `reader` on the space's relays until the function it gives is called. */
 export function readNostr(reader: NostrReader): () => void {
@@ -393,6 +469,7 @@ export function readNostr(reader: NostrReader): () => void {
   readAgain();
   return () => {
     readers.delete(reader);
+    caughtOf.delete(reader);
     readAgain();
   };
 }
@@ -417,23 +494,28 @@ onTorWay(() => {
 // A connection to each relay while something reads, none to others.
 function readAgain(): void {
   const wanted = relays && readers.size > 0 ? relays : [];
-  for (const [url, reading] of readings) {
-    if (wanted.includes(url)) continue;
+  for (const [key, reading] of readings) {
+    if (wanted.includes(reading.url)) continue;
     reading.stop();
-    readings.delete(url);
+    readings.delete(key);
   }
-  for (const url of wanted) if (!readings.has(url)) readings.set(url, new Reading(url));
+  for (const url of wanted) {
+    for (const way of WAYS) {
+      const key = way === 'tor' ? `tor ${url}` : url;
+      if (!readings.has(key)) readings.set(key, new Reading(url, way));
+    }
+  }
   nostrKeysChanged();
 }
 
-// What to ask a relay for: a filter for each reader with keys, from before when it last read.
-function wanted(): { says: string; filters: object[]; of: NostrReader[] } {
+// What to ask a relay for on `way`: a filter for each reader with keys read there, from before when it last read.
+function wanted(way: Way): { says: string; filters: object[]; of: NostrReader[] } {
   const now = seconds();
   const filters: object[] = [];
   const of: NostrReader[] = [];
   const says: string[] = [];
   for (const reader of readers) {
-    const keys = [...new Set(reader.keys().map((key) => key.p))].sort();
+    const keys = keysOn(reader, way).sort();
     if (keys.length === 0) continue;
     const read = reader.since();
     const since = read > 0 ? Math.max(0, read - BACKDATE - SLACK) : now - LIFETIME - BACKDATE;
@@ -487,11 +569,24 @@ class Reading {
   // Whether the open connection was closed to open again the space's new Tor way (reopen).
   private reopening = false;
 
-  private readonly url: string;
+  readonly url: string;
+  private readonly way: Way;
 
-  constructor(url: string) {
+  constructor(url: string, way: Way) {
     this.url = url;
+    this.way = way;
     void this.run();
+  }
+
+  // What the space's reading says of the relay, for its screen; the one through Tor for chats that
+  // go only through it says nothing there, as it reads beside it.
+  private say(change: NostrRelayState): void {
+    if (this.way === 'space') said(this.url, change);
+  }
+
+  // Whether the connection goes as this reading should: the space's way, or through Tor.
+  private fits(line: Line): boolean {
+    return this.way === 'tor' ? !line.straight : line.goesTheWay();
   }
 
   stop(): void {
@@ -536,20 +631,20 @@ class Reading {
 
   private async run(): Promise<void> {
     while (!this.stopped) {
-      if (!nostrNow() || wanted().of.length === 0) {
+      if (!wayNow(this.way) || wanted(this.way).of.length === 0) {
         await this.sleep(IDLE_LOOK);
         continue;
       }
       let ended = false;
       try {
-        this.line = await Line.open(this.url);
+        this.line = await Line.open(this.url, this.way === 'tor');
         if (this.stopped) break;
-        said(this.url, { read: { at: Date.now(), reading: true } });
+        this.say({ read: { at: Date.now(), reading: true } });
         ended = await this.read(this.line);
         this.wait = RETRY;
       } catch (error) {
         if (!this.reopening) {
-          said(this.url, { read: { at: Date.now(), reading: false, why: whyOf(error) } });
+          this.say({ read: { at: Date.now(), reading: false, why: whyOf(error) } });
           ended = true;
         }
       }
@@ -572,7 +667,7 @@ class Reading {
   private ask(): Promise<void> {
     const run = this.turn.then(async () => {
       const asking = this.asking;
-      const now = wanted();
+      const now = wanted(this.way);
       if (!asking || now.of.length === 0 || now.says === asking.says) return;
       const before = asking.sub;
       Object.assign(asking, { sub: toHex(randomBytes(8)), says: now.says, at: seconds(), of: now.of, live: false });
@@ -591,13 +686,13 @@ class Reading {
     this.asking = asking;
     try {
       for (;;) {
-        if (this.stopped || wanted().of.length === 0 || !nostrNow() || !line.goesTheWay()) return false;
+        if (this.stopped || wanted(this.way).of.length === 0 || !wayNow(this.way) || !this.fits(line)) return false;
         await this.ask();
         const said = await line.next(FRAME_WAIT);
         if (!said) {
           if (asking.live && seconds() - asking.caught >= CAUGHT_EVERY) {
             asking.caught = seconds() - 60;
-            for (const reader of asking.of) reader.caught(asking.caught);
+            for (const reader of asking.of) caughtOn(reader, this.way, asking.caught);
           }
           continue;
         }
@@ -607,7 +702,7 @@ class Reading {
         else if (said[0] === 'EOSE') {
           asking.live = true;
           asking.caught = asking.at;
-          for (const reader of asking.of) reader.caught(asking.at);
+          for (const reader of asking.of) caughtOn(reader, this.way, asking.at);
         } else if (said[0] === 'CLOSED') return true;
       }
     } finally {

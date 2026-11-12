@@ -113,4 +113,6 @@ export const collectionText: Record<string, string> = {
   "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Los chats aceptan archivos de hasta 100 MB: este solo puede ir a la Colección. Activa la Colección en Ajustes → General → Módulos.",
   "Encrypting it for Erevos…": "Cifrándolo para Erevos…",
   "Slideshow": "Presentación",
+  "Radio and TV lists": "Listas de radio y TV",
+  "What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos. Stations and channels themselves always play straight, so they see this device’s IP address while they play.": "Lo que Erevos pide para Radio y TV: la búsqueda en Radio Browser, una lista de reproducción o de TV descargada por su enlace, y los logotipos de los canales. Las emisoras y los canales en sí siempre se reproducen directo, así que ven la dirección IP de este dispositivo mientras se reproducen.",
 };

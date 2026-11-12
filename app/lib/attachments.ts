@@ -36,6 +36,7 @@ import {
 } from '../lock/attachment-files';
 import { dropPieces, piecesCame, readPieces, type PiecePlace } from './nostr-pieces';
 import { downloadBlob, NOSTR_FILE_MOST } from './nostr-files';
+import { nostrOwnTor } from './nostr';
 import { netThroughTor } from './net-http';
 import { t } from './i18n';
 
@@ -344,12 +345,13 @@ export function takesItself(own: Relay | null, from: FileFrom): boolean {
  * Returns where it is now kept. If any chunk is missing or was changed, nothing is kept. A photo
  * that came in pieces through Nostr is taken from those `place` keeps, the chat's own.
  */
-export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean | TakenFiles, place: PiecePlace | null = null, itself = false): Promise<FileRef> {
+export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean | TakenFiles, place: PiecePlace | null = null, itself = false, torChat = !!own?.torChat): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
   // Taken by itself (`itself`), never from where its sender chose straight: see takesItself.
   if (itself && !takesItself(own, from)) throw new FileMissingError();
-  if (!onRelay(from)) return takeSent(ref, from, progress, place, itself);
+  // From a file server, through Tor alone for a chat that goes only through it (`torChat`).
+  if (!onRelay(from)) return takeSent(ref, from, progress, place, itself, torChat);
   if (!own) throw new FileMissingError();
   const watch = leave === undefined ? takenFiles : typeof leave === 'object' ? leave : null;
   const left = (typeof leave === 'boolean' ? leave : watch?.leave(from)) ?? false;
@@ -420,7 +422,7 @@ export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array
 
 // Takes a file that came in Nostr wraps (pieces kept by lib/nostr-pieces.ts, in `place`, the chat's
 // own storage) or from a file server, and keeps it here as a file that went through the relay would be.
-async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null, itself: boolean): Promise<FileRef> {
+async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null, itself: boolean, torChat: boolean): Promise<FileRef> {
   const key = fromHex(ref.key);
   const { name, mime, kind, w, h, sticker, hidden } = ref;
   const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden } : {}) };
@@ -454,8 +456,9 @@ async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undef
     return taken;
   }
   if (!from.url || !from.x) throw new FileMissingError();
-  // Taken by itself, through Tor alone: never straight should Tor fail on the way.
-  const blob = await downloadBlob(from.url, itself);
+  // Taken by itself, through Tor alone: never straight should Tor fail on the way. Through Tor
+  // whatever the space's way by Nostr's own switch, and for a chat that goes only through Tor.
+  const blob = await downloadBlob(from.url, itself, torChat || nostrOwnTor());
   if (toHex(sha256Bytes(blob)) !== from.x) throw new FileDamagedError();
   let bytes: Uint8Array;
   try {

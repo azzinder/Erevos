@@ -10,6 +10,7 @@ import {
   PasswordSheet,
 } from "../components/PasswordSheet";
 import { NextcloudSignIn } from "../components/nextcloud-sign-in";
+import { serverTorLine, TorSwitch } from "../components/tor-switch";
 import {
   Button,
   Card,
@@ -27,12 +28,12 @@ import {
   cloudLabel,
   cloudParts,
   cloudServer,
-  cloudThroughTor,
   CLOUD_RESTORE_MOST,
   fetchFromCloud,
   listCloud,
   loadCloudBackup,
   sendToCloud,
+  setCloudTor,
   startCloudBackup,
   stopCloudBackup,
   tooLargeText,
@@ -229,12 +230,18 @@ export default function Backups() {
   const [address, setAddress] = useState("");
   const [user, setUser] = useState("");
   const [secret, setSecret] = useState("");
+  // The server's own Tor switch, as the form to add one or to restore from one shows it: the
+  // server's when there is one, kept with it (lib/backup-cloud.ts), else this screen's until then.
+  const [serverTor, setServerTor] = useState(false);
   // Whether the last backup put back here came from another phone, and when the old phone was said lost since (0: not).
   const [lost, setLost] = useState<{ other: boolean; at: number } | null>(null);
 
   useEffect(() => {
     loadAutoBackup().then(setAuto);
-    void loadCloudBackup().then(setCloud);
+    void loadCloudBackup().then((loaded) => {
+      setCloud(loaded);
+      if (loaded?.tor) setServerTor(true);
+    });
     void loadChecks().then(setChecks);
     void backsUpSms().then(setSmsToo);
     void backsUpCalls().then(setCallsToo);
@@ -245,7 +252,7 @@ export default function Backups() {
     const handed = takeHandedServer();
     if (handed) void listServer(handed);
   }, []);
-  // Whether backups to the server go through Tor changes as Tor becomes ready.
+  // How backups to the server go through Tor changes as Tor becomes ready.
   const [, setTorTick] = useState(0);
   useEffect(() => onTorReady(() => setTorTick((n) => n + 1)), []);
 
@@ -400,7 +407,7 @@ export default function Backups() {
     say("");
     setBusy(true);
     try {
-      setCloud(await startCloudBackup(address, user.trim(), secret));
+      setCloud(await startCloudBackup(address, user.trim(), secret, serverTor));
       setChecks(await saveCheck("server", null));
       setForm(null);
       setSecret("");
@@ -412,6 +419,19 @@ export default function Backups() {
     }
     if (CAN_AUTO_BACKUP) await backUpNow();
     else setAsking({ kind: "cloud" });
+  }
+
+  // The server's own Tor switch: kept with the server when there is one, and shown in its form.
+  async function changeServerTor(on: boolean) {
+    setServerTor(on);
+    if (!cloud) return;
+    try {
+      const next = await setCloudTor(on);
+      if (next) setCloud(next);
+    } catch (error) {
+      setServerTor(!on);
+      say(errorText(error), true);
+    }
   }
 
   async function lostPhone() {
@@ -473,7 +493,7 @@ export default function Backups() {
     say("");
     setBusy(true);
     try {
-      const chosen = server ?? cloudServer(address, user, secret);
+      const chosen = server ?? cloudServer(address, user, secret, serverTor);
       const files = await listCloud(chosen);
       setForm(null);
       setSecret("");
@@ -525,9 +545,16 @@ export default function Backups() {
   // The fields of a server: its folder's address, user name and password.
   const serverFields = (
     <>
+      <TorSwitch
+        on={serverTor}
+        onChange={(on) => void changeServerTor(on)}
+        disabled={busy}
+        said={serverTorLine(serverTor)}
+      />
       <NextcloudSignIn
         folder="backups"
         disabled={busy}
+        tor={serverTor}
         onSigned={(server) => {
           setAddress(server.url);
           setUser(server.user);
@@ -1184,15 +1211,12 @@ export default function Backups() {
                         { n: KEEP },
                       )}
                 </Text>
-                {canTor() ? (
-                  <Text variant="caption" tone="muted" style={hint}>
-                    {cloudThroughTor()
-                      ? t("Through Tor: the server does not see your address.")
-                      : t(
-                          "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.",
-                        )}
-                  </Text>
-                ) : null}
+                <TorSwitch
+                  on={cloud.tor === true}
+                  onChange={(on) => void changeServerTor(on)}
+                  disabled={busy}
+                  said={serverTorLine(cloud.tor === true)}
+                />
                 {cloud.error ? (
                   <Text variant="caption" color={colors.danger} style={hint}>
                     {CAN_AUTO_BACKUP

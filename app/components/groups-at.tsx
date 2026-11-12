@@ -22,6 +22,8 @@ export type GroupsWhere = {
   stickers(): StickerPlace;
   /** Whether links typed get a preview, as their chats' settings say. */
   previews(): Promise<boolean>;
+  /** Whether those previews are fetched only through Tor (SpaceData.previewsTor). */
+  previewsTor(): Promise<boolean>;
   /** Shows a group's chat, or a contact's. */
   openGroup(id: string): void;
   openContact(identity: string): void;
@@ -34,6 +36,7 @@ export const spaceGroupsWhere: GroupsWhere = {
   at: spaceGroupsAt,
   stickers: () => ({ holder: 'space', ...currentSpace() }),
   previews: async () => (await loadCurrentSpaceData()).previews,
+  previewsTor: async () => (await loadCurrentSpaceData()).previewsTor === true,
   openGroup: (id) => router.push(`/group?id=${id}`),
   openContact: (identity) => router.push(`/chat?contact=${identity}`),
   linked: () => linkedRole() === 'linked',

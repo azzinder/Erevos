@@ -98,7 +98,7 @@ test('which devices a list makes a device\'s others, which of two starts, and wh
 test('what two devices change at once settles: the later setting, a request accepted, a removal until added again', () => {
   const c = id('c');
   const kept: Synced = stamped({ ...blankSynced(c), name: 'Carol', request: false }, { name: 'Carol' }, 100, true);
-  assert.deepEqual(kept.at, { name: 100, look: 100, avatar: 100, hide: 100, added: 100 });
+  assert.deepEqual(kept.at, { name: 100, look: 100, avatar: 100, hide: 100, tor: 100, added: 100 });
   // A change made now is set after every setting of its fields kept, whatever the clock says.
   assert.equal(stampOf(kept, { name: 'C' }, 500), 500);
   assert.equal(stampOf(kept, { name: 'C' }, 50), 101);
@@ -129,7 +129,7 @@ test('what two devices change at once settles: the later setting, a request acce
     ...blankSynced(d),
     name: 'Dave',
     request: false,
-    at: { name: 300, look: 300, avatar: 300, hide: 300, added: 300 },
+    at: { name: 300, look: 300, avatar: 300, hide: 300, tor: 300, added: 300 },
   });
   assert.equal(changedBy(undefined, d, { name: 'Dave' }, 300, true, 300), null);
   assert.equal(changedBy(undefined, d, { name: 'Dave' }, 301, true, 300)?.name, 'Dave');

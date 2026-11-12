@@ -12,11 +12,15 @@ import type { TorWay } from '../lib/relay';
 import { isNostrRelay, MAX_NOSTR_RELAYS } from '../lock/e2e-data';
 import { loadCurrentSpaceData, NOSTR_RELAYS, updateCurrentSpaceData, type NostrSetting } from '../lock/space-data';
 
-// Whether the space's texts go through Nostr (lib/nostr.ts), on unless changed, and the Nostr
+// Whether the space's texts go through Nostr (lib/nostr.ts), on unless changed; whether Nostr goes
+// through Tor by its own switch, off unless turned on, besides the space's Tor way; the Nostr
 // relays it reads on: the first three unless changed, and any of one's own; and what each relay
 // did last since Erevos started, so a test shows where a text went and why.
 
 const pad = (n: number) => String(n).padStart(2, '0');
+
+// The setting with Nostr's own Tor switch off: left out, as at first.
+const withoutTor = ({ tor: _tor, ...rest }: NostrSetting): NostrSetting => rest;
 const clock = (at: number) => {
   const d = new Date(at);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -69,7 +73,7 @@ export default function NostrScreen() {
     try {
       await updateCurrentSpaceData({ nostr: next });
       setSetting(next);
-      setNostr(nostrOf(next));
+      setNostr(nostrOf(next), next.tor === true);
       setNote(said || t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -113,13 +117,21 @@ export default function NostrScreen() {
           <Chip label={t('On')} selected={setting?.on === true} onPress={() => setting && void keep({ ...setting, on: true })} />
           <Chip label={t('Off')} selected={setting?.on === false} onPress={() => setting && void keep({ ...setting, on: false })} />
         </Row>
-        {tor ? (
+        <Text variant="bodyStrong">{t('Nostr through Tor')}</Text>
+        <Row wrap>
+          <Chip label={t('On')} selected={setting?.tor === true} onPress={() => setting && void keep({ ...setting, tor: true })} />
+          <Chip label={t('Off')} selected={setting !== null && setting.tor !== true} onPress={() => setting && void keep(withoutTor(setting))} />
+        </Row>
+        {tor && setting ? (
           <Text tone="muted">
-            {tor === 'off'
-              ? t("Tor is off for this space, so Erevos reaches the Nostr relays straight: they see this phone's internet address, as your relay does, but still neither who wrote a text nor to whom.")
-              : t("Tor is on for this space, so Erevos reaches the Nostr relays through Tor: they do not see this phone's internet address.")}
+            {tor !== 'off'
+              ? t("Tor is on for this space, so Erevos reaches the Nostr relays through Tor: they do not see this phone's internet address.")
+              : setting.tor === true
+                ? t("Erevos reaches the Nostr relays through Tor, and starts Tor for it: they do not see this phone's internet address. While Tor starts, a text that goes there waits.")
+                : t("Tor is off for this space, so Erevos reaches the Nostr relays straight: they see this phone's internet address, as your relay does, but still neither who wrote a text nor to whom.")}
           </Text>
         ) : null}
+        <Text tone="muted">{t('A chat set to "Through Tor" reaches the Nostr relays only through Tor, whatever this switch says.')}</Text>
         <Text tone="muted">
           {t(
             "A text that went through Nostr goes through your relay again should your contact's phone not say within five minutes that it came, and they see it once. While Tor starts, or when no Nostr relay takes it either, it waits and goes again, as any message does.",

@@ -15,9 +15,11 @@ import { Button, Field, Input, Row, Text } from './ui';
 /**
  * Sign in with Nextcloud, as LPHL's, as Fasouli does (lib/nextcloud-login.ts): fills a server form
  * with Erevos's own folder there and an app password of its own. Nothing is kept until the form's
- * own Connect. Not in a browser, where a Nextcloud as it comes lets no web app in (CORS).
+ * own Connect. Not in a browser, where a Nextcloud as it comes lets no web app in (CORS). With
+ * `tor`, the Tor switch of the server it signs in for, Erevos asks the Nextcloud only through Tor;
+ * the sign-in page opens in the browser, which goes as it does, and the note says so.
  */
-export function NextcloudSignIn({ folder, disabled, onSigned }: { folder: NextcloudFolder; disabled?: boolean; onSigned: (server: CloudServer) => void }) {
+export function NextcloudSignIn({ folder, disabled, tor = false, onSigned }: { folder: NextcloudFolder; disabled?: boolean; tor?: boolean; onSigned: (server: CloudServer) => void }) {
   const colors = useColors();
   const [address, setAddress] = useState('');
   const [waiting, setWaiting] = useState(false);
@@ -34,9 +36,9 @@ export function NextcloudSignIn({ folder, disabled, onSigned }: { folder: Nextcl
     setWaiting(true);
     try {
       const base = nextcloudBase(address);
-      const flow = await startLoginFlow(base);
+      const flow = await startLoginFlow(base, tor);
       await Linking.openURL(flow.login);
-      const login = await waitForLogin(base, flow, controller.signal);
+      const login = await waitForLogin(base, flow, controller.signal, { tor });
       const server = await nextcloudFolder(login, folder);
       onSigned(server);
       setNote(t('Signed in as {user}. Erevos keeps it in its own folder there, {folder}. Tap Connect.', { user: login.user, folder: server.url.replace(/^.*\/remote\.php\/dav\/files\/[^/]+\//, '').replace(/\/$/, '') }));
@@ -67,6 +69,7 @@ export function NextcloudSignIn({ folder, disabled, onSigned }: { folder: Nextcl
       {waiting ? (
         <Text variant="caption" tone="muted">
           {t('Sign in in the browser and choose Grant access, then come back.')}
+          {tor ? ` ${t('Erevos asks the Nextcloud only through Tor, but the browser goes as it always does.')}` : ''}
         </Text>
       ) : note ? (
         <Text variant="caption" color={failed ? colors.warning : colors.success}>

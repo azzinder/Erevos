@@ -60,12 +60,15 @@ export type Synced = {
   look: Look | null;
   avatar?: Avatar | null;
   hide: boolean;
+  /** Whether the chat goes only through Tor (Contact.tor), on every device. Left out by a version
+   *  from before it, which says nothing of it: then each device keeps it as it has it. */
+  tor?: boolean;
   /** When each field was last set, and when the contact was added, as a primary of this version says them (lib/siblings.ts). */
   at?: FieldTimes;
 };
 
 /** The fields of a contact that settle by when each was set, the later first; the timer has its own time (`timerAt`). */
-export const TIMED = ['name', 'look', 'avatar', 'hide'] as const;
+export const TIMED = ['name', 'look', 'avatar', 'hide', 'tor'] as const;
 
 /** When each of a contact's TIMED fields was last set, and when it was added (`added`), milliseconds, by the clock of the device that did it. */
 export type FieldTimes = Partial<Record<(typeof TIMED)[number] | 'added', number>>;
@@ -318,9 +321,9 @@ function checkedTimes(value: unknown): FieldTimes | null {
 }
 
 /** What every device keeps alike of a contact. */
-export function syncedOf(contact: Pick<Contact, 'identity' | 'name' | 'timer' | 'timerAt' | 'request' | 'look' | 'avatar' | 'hide'>): Synced {
-  const { identity, name, timer, timerAt, request, look, avatar, hide } = contact;
-  return { identity, name, timer, timerAt, request, look, ...(avatar?.kind === 'photo' ? {} : { avatar }), hide };
+export function syncedOf(contact: Pick<Contact, 'identity' | 'name' | 'timer' | 'timerAt' | 'request' | 'look' | 'avatar' | 'hide'> & { tor?: boolean }): Synced {
+  const { identity, name, timer, timerAt, request, look, avatar, hide, tor } = contact;
+  return { identity, name, timer, timerAt, request, look, ...(avatar?.kind === 'photo' ? {} : { avatar }), hide, tor: tor === true };
 }
 
 /** A contact as said, checked: null when it is not one. */
@@ -337,15 +340,26 @@ export function checkedSynced(value: unknown): Synced | null {
     look: isObject(v.look) ? checkedLook(v.look) : null,
     ...('avatar' in v ? { avatar: v.avatar === null ? null : checkedAvatar(v.avatar) } : {}),
     hide: v.hide === true,
+    // Not said by a version from before it: left out, so it changes nothing.
+    ...('tor' in v ? { tor: v.tor === true } : {}),
     ...(at ? { at } : {}),
   };
 }
 
-/** The fields of `now` that differ from `before`, a contact as last said. */
+/**
+ * The fields of `now` that differ from `before`, a contact as last said. Whether the chat goes
+ * through Tor, where `before` never said it (a version from before it), is taken as off: so a
+ * device that comes to this version says nothing of its chats that are off, and turns none off
+ * that another device turned on meanwhile.
+ */
 export function changedFields(before: Synced, now: Synced): Partial<Omit<Synced, 'identity' | 'at'>> {
   const change: Partial<Omit<Synced, 'identity' | 'at'>> = {};
-  for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide'] as const) {
-    if (field === 'avatar' && !('avatar' in now)) continue;
+  for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide', 'tor'] as const) {
+    if ((field === 'avatar' || field === 'tor') && !(field in now)) continue;
+    if (field === 'tor') {
+      if ((before.tor === true) !== (now.tor === true)) change.tor = now.tor === true;
+      continue;
+    }
     if (JSON.stringify(before[field] ?? null) !== JSON.stringify(now[field] ?? null)) (change as Record<string, unknown>)[field] = now[field] ?? null;
   }
   return change;
@@ -356,11 +370,14 @@ export function changedFields(before: Synced, now: Synced): Partial<Omit<Synced,
  * primary's queue. It holds no conversation of its own, only an empty one in its place
  * (lib/devices.ts seals for the primary instead), and the account's identity as the one they know
  * it by, so the safety number is the phone's. What the device keeps of its own (what it holds back
- * while appearing offline, a photo picture) stays.
+ * while appearing offline, a photo picture) stays, and so does whether the chat goes through Tor
+ * while the primary says nothing of it, as one from before does.
  */
 export function mirrorOf(synced: Synced, kept: Contact | undefined, primary: Place, account: string): Contact {
+  const { tor: _kept, ...rest } = kept ?? { heldGot: [], heldRead: [], phone: '', avatar: null, seen: [], packetKey: '', sealTo: '', sealsIn: false };
+  const tor = 'tor' in synced ? synced.tor === true : kept?.tor === true;
   return {
-    ...(kept ?? { heldGot: [], heldRead: [], phone: '', avatar: null, seen: [], packetKey: '', sealTo: '', sealsIn: false }),
+    ...rest,
     identity: synced.identity,
     sender: primary.sender,
     relay: primary.relay,
@@ -376,6 +393,7 @@ export function mirrorOf(synced: Synced, kept: Contact | undefined, primary: Pla
     avatar: 'avatar' in synced ? (synced.avatar ?? null) : (kept?.avatar ?? null),
     ownIdentity: account,
     hide: synced.hide,
+    ...(tor ? { tor: true as const } : {}),
   };
 }
 
@@ -467,7 +485,7 @@ function checkedEnvelope(v: Json): Envelope | null {
       const full = checkedSynced({ ...said, identity: v.c });
       if (!full) return null;
       const change: Partial<Omit<Synced, 'identity' | 'at'>> = {};
-      for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide'] as const) {
+      for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide', 'tor'] as const) {
         if (field in said) (change as Record<string, unknown>)[field] = full[field] ?? null;
       }
       return { k: 'set', c: v.c, change, ...when, ...(v.added === true ? { added: true as const } : {}) };

@@ -12,6 +12,7 @@ import { playStation } from '../lib/collection-play';
 import { foundStations, linkStations, MOST_FOUND_BYTES, MOST_LIST_BYTES, nameFromLink, playableStations, playlistStations, RADIO_AGENT, radioSearchUrl, type FoundStation, type StationLink } from '../lib/collection-radio';
 import { utf8Decode } from '../lib/crypto';
 import { plural, t } from '../lib/i18n';
+import { throughTorNow } from '../lib/net-http';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { addStation, addStations, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -26,7 +27,9 @@ import { Button, Input, Sheet, Text } from './ui';
 // Radio Browser by the words typed, sent only when Search is pressed. A playlist that names several
 // stations (by its link, or a .m3u or .pls file from this device) adds each of them. What the
 // station learns is said where it is added and where it plays: this device's IP address. Its menu
-// also sends its name and link to a chat (sendLinkToChat), as text.
+// also sends its name and link to a chat (sendLinkToChat), as text. With the place's Tor switch for
+// its radio and TV lists on (`tor`, Collection.listsTor), Radio Browser and the playlists are asked
+// only through Tor, and do not see that address; the stations still play straight.
 
 type Options = { showTitle: boolean; stopOnLock: boolean };
 
@@ -183,8 +186,8 @@ export function StationsList({
   );
 }
 
-/** Adds a station by its link, with a name of the owner's or its server's. */
-export function AddStationSheet({ visible, place, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; onClose: () => void; onAdded: () => void }) {
+/** Adds a station by its link, with a name of the owner's or its server's; with `tor`, what it asks goes only through Tor. */
+export function AddStationSheet({ visible, place, tor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; onClose: () => void; onAdded: () => void }) {
   const [link, setLink] = useState('');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -199,7 +202,7 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
     setBusy(true);
     setNote('');
     try {
-      const got = await linkStations(given, get(MOST_LIST_BYTES));
+      const got = await linkStations(given, get(MOST_LIST_BYTES, tor));
       if ('many' in got) {
         await addMany(got.many, got.plain);
       } else {
@@ -259,7 +262,7 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
     setBusy(true);
     setNote('');
     try {
-      const answer = await get(MOST_FOUND_BYTES)(url);
+      const answer = await get(MOST_FOUND_BYTES, tor)(url);
       if (answer.status < 200 || answer.status >= 300) throw new Error(t('Radio Browser answered {status}.', { status: answer.status }));
       setFound(foundStations(answer.bytes));
     } catch (error) {
@@ -273,7 +276,9 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
       <Text variant="label">{t('Search Radio Browser')}</Text>
       <Input value={words} onChangeText={setWords} placeholder={t('A station’s name')} accessibilityLabel={t('Search Radio Browser')} autoCorrect={false} maxLength={100} onSubmitEditing={() => void search()} />
       <Text variant="caption" tone="muted">
-        {t('Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.')}
+        {throughTorNow(tor)
+          ? t('Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, through Tor, so it does not see this device’s IP address. Only stations with an https link are shown.')
+          : t('Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.')}
       </Text>
       <Button title={t('Search')} kind="secondary" compact loading={busy && found === null && !!words.trim()} disabled={!words.trim() || busy} onPress={() => void search()} />
       {found !== null && found.length === 0 ? (
@@ -300,7 +305,9 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
       <Input value={link} onChangeText={setLink} placeholder="https://…" accessibilityLabel={t('The station’s link')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2048} />
       <Input value={name} onChangeText={setName} placeholder={t('Name (optional)')} accessibilityLabel={t('Name (optional)')} maxLength={60} onSubmitEditing={() => void add()} />
       <Text variant="caption" tone="muted">
-        {t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. The station, and that playlist’s server, see this device’s IP address.')}
+        {throughTorNow(tor)
+          ? t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, through Tor: for the stream’s own link, or for each station it names. That playlist’s server does not see this device’s IP address; the station does, when it plays.')
+          : t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. The station, and that playlist’s server, see this device’s IP address.')}
       </Text>
       {note ? (
         <Text variant="caption" color={colors.warning}>
@@ -317,9 +324,10 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
   );
 }
 
-// A GET as backups make them (lib/backup-http.ts: on the phone through Tor as the space says, on a
-// computer through the shell), with only Erevos's name as the User-Agent, `most` bytes at most.
-const get = (most: number) => (url: string) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, most);
+// A GET as backups make them (lib/backup-http.ts: on the phone through Tor as the space says, or
+// only through Tor with `tor`; on a computer through the shell), with only Erevos's name as the
+// User-Agent, `most` bytes at most.
+const get = (most: number, tor: boolean) => (url: string) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, most, tor);
 
 const hostOf = (url: string) => {
   try {

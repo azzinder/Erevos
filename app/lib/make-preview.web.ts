@@ -9,6 +9,6 @@ import type { Preview } from './chat-parts';
 
 export const CAN_PREVIEW = false;
 
-export async function makePreview(_url: string): Promise<Preview | null> {
+export async function makePreview(_url: string, _tor = false): Promise<Preview | null> {
   return null;
 }

@@ -38,10 +38,6 @@ export const cloudBackup: Record<string, string> = {
     "Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι, και τη διεύθυνσή σου, εκτός αν το αντίγραφο πηγαίνει μέσω Tor, όπως λέει η ρύθμιση Tor του χώρου. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.",
   "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
     "Αυτός ο χώρος στέλνει τα Όλα μέσω Tor, και το Tor εδώ δεν μπορεί να φτάσει σε server, οπότε δεν πήγε τίποτα.",
-  "Through Tor: the server does not see your address.":
-    "Μέσω Tor: ο server δεν βλέπει τη διεύθυνσή σου.",
-  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
-    "Όχι μέσω Tor τώρα: ο server βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Relay και δίκτυα → Tor.",
   "There is no Erevos backup in that folder.":
     "Δεν υπάρχει αντίγραφο του Erevos σε αυτόν τον φάκελο.",
   "Restore from a server":

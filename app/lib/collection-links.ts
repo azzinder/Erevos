@@ -190,11 +190,12 @@ export class CollectionSync {
     for (let n = 0; n < thumbs.length && !this.closed; n += MOST_ASKED) await this.byRelay(thumbs.slice(n, n + MOST_ASKED));
   }
 
-  // The place's server as a way, for a file: when it has one, whether this device copies to it or not.
+  // The place's server as a way, for a file: when it has one, whether this device copies to it or
+  // not; only through Tor while this device's switch for it says so (Collection.serverTor).
   private serverWay(c: Collection): (ref: FileRef) => ChunkWay[] {
     const at = c.server;
     if (!at) return () => [];
-    const folder = serverFolder(at);
+    const folder = serverFolder(at, c.serverTor === true);
     return (ref) => [{ name: 'server', get: (_id, n) => fetchChunk(folder, ref, n) }];
   }
 

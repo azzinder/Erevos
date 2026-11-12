@@ -49,7 +49,9 @@ import { fromHex, randomBytes, toHex } from './crypto';
 // change nor swap one unseen. The device sync (lib/sync/) can fetch them the same way.
 //
 // Requests go as backups to a server go (lib/backup-cloud.ts): through Tor as the space's Tor way
-// says, and in the desktop app through its shell.
+// says, and in the desktop app through its shell. The place's own Tor switch for its server
+// (Collection.serverTor, off unless turned on) sends them only through Tor instead, whatever the
+// way, starting Tor for them, and never straight: the test, the copies and the files fetched back.
 
 /** How a place's copying to its server goes: bytes of chunks there out of all, whether it runs now, when it was last whole, and why it last failed. */
 export type ServerStatus = { running: boolean; done: number; total: number; last: number; error: string };
@@ -69,9 +71,9 @@ export function setServerRetry(ms: number[]): void {
 
 const nameOf = ({ holder, space }: CollectionPlace) => `${holder}/${space}`;
 
-/** The subfolder the place's chunks go in, with the user name and password. */
-export function serverFolder(server: Pick<CollectionServer, 'url' | 'folder' | 'user' | 'password'>): CloudServer {
-  return { url: `${server.url}${server.folder}/`, user: server.user, password: server.password };
+/** The subfolder the place's chunks go in, with the user name and password; with `tor` (the place's Collection.serverTor), reached only through Tor. */
+export function serverFolder(server: Pick<CollectionServer, 'url' | 'folder' | 'user' | 'password'>, tor = false): CloudServer {
+  return { url: `${server.url}${server.folder}/`, user: server.user, password: server.password, ...(tor ? { tor: true } : {}) };
 }
 
 // The server said no, clearly: not tried again now.
@@ -115,16 +117,16 @@ async function retried<T>(run: () => Promise<T>, signal?: AbortSignal): Promise<
   }
 }
 
-/** Asks the server whether the folder at `address` is there and takes the user name and password. Returns its address as kept. Throws CloudError with why not. */
-export async function testCollectionServer(address: string, user: string, password: string): Promise<string> {
+/** Asks the server whether the folder at `address` is there and takes the user name and password; with `tor`, only through Tor. Returns its address as kept. Throws CloudError with why not. */
+export async function testCollectionServer(address: string, user: string, password: string, tor = false): Promise<string> {
   const url = cloudFolder(address);
-  check(await askServer({ url, user: user.trim(), password }, 'PROPFIND', '', { headers: { Depth: '0' } }));
+  check(await askServer({ url, user: user.trim(), password, ...(tor ? { tor: true } : {}) }, 'PROPFIND', '', { headers: { Depth: '0' } }));
   return url;
 }
 
-// Makes the place's subfolder on the server, unless it is there.
-async function ensureFolder(server: CollectionServer, signal?: AbortSignal): Promise<void> {
-  const base: CloudServer = { url: server.url, user: server.user, password: server.password };
+// Makes the place's subfolder on the server, unless it is there; with `tor`, only through Tor.
+async function ensureFolder(server: CollectionServer, tor: boolean, signal?: AbortSignal): Promise<void> {
+  const base: CloudServer = { url: server.url, user: server.user, password: server.password, ...(tor ? { tor: true } : {}) };
   const there = await retried(() => askServer(base, 'PROPFIND', `${server.folder}/`, { headers: { Depth: '0' } }), signal);
   if (there.status !== 404) return check(there);
   // 405: made meanwhile.
@@ -133,15 +135,17 @@ async function ensureFolder(server: CollectionServer, signal?: AbortSignal): Pro
 
 /**
  * Copies the place's Collection to the folder at `address` from now on, with `user` and
- * `password`: after asking the server, which makes the place's subfolder there. The same folder
- * as before keeps its subfolder, so what went there stays. Throws CloudError with why not.
+ * `password`: after asking the server, which makes the place's subfolder there, through Tor alone
+ * when the place's switch says so. The same folder as before keeps its subfolder, so what went
+ * there stays. Throws CloudError with why not.
  */
 export async function connectCollectionServer(place: CollectionPlace, address: string, user: string, password: string): Promise<CollectionServer> {
-  const url = await testCollectionServer(address, user, password);
+  const tor = (await loadCollection(place)).serverTor === true;
+  const url = await testCollectionServer(address, user, password, tor);
   const before = (await loadCollection(place)).server;
   const same = before?.url === url;
   const server: CollectionServer = { on: true, url, user: user.trim(), password, folder: same ? before.folder : toHex(randomBytes(12)), last: same ? before.last : 0 };
-  await ensureFolder(server);
+  await ensureFolder(server, tor);
   await setCollectionServer(place, server);
   return server;
 }
@@ -195,6 +199,7 @@ export async function copyToServer(place: CollectionPlace, signal?: AbortSignal,
   const generation = collectionGeneration(place);
   const collection = await loadCollection(place);
   const server = collection.server;
+  const tor = collection.serverTor === true;
   if (!server?.on) {
     const idle = { running: false, done: 0, total: 0, last: server?.last ?? 0, error: '' };
     setStatus(place, idle);
@@ -206,8 +211,8 @@ export async function copyToServer(place: CollectionPlace, signal?: AbortSignal,
   let status: ServerStatus = { running: true, done: 0, total, last: server.last, error: '' };
   setStatus(place, status);
   try {
-    await ensureFolder(server, signal);
-    const folder = serverFolder(server);
+    await ensureFolder(server, tor, signal);
+    const folder = serverFolder(server, tor);
     const there = new Map((await retried(() => listFolder(folder, (name) => CHUNK_FILE.test(name)), signal)).map((file) => [file.name, file.size]));
     let done = 0;
     const missing: [string, number][] = [];
@@ -305,7 +310,7 @@ export async function fillItem(place: CollectionPlace, item: CollectionItem, opt
   const server = collection.server;
   const kept = collection.items.find((i) => i.id === item.id && i.file.id === item.file.id);
   if (!server?.on || !kept) return false;
-  const folder = serverFolder(server);
+  const folder = serverFolder(server, collection.serverTor === true);
   const missing = await fetchMissingChunks(folder, kept.file, options);
   if (kept.thumb) await fetchMissingChunks(folder, kept.thumb, { signal: options.signal }).catch(() => 0);
   return missing === 0;

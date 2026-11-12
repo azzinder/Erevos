@@ -19,7 +19,7 @@ import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_
 import { bodyOf, checkedList, checkedPass, PASS_MARGIN, readPass, verifyList, verifyPass, type DeviceList, type Pass } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { tellTorChats } from './tor-chats';
+import { circuitOf, tellTorChats } from './tor-chats';
 import { canTryLater, isQueueFull, sameRelay } from './relay';
 import { TooLargeForSlowWayError } from './nearby';
 import type { Look } from '../theme/look';
@@ -758,9 +758,11 @@ type Slot = { contact: Contact; way: Way | null };
  * What a sealing gives: the packets, in order, where they go, the first packet of the conversation
  * if the relay has not taken it yet, the number the copies for the endpoints of their account
  * wait under until those went (E2E.copiesAfter), 0 for none, and whether they were sealed for the
- * account's phone, on a linked device, which passes them on (`through`), or for the contact.
+ * account's phone, on a linked device, which passes them on (`through`), or for the contact. For
+ * a chat that goes only through Tor (Contact.tor), the name of its own circuits (`torChat`,
+ * lib/tor-chats.ts circuitOf), which they go on wherever they go: to the phone too.
  */
-type Sealed = { packets: Uint8Array[]; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean };
+type Sealed = { packets: Uint8Array[]; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean; torChat?: string };
 
 /** A copy as it goes: where the way to its endpoint says it reads now (its queue's sender id, hex; its relay, empty for this chat's own; that relay's key). */
 export type Outgoing = Copy & { s: string; relay: string; rk: string };
@@ -966,7 +968,7 @@ export class E2E {
     this.store = store;
     this.takesPart = takesPart;
     this.keepFanout = keepFanout;
-    tellTorChats(toHex(identity), data.contacts);
+    this.tellTor(data.contacts);
   }
 
   /** The space's own chat, or its hidden chats (`holder`), sealed with `key`. Makes the account the first time. */
@@ -1052,6 +1054,7 @@ export class E2E {
   /** Reaches the account's other devices through `link` from now on, or no longer. */
   useLink(link: Link | null): void {
     this.link = link;
+    this.tellTor(this.data.contacts);
   }
 
   /** Says from now on, in each message that says where this chat's queue is, when that queue was made (`qa`, lib/queue-move.ts), and which queue it is (`from`, its sender id). */
@@ -1471,7 +1474,10 @@ export class E2E {
       }
       return moved > 0 && tellDue(c.told, c.onNew, moved, since, now);
     };
-    return this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && due(c)).map((c) => c.identity);
+    // A chat that goes only through Tor and has no queue of its own yet takes one first: until its
+    // contact writes there, what they send comes to the own queue, which is not read through Tor.
+    const first = (c: Contact) => (c.tor === true && !this.mineHere(c) ? 0 : 1);
+    return [...this.data.contacts].sort((a, b) => first(a) - first(b)).filter((c) => !c.request && c.sender && c.conversations[0] && due(c)).map((c) => c.identity);
   }
 
   /** A contact was told the own queue made at `qa`, and the ring queue as it is now: the relay took it. `qa` 0: only the ring queue was due. */
@@ -1543,9 +1549,20 @@ export class E2E {
   private async save(data: E2EData): Promise<void> {
     this.data = data;
     this.link?.changed(data.contacts);
-    tellTorChats(toHex(this.identity), data.contacts);
+    this.tellTor(data.contacts);
     await this.store(data);
     await this.dropStale();
+  }
+
+  // Tells lib/tor-chats.ts which chats go only through Tor, by their queues. On a linked device
+  // (told by its link, or before it has one by the account it keeps) not by a contact's own queue:
+  // there every chat's is the phone's, which all of them and the device's own link to the phone
+  // share, so one chat's circuits would carry them all. What is sealed there for such a chat says
+  // its circuits itself instead (Sealed.torChat), and goes on them; its copies to the contact's
+  // other devices, and a way the device writes to them by itself, are told by their own queues.
+  private tellTor(contacts: readonly Contact[]): void {
+    const linked = this.link ? this.link.through : !!this.data.own;
+    tellTorChats(toHex(this.identity), contacts, linked);
   }
 
   private find(identity: string): Contact | undefined {
@@ -1701,19 +1718,29 @@ export class E2E {
   }
 
   /**
-   * Makes the chat with a contact appear offline to them, or not. Shown again, what was held
-   * goes with the next message to them, whatever it is.
+   * Whether the chat with a contact goes only through Tor (Contact.tor), or as the space's way says.
+   * The account's other devices do the same (lib/devices.ts), as the phone, or a device, sets it.
    */
-  /** Whether the chat with a contact goes only through Tor (Contact.tor), or as the space's way says. */
   setTor(identity: string, on: boolean): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact) throw new Error(t('No such contact.'));
       const { tor: _was, ...rest } = contact;
       await this.save(this.withContact(on ? { ...rest, tor: true } : rest));
+      // What Nostr reads changes with it (nostrKeys).
+      if (contact.nostr) nostrKeysChanged();
     });
   }
 
+  /** Whether the chat with `identity` goes only through Tor (Contact.tor, lib/tor-chats.ts). */
+  torChat(identity: string): boolean {
+    return this.find(identity)?.tor === true;
+  }
+
+  /**
+   * Makes the chat with a contact appear offline to them, or not. Shown again, what was held
+   * goes with the next message to them, whatever it is.
+   */
   setHidden(identity: string, hide: boolean): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -2414,14 +2441,15 @@ export class E2E {
    * contact has said no relay queue: then it can only go to their phone nearby (lib/nearby.ts).
    * The copies for the endpoints of their account (`copies`) are sealed once that went, however it
    * went (`copiesAfter`), and then wait for the relay. On a linked device it may be sealed for the account's phone,
-   * which passes it on (`through`), or for the contact, which this device writes to itself.
+   * which passes it on (`through`), or for the contact, which this device writes to itself. For a
+   * chat that goes only through Tor, the name of its own circuits (`torChat`), which it goes on to either.
    */
   seal(
     identity: string,
     text: string,
     from: string,
     { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false, rf, leaving = false }: Extra = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null; torChat?: string }> {
     return this.run(async () => {
       let contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -2473,14 +2501,14 @@ export class E2E {
       if (list) this.listSealed.set(identity, { ...list, at: Date.now() });
       if (tellsNostr) this.nostrSealed.set(identity, this.nostrSaid(contact));
       if (tellsName) this.nameSealed.set(identity, this.myName());
-      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = sealed;
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through, torChat } = sealed;
       // Words go through Nostr when they said they read there, and this chat does too (lib/nostr.ts):
       // not after a first packet the relay has still to take, nor what is sent for later, which the
       // relay holds, nor from a linked device, nor what it seals for the account's phone to pass on.
       // With no relay between the two, as this chat has no queue (`from`) or they said none, all of
       // it goes there, the first packet with it (lib/nostr-chats.ts nostrOnlyWay).
       const nostr = this.nostrWay(contact, from, sender, first, [packet], through, !!text, due);
-      return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through, nostr };
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through, nostr, ...(torChat ? { torChat } : {}) };
     });
   }
 
@@ -2508,7 +2536,7 @@ export class E2E {
     ms: number,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; talk?: boolean; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null; torChat?: string }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -2534,11 +2562,11 @@ export class E2E {
         re: isTag(re) ? re : '',
         more: forwarded ? { forwarded: true as const } : {},
       }));
-      const { packets, sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, messages, true);
+      const { packets, sender, relay, relayKey, spare, first, copies, through, torChat } = await this.sealFor(contact, messages, true);
       // Through Nostr only with no relay between the two: with one, a voice message is too large
       // to be kept for the relay's backup (NOSTR_KEEP_MOST), so it goes through the relay.
       const nostr = this.nostrWay(contact, from, sender, first, packets, through, false, due);
-      return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through, nostr };
+      return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through, nostr, ...(torChat ? { torChat } : {}) };
     });
   }
 
@@ -2551,7 +2579,7 @@ export class E2E {
     offer: FileOffer,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null; torChat?: string }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -2559,10 +2587,10 @@ export class E2E {
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...shotsSaid(contact), ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
-      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, [message], true);
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through, torChat } = await this.sealFor(contact, [message], true);
       // Pieces of a file that go through Nostr tell where they are in the same way (lib/nostr-files-own.ts).
       const nostr = this.nostrWay(contact, from, sender, first, [packet], through, offer.via !== undefined, due);
-      return { sender, relay, relayKey, spare, first, packet, tag, timer: lasts || timer, copies, through, nostr };
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: lasts || timer, copies, through, nostr, ...(torChat ? { torChat } : {}) };
     });
   }
 
@@ -2577,7 +2605,7 @@ export class E2E {
     plaintext: Uint8Array,
     from: string,
     at: Where,
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; copies: number; through: boolean }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; copies: number; through: boolean; torChat?: string }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -2586,8 +2614,8 @@ export class E2E {
       const { timer, timerAt } = timerOf(message, contact);
       // Writing, reacting or calling accepts a request, as from this phone.
       const writes = !!message.text || !!message.voice || !!message.file || !!message.react || acts(message.more ?? {}) || message.call?.kind === 'offer';
-      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
-      return { sender, relay, relayKey, spare, first, packet, copies, through };
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through, torChat } = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
+      return { sender, relay, relayKey, spare, first, packet, copies, through, ...(torChat ? { torChat } : {}) };
     });
   }
 
@@ -2729,7 +2757,8 @@ export class E2E {
     const copies = this.holdCopies({ c: contact.identity, ways, like: said[0], packetKey, leaving, at: now });
     // A way this device started itself (startBound) sends its first packet first, as the account's does.
     const first = direct ? direct.first : contact.first;
-    return { packets, sender: to.sender, relay: to.relay, relayKey: to.relayKey, spare: to.spare ?? null, first: first ? fromBase64(first) : null, copies, through };
+    const torChat = contact.tor === true ? { torChat: circuitOf(contact.identity) } : {};
+    return { packets, sender: to.sender, relay: to.relay, relayKey: to.relayKey, spare: to.spare ?? null, first: first ? fromBase64(first) : null, copies, through, ...torChat };
   }
 
   // What of `said` goes to one endpoint of the contact's account (`way`), as lib/endpoints.ts
@@ -3203,6 +3232,11 @@ export class E2E {
   /** The keys this chat reads on Nostr with (lib/nostr.ts readNostr): its contacts', and its link's. */
   nostrKeys(): NostrKey[] {
     return [...(this.data.nostrLink ? [this.data.nostrLink] : []), ...this.data.contacts.flatMap((contact) => (contact.nostr ? [contact.nostr] : []))];
+  }
+
+  /** The public keys (hex) of nostrKeys that are of chats that go only through Tor: read through Tor alone, never straight (lib/nostr.ts). */
+  torNostrKeys(): Set<string> {
+    return new Set(this.data.contacts.flatMap((contact) => (contact.nostr && contact.tor === true ? [contact.nostr.p] : [])));
   }
 
   /**

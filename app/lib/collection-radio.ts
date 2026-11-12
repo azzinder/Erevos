@@ -176,8 +176,9 @@ export async function linkStations(given: string, get: (url: string) => Promise<
 
 // Radio Browser (radio-browser.info), a free directory of stations anyone may edit: a search sends
 // it only the words typed, with the User-Agent "Erevos" on Android and in the desktop app (the
-// browser's own in a browser and on Sailfish OS), and it sees the device's IP address. Only
-// stations it gives an https link for are offered.
+// browser's own in a browser and on Sailfish OS), and it sees the device's IP address, unless
+// the search goes through Tor (Collection.listsTor, or the space's Tor way). Only stations it gives
+// an https link for are offered.
 
 /** The most stations a search shows. */
 export const MOST_FOUND = 30;

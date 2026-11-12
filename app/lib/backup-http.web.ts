@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { t } from './i18n';
-import { HTTP_MOST, HttpTooLargeError, netHttp, readCapped, type HttpAnswer, type HttpMethod } from './net-http';
+import { HTTP_MOST, HttpTooLargeError, httpFor, netHttp, readCapped, type HttpAnswer, type HttpMethod } from './net-http';
 import { SHELL, shellFetch } from './shell';
 
 // How a backup reaches a server (lib/backup-cloud.ts) on a computer and in the web app. A page may
@@ -14,13 +14,15 @@ import { SHELL, shellFetch } from './shell';
 // server set to let the web app's address in, and so does Sailfish OS's, whose shell has no such
 // path: there too only a server that lets the page in answers, as the Collection's radio search
 // (Radio Browser, which does) and its playlists ask through here. None of them has Tor for it
-// (lib/backup-cloud.ts).
+// (lib/backup-cloud.ts). So with `tor`, the Tor switch of what asks, nothing goes: the shell's way
+// and the page's are both straight, and only a build with Tor for it would send it (httpFor).
 // The shell stops an answer larger than 100 MB as it comes and says so with 413; the page weighs
 // what the shell hands over against `most` as it reads it, as lib/net-http.ts does.
 
-/** One request to the server. */
-export async function cloudRequest(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most: number = HTTP_MOST): Promise<HttpAnswer> {
+/** One request to the server; with `tor`, only through Tor. */
+export async function cloudRequest(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most: number = HTTP_MOST, tor = false): Promise<HttpAnswer> {
   const cap = Math.min(most, HTTP_MOST);
+  if (tor) return httpFor(true)(method, url, headers, body, cap);
   if (SHELL === 'electron') {
     const stop = new AbortController();
     const response = await shellFetch(`/__webdav?method=${method}&url=${encodeURIComponent(url)}`, {

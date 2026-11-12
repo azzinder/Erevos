@@ -3,14 +3,17 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { checkedPreview, type Preview } from './chat-parts';
-import { utf8Encode } from './crypto';
+import { logoType } from './collection-tv';
+import { utf8Decode, utf8Encode } from './crypto';
 import { splitLinks } from './links';
+import { httpFor } from './net-http';
 
 // The preview of a link in a message: the page's title, a line about it and a small picture, as
 // the page says them of itself (its og: and twitter: tags, or its <title> and description). Only
 // the sender's phone makes one, when it sends, and only when its owner turned previews on
 // (lib/make-preview.ts fetches the page); it goes inside the end-to-end encrypted message, and
-// the phone that gets it shows it, fetching nothing. Here, what is read from a page, kept pure.
+// the phone that gets it shows it, fetching nothing. Here, what is read from a page, kept pure,
+// and the page fetched only through Tor, as the previews' own Tor switch asks.
 
 /** How much of a page is read for its preview: its head is near the start. */
 export const MAX_PAGE = 512 * 1024;
@@ -86,4 +89,38 @@ export function fitPreview(words: string, preview: Preview): Preview | null {
   if (size(checked) <= ROOM) return checked;
   const plain = { url: checked.url, title: checked.title, text: checked.text };
   return size(plain) <= ROOM ? plain : null;
+}
+
+/**
+ * How a link sent now gets its preview, as the chat's settings say (SpaceData.previews and
+ * previewsTor): none while previews are off; only through Tor with their own Tor switch on,
+ * whatever the space's Tor way; else straight, as previews always went, and then none while the
+ * space sends everything through Tor (`everything`).
+ */
+export function previewWay(previews: boolean, tor: boolean, everything: boolean): 'none' | 'straight' | 'tor' {
+  if (!previews) return 'none';
+  if (tor) return 'tor';
+  return everything ? 'none' : 'straight';
+}
+
+/** What a preview is made of: what the page says of itself, and its picture's bytes and type when it has one. */
+export type PreviewParts = { title: string; text: string; picture?: { bytes: Uint8Array; type: string } };
+
+/**
+ * The page at `url` and its picture, fetched only through Tor (lib/net-http.ts httpFor), as the
+ * previews' own Tor switch asks (lib/make-preview.ts): Tor is started for it, and nothing goes
+ * straight should Tor fail. Through Tor an answer comes without its headers and is not sent on
+ * elsewhere, so the page is taken for what it says of itself, the picture is known by its first
+ * bytes, and a page or picture that sends elsewhere gives none. Each answer is `most` bytes at
+ * most. Null when the page says nothing of itself; throws when Tor fails.
+ */
+export async function partsThroughTor(url: string, most: number): Promise<PreviewParts | null> {
+  const http = httpFor(true);
+  const page = await http('GET', url, { Accept: 'text/html, application/xhtml+xml' }, undefined, most);
+  if (page.status !== 200) return null;
+  const info = pageInfo(utf8Decode(page.bytes).slice(0, MAX_PAGE), url);
+  if (!info) return null;
+  const got = info.picture ? await http('GET', info.picture, { Accept: 'image/jpeg, image/png, image/webp, image/gif' }, undefined, most).catch(() => null) : null;
+  const type = got && got.status === 200 && got.bytes.length > 0 ? logoType(got.bytes) : null;
+  return { title: info.title, text: info.text, ...(got && type ? { picture: { bytes: got.bytes, type } } : {}) };
 }

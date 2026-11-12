@@ -325,7 +325,7 @@ export async function startAgain(): Promise<void> {
   await updateSpaceData(space, key, { stopped: 0 });
   const data = await loadSpaceData(space, key);
   setRelayStopped(false);
-  setNostr(nostrOf(data.nostr));
+  setNostr(nostrOf(data.nostr), data.nostr.tor === true);
   restartSpaceRunning();
 }
 

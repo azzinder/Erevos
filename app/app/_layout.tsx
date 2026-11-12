@@ -197,7 +197,7 @@ export default function RootLayout() {
       // and the way 'all' waits for it.
       applyTor(data.tor, data.bridges).catch(() => undefined);
       // Its texts go through Nostr unless it says not, the way its Tor way says (lib/nostr.ts).
-      setNostr(nostrOf(data.nostr));
+      setNostr(nostrOf(data.nostr), data.nostr.tor === true);
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock, only });

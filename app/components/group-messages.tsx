@@ -19,7 +19,7 @@ import { asChatMessage, seenMark, type Marked } from '../lib/group-parts';
 import { memberName, type GroupInfo } from '../lib/groups';
 import { useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { plural, t } from '../lib/i18n';
-import { firstLink, fitPreview } from '../lib/link-preview';
+import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn } from '../lib/mentions';
 import { messageLine } from '../lib/message-line';
@@ -29,6 +29,7 @@ import { useModules } from '../lib/modules';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { CAN_PLACE } from '../lib/place';
 import { throughTor } from '../lib/relay';
+import { ipGate } from './ip-warning';
 import { saveText } from '../lib/save-file';
 import { stickerOf } from '../lib/stickers';
 import type { FileRef } from '../lock/attachment-files';
@@ -124,6 +125,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [placing, setPlacing] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [previews, setPreviews] = useState(false);
+  const [previewsTor, setPreviewsTor] = useState(false);
   // What is looked for in the group (null: no search), and which of what it found is gone to.
   const [searching, setSearching] = useState<string | null>(null);
   const [searchAt, setSearchAt] = useState(0);
@@ -145,6 +147,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
 
   useEffect(() => {
     where.previews().then(setPreviews, () => setPreviews(false));
+    where.previewsTor().then(setPreviewsTor, () => setPreviewsTor(false));
   }, [where]);
 
   // Who else is in the group, by identity: null in a public group, whose members say nothing of
@@ -414,12 +417,14 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     return actions;
   }
 
-  // The preview of the first link in words typed, when this phone makes them (lib/make-preview.ts).
+  // The preview of the first link in words typed, when this phone makes them, only through Tor
+  // with their own Tor switch on (lib/link-preview.ts previewWay, lib/make-preview.ts).
   async function previewOf(text: string): Promise<GroupParts> {
-    const link = previews && CAN_PREVIEW && !throughTor() ? firstLink(text) : null;
+    const way = CAN_PREVIEW ? previewWay(previews, previewsTor, throughTor()) : 'none';
+    const link = way !== 'none' ? firstLink(text) : null;
     if (!link) return {};
     onNote(t('Making the link’s preview…'));
-    const made = await makePreview(link);
+    const made = await makePreview(link, way === 'tor');
     onNote('');
     const preview = made && fitPreview(text, made);
     return preview ? { preview } : {};
@@ -441,6 +446,11 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       }
       setEditing(null);
       return;
+    }
+    // A group's messages go without Tor unless the space's way is Everything: that the relays that
+    // carry them see this phone's internet address is said once for the group, before (lib/ip-warning.ts).
+    if (!throughTor() && !(await ipGate({ network: 'Erevos', act: 'send', of: `group ${id.slice(0, 48)}` }))) {
+      throw new Error(t('Not sent. {reason}', { reason: t('Your internet address can be seen') }));
     }
     const groups = await groupsAt.groups();
     // The members named with @ and their whole name (lib/mentions.ts): told in a muted group too.

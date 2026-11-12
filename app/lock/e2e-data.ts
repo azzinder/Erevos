@@ -53,7 +53,8 @@ export type Contact = {
   shotsAt?: number;
   /** What goes to them and comes from them goes only through Tor, on circuits of this chat's own,
    *  whatever the space's Tor way (lib/tor-chats.ts): never straight, so it waits while Tor starts.
-   *  Calls do not: their sound goes as every call's does. Only this phone knows it. Missing: as the space. */
+   *  Calls do not: their sound goes as every call's does. The account's linked devices keep it alike
+   *  (lib/link-wire.ts Synced), set on the phone or on any of them. Missing: as the space. */
   tor?: true;
   /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
    *  request. Their phone hears nothing back (not even that a message came) until it does. */

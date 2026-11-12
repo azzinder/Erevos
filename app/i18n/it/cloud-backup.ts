@@ -36,10 +36,6 @@ export const cloudBackup: Record<string, string> = {
     "Ogni backup automatico può andare anche in una cartella su un server che scegli tu, come il tuo Nextcloud, via WebDAV. Il server riceve byte casuali con un nome casuale: non può aprirli né capire che sono di Erevos. Vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande, e il tuo indirizzo, a meno che il backup non passi per Tor, come dice l'impostazione Tor dello spazio. Non parte nulla finché non ne aggiungi uno.",
   "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
     "Questo spazio invia Tutto tramite Tor, e qui Tor non può raggiungere un server, quindi non gli è andato nulla.",
-  "Through Tor: the server does not see your address.":
-    "Tramite Tor: il server non vede il tuo indirizzo.",
-  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
-    "Ora non tramite Tor: il server vede il tuo indirizzo. Tor è in Impostazioni → Relay e reti → Tor.",
   "There is no Erevos backup in that folder.":
     "In quella cartella non c'è nessun backup di Erevos.",
   "Restore from a server":

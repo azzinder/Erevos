@@ -13,9 +13,10 @@ import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForSlowWayError, type NearHeard } from './nearby';
 import { toBase64, fromBase64 } from './crypto';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
+import { circuitOf } from './tor-chats';
 import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
 import { nostrReady } from './nostr';
-import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
+import { carriedFor, contactTarget, sealedTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 import { inTurn, needsRearm, ownerLooks, safetyDue, safetyStopped } from './safety';
 
@@ -226,7 +227,8 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     packets = voice.packets;
   } else if (message.file) {
     if (!place.own) throw new NoWayError();
-    const offer = await uploadFile(place.own, message.file, undefined, message.at);
+    // A chat that goes only through Tor sends its files on its own circuits too.
+    const offer = await uploadFile(e2e.torChat(identity) ? { ...place.own, torChat: circuitOf(identity) } : place.own, message.file, undefined, message.at);
     const file = await e2e.sealFile(identity, offer, '', options);
     sealed = file;
     packets = [file.packet];
@@ -235,7 +237,8 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     sealed = text;
     packets = [text.packet];
   }
-  const target = contactTarget(sends, sealed);
+  // A chat's that goes only through Tor waits there on its own circuits (sealedTarget), on a linked device too.
+  const target = sealedTarget(sends, sealed);
   const held = await e2e.copiesAfter(
     sealed.copies,
     (async () => {
@@ -387,7 +390,7 @@ async function rearmOne(e2e: E2E, history: History, place: SendPlace, message: M
     // their queue moved.
     const kept = message.resend;
     if (kept && place.sends && e2e.queueOf(identity)?.sender === kept.s) {
-      const target = contactTarget(place.sends, { relay: kept.r, relayKey: kept.k });
+      const target = sealedTarget(place.sends, { relay: kept.r, relayKey: kept.k, ...(e2e.torChat(identity) ? { torChat: circuitOf(identity) } : {}) });
       const again = await sendMessageLater(target, fromHex(kept.s), kept.p.map(fromBase64), at, kept.m ?? 'message');
       made = { lasts: message.lasts ?? 0, held: again, heldFor: kept.s, resend: kept };
     } else {
@@ -453,7 +456,7 @@ function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): 
 
 // Whether Nostr is the way to them now: no relay between the two, they read there, and Tor is ready (lib/nostr-chats.ts nostrOnlyWay).
 function throughNostr(e2e: E2E, place: SendPlace, identity: string, queue: { sender: string }): boolean {
-  return (!place.sends || !queue.sender || !place.senderHex) && nostrReady() && e2e.readsOnNostr(identity);
+  return (!place.sends || !queue.sender || !place.senderHex) && nostrReady(e2e.torChat(identity)) && e2e.readsOnNostr(identity);
 }
 
 function throughRelay(place: SendPlace, queue: { sender: string; relay: string; relayKey: string }): boolean {
@@ -486,7 +489,9 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     // no relay between the two: in Nostr wraps, or on a file server (lib/nostr-send-files.ts).
     const queue = e2e.queueOf(identity);
     const toNostr = !place.own || !queue?.sender || !place.senderHex || !place.sends ? e2e.nostrPlace(identity) : null;
-    const offer = toNostr ? await offerOnNostr(refSource(message.file), message.file, toNostr) : await uploadFile(place.own!, message.file);
+    // A chat that goes only through Tor sends its files through Tor too, whatever the space's way.
+    const tor = e2e.torChat(identity);
+    const offer = toNostr ? await offerOnNostr(refSource(message.file), message.file, toNostr, undefined, tor) : await uploadFile(tor ? { ...place.own!, torChat: circuitOf(identity) } : place.own!, message.file);
     const file = await e2e.sealFile(identity, offer, place.senderHex, options);
     sealed = file;
     packets = [file.packet];

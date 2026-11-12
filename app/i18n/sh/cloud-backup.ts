@@ -36,10 +36,6 @@ export const cloudBackup: Record<string, string> = {
     "Svaka automatska rezervna kopija može ići i u folder na serveru koji izaberete, kao vaš Nextcloud, preko WebDAV-a. Server dobija nasumične bajtove pod nasumičnim imenom: ne može ih otvoriti niti znati da su Erevosovi. Ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika, i vašu adresu, osim ako kopija ide preko Tora, kako kaže Tor postavka prostora. Ništa ne ide dok ne dodate server.",
   "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
     "Ovaj prostor šalje Sve preko Tora, a Tor ovdje ne može doći do servera, pa ništa nije otišlo.",
-  "Through Tor: the server does not see your address.":
-    "Preko Tora: server ne vidi vašu adresu.",
-  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
-    "Trenutno ne preko Tora: server vidi vašu adresu. Tor je u Postavke → Relay i mreže → Tor.",
   "There is no Erevos backup in that folder.":
     "U tom folderu nema Erevos rezervne kopije.",
   "Restore from a server":

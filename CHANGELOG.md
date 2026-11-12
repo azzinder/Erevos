@@ -44,6 +44,50 @@ On main, not released yet:
   that chat's messages and files go only through Tor, on Tor circuits of their own, whatever the space's Tor way, so
   the relay does not see the phone's address for it and no Tor exit carries it with another chat; they wait while Tor
   starts. Calls do not go through Tor. Hidden chats have it too.
+- **One chat only through Tor reaches Nostr too**: a chat with **Through Tor** on in its **Details** now sends and
+  reads its Nostr texts only through Tor, and its photos and files on Nostr file servers (Blossom) too, even when the
+  space's Tor is **Nothing**; Tor is started for it, and what goes waits for it, never straight. Until the contact
+  first writes to the chat's own queue, their first messages come to the space's own queue, which is read the space's
+  way. Before, with the space's Tor off, such a chat's texts could reach the public Nostr relays straight, and they
+  saw the phone's internet address.
+- **Through Tor on your linked devices too**: a chat's **Through Tor** switch (**Details** → **Through Tor**) now
+  reaches the account's linked devices, the computer app, the web app and Jolla (Sailfish), and back: switched on or
+  off on any of them, it is switched everywhere. On a linked device that chat's messages, files and send-later
+  messages then go only through Tor too, on the chat's own circuits, never straight, and so do the copies that go to
+  the contact's other devices. The web app, and any build without Tor, sends nothing for such a chat while the switch
+  is on; the switch is shown there while it is on, so it can be turned off, with a line that says why. A device still
+  on an older version never turns it off anywhere; it learns a change made elsewhere at that contact's next change.
+  Before, it was only on the phone where you set it, and the computer and the web app sent that chat as their own Tor
+  setting said.
+- **Nostr has its own Tor switch**: the **Nostr** screen has **Nostr through Tor**, **On** or **Off**, off unless
+  turned on. On, Erevos reaches the Nostr relays and the Nostr file servers only through Tor, starting Tor for it even
+  when the space's Tor is **Nothing**; a text that goes there waits while Tor starts. It only adds Tor: with the
+  space's Tor on, Nostr goes through Tor whatever it says, and so does a chat set to **Through Tor**. Before, Nostr
+  only followed the space's Tor setting, and the screen only said whether it was on.
+- **Warnings before your internet address (IP address) can be seen**, each said once, with a **Guide** button that
+  opens the new guide section **Who sees your internet address** and, where there is one, a button that fixes it:
+  before the first message, voice message or file in an Erevos chat that can go without Tor (**Through Tor for this
+  chat** turns that chat's switch on and sends; **Go on** sends and the chat is not warned again); before the first
+  message in an Erevos group that can go without Tor; before a call, which never goes through Tor, unless the contact
+  is nearby on the same network; before fetching a file a contact put on a file server they chose; and in every **Open
+  this link?** question, which now says the site sees the address and that Tor Browser hides it. Before, none of these
+  said so.
+- **A Tor switch of their own**: backups to a server, the Collection's server copy, radio and TV lists, link previews
+  and updates each have a **Through Tor** switch in their own screen (in a server's card and in the form that adds or
+  restores from one, in the Collection's settings, under **Radio and TV lists**, under **Link previews**, in
+  **Updates**), off unless turned on. On, that goes only through Tor, starting Tor for it and waiting while it starts,
+  whatever the space's Tor setting; nothing goes straight. It only adds Tor: off, it goes as the space's Tor setting
+  says. The Nextcloud sign-in follows the switch of the server it signs in for. On the computer and in the web app,
+  which have no Tor, a server with the switch on gets nothing; backup pieces given to friends do not carry it. Radio
+  Browser's search, playlist and TV-list links and channel logos go through Tor; playing a station or a channel always
+  goes straight, so it sees the address. A link preview is fetched through Tor, slower, and a page that sends you on
+  elsewhere, or does not let Tor in, gets none; with the space's Tor at **Everything**, previews go only if the switch
+  is on. For updates, one switch makes the daily new-version notice and **Check for updates** ask the web app's server,
+  which holds the release computer's signature of each update, through Tor, and not GitHub; a new version is told, but
+  does not download through Tor, as its package is larger than Erevos's Tor takes: to install it, turn the switch off
+  for a moment, or download it from the releases page in Tor Browser. The updates switch is per phone. Before, backups,
+  the Collection and radio and TV followed only the space's Tor setting, previews and updates never went through Tor,
+  and several screens only had a line saying whether the space's Tor was on.
 - **Bare web addresses open too**: t.me/name, example.org/page and other names with a known web ending are underlined
   and tappable in every chat, as Telegram and Signal show them, opened with https:// once shown whole. E-mail
   addresses and file names (photo.jpg) are not links. Before, only addresses starting with http://, https:// or www.

@@ -11,18 +11,23 @@ import { idsOf, isThere, valueOf, type Change, type Json, type Log } from './log
 // What of the contacts goes into the account's log (lib/sync/log.ts, docs/sync.md, phase S1): each
 // contact a record of kind `contact` by its identity, with what every device keeps alike of it
 // (lib/link-wire.ts Synced: its name, timer, whether it is still a request, its look, whether it is
-// hidden; a picture stays where it was chosen, and goes later), and each one blocked a record of
-// kind `blocked`, with the name it had. `changesFor` says what to write so the log says what the
-// phone has now: nothing for what it says already. A linked device writes what it changed, as it
-// says it in `set` (`syncChangesOf`), and takes what the log says as such a `set` (`setsFromLog`).
+// hidden, whether it goes only through Tor; a picture stays where it was chosen, and goes later),
+// and each one blocked a record of kind `blocked`, with the name it had. `changesFor` says what to
+// write so the log says what the phone has now: nothing for what it says already. A linked device
+// writes what it changed, as it says it in `set` (`syncChangesOf`), and takes what the log says as
+// such a `set` (`setsFromLog`).
 
-/** What of a contact the log keeps: lib/link-wire.ts Synced without the picture and the times. */
-export type LoggedContact = { identity: string; name: string; timer: number; request: boolean; look: Json; hide: boolean };
+/**
+ * What of a contact the log keeps: lib/link-wire.ts Synced without the picture and the times.
+ * Whether the chat goes only through Tor is missing where it was never said, as by a version from
+ * before it: the log then keeps it as it has it.
+ */
+export type LoggedContact = { identity: string; name: string; timer: number; request: boolean; look: Json; hide: boolean; tor?: boolean };
 
 /** What of one blocked the log keeps. */
 export type LoggedBlocked = { identity: string; name: string };
 
-const FIELDS = ['name', 'timer', 'request', 'look', 'hide'] as const;
+const FIELDS = ['name', 'timer', 'request', 'look', 'hide', 'tor'] as const;
 
 const same = (a: Json | undefined, b: Json) => JSON.stringify(a ?? null) === JSON.stringify(b);
 
@@ -35,6 +40,8 @@ function changesOf<T extends { identity: string }>(log: Log, kind: string, now: 
     here.add(id);
     if (!isThere(log, kind, id)) changes.push({ k: kind, id, x: 'add' });
     for (const f of fields) {
+      // A field not said is left as the log has it.
+      if (item[f] === undefined) continue;
       const v = (item[f] ?? null) as Json;
       if (!isThere(log, kind, id) || !same(valueOf(log, kind, id, f), v)) changes.push({ k: kind, id, f, v });
     }
@@ -50,14 +57,18 @@ export function changesFor(log: Log, contacts: readonly LoggedContact[], blocked
 
 /** The contacts as the log says them, by identity. */
 export function contactsIn(log: Log): LoggedContact[] {
-  return idsOf(log, 'contact').map((identity) => ({
-    identity,
-    name: String(valueOf(log, 'contact', identity, 'name') ?? ''),
-    timer: Number(valueOf(log, 'contact', identity, 'timer') ?? 0),
-    request: valueOf(log, 'contact', identity, 'request') === true,
-    look: valueOf(log, 'contact', identity, 'look') ?? null,
-    hide: valueOf(log, 'contact', identity, 'hide') === true,
-  }));
+  return idsOf(log, 'contact').map((identity) => {
+    const tor = valueOf(log, 'contact', identity, 'tor');
+    return {
+      identity,
+      name: String(valueOf(log, 'contact', identity, 'name') ?? ''),
+      timer: Number(valueOf(log, 'contact', identity, 'timer') ?? 0),
+      request: valueOf(log, 'contact', identity, 'request') === true,
+      look: valueOf(log, 'contact', identity, 'look') ?? null,
+      hide: valueOf(log, 'contact', identity, 'hide') === true,
+      ...(typeof tor === 'boolean' ? { tor } : {}),
+    };
+  });
 }
 
 /** Those blocked as the log says them. */
@@ -84,6 +95,7 @@ export function syncChangesOf(said: SetEnvelope): Change[] {
   if (c.request === false) out.push({ k: 'contact', id, f: 'request', v: false });
   if (c.look !== undefined) out.push({ k: 'contact', id, f: 'look', v: (c.look ?? null) as unknown as Json });
   if (c.hide !== undefined) out.push({ k: 'contact', id, f: 'hide', v: c.hide });
+  if (c.tor !== undefined) out.push({ k: 'contact', id, f: 'tor', v: c.tor });
   return out;
 }
 
@@ -105,6 +117,8 @@ export function setsFromLog(log: Log, id: string, kept: Synced | undefined): Set
   const timer = valueOf(log, 'contact', id, 'timer');
   const look = checkedLookOf(valueOf(log, 'contact', id, 'look'));
   const hide = valueOf(log, 'contact', id, 'hide');
+  // Whether the chat goes only through Tor: none from a version from before it, which leaves it as kept.
+  const tor = valueOf(log, 'contact', id, 'tor');
   const request = valueOf(log, 'contact', id, 'request');
   if (!kept) {
     // Added: with all it holds, as of when it was added.
@@ -113,6 +127,7 @@ export function setsFromLog(log: Log, id: string, kept: Synced | undefined): Set
       ...(typeof timer === 'number' ? { timer, timerAt: setAt(log, id, 'timer') } : {}),
       ...(look !== undefined ? { look } : {}),
       ...(typeof hide === 'boolean' ? { hide } : {}),
+      ...(typeof tor === 'boolean' ? { tor } : {}),
       ...(typeof request === 'boolean' ? { request } : {}),
     };
     return [{ k: 'set', c: id, change, when: e.add!.t, added: true }];
@@ -123,6 +138,7 @@ export function setsFromLog(log: Log, id: string, kept: Synced | undefined): Set
   if (typeof timer === 'number' && timer !== kept.timer) one({ timer, timerAt: setAt(log, id, 'timer') }, 'timer');
   if (look !== undefined && JSON.stringify(look) !== JSON.stringify(kept.look)) one({ look }, 'look');
   if (typeof hide === 'boolean' && hide !== kept.hide) one({ hide }, 'hide');
+  if (typeof tor === 'boolean' && tor !== (kept.tor === true)) one({ tor }, 'tor');
   if (request === false && kept.request) one({ request: false }, 'request');
   return out;
 }

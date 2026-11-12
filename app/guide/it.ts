@@ -1254,8 +1254,11 @@ ogni posto di chat nascoste ha un suo interruttore, nei dettagli di una chat lì
 sito scelto da qualcun altro, e non mostra a quel sito niente di sé, nemmeno il suo indirizzo.
 
 - **Il sito vede l’indirizzo internet di questo telefono**, e quando, come lo vedrebbe da un browser, ma non per chi è
-  il messaggio. Tramite Tor, Erevos invia solo le sue richieste al relay, non le pagine, quindi mentre tutto nello
-  spazio passa da Tor (**Tutto** in Tor) non si creano anteprime.
+  il messaggio. Con **Tramite Tor** attivo, nelle **Anteprime dei link**, la pagina e la sua immagine vengono
+  scaricate solo tramite Tor, qualunque sia l’impostazione Tor dello spazio, quindi il sito non vede l’indirizzo. È
+  più lento e aspetta mentre Tor si avvia; una pagina che ti manda altrove, o che non fa entrare Tor, non ha
+  anteprima. Mentre tutto nello spazio passa da Tor (**Tutto** in Tor), le anteprime si creano solo con **Tramite
+  Tor** attivo.
 - Erevos su un computer non ne crea, ma mostra lo stesso quelle che arrivano.
 - **Via LoRa**, che trasmette poco, un messaggio parte senza la sua anteprima piuttosto che aspettare, e qui non ne
   tiene nessuna.
@@ -1724,6 +1727,12 @@ vocali, che sono grandi, vanno direttamente e quindi più veloci.
   non lo attivi. Il relay allora non vede l’indirizzo IP del tuo telefono per quella chat, e nessuna uscita Tor la
   porta insieme a un’altra chat. È più lento, e quello che parte aspetta mentre Tor si avvia. Le chiamate non passano
   tramite Tor. Anche le chat nascoste lo hanno, ciascuna nei propri **Dettagli**.
+  È uguale sui tuoi dispositivi collegati: attivato o disattivato su uno, lo è su tutti. Su un dispositivo senza Tor,
+  come l’app web, quella chat non invia nulla finché è attivo.
+  Vale anche per i testi Nostr di quella chat e per le sue foto e i suoi file sui server di file Nostr, anche quando
+  la scelta di questo spazio è **Niente**: Tor viene avviato per loro e niente parte in diretta. Finché il tuo
+  contatto non scrive per la prima volta nella coda propria della chat, i suoi primi messaggi arrivano nella coda
+  dello spazio, che si legge come dice lo spazio. Vedi [Chi vede il tuo indirizzo internet](#ip).
 
 - **Che cosa nasconde:** il relay non vede più l’indirizzo IP del tuo telefono, solo un’uscita Tor (o niente, per un
   relay con un indirizzo \`.onion\`). Il tuo operatore telefonico o la rete Wi-Fi vedono solo che usi Tor, non quale
@@ -1780,6 +1789,11 @@ spazio ha la sua scelta, e i suoi relay Nostr.
 - **Come va:** con **Niente**, i testi vanno direttamente ai relay Nostr. Con **Messaggi**, tramite Tor quando Tor è
   pronto, e dal tuo relay mentre Tor si avvia. Con **Tutto**, solo tramite Tor. Quando la via cambia, le connessioni
   Nostr si chiudono e si riaprono sulla via nuova.
+- **Nostr tramite Tor:** nella schermata **Nostr**, **Nostr tramite Tor** è **Disattivato** a meno che tu non lo
+  attivi. **Attivato**, Erevos raggiunge i relay Nostr e i server di file Nostr solo tramite Tor e avvia Tor per
+  questo, anche quando il Tor dello spazio è **Niente**; un testo che va lì aspetta mentre Tor si avvia. Aggiunge solo
+  Tor: con Tor attivato per lo spazio, Nostr passa da Tor qualunque cosa dica questo, e una chat impostata su
+  **Tramite Tor** passa da Tor qualunque cosa dica questo. Vedi [Chi vede il tuo indirizzo internet](#ip).
 - **I relay:** relay.damus.io, nos.lol e relay.primal.net a meno che tu non li cambi; puoi aggiungere i tuoi, al
   massimo cinque. Ai tuoi contatti vengono comunicati i relay su cui leggi, e ti scrivono lì; basta che uno prenda un
   testo.
@@ -1833,6 +1847,41 @@ codice QR dicono dove legge su Nostr, e basta questo per parlare.
 
 **Perché:** Nostr è solo la porta d’ingresso. Nessuno ha bisogno di un invito per iniziare, e appena uno di voi ha un
 relay, questo trasporta quello che è troppo grande per Nostr.
+
+## Chi vede il tuo indirizzo internet {#ip}
+
+L’indirizzo internet del tuo telefono, il suo indirizzo IP, mostra più o meno dove sei e quale operatore usi. Non
+mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la connessione passi da Tor.
+
+- **Il tuo relay e i relay dei tuoi contatti:** lo vedono. Per nasconderlo, attiva Tor per lo spazio (**Impostazioni**
+  → **Relay e reti** → **Tor**) oppure **Tramite Tor** nei **Dettagli** di una chat. Vedi [Tramite Tor](#tor).
+
+- **I relay Nostr pubblici e i server di file Nostr:** lo vedono, a meno che la connessione passi da Tor. Attiva
+  **Nostr tramite Tor** in **Impostazioni** → **Relay e reti** → **Nostr**, oppure **Tramite Tor** per una chat. Vedi
+  [Tramite Nostr](#nostr).
+
+- **Le chiamate:** non passano mai da Tor. Il relay delle chiamate, il tuo o quello del tuo contatto, vede
+  l’indirizzo, ma non quello che si dice. Una chiamata tra telefoni vicini sulla stessa rete resta su quella rete.
+
+- **Un file su un server scelto dal tuo contatto:** il server vede l’indirizzo quando il tuo telefono scarica il file.
+  Tor lo nasconde.
+
+- **I link web che apri:** il sito lo vede, come ogni pagina web. Per nasconderlo, apri i link in Tor Browser. Anche
+  l’anteprima di un link viene scaricata dal suo sito, e il sito vede l’indirizzo allo stesso modo.
+  Con **Tramite Tor** attivo per le anteprime dei link, non lo vede.
+
+- **I gruppi:** un messaggio in un gruppo Erevos passa da un server, che vede l’indirizzo. Tor per lo spazio lo
+  nasconde; un gruppo non ha un interruttore suo.
+
+- **Backup, il server della Raccolta, liste radio e TV, anteprime dei link e aggiornamenti:** ognuno ha il proprio
+  interruttore **Tramite Tor**, nella propria schermata, disattivato finché non lo attivi. Vedi [Backup](#backup),
+  [Raccolta](#collection), [Chat tramite un relay](#relay) e [Aggiornamenti](#updates).
+
+Erevos avvisa una volta prima di ciascuno di questi casi, con il titolo **Il tuo indirizzo internet può essere
+visto**, un pulsante **Guida** che apre questa sezione e, dove può, un pulsante che lo risolve, come **Tramite Tor per
+questa chat**. **Vai avanti** prosegue; per una chat viene detto una volta e non di nuovo per quella chat.
+
+I telefoni vicini, LoRa e gli SMS non usano internet, quindi non mostrano nessun indirizzo internet.
 
 ## Matrix {#matrix}
 
@@ -1981,8 +2030,7 @@ sta nel mezzo.
 - **Posizioni:** **Posizione** invia dove sei, una volta, come fa Element; va cifrata come la chat e si mostra con
   **Apri nelle mappe** su Android.
 - **Anteprime dei link:** con le **Anteprime dei link** attive, come per le chat con i tuoi contatti, il primo link di
-  un messaggio parte con un’anteprima fatta dal tuo telefono, cifrata anch’essa in una chat cifrata. Mai tramite Tor,
-  e mai in un luogo nascosto.
+  un messaggio parte con un’anteprima fatta dal tuo telefono, cifrata anch’essa in una chat cifrata. Tramite Tor solo con **Tramite Tor** attivo nelle **Anteprime dei link**, e mai in un luogo nascosto.
 - **Fissare e inoltrare:** **Fissa**, nel menu di un messaggio, lo fissa in cima alla stanza per tutti, se la stanza
   te lo permette; una barra sopra la chat mostra l’ultimo messaggio fissato, e un tocco ci va e poi mostra il
   successivo. **Non fissare più** lo toglie. **Inoltra** invia una copia a un’altra chat di questo account; la copia
@@ -3152,8 +3200,8 @@ La Raccolta è un posto cifrato per le tue foto, i tuoi file e le tue cartelle, 
 - **Fuori dalla Raccolta:** una foto si apre a schermo intero, per scorrere e ingrandire, con **Invia a una chat**, **Salva sul telefono**, **Informazioni** ed **Elimina**. Salvare sul telefono o aprire un file con un’altra app lo porta fuori non cifrato, e Erevos lo dice prima. Inviare a una chat lascia la copia della Raccolta dov’è. Dalla Raccolta di un luogo nascosto i file vanno solo alle chat e ai gruppi di quel luogo nascosto, mai a quelli dello spazio, e la Raccolta dello spazio mai a un luogo nascosto. Scorri, o usa le frecce, per la foto successiva o la precedente; **Presentazione** in alto le mostra una dopo l’altra, ogni 4 secondi, fino a un tocco.
 - **Da una chat:** **+** sotto il campo del messaggio, poi **Raccolta**, apre la Raccolta del luogo di quella chat: tocca le foto o i file da inviare, poi **Invia**, e vanno in quella chat.
 - **Backup:** un backup contiene la Raccolta insieme al resto del telefono. **Impostazioni** → **Dati e dispositivi** → **Raccolta**, o i tre puntini nella Raccolta, possono lasciare quella Raccolta fuori dai backup fatti mentre è aperta: ogni Raccolta ha la sua scelta.
-- **Su un server WebDAV:** nelle impostazioni della Raccolta, **Anche su un server WebDAV** copia i file di questa Raccolta così come sono, sempre cifrati, in una cartella su un server che scegli tu, Nextcloud, ownCloud o qualsiasi server che parli WebDAV: indica l’indirizzo della cartella, un nome utente e, meglio, una password per app, poi tocca **Connetti**; **Prova la connessione** li verifica prima. Ogni spazio e ogni luogo nascosto ha la sua scelta e il suo server; per primo viene proposto il server dei backup. Va solo ciò che non c’è ancora, un pezzo alla volta, mentre il luogo è aperto, e dopo un calo della rete riprende da dove si era fermata; un file eliminato qui viene eliminato anche lì. Nient’altro nella cartella viene toccato. Il server vede solo pezzi con nomi casuali, in una sottocartella dal nome casuale, e non può aprirli. Un telefono a cui manca un file, come dopo un backup ripristinato su un telefono nuovo, lo prende da lì quando lo apre, e tiene solo i pezzi che si aprono con la chiave del file. Erevos mostra quanto ne è già arrivato, con **Annulla**: ciò che è arrivato resta, e la volta successiva arriva solo il resto; musica, video, PDF e **Apri con un’altra app** lo recuperano anche loro prima. Finché tutto è copiato, i backup fatti con il luogo aperto possono lasciarne fuori i pezzi, anche dopo un riavvio di Erevos, finché non si aggiunge o elimina un file.
-- **Con Nextcloud, come quello di LPHL:** in quel modulo, e in **Aggiungi un server** dei backup, scrivi l’indirizzo del tuo Nextcloud in **Il tuo Nextcloud** e tocca **Accedi con Nextcloud**: accedi nel browser, come per Fasouli, con Authentik o come vi si accede, e scegli **Concedi accesso**. Erevos riceve una password per app tutta sua e riempie il modulo con la sua cartella nei tuoi file, **Erevos/Collection** o **Erevos/Backups**, creata se manca, accanto a quella di Fasouli, che non legge mai; poi tocca **Connetti**. Quella password si revoca in Nextcloud → Impostazioni → Sicurezza.
+- **Su un server WebDAV:** nelle impostazioni della Raccolta, **Anche su un server WebDAV** copia i file di questa Raccolta così come sono, sempre cifrati, in una cartella su un server che scegli tu, Nextcloud, ownCloud o qualsiasi server che parli WebDAV: indica l’indirizzo della cartella, un nome utente e, meglio, una password per app, poi tocca **Connetti**; **Prova la connessione** li verifica prima. Ogni spazio e ogni luogo nascosto ha la sua scelta e il suo server; per primo viene proposto il server dei backup. Va solo ciò che non c’è ancora, un pezzo alla volta, mentre il luogo è aperto, e dopo un calo della rete riprende da dove si era fermata; un file eliminato qui viene eliminato anche lì. Nient’altro nella cartella viene toccato. Il server vede solo pezzi con nomi casuali, in una sottocartella dal nome casuale, e non può aprirli. Un telefono a cui manca un file, come dopo un backup ripristinato su un telefono nuovo, lo prende da lì quando lo apre, e tiene solo i pezzi che si aprono con la chiave del file. Erevos mostra quanto ne è già arrivato, con **Annulla**: ciò che è arrivato resta, e la volta successiva arriva solo il resto; musica, video, PDF e **Apri con un’altra app** lo recuperano anche loro prima. Finché tutto è copiato, i backup fatti con il luogo aperto possono lasciarne fuori i pezzi, anche dopo un riavvio di Erevos, finché non si aggiunge o elimina un file. Ha un proprio interruttore **Tramite Tor**, disattivato finché non lo attivi: attivo, la copia va solo tramite Tor, qualunque sia l’impostazione Tor dello spazio, quindi il server non vede il tuo indirizzo IP; è più lento e aspetta mentre Tor si avvia. Dove non c’è Tor, nell’app per computer e nell’app web, un server con l’interruttore attivo non riceve nulla.
+- **Con Nextcloud, come quello di LPHL:** in quel modulo, e in **Aggiungi un server** dei backup, scrivi l’indirizzo del tuo Nextcloud in **Il tuo Nextcloud** e tocca **Accedi con Nextcloud**: accedi nel browser, come per Fasouli, con Authentik o come vi si accede, e scegli **Concedi accesso**. Erevos riceve una password per app tutta sua e riempie il modulo con la sua cartella nei tuoi file, **Erevos/Collection** o **Erevos/Backups**, creata se manca, accanto a quella di Fasouli, che non legge mai; poi tocca **Connetti**. Quella password si revoca in Nextcloud → Impostazioni → Sicurezza. L’accesso segue l’interruttore **Tramite Tor** del server per cui si fa: attivo, Erevos interroga il tuo Nextcloud solo tramite Tor, ma la pagina nel browser va come sempre.
 - **Sui tuoi dispositivi collegati:** nelle impostazioni della Raccolta, **Anche sui miei dispositivi collegati** manda quella Raccolta ai [dispositivi collegati](#devices) del suo spazio o luogo nascosto, e l’interruttore vale per tutti. Un file aggiunto, rinominato, spostato o eliminato su uno lo è su tutti. Le miniature arrivano subito; il file stesso arriva subito sulla stessa Wi-Fi, altrimenti quando lo apri, dal server WebDAV se la Raccolta ne ha uno, o tramite il relay fino a 100 MB. Ogni pezzo viene tenuto solo quando si apre con la chiave del file, e un trasferimento interrotto riprende dal pezzo che mancava. Un file viene eliminato altrove solo quando viene eliminato su uno dei tuoi dispositivi, mai perché lì manca. La Raccolta di un luogo nascosto va solo ai dispositivi collegati di quel luogo.
 - **Musica, video e PDF:** un PDF si legge pagina per pagina dentro Erevos (Android 11 e successivi), decifrato solo in memoria. Musica e video si riproducono direttamente dai loro pezzi cifrati, mai da una copia: un video a schermo intero, la musica con le successive della cartella, che continua a schermo spento, con riproduci, pausa, successivo e precedente nella notifica e sulla schermata di blocco del telefono, e lì solo questi. L’elenco continua dopo che lo spazio si è bloccato, a meno che **Ferma la riproduzione quando lo spazio si blocca** sia attivo nelle impostazioni della Raccolta; **Ferma** e il pulsante antipanico lo terminano. La notifica dice solo **In riproduzione**, a meno che **Mostra il titolo nella notifica** sia attivo. **Apri con un’altra app** passa il file mentre viene decifrato, senza copie sul telefono, finché non esci dalla Raccolta; l’altra app può tenerne una sua.
 - **Originali nella galleria:** con **Elimina l’originale dalla galleria dopo l’importazione** attivo, una foto o un video scelto dai file del telefono viene eliminato dalla galleria appena è nella Raccolta, dopo che Android ti chiede di confermare. Serve Android 11 o successivo. Una foto della fotocamera non finisce mai nella galleria.
@@ -3164,13 +3212,14 @@ La Raccolta è un posto cifrato per le tue foto, i tuoi file e le tue cartelle, 
 - **Sottotitoli:** un file .srt o .vtt nella stessa cartella di un video, con il suo nome (film.mkv e film.srt, o film.en.srt), si mostra come i suoi sottotitoli, letto dai suoi pezzi cifrati come il video; **Sottotitoli sì** in alto li toglie, e li rimette.
 - **Playlist:** in alto in **Musica**, **Nuova playlist** ne crea una; le canzoni ci entrano dal loro menu (**Aggiungi a una playlist**) o scelte insieme (tienine premuta una, poi **Playlist**). Aprila per riprodurla in ordine o in ordine casuale, spostare una canzone su o giù, o toglierla: resta nella Raccolta. Le playlist sono tenute cifrate con la Raccolta, mai in chiaro.
 - **Radio:** la scheda **Radio** contiene stazioni radio via internet, ciascuna dal suo link; **+** lì ne aggiunge una. Solo link https: Erevos non apre http in chiaro, quindi una stazione che ha solo un link http non si può aggiungere. Un link di playlist (.m3u, .pls) viene letto una volta, quando si aggiunge, per il link del flusso stesso; un flusso HLS (.m3u8) suona sul telefono. Una stazione suona come la musica, con la stessa notifica, lo stesso **Ferma la riproduzione quando lo spazio si blocca** e il pulsante antipanico; il titolo che invia si vede nella schermata di riproduzione, e nella notifica solo quando **Mostra il titolo nella notifica** è attivo. La stazione, e chi gestisce il suo server, vede l’indirizzo IP del tuo dispositivo mentre suona, come ogni sito; Erevos non le invia nient’altro, e solo «Erevos» come nome. Le stazioni sono tenute cifrate con la Raccolta.
-- **Trovare una stazione:** **Aggiungi una stazione** cerca anche in Radio Browser (radio-browser.info), un elenco libero di stazioni a cui chiunque può aggiungere: gli vengono inviate solo le parole che scrivi, quando premi **Cerca**, e vede l’indirizzo IP del tuo dispositivo, come la stazione. Si vedono solo stazioni per cui ha un link https; un tocco ne aggiunge una.
+- **Trovare una stazione:** **Aggiungi una stazione** cerca anche in Radio Browser (radio-browser.info), un elenco libero di stazioni a cui chiunque può aggiungere: gli vengono inviate solo le parole che scrivi, quando premi **Cerca**, e vede l’indirizzo IP del tuo dispositivo, come la stazione. Si vedono solo stazioni per cui ha un link https; un tocco ne aggiunge una. Con **Tramite Tor** attivo in **Liste radio e TV**, più sotto, la ricerca passa tramite Tor e Radio Browser non vede il tuo indirizzo IP.
 - **Una playlist di molte stazioni:** un link di playlist (.m3u, .pls) che nomina molte stazioni le aggiunge tutte, e **Importa un file di playlist** aggiunge le stazioni di un file .m3u o .pls del tuo dispositivo, letto lì e non inviato da nessuna parte. Vengono aggiunte solo stazioni con link https (al massimo 500 da una lista), ed Erevos dice quante ne sono rimaste fuori.
 - **Quando un flusso cade:** se il server di una stazione, o un proxy lungo la strada, chiude il flusso, o la rete se ne va per un momento, Erevos richiede la stazione da solo dopo 1, 2, 4… secondi (al massimo 30), finché vuoi ascoltarla, su Android, sul computer e nel browser. Dopo 12 tentativi di fila si ferma e lo dice.
 - **TV:** la scheda **TV** tiene canali TV, ognuno con il suo link https, nei gruppi che dà loro la loro lista, con una riga per mostrare un gruppo e una ricerca per nome. Un tocco riproduce un canale a tutto schermo, come un video, con lo stesso **Ferma la riproduzione quando lo spazio si blocca** e il pulsante antipanico; non c’è una guida ai programmi. Si riproduce su Android, nell’app desktop e in un browser; lì un flusso HLS si riproduce con hls.js, e solo se il suo server lascia che l’app web lo legga.
 - **Aggiungere canali:** **+** in **TV** aggiunge una lista dal suo link (.m3u), letta una volta quando viene aggiunta, un file di lista del tuo dispositivo (**Importa un file di lista (.m3u)**), letto lì e non inviato da nessuna parte, oppure un canale dal suo link. Vengono aggiunti solo canali con un link https, ogni link una volta, fino a 15.000 in ogni Raccolta, ed Erevos dice quanti sono rimasti fuori. Tieni premuto un canale per rinominarlo, eliminare lui o tutto il suo gruppo, o mandare con **Invia a una chat** il suo nome e il suo link; anche il menu di una stazione radio ha **Invia a una chat**.
-- **iptv-org:** **Aggiungi canali** offre iptv-org (github.com/iptv-org/iptv), una lista pubblica di canali gratuiti: **iptv-org per paese**, prima la regione del tuo dispositivo, oppure **iptv-org: tutti i canali**, più di 10.000. Il suo server vede l’indirizzo IP del tuo dispositivo quando la lista viene scaricata, e ogni canale quando va in onda.
+- **iptv-org:** **Aggiungi canali** offre iptv-org (github.com/iptv-org/iptv), una lista pubblica di canali gratuiti: **iptv-org per paese**, prima la regione del tuo dispositivo, oppure **iptv-org: tutti i canali**, più di 10.000. Il suo server vede l’indirizzo IP del tuo dispositivo quando la lista viene scaricata, e ogni canale quando va in onda. Con **Tramite Tor** attivo in **Liste radio e TV**, più sotto, la lista viene scaricata tramite Tor, quindi il suo server non vede il tuo indirizzo IP; ogni canale lo vede comunque, quando va in onda.
 - **Cosa vede un canale:** il canale, e chi gestisce il suo server, vede l’indirizzo IP del tuo dispositivo mentre va in onda, come qualsiasi sito. I loghi appaiono solo con **Mostra i loghi dei canali** attivo nelle impostazioni della Raccolta, perché anche il server di ogni logo vede il tuo indirizzo IP; altrimenti un’icona della TV. I canali sono tenuti cifrati con la Raccolta.
+- **Liste radio e TV tramite Tor:** nelle impostazioni della Raccolta, la scheda **Liste radio e TV** ha **Tramite Tor**, disattivato finché non lo attivi. Attivo, Erevos chiede solo tramite Tor, qualunque sia l’impostazione Tor dello spazio, la ricerca in Radio Browser, una playlist o una lista TV scaricata dal suo link, la lista di iptv-org e i loghi dei canali, quindi i loro server non vedono l’indirizzo IP del tuo dispositivo. È più lento e aspetta mentre Tor si avvia. Riprodurre una stazione o un canale va sempre in modo diretto, quindi vede l’indirizzo IP mentre è in riproduzione.
 
 **Perché:** certe foto e certi file, un passaporto, un contratto, un’immagine, non devono stare nella galleria per essere letti da qualunque app né viaggiare in una chat. La Raccolta li tiene con la stessa cifratura delle chat, a parte. Quando un file è salvato sul telefono o aperto con un’altra app, è fuori da Erevos, non cifrato.
 
@@ -3204,6 +3253,8 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
    ciò che è nuovo; **Smetti di inviare** lo ferma, e quelli che ci sono
    restano. Nella web app, che non fa backup da sé, **Invia un backup ora** ne invia uno lì, con una password che
    scrivi ogni volta.
+   Ogni server ha un interruttore **Tramite Tor**, nella sua scheda e nel modulo che ne aggiunge uno, disattivato
+   finché non lo attivi (vedi **Su un server** più sotto).
 4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
    volta, trova i file del backup accanto a lui, o ti chiede di sceglierli, o la loro cartella (per un backup
    automatico, scegli ogni file della cartella, perché alcuni dei suoi file possono cominciare come il nome di un
@@ -3244,6 +3295,13 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   massimo che Erevos accetta in un download: allora scarica il backup e i suoi file dal server e tocca **Ripristina
   un backup**. Un Erevos precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google
   lega il file al tuo nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
+  L’interruttore **Tramite Tor** di ogni server, disattivato finché non lo attivi, ha la precedenza sulla scelta dello
+  spazio per quel server: attivo, i suoi backup vanno solo tramite Tor, qualunque sia l’impostazione Tor dello spazio,
+  e aspettano che Tor si avvii, quindi il server non vede l’indirizzo del telefono. **Ripristina da un server** e il
+  modulo che aggiunge un server hanno lo stesso interruttore, e l’accesso con Nextcloud segue l’interruttore del
+  server per cui si fa: la pagina nel browser va come sempre. L’app per computer e l’app web non hanno Tor: un server
+  con l’interruttore attivo non riceve nulla da lì. I pezzi del backup che dai agli amici ([Pezzi del backup presso
+  amici](#backup-pieces)) non portano l’interruttore.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
   messaggi arrivati dopo il backup e già letti non ci sono. Una conversazione proseguita dopo il backup smetterebbe di
   aprire i nuovi messaggi, quindi ogni chat ripristinata, quella dello spazio e quella di ogni posto nascosto quando
@@ -3832,6 +3890,10 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   di panico, il tempo del blocco, la vibrazione, il relay e Tor, i moduli, il nome del dispositivo. Un dispositivo che
   deve tenere le sue: **Impostazioni** → **Dati e dispositivi** → **Dispositivi collegati** → **Stesse impostazioni su
   tutti i dispositivi** disattivato. Riattivato, prende subito quelle degli altri. Le chat nascoste tengono le loro.
+- **Tramite Tor per una chat:** l’interruttore **Tramite Tor** nei **Dettagli** di una chat di Erevos è lo stesso su
+  ogni dispositivo: attivato o disattivato su uno, lo è su tutti. Su un dispositivo senza Tor, come l’app web, quella
+  chat non invia nulla finché è attivo. Un dispositivo con una versione più vecchia non lo disattiva mai per gli
+  altri. Vedi [Tramite Tor](#tor).
 - **Sullo stesso Wi-Fi:** il telefono e un computer sullo stesso Wi-Fi o hotspot (con **Trova Erevos sulla stessa rete Wi-Fi**
   attivo) si passano ciò che cambia direttamente lì, anche senza internet; il relay riceve comunque la sua copia, che
   allora non cambia più nulla. Solo quelli dello spazio: i collegamenti delle chat nascoste passano dal relay.
@@ -4051,6 +4113,9 @@ versione, senza chiedere a GitHub, come spiega **Avvisato quando esce una nuova 
    Android lo vede anche il server della web app, che contiene la firma dell’aggiornamento fatta dal computer delle
    versioni. Mentre tutto nello
    spazio passa da Tor (**Tutto** in Tor), Erevos non controlla, perché aggirerebbe Tor.
+   Con **Tramite Tor** attivo, in questa schermata (disattivato finché non lo attivi), interroga solo il server
+   dell’app web, tramite Tor, e non GitHub: GitHub non viene interrogato e nulla vede l’indirizzo. È più lento e
+   aspetta mentre Tor si avvia; e funziona anche mentre tutto nello spazio passa da Tor.
 3. Quando c’è una nuova versione: su Android tocca **Installa**. Si scarica, viene controllata rispetto alla versione
    pubblicata (la sua dimensione e lo SHA-256), e si apre il programma di installazione di Android: tocca lì
    **Installa**. Erevos la offre solo dopo che il computer delle versioni, che tiene la sua chiave offline, ha firmato
@@ -4061,6 +4126,9 @@ versione, senza chiedere a GitHub, come spiega **Avvisato quando esce una nuova 
    tutto; poi Erevos lo dice e non si installa nulla. La prima volta, Android chiede di consentire l’installazione di
    app da Erevos. Su un computer e su Sailfish OS, **Apri la pagina di download** apre la pagina delle versioni:
    prendi il file che Erevos indica, quello del pacchetto che hai, e aggiorna come nella tabella qui sotto.
+   Tramite Tor una nuova versione viene segnalata, ma non si scarica qui, perché il suo pacchetto è più grande di
+   quanto accetti il Tor di Erevos: disattiva **Tramite Tor** per un momento per installarla, oppure scaricala dalla
+   pagina delle versioni in Tor Browser.
 
 Una versione come **4.0.0-rc.1** è una versione di prova prima della 4.0.0 (una release candidate): si installa e si
 aggiorna come ogni altra, e la 4.0.0 arriva dopo.
@@ -4087,6 +4155,10 @@ per **Aggiornamenti**, poi **Cerca aggiornamenti**. Se ne va appena hai quella v
 - **Solo sul relay di LPHL:** uno spazio chiede solo mentre usa il relay di LPHL e non manda tutto tramite Tor
   (**Tutto** in Tor): il server allora non vede nulla che non veda già. Uno spazio su un altro relay, o senza relay,
   non chiede nulla; lì te lo dice **Cerca aggiornamenti**.
+  L’interruttore **Tramite Tor** in **Aggiornamenti**, uno per questa notifica e per **Cerca aggiornamenti**, solo su
+  questo telefono, la fa chiedere tramite Tor: il server allora non vede l’indirizzo del telefono, e anche uno spazio
+  che manda tutto tramite Tor chiede. Una nuova versione viene segnalata, ma si installa solo con l’interruttore
+  disattivato.
 - **Per disattivarlo:** **Impostazioni** → **Generali** → **Aggiornamenti** → **Avvisami quando esce una nuova
   versione**.
 - Funziona dalla versione che ce l’ha: quella precedente non dice nulla. Non nella build di F-Droid, che aggiorna
@@ -4215,7 +4287,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Chat di gruppo** | Crittografate end-to-end con MLS (RFC 9420); i membri rimossi non leggono più nulla dopo. La copia di ogni membro è sigillata a parte, quindi i relay non possono capire chi fa parte di un gruppo; ogni relay vede comunque un messaggio arrivare a una coda. I membri vedono le chiavi e gli indirizzi dei relay gli uni degli altri. Foto, file e messaggi vocali passano dall’archivio di file del relay di chi invia, come verso un contatto, e restano lì 14 giorni. Non sottoposte ad audit. | |
 | **Chiamate di gruppo** | Voce e video, crittografati end-to-end tra ogni coppia di telefoni nella chiamata (DTLS-SRTP, con le chiavi inviate nella crittografia del gruppo). Tramite il relay per le chiamate, nessun telefono vede l’indirizzo IP di un altro; il server che lo fa funzionare vede quello di ogni telefono, quando e per quanto tempo, e quanto passa. Ogni membro, nella chiamata o no, sa chi ne fa parte. I relay vedono quando ne inizia una. | Video con più di quattro persone, tramite un server; più di otto persone. |
 | **Gruppi pubblici** | Come le chat di gruppo, e chiunque abbia il link può chiedere di entrare e leggere da quando viene fatto entrare. Le richieste arrivano al relay del proprietario sigillate per il telefono del proprietario: il relay vede quante e quando, non da chi. I membri vedono gli uni degli altri i nomi scelti, le chiavi create solo per quel gruppo, gli indirizzi dei relay e gli ID mittente delle code. Non sottoposti ad audit. | |
-| **Anteprime dei link** | Disattivate finché non le attivi. Allora, mentre invii un link, il tuo telefono scarica la sua pagina direttamente dal sito, che vede il tuo indirizzo IP e quando, non per chi è il messaggio. L’anteprima va dentro il messaggio crittografato; il telefono che la riceve non scarica nulla. Nessuna mentre lo spazio passa da Tor; nelle chat nascoste solo con l’interruttore del loro posto. | Anteprime tramite Tor. |
+| **Anteprime dei link** | Disattivate finché non le attivi. Allora, mentre invii un link, il tuo telefono scarica la sua pagina direttamente dal sito, che vede il tuo indirizzo IP e quando, non per chi è il messaggio. L’anteprima va dentro il messaggio crittografato; il telefono che la riceve non scarica nulla. Con **Tramite Tor** attivo, la pagina viene scaricata solo tramite Tor e il sito non vede il tuo indirizzo IP. Nessuna mentre lo spazio manda tutto tramite Tor, a meno che **Tramite Tor** sia attivo; nelle chat nascoste solo con l’interruttore del loro posto. | |
 
 ## Trasparenza {#transparency}
 

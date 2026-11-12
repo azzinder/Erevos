@@ -60,6 +60,7 @@ import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { ThreadFollow } from '../lib/thread-follow';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
+import { TorSwitch } from '../components/tor-switch';
 import { useGlassBlur } from '../components/glass';
 import { LaterPicker } from '../components/later-picker';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -74,7 +75,7 @@ import { SelectBar, selectAction, useSelection } from '../components/select-bar'
 import { PollSheet } from '../components/poll';
 import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { cardWords } from '../lib/card-share';
-import { firstLink, fitPreview } from '../lib/link-preview';
+import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE } from '../lib/place';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
@@ -183,7 +184,9 @@ import {
   type Relay,
 } from '../lib/relay';
 import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, lookNow, openNearby, shownPace, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
-import { nostrReady, readNostr } from '../lib/nostr';
+import { nostrOwnTor, nostrReady, readNostr } from '../lib/nostr';
+import { netThroughTor } from '../lib/net-http';
+import { ipGate } from '../components/ip-warning';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
 import { useNfcShare } from '../lib/nfc-share';
@@ -446,8 +449,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
   const [carrying, setCarrying] = useState(false);
   const [lanOn, setLanOn] = useState(true);
-  // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews).
+  // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews),
+  // and whether only through Tor (SpaceData.previewsTor).
   const [previews, setPreviews] = useState(false);
+  const [previewsTor, setPreviewsTor] = useState(false);
   // Whether the space's contacts see when it was last open, and it sees theirs (SpaceData.lastSeen).
   const [lastSeenOn, setLastSeenOn] = useState(true);
   // With it on, whether they are told, unasked, that Erevos opened (SpaceData.tellOpen).
@@ -986,6 +991,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function changePreviews(on: boolean) {
     setPreviews(on);
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, { previews: on }) : updateCurrentSpaceData({ previews: on })).catch((error) => setNote(errorText(error)));
+  }
+
+  // Fetches the previews' pages only through Tor, or as before, here as changePreviews does.
+  function changePreviewsTor(on: boolean) {
+    setPreviewsTor(on);
+    (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, { previewsTor: on }) : updateCurrentSpaceData({ previewsTor: on })).catch((error) => setNote(errorText(error)));
   }
 
   // Tells the space's contacts when it was last open, and shows theirs, or neither (lib/last-seen.ts).
@@ -1558,6 +1569,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setViaUrl(data.via);
         setViaToken(data.viaToken);
         setPreviews(data.previews);
+        setPreviewsTor(data.previewsTor === true);
         setLastSeenOn(data.lastSeen);
         setTellOpenOn(data.tellOpen);
         if (hiddenKey) setPlaceSign(data.sign);
@@ -3216,6 +3228,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             at: placeGroups,
             stickers: () => stickerPlace,
             previews: async () => (await loadHiddenData(currentSpace().space, pocket, hiddenKey)).previews,
+            previewsTor: async () => (await loadHiddenData(currentSpace().space, pocket, hiddenKey)).previewsTor === true,
             openGroup: setShownGroup,
             openContact: (identity) => openFromGroup.current(identity),
             linked: () => placeLinksNow(currentSpace().space, pocket)?.role() === 'linked',
@@ -3246,15 +3259,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // The preview of the first link in words typed, when this phone makes them, here (the space's
-  // chats, or a hidden place, each with its own switch), never while the space goes through Tor
-  // (lib/make-preview.ts). None if it takes too long.
+  // chats, or a hidden place, each with its own switch): only through Tor with their own Tor
+  // switch on, else straight and never while the space sends everything through Tor
+  // (lib/link-preview.ts previewWay). None if it takes too long.
   async function previewOf(text: string): Promise<Carried> {
-    const link = previews && CAN_PREVIEW && !throughTor() ? firstLink(text) : null;
+    const way = CAN_PREVIEW ? previewWay(previews, previewsTor, throughTor()) : 'none';
+    const link = way !== 'none' ? firstLink(text) : null;
     if (!link) return {};
     previewing.current = true;
     setNote(t('Making the link’s preview…'));
     try {
-      const made = await makePreview(link);
+      const made = await makePreview(link, way === 'tor');
       const preview = made && fitPreview(text, made);
       return preview ? { preview } : {};
     } finally {
@@ -3387,6 +3402,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(e2e ? t('Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.') : notOpen());
       return;
     }
+    // Calls never go through Tor: that the call relay sees this phone's internet address is said
+    // once for the chat, before (lib/ip-warning.ts). Nearby, the call stays on the same network.
+    if (!near && !(await ipGate({ network: 'Erevos', act: 'call', of: circuitOf(identity) }))) return;
     if (!(await callPermissions(video))) {
       setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
@@ -3481,6 +3499,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     const text = content ? content.text : draft.text().trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
+    if (!(await ipBeforeSend(to))) return;
     setVanishing(false);
     if (!e2e && !hasCore()) {
       setNote(t(NO_CORE));
@@ -4081,6 +4100,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   async function sendVoice(audio: Uint8Array, ms: number, talk: boolean, to = selectedContact, forwarded = false, lasts = 0) {
     const peer = to;
     if (!peer) return;
+    if (!(await ipBeforeSend(peer))) return;
     if (!e2e) {
       // Held while the chats open, then sent as it was recorded.
       if (hasCore()) {
@@ -4209,6 +4229,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const own = given ? torOwn(given, peer) : given;
     const key = `${peer}|${tag}`;
     if (takingNow.current.has(key) || !ref.from) return;
+    // A file on a server the contact chose, fetched without Tor, shows it this phone's internet
+    // address: said once for the chat, before (lib/ip-warning.ts). Taken by itself, it never goes straight.
+    const exposed = !itself && !!ref.from.url && !isTorChat(peer) && !nostrOwnTor() && !netThroughTor();
+    if (exposed && !(await ipGate({ network: 'Erevos', act: 'file', of: peer.startsWith(CONTACT_PREFIX) ? circuitOf(peer.slice(CONTACT_PREFIX.length)) : peer.slice(0, 64) }))) return;
     takingNow.current.add(key);
     tried.current.add(key);
     setTaking((now) => ({ ...now, [key]: '0%' }));
@@ -4216,7 +4240,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // What hidden chats take stays on the relay only while their own devices still take it (lib/devices.ts),
       // which the space's never hear of; with none, it goes from the relay at once.
       // A photo that came in pieces through Nostr is taken from those this place keeps (lib/nostr-pieces.ts).
-      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? (placeLinked() ?? false) : undefined, contactsPlace, itself);
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? (placeLinked() ?? false) : undefined, contactsPlace, itself, isTorChat(peer));
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
       // Deleted while it came: its chunks go too.
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);
@@ -4422,6 +4446,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(t('Photos and files go to contacts through the relay. Type its address in Relay, and pick a contact.'));
       return;
     }
+    if (!(await ipBeforeSend(peer))) return;
     if (!e2e) {
       setNote(notOpen());
       return;
@@ -4489,11 +4514,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       };
       let sent: { ref: FileRef; offer: FileOffer };
       if (toNostr) {
-        if (!nostrReady()) throw new RelayUnreachableError(t('Tor is not ready.'));
+        const torChat = isTorChat(peer);
+        if (!nostrReady(torChat)) throw new RelayUnreachableError(t('Tor is not ready.'));
         if (!goesInPieces(meta, picked.source.size) && picked.source.size > NOSTR_FILE_LIMIT) throw new NostrFileTooLargeError();
         const ref = await keepFile(picked.source, meta);
         try {
-          sent = { ref, offer: await offerOnNostr(refSource(ref), meta, toNostr, progress) };
+          sent = { ref, offer: await offerOnNostr(refSource(ref), meta, toNostr, progress, torChat) };
         } catch (failed) {
           await deleteChunks(ref.id, ref.count).catch(() => undefined);
           throw failed;
@@ -4749,10 +4775,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Whether the chat goes only through Tor (lib/tor-chats.ts): its files too, whatever the space's way.
+  function isTorChat(peer: string): boolean {
+    const identity = peer.startsWith(CONTACT_PREFIX) ? peer.slice(CONTACT_PREFIX.length) : '';
+    return !!identity && contacts.some((c) => c.identity === identity && c.tor === true);
+  }
+
   // Our relay as a chat's files go through it: on that chat's own circuits through Tor when it goes only through Tor.
   function torOwn(own: Relay, peer: string): Relay {
-    const identity = peer.startsWith(CONTACT_PREFIX) ? peer.slice(CONTACT_PREFIX.length) : '';
-    return identity && contacts.some((c) => c.identity === identity && c.tor === true) ? { ...own, torChat: circuitOf(identity) } : own;
+    return isTorChat(peer) ? { ...own, torChat: circuitOf(peer.slice(CONTACT_PREFIX.length)) } : own;
+  }
+
+  // Before the first of what is sent to a chat that can go without Tor, it is said once, for that
+  // chat, that this phone's internet address can be seen, offering Tor for the chat (lib/ip-warning.ts).
+  function ipBeforeSend(peer: string): Promise<boolean> {
+    if (!peer.startsWith(CONTACT_PREFIX) || isTorChat(peer) || throughTor()) return Promise.resolve(true);
+    return ipGate({ network: 'Erevos', act: 'send', of: circuitOf(peer.slice(CONTACT_PREFIX.length)) }, { label: t('Through Tor for this chat'), run: () => changeTor(peer, true) });
   }
 
   // The chat goes only through Tor, on circuits of its own, whatever the space's way (lib/tor-chats.ts).
@@ -6536,14 +6574,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             </Text>
                           </>
                         ) : null}
-                        {canTor() ? (
+                        {/* Shown where there is no Tor too while it is on, turned on on the phone or another device, so it can be turned off. */}
+                        {canTor() || selectedTor ? (
                           <>
                             <View style={styles.rule} />
                             <DetailRow title={t('Through Tor')} checked={selectedTor} onPress={() => void changeTor(selectedContact, !selectedTor)} />
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
-                              {selectedTor
-                                ? t('This chat goes only through Tor, on its own circuits, whatever the space’s Tor setting: the relay does not see your address for it. Slower, and it waits while Tor starts. Calls do not go through Tor.')
-                                : t('This chat goes as the space’s Tor setting says. Turn on to send it only through Tor.')}
+                              {!canTor()
+                                ? t('This build of Erevos has no Tor, so this chat sends nothing from here while this is on. Turn it off here, or write from the phone.')
+                                : selectedTor
+                                  ? t('This chat goes only through Tor, on its own circuits, whatever the space’s Tor setting: the relay does not see your address for it. Slower, and it waits while Tor starts. Calls do not go through Tor.')
+                                  : t('This chat goes as the space’s Tor setting says. Turn on to send it only through Tor.')}
                             </Text>
                           </>
                         ) : null}
@@ -6603,14 +6644,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             <View style={styles.rule} />
                             <DetailRow title={t('Link previews')} checked={previews} onPress={() => changePreviews(!previews)} />
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
-                              {throughTor()
-                                ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
+                              {previewsTor
+                                ? previews && hiddenKey
+                                  ? t("When you send a link, this phone fetches its page through Tor and sends its title, a line and a small picture inside the message. The site does not see this phone's internet address. Only in the hidden chats of this place.")
+                                  : previews
+                                    ? t("When you send a link, this phone fetches its page through Tor and sends its title, a line and a small picture inside the message. The site does not see this phone's internet address. In all chats of this space, not in hidden chats.")
+                                    : t("Links go as they are. Turned on, this phone fetches a link's page through Tor as you send it, so the site does not see this phone's internet address. The phone that gets it fetches nothing.")
+                                : throughTor()
+                                ? t('None while this space sends everything through Tor, unless they go through Tor too: turn on Through Tor below.')
                                 : previews && hiddenKey
                                   ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. Only in the hidden chats of this place.")
                                 : previews
                                   ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.")
                                   : t("Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.")}
                             </Text>
+                            <View style={styles.rowMore}>
+                              <TorSwitch
+                                on={previewsTor}
+                                onChange={changePreviewsTor}
+                                said={previewsTor ? t('Slower, and waits while Tor starts. A page that sends you on elsewhere, or that does not let Tor in, gets no preview.') : undefined}
+                              />
+                            </View>
                           </>
                         ) : null}
                         <View style={styles.rule} />

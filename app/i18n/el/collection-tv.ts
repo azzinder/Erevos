@@ -49,4 +49,7 @@ export const collectionTv: Record<string, string> = {
   "That is not a link to a channel or a list.": "Αυτός δεν είναι σύνδεσμος καναλιού ή λίστας.",
   "The list could not be read ({status}).": "Η λίστα δεν μπόρεσε να διαβαστεί ({status}).",
   "This channel is here already.": "Αυτό το κανάλι υπάρχει ήδη.",
+  "In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.": "Στην Τηλεόραση, το λογότυπο κάθε καναλιού φέρνεται από τον διακομιστή του μέσω Tor, οπότε αυτός δεν βλέπει τη διεύθυνση IP αυτής της συσκευής. Αλλιώς φαίνεται ένα εικονίδιο τηλεόρασης.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.": "Το iptv-org (github.com/iptv-org/iptv) είναι μια δημόσια λίστα με δωρεάν κανάλια. Η λίστα του φέρνεται μέσω Tor, οπότε ο διακομιστής του δεν βλέπει τη διεύθυνση IP αυτής της συσκευής· κάθε κανάλι τη βλέπει όταν παίζει.",
+  "Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.": "Μόνο σύνδεσμοι https: το Erevos δεν ανοίγει απλό http. Η λίστα (.m3u) διαβάζεται μία φορά, τώρα, μέσω Tor, και προστίθεται κάθε κανάλι της με σύνδεσμο https, με την ομάδα και το λογότυπό του. Ο διακομιστής της λίστας δεν βλέπει τη διεύθυνση IP αυτής της συσκευής.",
 };

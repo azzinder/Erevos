@@ -6,7 +6,7 @@ import { gcm } from '@noble/ciphers/aes.js';
 
 import { fromHex, randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode, aesGcmSeal } from './crypto';
 import { t } from './i18n';
-import { netHttp, torOnlyHttp, type Http, type HttpAnswer } from './net-http';
+import { netHttp, torChatHttp, torOnlyHttp, type Http, type HttpAnswer } from './net-http';
 
 // Photos and files in chats with other Nostr apps (docs/nostr-chats.md), as NIP-17 sends them
 // (kind 15): the file is encrypted on the phone with AES-256-GCM, by a key and nonce made for it
@@ -141,6 +141,10 @@ export function setNostrHttp(next: NostrHttp | null): void {
   http = next ?? netHttp;
 }
 
+// How a file of a chat that goes only through Tor (`torChat`) reaches a server: through Tor alone,
+// whatever the space's way. The checks' own way (setNostrHttp) stays theirs.
+const wayOf = (torChat: boolean): NostrHttp => (torChat && http === netHttp ? torChatHttp : http);
+
 const base64url = (bytes: Uint8Array) => {
   let s = '';
   for (const b of bytes) s += String.fromCharCode(b);
@@ -150,14 +154,17 @@ const base64url = (bytes: Uint8Array) => {
 /**
  * Puts encrypted bytes on the first of `servers` that takes them (BUD-02), signed by `sign` with
  * a key made for this upload alone. Answers where they are. Throws, with what the servers said,
- * when none took them.
+ * when none took them. `torChat`: for a chat that goes only through Tor, through Tor whatever the
+ * space's way, never straight.
  */
 export async function uploadBlob(
   servers: string[],
   sealed: Uint8Array,
   sign: (kind: number, tags: string[][], content: string) => Promise<unknown>,
   now = Date.now(),
+  torChat = false,
 ): Promise<string> {
+  const via = wayOf(torChat);
   const hash = toHex(sha256Bytes(sealed));
   const said: string[] = [];
   for (const server of servers) {
@@ -174,7 +181,7 @@ export async function uploadBlob(
         ],
         'Upload Blob',
       );
-      const answer = await http('PUT', `${root}/upload`, {
+      const answer = await via('PUT', `${root}/upload`, {
         Authorization: `Nostr ${base64url(utf8Encode(JSON.stringify(auth)))}`,
         'Content-Type': 'application/octet-stream',
         'X-SHA-256': hash,
@@ -200,9 +207,10 @@ export const NOSTR_BLOB_MOST = NOSTR_FILE_MOST + 64 * 1024;
 
 /** Fetches a file's encrypted bytes from where the message says, NOSTR_BLOB_MOST at most; with
  *  `onlyTor`, through Tor or not at all, never straight when Tor fails (a file taken by itself,
- *  lib/attachments.ts takesItself). The checks' own way (setNostrHttp) stays theirs. */
-export async function downloadBlob(url: string, onlyTor = false): Promise<Uint8Array> {
-  const answer = await (onlyTor && http === netHttp ? torOnlyHttp : http)('GET', url, {}, undefined, NOSTR_BLOB_MOST);
+ *  lib/attachments.ts takesItself); with `torChat`, of a chat that goes only through Tor, through
+ *  Tor whatever the space's way. The checks' own way (setNostrHttp) stays theirs. */
+export async function downloadBlob(url: string, onlyTor = false, torChat = false): Promise<Uint8Array> {
+  const answer = await (torChat ? wayOf(true) : onlyTor && http === netHttp ? torOnlyHttp : http)('GET', url, {}, undefined, NOSTR_BLOB_MOST);
   if (answer.status < 200 || answer.status >= 300) throw new Error(t('The file could not be fetched ({status}).', { status: String(answer.status) }));
   return answer.bytes;
 }

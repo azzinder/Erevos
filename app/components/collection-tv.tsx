@@ -29,6 +29,7 @@ import {
 } from '../lib/collection-tv';
 import { utf8Decode } from '../lib/crypto';
 import { lang, locale, plural, t } from '../lib/i18n';
+import { throughTorNow } from '../lib/net-http';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { addChannel, addChannels, deleteChannel, deleteChannelGroup, renameChannel, type CollectionChannel, type CollectionPlace } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -47,7 +48,9 @@ import { Button, Input, Sheet, Text } from './ui';
 // country or whole, a list file from this device, or one channel by its link. There is no
 // programme guide. What the channel learns is said where it is added and where it plays: this
 // device's IP address. Logos are fetched, as the lists are, only when the place's Show channel
-// logos is on, as their servers see the device's IP address too; otherwise an icon.
+// logos is on, as their servers see the device's IP address too; otherwise an icon. With the
+// place's Tor switch for its radio and TV lists on (`tor`, Collection.listsTor), the lists and the
+// logos are asked only through Tor, and those servers do not see it; the channels still play straight.
 
 type Options = { showTitle: boolean; stopOnLock: boolean };
 
@@ -61,6 +64,7 @@ export function ChannelsList({
   hidden,
   options,
   showLogos,
+  tor = false,
   onAdd,
   onChanged,
   bottom,
@@ -71,6 +75,8 @@ export function ChannelsList({
   hidden: boolean;
   options: Options;
   showLogos: boolean;
+  /** The logos are fetched only through Tor (Collection.listsTor). */
+  tor?: boolean;
   onAdd: () => void;
   onChanged: () => void;
   bottom: number;
@@ -179,7 +185,7 @@ export function ChannelsList({
             </Text>
           ) : null
         }
-        renderItem={({ item }) => <ChannelRow channel={item} showLogo={showLogos} onPress={() => void play(item)} onMenu={() => setMenu(item)} />}
+        renderItem={({ item }) => <ChannelRow channel={item} showLogo={showLogos} tor={tor} onPress={() => void play(item)} onMenu={() => setMenu(item)} />}
       />
       <Sheet visible={menu !== null && renaming === null} onClose={() => setMenu(null)} title={menu?.name}>
         <SheetRow
@@ -248,11 +254,11 @@ export function ChannelsList({
   );
 }
 
-const ChannelRow = memo(function ChannelRow({ channel, showLogo, onPress, onMenu }: { channel: CollectionChannel; showLogo: boolean; onPress: () => void; onMenu: () => void }) {
+const ChannelRow = memo(function ChannelRow({ channel, showLogo, tor, onPress, onMenu }: { channel: CollectionChannel; showLogo: boolean; tor: boolean; onPress: () => void; onMenu: () => void }) {
   const colors = useColors();
   return (
     <Pressable onPress={onPress} onLongPress={onMenu} accessibilityRole="button" style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
-      <Logo url={showLogo ? channel.logo : ''} colors={colors} />
+      <Logo url={showLogo ? channel.logo : ''} tor={tor} colors={colors} />
       <View style={styles.grow}>
         <Text variant="bodyStrong" numberOfLines={1}>
           {channel.name}
@@ -288,15 +294,16 @@ function keepLogo(url: string, uri: string | null): void {
   }
 }
 
-// A logo fetched as lists are (through Tor on the phone as the space says, through the shell in the
-// desktop app), with only Erevos's name as the User-Agent; only a picture, MOST_LOGO_BYTES at most.
-// A row scrolled away before its turn came fetches nothing (undefined).
-async function fetchLogo(url: string, wanted: () => boolean): Promise<string | null | undefined> {
+// A logo fetched as lists are (through Tor on the phone as the space says, or only through Tor with
+// `tor`; through the shell in the desktop app), with only Erevos's name as the User-Agent; only a
+// picture, MOST_LOGO_BYTES at most. A row scrolled away before its turn came fetches nothing
+// (undefined).
+async function fetchLogo(url: string, wanted: () => boolean, tor: boolean): Promise<string | null | undefined> {
   if (fetching >= AT_ONCE) await new Promise<void>((go) => waiting.push(go));
   fetching++;
   try {
     if (!wanted()) return undefined;
-    const answer = await cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, MOST_LOGO_BYTES);
+    const answer = await cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, MOST_LOGO_BYTES, tor);
     const type = answer.status >= 200 && answer.status < 300 ? logoType(answer.bytes) : null;
     return type ? memoryUri(answer.bytes, type) : null;
   } catch {
@@ -307,7 +314,7 @@ async function fetchLogo(url: string, wanted: () => boolean): Promise<string | n
   }
 }
 
-function Logo({ url, colors }: { url: string; colors: Colors }) {
+function Logo({ url, tor, colors }: { url: string; tor: boolean; colors: Colors }) {
   const [uri, setUri] = useState<string | null>(url ? (logos.get(url) ?? null) : null);
   useEffect(() => {
     if (!url) {
@@ -319,7 +326,7 @@ function Logo({ url, colors }: { url: string; colors: Colors }) {
       return;
     }
     let active = true;
-    void fetchLogo(url, () => active).then((made) => {
+    void fetchLogo(url, () => active, tor).then((made) => {
       if (made === undefined) return;
       keepLogo(url, made);
       if (active) setUri(made);
@@ -327,7 +334,7 @@ function Logo({ url, colors }: { url: string; colors: Colors }) {
     return () => {
       active = false;
     };
-  }, [url]);
+  }, [url, tor]);
   return (
     <View style={[styles.icon, { backgroundColor: withAlpha(colors.primary, 0.14) }]}>
       {uri ? <Image source={{ uri }} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors /> : <TvIcon color={colors.primary} size={22} />}
@@ -336,7 +343,7 @@ function Logo({ url, colors }: { url: string; colors: Colors }) {
 }
 
 /** Adds channels: a list by its link, iptv-org's by country or whole, a list file, or one channel by its link. */
-export function AddChannelsSheet({ visible, place, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; onClose: () => void; onAdded: () => void }) {
+export function AddChannelsSheet({ visible, place, tor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; onClose: () => void; onAdded: () => void }) {
   const colors = useColors();
   const [list, setList] = useState('');
   const [link, setLink] = useState('');
@@ -365,7 +372,7 @@ export function AddChannelsSheet({ visible, place, onClose, onAdded }: { visible
     setBusy(true);
     setNote('');
     try {
-      const got = await listFromLink(given, (url) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, MOST_TV_LIST_BYTES));
+      const got = await listFromLink(given, (url) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, MOST_TV_LIST_BYTES, tor));
       if ('many' in got) await addMany(got.many, got.plain);
       else await addOne(got.one.url, got.one.mime, '');
       setList('');
@@ -421,7 +428,9 @@ export function AddChannelsSheet({ visible, place, onClose, onAdded }: { visible
     <Sheet visible={visible} onClose={onClose} title={t('Add channels')}>
       <Text variant="label">{t('From iptv-org')}</Text>
       <Text variant="caption" tone="muted">
-        {t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.')}
+        {throughTorNow(tor)
+          ? t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.')
+          : t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.')}
       </Text>
       <Pressable onPress={() => setPicking((p) => !p)} accessibilityRole="button" accessibilityLabel={t('Country')} style={({ pressed }) => [styles.sheetRow, pressed && { opacity: 0.6 }]}>
         <Text variant="bodyStrong" style={styles.grow}>
@@ -456,7 +465,9 @@ export function AddChannelsSheet({ visible, place, onClose, onAdded }: { visible
       <Text variant="label">{t('Add a list by its link')}</Text>
       <Input value={list} onChangeText={setList} placeholder="https://…/list.m3u" accessibilityLabel={t('The list’s link')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2048} onSubmitEditing={() => void addList(list)} />
       <Text variant="caption" tone="muted">
-        {t('Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, and each channel in it with an https link is added, with its group and logo. The list’s server sees this device’s IP address.')}
+        {throughTorNow(tor)
+          ? t('Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.')
+          : t('Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, and each channel in it with an https link is added, with its group and logo. The list’s server sees this device’s IP address.')}
       </Text>
       <Button title={t('Add the list')} loading={busy && !!list.trim()} disabled={!list.trim() || busy} onPress={() => void addList(list)} />
       {note ? (

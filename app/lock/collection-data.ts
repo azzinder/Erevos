@@ -39,7 +39,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // until the owner turns them on: whether a photo or video picked from the phone's gallery is then
 // deleted there (lib/collection-import.ts, which Android has the owner confirm), whether the list
 // playing stops when the space locks, and whether the notice of the list playing shows a file's
-// name (lib/collection-play.ts).
+// name (lib/collection-play.ts). And two Tor switches, each the device's own, as they are not
+// carried to linked devices: one for the copies on its server, one for its radio and TV lists.
 //
 // And whether its chunks are copied to a folder on a WebDAV server (`server`, CollectionServer;
 // lib/collection-webdav.ts): off until the owner gives a server, kept here with its user name and
@@ -91,8 +92,12 @@ export type Collection = {
   playlists?: CollectionPlaylist[];
   /** Internet radio stations, by their https link (lib/collection-radio.ts). */
   stations?: CollectionStation[];
-  /** Channels' logos are fetched and shown (their servers see the device's IP address); otherwise an icon. */
+  /** Channels' logos are fetched and shown (their servers see the device's IP address, unless `listsTor`); otherwise an icon. */
   showLogos?: boolean;
+  /** The copies on `server` go only through Tor, whatever the space's Tor way (lib/collection-webdav.ts). */
+  serverTor?: boolean;
+  /** Radio Browser, the radio and TV lists fetched by their links and the channels' logos are asked only through Tor (components/collection-radio.tsx, collection-tv.tsx); the stations and channels themselves still play straight. */
+  listsTor?: boolean;
   /** TV channels, by their https link, from IPTV lists or one at a time (lib/collection-tv.ts). */
   channels?: CollectionChannel[];
 };
@@ -120,8 +125,8 @@ export type CollectionPosition = { id: string; ms: number; at: number };
 export type CollectionPlaylist = { id: string; name: string; items: string[]; at: number };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
-export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices' | 'showLogos';
-const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices', 'showLogos'];
+export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices' | 'showLogos' | 'serverTor' | 'listsTor';
+const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices', 'showLogos', 'serverTor', 'listsTor'];
 
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;

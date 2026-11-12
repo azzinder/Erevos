@@ -49,4 +49,7 @@ export const collectionTv: Record<string, string> = {
   "That is not a link to a channel or a list.": "Questo non è un link a un canale o a una lista.",
   "The list could not be read ({status}).": "Non è stato possibile leggere la lista ({status}).",
   "This channel is here already.": "Questo canale c’è già.",
+  "In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.": "In TV, il logo di ogni canale viene scaricato dal suo server tramite Tor, che quindi non vede l’indirizzo IP di questo dispositivo. Altrimenti appare un’icona della TV.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.": "iptv-org (github.com/iptv-org/iptv) è una lista pubblica di canali gratuiti. La sua lista viene scaricata tramite Tor, quindi il suo server non vede l’indirizzo IP di questo dispositivo; ogni canale lo vede quando va in onda.",
+  "Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.": "Solo link https: Erevos non apre http semplice. La lista (.m3u) viene letta una volta, ora, tramite Tor, e ogni suo canale con un link https viene aggiunto, con il suo gruppo e il suo logo. Il server della lista non vede l’indirizzo IP di questo dispositivo.",
 };

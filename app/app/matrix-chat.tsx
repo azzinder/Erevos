@@ -43,7 +43,7 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
-import { firstLink, fitPreview } from '../lib/link-preview';
+import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
 import { directOther, isMatrixId, MATRIX_TYPING_SHOWS, matrixPresence, matrixTyping, onMatrixTyping, OWN_ROOM_NAME, readByAll, readersOf, shownRoomName, type MatrixMessage } from '../lib/matrix';
@@ -220,6 +220,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   // One of ours whose readers are shown, by its ID.
   const [readersFor, setReadersFor] = useState<string | null>(null);
   const [previews, setPreviews] = useState(false);
+  const [previewsTor, setPreviewsTor] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [lit, setLit] = useState<string | null>(null);
   // Whether the room's own look shows its choices (components/chat-look.tsx).
@@ -252,7 +253,13 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
   useEffect(() => {
     if (where !== 'space') return;
-    loadCurrentSpaceData().then((data) => setPreviews(data.previews), () => setPreviews(false));
+    loadCurrentSpaceData().then(
+      (data) => {
+        setPreviews(data.previews);
+        setPreviewsTor(data.previewsTor === true);
+      },
+      () => setPreviews(false),
+    );
   }, [where]);
 
   useEffect(() => {
@@ -442,12 +449,14 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   }
 
   // The preview of the first link in words typed, when this phone makes them (lib/make-preview.ts):
-  // not in a hidden place, and never while the space goes through Tor. None if it takes too long.
+  // not in a hidden place; only through Tor with their own Tor switch on, else never while the
+  // space sends everything through Tor (lib/link-preview.ts previewWay). None if it takes too long.
   async function previewOf(text: string) {
-    const link = previews && where === 'space' && CAN_PREVIEW && !throughTor() ? firstLink(text) : null;
+    const way = where === 'space' && CAN_PREVIEW ? previewWay(previews, previewsTor, throughTor()) : 'none';
+    const link = way !== 'none' ? firstLink(text) : null;
     if (!link) return null;
     setNote(t('Making the link’s preview…'));
-    const made = await makePreview(link);
+    const made = await makePreview(link, way === 'tor');
     setNote('');
     return made ? fitPreview(text, made) : null;
   }

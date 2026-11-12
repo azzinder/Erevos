@@ -7,16 +7,19 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { NextcloudSignIn } from '../components/nextcloud-sign-in';
+import { serverTorLine, TorSwitch } from '../components/tor-switch';
 import { Button, Card, Field, Input, Page, Row, Text, Toggle } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { cloudLabel, loadCloudBackup } from '../lib/backup-cloud';
 import { CAN_CLOUD_BACKUP } from '../lib/backup-place';
+import { canTorHttp } from '../lib/core';
 import { CAN_DELETE_ORIGINALS } from '../lib/collection-import';
 import { useCollectionPlace } from '../lib/collection-place';
 import { PLAY_CHOICES, stopOnLockChanged } from '../lib/collection-play';
 import { connectCollectionServer, scheduleServerCopy, serverStatus, testCollectionServer, turnCollectionServer, watchServerStatus, type ServerStatus } from '../lib/collection-webdav';
 import { tap } from '../lib/haptics';
 import { locale, t } from '../lib/i18n';
+import { throughTorNow } from '../lib/net-http';
 import { loadCollection, setCollectionBackup, setCollectionOption, type Collection, type CollectionOption, type CollectionPlace, type CollectionServer } from '../lock/collection-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -32,7 +35,9 @@ import { useColors } from '../theme/context';
 // no notice (lib/collection-play.ts); the other choices stay kept for the phone.
 // Where backups can go to a server, the place's Collection can be copied to a WebDAV server too
 // (lib/collection-webdav.ts): its address, user name and password, kept sealed with the place,
-// first those of the backups' server if there is one, with how the copying goes.
+// first those of the backups' server if there is one, with how the copying goes, and its own Tor
+// switch. The radio and TV lists have one too (components/collection-radio.tsx, collection-tv.tsx):
+// for what Erevos asks of their servers, not for playing, which goes straight.
 
 const DESK = Platform.OS === 'web';
 
@@ -55,7 +60,15 @@ export default function CollectionSettingsScreen() {
       .then((c) => {
         if (!active) return;
         setBackup(c.backup);
-        setOptions({ deleteOriginals: c.deleteOriginals === true, stopOnLock: c.stopOnLock === true, showTitle: c.showTitle === true, devices: c.devices === true, showLogos: c.showLogos === true });
+        setOptions({
+          deleteOriginals: c.deleteOriginals === true,
+          stopOnLock: c.stopOnLock === true,
+          showTitle: c.showTitle === true,
+          devices: c.devices === true,
+          showLogos: c.showLogos === true,
+          serverTor: c.serverTor === true,
+          listsTor: c.listsTor === true,
+        });
       })
       .catch(() => {
         if (!active) return;
@@ -70,7 +83,11 @@ export default function CollectionSettingsScreen() {
   async function turn(option: CollectionOption) {
     if (!place || !options) return;
     tap();
-    const next = !options[option];
+    await turnTo(option, !options[option]);
+  }
+
+  async function turnTo(option: CollectionOption, next: boolean) {
+    if (!place || !options || options[option] === next) return;
     setOptions({ ...options, [option]: next });
     try {
       await setCollectionOption(place, option, next);
@@ -125,7 +142,7 @@ export default function CollectionSettingsScreen() {
           onPress={() => void turn('devices')}
         />
       </Card>
-      {place && CAN_CLOUD_BACKUP ? <ServerCard place={place} /> : null}
+      {place && CAN_CLOUD_BACKUP ? <ServerCard place={place} tor={options?.serverTor === true} torReady={options !== null} onTor={(on) => void turnTo('serverTor', on)} /> : null}
       {DESK ? null : (
         <Card>
           <Switch
@@ -158,12 +175,25 @@ export default function CollectionSettingsScreen() {
       <Card>
         <Switch
           title={t('Show channel logos')}
-          text={t('In TV, each channel’s logo is fetched from its server, which then sees this device’s IP address. Otherwise a TV icon shows.')}
+          text={
+            throughTorNow(options?.listsTor === true)
+              ? t('In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.')
+              : t('In TV, each channel’s logo is fetched from its server, which then sees this device’s IP address. Otherwise a TV icon shows.')
+          }
           on={options?.showLogos === true}
           disabled={!options}
           onPress={() => void turn('showLogos')}
         />
       </Card>
+      {options && (options.listsTor || canTorHttp()) ? (
+        <Card>
+          <Text variant="bodyStrong">{t('Radio and TV lists')}</Text>
+          <Text variant="caption" tone="muted">
+            {t('What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos. Stations and channels themselves always play straight, so they see this device’s IP address while they play.')}
+          </Text>
+          <TorSwitch on={options.listsTor === true} onChange={(on) => void turnTo('listsTor', on)} said={serverTorLine(options.listsTor === true)} />
+        </Card>
+      ) : null}
     </Page>
   );
 }
@@ -194,8 +224,10 @@ function statusText(server: CollectionServer, status: ServerStatus | null): stri
   return parts.join(' ');
 }
 
-// The place's server: on or off, its address, user name and password, and how the copying goes.
-function ServerCard({ place }: { place: CollectionPlace }) {
+// The place's server: on or off, its address, user name and password, how the copying goes, and
+// its own Tor switch (`tor`, the place's Collection.serverTor), which the test and the sign-in
+// with Nextcloud follow too.
+function ServerCard({ place, tor, torReady, onTor }: { place: CollectionPlace; tor: boolean; torReady: boolean; onTor: (on: boolean) => void }) {
   const colors = useColors();
   const [server, setServer] = useState<CollectionServer | null | undefined>(undefined);
   const [status, setStatus] = useState<ServerStatus | null>(() => serverStatus(place));
@@ -259,7 +291,7 @@ function ServerCard({ place }: { place: CollectionPlace }) {
     setBusy(true);
     setNote('');
     try {
-      await testCollectionServer(address, user, secret);
+      await testCollectionServer(address, user, secret, tor);
       setNote(t('The connection works.'));
       setWorks(true);
     } catch (error) {
@@ -287,6 +319,7 @@ function ServerCard({ place }: { place: CollectionPlace }) {
   return (
     <Card>
       <Switch title={t('Also on a WebDAV server')} text={t('This Collection’s files are copied, still encrypted, to a folder on a server you choose: Nextcloud, ownCloud or any that speaks WebDAV. The server cannot open them. A phone that lacks a file fetches it from there. Copies go while this space or hidden place is open.')} on={server?.on === true} disabled={server === undefined || busy} onPress={() => void turn()} />
+      {server || form ? <TorSwitch on={tor} onChange={onTor} disabled={!torReady || busy} said={serverTorLine(tor)} /> : null}
       {server && !form ? (
         <>
           <Text variant="caption" tone="muted">
@@ -300,7 +333,7 @@ function ServerCard({ place }: { place: CollectionPlace }) {
       ) : null}
       {form ? (
         <>
-          <NextcloudSignIn folder="collection" disabled={busy} onSigned={(next) => {
+          <NextcloudSignIn folder="collection" disabled={busy} tor={tor} onSigned={(next) => {
             setAddress(next.url);
             setUser(next.user);
             setSecret(next.password);

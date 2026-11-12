@@ -16,6 +16,7 @@ import { t } from './i18n';
 import { MAX_IMPORTED_FILE } from './imports';
 import { holdChunks, releaseChunks } from './pending-chunks';
 import { deleteChunk, getChunk, putChunk, RelaySession, sameRelay, type Relay } from './relay';
+import { circuitOf } from './tor-chats';
 import type { SpaceChats } from './space-chats';
 
 // The files of imported chats shared with a contact (lib/chat-share.ts) go in rounds through the
@@ -136,6 +137,15 @@ function told(place: RoundsPlace, more: Omit<SharesChanged, 'holder' | 'space'> 
 
 /** Whether this chat's device takes the files of shares: not one of an account's linked devices. */
 export const takesRounds = (e2e: E2E): boolean => !e2e.onLinkedDevice() && !e2e.own();
+
+// `relay` as a contact's shared chat goes through it: on that chat's own circuits through Tor when
+// the chat goes only through Tor (lib/tor-chats.ts), as its messages and files do.
+function forChat(way: ShareWay, identity: string, relay: Relay): Relay {
+  return way.chats.e2e.torChat(identity) ? { ...relay, torChat: circuitOf(identity) } : relay;
+}
+
+// A session on `relay`, with its chat's circuits when it has some.
+const sessionOn = (relay: Relay): Promise<RelaySession> => RelaySession.open({ url: relay.url, token: relay.token, ...(relay.torChat ? { torChat: relay.torChat } : {}) }, true);
 
 // The shares stopped here meanwhile, by id: a round under way puts up none of theirs more.
 const ended = new Set<string>();
@@ -397,7 +407,7 @@ async function takeHeard(way: ShareWay, data: RoundsData): Promise<RoundsData> {
   }
   if (freed || again.length > 0) roomAgain(place);
   // Gone from the relay, as the contact found: what is left there of them is taken off, and they go up again.
-  if (way.own) for (const share of again) await takeOff(way.own, share.r, share.out);
+  if (way.own) for (const share of again) await takeOff(forChat(way, share.to, way.own), share.r, share.out);
   for (const share of insGone) await endIn(way, share, false);
   for (const share of insEnd) await filesEnd(way, share);
   for (const [who, s] of noFiles) await way.send(who, { s, end: true }).catch(() => undefined);
@@ -440,7 +450,7 @@ function heardIds(share: InShare, at: number, relay: string, ids: string): InSha
 // stopped here, the contact told.
 async function endOut(way: ShareWay, share: OutShare, tell: boolean): Promise<void> {
   ended.add(share.s);
-  if (way.own) await takeOff(way.own, share.r, share.out);
+  if (way.own) await takeOff(forChat(way, share.to, way.own), share.r, share.out);
   if (share.out && way.chats.pieces) roomAgain(way.chats.pieces);
   await deleteChunks(share.list.id, share.list.count).catch(() => undefined);
   lists.delete(share.list.id);
@@ -520,7 +530,7 @@ async function leftBehind(place: RoundsPlace, share: InShare, refs: FileRef[]): 
 // behind skipped; only from our relay as it is now, and one it cannot take off expires there.
 async function takeOff(own: Relay, relay: string, ids: string): Promise<void> {
   if (!ids || !sameRelay(relay, own.url)) return;
-  const session = await RelaySession.open({ url: own.url, token: own.token }, true).catch(() => null);
+  const session = await sessionOn(own).catch(() => null);
   if (!session) return;
   try {
     for (let at = 0; at + ID_HEX <= ids.length; at += ID_HEX) {
@@ -658,7 +668,8 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
   }
   if (ready.length === 0) return;
   let left = WINDOW - ready.reduce((sum, { share, list }) => sum + onRelay(share, list), 0);
-  let session: RelaySession | null = null;
+  // One session for each way: our relay straight or as the space's Tor way says, and each chat that goes only through Tor on its own circuits.
+  const sessions = new Map<string, RelaySession>();
   try {
     for (const { share: first, list } of ready) {
       let share: OutShare | null = first;
@@ -666,7 +677,7 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
       if (now - share.heard > ASLEEP) {
         // Their phone said nothing for two weeks: what waits for it is taken off, and no more goes up.
         if (share.out) {
-          await takeOff(own, share.r, share.out);
+          await takeOff(forChat(way, share.to, own), share.r, share.out);
           left += onRelay(share, list);
           await updateOut(place, share.s, (one) => ({ ...one, out: '', said: 0, put: 0 }));
         }
@@ -674,7 +685,7 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
       }
       if (share.out && share.put && now - share.put > PUT_AGAIN) {
         // Up there almost as long as the relay keeps them: put again, said again.
-        await takeOff(own, share.r, share.out);
+        await takeOff(forChat(way, share.to, own), share.r, share.out);
         left += onRelay(share, list);
         share = await updateOut(place, share.s, (one) => ({ ...one, out: '', said: 0, put: 0 }));
       } else if (share.out && share.said > 0 && !share.full && now - Math.max(share.heard, share.again ?? 0) > SAY_AGAIN) {
@@ -695,7 +706,7 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
         const next: OutShare | null = await updateOut(place, share.s, (one) => (one.took === share!.took ? { ...one, out: one.out + add, r: own.url, put: one.put || Date.now() } : null));
         // Stopped meanwhile: what went up is taken off again.
         if (!next || ended.has(share.s)) {
-          await takeOff(own, own.url, add);
+          await takeOff(forChat(way, share.to, own), own.url, add);
           share = null;
           return;
         }
@@ -714,7 +725,9 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
             batch += ZERO.repeat(Math.min(count - n, WINDOW_CHUNKS - outsNow));
           } else {
             if (left < list.chunks[file]) break;
-            session ??= await RelaySession.open({ url: own.url, token: own.token }, true);
+            const to = forChat(way, share.to, own);
+            let session = sessions.get(to.torChat ?? '');
+            if (!session) sessions.set(to.torChat ?? '', (session = await sessionOn(to)));
             batch += toHex(await putChunk(session, sealed));
             left -= list.chunks[file];
             paused.delete(name);
@@ -731,7 +744,7 @@ async function goOut(way: ShareWay, outs: OutShare[], used: Set<string>): Promis
       await flush();
     }
   } finally {
-    session?.close();
+    for (const session of sessions.values()) session.close();
   }
 }
 
@@ -850,7 +863,7 @@ async function comeIn(way: ShareWay, ins: InShare[], used: Set<string>): Promise
           }
           let open = sessions.get(relay);
           if (!open) {
-            const where = fileWay(own, relay);
+            const where = fileWay(forChat(way, now.by, own), relay);
             open = { session: await RelaySession.open(where.at, true), via: where.via };
             sessions.set(relay, open);
           }
@@ -987,7 +1000,7 @@ async function keepPacks(way: ShareWay, packs: RoundsData['packs']): Promise<voi
 async function keepPack(way: ShareWay, identity: string, name: string, tag: string, file: FileRef, itself: boolean): Promise<void> {
   const place = way.chats.pieces!;
   const peer = `${CONTACT_PREFIX}${identity}`;
-  const pack = await takeFile(way.own, file, undefined, way.leave, place, itself);
+  const pack = await takeFile(way.own && forChat(way, identity, way.own), file, undefined, way.leave, place, itself);
   const bytes = await readFile(pack);
   if (!bytes) throw new FileGoneError();
   const read = readPack(bytes);

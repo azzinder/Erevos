@@ -1213,8 +1213,10 @@ razgovore prostora; svako mjesto skrivenih razgovora ima vlastiti prekidač, u d
 izabrao neko drugi i toj stranici ne pokazuje ništa o sebi, čak ni svoju adresu.
 
 - **Stranica vidi internet adresu ovog telefona**, i kada, kao što bi je vidjela iz preglednika, ali ne i za koga je
-  poruka. Preko Tora Erevos šalje samo svoje zahtjeve relayu, ne i stranice, pa dok sve u prostoru ide preko Tora
-  (**Sve** pod Torom) pregledi se uopće ne prave.
+  poruka. Kad je **Preko Tora** uključeno, u **Pregledima linkova**, stranica i njena slika preuzimaju se samo preko
+  Tora, bez obzira na Tor podešavanje prostora, pa stranica ne vidi adresu. To je sporije i čeka dok se Tor pokreće;
+  stranica koja vas šalje drugamo, ili koja ne pušta Tor, nema pregled. Dok sve u prostoru ide preko Tora (**Sve** pod
+  Torom), pregledi se prave samo s uključenim **Preko Tora**.
 - Erevos na računaru ih ne pravi, ali svejedno prikazuje one koji stignu.
 - **Preko LoRa veze**, koja prenosi samo malo, poruka ide bez pregleda radije nego da čeka, a ovdje ga ne zadržava.
 - Pregled je ono što stranica kaže o sebi, istinito ili ne. Erevos od prije ovoga prikazuje link bez njega.
@@ -1648,6 +1650,12 @@ idu direktno, pa time i brže.
   uključite. Relay tada za taj razgovor ne vidi IP adresu vašeg telefona, i nijedan Tor izlaz ga ne nosi zajedno s
   drugim razgovorom. Sporije je, a ono što ide čeka dok se Tor pokreće. Pozivi ne idu preko Tora. Skriveni razgovori
   ga također imaju, svaki u svojim **Detaljima**.
+  Isto je na vašim povezanim uređajima: uključeno ili isključeno na jednom, uključeno je ili isključeno na svima. Na
+  uređaju bez Tora, kao što je web aplikacija, taj razgovor ne šalje ništa dok je uključeno.
+  Vrijedi i za Nostr tekstove tog razgovora te njegove fotografije i datoteke na Nostr serverima datoteka, čak i kad
+  je izbor ovog prostora **Ništa**: Tor se za njih pokreće i ništa ne ide direktno. Dok vaš kontakt prvi put ne napiše
+  u vlastiti red razgovora, njegove prve poruke dolaze u red prostora, koji se čita onako kako prostor kaže. Vidi [Ko
+  vidi vašu IP adresu](#ip).
 
 - **Šta skriva:** relay više ne vidi IP adresu vašeg telefona, samo izlaz iz Tora (ili ništa, za relay s
   \`.onion\` adresom). Vaša telefonska kompanija ili Wi-Fi mreža vide samo da koristite Tor, ali ne i koji relay.
@@ -1703,6 +1711,11 @@ vlastiti izbor i vlastite Nostr relaye.
 - **Kako ide:** s **Ništa**, tekstovi idu izravno do Nostr relaya. S **Poruke**, preko Tora kad je Tor spreman, a preko
   vašeg relaya dok se Tor pokreće. Sa **Sve**, samo preko Tora. Kad se put promijeni, Nostr veze se zatvore i ponovo
   otvore novim putem.
+- **Nostr preko Tora:** na ekranu **Nostr**, **Nostr preko Tora** je **Isključeno** dok ga ne uključite.
+  **Uključeno**, Erevos dolazi do Nostr relaya i Nostr servera datoteka samo preko Tora i pokreće Tor za to, čak i kad
+  je Tor prostora na **Ništa**; tekst koji ide tamo čeka dok se Tor pokreće. Dodaje samo Tor: kad je Tor za prostor
+  uključen, Nostr ide preko Tora šta god ovo kaže, a razgovor s **Preko Tora** ide preko Tora šta god ovo kaže. Vidi
+  [Ko vidi vašu IP adresu](#ip).
 - **Relayi:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju relayi na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
 - **Šta ostaje na vašem relayu:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg relaya kad je jedan između vas; bez relaya između vas idu i preko Nostra (pogledajte Bez ikakvog relaya).
@@ -1754,6 +1767,41 @@ Nostru, i to je dovoljno za razgovor.
 
 **Zašto:** Nostr je samo način ulaska. Nikome ne treba pozivnica da počne, a kad jedno od vas ima relay, on prenosi
 ono što je preveliko za Nostr.
+
+## Ko vidi vašu IP adresu {#ip}
+
+Internet adresa vašeg telefona, njegova IP adresa, otprilike pokazuje gdje ste i kojeg provajdera koristite. Ne
+pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne ide preko Tora.
+
+- **Vaš relay i relayi vaših kontakata:** vide je. Da je sakrijete, uključite Tor za prostor (**Postavke** → **Relay i
+  mreže** → **Tor**) ili **Preko Tora** u **Detaljima** jednog razgovora. Vidi [Preko Tora](#tor).
+
+- **Javni Nostr relayi i Nostr serveri datoteka:** vide je, osim ako veza ne ide preko Tora. Uključite **Nostr preko
+  Tora** pod **Postavke** → **Relay i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Vidi [Preko
+  Nostra](#nostr).
+
+- **Pozivi:** nikad ne idu preko Tora. Relay za pozive, vaš ili vašeg kontakta, vidi adresu, ali ne i ono što se
+  govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži.
+
+- **Datoteka na serveru koji je odabrao vaš kontakt:** server vidi adresu kad vaš telefon preuzima datoteku. Tor je
+  sakriva.
+
+- **Web linkovi koje otvarate:** sajt je vidi, kao i svaka web-stranica. Da je sakrijete, otvarajte linkove u Tor
+  Browseru. Pregled linka također se preuzima s njegovog sajta, pa sajt vidi adresu na isti način.
+  S uključenim **Preko Tora** za preglede linkova, ne vidi.
+
+- **Grupe:** poruka u Erevos grupi ide preko servera, koji vidi adresu. Tor za prostor je sakriva; grupa nema vlastiti
+  prekidač.
+
+- **Rezervne kopije, server Zbirke, liste radija i TV-a, pregledi linkova i ažuriranja:** svako ima svoj prekidač
+  **Preko Tora**, na svom ekranu, isključen dok ga ne uključite. Vidi [Rezervne kopije](#backup),
+  [Zbirka](#collection), [Razgovor preko relaya](#relay) i [Ažuriranja](#updates).
+
+Erevos upozorava jednom prije svakog od ovih slučajeva, s naslovom **Vaša IP adresa može biti vidljiva**, dugmetom
+**Vodič** koje otvara ovaj odjeljak i, gdje može, dugmetom koje to popravlja, poput **Preko Tora za ovaj razgovor**.
+**Nastavi** ide dalje; za razgovor se kaže jednom i ne ponavlja se za taj razgovor.
+
+Obližnji telefoni, LoRa i SMS ne koriste internet, pa ne pokazuju nikakvu IP adresu.
 
 ## Matrix {#matrix}
 
@@ -1892,8 +1940,7 @@ između.
 - **Lokacije:** **Lokacija** šalje gdje ste, jednom, kao Element; ide šifrovana kao razgovor i prikazuje se s **Otvori
   u kartama** na Androidu.
 - **Pregledi linkova:** kad su **Pregledi linkova** uključeni, kao za razgovore s kontaktima, prvi link u poruci ide s
-  pregledom koji je napravio vaš telefon, u šifrovanom razgovoru takođe šifrovan. Nikad preko Tora, i nikad na
-  skrivenom mjestu.
+  pregledom koji je napravio vaš telefon, u šifrovanom razgovoru takođe šifrovan. Preko Tora samo s uključenim **Preko Tora** u **Pregledima linkova**, i nikad na skrivenom mjestu.
 - **Prikvačivanje i proslijeđivanje:** **Prikvači**, u meniju poruke, prikvači je na vrh sobe za sve, ako soba
   dozvoljava; traka iznad razgovora prikazuje posljednju prikvačenu poruku, dodir ide do nje a zatim prikazuje
   sljedeću. **Otkvači** je skida. **Proslijedi** šalje kopiju u drugi razgovor ovog računa; kopija s originalom ne
@@ -3015,8 +3062,8 @@ Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom p
 - **Iz Zbirke van:** fotografija se otvara preko cijelog ekrana, za listanje i zumiranje, s **Pošalji u razgovor**, **Spremi na telefon**, **Informacije** i **Izbriši**. Spremanje na telefon ili otvaranje datoteke drugom aplikacijom izvodi je nešifriranu, a Erevos to kaže unaprijed. Slanje u razgovor ostavlja kopiju u Zbirci. Iz Zbirke skrivenog mjesta datoteke idu samo u razgovore i grupe tog skrivenog mjesta, nikad u one prostora, a Zbirka prostora nikad u skriveno mjesto. Prevucite, ili koristite strelice, za sljedeću ili prethodnu fotografiju; **Projekcija slajdova** gore ih prikazuje jednu za drugom, svake 4 sekunde, do dodira.
 - **Iz razgovora:** **+** ispod polja poruke, pa **Zbirka**, otvara Zbirku mjesta tog razgovora: dodirnite fotografije ili datoteke za slanje, pa **Pošalji**, i idu u taj razgovor.
 - **Sigurnosne kopije:** sigurnosna kopija sadrži Zbirku s ostatkom telefona. **Postavke** → **Podaci i uređaji** → **Zbirka**, ili tri tačke u Zbirci, mogu ostaviti tu Zbirku izvan kopija napravljenih dok je otvorena: svaka Zbirka ima svoj izbor.
-- **Na WebDAV serveru:** u podešavanjima Zbirke, **I na WebDAV serveru** kopira datoteke te Zbirke kakve jesu, i dalje šifrovane, u folder na serveru koji izabereš, Nextcloud, ownCloud ili bilo koji koji govori WebDAV: upiši adresu foldera, korisničko ime i, najbolje, lozinku za aplikaciju, pa dodirni **Poveži**; **Provjeri vezu** ih prvo provjeri. Svaki prostor i svako skriveno mjesto ima svoj izbor i svoj server; prvo se nudi server sigurnosnih kopija. Ide samo ono čega tamo još nema, dio po dio, dok je mjesto otvoreno, i nastavlja gdje je stalo kad mreža padne; datoteka obrisana ovdje briše se i tamo. Ništa drugo u folderu se ne dira. Server vidi samo dijelove sa nasumičnim imenima, u podfolderu sa nasumičnim imenom, i ne može ih otvoriti. Telefon kojem nedostaje datoteka, kao nakon sigurnosne kopije vraćene na novi telefon, uzima je odande kad je otvori, i čuva samo dijelove koji se otvaraju ključem datoteke. Erevos pokazuje koliko je od nje stiglo, s **Otkaži**: ono što je stiglo ostaje, a sljedeći put stiže samo ostatak; muzika, video snimci, PDF-ovi i **Otvori drugom aplikacijom** je takođe prvo preuzimaju. Dok je sve kopirano, sigurnosne kopije napravljene dok je mjesto otvoreno mogu izostaviti njegove dijelove, i nakon ponovnog pokretanja Erevosa, dok se ne doda ili obriše neka datoteka.
-- **Sa Nextcloudom, kao LPHL-ovim:** u tom obrascu, i u **Dodaj server** rezervnih kopija, upiši adresu svog Nextclouda pod **Tvoj Nextcloud** i dodirni **Prijava preko Nextclouda**: prijavi se u pregledaču, kao u Fasouliju, preko Authentika ili kako se već tamo prijavljuje, i izaberi **Odobri pristup**. Erevos dobija svoju lozinku za aplikaciju i popunjava obrazac svojom fasciklom u tvojim datotekama, **Erevos/Collection** ili **Erevos/Backups**, napravljenom ako je nema, pored Fasoulijeve, koju nikad ne čita; zatim dodirni **Poveži**. Tu lozinku opozivaš u Nextcloud → Podešavanja → Bezbednost.
+- **Na WebDAV serveru:** u podešavanjima Zbirke, **I na WebDAV serveru** kopira datoteke te Zbirke kakve jesu, i dalje šifrovane, u folder na serveru koji izabereš, Nextcloud, ownCloud ili bilo koji koji govori WebDAV: upiši adresu foldera, korisničko ime i, najbolje, lozinku za aplikaciju, pa dodirni **Poveži**; **Provjeri vezu** ih prvo provjeri. Svaki prostor i svako skriveno mjesto ima svoj izbor i svoj server; prvo se nudi server sigurnosnih kopija. Ide samo ono čega tamo još nema, dio po dio, dok je mjesto otvoreno, i nastavlja gdje je stalo kad mreža padne; datoteka obrisana ovdje briše se i tamo. Ništa drugo u folderu se ne dira. Server vidi samo dijelove sa nasumičnim imenima, u podfolderu sa nasumičnim imenom, i ne može ih otvoriti. Telefon kojem nedostaje datoteka, kao nakon sigurnosne kopije vraćene na novi telefon, uzima je odande kad je otvori, i čuva samo dijelove koji se otvaraju ključem datoteke. Erevos pokazuje koliko je od nje stiglo, s **Otkaži**: ono što je stiglo ostaje, a sljedeći put stiže samo ostatak; muzika, video snimci, PDF-ovi i **Otvori drugom aplikacijom** je takođe prvo preuzimaju. Dok je sve kopirano, sigurnosne kopije napravljene dok je mjesto otvoreno mogu izostaviti njegove dijelove, i nakon ponovnog pokretanja Erevosa, dok se ne doda ili obriše neka datoteka. Ima svoj prekidač **Preko Tora**, isključen dok ga ne uključite: uključen, kopija ide samo preko Tora, bez obzira na Tor podešavanje prostora, pa server ne vidi vašu IP adresu; sporije je i čeka dok se Tor pokreće. Gdje nema Tora, u aplikaciji za računar i u web-aplikaciji, server s uključenim prekidačem ne dobija ništa.
+- **Sa Nextcloudom, kao LPHL-ovim:** u tom obrascu, i u **Dodaj server** rezervnih kopija, upiši adresu svog Nextclouda pod **Tvoj Nextcloud** i dodirni **Prijava preko Nextclouda**: prijavi se u pregledaču, kao u Fasouliju, preko Authentika ili kako se već tamo prijavljuje, i izaberi **Odobri pristup**. Erevos dobija svoju lozinku za aplikaciju i popunjava obrazac svojom fasciklom u tvojim datotekama, **Erevos/Collection** ili **Erevos/Backups**, napravljenom ako je nema, pored Fasoulijeve, koju nikad ne čita; zatim dodirni **Poveži**. Tu lozinku opozivaš u Nextcloud → Podešavanja → Bezbednost. Prijava slijedi prekidač **Preko Tora** servera za koji se prijavljuje: uključen, Erevos pita vaš Nextcloud samo preko Tora, ali sama stranica u pregledaču ide kao i uvijek.
 - **Na tvojim povezanim uređajima:** u podešavanjima Zbirke, **I na mojim povezanim uređajima** šalje tu Zbirku na [povezane uređaje](#devices) njenog prostora ili skrivenog mjesta, a prekidač važi za sve. Datoteka dodana, preimenovana, premještena ili obrisana na jednom takva je na svima. Sličice stižu odmah; sama datoteka stiže odmah na istom Wi-Fi-ju, inače kad je otvoriš, sa WebDAV servera ako ga Zbirka ima, ili preko relaya do 100 MB. Svaki komad se čuva tek kad se otvori ključem datoteke, a prekinut prijenos nastavlja od komada koji je falio. Datoteka se drugdje briše samo kad se obriše na jednom od tvojih uređaja, nikad zato što tamo fali. Zbirka skrivenog mjesta ide samo na povezane uređaje tog mjesta.
 - **Muzika, video i PDF:** PDF se čita stranicu po stranicu unutar Erevosa (Android 11 i noviji), dešifriran samo u memoriji. Muzika i video se reproduciraju direktno iz svojih šifriranih dijelova, nikad iz kopije: video preko cijelog ekrana, muzika sa sljedećima iz foldera, i nastavlja s ugašenim ekranom, s reprodukcijom, pauzom, sljedećim i prethodnim u obavještenju i na zaključanom ekranu telefona, i tamo samo s tim. Popis nastavlja nakon što se prostor zaključa, osim ako je u postavkama Zbirke uključeno **Zaustavi reprodukciju kad se prostor zaključa**; **Zaustavi** i dugme za paniku ga završavaju. Obavještenje pokazuje samo **Reprodukcija**, osim ako je uključeno **Prikaži naslov u obavještenju**. **Otvori drugom aplikacijom** predaje datoteku dok se dešifrira, bez kopije na telefonu, dok ne izađete iz Zbirke; druga aplikacija može zadržati svoju.
 - **Originali u galeriji:** s uključenim **Izbriši original iz galerije nakon uvoza**, fotografija ili video izabran iz datoteka telefona briše se iz galerije čim je u Zbirci, nakon što Android zatraži da potvrdite. Potreban je Android 11 ili noviji. Fotografija iz kamere nikad ne ide u galeriju.
@@ -3027,13 +3074,14 @@ Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom p
 - **Titlovi:** datoteka .srt ili .vtt u istom folderu kao video, s njegovim imenom (film.mkv i film.srt, ili film.en.srt), prikazuje se kao njegovi titlovi, čitana iz šifriranih dijelova kao i video; **Titlovi uključeni** na vrhu ih isključuje, i ponovo uključuje.
 - **Liste za reprodukciju:** na vrhu **Muzike**, **Nova lista za reprodukciju** pravi jednu; pjesme ulaze u nju iz svog menija (**Dodaj u listu za reprodukciju**) ili izabrane zajedno (zadrži jednu, pa **Lista za reprodukciju**). Otvori je da je pustiš redom ili nasumično, pomjeriš pjesmu gore ili dolje, ili je izbaciš: ostaje u Zbirci. Liste se čuvaju šifrirane sa Zbirkom, nikad nešifrirane.
 - **Radio:** kartica **Radio** ima stanice internet radija, svaku po njenom linku; **+** tamo dodaje jednu. Samo https linkovi: Erevos ne otvara nešifrirani http, pa se stanica koja ima samo http link ne može dodati. Link liste (.m3u, .pls) čita se jednom, kad se dodaje, za link samog toka; HLS tok (.m3u8) svira na telefonu. Stanica svira kao muzika, s istim obavještenjem, istim **Zaustavi reprodukciju kad se prostor zaključa** i dugmetom za paniku; naslov koji šalje vidi se na ekranu reprodukcije, a u obavještenju samo kad je uključeno **Prikaži naslov u obavještenju**. Stanica, i ko vodi njen server, vidi IP adresu tvog uređaja dok svira, kao i svaki sajt; Erevos joj ne šalje ništa drugo, i samo „Erevos“ kao ime. Stanice se čuvaju šifrirane sa Zbirkom.
-- **Pronalaženje stanice:** **Dodaj stanicu** traži i u Radio Browseru (radio-browser.info), slobodnom imeniku stanica u koji svako može dodati: šalju mu se samo riječi koje upišeš, kad pritisneš **Traži**, i vidi IP adresu tvog uređaja, kao i stanica. Prikazuju se samo stanice za koje ima https link; dodir dodaje jednu.
+- **Pronalaženje stanice:** **Dodaj stanicu** traži i u Radio Browseru (radio-browser.info), slobodnom imeniku stanica u koji svako može dodati: šalju mu se samo riječi koje upišeš, kad pritisneš **Traži**, i vidi IP adresu tvog uređaja, kao i stanica. Prikazuju se samo stanice za koje ima https link; dodir dodaje jednu. S uključenim **Preko Tora** u **Listama radija i TV-a**, niže, pretraga ide preko Tora i Radio Browser ne vidi vašu IP adresu.
 - **Lista s mnogo stanica:** link liste (.m3u, .pls) koji navodi mnogo stanica dodaje svaku od njih, a **Uvezi datoteku liste** dodaje stanice iz .m3u ili .pls datoteke na vašem uređaju, koja se čita tamo i ne šalje nikamo. Dodaju se samo stanice s https linkom (najviše 500 iz jedne liste), a Erevos kaže koliko ih je izostavljeno.
 - **Kad tok padne:** ako server stanice, ili proxy na putu, završi tok, ili mreža na trenutak nestane, Erevos sam ponovo traži stanicu nakon 1, 2, 4… sekunde (najviše 30), dok god želite da svira, na Androidu, na računaru i u pregledniku. Nakon 12 pokušaja zaredom staje i kaže to.
 - **TV:** kartica **TV** drži TV kanale, svaki po njegovom https linku, u grupama koje im daje njihova lista, s redom za prikaz jedne grupe i pretragom po imenu. Dodir pušta kanal preko cijelog ekrana, kao video, s istim **Zaustavi reprodukciju kad se prostor zaključa** i dugmetom za paniku; TV vodiča nema. Pušta se na Androidu, u aplikaciji za računar i u pregledniku; tamo se HLS tok pušta preko hls.js, i samo kad njegov server pusti web aplikaciju da ga čita.
 - **Dodavanje kanala:** **+** u **TV** dodaje listu po njenom linku (.m3u), koja se čita jednom kad se dodaje, datoteku liste s tvog uređaja (**Uvezi datoteku liste (.m3u)**), koja se čita tamo i ne šalje se nikamo, ili jedan kanal po njegovom linku. Dodaju se samo kanali s https linkom, svaki link jednom, do 15.000 u svakoj Zbirci, a Erevos kaže koliko ih je izostavljeno. Drži kanal pritisnut da ga preimenuješ, obrišeš njega ili cijelu njegovu grupu, ili da s **Pošalji u razgovor** pošalješ njegovo ime i link; meni radio stanice također ima **Pošalji u razgovor**.
-- **iptv-org:** **Dodaj kanale** nudi iptv-org (github.com/iptv-org/iptv), javnu listu besplatnih kanala: **iptv-org po državi**, prvo regija tvog uređaja, ili **iptv-org: svi kanali**, preko 10.000. Njegov server vidi IP adresu tvog uređaja kada se lista preuzima, a svaki kanal kada se pušta.
+- **iptv-org:** **Dodaj kanale** nudi iptv-org (github.com/iptv-org/iptv), javnu listu besplatnih kanala: **iptv-org po državi**, prvo regija tvog uređaja, ili **iptv-org: svi kanali**, preko 10.000. Njegov server vidi IP adresu tvog uređaja kada se lista preuzima, a svaki kanal kada se pušta. S uključenim **Preko Tora** u **Listama radija i TV-a**, niže, lista se preuzima preko Tora, pa njen server ne vidi vašu IP adresu; svaki kanal je i dalje vidi, kada se pušta.
 - **Šta kanal vidi:** kanal, i ko god drži njegov server, vidi IP adresu tvog uređaja dok se pušta, kao i svaki sajt. Logotipi se prikazuju samo s uključenim **Prikaži logotipe kanala** u postavkama Zbirke, jer i server svakog logotipa vidi tvoju IP adresu; inače ikona televizora. Kanali se čuvaju šifrovani sa Zbirkom.
+- **Liste radija i TV-a preko Tora:** u postavkama Zbirke, kartica **Liste radija i TV-a** ima **Preko Tora**, isključeno dok ga ne uključite. Uključeno, Erevos traži samo preko Tora, bez obzira na Tor podešavanje prostora, pretragu u Radio Browseru, listu ili TV listu preko linka, listu iptv-org i logotipe kanala, pa njihovi serveri ne vide IP adresu vašeg uređaja. Sporije je i čeka dok se Tor pokreće. Puštanje stanice ili kanala uvijek ide direktno, pa ona vidi IP adresu dok se pušta.
 
 **Zašto:** neke fotografije i datoteke, pasoš, ugovor, slika, ne smiju ni stajati u galeriji da ih čita svaka aplikacija ni putovati u razgovoru. Zbirka ih čuva istim šifriranjem kao razgovore, odvojeno od njih. Kad se datoteka spremi na telefon ili otvori drugom aplikacijom, ona je izvan Erevosa, nešifrirana.
 
@@ -3065,6 +3113,8 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
    novo; **Prestani slati** to zaustavlja, a one koje su tamo ostaju. U web
    aplikaciji, koja ne pravi rezervne kopije sama, **Pošalji rezervnu kopiju sada** šalje jednu tamo, s lozinkom koju
    upisujete svaki put.
+   Svaki server ima prekidač **Preko Tora**, na svojoj kartici i u obrascu koji ga dodaje, isključen dok ga ne
+   uključite (vidi **Na serveru** niže).
 4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder (za automatsku kopiju
    izaberite svaku datoteku foldera, jer neke njegove datoteke mogu počinjati kao ime ranije kopije), a zatim stavlja rezervnu
@@ -3102,6 +3152,13 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   prima pri preuzimanju: tada preuzmite kopiju i njene datoteke sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
   stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
   ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
+  Prekidač **Preko Tora** svakog servera, isključen dok ga ne uključite, ima prednost nad izborom prostora za taj
+  server: uključen, njegove rezervne kopije idu samo preko Tora, bez obzira na Tor podešavanje prostora, i čekaju da
+  se Tor pokrene, pa server ne vidi adresu telefona. **Vrati sa servera** i obrazac koji dodaje server imaju isti
+  prekidač, a prijava s Nextcloudom slijedi prekidač servera za koji se prijavljuje: sama stranica u pregledaču ide
+  kao i uvijek. Aplikacija za računar i web-aplikacija nemaju Tor: server s uključenim prekidačem odatle ne dobija
+  ništa. Dijelovi rezervne kopije koje dajete prijateljima ([Dijelovi rezervne kopije kod prijatelja](#backup-pieces))
+  ne nose prekidač.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke
   koje su stigle nakon kopije i već su pročitane nisu u njoj. Razgovor koji se nastavio nakon kopije prestao bi
   otvarati nove poruke, pa svaki vraćeni razgovor, onaj prostora i onaj svakog skrivenog mjesta kad se otvori, sam i
@@ -3669,6 +3726,10 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   vibracija, relej i Tor, moduli, ime uređaja. Uređaj koji treba da zadrži svoje: **Postavke** → **Podaci i uređaji**
   → **Povezani uređaji** → **Iste postavke na svim uređajima** isključeno. Ponovo uključen, odmah preuzima postavke
   drugih. Skriveni razgovori zadržavaju svoje.
+- **Preko Tora za jedan razgovor:** prekidač **Preko Tora** u **Detaljima** Erevos razgovora isti je na svakom
+  uređaju: uključen ili isključen na jednom, uključen je ili isključen na svima. Na uređaju bez Tora, kao što je web
+  aplikacija, taj razgovor ne šalje ništa dok je uključen. Uređaj sa starijom verzijom ga nikad ne isključuje na
+  ostalima. Vidi [Preko Tora](#tor).
 - **Na istom Wi-Fiju:** telefon i računar na istom Wi-Fiju ili hotspotu (s uključenim **Pronađi Erevos na istoj Wi-Fi mreži**)
   daju jedno drugom ono što se mijenja direktno tamo, i bez interneta; relej ipak dobija svoju kopiju, koja tada ništa
   više ne mijenja. Samo prostora: veze skrivenih razgovora idu preko releja.
@@ -3874,6 +3935,9 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
 2. Dodirnite **Provjeri ažuriranja**. GitHub tada vidi internet adresu ovog uređaja, ništa drugo; na Androidu je vidi
    i server web-aplikacije, koji sadrži potpis ažuriranja od računara za izdanja. Dok sve u
    prostoru ide preko Tora (**Sve** pod Torom), Erevos ne provjerava, jer bi to zaobišlo Tor.
+   S uključenim **Preko Tora**, na ovom ekranu (isključeno dok ga ne uključite), pita samo server web-aplikacije,
+   preko Tora, a ne GitHub: GitHub se ne pita i ništa ne vidi adresu. Sporije je i čeka dok se Tor pokreće; i radi i
+   dok sve u prostoru ide preko Tora.
 3. Kad postoji nova verzija: na Androidu dodirnite **Instaliraj**. Preuzima se, provjerava prema izdanju (njegova
    veličina i SHA-256), i otvara se Androidov instalater: tamo dodirnite **Instaliraj**. Erevos je nudi tek kad je
    računar za izdanja, koji svoj ključ čuva van mreže, potpisao tu verziju i njen SHA-256: onaj ko bi sam preuzeo
@@ -3883,6 +3947,8 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
    tri puta; onda Erevos to kaže i ništa se ne instalira. Prvi put Android traži da dozvolite instaliranje aplikacija
    iz Erevosa. Na računaru i Sailfish OS-u **Otvori stranicu za preuzimanje** otvara stranicu izdanja: uzmite datoteku
    koju Erevos navodi, onu za paket koji imate, i ažurirajte kao u tabeli ispod.
+   Preko Tora nova verzija se javi, ali se ovdje ne preuzima, jer je njen paket veći nego što Tor u Erevosu prima: na
+   trenutak isključite **Preko Tora** da je instalirate, ili je preuzmite sa stranice izdanja u Tor Browseru.
 
 Verzija poput **4.0.0-rc.1** je probna verzija prije 4.0.0 (kandidat za izdanje): instalira se i ažurira kao svaka
 druga, a 4.0.0 dolazi poslije nje.
@@ -3908,6 +3974,9 @@ koje za **Ažuriranja**, a zatim **Provjeri ažuriranja**. Nestaje kad budete im
 - **Samo na LPHL-ovom relayu:** prostor pita samo dok koristi LPHL-ov relay i ne šalje sve preko Tora (**Sve** pod
   Torom): server tada ne vidi ništa što već ne vidi. Prostor na drugom relayu, ili bez relaya, ne pita ništa; tamo vam
   to kaže **Provjeri ažuriranja**.
+  Prekidač **Preko Tora** u **Ažuriranjima**, jedan za ovo obavještenje i za **Provjeri ažuriranja**, samo na ovom
+  telefonu, tjera ga da pita preko Tora: server tada ne vidi adresu telefona, a pita i prostor koji šalje sve preko
+  Tora. Nova verzija se javi, ali se instalira samo s isključenim prekidačem.
 - **Da to isključite:** **Postavke** → **Općenito** → **Ažuriranja** → **Javi mi kad izađe nova verzija**.
 - Radi od verzije koja to ima uključeno: prethodna ne kaže ništa. Nije u F-Droid verziji, koju ažurira F-Droid.
 
@@ -4035,7 +4104,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Grupni razgovori** | Šifrirani s kraja na kraj pomoću MLS-a (RFC 9420); uklonjeni članovi nakon toga ništa ne čitaju. Kopija svakog člana zapečaćena je zasebno, pa relayi ne mogu saznati ko je u grupi; svaki relay ipak vidi da poruka stiže u red. Članovi vide ključeve i adrese relaya jedni drugih. Fotografije, datoteke i glasovne poruke idu preko pohrane datoteka relaya pošiljaoca, kao i kontaktu, i ostaju tamo 14 dana. Nije nezavisno provjereno. | |
 | **Grupni pozivi** | Glasovni i video, šifrirani s kraja na kraj između svaka dva telefona u pozivu (DTLS-SRTP, čiji se ključevi šalju u šifriranju grupe). Preko relaya za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi adresu svakog telefona, kada i koliko dugo, i koliko prolazi. Svaki član, u pozivu ili ne, saznaje ko je u njemu. Relayi vide kada poziv počinje. | Video s više od četiri osobe, preko servera; više od osam osoba. |
 | **Javne grupe** | Kao grupni razgovori, a svako ko ima link može zatražiti ulazak i čitati od trenutka kad ga puste. Zahtjevi stižu na relay vlasnika zapečaćeni za telefon vlasnika: relay vidi koliko ih je i kada, ali ne i od koga. Članovi vide izabrana imena jedni drugih, ključeve napravljene samo za tu grupu, adrese relaya i identifikatore pošiljaoca redova. Nije nezavisno provjereno. | |
-| **Pregledi linkova** | Isključeni dok se ne uključe. Tada, dok šaljete link, vaš telefon preuzima njegovu stranicu direktno sa sajta, koji vidi vašu IP adresu i vrijeme, ali ne i za koga je poruka. Pregled ide unutar šifrirane poruke; telefon koji je primi ništa ne preuzima. Nijedan dok prostor ide preko Tora; u skrivenim razgovorima samo s vlastitim prekidačem njihovog mjesta. | Pregledi preko Tora. |
+| **Pregledi linkova** | Isključeni dok se ne uključe. Tada, dok šaljete link, vaš telefon preuzima njegovu stranicu direktno sa sajta, koji vidi vašu IP adresu i vrijeme, ali ne i za koga je poruka. Pregled ide unutar šifrirane poruke; telefon koji je primi ništa ne preuzima. S uključenim **Preko Tora** stranica se preuzima samo preko Tora i sajt ne vidi vašu IP adresu. Nijedan dok prostor šalje sve preko Tora, osim ako je **Preko Tora** uključeno; u skrivenim razgovorima samo s vlastitim prekidačem njihovog mjesta. | |
 
 ## Transparentnost {#transparency}
 

@@ -34,3 +34,13 @@ test('its queues are read apart, through Tor, whatever the space says; turned of
   assert.equal(readsThroughTor('aa'), false);
   assert.deepEqual(bunches(queues, 'w', false), [{ way: 'w', queues }]);
 });
+
+test("its copies to the contact's other devices and a way written to them by itself go on its circuits too; on a linked device not the phone's queue, which every chat shares", () => {
+  const id = 'cc'.repeat(16);
+  const way = (sender: string) => ({ id: sender, bundle: '', sender, relay: 'wss://e', relayKey: '' });
+  const c = contact(id, { tor: true, ringSender: 'ring', endpoints: [way('their-laptop'), way('')], direct: way('direct') } as Partial<Contact>);
+  const circuit = circuitOf(id);
+  assert.deepEqual([...torChatsOf([c]).senders.keys()].sort(), [`${id}-s`, 'direct', 'ring', 'their-laptop'].sort());
+  const linked = torChatsOf([c], true);
+  assert.deepEqual([...linked.senders.entries()].sort(), [['direct', circuit], ['their-laptop', circuit]]);
+});

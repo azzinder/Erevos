@@ -10,4 +10,5 @@ export const torChatText: Record<string, string> = {
   "Through Tor": "Par Tor",
   "This chat goes only through Tor, on its own circuits, whatever the space’s Tor setting: the relay does not see your address for it. Slower, and it waits while Tor starts. Calls do not go through Tor.": "Cette discussion passe uniquement par Tor, sur ses propres circuits, quel que soit le réglage Tor de l’espace : le relay ne voit pas ton adresse pour elle. Plus lent, et elle attend pendant le démarrage de Tor. Les appels ne passent pas par Tor.",
   "This chat goes as the space’s Tor setting says. Turn on to send it only through Tor.": "Cette discussion passe comme le dit le réglage Tor de l’espace. Active pour l’envoyer uniquement par Tor.",
+  "This build of Erevos has no Tor, so this chat sends nothing from here while this is on. Turn it off here, or write from the phone.": "Cette version d’Erevos n’a pas Tor, donc cette discussion n’envoie rien d’ici tant que cela est activé. Désactive-le ici, ou écris depuis le téléphone.",
 };

@@ -231,20 +231,43 @@ export function sentMark(sealed: { through: boolean }, mark: Mark): Mark {
   return sealed.through ? 'quiet' : mark;
 }
 
+// `relay` on a chat's own circuits through Tor (Relay.torChat, lib/tor-chats.ts), and the relay it
+// goes through and each it falls back to with it: none of them reached straight.
+function onCircuits(relay: Relay, torChat: string): Relay {
+  return {
+    ...relay,
+    torChat,
+    ...(relay.via ? { via: onCircuits(relay.via, torChat) } : {}),
+    ...(relay.fallback ? { fallback: relay.fallback.map((f) => ({ ...f, relay: onCircuits(f.relay, torChat) })) } : {}),
+  };
+}
+
 /**
- * Hands a contact's packets to the relay in turn, to where `sealed` says (contactTarget, from
- * `own`), after the conversation's first packet if the relay has not taken that yet, then
- * `firstSent`. `mark` goes with the last packet only, and the ones before it, the first packet
- * too, are quiet: what comes in parts, as a voice message does, is one message.
+ * Where what was sealed for a contact goes (contactTarget, from `own`): for a chat that goes only
+ * through Tor (`torChat`, lib/e2e.ts), on that chat's circuits, each relay on the way, or not at
+ * all. So on a linked device too, where it goes to the phone's queue, which every chat shares, and
+ * so is not told apart by its sender id as on the phone (lib/tor-chats.ts).
+ */
+export function sealedTarget(own: Relay, sealed: { relay: string; relayKey: string; spare?: Spare | null; torChat?: string }): Relay {
+  const target = contactTarget(own, sealed);
+  return sealed.torChat ? onCircuits(target, sealed.torChat) : target;
+}
+
+/**
+ * Hands a contact's packets to the relay in turn, to where `sealed` says (sealedTarget, from
+ * `own`: a chat's that goes only through Tor on its circuits), after the conversation's first
+ * packet if the relay has not taken that yet, then `firstSent`. `mark` goes with the last packet
+ * only, and the ones before it, the first packet too, are quiet: what comes in parts, as a voice
+ * message does, is one message.
  */
 export async function sendSealed(
   own: Relay,
-  sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null },
+  sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null; torChat?: string },
   packets: Uint8Array[],
   mark: Mark,
   firstSent: () => Promise<void>,
 ): Promise<void> {
-  const to = contactTarget(own, sealed);
+  const to = sealedTarget(own, sealed);
   const sender = fromHex(sealed.sender);
   if (sealed.first) {
     await sendMessage(to, sender, sealed.first, 'quiet');

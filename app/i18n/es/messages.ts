@@ -747,8 +747,6 @@ export const messages: Record<string, string> = {
   // Link previews, made by the sender's phone (lib/make-preview.ts).
   'Link previews': 'Vistas previas de enlaces',
   'Making the link’s preview…': 'Creando la vista previa del enlace…',
-  'None while this space goes through Tor: Erevos sends only relay requests through it.':
-    'Ninguna mientras este espacio va por Tor: Erevos solo envía por Tor las peticiones al relay.',
   "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.":
     'Cuando envías un enlace, este teléfono descarga su página directamente del sitio y envía su título, una línea y una pequeña imagen dentro del mensaje. El sitio ve la dirección de internet de este teléfono. En todos los chats de este espacio, no en los chats ocultos.',
   "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. Only in the hidden chats of this place.":
@@ -770,4 +768,9 @@ export const messages: Record<string, string> = {
   'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Se abre en el chat, el grupo o la conversación SMS que elijas, en el campo del mensaje, para leerlo y enviarlo allí. Nunca en chats ocultos.',
   'No chat matches.': 'Ningún chat coincide.',
   'Erevos chat': 'Chat de Erevos',
+  "When you send a link, this phone fetches its page through Tor and sends its title, a line and a small picture inside the message. The site does not see this phone's internet address. Only in the hidden chats of this place.": "Cuando envías un enlace, este teléfono descarga su página por Tor y envía su título, una línea y una pequeña imagen dentro del mensaje. El sitio no ve la dirección de internet de este teléfono. Solo en los chats ocultos de esta posición.",
+  "When you send a link, this phone fetches its page through Tor and sends its title, a line and a small picture inside the message. The site does not see this phone's internet address. In all chats of this space, not in hidden chats.": "Cuando envías un enlace, este teléfono descarga su página por Tor y envía su título, una línea y una pequeña imagen dentro del mensaje. El sitio no ve la dirección de internet de este teléfono. En todos los chats de este espacio, no en los chats ocultos.",
+  "Links go as they are. Turned on, this phone fetches a link's page through Tor as you send it, so the site does not see this phone's internet address. The phone that gets it fetches nothing.": "Los enlaces se envían tal cual. Si lo activas, este teléfono descarga la página de un enlace por Tor al enviarlo, así que el sitio no ve la dirección de internet de este teléfono. El teléfono que lo recibe no descarga nada.",
+  "None while this space sends everything through Tor, unless they go through Tor too: turn on Through Tor below.": "Ninguna mientras este espacio envía todo por Tor, salvo que también vayan por Tor: activa Por Tor abajo.",
+  "Slower, and waits while Tor starts. A page that sends you on elsewhere, or that does not let Tor in, gets no preview.": "Más lento, y espera mientras Tor arranca. Una página que te manda a otra parte, o que no deja entrar a Tor, no tiene vista previa.",
 };

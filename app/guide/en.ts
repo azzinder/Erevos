@@ -1154,8 +1154,10 @@ each place of hidden chats has a switch of its own, in a chat's details there.
 and shows that site nothing of itself, not even its address.
 
 - **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
-  for. Through Tor, Erevos sends only its relay requests, not pages, so while everything in the space goes through Tor
-  (**Everything** under Tor) no previews are made at all.
+  for. With **Through Tor** on, under **Link previews**, the page and its picture are fetched only through Tor,
+  whatever the space's Tor setting, so the site does not see the address. That is slower, and waits while Tor starts;
+  a page that sends you on elsewhere (a redirect), or that does not let Tor in, gets no preview. While everything in
+  the space goes through Tor (**Everything** under Tor), previews are made only with **Through Tor** on.
 - Erevos on a computer makes none, but shows those that come all the same.
 - **Over LoRa**, which takes only a little, a message goes without its preview rather than wait, and keeps none here.
 - A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
@@ -1574,6 +1576,12 @@ are large, go straight and so faster.
   relay then does not see your phone's IP address for that chat, and no Tor exit carries it together with another
   chat. It is slower, and what goes waits while Tor starts. Calls do not go through Tor. Hidden chats have it too,
   each in its own **Details**.
+  It is the same on your linked devices: switched on or off on any of them, it is switched on or off everywhere. On a
+  device without Tor, such as the web app, that chat sends nothing while it is on.
+  It covers that chat's Nostr texts and its photos and files on Nostr file servers too, even when this space's choice
+  is **Nothing**: Tor is started for them, and nothing goes straight. Until your contact first writes to the chat's
+  own queue, their first messages come to the space's own queue, which is read the space's way. See [Who sees your
+  internet address](#ip).
 
 - **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
   with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.
@@ -1626,6 +1634,11 @@ choice, and its own Nostr relays.
 - **How it goes:** with **Nothing**, texts go to the Nostr relays straight. With **Messages**, through Tor once Tor is
   ready, and through your relay while Tor starts. With **Everything**, only through Tor. When the way changes, the Nostr
   connections close and open again the new way.
+- **Nostr through Tor:** on the **Nostr** screen, **Nostr through Tor** is **Off** unless you turn it on. **On**,
+  Erevos reaches the Nostr relays and the Nostr file servers only through Tor and starts Tor for it, even when the
+  space's Tor is **Nothing**; a text that goes there waits while Tor starts. It only adds Tor: with Tor on for the
+  space, Nostr goes through Tor whatever this says, and a chat set to **Through Tor** goes through Tor whatever this
+  says. See [Who sees your internet address](#ip).
 - **The relays:** relay.damus.io, nos.lol and relay.primal.net unless you change them; you can add your own, five at
   most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.
 - **What stays on your relay:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your relay when one is between you; with no relay between you they go through Nostr too (see With no relay at all).
@@ -1675,6 +1688,41 @@ on Nostr, and that is enough to talk.
 
 **Why:** Nostr is only the way in. No one needs an invite to begin, and once one of you has a relay, it carries what
 is too big for Nostr.
+
+## Who sees your internet address {#ip}
+
+Your phone's internet address, its IP address, shows roughly where you are and which provider you use. It does not
+show what you write. Whoever your phone connects to sees it, unless the connection goes through Tor.
+
+- **Your relay and your contact's relays:** they see it. To hide it, turn Tor on for the space (**Settings** → **Relay
+  and networks** → **Tor**), or turn on **Through Tor** in one chat's **Details**. See [Through Tor](#tor).
+
+- **The public Nostr relays and the Nostr file servers:** they see it unless the connection goes through Tor. Turn on
+  **Nostr through Tor** under **Settings** → **Relay and networks** → **Nostr**, or **Through Tor** for one chat. See
+  [Through Nostr](#nostr).
+
+- **Calls:** they never go through Tor. The call relay, yours or your contact's, sees the address, though not what is
+  said. A call between phones nearby on the same network stays on that network.
+
+- **A file on a server your contact chose:** the server sees the address when your phone fetches the file. Tor hides
+  it.
+
+- **Web links you open:** the site sees it, as any web page does. To hide it, open links in Tor Browser. A link's
+  preview is fetched from its site too, and the site sees the address the same way.
+  With **Through Tor** on for link previews, it does not.
+
+- **Groups:** a message in an Erevos group goes through a server, which sees the address. Tor for the space hides it;
+  a group has no switch of its own.
+
+- **Backups, the Collection's server, radio and TV lists, link previews and updates:** each has its own **Through
+  Tor** switch, in its own screen, off unless you turn it on. See [Backups](#backup), [Collection](#collection), [Chat
+  through a relay](#relay) and [Updates](#updates).
+
+Erevos warns once before each of these, with the title **Your internet address can be seen**, a **Guide** button that
+opens this section and, where it can, a button that fixes it, such as **Through Tor for this chat**. **Go on** goes
+on; for a chat it is said once, and not again for that chat.
+
+Nearby phones, LoRa and SMS do not use the internet, so they show no internet address.
 
 ## Matrix {#matrix}
 
@@ -1811,7 +1859,7 @@ between.
 - **Places:** **Location** sends where you are, once, as Element does; it goes encrypted as the chat is, and shows
   with **Open in maps** on Android.
 - **Link previews:** with **Link previews** on, as for your contacts' chats, the first link in a message goes with a
-  preview your phone made, in an encrypted chat encrypted too. Never through Tor, and never in a hidden place.
+  preview your phone made, in an encrypted chat encrypted too. Through Tor only with **Through Tor** on under **Link previews**, and never in a hidden place.
 - **Pinning and forwarding:** **Pin**, in a message's menu, pins it to the top of the room for everyone, if the room
   lets you; a bar over the chat shows the latest pinned message, and a tap goes to it and then shows the next.
   **Unpin** takes it down. **Forward** sends a copy to another chat of this account; the copy shares nothing with the
@@ -2878,8 +2926,8 @@ The Collection is an encrypted place for your photos, files and folders, in ever
 - **Out of the Collection:** a photo opens on the whole screen, to swipe and zoom, with **Send to a chat**, **Save to phone**, **Information** and **Delete**. Saving to the phone, or opening a file with another app, takes it out unencrypted, and Erevos says so first. Sending to a chat leaves the Collection's copy where it is. From a hidden place's Collection, files go only to the chats and groups of that hidden place, never to the space's, and the space's Collection never to a hidden place's. Swipe, or use the arrows, for the next photo or the one before; **Slideshow** at the top shows them one after the other, every 4 seconds, till a tap.
 - **From a chat:** **+** under the message field, then **Collection**, opens the Collection of that chat's place: tap the photos or files to send, then **Send**, and they go in that chat.
 - **Backups:** a backup holds the Collection with the rest of the phone. **Settings** → **Data and devices** → **Collection**, or the three dots in the Collection, can leave that Collection out of the backups made while it is open: each Collection has its own choice.
-- **On a WebDAV server:** in the Collection's settings, **Also on a WebDAV server** copies that Collection's files as they are, still encrypted, to a folder on a server you choose, Nextcloud, ownCloud or any that speaks WebDAV: give the folder's address, a user name and, best, an app password, then tap **Connect**; **Test the connection** checks them first. Each space and hidden place has its own choice and server; the backups' server is offered first. Only what is not there yet goes, a piece at a time, while the place is open, going on where it stopped after the network drops, and a file deleted here is deleted there too; nothing else in the folder is touched. The server sees only pieces with random names, in a subfolder with a random name, and cannot open them. A phone that lacks a file, as after a backup restored on a new phone, fetches it from there as it opens, and keeps only pieces that open with the file's key. Erevos shows how much of it has come, with **Cancel**: what came stays, and the next time only the rest comes; music, videos, PDFs and **Open with another app** fetch it first too. While everything is copied, backups made while the place is open may leave its pieces out, after Erevos starts again too, until a file is added or deleted.
-- **With Nextcloud, as LPHL’s:** in that form, and in the backups’ **Add a server**, type your Nextcloud’s address under **Your Nextcloud** and tap **Sign in with Nextcloud**: sign in in the browser, as Fasouli does, through Authentik or however it signs in, and choose **Grant access**. Erevos gets an app password of its own and fills the form with its own folder in your files, **Erevos/Collection** or **Erevos/Backups**, made if it is not there, beside Fasouli’s, which it never reads; then tap **Connect**. Take that app password back in Nextcloud → Settings → Security.
+- **On a WebDAV server:** in the Collection's settings, **Also on a WebDAV server** copies that Collection's files as they are, still encrypted, to a folder on a server you choose, Nextcloud, ownCloud or any that speaks WebDAV: give the folder's address, a user name and, best, an app password, then tap **Connect**; **Test the connection** checks them first. Each space and hidden place has its own choice and server; the backups' server is offered first. Only what is not there yet goes, a piece at a time, while the place is open, going on where it stopped after the network drops, and a file deleted here is deleted there too; nothing else in the folder is touched. The server sees only pieces with random names, in a subfolder with a random name, and cannot open them. A phone that lacks a file, as after a backup restored on a new phone, fetches it from there as it opens, and keeps only pieces that open with the file's key. Erevos shows how much of it has come, with **Cancel**: what came stays, and the next time only the rest comes; music, videos, PDFs and **Open with another app** fetch it first too. While everything is copied, backups made while the place is open may leave its pieces out, after Erevos starts again too, until a file is added or deleted. It has a **Through Tor** switch of its own, off unless you turn it on: with it on, the copy goes only through Tor, whatever the space's Tor setting, so the server does not see your IP address; it is slower, and waits while Tor starts. Where there is no Tor, in the desktop app and the web app, a server with it on gets nothing.
+- **With Nextcloud, as LPHL’s:** in that form, and in the backups’ **Add a server**, type your Nextcloud’s address under **Your Nextcloud** and tap **Sign in with Nextcloud**: sign in in the browser, as Fasouli does, through Authentik or however it signs in, and choose **Grant access**. Erevos gets an app password of its own and fills the form with its own folder in your files, **Erevos/Collection** or **Erevos/Backups**, made if it is not there, beside Fasouli’s, which it never reads; then tap **Connect**. Take that app password back in Nextcloud → Settings → Security. The sign-in follows the **Through Tor** switch of the server it signs in for: with it on, Erevos asks your Nextcloud only through Tor, but the browser page itself goes as the browser always does.
 - **On your linked devices:** in the Collection's settings, **On my linked devices too** sends that Collection to the [linked devices](#devices) of its space or hidden place, and the switch goes to all of them. A file added, renamed, moved or deleted on one is so on all. Small pictures come at once; a file itself comes at once on the same Wi-Fi, else when you open it, from the WebDAV server if the Collection has one, or through the relay up to 100 MB. Each piece is kept only once it opens with the file's key, and a transfer cut off goes on from the piece that was missing. A file is deleted elsewhere only when it is deleted on one of your devices, never because it is missing there. A hidden place's Collection goes only to that place's own linked devices.
 - **Music, videos and PDFs:** a PDF reads page by page inside Erevos (Android 11 and later), decrypted in memory only. Music and videos play straight from their encrypted pieces, never from a copy: a video on the whole screen, music with the next ones in the folder, going on with the screen off, with play, pause, next and previous in the notification and on the phone's lock screen, and only those there. The list goes on after the space locks, unless **Stop playing when the space locks** is on in the Collection's settings; **Stop** and the panic button end it. The notification says only **Playing** unless **Show the title in the notification** is on. **Open with another app** hands the file over as it is decrypted, with no copy on the phone, until you leave the Collection; the other app may keep one of its own.
 - **Gallery originals:** with **Delete the original from the gallery after importing** on, a photo or video picked from the phone's files is deleted from the gallery once it is in the Collection, after Android asks you to confirm. It needs Android 11 or later. A photo from the camera never goes to the gallery.
@@ -2890,13 +2938,14 @@ The Collection is an encrypted place for your photos, files and folders, in ever
 - **Subtitles:** an .srt or .vtt file in the same folder as a video, with its name (film.mkv and film.srt, or film.en.srt), plays as its subtitles, read from its encrypted pieces as the video is; **Subtitles on** at the top turns them off, and on again.
 - **Playlists:** at the top of **Music**, **New playlist** makes one; songs go into it from their menu (**Add to a playlist**) or chosen together (hold one down, then **Playlist**). Open it to play it in order or shuffled, move a song up or down, or take it out: it stays in the Collection. Playlists are kept encrypted with the Collection, never in plain storage.
 - **Radio:** the **Radio** tab holds internet radio stations, each by its link; **+** there adds one. Only https links: Erevos opens no plain http, so a station that has only an http link cannot be added. A playlist link (.m3u, .pls) is read once, as it is added, for the stream's own link; an HLS stream (.m3u8) plays on the phone. A station plays like the music, with the same notice, the same **Stop playing when the space locks** and the panic button; the title it sends shows on the player's screen, and in the notification only when **Show the title in the notification** is on. The station, and whoever runs its server, sees your device's IP address while it plays, as any site does; Erevos sends it nothing else, and only "Erevos" as its name. Stations are kept encrypted with the Collection.
-- **Finding a station:** **Add a station** also searches Radio Browser (radio-browser.info), a free directory of stations anyone can add to: it is sent only the words you type, when you press **Search**, and sees your device's IP address, as the station does. Only stations it has an https link for are shown; a tap adds one.
+- **Finding a station:** **Add a station** also searches Radio Browser (radio-browser.info), a free directory of stations anyone can add to: it is sent only the words you type, when you press **Search**, and sees your device's IP address, as the station does. Only stations it has an https link for are shown; a tap adds one. With **Through Tor** on under **Radio and TV lists**, below, the search goes through Tor, and Radio Browser does not see your IP address.
 - **A playlist of many stations:** a playlist link (.m3u, .pls) that names many stations adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file on your device, read there and sent nowhere. Only stations with an https link are added (500 at most from one list), and Erevos says how many were left out.
 - **When a stream drops:** if a station's server, or a proxy on the way, ends the stream, or the network goes for a moment, Erevos asks the station again by itself after 1, 2, 4… seconds (at most 30), while you still want it playing, on Android, on a computer and in a browser. After 12 tries in a row it stops and says so.
 - **TV:** the **TV** tab holds TV channels, each by its https link, in the groups their list gives them, with a row to show one group and a search by name. A tap plays a channel on the whole screen, as a video, with the same **Stop playing when the space locks** and the panic button; there is no programme guide. It plays on Android, in the desktop app and in a browser; there an HLS stream plays through hls.js, and only when its server lets the web app read it.
 - **Adding channels:** **+** in **TV** adds a list by its link (.m3u), read once as it is added, a list file from your device (**Import a list file (.m3u)**), read there and sent nowhere, or one channel by its link. Only channels with an https link are added, a link already there once, up to 15,000 in each Collection, and Erevos says how many were left out. Hold a channel down to rename it, delete it or its whole group, or **Send to a chat** its name and link; a radio station's menu has **Send to a chat** too.
-- **iptv-org:** **Add channels** offers iptv-org (github.com/iptv-org/iptv), a public list of free channels: **iptv-org by country**, your device's region first, or **iptv-org: all channels**, over 10,000 of them. Its server sees your device's IP address when the list is fetched, and each channel when it plays.
+- **iptv-org:** **Add channels** offers iptv-org (github.com/iptv-org/iptv), a public list of free channels: **iptv-org by country**, your device's region first, or **iptv-org: all channels**, over 10,000 of them. Its server sees your device's IP address when the list is fetched, and each channel when it plays. With **Through Tor** on under **Radio and TV lists**, below, the list is fetched through Tor, so its server does not see your IP address; each channel still does, when it plays.
 - **What a channel sees:** the channel, and whoever runs its server, sees your device's IP address while it plays, as any site does. Logos show only with **Show channel logos** on in the Collection's settings, as each logo's server sees your IP address too; otherwise a TV icon. Channels are kept encrypted with the Collection.
+- **Radio and TV lists through Tor:** in the Collection's settings, the card **Radio and TV lists** has **Through Tor**, off unless you turn it on. On, Erevos asks only through Tor, whatever the space's Tor setting, for the search in Radio Browser, a playlist or TV list fetched by its link, iptv-org's list and the channels' logos, so their servers do not see your device's IP address. It is slower, and waits while Tor starts. Playing a station or a channel always goes straight, so it sees the IP address while it plays.
 
 **Why:** some photos and files, a passport, a contract, a picture, should neither sit in the gallery for any app to read nor travel in a chat. The Collection keeps them with the same encryption as the chats, apart from them. Once a file is saved to the phone or opened with another app, it is outside Erevos, not encrypted.
 
@@ -2925,6 +2974,8 @@ automatic backup uses the files of the ones before it too: keep the whole folder
    server keeps the 3 newest, with every file they need, and each one sends only what is new; **Stop sending** stops
    it, and those there stay. In the web app, which makes no backups
    by itself, **Send a backup now** sends one there, with a password you type each time.
+   Each server has a **Through Tor** switch, in its card and in the form that adds one, off unless you turn it on (see
+   **On a server** below).
 4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
    backup's files beside it, or asks you to choose them or their folder (for an automatic backup, choose every file of
    the folder, as some of its files may start as an earlier backup's name), then puts the backup in place of everything on
@@ -2960,6 +3011,12 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   most Erevos takes in any download: then download the backup and its files from the server and tap **Restore a
   backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
   purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
+  Each server's **Through Tor** switch, off unless you turn it on, goes before the space's choice for that server: on,
+  its backups go only through Tor, whatever the space's Tor setting, and wait for Tor to start, so the server does not
+  see the phone's address. **Restore from a server** and the form that adds a server have the same switch, and the
+  Nextcloud sign-in follows the switch of the server it signs in for: the browser page itself goes as the browser
+  always does. The desktop app and the web app have no Tor: a server with the switch on gets nothing from there.
+  Backup pieces you give to friends ([Backup pieces with friends](#backup-pieces)) do not carry the switch.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it. A conversation that went on after the backup would
   stop opening new messages, so each restored chat, the space's and each hidden place's as it opens, starts a new
@@ -3495,6 +3552,9 @@ The chats then come to the computer, and after them the messages chosen.
   vibration, the relay and Tor, the modules, the device's name. A device that should keep its own: **Settings** →
   **Data and devices** → **Linked devices** → **Same settings on every device** off. Turned on again, it takes the
   others' at once. Hidden chats keep their own.
+- **Through Tor for one chat:** the **Through Tor** switch in an Erevos chat's **Details** is the same on every device:
+  switched on or off on one, it is switched on or off on all. On a device without Tor, such as the web app, that chat
+  sends nothing while it is on. A device on an older version never turns it off for the others. See [Through Tor](#tor).
 - **On the same Wi-Fi:** the phone and a computer on the same Wi-Fi or hotspot (with **Find Erevos on the same Wi-Fi** on)
   give each other what changes straight there, with no internet too; the relay still gets its copy, which then changes
   nothing more. Only the space's: hidden chats' links go through the relay.
@@ -3696,6 +3756,9 @@ asking GitHub, as **Told when a new version is out** below says. To update:
 2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else; on Android so does the web
    app's server, which holds the release computer's signature of the update. While everything in the
    space goes through Tor (**Everything** under Tor), Erevos does not check, since that would go around Tor.
+   With **Through Tor** on, on this screen (off unless you turn it on), it asks only the web app's server, through
+   Tor, and not GitHub: GitHub is not asked and nothing sees the address. That is slower, and waits while Tor starts;
+   and it works while everything in the space goes through Tor too.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
    SHA-256), and Android's installer opens: tap **Install** there. Erevos offers it only once the release computer,
    which keeps its key offline, has signed that build and SHA-256: whoever took over the GitHub account alone could
@@ -3705,6 +3768,8 @@ asking GitHub, as **Told when a new version is out** below says. To update:
    the start, three times in all; then Erevos says so, and nothing installs. The first time, Android asks to allow
    installing apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take
    the file Erevos names, the one of the package you have, and update as in the table below.
+   Through Tor a new version is told, but it does not download here, as its package is larger than Erevos's Tor takes:
+   turn **Through Tor** off for a moment to install it, or download it from the releases page in Tor Browser.
 
 A version such as **4.0.0-rc.1** is a test version before 4.0.0 (a release candidate): it installs and updates like
 any other, and 4.0.0 comes after it.
@@ -3730,6 +3795,9 @@ update.**, marked until you open it, and a notice says **Erevos 3.3.0 is out** t
 - **Only on LPHL's relay:** a space asks only while it uses LPHL's relay and does not send everything through Tor
   (**Everything** under Tor): the server then sees nothing it does not see already. A space on another relay, or with
   no relay, asks nothing; there **Check for updates** tells you.
+  The **Through Tor** switch in **Updates**, one for this notice and for **Check for updates**, on this phone only,
+  makes it ask through Tor: the server then does not see the phone's address, and a space that sends everything
+  through Tor asks too. A new version is told, but installs only with the switch off.
 - **To turn it off:** **Settings** → **General** → **Updates** → **Tell me when a new version is out**.
 - It works from the version that has it on: the one before says nothing. Not in the F-Droid build, which F-Droid
   updates.
@@ -3852,7 +3920,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The relays see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
-| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor; in hidden chats only with their place's own switch. | Previews through Tor. |
+| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. With **Through Tor** on, the page is fetched only through Tor, and the site does not see your IP address. None while the space sends everything through Tor, unless **Through Tor** is on; in hidden chats only with their place's own switch. | |
 
 ## Transparency {#transparency}
 

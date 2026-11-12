@@ -1470,7 +1470,7 @@ export class Links implements Link, TakenFiles {
     // Ahead of what the chat writes to them next, if the relay takes it now.
     await this.flush().catch(() => undefined);
     if (known) return { ...known, request: false };
-    const synced: Synced = { identity, name: '', timer: 0, timerAt: 0, request: false, look: null, hide: false };
+    const synced: Synced = { identity, name: '', timer: 0, timerAt: 0, request: false, look: null, hide: false, tor: false };
     return mirrorOf(synced, undefined, primary.at, this.data.account);
   }
 
@@ -1867,7 +1867,7 @@ export class Links implements Link, TakenFiles {
   // set, blocked) still carry them too, for devices of the 6 series.
   private syncContacts(contacts: readonly Contact[], blocked: readonly Blocked[]): void {
     if (this.data.primary) return;
-    const logged = contacts.map((c) => ({ identity: c.identity, name: c.name, timer: c.timer, request: c.request, look: (c.look ?? null) as SyncJson, hide: c.hide }));
+    const logged = contacts.map((c) => ({ identity: c.identity, name: c.name, timer: c.timer, request: c.request, look: (c.look ?? null) as SyncJson, hide: c.hide, tor: c.tor === true }));
     const kept = blocked.map((b) => ({ identity: b.identity, name: b.name }));
     void this.syncs.writeFrom((log) => changesFor(log, logged, kept)).catch(() => undefined);
   }
@@ -2166,6 +2166,7 @@ export class Links implements Link, TakenFiles {
       else if (op.f === 'request' && op.v === false) await this.setFor(op.id, { request: false }, false, op.at.t);
       else if (op.f === 'name' && typeof op.v === 'string') await this.setFor(op.id, { name: op.v }, false, op.at.t);
       else if (op.f === 'hide' && typeof op.v === 'boolean') await this.setFor(op.id, { hide: op.v }, false, op.at.t);
+      else if (op.f === 'tor' && typeof op.v === 'boolean') await this.setFor(op.id, { tor: op.v }, false, op.at.t);
       else if (op.f === 'look') {
         const look = checkedLookOf(op.v);
         if (look !== undefined) await this.setFor(op.id, { look }, false, op.at.t);
@@ -4100,6 +4101,7 @@ export class Links implements Link, TakenFiles {
     if (change.look !== undefined && JSON.stringify(change.look) !== JSON.stringify(contact.look)) await e2e.setLook(c, change.look);
     if (change.avatar !== undefined && change.avatar?.kind !== 'photo' && JSON.stringify(change.avatar) !== JSON.stringify(contact.avatar)) await e2e.setAvatar(c, change.avatar);
     if (change.hide !== undefined && change.hide !== contact.hide) await e2e.setHidden(c, change.hide);
+    if (change.tor !== undefined && change.tor !== (contact.tor === true)) await e2e.setTor(c, change.tor);
     if (change.request === false && contact.request) await e2e.acceptRequest(c);
     if (change.timer !== undefined && change.timerAt !== undefined && change.timerAt > contact.timerAt) {
       await e2e.setTimer(c, change.timer);

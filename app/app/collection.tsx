@@ -619,6 +619,7 @@ export default function CollectionScreen() {
           hidden={inHidden}
           options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
           showLogos={there.showLogos === true}
+          tor={there.listsTor === true}
           onAdd={() => setAddingChannels(true)}
           onChanged={() => void reload()}
           bottom={bottomRoom}
@@ -870,8 +871,8 @@ export default function CollectionScreen() {
           setNowPlaying(true);
         }}
       />
-      <AddStationSheet visible={addingStation} place={place} onClose={() => setAddingStation(false)} onAdded={() => void reload()} />
-      <AddChannelsSheet visible={addingChannels} place={place} onClose={() => setAddingChannels(false)} onAdded={() => void reload()} />
+      <AddStationSheet visible={addingStation} place={place} tor={there.listsTor === true} onClose={() => setAddingStation(false)} onAdded={() => void reload()} />
+      <AddChannelsSheet visible={addingChannels} place={place} tor={there.listsTor === true} onClose={() => setAddingChannels(false)} onAdded={() => void reload()} />
       <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)} />
     </View>
   );

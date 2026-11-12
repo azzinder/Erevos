@@ -7,13 +7,21 @@ import { Linking, Platform, Text as NativeText, type StyleProp, type TextStyle }
 
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
+import { IP_GUIDE, ipWarningText } from '../lib/ip-warning';
 import { splitLinks } from '../lib/links';
 import { hasStyle, styleText, type Look, type StyledPart } from '../lib/text-style';
 
-/** Asks before opening a web address from a message, showing it whole, then opens it in the browser. */
+import { openGuideLink } from './guide';
+
+/**
+ * Asks before opening a web address from a message, showing it whole and that the site sees this
+ * phone's internet address (lib/ip-warning.ts), with the guide's section on it; then opens it in the browser.
+ */
 export function openLink(url: string): void {
-  ask(t('Open this link?'), url, [
+  const { message } = ipWarningText({ network: '', act: 'link', of: '' });
+  ask(t('Open this link?'), `${url}\n\n${message}`, [
     { text: t('Cancel'), style: 'cancel' },
+    { text: t('Guide'), onPress: () => openGuideLink(IP_GUIDE) },
     { text: t('Open'), onPress: () => void Linking.openURL(url).catch(() => undefined) },
   ]);
 }

@@ -8,7 +8,7 @@
 // A text goes through the relays first: ours, their home relays, then our home relay. Only when
 // none of them took it, and the contact said they read on Nostr (lib/e2e.ts seal, `nostr`), it goes
 // to their Nostr relays while it can (lib/nostr.ts nostrReady: straight with Tor off, through Tor
-// while it is ready), and is kept: should their phone not say it came within NOSTR_BACKUP_MS, it
+// while it is ready; for a chat that goes only through Tor, through Tor always), and is kept: should their phone not say it came within NOSTR_BACKUP_MS, it
 // goes through our relay again (sendNostrBackups, with each look at the relay), and their phone,
 // which may have it from both, shows it once. To a contact that asked for a bell (their hidden
 // chats, closed, hear of what came only from their relay queue), a bell goes to their relay queue
@@ -59,10 +59,11 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
       await relay();
       return;
     } catch (error) {
-      // No relay took it: a Nostr relay still may.
-      if (!nostrReady()) throw error;
+      // No relay took it: a Nostr relay still may, through Tor for a chat that goes only through it.
+      const tor = e2e.torChat(identity);
+      if (!nostrReady(tor)) throw error;
       try {
-        for (const wrap of wraps) await publishNostr(to, wrap);
+        for (const wrap of wraps) await publishNostr(to, wrap, tor);
       } catch {
         throw error;
       }
@@ -91,9 +92,10 @@ export function nostrOnlyWay(e2e: E2E, identity: string, sealed: ForNostr & { fi
   const wraps = nostrWraps(packets, sealed.first);
   if (!wraps) return null;
   return async () => {
-    if (!nostrReady()) throw new RelayUnreachableError(t('Tor is not ready.'));
+    const tor = e2e.torChat(identity);
+    if (!nostrReady(tor)) throw new RelayUnreachableError(t('Tor is not ready.'));
     try {
-      for (const wrap of wraps) await publishNostr(to, wrap);
+      for (const wrap of wraps) await publishNostr(to, wrap, tor);
     } catch (error) {
       throw new RelayUnreachableError(t('No Nostr relay took it: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
     }
@@ -108,10 +110,10 @@ export function nostrOnlyWay(e2e: E2E, identity: string, sealed: ForNostr & { fi
 
 /** Sends to Nostr again what went to contacts there only and was not said to have come (lib/e2e.ts nostrAgainDue), each to where they read now. What cannot go now goes with the next look. */
 export async function sendNostrAgain(e2e: E2E, now = Date.now()): Promise<void> {
-  if (!nostrReady()) return;
   // The wraps of one message go together, and count once.
   const due = new Map<string, { identity: string; tag: string; to: NostrTo; wraps: Uint8Array[] }>();
   for (const { identity, tag, packed, to } of e2e.nostrAgainDue(now)) {
+    if (!nostrReady(e2e.torChat(identity))) continue;
     const key = `${identity}|${tag}`;
     const there = due.get(key);
     if (there) there.wraps.push(packed);
@@ -119,7 +121,8 @@ export async function sendNostrAgain(e2e: E2E, now = Date.now()): Promise<void> 
   }
   for (const { identity, tag, to, wraps } of due.values()) {
     try {
-      for (const wrap of wraps) await publishNostr(to, wrap);
+      const tor = e2e.torChat(identity);
+      for (const wrap of wraps) await publishNostr(to, wrap, tor);
       await e2e.nostrWentAgain(identity, tag, now);
     } catch {
       // Tried again with the next look.
@@ -164,6 +167,7 @@ export async function sendNostrBackups(e2e: E2E, own: Relay, now = Date.now()): 
 export function nostrReaderOf(e2e: () => E2E | null, take: (bytes: Uint8Array) => Promise<void>, place?: () => PiecePlace | null): NostrReader {
   return {
     keys: () => e2e()?.nostrKeys() ?? [],
+    tor: () => e2e()?.torNostrKeys() ?? new Set<string>(),
     since: () => e2e()?.nostrSince() ?? 0,
     caught: (at) => void e2e()?.nostrRead(at).catch(() => undefined),
     take,

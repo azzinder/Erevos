@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, View } from 'react-native';
 
+import { TorSwitch } from '../components/tor-switch';
 import { Button, Card, Page, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { tap } from '../lib/haptics';
@@ -16,8 +17,9 @@ import { CAN_GIVE, CAN_TAKE, takeFromNearby } from '../lib/give-app';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { readNearbyLink } from '../lib/nearby-link';
 import { readQrPhoto } from '../lib/read-qr';
+import { throughTor } from '../lib/relay';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
-import { loadNotice, noticeSeen, onNotice, setNoticeOn } from '../lib/release-notice';
+import { latestTold, loadNotice, noticeSeen, onNotice, setNoticeOn, setUpdatesTor, torGet, type Told } from '../lib/release-notice';
 import { fetchStatement, signingOf } from '../lib/update-signature';
 import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -31,6 +33,12 @@ import { useColors } from '../theme/context';
 // version downloads, is checked and installs over this one; on a computer and Sailfish OS the
 // download page opens, and the note says which file there updates this one. The web app updates
 // itself (pwa/), so it has no button, nor has the F-Droid build, which F-Droid updates.
+// On Android, Updates has a Tor switch of its own (lib/release-notice.ts), off unless turned on:
+// with it on, the daily notice and Check for updates go only through Tor, whatever the space's Tor
+// way, so they work with Everything through Tor too. Through Tor Check for updates asks the web
+// app's server, not GitHub, whose answers send the asker on elsewhere, which Erevos's Tor does not
+// follow; and the package does not download through it, being larger than Erevos's Tor takes, so
+// the note says how to install it.
 
 const supported = (Platform.OS === 'android' && !FDROID) || SHELL !== null;
 // This app's version and its build number (app.config.js sets both for releases).
@@ -47,11 +55,20 @@ export default function UpdatesScreen() {
   const abort = useRef<AbortController | null>(null);
   // Whether a new version is told at the top of the chats; null until read, and where none is told.
   const [telling, setTelling] = useState<boolean | null>(null);
+  // Whether updates go only through Tor (Kept.tor); null until read, and where they never do.
+  const [torOn, setTorOn] = useState<boolean | null>(null);
 
   // A new version told of is seen once this opens.
   useEffect(() => {
     if (Platform.OS !== 'android' || FDROID) return;
-    const read = () => void loadNotice().then((kept) => setTelling(kept.on), () => undefined);
+    const read = () =>
+      void loadNotice().then(
+        (kept) => {
+          setTelling(kept.on);
+          setTorOn(kept.tor === true);
+        },
+        () => undefined,
+      );
     read();
     noticeSeen().catch(() => undefined);
     return onNotice(read);
@@ -113,8 +130,37 @@ export default function UpdatesScreen() {
     }
   }
 
+  // With Updates' own Tor switch on: the web app's server, only through Tor, for the release the
+  // release computer signed (lib/release-notice.ts latestTold). Nothing downloads through Tor.
+  async function checkThroughTor() {
+    setChecking(true);
+    let told: Told | null;
+    try {
+      told = await latestTold(torGet);
+    } catch (error) {
+      setNote(t("The web app's server could not be reached through Tor ({error}). Tor may still be starting: try again in a while.", { error: error instanceof Error ? error.message : String(error) }));
+      return;
+    } finally {
+      setChecking(false);
+    }
+    if (!told) {
+      setNote(t("The web app's server told of no release signed by the release computer. Try again later."));
+      return;
+    }
+    if (!CURRENT_BUILD) {
+      setNote(t('This Erevos was built on a computer, so it does not update itself. The newest release is {version}: User guide → Updates says how to switch to it.', { version: told.name }));
+      return;
+    }
+    if (told.build <= CURRENT_BUILD) {
+      setNote(t('Erevos is up to date ({version}).', { version: VERSION }));
+      return;
+    }
+    setNote(t('Erevos {version} is out. Through Tor it does not download here, as its package is larger than Erevos’s Tor takes: turn Through Tor off for a moment to install it, or download it from the releases page in Tor Browser.', { version: told.name }));
+  }
+
   async function check() {
     setNote('');
+    if (torOn) return checkThroughTor();
     // A check outside Tor would show GitHub this device's internet address while the owner asked
     // for it to be hidden.
     const data = await loadCurrentSpaceData().catch(() => null);
@@ -220,7 +266,9 @@ export default function UpdatesScreen() {
       {supported ? (
         <Card>
           <Text tone="muted">
-            {t("Erevos asks GitHub for updates only when you tap the button: a regular check would tell GitHub that this device has Erevos. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.")}
+            {torOn
+              ? t("Erevos asks for updates only when you tap the button. Through Tor it asks the web app's server, which holds the release computer's signature of each update, and not GitHub: the server does not see this device's internet address.")
+              : t("Erevos asks GitHub for updates only when you tap the button: a regular check would tell GitHub that this device has Erevos. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.")}
           </Text>
           {telling !== null ? (
             <>
@@ -240,10 +288,28 @@ export default function UpdatesScreen() {
               </Pressable>
               <Text variant="caption" tone="muted">
                 {telling
-                  ? t("Once a day Erevos asks LPHL's server, which runs the relay too, whether a new version is out, and says so at the top of the chats and in a notice. It asks only while this space uses LPHL's relay and does not send everything through Tor, so the server learns nothing it did not know. The answer counts only when signed by the release computer.")
+                  ? torOn
+                    ? t("Once a day Erevos asks LPHL's server, which runs the relay too, through Tor whether a new version is out, and says so at the top of the chats and in a notice. It asks only while this space uses LPHL's relay. The answer counts only when signed by the release computer.")
+                    : t("Once a day Erevos asks LPHL's server, which runs the relay too, whether a new version is out, and says so at the top of the chats and in a notice. It asks only while this space uses LPHL's relay and does not send everything through Tor, so the server learns nothing it did not know. The answer counts only when signed by the release computer.")
                   : t('Erevos does not ask whether a new version is out: only Check for updates tells you.')}
               </Text>
             </>
+          ) : null}
+          {torOn !== null ? (
+            <TorSwitch
+              on={torOn}
+              onChange={(on) => {
+                setTorOn(on);
+                void setUpdatesTor(on).catch(() => setTorOn(!on));
+              }}
+              said={
+                torOn
+                  ? t('Through Tor: the servers do not see this phone’s internet address. It is slower, and waits while Tor starts. A new version is told, but it does not download through Tor: to install it, turn this off for a moment.')
+                  : throughTor()
+                    ? t('Off, nothing here goes while this space sends everything through Tor.')
+                    : t('Straight: GitHub and the web app’s server see this phone’s internet address.')
+              }
+            />
           ) : null}
           {progress ? (
             <View style={{ gap: space.sm }}>

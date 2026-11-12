@@ -14,11 +14,14 @@ import { t } from './i18n';
 //
 // Its folders are Erevos's own, in the owner's files: Erevos/Backups and Erevos/Collection, beside
 // Fasouli's, which Erevos never reads. Requests go as backups to a server go (lib/backup-cloud.ts),
-// through Tor as the space's Tor way says; the flow's addresses must be on the Nextcloud's own
-// address, or it is refused.
+// through Tor as the space's Tor way says, or only through Tor with `tor`: the Tor switch of the
+// server it signs in for, backups' or the Collection's, so the sign-in goes as that server will.
+// The sign-in page itself opens in the browser, which goes as the browser does. The flow's
+// addresses must be on the Nextcloud's own address, or it is refused.
 
 export type LoginFlow = { login: string; poll: { endpoint: string; token: string } };
-export type NextcloudLogin = { base: string; user: string; password: string };
+/** `tor`: asked only through Tor, as the server signed in for will be; left out while it is not. */
+export type NextcloudLogin = { base: string; user: string; password: string; tor?: boolean };
 
 /** How long a flow lasts on the server, and how often Erevos asks whether access was granted. */
 export const FLOW_LIFETIME_MS = 20 * 60_000;
@@ -58,9 +61,9 @@ function json(bytes: Uint8Array): Record<string, unknown> | null {
   }
 }
 
-/** Asks the Nextcloud at `base` for a flow. Throws CloudError with why not. */
-export async function startLoginFlow(base: string): Promise<LoginFlow> {
-  const answer = await askAddress('POST', `${base}/index.php/login/v2`);
+/** Asks the Nextcloud at `base` for a flow; with `tor`, only through Tor. Throws CloudError with why not. */
+export async function startLoginFlow(base: string, tor = false): Promise<LoginFlow> {
+  const answer = await askAddress('POST', `${base}/index.php/login/v2`, {}, undefined, tor);
   const said = cloudStatusText(answer.status);
   if (said) throw new CloudError(answer.status === 404 ? t('There is no Nextcloud at that address.') : said);
   const data = json(answer.bytes);
@@ -76,14 +79,15 @@ export async function startLoginFlow(base: string): Promise<LoginFlow> {
 }
 
 /**
- * Waits until the owner grants access, asking every 2 seconds. Throws SignInCancelled when
- * `signal` aborts, and CloudError when the flow ran out.
+ * Waits until the owner grants access, asking every 2 seconds; with `tor`, only through Tor, and
+ * the login says so. Throws SignInCancelled when `signal` aborts, and CloudError when the flow ran
+ * out.
  */
 export async function waitForLogin(
   base: string,
   flow: LoginFlow,
   signal: AbortSignal,
-  { every = POLL_EVERY_MS, lifetime = FLOW_LIFETIME_MS, now = Date.now } = {},
+  { every = POLL_EVERY_MS, lifetime = FLOW_LIFETIME_MS, now = Date.now, tor = false } = {},
 ): Promise<NextcloudLogin> {
   const until = now() + lifetime;
   const pause = () =>
@@ -101,12 +105,12 @@ export async function waitForLogin(
   const body = utf8Encode(`token=${encodeURIComponent(flow.poll.token)}`);
   while (now() < until) {
     if (signal.aborted) throw new SignInCancelled();
-    const answer = await askAddress('POST', flow.poll.endpoint, { 'Content-Type': 'application/x-www-form-urlencoded' }, body).catch(() => null);
+    const answer = await askAddress('POST', flow.poll.endpoint, { 'Content-Type': 'application/x-www-form-urlencoded' }, body, tor).catch(() => null);
     if (signal.aborted) throw new SignInCancelled();
     if (answer && answer.status >= 200 && answer.status < 300) {
       const data = json(answer.bytes);
       if (typeof data?.loginName === 'string' && typeof data.appPassword === 'string') {
-        return { base, user: data.loginName, password: data.appPassword };
+        return { base, user: data.loginName, password: data.appPassword, ...(tor ? { tor: true } : {}) };
       }
     }
     await pause();
@@ -120,7 +124,7 @@ export async function waitForLogin(
  */
 export async function filesOf(login: NextcloudLogin): Promise<string> {
   const fallback = `${login.base}/remote.php/dav/files/${encodeURIComponent(login.user)}`;
-  const answer = await askServer({ url: `${login.base}/remote.php/dav/`, user: login.user, password: login.password }, 'PROPFIND', '', {
+  const answer = await askServer({ url: `${login.base}/remote.php/dav/`, user: login.user, password: login.password, ...(login.tor ? { tor: true } : {}) }, 'PROPFIND', '', {
     headers: { Depth: '0', 'Content-Type': 'application/xml; charset=utf-8' },
     body: utf8Encode('<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>'),
   }).catch(() => null);
@@ -131,11 +135,12 @@ export async function filesOf(login: NextcloudLogin): Promise<string> {
 
 /**
  * Erevos's folder for `which` there, made when it is not yet (Erevos, then Backups or Collection):
- * the server to give to backups or to the Collection. Throws CloudError with why not.
+ * the server to give to backups or to the Collection, through Tor alone when the login was.
+ * Throws CloudError with why not.
  */
 export async function nextcloudFolder(login: NextcloudLogin, which: NextcloudFolder): Promise<CloudServer> {
   const files = await filesOf(login);
-  const server = { url: `${files}/`, user: login.user, password: login.password };
+  const server: CloudServer = { url: `${files}/`, user: login.user, password: login.password, ...(login.tor ? { tor: true } : {}) };
   for (const name of [`${ROOT}/`, `${ROOT}/${NEXTCLOUD_FOLDERS[which]}/`]) {
     const answer = await askServer(server, 'MKCOL', name);
     // 405: it is there already.

@@ -1324,8 +1324,11 @@ chaque emplacement de discussions masquées a son propre interrupteur, dans les 
 aucun site choisi par quelqu’un d’autre, et ne montre rien de lui-même à ce site, pas même son adresse.
 
 - **Le site voit l’adresse internet de ce téléphone**, et quand, comme il le verrait depuis un navigateur, mais pas à
-  qui le message est destiné. Par Tor, Erevos n’envoie que ses requêtes au relais, pas des pages, donc tant que tout
-  dans l’espace passe par Tor (**Tout** sous Tor), aucun aperçu n’est fait du tout.
+  qui le message est destiné. Avec **Par Tor** activé, dans les **Aperçus des liens**, la page et son image sont
+  récupérées uniquement par Tor, quel que soit le réglage Tor de l’espace, donc le site ne voit pas l’adresse. C’est
+  plus lent, et cela attend pendant le démarrage de Tor ; une page qui te renvoie ailleurs, ou qui n’accepte pas Tor,
+  n’a pas d’aperçu. Tant que tout dans l’espace passe par Tor (**Tout** sous Tor), les aperçus ne sont faits qu’avec
+  **Par Tor** activé.
 - Erevos sur un ordinateur n’en fait aucun, mais affiche quand même ceux qui arrivent.
 - **Par LoRa**, qui ne prend que peu, un message part sans son aperçu plutôt que d’attendre, et n’en garde aucun ici.
 - Un aperçu est ce que la page dit d’elle-même, vrai ou non. Un Erevos d’avant cela affiche le lien sans aperçu.
@@ -1808,6 +1811,12 @@ messages vocaux, qui sont gros, passent en direct et donc plus vite.
   discussion, et aucune sortie Tor ne la porte avec une autre discussion. C’est plus lent, et ce qui part attend
   pendant le démarrage de Tor. Les appels ne passent pas par Tor. Les discussions cachées l’ont aussi, chacune dans
   ses propres **Détails**.
+  C’est pareil sur tes appareils associés : activé ou désactivé sur l’un, c’est activé ou désactivé partout. Sur un
+  appareil sans Tor, comme l’application web, cette discussion n’envoie rien tant que c’est activé.
+  Cela couvre aussi les textes Nostr de cette discussion et ses photos et fichiers sur des serveurs de fichiers Nostr,
+  même quand le choix de cet espace est **Rien** : Tor est démarré pour eux, et rien ne part en direct. Tant que ton
+  contact n’a pas écrit une première fois dans la file propre à la discussion, ses premiers messages arrivent dans la
+  file de l’espace, qui est lue comme l’espace le dit. Voir [Qui voit ton adresse internet](#ip).
 
 - **Ce qu’il cache :** le relais ne voit plus l’adresse IP de ton téléphone, seulement une sortie Tor (ou rien, pour un
   relais avec une adresse \`.onion\`). Ton opérateur téléphonique ou le Wi-Fi voit seulement que tu utilises Tor, pas
@@ -1865,6 +1874,11 @@ quand aucun ne l’a pris. Chaque espace a son propre choix, et ses propres rela
 - **Comment cela passe :** avec **Rien**, les textes vont en direct aux relais Nostr. Avec **Messages**, via Tor une
   fois Tor prêt, et par ton relais pendant que Tor démarre. Avec **Tout**, seulement via Tor. Quand la voie change, les
   connexions Nostr se ferment et se rouvrent par la nouvelle voie.
+- **Nostr par Tor :** sur l’écran **Nostr**, **Nostr par Tor** est sur **Désactivé** tant que tu ne l’actives pas.
+  **Activé**, Erevos joint les relais Nostr et les serveurs de fichiers Nostr uniquement par Tor et démarre Tor pour
+  cela, même quand le Tor de l’espace est sur **Rien** ; un texte qui part là-bas attend pendant le démarrage de Tor.
+  Cela ajoute seulement Tor : avec Tor activé pour l’espace, Nostr passe par Tor quoi que dise ce réglage, et une
+  discussion réglée sur **Par Tor** passe par Tor quoi que dise ce réglage. Voir [Qui voit ton adresse internet](#ip).
 - **Les relais :** relay.damus.io, nos.lol et relay.primal.net tant que tu ne les changes pas ; tu peux ajouter les
   tiens, cinq au plus. Tes contacts apprennent les relais sur lesquels tu lis, et t’y écrivent ; un relais qui prend un
   texte suffit.
@@ -1921,6 +1935,42 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
 
 **Pourquoi :** Nostr n’est que la porte d’entrée. Personne n’a besoin d’une invitation pour commencer, et dès que l’un
 de vous a un relais, celui-ci porte ce qui est trop gros pour Nostr.
+
+## Qui voit ton adresse internet {#ip}
+
+L’adresse internet de ton téléphone, son adresse IP, montre à peu près où tu es et quel fournisseur tu utilises. Elle
+ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf si la connexion passe par Tor.
+
+- **Ton relais et les relais de tes contacts :** ils la voient. Pour la cacher, active Tor pour l’espace (**Réglages**
+  → **Relais et réseaux** → **Tor**) ou **Par Tor** dans les **Détails** d’une discussion. Voir [Par Tor](#tor).
+
+- **Les relais Nostr publics et les serveurs de fichiers Nostr :** ils la voient, sauf si la connexion passe par Tor.
+  Active **Nostr par Tor** sous **Réglages** → **Relais et réseaux** → **Nostr**, ou **Par Tor** pour une discussion.
+  Voir [Par Nostr](#nostr).
+
+- **Les appels :** ils ne passent jamais par Tor. Le relais d’appel, le tien ou celui de ton contact, voit l’adresse,
+  mais pas ce qui se dit. Un appel entre téléphones proches sur le même réseau reste sur ce réseau.
+
+- **Un fichier sur un serveur que ton contact a choisi :** le serveur voit l’adresse quand ton téléphone récupère le
+  fichier. Tor la cache.
+
+- **Les liens web que tu ouvres :** le site la voit, comme toute page web. Pour la cacher, ouvre les liens dans Tor
+  Browser. L’aperçu d’un lien est aussi récupéré sur son site, et le site voit l’adresse de la même façon.
+  Avec **Par Tor** activé pour les aperçus des liens, il ne la voit pas.
+
+- **Les groupes :** un message dans un groupe Erevos passe par un serveur, qui voit l’adresse. Tor pour l’espace la
+  cache ; un groupe n’a pas de réglage à lui.
+
+- **Sauvegardes, serveur de la Collection, listes radio et TV, aperçus des liens et mises à jour :** chacun a son
+  propre interrupteur **Par Tor**, dans son propre écran, désactivé tant que tu ne l’actives pas. Voir
+  [Sauvegardes](#backup), [Collection](#collection), [Discuter par un relais](#relay) et [Mises à jour](#updates).
+
+Erevos prévient une fois avant chacun de ces cas, avec le titre **Ton adresse internet peut être vue**, un bouton
+**Guide** qui ouvre cette section et, quand c’est possible, un bouton qui y remédie, comme **Par Tor pour cette
+discussion**. **Continuer** poursuit ; pour une discussion, c’est dit une fois, et pas de nouveau pour cette
+discussion.
+
+Les téléphones proches, LoRa et les SMS n’utilisent pas internet, donc ils ne montrent aucune adresse internet.
 
 ## Matrix {#matrix}
 
@@ -2074,8 +2124,7 @@ Element : aucun pont ne se met entre les deux.
 - **Positions :** **Position** envoie où tu es, une fois, comme le fait Element ; elle part chiffrée comme le chat, et
   s’affiche avec **Ouvrir la carte** sur Android.
 - **Aperçus des liens :** avec les **Aperçus des liens** activés, comme pour les chats avec tes contacts, le premier
-  lien d’un message part avec un aperçu fait par ton téléphone, chiffré aussi dans un chat chiffré. Jamais par Tor, et
-  jamais dans un lieu caché.
+  lien d’un message part avec un aperçu fait par ton téléphone, chiffré aussi dans un chat chiffré. Par Tor seulement avec **Par Tor** activé dans les **Aperçus des liens**, et jamais dans un lieu caché.
 - **Épingler et transférer :** **Épingler**, dans le menu d’un message, l’épingle en haut du salon pour tout le monde,
   si le salon te le permet ; une barre au-dessus du chat montre le dernier message épinglé, et un toucher y va puis
   montre le suivant. **Désépingler** l’enlève. **Transférer** envoie une copie à un autre chat de ce compte ; la copie
@@ -3317,8 +3366,8 @@ La Collection est un endroit chiffré pour tes photos, tes fichiers et tes dossi
 - **Hors de la Collection :** une photo s’ouvre en plein écran, pour balayer et zoomer, avec **Envoyer à une discussion**, **Enregistrer sur le téléphone**, **Informations** et **Supprimer**. Enregistrer sur le téléphone ou ouvrir un fichier avec une autre app le sort non chiffré, et Erevos le dit d’abord. Envoyer à une discussion laisse la copie de la Collection où elle est. Depuis la Collection d’un lieu caché, les fichiers vont seulement aux discussions et aux groupes de ce lieu caché, jamais à ceux de l’espace, et la Collection de l’espace jamais à un lieu caché. Glisse, ou utilise les flèches, pour la photo suivante ou la précédente ; **Diaporama** en haut les montre l’une après l’autre, toutes les 4 secondes, jusqu’à un toucher.
 - **Depuis une discussion :** **+** sous le champ du message, puis **Collection**, ouvre la Collection du lieu de cette discussion : touche les photos ou fichiers à envoyer, puis **Envoyer**, et ils partent dans cette discussion.
 - **Sauvegardes :** une sauvegarde contient la Collection avec le reste du téléphone. **Réglages** → **Données et appareils** → **Collection**, ou les trois points dans la Collection, peuvent laisser cette Collection hors des sauvegardes faites pendant qu’elle est ouverte : chaque Collection a son propre choix.
-- **Sur un serveur WebDAV :** dans les réglages de la Collection, **Aussi sur un serveur WebDAV** copie les fichiers de cette Collection tels quels, toujours chiffrés, dans un dossier sur un serveur de ton choix, Nextcloud, ownCloud ou tout serveur qui parle WebDAV : donne l’adresse du dossier, un nom d’utilisateur et, de préférence, un mot de passe d’application, puis touche **Connecter** ; **Tester la connexion** les vérifie d’abord. Chaque espace et chaque lieu caché a son propre choix et son propre serveur ; le serveur des sauvegardes est proposé en premier. Seul ce qui n’y est pas encore part, un morceau à la fois, tant que le lieu est ouvert, et la copie reprend là où elle s’est arrêtée après une coupure du réseau ; un fichier supprimé ici l’est aussi là-bas. Rien d’autre dans le dossier n’est touché. Le serveur ne voit que des morceaux aux noms aléatoires, dans un sous-dossier au nom aléatoire, et ne peut pas les ouvrir. Un téléphone à qui il manque un fichier, comme après une sauvegarde restaurée sur un nouveau téléphone, va le chercher là-bas à l’ouverture, et ne garde que les morceaux qui s’ouvrent avec la clé du fichier. Erevos montre combien en est déjà arrivé, avec **Annuler** : ce qui est arrivé reste, et la fois suivante seul le reste vient ; la musique, les vidéos, les PDF et **Ouvrir avec une autre application** le récupèrent aussi d’abord. Tant que tout est copié, les sauvegardes faites pendant que le lieu est ouvert peuvent laisser ses morceaux de côté, même après un redémarrage d’Erevos, jusqu’à ce qu’un fichier soit ajouté ou supprimé.
-- **Avec Nextcloud, comme celui de LPHL :** dans ce formulaire, et dans **Ajouter un serveur** des sauvegardes, tape l’adresse de ton Nextcloud sous **Ton Nextcloud** et touche **Se connecter avec Nextcloud** : connecte-toi dans le navigateur, comme pour Fasouli, par Authentik ou comme il se connecte, et choisis **Accorder l’accès**. Erevos reçoit son propre mot de passe d’application et remplit le formulaire avec son propre dossier dans tes fichiers, **Erevos/Collection** ou **Erevos/Backups**, créé s’il manque, à côté de celui de Fasouli, qu’il ne lit jamais ; puis touche **Connecter**. Ce mot de passe se retire dans Nextcloud → Paramètres → Sécurité.
+- **Sur un serveur WebDAV :** dans les réglages de la Collection, **Aussi sur un serveur WebDAV** copie les fichiers de cette Collection tels quels, toujours chiffrés, dans un dossier sur un serveur de ton choix, Nextcloud, ownCloud ou tout serveur qui parle WebDAV : donne l’adresse du dossier, un nom d’utilisateur et, de préférence, un mot de passe d’application, puis touche **Connecter** ; **Tester la connexion** les vérifie d’abord. Chaque espace et chaque lieu caché a son propre choix et son propre serveur ; le serveur des sauvegardes est proposé en premier. Seul ce qui n’y est pas encore part, un morceau à la fois, tant que le lieu est ouvert, et la copie reprend là où elle s’est arrêtée après une coupure du réseau ; un fichier supprimé ici l’est aussi là-bas. Rien d’autre dans le dossier n’est touché. Le serveur ne voit que des morceaux aux noms aléatoires, dans un sous-dossier au nom aléatoire, et ne peut pas les ouvrir. Un téléphone à qui il manque un fichier, comme après une sauvegarde restaurée sur un nouveau téléphone, va le chercher là-bas à l’ouverture, et ne garde que les morceaux qui s’ouvrent avec la clé du fichier. Erevos montre combien en est déjà arrivé, avec **Annuler** : ce qui est arrivé reste, et la fois suivante seul le reste vient ; la musique, les vidéos, les PDF et **Ouvrir avec une autre application** le récupèrent aussi d’abord. Tant que tout est copié, les sauvegardes faites pendant que le lieu est ouvert peuvent laisser ses morceaux de côté, même après un redémarrage d’Erevos, jusqu’à ce qu’un fichier soit ajouté ou supprimé. Elle a son propre interrupteur **Par Tor**, désactivé tant que tu ne l’actives pas : activé, la copie passe uniquement par Tor, quel que soit le réglage Tor de l’espace, donc le serveur ne voit pas ton adresse IP ; c’est plus lent, et cela attend pendant le démarrage de Tor. Là où il n’y a pas de Tor, dans l’appli de bureau et dans l’appli web, un serveur dont l’interrupteur est activé ne reçoit rien.
+- **Avec Nextcloud, comme celui de LPHL :** dans ce formulaire, et dans **Ajouter un serveur** des sauvegardes, tape l’adresse de ton Nextcloud sous **Ton Nextcloud** et touche **Se connecter avec Nextcloud** : connecte-toi dans le navigateur, comme pour Fasouli, par Authentik ou comme il se connecte, et choisis **Accorder l’accès**. Erevos reçoit son propre mot de passe d’application et remplit le formulaire avec son propre dossier dans tes fichiers, **Erevos/Collection** ou **Erevos/Backups**, créé s’il manque, à côté de celui de Fasouli, qu’il ne lit jamais ; puis touche **Connecter**. Ce mot de passe se retire dans Nextcloud → Paramètres → Sécurité. La connexion suit l’interrupteur **Par Tor** du serveur pour lequel elle se fait : activé, Erevos interroge ton Nextcloud uniquement par Tor, mais la page du navigateur elle-même passe comme d’habitude.
 - **Sur tes appareils associés :** dans les réglages de la Collection, **Aussi sur mes appareils associés** envoie cette Collection aux [appareils associés](#devices) de son espace ou lieu caché, et l’interrupteur vaut pour tous. Un fichier ajouté, renommé, déplacé ou supprimé sur l’un l’est sur tous. Les miniatures arrivent tout de suite ; le fichier lui-même arrive tout de suite sur le même Wi-Fi, sinon quand tu l’ouvres, depuis le serveur WebDAV si la Collection en a un, ou par le relais jusqu’à 100 Mo. Chaque morceau n’est gardé qu’une fois ouvert avec la clé du fichier, et un transfert coupé reprend au morceau qui manquait. Un fichier n’est supprimé ailleurs que s’il est supprimé sur l’un de tes appareils, jamais parce qu’il y manque. La Collection d’un lieu caché ne va qu’aux appareils associés de ce lieu.
 - **Musique, vidéos et PDF :** un PDF se lit page par page dans Erevos (Android 11 et plus récent), déchiffré en mémoire seulement. La musique et les vidéos se lisent directement depuis leurs morceaux chiffrés, jamais depuis une copie : une vidéo en plein écran, la musique avec les suivantes du dossier, qui continue écran éteint, avec lecture, pause, suivant et précédent dans la notification et sur l’écran de verrouillage du téléphone, et seulement cela là. La liste continue une fois l’espace verrouillé, sauf si **Arrêter la lecture quand l’espace se verrouille** est activé dans les réglages de la Collection ; **Arrêter** et le bouton de panique y mettent fin. La notification indique seulement **Lecture en cours**, sauf si **Afficher le titre dans la notification** est activé. **Ouvrir avec une autre application** transmet le fichier à mesure qu’il est déchiffré, sans copie sur le téléphone, jusqu’à ce que tu quittes la Collection ; l’autre application peut en garder une à elle.
 - **Originaux de la galerie :** avec **Supprimer l’original de la galerie après l’importation** activé, une photo ou une vidéo choisie dans les fichiers du téléphone est supprimée de la galerie dès qu’elle est dans la Collection, après qu’Android t’a demandé de confirmer. Il faut Android 11 ou plus récent. Une photo de l’appareil photo ne va jamais dans la galerie.
@@ -3329,13 +3378,14 @@ La Collection est un endroit chiffré pour tes photos, tes fichiers et tes dossi
 - **Sous-titres :** un fichier .srt ou .vtt dans le même dossier qu’une vidéo, à son nom (film.mkv et film.srt, ou film.en.srt), s’affiche comme ses sous-titres, lu depuis ses morceaux chiffrés comme la vidéo ; **Sous-titres activés** en haut les masque, puis les réaffiche.
 - **Playlists :** en haut de **Musique**, **Nouvelle playlist** en crée une ; les chansons y entrent depuis leur menu (**Ajouter à une playlist**) ou choisies ensemble (maintenez-en une appuyée, puis **Playlist**). Ouvrez-la pour la lire dans l’ordre ou en aléatoire, monter ou descendre une chanson, ou la retirer : elle reste dans la Collection. Les playlists sont gardées chiffrées avec la Collection, jamais en clair.
 - **Radio :** l’onglet **Radio** contient des stations de radio par internet, chacune par son lien ; **+** y en ajoute une. Liens https uniquement : Erevos n’ouvre pas de http en clair, donc une station qui n’a qu’un lien http ne peut pas être ajoutée. Un lien de playlist (.m3u, .pls) est lu une fois, à l’ajout, pour le lien du flux lui-même ; un flux HLS (.m3u8) se lit sur le téléphone. Une station se lit comme la musique, avec la même notification, le même **Arrêter la lecture quand l’espace se verrouille** et le bouton de panique ; le titre qu’elle envoie s’affiche sur l’écran de lecture, et dans la notification seulement quand **Afficher le titre dans la notification** est activé. La station, et qui gère son serveur, voit l’adresse IP de votre appareil pendant la lecture, comme tout site ; Erevos ne lui envoie rien d’autre, et seulement « Erevos » comme nom. Les stations sont gardées chiffrées avec la Collection.
-- **Trouver une station :** **Ajouter une station** cherche aussi dans Radio Browser (radio-browser.info), un annuaire libre de stations auquel chacun peut ajouter : il ne reçoit que les mots que vous tapez, quand vous appuyez sur **Rechercher**, et voit l’adresse IP de votre appareil, comme la station. Seules les stations pour lesquelles il a un lien https sont affichées ; une touche en ajoute une.
+- **Trouver une station :** **Ajouter une station** cherche aussi dans Radio Browser (radio-browser.info), un annuaire libre de stations auquel chacun peut ajouter : il ne reçoit que les mots que vous tapez, quand vous appuyez sur **Rechercher**, et voit l’adresse IP de votre appareil, comme la station. Seules les stations pour lesquelles il a un lien https sont affichées ; une touche en ajoute une. Avec **Par Tor** activé sous **Listes radio et TV**, plus bas, la recherche passe par Tor et Radio Browser ne voit pas ton adresse IP.
 - **Une playlist de plusieurs stations :** un lien de playlist (.m3u, .pls) qui nomme plusieurs stations les ajoute toutes, et **Importer un fichier de playlist** ajoute les stations d’un fichier .m3u ou .pls de ton appareil, lu là et envoyé nulle part. Seules les stations avec un lien https sont ajoutées (500 au plus d’une liste), et Erevos dit combien ont été laissées de côté.
 - **Quand un flux coupe :** si le serveur d’une station, ou un proxy sur le chemin, termine le flux, ou que le réseau disparaît un instant, Erevos redemande la station tout seul après 1, 2, 4… secondes (30 au plus), tant que tu veux l’écouter, sur Android, sur un ordinateur et dans un navigateur. Après 12 essais de suite, il s’arrête et le dit.
 - **TV :** l’onglet **TV** garde des chaînes de télé, chacune par son lien https, dans les groupes que leur donne leur liste, avec une rangée pour afficher un groupe et une recherche par nom. Un appui lit une chaîne en plein écran, comme une vidéo, avec le même **Arrêter la lecture quand l’espace se verrouille** et le bouton panique ; il n’y a pas de guide des programmes. Elle se lit sur Android, dans l’application de bureau et dans un navigateur ; là, un flux HLS se lit avec hls.js, et seulement si son serveur laisse l’application web le lire.
 - **Ajouter des chaînes :** **+** dans **TV** ajoute une liste par son lien (.m3u), lue une fois à l’ajout, un fichier de liste de votre appareil (**Importer un fichier de liste (.m3u)**), lu là et envoyé nulle part, ou une chaîne par son lien. Seules les chaînes avec un lien https sont ajoutées, chaque lien une fois, jusqu’à 15 000 dans chaque Collection, et Erevos dit combien ont été laissées de côté. Appuyez longuement sur une chaîne pour la renommer, la supprimer ou supprimer tout son groupe, ou envoyer son nom et son lien avec **Envoyer à une discussion** ; le menu d’une station de radio a aussi **Envoyer à une discussion**.
-- **iptv-org :** **Ajouter des chaînes** propose iptv-org (github.com/iptv-org/iptv), une liste publique de chaînes gratuites : **iptv-org par pays**, la région de votre appareil d’abord, ou **iptv-org : toutes les chaînes**, plus de 10 000. Son serveur voit l’adresse IP de votre appareil quand la liste est récupérée, et chaque chaîne pendant sa lecture.
+- **iptv-org :** **Ajouter des chaînes** propose iptv-org (github.com/iptv-org/iptv), une liste publique de chaînes gratuites : **iptv-org par pays**, la région de votre appareil d’abord, ou **iptv-org : toutes les chaînes**, plus de 10 000. Son serveur voit l’adresse IP de votre appareil quand la liste est récupérée, et chaque chaîne pendant sa lecture. Avec **Par Tor** activé sous **Listes radio et TV**, plus bas, la liste est récupérée par Tor, donc son serveur ne voit pas ton adresse IP ; chaque chaîne la voit toujours, pendant sa lecture.
 - **Ce que voit une chaîne :** la chaîne, et qui fait tourner son serveur, voit l’adresse IP de votre appareil pendant la lecture, comme tout site. Les logos ne s’affichent qu’avec **Afficher les logos des chaînes** activé dans les réglages de la Collection, car le serveur de chaque logo voit aussi votre adresse IP ; sinon, une icône de télé. Les chaînes sont gardées chiffrées avec la Collection.
+- **Listes radio et TV par Tor :** dans les réglages de la Collection, la carte **Listes radio et TV** a **Par Tor**, désactivé tant que tu ne l’actives pas. Activé, Erevos demande uniquement par Tor, quel que soit le réglage Tor de l’espace, la recherche dans Radio Browser, une playlist ou une liste TV récupérée par son lien, la liste d’iptv-org et les logos des chaînes, donc leurs serveurs ne voient pas l’adresse IP de ton appareil. C’est plus lent, et cela attend pendant le démarrage de Tor. Lire une station ou une chaîne passe toujours en direct, donc elle voit l’adresse IP pendant la lecture.
 
 **Pourquoi :** certaines photos et certains fichiers, un passeport, un contrat, une image, ne doivent ni rester dans la galerie pour que n’importe quelle app les lise, ni voyager dans une discussion. La Collection les garde avec le même chiffrement que les discussions, à part d’elles. Dès qu’un fichier est enregistré sur le téléphone ou ouvert avec une autre app, il est hors d’Erevos, non chiffré.
 
@@ -3370,6 +3420,8 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
    envoyer** l’arrête, et celles qui y sont restent. Dans l’app web, qui ne fait pas de
    sauvegardes d’elle-même, **Envoyer une sauvegarde maintenant** en envoie une là-bas, avec un mot de passe que tu
    tapes à chaque fois.
+   Chaque serveur a un interrupteur **Par Tor**, dans sa carte et dans le formulaire qui en ajoute un, désactivé tant
+   que tu ne l’actives pas (voir **Sur un serveur** plus bas).
 4. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
    demande encore une fois, trouve les fichiers de la sauvegarde à côté d’elle, ou te demande de les choisir, ou leur
    dossier (pour une sauvegarde automatique, choisis tous les fichiers du dossier, car certains de ses fichiers
@@ -3411,6 +3463,14 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   le serveur et appuie sur **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
   laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
   connexion Google sur le téléphone.
+  L’interrupteur **Par Tor** de chaque serveur, désactivé tant que tu ne l’actives pas, passe avant le choix de
+  l’espace pour ce serveur : activé, ses sauvegardes passent uniquement par Tor, quel que soit le réglage Tor de
+  l’espace, et attendent le démarrage de Tor, donc le serveur ne voit pas l’adresse du téléphone. **Restaurer depuis
+  un serveur** et le formulaire qui ajoute un serveur ont le même interrupteur, et la connexion avec Nextcloud suit
+  l’interrupteur du serveur pour lequel elle se fait : la page du navigateur elle-même passe comme d’habitude. L’appli
+  de bureau et l’appli web n’ont pas Tor : un serveur dont l’interrupteur est activé ne reçoit rien de là. Les
+  morceaux de sauvegarde que tu donnes à des amis ([Morceaux de sauvegarde chez des amis](#backup-pieces)) ne portent
+  pas l’interrupteur.
 - **Les discussions qui ont continué après la sauvegarde :** restaurer remet les clés de chaque conversation telles
   qu’elles étaient alors. Les messages arrivés après la sauvegarde et déjà lus n’y sont pas. Une conversation qui a
   continué après la sauvegarde n’ouvrirait plus les nouveaux messages, si bien que chaque discussion restaurée, celle
@@ -4041,6 +4101,10 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   nom de l’appareil. Un appareil qui doit garder les siens : **Réglages** → **Données et appareils** → **Appareils
   associés** → **Mêmes réglages sur tous les appareils** désactivé. Réactivé, il prend aussitôt ceux des autres. Les
   discussions cachées gardent les leurs.
+- **Par Tor pour une discussion :** le réglage **Par Tor** dans les **Détails** d’une discussion Erevos est le même sur
+  chaque appareil : activé ou désactivé sur l’un, il l’est sur tous. Sur un appareil sans Tor, comme l’application web,
+  cette discussion n’envoie rien tant qu’il est activé. Un appareil sur une version plus ancienne ne le désactive
+  jamais pour les autres. Voir [Par Tor](#tor).
 - **Sur le même Wi-Fi :** le téléphone et un ordinateur sur le même Wi-Fi ou point d’accès (avec **Trouver Erevos sur le même Wi-Fi** activé) se donnent ce qui change directement là, sans internet aussi ; le relais reçoit quand même sa copie,
   qui ne change alors plus rien. Seulement ceux de l’espace : les associations des discussions cachées passent par le
   relais.
@@ -4269,6 +4333,9 @@ version sort** plus bas. Pour mettre à jour :
 2. Appuie sur **Rechercher des mises à jour**. GitHub voit alors l’adresse internet de cet appareil, rien d’autre ; sur
    Android, le serveur de l’app web aussi, qui garde la signature de la mise à jour par l’ordinateur des versions. Tant
    que tout dans l’espace passe par Tor (**Tout** sous Tor), Erevos ne vérifie pas, puisque cela contournerait Tor.
+   Avec **Par Tor** activé, sur cet écran (désactivé tant que tu ne l’actives pas), il interroge uniquement le serveur
+   de l’appli web, par Tor, et non GitHub : GitHub n’est pas interrogé et rien ne voit l’adresse. C’est plus lent, et
+   cela attend pendant le démarrage de Tor ; et cela marche aussi tant que tout dans l’espace passe par Tor.
 3. Quand il y a une nouvelle version : sur Android, appuie sur **Installer**. Elle se télécharge, est vérifiée par
    rapport à la version publiée (sa taille et son SHA-256), et l’installateur d’Android s’ouvre : appuie sur
    **Installer** là aussi. Erevos ne la propose qu’une fois que l’ordinateur des versions, qui garde sa clé hors
@@ -4280,6 +4347,9 @@ version sort** plus bas. Pour mettre à jour :
    rien ne s’installe. La première fois, Android demande d’autoriser l’installation d’applis depuis Erevos. Sur un
    ordinateur et sur Sailfish OS, **Ouvrir la page de téléchargement** ouvre la page des versions : prends le fichier
    qu’Erevos nomme, celui du paquet que tu as, et mets à jour comme dans le tableau ci-dessous.
+   Par Tor, une nouvelle version est signalée, mais elle ne se télécharge pas ici, car son paquet est plus gros que ce
+   que le Tor d’Erevos accepte : désactive **Par Tor** un instant pour l’installer, ou télécharge-la depuis la page
+   des versions dans Tor Browser.
 
 Une version comme **4.0.0-rc.1** est une version de test avant la 4.0.0 (une version candidate) : elle s’installe et
 se met à jour comme les autres, et la 4.0.0 vient après elle.
@@ -4306,6 +4376,10 @@ notification dit aussi **Erevos 3.3.0 is out**. Appuie sur l’un ou l’autre p
 - **Seulement sur le relais de LPHL :** un espace ne demande que tant qu’il utilise le relais de LPHL et n’envoie pas
   tout par Tor (**Tout** sous Tor) : le serveur ne voit alors rien qu’il ne voie déjà. Un espace sur un autre relais, ou
   sans relais, ne demande rien ; là, **Rechercher des mises à jour** te le dit.
+  L’interrupteur **Par Tor** de **Mises à jour**, un pour cette notification et pour **Rechercher des mises à jour**,
+  sur ce téléphone seulement, la fait demander par Tor : le serveur ne voit alors pas l’adresse du téléphone, et un
+  espace qui envoie tout par Tor demande aussi. Une nouvelle version est signalée, mais ne s’installe qu’avec
+  l’interrupteur désactivé.
 - **Pour la désactiver :** **Réglages** → **Général** → **Mises à jour** → **Me prévenir quand une nouvelle version
   sort**.
 - Elle fonctionne à partir de la version qui l’a : celle d’avant ne dit rien. Pas dans la compilation F-Droid, que
@@ -4440,7 +4514,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Discussions de groupe** | Chiffrées de bout en bout avec MLS (RFC 9420) ; les membres retirés ne lisent plus rien ensuite. La copie de chaque membre est scellée à part, donc les relais ne peuvent pas savoir qui est dans un groupe ; chaque relais voit quand même un message atteindre une file d’attente. Les membres voient les clés et les adresses de relais les uns des autres. Les photos, fichiers et messages vocaux passent par le stockage de fichiers du relais de l’expéditeur, comme vers un contact, et y restent 14 jours. Pas audité. | |
 | **Appels de groupe** | Voix et vidéo, chiffrées de bout en bout entre chaque paire de téléphones de l’appel (DTLS-SRTP, ses clés envoyées dans le chiffrement du groupe). Par le relais d’appel, aucun téléphone ne voit l’adresse IP d’un autre ; le serveur qui le fait tourner voit celle de chaque téléphone, quand et combien de temps, et combien passe. Chaque membre, dans l’appel ou non, apprend qui y est. Les relais voient quand un appel commence. | La vidéo à plus de quatre personnes, par un serveur ; plus de huit personnes. |
 | **Groupes publics** | Comme les discussions de groupe, et quiconque a le lien peut demander à rejoindre et lire à partir du moment où il est admis. Les demandes arrivent au relais du propriétaire scellées pour le téléphone du propriétaire : le relais voit combien et quand, pas de qui. Les membres voient les noms choisis, les clés faites pour ce seul groupe, les adresses de relais et les identifiants d’expéditeur de file d’attente les uns des autres. Pas audité. | |
-| **Aperçus des liens** | Désactivés sauf si tu les actives. Alors, quand tu envoies un lien, ton téléphone récupère sa page directement depuis le site, qui voit ton adresse IP et quand, pas à qui le message est destiné. L’aperçu va dans le message chiffré ; le téléphone qui le reçoit ne récupère rien. Aucun tant que l’espace passe par Tor ; dans les discussions masquées, seulement avec l’interrupteur propre à leur emplacement. | Des aperçus par Tor. |
+| **Aperçus des liens** | Désactivés sauf si tu les actives. Alors, quand tu envoies un lien, ton téléphone récupère sa page directement depuis le site, qui voit ton adresse IP et quand, pas à qui le message est destiné. L’aperçu va dans le message chiffré ; le téléphone qui le reçoit ne récupère rien. Avec **Par Tor** activé, la page est récupérée uniquement par Tor, et le site ne voit pas ton adresse IP. Aucun tant que l’espace envoie tout par Tor, sauf si **Par Tor** est activé ; dans les discussions masquées, seulement avec l’interrupteur propre à leur emplacement. | |
 
 ## Transparence {#transparency}
 

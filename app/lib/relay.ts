@@ -435,6 +435,12 @@ export function setTorStarter(start: () => Promise<void>): void {
   torStarter = start;
 }
 
+/** Starts Tor for a chat that goes only through it, whatever the space's way; throws when this build has none. */
+export async function torForChat(): Promise<void> {
+  if (!canTor()) throw new RelayUnreachableError(t('This chat goes only through Tor, which this build of Erevos does not have.'));
+  await torStarter?.();
+}
+
 // `relay` for a send with `senderId`: on its chat's own circuits through Tor when that chat goes only through Tor.
 function forSender(relay: Relay, senderId: Uint8Array): Relay {
   const circuit = torChatSenders.get(toHex(senderId));

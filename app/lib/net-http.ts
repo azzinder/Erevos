@@ -5,11 +5,12 @@
 import { canTorHttp, torHttp } from './core';
 import { t } from './i18n';
 import { streamingFetch } from './net-fetch';
-import { throughTor, torFor } from './relay';
+import { throughTor, torFor, torForChat } from './relay';
 
 // HTTPS for the other networks' files (lib/nostr-files.ts, lib/xmpp-files.ts), the relay's Matrix
 // push gateway (lib/matrix-push.ts) and backups to a server (lib/backup-cloud.ts): through Tor as
-// the space's Tor way says, as their chats go.
+// the space's Tor way says, as their chats go. What has a Tor switch of its own (httpFor) goes
+// only through Tor while it is on, whatever the way.
 // With Messages, straight while Tor is not ready or when it fails; with Everything, only through
 // Tor. In the web app and on a computer, straight.
 //
@@ -131,3 +132,43 @@ export const torOnlyHttp: Http = async (method, url, headers, body, most = HTTP_
   if (!netThroughTor()) throw new Error(t('Tor is not ready.'));
   return viaTor(method, url, headers, body, Math.min(most, HTTP_MOST));
 };
+
+/**
+ * As netHttp for a chat that goes only through Tor (lib/relay.ts setTorChats), whatever the
+ * space's Tor way: Tor is started for it, and nothing goes straight, should Tor fail or not be.
+ */
+export const torChatHttp: Http = async (method, url, headers, body, most = HTTP_MOST) => {
+  if (!canTorHttp()) throw new Error(t('This chat goes only through Tor, which this build of Erevos does not have.'));
+  await torForChat();
+  return viaTor(method, url, headers, body, Math.min(most, HTTP_MOST));
+};
+
+/** Why a request whose own Tor switch is on did not go: this build of Erevos has no Tor for it. */
+export class NoTorError extends Error {
+  constructor() {
+    super(t('This goes only through Tor, which this build of Erevos does not have.'));
+    this.name = 'NoTorError';
+  }
+}
+
+/**
+ * As torChatHttp, for what has a Tor switch of its own besides the space's Tor way, turned on: a
+ * backup to a server, the Collection's server, its radio and TV lists, link previews, updates.
+ * Tor is started for it, whatever the space's way, and it waits while Tor starts; nothing goes
+ * straight, should Tor fail or not be in this build (NoTorError).
+ */
+export const ownTorHttp: Http = async (method, url, headers, body, most = HTTP_MOST) => {
+  if (!canTorHttp()) throw new NoTorError();
+  await torForChat();
+  return viaTor(method, url, headers, body, Math.min(most, HTTP_MOST));
+};
+
+/**
+ * How something with a Tor switch of its own reaches its server: with the switch on only through
+ * Tor (ownTorHttp), with it off as the space's Tor way says (netHttp), as it always did. So the
+ * switch only ever adds Tor.
+ */
+export const httpFor = (tor: boolean): Http => (tor ? ownTorHttp : netHttp);
+
+/** Whether a request through httpFor(tor) goes through Tor now, or, with the switch on, only through it. */
+export const throughTorNow = (tor: boolean): boolean => tor || netThroughTor();

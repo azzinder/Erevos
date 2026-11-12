@@ -12,4 +12,5 @@ export const nextcloudText: Record<string, string> = {
   'As LPHL’s, the one Fasouli syncs with. Erevos gets an app password of its own there, which you can take back in Nextcloud → Settings → Security.': 'Como o do LPHL, aquele com que o Fasouli sincroniza. O Erevos recebe lá uma senha de app própria, que você pode revogar em Nextcloud → Configurações → Segurança.',
   'Sign in with Nextcloud': 'Entrar com Nextcloud',
   'Sign in in the browser and choose Grant access, then come back.': 'Entre no navegador e escolha Conceder acesso; depois volte.',
+  "Erevos asks the Nextcloud only through Tor, but the browser goes as it always does.": "O Erevos pergunta ao Nextcloud só pelo Tor, mas o navegador vai como sempre.",
 };

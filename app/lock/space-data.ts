@@ -82,6 +82,9 @@ export type SpaceData = {
   pushScope: string;
   // Whether this phone makes the preview of a link it sends (lib/make-preview.ts). Off unless set.
   previews: boolean;
+  // Whether the page and picture of a preview are fetched only through Tor, whatever the Tor way
+  // (lib/make-preview.ts): left out unless turned on, as at first, so it is off.
+  previewsTor?: boolean;
   // The ticket our contact link gives for a place on our relay (lib/relay.ts, lendTicket), and
   // that relay, kept while it has days left so the link stays the same. Empty when there is none.
   lend: Lending;
@@ -114,6 +117,9 @@ export type SpaceData = {
   publicImages: PublicImages;
   // Whether a post's first link shows as a card with the page's title and picture. On unless set.
   publicCards: boolean;
+  // The warnings that this phone's internet address may be seen (lib/ip-warning.ts) already said
+  // and gone on from, by what they were of: each is said once. None while none was.
+  ipSeen?: string[];
 };
 
 /**
@@ -130,7 +136,8 @@ export type SpareRelay = { url: string; token: string; queue: Queue | null; more
 export type PendingCoupon = { issuer: string; nonce: string; randomizer: string; signature: string; token: string; after: number };
 /** The most home relays a space has besides the first (SpareRelay.more): a contact link says each. */
 export const MORE_SPARES = 2;
-export type NostrSetting = { on: boolean; relays: string[] };
+/** `tor`: Nostr's own Tor switch, off unless turned on: through Tor whatever the space's Tor way (lib/nostr.ts). */
+export type NostrSetting = { on: boolean; relays: string[]; tor?: boolean };
 /** The Nostr relays a space reads on unless it names others. */
 export const NOSTR_RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
 export const NOSTR_DEFAULT: NostrSetting = { on: true, relays: NOSTR_RELAYS };
@@ -216,7 +223,7 @@ function checkedPending(value: unknown): PendingCoupon | undefined {
 export function checkedNostr(value: unknown): NostrSetting {
   const v = (value ?? {}) as Partial<Record<keyof NostrSetting, unknown>>;
   if (typeof v.on !== 'boolean' || !Array.isArray(v.relays)) return NOSTR_DEFAULT;
-  return { on: v.on, relays: [...new Set(v.relays.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) };
+  return { on: v.on, relays: [...new Set(v.relays.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS), ...(v.tor === true ? { tor: true } : {}) };
 }
 
 /** The Tor way stored: none unless one was kept; from before the ways, true (all) stays all, and false (none) becomes 'messages'. */
@@ -254,6 +261,7 @@ function checked(value: unknown): SpaceData {
     pushLeft: v.pushLeft === true,
     pushScope: typeof v.pushScope === 'string' && /^[0-9a-f]{32}$/.test(v.pushScope) ? v.pushScope : '',
     previews: v.previews === true,
+    ...(v.previewsTor === true ? { previewsTor: true } : {}),
     lend: checkedLending(v.lend),
     offered: checkedOffered(v.offered),
     relayKeys: checkedRelayKeys(v.relayKeys),
@@ -263,7 +271,18 @@ function checked(value: unknown): SpaceData {
     tellOpen: v.tellOpen !== false,
     publicImages: PUBLIC_IMAGES.includes(v.publicImages as PublicImages) ? (v.publicImages as PublicImages) : 'always',
     publicCards: v.publicCards !== false,
+    ...ipSeenOf(v.ipSeen),
   };
+}
+
+/** The most warnings of an internet address kept as said (SpaceData.ipSeen): the oldest go first. */
+export const IP_SEEN_MOST = 500;
+
+// The warnings of an internet address said, as stored: texts, each once, the latest IP_SEEN_MOST.
+function ipSeenOf(value: unknown): { ipSeen?: string[] } {
+  if (!Array.isArray(value)) return {};
+  const seen = [...new Set(value.filter((one): one is string => typeof one === 'string' && one.length > 0 && one.length <= 200))].slice(-IP_SEEN_MOST);
+  return seen.length > 0 ? { ipSeen: seen } : {};
 }
 
 function checkedOffered(value: unknown): Offered {

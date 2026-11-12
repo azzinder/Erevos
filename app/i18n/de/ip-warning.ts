@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// The warnings that this phone's internet address may be seen (lib/ip-warning.ts, components/ip-warning.tsx) in German (i18n/de/index.ts).
+export const ipWarningStrings: Record<string, string> = {
+  "Your internet address can be seen": "Deine Internetadresse kann gesehen werden",
+  "On {network}, what you send here can go without Tor. The servers that carry it, yours and your contact's, can then see this phone's internet address (IP address), though not what you wrote.": "Bei {network} kann das, was du hier sendest, ohne Tor gehen. Die Server, die es tragen, deine und die deines Kontakts, können dann die Internetadresse (IP-Adresse) dieses Telefons sehen, aber nicht, was du geschrieben hast.",
+  "Calls never go through Tor. The call relay that carries the sound and picture, yours or your contact's, sees this phone's internet address (IP address), though not what is said.": "Anrufe gehen nie über Tor. Das Anruf-Relay, das Ton und Bild trägt, deines oder das deines Kontakts, sieht die Internetadresse (IP-Adresse) dieses Telefons, aber nicht, was gesagt wird.",
+  "This file is on a server your contact chose. Fetched without Tor, that server sees this phone's internet address (IP address), though not what the file holds.": "Diese Datei liegt auf einem Server, den dein Kontakt gewählt hat. Ohne Tor geholt, sieht dieser Server die Internetadresse (IP-Adresse) dieses Telefons, aber nicht, was die Datei enthält.",
+  "The site sees this phone's internet address (IP address), as any web page you open does. To hide it, open links in Tor Browser.": "Die Seite sieht die Internetadresse (IP-Adresse) dieses Telefons, wie jede Webseite, die du öffnest. Um sie zu verbergen, öffne Links im Tor Browser.",
+  "To show a link's preview, the page is fetched from its site. Without Tor, the site sees this phone's internet address (IP address).": "Um die Vorschau eines Links zu zeigen, wird die Seite von ihrer Website geholt. Ohne Tor sieht die Website die Internetadresse (IP-Adresse) dieses Telefons.",
+  "On {network}, joining goes through a server. Without Tor, it sees this phone's internet address (IP address).": "Bei {network} läuft das Beitreten über einen Server. Ohne Tor sieht er die Internetadresse (IP-Adresse) dieses Telefons.",
+  "Guide": "Anleitung",
+  "Through Tor for this chat": "Über Tor für diesen Chat",
+};

@@ -185,7 +185,7 @@ export function checkedSiblings(value: unknown): Siblings | null {
 
 /** A contact before anything of it was said, as a change to it is told from. */
 export function blankSynced(identity: string): Synced {
-  return { identity, name: '', timer: 0, timerAt: 0, request: true, look: null, hide: false };
+  return { identity, name: '', timer: 0, timerAt: 0, request: true, look: null, hide: false, tor: false };
 }
 
 /** When a change made now to a contact as kept (`before`) is set: now, or after every setting of its fields kept, whatever the clock says. */
@@ -203,9 +203,10 @@ export function stamped(synced: Synced, change: Change, at: number, added = fals
   return { ...synced, at: times };
 }
 
-// Takes one field, and when it was set, from another's word of a contact.
+// Takes one field, and when it was set, from another's word of a contact: a picture, or whether
+// the chat goes through Tor, that the word leaves out is left out here too.
 function takeField(into: Synced, from: Synced | Change, field: (typeof TIMED)[number], at: number | undefined): void {
-  if (field === 'avatar' && !('avatar' in from)) delete into.avatar;
+  if ((field === 'avatar' || field === 'tor') && !(field in from)) delete into[field];
   else (into as Record<string, unknown>)[field] = field === 'avatar' ? (from.avatar ?? null) : from[field];
   into.at = { ...into.at, [field]: at };
 }

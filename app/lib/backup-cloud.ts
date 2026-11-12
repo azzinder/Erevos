@@ -8,7 +8,7 @@ import { canTorHttp } from './core';
 import { fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { cloudRequest } from './backup-http';
-import { HTTP_MOST, HttpTooLargeError, type HttpMethod } from './net-http';
+import { HTTP_MOST, HttpTooLargeError, NoTorError, type HttpMethod } from './net-http';
 import { throughTor, torFor, waitForTor } from './relay';
 import { secureDelete, secureGet, secureSet } from './secure';
 
@@ -44,9 +44,17 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // ready, straight when it is not or fails; with Nothing straight. Just after a space opens Tor is
 // still starting, so a backup first waits for it a while (torWaitMs).
 //
+// Backups to a server have a Tor switch of their own besides (Backups → To a server too), off
+// unless turned on, kept with the server (`tor`), so a backup holds it too: with it on, all that
+// goes to the server, backups, restores, checks and the sign-in with Nextcloud, goes only through
+// Tor, which is started for it whatever the space's way, and nothing straight should Tor fail. A
+// server typed to restore from takes the switch as the screen shows it (CloudServer.tor). The
+// Collection's copies on a server (lib/collection-webdav.ts) have a switch of their own.
+//
 // On a computer the desktop app sends each request from its shell, as a page may not reach such a
 // server (CORS); the web app reaches only a server that lets it (lib/backup-http.web.ts). Neither
-// has Tor for it: with a space sending Everything through Tor, nothing goes there.
+// has Tor for it: with a space sending Everything through Tor, or with the server's own Tor switch
+// on, nothing goes there.
 //
 // A backup there can be put back from the server itself (listCloud, fetchFromCloud): the folder is
 // listed, only the names Erevos gives backups are shown, newest first, and the one chosen is
@@ -57,8 +65,8 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // own are, with the names of the backups sent, oldest first. Backups hold it (lock/backup.ts):
 // restored where the phone sends to the same folder, the phone's own list of what went there stays.
 
-/** A folder on a server, with the user name and password for it. */
-export type CloudServer = { url: string; user: string; password: string };
+/** A folder on a server, with the user name and password for it; `tor`: reached only through Tor (lib/net-http.ts httpFor). */
+export type CloudServer = { url: string; user: string; password: string; tor?: boolean };
 
 /** A backup on the server: its name, its size in bytes and when it came, milliseconds, 0 if the server does not say. */
 export type CloudFile = { name: string; size: number; when: number };
@@ -85,11 +93,13 @@ export type CloudHeld = { seed: string; left: string };
 
 /** Where backups go on a server. `names` are the backups sent, oldest first, `parts` the parts of
  *  each, `held` those of backups gone that others name, `unfinished` those of backups that never
- *  ended, to delete. `last` milliseconds, 0 if none went yet. */
+ *  ended, to delete. `last` milliseconds, 0 if none went yet. `tor`: the server is reached only
+ *  through Tor; left out while the switch is off, as at first. */
 export type CloudBackup = {
   url: string;
   user: string;
   password: string;
+  tor?: boolean;
   names: string[];
   parts: Record<string, CloudParts>;
   held: CloudHeld[];
@@ -153,8 +163,8 @@ const CLOUD = 'erevos.backup-cloud';
 /** A server's answer: its status and what it said. */
 export type CloudAnswer = { status: number; bytes: Uint8Array };
 
-/** How a request goes to the server. The checks put a server of their own here. */
-export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number) => Promise<CloudAnswer>;
+/** How a request goes to the server; with `tor`, only through Tor. The checks put a server of their own here. */
+export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number, tor?: boolean) => Promise<CloudAnswer>;
 
 /** The largest backup that comes back from a server: what any download takes (lib/net-http.ts),
  *  100 MB. A larger one is downloaded from the server by hand and opened as a file. */
@@ -223,14 +233,19 @@ export function cloudStatusText(status: number): string | null {
   return t('The server answered {status}.', { status });
 }
 
-async function ask(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number): Promise<CloudAnswer> {
-  // Erevos sends nothing straight while the open space sends everything through Tor.
-  if (throughTor() && !canTorHttp()) throw new CloudError(t('This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.'));
-  if (canTorHttp()) await waitForTor(torWaitMs);
+// With `tor` (the Tor switch of what asks) only through Tor, which is started for it and waited
+// for as the request goes; else as the space's Tor way says.
+async function ask(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number, tor = false): Promise<CloudAnswer> {
+  // Erevos sends nothing straight while the open space sends everything through Tor, nor while
+  // the switch says only through Tor: a build without Tor for it sends nothing then.
+  if (tor && !canTorHttp()) throw new CloudError(new NoTorError().message);
+  if (!tor && throughTor() && !canTorHttp()) throw new CloudError(t('This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.'));
+  if (!tor && canTorHttp()) await waitForTor(torWaitMs);
   try {
-    return await http(method, url, headers, body, most);
+    return await http(method, url, headers, body, most, tor);
   } catch (error) {
     if (error instanceof HttpTooLargeError) throw new CloudError(tooLargeText(error.most));
+    if (error instanceof NoTorError) throw new CloudError(error.message);
     throw new Unreached(
       t('Could not reach the server. {error}', {
         error: error instanceof Error ? error.message : String(error),
@@ -242,16 +257,17 @@ async function ask(method: HttpMethod, url: string, headers: Record<string, stri
 /**
  * One request to `name` in the server's folder ('' for the folder itself), with its user name and
  * password: the server's answer, whatever its status (cloudStatusText says it in words). Goes
- * through Tor as backups do. Throws CloudError when the server cannot be reached. The Collection's
- * copies on a server (lib/collection-webdav.ts) ask theirs so too.
+ * through Tor as the space's Tor way says, or, with the server's `tor`, only through Tor. Throws
+ * CloudError when the server cannot be reached. The Collection's copies on a server
+ * (lib/collection-webdav.ts) ask theirs so too.
  */
 export function askServer(server: CloudServer, method: HttpMethod, name: string, { headers = {}, body, most }: { headers?: Record<string, string>; body?: Uint8Array; most?: number } = {}): Promise<CloudAnswer> {
-  return ask(method, server.url + name, { ...authorization(server), ...headers }, body, most);
+  return ask(method, server.url + name, { ...authorization(server), ...headers }, body, most, server.tor === true);
 }
 
-/** One request to `url` with no user name, as the sign-in with Nextcloud asks (lib/nextcloud-login.ts); as askServer otherwise. */
-export function askAddress(method: HttpMethod, url: string, headers: Record<string, string> = {}, body?: Uint8Array): Promise<CloudAnswer> {
-  return ask(method, url, headers, body);
+/** One request to `url` with no user name, as the sign-in with Nextcloud asks (lib/nextcloud-login.ts); as askServer otherwise, with `tor` only through Tor. */
+export function askAddress(method: HttpMethod, url: string, headers: Record<string, string> = {}, body?: Uint8Array, tor = false): Promise<CloudAnswer> {
+  return ask(method, url, headers, body, undefined, tor);
 }
 
 export async function loadCloudBackup(): Promise<CloudBackup | null> {
@@ -270,6 +286,7 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
       url: value.url,
       user: value.user,
       password: value.password,
+      ...(value.tor === true ? { tor: true } : {}),
       names,
       parts,
       held: Array.isArray(value.held) ? value.held.map(heldOf).filter((of): of is CloudHeld => of !== null) : [],
@@ -284,16 +301,24 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
 
 /**
  * Sends automatic backups to the folder at `address` from now on, after asking the server whether
- * the folder is there and takes the user name and password. Throws CloudError with why not.
+ * the folder is there and takes the user name and password; with `tor`, only through Tor, then and
+ * from now on. Throws CloudError with why not.
  */
-export async function startCloudBackup(address: string, user: string, password: string): Promise<CloudBackup> {
+export async function startCloudBackup(address: string, user: string, password: string, tor = false): Promise<CloudBackup> {
   const url = cloudFolder(address);
   const said = cloudStatusText(
     (
-      await ask('PROPFIND', url, {
-        ...authorization({ user, password }),
-        Depth: '0',
-      })
+      await ask(
+        'PROPFIND',
+        url,
+        {
+          ...authorization({ user, password }),
+          Depth: '0',
+        },
+        undefined,
+        undefined,
+        tor,
+      )
     ).status,
   );
   if (said) throw new CloudError(said);
@@ -304,6 +329,7 @@ export async function startCloudBackup(address: string, user: string, password: 
     url,
     user,
     password,
+    ...(tor ? { tor: true } : {}),
     names: same ? before.names : [],
     parts: same ? before.parts : {},
     held: same ? before.held : [],
@@ -319,6 +345,16 @@ export async function startCloudBackup(address: string, user: string, password: 
  *  it not whole, which then counts as failed (lib/backup-folder.ts). */
 export async function saveCloudBackup(cloud: CloudBackup): Promise<void> {
   await secureSet(CLOUD, JSON.stringify(cloud));
+}
+
+/** Turns the server's own Tor switch on or off: the settings as they are after it, or null when no server is set. */
+export async function setCloudTor(on: boolean): Promise<CloudBackup | null> {
+  const cloud = await loadCloudBackup();
+  if (!cloud) return null;
+  const { tor: _was, ...rest } = cloud;
+  const next: CloudBackup = on ? { ...rest, tor: true } : rest;
+  await secureSet(CLOUD, JSON.stringify(next));
+  return next;
 }
 
 /** Sends no more backups to the server; those there stay. */
@@ -349,7 +385,7 @@ async function put(cloud: CloudBackup, name: string, bytes: Uint8Array): Promise
     let said: string | null;
     let again: boolean;
     try {
-      const { status } = await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes);
+      const { status } = await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes, undefined, cloud.tor === true);
       said = cloudStatusText(status);
       again = passing(status);
     } catch (error) {
@@ -365,7 +401,7 @@ async function put(cloud: CloudBackup, name: string, bytes: Uint8Array): Promise
 
 // Deletes `name` on the server: whether it is gone now, as one already gone is.
 async function gone(cloud: CloudBackup, name: string): Promise<boolean> {
-  const status = await ask('DELETE', cloud.url + name, authorization(cloud)).then(
+  const status = await ask('DELETE', cloud.url + name, authorization(cloud), undefined, undefined, cloud.tor === true).then(
     (answer) => answer.status,
     () => 0,
   );
@@ -518,9 +554,9 @@ export function cloudLabel(cloud: Pick<CloudBackup, 'url'>): string {
   }
 }
 
-/** A folder on a server as the owner typed it, to restore from. Throws CloudError when the address is not one. */
-export function cloudServer(address: string, user: string, password: string): CloudServer {
-  return { url: cloudFolder(address), user: user.trim(), password };
+/** A folder on a server as the owner typed it, to restore from; with `tor`, reached only through Tor. Throws CloudError when the address is not one. */
+export function cloudServer(address: string, user: string, password: string, tor = false): CloudServer {
+  return { url: cloudFolder(address), user: user.trim(), password, ...(tor ? { tor: true } : {}) };
 }
 
 // What WebDAV is asked of each file in the folder.
@@ -544,6 +580,8 @@ async function listing(server: CloudServer): Promise<string> {
     server.url,
     { ...authorization(server), Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' },
     utf8Encode(LISTING),
+    undefined,
+    server.tor === true,
   );
   const said = cloudStatusText(answer.status);
   if (said) throw new CloudError(said);
@@ -561,7 +599,7 @@ export async function cloudParts(server: CloudServer): Promise<{ missing(names: 
     missing: (names) => names.filter((name) => !there.has(name)),
     read: async (name) => {
       if (!PART_NAME.test(name) || !there.has(name)) return null;
-      const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST);
+      const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST, server.tor === true);
       if (answer.status === 404) return null;
       const said = cloudStatusText(answer.status);
       if (said) throw new CloudError(said);
@@ -581,7 +619,7 @@ export async function cloudFiles(server: CloudServer): Promise<{ sizes: Map<stri
     sizes,
     read: async (name) => {
       if (!sizes.has(name)) return null;
-      const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST);
+      const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST, server.tor === true);
       if (answer.status === 404) return null;
       const said = cloudStatusText(answer.status);
       if (said) throw new CloudError(said);
@@ -629,7 +667,7 @@ function listed(xml: string, kind: (name: string) => boolean): CloudFile[] {
 export async function fetchFromCloud(server: CloudServer, name: string, most: number = CLOUD_RESTORE_MOST): Promise<Uint8Array> {
   if (!isBackupName(name)) throw new CloudError(t('That file is not an Erevos backup.'));
   const cap = Math.min(most, CLOUD_RESTORE_MOST);
-  const answer = await ask('GET', server.url + name, authorization(server), undefined, cap);
+  const answer = await ask('GET', server.url + name, authorization(server), undefined, cap, server.tor === true);
   const said = cloudStatusText(answer.status);
   if (said) throw new CloudError(said);
   if (answer.bytes.length > cap) throw new CloudError(tooLargeText(cap));
