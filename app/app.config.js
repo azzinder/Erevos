@@ -4,8 +4,8 @@
 
 // The app's settings are in app.json; this adds what a build changes. The release workflow
 // (.github/workflows/release.yml) sets EREVOS_VERSION (2.0.0 and up) and EREVOS_BUILD (the run's
-// number, which goes up with every release), so each release has its own version and Android
-// installs it over the one before; Updates (app/updates.tsx) reads the build in `extra`. A build on a
+// number, or above it when an Erevos+ build took it: it goes up with every build of either), so
+// each release has its own version and Android installs it over the one before; Updates (app/updates.tsx) reads the build in `extra`. A build on a
 // computer without them keeps app.json's version and has no build number.
 // EREVOS_DISTRIBUTION=fdroid makes the F-Droid build: F-Droid updates it, so it has no Check for
 // updates (lib/distribution.ts) and may not install packages. The release workflow does not set it.

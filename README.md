@@ -485,7 +485,9 @@ the macOS disk image, Windows (installer and portable .exe), the Sailfish OS RPM
 with `SHA256SUMS`. A package whose job fails is left out and the others still go. The workflow is
 set to run every night at 02:30 UTC when main has changed, while it is enabled on GitHub, and by
 hand (Actions, release, Run workflow). The five newest releases stay. Some run numbers have no
-release; [CHANGELOG.md](CHANGELOG.md) lists the ones there are.
+release; [CHANGELOG.md](CHANGELOG.md) lists the ones there are. A build's number is the run's,
+unless an Erevos+ build already took it or one above it: Erevos and Erevos+ are the same app to
+Android and install over each other, so every build of either has a number above all before it.
 
 A test release before a version is named as in `4.0.0-rc.1` (a release candidate; also
 `-alpha.<n>` and `-beta.<n>`): it comes after 3.x and before 4.0.0, the one after it is

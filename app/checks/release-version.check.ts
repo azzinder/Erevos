@@ -3,9 +3,9 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // Naming a release (.github/workflows/release.yml, its version job): 2.1.0, or a test release
-// such as 4.0.0-rc.1, always newer than the latest; and the Sailfish RPM's version of a test
-// release. The workflow's own script runs here, with a gh of this check's own that names the latest
-// release. Run with: npm run check
+// such as 4.0.0-rc.1, always newer than the latest; its build number, above every Erevos and
+// Erevos+ build so far; and the Sailfish RPM's version of a test release. The workflow's own
+// scripts run here, with a gh of this check's own. Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -105,6 +105,72 @@ test('the app reads the names the workflow gives, in the same order', () => {
   }
   for (const odd of ['4.0.0RC1', '4.0.0-RC1', '4.0.0-rc', '4.0.0-rc.0', '4.0.0-rc.01', 'v4.0.0-rc.1', '4.0.0-rc.1.2']) {
     assert.equal(VERSION_NAME.test(odd), false, odd);
+  }
+});
+
+// The build number step, with a gh of its own: PUBLISHED lists "<tag>:<build>" of the published
+// releases with a version.json, DRAFTS the drafts' tags, RUNS erevosgram.yml's run names, and
+// FAIL makes the call naming it fail.
+const numberDir = join(dir, 'number');
+mkdirSync(numberDir);
+writeFileSync(
+  join(numberDir, 'gh'),
+  [
+    '#!/bin/bash',
+    'case "$*" in',
+    '  "release download "*) [ "$FAIL" = download ] && exit 1; for p in $PUBLISHED; do [ "${p%%:*}" = "$3" ] && printf \'{"name": "x", "build": %s}\\n\' "${p##*:}"; done ;;',
+    '  *"select(.draft | not)"*) [ "$FAIL" = releases ] && exit 1; for p in $PUBLISHED; do echo "${p%%:*}"; done ;;',
+    '  *"select(.draft)"*) for d in $DRAFTS; do echo "$d" | sed "s/^build-//"; done ;;',
+    '  *erevosgram.yml/runs*) [ "$FAIL" = runs ] && exit 1; printf "%s\\n" "$RUNS" ;;',
+    '  *) exit 1 ;;',
+    'esac',
+    'exit 0',
+    '',
+  ].join('\n'),
+);
+chmodSync(join(numberDir, 'gh'), 0o755);
+writeFileSync(join(numberDir, 'number.sh'), stepScript('number'));
+
+/** The build number the version job gives run `run`; an error's words when it refuses. */
+function numbered(run: number, builds: { published?: string; drafts?: string; runs?: string[]; fail?: string } = {}): string {
+  const output = join(numberDir, 'output');
+  writeFileSync(output, '');
+  const env = {
+    ...process.env,
+    PATH: `${numberDir}:${process.env.PATH}`,
+    PUBLISHED: builds.published ?? '',
+    DRAFTS: builds.drafts ?? '',
+    RUNS: (builds.runs ?? []).join('\n'),
+    FAIL: builds.fail ?? '',
+    GITHUB_OUTPUT: output,
+    GITHUB_RUN_NUMBER: String(run),
+    GH_REPO: 'example/erevos',
+  };
+  try {
+    execFileSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', join(numberDir, 'number.sh')], { env, stdio: 'pipe' });
+  } catch (e) {
+    const out = String((e as { stdout?: Buffer }).stdout ?? '');
+    return out.match(/::error::(.*)/)?.[1] ?? out;
+  }
+  return /^number=(.*)$/m.exec(readFileSync(output, 'utf8'))?.[1] ?? '';
+}
+
+test("a build's number is the run's, unless an Erevos or Erevos+ build already took it or one above it", () => {
+  assert.equal(numbered(67), '67');
+  assert.equal(numbered(67, { published: 'v7.0.0-rc.10:66 v7.0.0-rc.9:64' }), '67');
+  // Erevos+ 7.1.0-beta.5 is build 67: Erevos's next is 68, not the run's 67.
+  assert.equal(numbered(67, { published: 'v7.0.0-rc.10:66 v7.1.0-beta.5:67' }), '68');
+  assert.equal(numbered(80, { published: 'v7.0.0-rc.10:66 v7.1.0-beta.5:67' }), '80');
+  // An Erevos+ or ErevosGram build under way or never published, by its run's name.
+  assert.equal(numbered(67, { runs: ['erevosgram', 'Erevos+ 7.1.1-beta.1, build 71', '7.1.0-EGram-beta1'] }), '72');
+  // A build of this workflow under way, by its draft.
+  assert.equal(numbered(67, { drafts: 'build-69' }), '70');
+  assert.equal(numbered(67, { published: 'v7.1.0-beta.5:67', drafts: 'build-65', runs: ['Erevos+ 7.1.0-beta.5, build 67'] }), '68');
+});
+
+test('a build whose number is not sure does not go out', () => {
+  for (const fail of ['releases', 'download', 'runs']) {
+    assert.match(numbered(67, { published: 'v7.0.0-rc.10:66', fail }), /Not every build so far could be read/, fail);
   }
 });
 

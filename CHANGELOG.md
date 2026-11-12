@@ -21,6 +21,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- Every Erevos build's number is above every Erevos+ build so far, so Updates moves between the two and Android
+  installs each over the other.
+
 ## 7.0.0-rc.10 (2026-11-12)
 
 ### For you

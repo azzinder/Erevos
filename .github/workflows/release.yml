@@ -23,11 +23,15 @@ name: release
 # release like any other. A beta or an alpha (7.0.1-beta.1) is a prerelease, never the latest: it
 # goes to Erevos's beta channel (app/lib/update-channel.ts), a release tagged channel-erevos-beta
 # whose version.json each beta replaces, and only an Erevos that joined the betas (Updates, Beta
-# versions) is offered it. Every build still has its own number, the run's, which Android and Check
-# for updates go by. Erevos+'s releases (7.1.x, from the erevos-plus branch) are in the same
-# repositories, titled "Erevos+ …"; they count for nothing here.
+# versions) is offered it. Erevos+'s releases (7.1.x, from the erevos-plus branch) are in the same
+# repositories, titled "Erevos+ …"; they count for nothing in the version.
 #
-# The jobs hand their files to the publish job through a draft release, build-<run number>:
+# Every build has its own number, which Android and Check for updates go by: the run's, unless an
+# Erevos+ build already took it or one above it. Erevos and Erevos+ are the same app to Android
+# (app.erevos) and each installs over the other, so they share one row of build numbers, and a
+# build's is always above every one before it (the version job, Choose the build number).
+#
+# The jobs hand their files to the publish job through a draft release, build-<build number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
 # The five newest releases stay.
 #
@@ -58,25 +62,55 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-# Each job also has EREVOS_VERSION, from the version job.
+# Each job also has EREVOS_VERSION and EREVOS_BUILD, from the version job.
 env:
-  EREVOS_BUILD: ${{ github.run_number }}
   EXPO_NO_TELEMETRY: "1"
 
 jobs:
-  # Decides whether to build at all, then opens the draft release the jobs hand their files to.
+  # Decides whether to build at all and the build's number, then opens the draft release the jobs
+  # hand their files to.
   version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Erevos+'s builds under way (erevosgram.yml's runs), for the build number.
+      actions: read
     outputs:
       build: ${{ steps.check.outputs.build }}
+      number: ${{ steps.number.outputs.number }}
       version: ${{ steps.check.outputs.version }}
       latest: ${{ steps.check.outputs.latest }}
     steps:
+      - name: Choose the build number, above every Erevos and Erevos+ build so far
+        id: number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Every build so far: each published release's, Erevos's and Erevos+'s (its version.json),
+          # the builds under way here (their drafts, build-<n>), and Erevos+'s and ErevosGram's
+          # (erevosgram.yml, whose runs are named "<version>, build <n>", the unpublished ones too).
+          # Should any of them not be read, no build: two with one number would not install.
+          builds=$(mktemp)
+          if ! {
+            gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | select(any(.assets[]; .name == "version.json")) | .tag_name' |
+              while read -r tag; do gh release download "$tag" --repo "$GH_REPO" -p version.json -O - | jq -r '.build // empty' || exit 1; done &&
+            gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft) | .tag_name | select(startswith("build-")) | ltrimstr("build-")' &&
+            gh api "repos/$GH_REPO/actions/workflows/erevosgram.yml/runs?per_page=100" --jq '.workflow_runs[].display_title' |
+              sed -n 's/.*, build \([1-9][0-9]*\)$/\1/p'
+          } > "$builds"; then
+            echo "::error::Not every build so far could be read, so no number is sure for this one: no build."; exit 1
+          fi
+          highest=$(grep -E '^[1-9][0-9]*$' "$builds" | sort -n | tail -n1 || true)
+          number=$GITHUB_RUN_NUMBER
+          if [ -n "$highest" ] && [ "$number" -le "$highest" ]; then number=$((highest + 1)); fi
+          echo "Build $number (the run's number is $GITHUB_RUN_NUMBER; the highest build so far ${highest:-none})."
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
       - name: Check the branch, whether main changed since the last release, and the version
         id: check
         env:
+          EREVOS_BUILD: ${{ steps.number.outputs.number }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           WANTED: ${{ inputs.version }}
@@ -138,6 +172,7 @@ jobs:
       - name: Prepare the draft release the jobs hand their files to
         if: ${{ steps.check.outputs.build == 'true' }}
         env:
+          EREVOS_BUILD: ${{ steps.number.outputs.number }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
@@ -157,6 +192,7 @@ jobs:
     if: ${{ needs.version.outputs.build == 'true' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -271,6 +307,7 @@ jobs:
     if: ${{ needs.version.outputs.build == 'true' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -362,6 +399,7 @@ jobs:
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' && inputs.macos != 'off' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: macos-latest
     timeout-minutes: 30
     permissions:
@@ -426,6 +464,7 @@ jobs:
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_WINDOWS != 'off' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -473,6 +512,7 @@ jobs:
     if: ${{ needs.version.outputs.build == 'true' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -521,6 +561,7 @@ jobs:
       contents: write
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
       # true unless a published release has a newer version (see the top of this file).
       EREVOS_LATEST: ${{ needs.version.outputs.latest }}
       # Writes to the public download repository that Updates → Check for updates reads
