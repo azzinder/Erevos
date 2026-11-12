@@ -861,10 +861,11 @@ export class History {
    */
   async mark(peer: string, mine: boolean, mark: Mark, now: number, tags: string[] | null = null): Promise<string[]> {
     const raised: string[] = [];
+    const asked = tags ? new Set(tags) : null;
     const list = (this.data.chats[peer] ?? []).map((kept): Kept => {
       const m = unpack(kept);
       // Theirs that came before its time (lib/later.ts, showsAt) is not read before it shows.
-      if (m.mine !== mine || m.mark! >= mark || (tags && !tags.includes(m.tag)) || (!mine && m.at > now)) return kept;
+      if (m.mine !== mine || m.mark! >= mark || (asked && !asked.has(m.tag)) || (!mine && m.at > now)) return kept;
       raised.push(m.tag);
       return pack(withMark(m, mark, now));
     });

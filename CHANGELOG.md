@@ -22,6 +22,10 @@ On main, not released yet:
   on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment.
   Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on.
   Before, they always played straight, and the settings said so.
+- **A chat no longer freezes before a message sent for later shows**: a message your contact sends with **Send later**
+  can come before its time, and shows only then. Until then its chat was marked read again and again without end, so
+  it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a
+  message is read once it shows.
 
 ### Under the hood
 
@@ -29,6 +33,9 @@ On main, not released yet:
   installs each over the other.
 - The core opens HTTPS streams through Tor (no ALPN, held back when the player pauses), and Android's player reads a
   station or a channel over them, HLS pieces too, speaking HTTP/1.1 itself.
+- A chat's thread, and its media list while the details show, are no longer worked out again each time the clock moves
+  or another chat changes; marking messages read finds them by tag in one pass, and a link followed by a long run of
+  marks or brackets is trimmed in one pass too, where before it took ever longer with each mark.
 
 ## 7.0.0-rc.10 (2026-11-12)
 

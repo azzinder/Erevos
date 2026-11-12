@@ -1925,9 +1925,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // way ends, which through Tor can take tens of seconds: they are marked in the history they
   // came from (openingChats), which the home screen counts from, even if the chat is left before
   // it opens. Their phone is told with the chat's first look, once open; left before, it is not.
+  // One of theirs that came before the time it was sent for (lib/later.ts) shows only then, and is
+  // read only then: the clock (`now`) goes at its time. Counted as unread before it, it was marked
+  // again and again without end, and the chat was drawn again each time.
   useEffect(() => {
     if (!shown || gated || !appActive || !(e2e || openingChats.current) || !selected?.startsWith(CONTACT_PREFIX)) return;
-    const unread = messages.filter((m) => m.peer === selected && !m.mine && m.mark < 2);
+    const shownBy = Date.now();
+    const unread = messages.filter((m) => m.peer === selected && !m.mine && m.mark < 2 && m.at <= shownBy);
     if (unread.length === 0) return;
     const peer = selected;
     // While it opens, only those that show: the look under way may keep more in the history meanwhile.
@@ -1936,7 +1940,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       .catch(() => {
         // Read here, but their phone is not told.
       });
-  }, [shown, gated, appActive, e2e, selected, messages]);
+  }, [shown, gated, appActive, e2e, selected, messages, now]);
 
   // While a contact's chat shows, it asks now and then whether their phone is open, saying this
   // one is. A chat that appears offline asks nothing, so it does not learn it either. It asks
@@ -2524,14 +2528,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Raises the mark of a chat's messages, ours or theirs: all of them, or those with `tags`. A
   // disappearing one marked read starts its time. Returns, through the history, the tags raised.
+  // When none is raised, the list stays the same one, so nothing that follows it runs again.
   function markMessages(peer: string, mine: boolean, mark: Mark, tags: string[] | null = null): Promise<string[]> {
     const now = Date.now();
-    setMessages((list) =>
-      list.map((m) => {
-        if (m.peer !== peer || m.mine !== mine || m.mark >= mark || (tags && !tags.includes(m.tag)) || (!mine && m.at > now)) return m;
+    const asked = tags ? new Set(tags) : null;
+    setMessages((list) => {
+      let raised = false;
+      const marked = list.map((m) => {
+        if (m.peer !== peer || m.mine !== mine || m.mark >= mark || (asked && !asked.has(m.tag)) || (!mine && m.at > now)) return m;
+        raised = true;
         return { ...m, mark, ...(mark === 2 && !m.until && m.lasts ? { until: now + m.lasts * 1000, lasts: 0 } : {}) };
-      }),
-    );
+      });
+      return raised ? marked : list;
+    });
     return (history.current ?? openingChats.current?.history)?.mark(peer, mine, mark, now, tags) ?? Promise.resolve([]);
   }
 
@@ -5458,11 +5467,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
-  // Worked out again only when the messages, the chat or the time (every few seconds) change.
+  // Worked out again only when the messages, the chat or the time (every few seconds) change; and
+  // when the same messages show as before (the clock went, another chat changed), it is the same
+  // list, so the thread and what is sorted out of it (the details' media) are not done again.
   // None while the chat's PIN is asked for: nothing of it lies under the gate (ChatPinGate).
+  const visibleWas = useRef<Message[]>([]);
   const visible = useMemo(() => {
     const shownBy = Date.now();
-    return gated ? [] : messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+    const list = gated ? [] : messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+    const was = visibleWas.current;
+    if (list.length === was.length && list.every((message, n) => message === was[n])) return was;
+    visibleWas.current = list;
+    return list;
   }, [messages, selected, now, gated]);
   // The message each tag names, for the one a message answers.
   const byTag = useMemo(() => {

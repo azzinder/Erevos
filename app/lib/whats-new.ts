@@ -24,6 +24,7 @@ export const NEXT: Changes = {
   forYou: [
     mark("**Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas, which come out first for trying, or leave them. See [Erevos or Erevos+, and betas](#updates)."),
     mark("**Radio and TV through Tor**: the Collection's settings on Android have **Play through Tor**, off unless you turn it on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment. Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on. Before, they always played straight. See [Collection](#collection)."),
+    mark("**A chat no longer freezes before a message sent for later shows**: a message your contact sends with **Send later** can come before its time, and shows only then. Until then its chat was marked read again and again without end, so it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a message is read once it shows. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };

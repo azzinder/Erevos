@@ -32,6 +32,14 @@ test('a sentence mark or an unopened bracket after it is not part of it', () => 
   assert.deepEqual(urls('«https://example.org»'), ['https://example.org']);
 });
 
+test('a long run of marks or brackets after a link takes no longer than its length', () => {
+  const started = performance.now();
+  assert.deepEqual(urls(`https://example.org/a${'.)'.repeat(20000)} next`), ['https://example.org/a']);
+  assert.deepEqual(urls(`https://example.org/(a)${')!'.repeat(20000)}`), ['https://example.org/(a)']);
+  assert.deepEqual(urls(`example.org/[a]${'],'.repeat(20000)}`), ['https://example.org/[a]']);
+  assert.ok(performance.now() - started < 2000);
+});
+
 test('only web addresses: no other kinds of link', () => {
   assert.deepEqual(urls('javascript:alert(1) file:///etc/passwd tel:123'), []);
 });

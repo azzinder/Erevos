@@ -15,7 +15,8 @@ const ENDINGS = [
   'co', 'xyz', 'online', 'site', 'news', 'social', 'chat', 'link', 'page', 'blog', 'shop', 'store', 'onion', 'im', 'to', 'cc', 'sh', 'ai',
 ];
 const LINK = new RegExp(`(?:\\b(?:https?:\\/\\/|www\\.)[^\\s<>"]+)|(?<![@\\w.\\/-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:${ENDINGS.join('|')})(?![\\w-])(?:[/?#][^\\s<>"]*)?`, 'gi');
-const TRAILING = /[.,;:!?'’”»]+$/;
+// Marks that end a sentence, not a link: one at the end of a link is no part of it.
+const TRAILING = new Set([...".,;:!?'’”»"]);
 
 export type TextPart = { text: string; url?: string };
 
@@ -24,14 +25,7 @@ export function splitLinks(text: string): TextPart[] {
   const parts: TextPart[] = [];
   let last = 0;
   for (const match of text.matchAll(LINK)) {
-    let link = match[0];
-    for (;;) {
-      const trimmed = link.replace(TRAILING, '');
-      const unopened = /[)\]]$/.test(trimmed) && count(trimmed, trimmed.endsWith(')') ? '(' : '[') < count(trimmed, trimmed.endsWith(')') ? ')' : ']');
-      const next = unopened ? trimmed.slice(0, -1) : trimmed;
-      if (next === link) break;
-      link = next;
-    }
+    const link = trimEnd(match[0]);
     const at = match.index ?? 0;
     if (link.length <= 4) continue;
     if (at > last) parts.push({ text: text.slice(last, at) });
@@ -42,6 +36,23 @@ export function splitLinks(text: string): TextPart[] {
   return parts;
 }
 
-function count(text: string, mark: string): number {
-  return text.split(mark).length - 1;
+/**
+ * `link` without the marks that end a sentence after it, nor a closing bracket that has no opening
+ * one in it, again and again as each goes. Once over the link and once back from its end, however
+ * many there are, so a long run of them in a message takes no longer than its length.
+ */
+function trimEnd(link: string): string {
+  const brackets = { '(': 0, ')': 0, '[': 0, ']': 0 };
+  for (const mark of link) if (mark === '(' || mark === ')' || mark === '[' || mark === ']') brackets[mark] += 1;
+  let end = link.length;
+  for (;;) {
+    while (end > 0 && TRAILING.has(link[end - 1])) end -= 1;
+    const last = link[end - 1];
+    if ((last === ')' && brackets['('] < brackets[')']) || (last === ']' && brackets['['] < brackets[']'])) {
+      brackets[last] -= 1;
+      end -= 1;
+      continue;
+    }
+    return link.slice(0, end);
+  }
 }
