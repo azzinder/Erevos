@@ -18,11 +18,17 @@ On main, not released yet:
   **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas or leave
   them. Erevos+ is published in the same public download repository as Erevos, and each edition and its betas are
   signed apart by the release computer.
+- **Radio and TV through Tor**: the Collection's settings on Android have **Play through Tor**, off unless you turn it
+  on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment.
+  Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on.
+  Before, they always played straight, and the settings said so.
 
 ### Under the hood
 
 - Every Erevos build's number is above every Erevos+ build so far, so Updates moves between the two and Android
   installs each over the other.
+- The core opens HTTPS streams through Tor (no ALPN, held back when the player pauses), and Android's player reads a
+  station or a channel over them, HLS pieces too, speaking HTTP/1.1 itself.
 
 ## 7.0.0-rc.10 (2026-11-12)
 

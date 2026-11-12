@@ -14,4 +14,6 @@ export const ipWarningStrings: Record<string, string> = {
   "On {network}, joining goes through a server. Without Tor, it sees this phone's internet address (IP address).": "Em {network}, entrar passa por um servidor. Sem Tor, ele vê o endereço de internet (endereço IP) deste celular.",
   "Guide": "Guia",
   "Through Tor for this chat": "Pelo Tor para esta conversa",
+  "A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Uma estação toca direto do servidor dela, que então vê o endereço de internet (endereço IP) deste celular enquanto toca, como qualquer site.",
+  "A TV channel plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Um canal de TV toca direto do servidor dele, que então vê o endereço de internet (endereço IP) deste celular enquanto toca, como qualquer site.",
 };

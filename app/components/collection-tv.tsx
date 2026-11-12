@@ -8,7 +8,7 @@ import { Image, Pressable, ScrollView, SectionList, StyleSheet, View } from 'rea
 import { confirm } from '../lib/alert';
 import { cloudRequest } from '../lib/backup-http';
 import { memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
-import { playChannel } from '../lib/collection-play';
+import { playChannel, playsThroughTor } from '../lib/collection-play';
 import { RADIO_AGENT } from '../lib/collection-radio';
 import {
   channelGroups,
@@ -34,7 +34,7 @@ import { pickFile, TooLargeError } from '../lib/pick-file';
 import { addChannel, addChannels, deleteChannel, deleteChannelGroup, renameChannel, type CollectionChannel, type CollectionPlace } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
-import { sendLinkToChat } from './collection-radio';
+import { liveTor, playLine, sendLinkToChat, turnOnPlayTor } from './collection-radio';
 import { VideoScreen } from './collection-player';
 import { MoreIcon, PencilIcon, SendIcon, TrashIcon, TvIcon } from './icons';
 import { Button, Input, Sheet, Text } from './ui';
@@ -50,9 +50,12 @@ import { Button, Input, Sheet, Text } from './ui';
 // device's IP address. Logos are fetched, as the lists are, only when the place's Show channel
 // logos is on, as their servers see the device's IP address too; otherwise an icon. With the
 // place's Tor switch for its radio and TV lists on (`tor`, Collection.listsTor), the lists and the
-// logos are asked only through Tor, and those servers do not see it; the channels still play straight.
+// logos are asked only through Tor, and those servers do not see it. The channels play as the
+// stations do (components/collection-radio.tsx liveTor): only through Tor with the place's Play
+// through Tor on, where a channel may start slowly or stall; otherwise straight, said once first.
 
-type Options = { showTitle: boolean; stopOnLock: boolean };
+/** The place's choices for playing a channel, its Play through Tor (`tor`) too. */
+type Options = { showTitle: boolean; stopOnLock: boolean; tor: boolean };
 
 // The groups shown: every one, or one by name.
 const ALL = '\u0000all';
@@ -110,7 +113,9 @@ export function ChannelsList({
   async function play(c: CollectionChannel) {
     setNote('');
     try {
-      await playChannel(c, options);
+      const tor = await liveTor('channel', hidden, options.tor, turnOnPlayTor(place, setNote, onChanged));
+      if (tor === null) return;
+      await playChannel(c, { ...options, tor });
       setWatching(true);
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -143,7 +148,9 @@ export function ChannelsList({
             {header}
             <View style={styles.intro}>
               <Text variant="caption" tone="muted">
-                {t('Channels play from their https links. The channel sees this device’s IP address while it plays, as any site does. There is no programme guide.')}
+                {playsThroughTor(options.tor)
+                  ? t('Channels play from their https links, through Tor, so the channel does not see this device’s IP address. Through Tor a channel may start slowly or stall for a moment. There is no programme guide.')
+                  : t('Channels play from their https links. The channel sees this device’s IP address while it plays, as any site does. There is no programme guide.')}
               </Text>
               {note ? (
                 <Pressable onPress={() => setNote('')} accessibilityRole="button" accessibilityLabel={t('Close')}>
@@ -343,7 +350,7 @@ function Logo({ url, tor, colors }: { url: string; tor: boolean; colors: Colors 
 }
 
 /** Adds channels: a list by its link, iptv-org's by country or whole, a list file, or one channel by its link. */
-export function AddChannelsSheet({ visible, place, tor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; onClose: () => void; onAdded: () => void }) {
+export function AddChannelsSheet({ visible, place, tor = false, playTor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; playTor?: boolean; onClose: () => void; onAdded: () => void }) {
   const colors = useColors();
   const [list, setList] = useState('');
   const [link, setLink] = useState('');
@@ -429,8 +436,9 @@ export function AddChannelsSheet({ visible, place, tor = false, onClose, onAdded
       <Text variant="label">{t('From iptv-org')}</Text>
       <Text variant="caption" tone="muted">
         {throughTorNow(tor)
-          ? t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.')
-          : t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.')}
+          ? t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address.')
+          : t('iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched.')}{' '}
+        {playLine(playTor)}
       </Text>
       <Pressable onPress={() => setPicking((p) => !p)} accessibilityRole="button" accessibilityLabel={t('Country')} style={({ pressed }) => [styles.sheetRow, pressed && { opacity: 0.6 }]}>
         <Text variant="bodyStrong" style={styles.grow}>

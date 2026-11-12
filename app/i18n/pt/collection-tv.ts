@@ -23,7 +23,7 @@ export const collectionTv: Record<string, string> = {
   "This list names no channel.": "Esta lista não traz nenhum canal.",
   "This file is too large for a list.": "Este arquivo é grande demais para uma lista.",
   "From iptv-org": "Do iptv-org",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.": "O iptv-org (github.com/iptv-org/iptv) é uma lista pública de canais gratuitos. O servidor dele vê o endereço IP deste aparelho quando a lista é buscada, e cada canal quando toca.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched.": "O iptv-org (github.com/iptv-org/iptv) é uma lista pública de canais gratuitos. O servidor dele vê o endereço IP deste aparelho quando a lista é buscada.",
   Country: "País",
   "Country: {name}": "País: {name}",
   "iptv-org by country": "iptv-org por país",
@@ -50,6 +50,6 @@ export const collectionTv: Record<string, string> = {
   "The list could not be read ({status}).": "Não foi possível ler a lista ({status}).",
   "This channel is here already.": "Este canal já está aqui.",
   "In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.": "Em TV, o logotipo de cada canal é buscado no servidor dele pelo Tor, que assim não vê o endereço IP deste aparelho. Senão, aparece um ícone de TV.",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.": "O iptv-org (github.com/iptv-org/iptv) é uma lista pública de canais gratuitos. A lista dele é buscada pelo Tor, então o servidor dele não vê o endereço IP deste aparelho; cada canal vê, quando toca.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address.": "O iptv-org (github.com/iptv-org/iptv) é uma lista pública de canais gratuitos. A lista dele é buscada pelo Tor, então o servidor dele não vê o endereço IP deste aparelho.",
   "Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.": "Só links https: o Erevos não abre http simples. A lista (.m3u) é lida uma vez, agora, pelo Tor, e cada canal dela com link https é adicionado, com seu grupo e logotipo. O servidor da lista não vê o endereço IP deste aparelho.",
 };

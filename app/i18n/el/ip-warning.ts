@@ -14,4 +14,6 @@ export const ipWarningStrings: Record<string, string> = {
   "On {network}, joining goes through a server. Without Tor, it sees this phone's internet address (IP address).": "Στο {network}, η συμμετοχή γίνεται μέσω διακομιστή. Χωρίς Tor, αυτός βλέπει τη διεύθυνση internet (διεύθυνση IP) αυτού του τηλεφώνου.",
   "Guide": "Οδηγός",
   "Through Tor for this chat": "Μέσω Tor για αυτή τη συνομιλία",
+  "A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Ένας σταθμός παίζει κατευθείαν από τον διακομιστή του, που τότε βλέπει τη διεύθυνση internet (διεύθυνση IP) αυτού του τηλεφώνου όσο παίζει, όπως κάθε ιστότοπος.",
+  "A TV channel plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Ένα κανάλι τηλεόρασης παίζει κατευθείαν από τον διακομιστή του, που τότε βλέπει τη διεύθυνση internet (διεύθυνση IP) αυτού του τηλεφώνου όσο παίζει, όπως κάθε ιστότοπος.",
 };

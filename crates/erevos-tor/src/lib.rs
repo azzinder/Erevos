@@ -684,11 +684,12 @@ fn http_answer(raw: &[u8]) -> Result<(u16, Vec<u8>)> {
     }
 }
 
-/// An XMPP server's connection (app/lib/xmpp-net.ts): what is written goes on `writer`, and what
-/// the server sends waits in `chunks`, put there by `reader` as it comes, until it closes.
+/// An XMPP server's connection (app/lib/xmpp-net.ts), or a web server's (a station played through
+/// Tor, TorHttpDataSource.kt): what is written goes on `writer`, and what the server sends waits in
+/// `chunks`, put there by `reader` as it comes (STREAM_BACKLOG pieces at most), until it closes.
 struct Stream {
     writer: tokio::sync::Mutex<tokio::io::WriteHalf<Box<dyn Io>>>,
-    chunks: tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>,
+    chunks: tokio::sync::Mutex<tokio::sync::mpsc::Receiver<Vec<u8>>>,
     reader: tokio::task::JoinHandle<()>,
     /// Through Tor: the circuits it went on, by the name they are kept under.
     way: Option<(String, IsolationToken)>,
@@ -698,14 +699,23 @@ fn streams() -> std::sync::MutexGuard<'static, HashMap<u64, Arc<Stream>>> {
     STREAMS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// How an XMPP connection gets its TLS.
+/// How a connection gets its TLS: an XMPP server's, or a web server's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tls {
     /// In TLS from the first byte (XEP-0368, `_xmpps-client`), with ALPN `xmpp-client`.
     Direct,
     /// In the clear until XMPP's STARTTLS (RFC 6120), then in TLS.
     StartTls,
+    /// In TLS from the first byte with no ALPN, as a web server is asked over HTTP/1.1: a radio
+    /// station or a TV channel of the Collection played through Tor (its Play through Tor), whose
+    /// HTTP the app speaks itself (TorHttpDataSource.kt).
+    Https,
 }
+
+/// What a connection's server sent waits for the app in at most this many pieces (16 KB each):
+/// then nothing more is read from it until some is taken, so a stream that goes on without end
+/// while nothing takes it (a radio station paused) does not fill the phone's memory.
+const STREAM_BACKLOG: usize = 64;
 
 /// The most the server may say before TLS begins.
 const MOST_BEFORE_TLS: usize = 64 * 1024;
@@ -763,16 +773,17 @@ async fn starttls<S: AsyncRead + AsyncWrite + Unpin>(io: &mut S, domain: &str) -
     }
 }
 
-/// Opens a connection to the XMPP server `host`:`port` for the XMPP domain `domain`, in TLS as
-/// `tls` says, through Tor when `tor` (on circuits of the domain's own, new ones after a failure).
-/// Returns its handle for [`stream_write`], [`stream_read`] and [`stream_close`].
+/// Opens a connection to the XMPP server `host`:`port` for the XMPP domain `domain`, or with
+/// [`Tls::Https`] to the web server `host`:`port` named `domain`, in TLS as `tls` says, through Tor
+/// when `tor` (on circuits of the domain's own, new ones after a failure). Returns its handle for
+/// [`stream_write`], [`stream_read`] and [`stream_close`].
 pub fn stream_open(host: &str, port: u16, domain: &str, tls: Tls, tor: bool) -> Result<u64> {
     if domain.is_empty() || domain.contains(['\'', '"', '<', '>', '&', ' ']) {
-        return Err(format!("not an XMPP domain: {domain}"));
+        return Err(format!("not a domain: {domain}"));
     }
     let runtime = runtime()?;
     let way = tor.then(|| {
-        let name = format!("xmpp {domain}");
+        let name = format!("{} {domain}", if tls == Tls::Https { "web" } else { "xmpp" });
         let token = nostr_way(&name);
         (name, token)
     });
@@ -797,6 +808,7 @@ pub fn stream_open(host: &str, port: u16, domain: &str, tls: Tls, tor: bool) -> 
             };
             match tls {
                 Tls::Direct => tls_for(plain, &domain_owned, true).await,
+                Tls::Https => tls_for(plain, &domain_owned, false).await,
                 Tls::StartTls => {
                     starttls(&mut plain, &domain_owned).await?;
                     tls_for(plain, &domain_owned, false).await
@@ -816,7 +828,7 @@ pub fn stream_open(host: &str, port: u16, domain: &str, tls: Tls, tor: bool) -> 
         }
     };
     let (mut read, write) = tokio::io::split(io);
-    let (sender, chunks) = tokio::sync::mpsc::unbounded_channel();
+    let (sender, chunks) = tokio::sync::mpsc::channel(STREAM_BACKLOG);
     let reader = runtime.spawn(async move {
         use tokio::io::AsyncReadExt;
         let mut piece = vec![0u8; 16 * 1024];
@@ -824,7 +836,7 @@ pub fn stream_open(host: &str, port: u16, domain: &str, tls: Tls, tor: bool) -> 
             match read.read(&mut piece).await {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
-                    if sender.send(piece[..n].to_vec()).is_err() {
+                    if sender.send(piece[..n].to_vec()).await.is_err() {
                         break;
                     }
                 }

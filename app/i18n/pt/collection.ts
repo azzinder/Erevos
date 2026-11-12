@@ -114,5 +114,5 @@ export const collectionText: Record<string, string> = {
   "Encrypting it for Erevos…": "Criptografando para o Erevos…",
   "Slideshow": "Apresentação",
   "Radio and TV lists": "Listas de rádio e TV",
-  "What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos. Stations and channels themselves always play straight, so they see this device’s IP address while they play.": "O que o Erevos pede para Rádio e TV: a busca no Radio Browser, uma playlist ou lista de TV buscada pelo link, e os logotipos dos canais. As estações e os canais em si sempre tocam direto, então veem o endereço IP deste aparelho enquanto tocam.",
+  "What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos.": "O que o Erevos pede para Rádio e TV: a busca no Radio Browser, uma playlist ou lista de TV buscada pelo link, e os logotipos dos canais.",
 };

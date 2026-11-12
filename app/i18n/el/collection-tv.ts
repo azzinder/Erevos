@@ -23,7 +23,7 @@ export const collectionTv: Record<string, string> = {
   "This list names no channel.": "Αυτή η λίστα δεν αναφέρει κανένα κανάλι.",
   "This file is too large for a list.": "Αυτό το αρχείο είναι πολύ μεγάλο για λίστα.",
   "From iptv-org": "Από το iptv-org",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.": "Το iptv-org (github.com/iptv-org/iptv) είναι μια δημόσια λίστα με δωρεάν κανάλια. Ο διακομιστής του βλέπει τη διεύθυνση IP αυτής της συσκευής όταν φέρνεται η λίστα, και κάθε κανάλι όταν παίζει.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched.": "Το iptv-org (github.com/iptv-org/iptv) είναι μια δημόσια λίστα με δωρεάν κανάλια. Ο διακομιστής του βλέπει τη διεύθυνση IP αυτής της συσκευής όταν φέρνεται η λίστα.",
   Country: "Χώρα",
   "Country: {name}": "Χώρα: {name}",
   "iptv-org by country": "iptv-org ανά χώρα",
@@ -50,6 +50,6 @@ export const collectionTv: Record<string, string> = {
   "The list could not be read ({status}).": "Η λίστα δεν μπόρεσε να διαβαστεί ({status}).",
   "This channel is here already.": "Αυτό το κανάλι υπάρχει ήδη.",
   "In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.": "Στην Τηλεόραση, το λογότυπο κάθε καναλιού φέρνεται από τον διακομιστή του μέσω Tor, οπότε αυτός δεν βλέπει τη διεύθυνση IP αυτής της συσκευής. Αλλιώς φαίνεται ένα εικονίδιο τηλεόρασης.",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.": "Το iptv-org (github.com/iptv-org/iptv) είναι μια δημόσια λίστα με δωρεάν κανάλια. Η λίστα του φέρνεται μέσω Tor, οπότε ο διακομιστής του δεν βλέπει τη διεύθυνση IP αυτής της συσκευής· κάθε κανάλι τη βλέπει όταν παίζει.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address.": "Το iptv-org (github.com/iptv-org/iptv) είναι μια δημόσια λίστα με δωρεάν κανάλια. Η λίστα του φέρνεται μέσω Tor, οπότε ο διακομιστής του δεν βλέπει τη διεύθυνση IP αυτής της συσκευής.",
   "Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.": "Μόνο σύνδεσμοι https: το Erevos δεν ανοίγει απλό http. Η λίστα (.m3u) διαβάζεται μία φορά, τώρα, μέσω Tor, και προστίθεται κάθε κανάλι της με σύνδεσμο https, με την ομάδα και το λογότυπό του. Ο διακομιστής της λίστας δεν βλέπει τη διεύθυνση IP αυτής της συσκευής.",
 };

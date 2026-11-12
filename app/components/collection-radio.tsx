@@ -8,16 +8,18 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { confirm } from '../lib/alert';
 import { cloudRequest } from '../lib/backup-http';
-import { playStation } from '../lib/collection-play';
+import { canPlayThroughTor, playStation, playsThroughTor } from '../lib/collection-play';
 import { foundStations, linkStations, MOST_FOUND_BYTES, MOST_LIST_BYTES, nameFromLink, playableStations, playlistStations, RADIO_AGENT, radioSearchUrl, type FoundStation, type StationLink } from '../lib/collection-radio';
 import { utf8Decode } from '../lib/crypto';
 import { plural, t } from '../lib/i18n';
+import { type IpFix } from '../lib/ip-warning';
 import { throughTorNow } from '../lib/net-http';
 import { pickFile, TooLargeError } from '../lib/pick-file';
-import { addStation, addStations, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
+import { addStation, addStations, deleteStation, renameStation, setCollectionOption, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 import { MoreIcon, PencilIcon, SendIcon, SignalIcon, TrashIcon } from './icons';
+import { hiddenKeep, ipGate } from './ip-warning';
 import { Button, Input, Sheet, Text } from './ui';
 
 // The Collection's Radio tab (app/collection.tsx): internet radio stations, each by its https link,
@@ -29,9 +31,55 @@ import { Button, Input, Sheet, Text } from './ui';
 // station learns is said where it is added and where it plays: this device's IP address. Its menu
 // also sends its name and link to a chat (sendLinkToChat), as text. With the place's Tor switch for
 // its radio and TV lists on (`tor`, Collection.listsTor), Radio Browser and the playlists are asked
-// only through Tor, and do not see that address; the stations still play straight.
+// only through Tor, and do not see that address. The stations play only through Tor with its Play
+// through Tor on (`playTor`, Collection.playTor) or the space sending everything through Tor;
+// otherwise straight, and before the first one plays Erevos says that the station sees the address
+// (liveTor), once for the place's Radio, with Play through Tor to turn on instead.
 
-type Options = { showTitle: boolean; stopOnLock: boolean };
+/** The place's choices for playing a station or a channel, its Play through Tor (`tor`) too. */
+type Options = { showTitle: boolean; stopOnLock: boolean; tor: boolean };
+
+/**
+ * Before a station or a channel plays (`act`) of a place whose Play through Tor is `tor`: whether it
+ * goes through Tor, and if not, the warning that its server sees this device's IP address, said once
+ * for the place's Radio, or TV (lib/ip-warning.ts), kept with the hidden chats for theirs
+ * (`hidden`); with Play through Tor to turn on instead (`turnOn`) where this device plays through
+ * Tor. Whether it goes through Tor; null to play nothing.
+ */
+export async function liveTor(act: 'station' | 'channel', hidden: boolean, tor: boolean, turnOn: (() => Promise<void>) | null): Promise<boolean | null> {
+  if (playsThroughTor(tor)) return tor;
+  let turned = false;
+  const fix: IpFix | undefined =
+    turnOn && canPlayThroughTor()
+      ? {
+          label: t('Play through Tor'),
+          run: async () => {
+            await turnOn();
+            turned = true;
+          },
+        }
+      : undefined;
+  const go = await ipGate({ network: 'Erevos', act, of: 'collection', ...(hidden ? { keep: hiddenKeep() } : {}) }, fix);
+  return go ? turned : null;
+}
+
+/** Turns on Play through Tor for `place`, for liveTor: what fails is said by `say`, and stops the play. */
+export function turnOnPlayTor(place: CollectionPlace | null, say: (text: string) => void, done: () => void): (() => Promise<void>) | null {
+  if (!place) return null;
+  return async () => {
+    try {
+      await setCollectionOption(place, 'playTor', true);
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+    done();
+  };
+}
+
+/** How a station or a channel reaches this device as it plays, said under the list it was added from. */
+export const playLine = (tor: boolean): string =>
+  playsThroughTor(tor) ? t('Stations and channels play through Tor, so they do not see this device’s IP address.') : t('Stations and channels see this device’s IP address while they play.');
 
 /**
  * Sends a station's or a channel's name and link to a chat, as a message's text: through Send to
@@ -71,7 +119,9 @@ export function StationsList({
   async function play(s: CollectionStation) {
     setNote('');
     try {
-      await playStation(s, options);
+      const tor = await liveTor('station', hidden, options.tor, turnOnPlayTor(place, setNote, onChanged));
+      if (tor === null) return;
+      await playStation(s, { ...options, tor });
       onPlaying();
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -99,7 +149,9 @@ export function StationsList({
             {header}
             <View style={styles.intro}>
               <Text variant="caption" tone="muted">
-                {t('Stations play from their https links. The station sees this device’s IP address while it plays, as any site does.')}
+                {playsThroughTor(options.tor)
+                  ? t('Stations play from their https links, through Tor, so the station does not see this device’s IP address.')
+                  : t('Stations play from their https links. The station sees this device’s IP address while it plays, as any site does.')}
               </Text>
               {note ? (
                 <Pressable onPress={() => setNote('')} accessibilityRole="button" accessibilityLabel={t('Close')}>
@@ -186,8 +238,8 @@ export function StationsList({
   );
 }
 
-/** Adds a station by its link, with a name of the owner's or its server's; with `tor`, what it asks goes only through Tor. */
-export function AddStationSheet({ visible, place, tor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; onClose: () => void; onAdded: () => void }) {
+/** Adds a station by its link, with a name of the owner's or its server's; with `tor`, what it asks goes only through Tor; `playTor`, the place's Play through Tor. */
+export function AddStationSheet({ visible, place, tor = false, playTor = false, onClose, onAdded }: { visible: boolean; place: CollectionPlace | null; tor?: boolean; playTor?: boolean; onClose: () => void; onAdded: () => void }) {
   const [link, setLink] = useState('');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -306,8 +358,9 @@ export function AddStationSheet({ visible, place, tor = false, onClose, onAdded 
       <Input value={name} onChangeText={setName} placeholder={t('Name (optional)')} accessibilityLabel={t('Name (optional)')} maxLength={60} onSubmitEditing={() => void add()} />
       <Text variant="caption" tone="muted">
         {throughTorNow(tor)
-          ? t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, through Tor: for the stream’s own link, or for each station it names. That playlist’s server does not see this device’s IP address; the station does, when it plays.')
-          : t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. The station, and that playlist’s server, see this device’s IP address.')}
+          ? t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, through Tor: for the stream’s own link, or for each station it names. That playlist’s server does not see this device’s IP address.')
+          : t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. That playlist’s server sees this device’s IP address.')}{' '}
+        {playLine(playTor)}
       </Text>
       {note ? (
         <Text variant="caption" color={colors.warning}>

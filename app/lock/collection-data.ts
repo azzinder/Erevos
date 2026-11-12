@@ -96,8 +96,10 @@ export type Collection = {
   showLogos?: boolean;
   /** The copies on `server` go only through Tor, whatever the space's Tor way (lib/collection-webdav.ts). */
   serverTor?: boolean;
-  /** Radio Browser, the radio and TV lists fetched by their links and the channels' logos are asked only through Tor (components/collection-radio.tsx, collection-tv.tsx); the stations and channels themselves still play straight. */
+  /** Radio Browser, the radio and TV lists fetched by their links and the channels' logos are asked only through Tor (components/collection-radio.tsx, collection-tv.tsx); the stations and channels themselves play as `playTor` says. */
   listsTor?: boolean;
+  /** The stations and channels play only through Tor (lib/collection-play.ts, Play through Tor); otherwise straight, unless the space sends everything through Tor, and Erevos says first that they see the device's IP address. */
+  playTor?: boolean;
   /** TV channels, by their https link, from IPTV lists or one at a time (lib/collection-tv.ts). */
   channels?: CollectionChannel[];
 };
@@ -125,8 +127,8 @@ export type CollectionPosition = { id: string; ms: number; at: number };
 export type CollectionPlaylist = { id: string; name: string; items: string[]; at: number };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
-export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices' | 'showLogos' | 'serverTor' | 'listsTor';
-const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices', 'showLogos', 'serverTor', 'listsTor'];
+export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices' | 'showLogos' | 'serverTor' | 'listsTor' | 'playTor';
+const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices', 'showLogos', 'serverTor', 'listsTor', 'playTor'];
 
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;

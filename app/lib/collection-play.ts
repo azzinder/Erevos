@@ -29,9 +29,11 @@ import {
   onDeskPlayer,
 } from './collection-desk-player';
 import { dropCollectionMemory, memoryUri, releaseMemoryUri } from './collection-memory';
+import { canTorHttp } from './core';
 import { positionToKeep } from './collection-queue';
 import { playKind, playType } from './collection-view';
 import { t } from './i18n';
+import { throughTor, torForChat } from './relay';
 import { subtitlesFor, subtitlesType } from './subtitles';
 
 // The Collection's music and videos, played on the phone by its Android part
@@ -51,8 +53,11 @@ import { subtitlesFor, subtitlesType } from './subtitles';
 //
 // An internet radio station (lib/collection-radio.ts) plays the same way, as a list of one, from
 // its https link: on Android through the same player, with the same notice, the same choices and
-// the same stops; its ICY title, when it sends one, shows as a song's title does. The station sees
-// the device's IP address.
+// the same stops; its ICY title, when it sends one, shows as a song's title does. With the place's
+// Play through Tor on (Collection.playTor), or the space sending everything through Tor, it plays
+// only through Tor (the Android part's TorHttpDataSource.kt): Tor is started for it and waited for,
+// and should it fail, nothing plays straight. Otherwise the station sees the device's IP address,
+// which the Radio and TV tabs say before the first one plays (components/collection-radio.tsx).
 //
 // What the space's locking, closing and the panic button do to what the Collection opened here is
 // told from here too: links to open files with other apps, PDFs shown, and the list.
@@ -126,26 +131,51 @@ let station = false;
 /** Whether what plays now is an internet radio station. */
 export const stationPlaying = (): boolean => station;
 
-/** Plays an internet radio station, with the place's own choices. The station sees this device's IP address. */
-export async function playStation(s: CollectionStation, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
-  await keepWhereLeft();
-  if (DESK) await deskPlayStation(s.url, s.mime);
-  else if (collectionNative) await collectionNative.playList([{ url: s.url, name: showTitle ? s.name : '', mime: s.mime, video: false }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
-  else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
-  rememberLive(s, false);
+/** Whether this device plays a station or a channel through Tor: Android's player, with Tor in its core. */
+export const canPlayThroughTor = (): boolean => canTorHttp() && !!collectionNative?.canPlayThroughTor?.();
+
+/**
+ * Whether a station or a channel of a place whose Play through Tor is `on` plays through Tor: with
+ * it on, or while the space sends everything through Tor, in a build with Tor.
+ */
+export const playsThroughTor = (on: boolean): boolean => on || (canTorHttp() && throughTor());
+
+/** The place's choices for a station or a channel: as for a list, and its Play through Tor (`tor`). */
+export type LiveOptions = { showTitle: boolean; stopOnLock: boolean; tor?: boolean };
+
+// Tor, started for a station or a channel and waited for; an error where this build has none for it.
+async function torForPlaying(): Promise<void> {
+  if (!canTorHttp()) throw new Error(t('This build of Erevos has no Tor, so with Play through Tor on, stations and channels do not play.'));
+  if (!canPlayThroughTor()) {
+    // A computer or Jolla has Tor but not this player: only Android's plays through it.
+    throw new Error(collectionNative ? t('This build of Erevos cannot do this. Update Erevos for it.') : t('Stations and channels play through Tor only on the phone, so with Tor on for them they do not play here.'));
+  }
+  await torForChat();
+}
+
+/** Plays an internet radio station, with the place's own choices: through Tor as playsThroughTor says, else straight, and the station sees this device's IP address. */
+export async function playStation(s: CollectionStation, options: LiveOptions): Promise<void> {
+  await playLive(s, false, options);
 }
 
 /**
  * Plays a TV channel (lib/collection-tv.ts) as a station is played, with the place's own choices,
- * but as a video, shown by components/collection-player.tsx VideoScreen. The channel sees this
- * device's IP address.
+ * but as a video, shown by components/collection-player.tsx VideoScreen: through Tor as
+ * playsThroughTor says, else straight, and the channel sees this device's IP address.
  */
-export async function playChannel(c: CollectionChannel, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
+export async function playChannel(c: CollectionChannel, options: LiveOptions): Promise<void> {
+  await playLive(c, true, options);
+}
+
+async function playLive(live: CollectionStation | CollectionChannel, video: boolean, { showTitle, stopOnLock, tor = false }: LiveOptions): Promise<void> {
+  const viaTor = playsThroughTor(tor);
+  if (viaTor) await torForPlaying();
   await keepWhereLeft();
-  if (DESK) await deskPlayChannel(c.url, c.mime);
-  else if (collectionNative) await collectionNative.playList([{ url: c.url, name: showTitle ? c.name : '', mime: c.mime, video: true }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
-  else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
-  rememberLive(c, true);
+  if (DESK) await (video ? deskPlayChannel : deskPlayStation)(live.url, live.mime);
+  else if (collectionNative) {
+    await collectionNative.playList([{ url: live.url, name: showTitle ? live.name : '', mime: live.mime, video, ...(viaTor ? { tor: true } : {}) }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
+  } else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  rememberLive(live, video);
 }
 
 // What plays is a stream with no length (a station or a channel): nothing of it is kept.

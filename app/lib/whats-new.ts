@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas, which come out first for trying, or leave them. See [Erevos or Erevos+, and betas](#updates)."),
+    mark("**Radio and TV through Tor**: the Collection's settings on Android have **Play through Tor**, off unless you turn it on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment. Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on. Before, they always played straight. See [Collection](#collection)."),
   ],
   underTheHood: [],
 };

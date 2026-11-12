@@ -28,10 +28,11 @@ export type PlayItem = SealedRef & {
 
 /**
  * An internet radio station to play, by its https link (lib/collection-radio.ts), or a TV channel
- * (lib/collection-tv.ts, `video`); `mime` says an HLS stream. Not in builds before it; a channel
- * plays only its sound in builds before channels.
+ * (lib/collection-tv.ts, `video`); `mime` says an HLS stream; `tor`, only through Tor (Play through
+ * Tor, where canPlayThroughTor). Not in builds before it; a channel plays only its sound in builds
+ * before channels.
  */
-export type PlayStation = { url: string; name: string; mime: string; video: boolean };
+export type PlayStation = { url: string; name: string; mime: string; video: boolean; tor?: boolean };
 
 /** What plays again: nothing, the whole list, or the one file. */
 export type Repeat = 'off' | 'all' | 'one';
@@ -86,6 +87,8 @@ type Native = {
   pdfPage(handle: string, index: number, width: number, format: 'png' | 'jpeg'): Promise<{ data: string; width: number; height: number }>;
   pdfClose(handle: string): void;
   playList(items: (PlayItem | PlayStation)[], start: number, options: { showTitle: boolean; neutral: string; stopOnLock: boolean; stopLabel: string }): Promise<PlayerState>;
+  /** Whether a station or a channel plays only through Tor here (PlayStation `tor`). Not in builds before it, which play every one straight. */
+  canPlayThroughTor?(): boolean;
   pause(): Promise<void>;
   resume(): Promise<void>;
   next(): Promise<void>;

@@ -48,7 +48,7 @@ export const collectionMedia: Record<string, string> = {
   "Only its link goes from the Collection.": "Samo njen link izlazi iz Zbirke.",
   "The station’s link": "Link stanice",
   "Name (optional)": "Ime (neobavezno)",
-  "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. The station, and that playlist’s server, see this device’s IP address.": "Samo https linkovi: Erevos ne otvara nešifrirani http. Link liste (.m3u, .pls) čita se jednom, sada: za link samog toka ili za svaku stanicu koju navodi. Stanica, i server te liste, vide IP adresu ovog uređaja.",
+  "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. That playlist’s server sees this device’s IP address.": "Samo https linkovi: Erevos ne otvara nešifrirani http. Link liste (.m3u, .pls) čita se jednom, sada: za link samog toka ili za svaku stanicu koju navodi. Server te liste vidi IP adresu ovog uređaja.",
   "Radio Browser answered {status}.": "Radio Browser je odgovorio {status}.",
   "Search Radio Browser": "Traži u Radio Browseru",
   "A station’s name": "Ime stanice",
@@ -67,5 +67,5 @@ export const collectionMedia: Record<string, string> = {
   "A .m3u or .pls file on this device, with one station or many: each station with an https link is added. The file is read here and sent nowhere.": "Datoteka .m3u ili .pls na ovom uređaju, s jednom stanicom ili više njih: dodaje se svaka stanica s https linkom. Datoteka se čita ovdje i ne šalje se nikamo.",
   "Import a playlist file": "Uvezi datoteku liste",
   "Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, through Tor, so it does not see this device’s IP address. Only stations with an https link are shown.": "Radio Browseru (radio-browser.info), slobodnom imeniku stanica, šalju se samo riječi koje upišeš, kad pritisneš Traži, preko Tora, pa on ne vidi IP adresu ovog uređaja. Prikazuju se samo stanice s https linkom.",
-  "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, through Tor: for the stream’s own link, or for each station it names. That playlist’s server does not see this device’s IP address; the station does, when it plays.": "Samo https linkovi: Erevos ne otvara nešifrirani http. Link liste (.m3u, .pls) čita se jednom, sada, preko Tora: za link samog toka ili za svaku stanicu koju navodi. Server te liste ne vidi IP adresu ovog uređaja; stanica je vidi, kada se pušta.",
+  "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, through Tor: for the stream’s own link, or for each station it names. That playlist’s server does not see this device’s IP address.": "Samo https linkovi: Erevos ne otvara nešifrirani http. Link liste (.m3u, .pls) čita se jednom, sada, preko Tora: za link samog toka ili za svaku stanicu koju navodi. Server te liste ne vidi IP adresu ovog uređaja.",
 };

@@ -605,7 +605,7 @@ export default function CollectionScreen() {
           stations={searching ? [] : (there.stations ?? [])}
           place={place}
           hidden={inHidden}
-          options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
+          options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true, tor: there.playTor === true }}
           onAdd={() => setAddingStation(true)}
           onChanged={() => void reload()}
           onPlaying={() => setNowPlaying(true)}
@@ -617,7 +617,7 @@ export default function CollectionScreen() {
           channels={searching ? [] : (there.channels ?? [])}
           place={place}
           hidden={inHidden}
-          options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
+          options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true, tor: there.playTor === true }}
           showLogos={there.showLogos === true}
           tor={there.listsTor === true}
           onAdd={() => setAddingChannels(true)}
@@ -871,8 +871,8 @@ export default function CollectionScreen() {
           setNowPlaying(true);
         }}
       />
-      <AddStationSheet visible={addingStation} place={place} tor={there.listsTor === true} onClose={() => setAddingStation(false)} onAdded={() => void reload()} />
-      <AddChannelsSheet visible={addingChannels} place={place} tor={there.listsTor === true} onClose={() => setAddingChannels(false)} onAdded={() => void reload()} />
+      <AddStationSheet visible={addingStation} place={place} tor={there.listsTor === true} playTor={there.playTor === true} onClose={() => setAddingStation(false)} onAdded={() => void reload()} />
+      <AddChannelsSheet visible={addingChannels} place={place} tor={there.listsTor === true} playTor={there.playTor === true} onClose={() => setAddingChannels(false)} onAdded={() => void reload()} />
       <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)} />
     </View>
   );

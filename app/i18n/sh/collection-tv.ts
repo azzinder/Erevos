@@ -23,7 +23,7 @@ export const collectionTv: Record<string, string> = {
   "This list names no channel.": "Ova lista ne navodi nijedan kanal.",
   "This file is too large for a list.": "Ova datoteka je prevelika za listu.",
   "From iptv-org": "Sa iptv-org",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched, and each channel when it plays.": "iptv-org (github.com/iptv-org/iptv) je javna lista besplatnih kanala. Njegov server vidi IP adresu ovog uređaja kada se lista preuzima, a svaki kanal kada se pušta.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its server sees this device’s IP address when the list is fetched.": "iptv-org (github.com/iptv-org/iptv) je javna lista besplatnih kanala. Njegov server vidi IP adresu ovog uređaja kada se lista preuzima.",
   Country: "Država",
   "Country: {name}": "Država: {name}",
   "iptv-org by country": "iptv-org po državi",
@@ -50,6 +50,6 @@ export const collectionTv: Record<string, string> = {
   "The list could not be read ({status}).": "Lista se nije mogla pročitati ({status}).",
   "This channel is here already.": "Ovaj kanal je već ovdje.",
   "In TV, each channel’s logo is fetched from its server through Tor, so it does not see this device’s IP address. Otherwise a TV icon shows.": "U TV-u se logotip svakog kanala preuzima s njegovog servera preko Tora, pa on ne vidi IP adresu ovog uređaja. Inače se prikazuje ikona televizora.",
-  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address; each channel does, when it plays.": "iptv-org (github.com/iptv-org/iptv) je javna lista besplatnih kanala. Njegova lista se preuzima preko Tora, pa njegov server ne vidi IP adresu ovog uređaja; svaki kanal je vidi kada se pušta.",
+  "iptv-org (github.com/iptv-org/iptv) is a public list of free channels. Its list is fetched through Tor, so its server does not see this device’s IP address.": "iptv-org (github.com/iptv-org/iptv) je javna lista besplatnih kanala. Njegova lista se preuzima preko Tora, pa njegov server ne vidi IP adresu ovog uređaja.",
   "Only https links: Erevos opens no plain http. The list (.m3u) is read once, now, through Tor, and each channel in it with an https link is added, with its group and logo. The list’s server does not see this device’s IP address.": "Samo https linkovi: Erevos ne otvara obični http. Lista (.m3u) se čita jednom, sada, preko Tora, i dodaje se svaki njen kanal s https linkom, s grupom i logotipom. Server liste ne vidi IP adresu ovog uređaja.",
 };

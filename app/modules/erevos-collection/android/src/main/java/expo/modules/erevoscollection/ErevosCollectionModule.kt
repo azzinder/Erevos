@@ -151,6 +151,9 @@ class ErevosCollectionModule : Module() {
       PdfPages.close(handle)
     }
 
+    // Whether a station or a channel plays through Tor here (`tor` in playList, TorHttpDataSource.kt).
+    Function("canPlayThroughTor") { TorHttpDataSource.available() }
+
     // Plays the list from `start`: each item a file as above with its name, type and whether it
     // is a video. `showTitle`: the notice shows the file's name, else `neutral`. `stopOnLock`:
     // the list stops when the space locks. `stopLabel`: the word on the notice's Stop.
@@ -167,7 +170,10 @@ class ErevosCollectionModule : Module() {
           if (url != null) {
             val link = Uri.parse(url)
             if (link.scheme != "https" || link.host.isNullOrEmpty() || link.userInfo != null || url.length > 2048) throw IllegalArgumentException("Only https links")
-            items += Playing.Item(null, name, mime, entry["video"] == true, url = url)
+            // Play through Tor: only through it, or not at all.
+            val tor = entry["tor"] == true
+            if (tor && !TorHttpDataSource.available()) throw IllegalStateException("This build of Erevos has no Tor")
+            items += Playing.Item(null, name, mime, entry["video"] == true, url = url, tor = tor)
             continue
           }
           val resume = (entry["resume"] as? Number)?.toLong() ?: 0L

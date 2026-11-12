@@ -15,7 +15,7 @@ import { CAN_CLOUD_BACKUP } from '../lib/backup-place';
 import { canTorHttp } from '../lib/core';
 import { CAN_DELETE_ORIGINALS } from '../lib/collection-import';
 import { useCollectionPlace } from '../lib/collection-place';
-import { PLAY_CHOICES, stopOnLockChanged } from '../lib/collection-play';
+import { canPlayThroughTor, PLAY_CHOICES, playsThroughTor, stopOnLockChanged } from '../lib/collection-play';
 import { connectCollectionServer, scheduleServerCopy, serverStatus, testCollectionServer, turnCollectionServer, watchServerStatus, type ServerStatus } from '../lib/collection-webdav';
 import { tap } from '../lib/haptics';
 import { locale, t } from '../lib/i18n';
@@ -36,8 +36,11 @@ import { useColors } from '../theme/context';
 // Where backups can go to a server, the place's Collection can be copied to a WebDAV server too
 // (lib/collection-webdav.ts): its address, user name and password, kept sealed with the place,
 // first those of the backups' server if there is one, with how the copying goes, and its own Tor
-// switch. The radio and TV lists have one too (components/collection-radio.tsx, collection-tv.tsx):
-// for what Erevos asks of their servers, not for playing, which goes straight.
+// switch. The radio and TV lists have one too (components/collection-radio.tsx, collection-tv.tsx),
+// for what Erevos asks of their servers; and the stations and channels themselves Play through Tor
+// (lib/collection-play.ts), off until turned on, which the Android app with Tor shows: off, they
+// play straight, unless the space sends everything through Tor, and Erevos says first that they
+// see this phone's internet address.
 
 const DESK = Platform.OS === 'web';
 
@@ -68,6 +71,7 @@ export default function CollectionSettingsScreen() {
           showLogos: c.showLogos === true,
           serverTor: c.serverTor === true,
           listsTor: c.listsTor === true,
+          playTor: c.playTor === true,
         });
       })
       .catch(() => {
@@ -189,9 +193,14 @@ export default function CollectionSettingsScreen() {
         <Card>
           <Text variant="bodyStrong">{t('Radio and TV lists')}</Text>
           <Text variant="caption" tone="muted">
-            {t('What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos. Stations and channels themselves always play straight, so they see this device’s IP address while they play.')}
+            {t('What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos.')}
           </Text>
           <TorSwitch on={options.listsTor === true} onChange={(on) => void turnTo('listsTor', on)} said={serverTorLine(options.listsTor === true)} />
+        </Card>
+      ) : null}
+      {options && (options.playTor || canPlayThroughTor()) ? (
+        <Card>
+          <Switch title={t('Play through Tor')} text={playTorLine(options.playTor === true)} on={options.playTor === true} disabled={!options} onPress={() => void turn('playTor')} />
         </Card>
       ) : null}
     </Page>
@@ -210,6 +219,18 @@ function Switch({ title, text, on, disabled, onPress }: { title: string; text: s
       <Toggle on={on} />
     </Pressable>
   );
+}
+
+/** How the stations and channels play now, with Play through Tor `on` or off, in plain words. */
+function playTorLine(on: boolean): string {
+  if (on) {
+    if (canPlayThroughTor()) return t('Stations and channels play only through Tor, so they do not see this phone’s internet address. It is slower and waits while Tor starts, and TV may stall for a moment.');
+    return canTorHttp()
+      ? t('Stations and channels play through Tor only on the phone, so with Tor on for them they do not play here.')
+      : t('This build of Erevos has no Tor, so with this on, stations and channels do not play.');
+  }
+  if (playsThroughTor(false)) return t('This space sends everything through Tor, so stations and channels play through Tor too, and do not see this phone’s internet address.');
+  return t('Stations and channels play straight and see this phone’s internet address while they play. Erevos says so before the first one plays.');
 }
 
 const whenText = (ms: number) => new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

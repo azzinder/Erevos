@@ -425,7 +425,8 @@ pub mod tor {
     }
 
     /// An XMPP server's connection, straight or through Tor: `head` is JSON, `{"host", "port",
-    /// "domain", "tls": "direct" or "starttls", "tor": true or false}`. Its handle.
+    /// "domain", "tls": "direct" or "starttls", "tor": true or false}`; or, with "tls": "https", a
+    /// web server's in TLS with no ALPN, for HTTP/1.1 (a station played through Tor). Its handle.
     pub fn net_open(head: &[u8]) -> Result<Vec<u8>> {
         let head: serde_json::Value = serde_json::from_slice(head).map_err(|e| e.to_string())?;
         let field = |name: &str| head.get(name).and_then(serde_json::Value::as_str).ok_or_else(|| format!("no {name}"));
@@ -433,6 +434,7 @@ pub mod tor {
         let tls = match field("tls")? {
             "direct" => erevos_tor::Tls::Direct,
             "starttls" => erevos_tor::Tls::StartTls,
+            "https" => erevos_tor::Tls::Https,
             other => return Err(format!("no TLS called {other}")),
         };
         let tor = head.get("tor").and_then(serde_json::Value::as_bool).unwrap_or(false);

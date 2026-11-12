@@ -68,8 +68,11 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @OptIn(UnstableApi::class)
 internal object Playing {
-  /** A file of the Collection (`file`), or an internet radio station or TV channel (`video`) by its https link (`url`). */
-  class Item(val file: SealedFile?, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "", val url: String? = null)
+  /**
+   * A file of the Collection (`file`), or an internet radio station or TV channel (`video`) by its
+   * https link (`url`), played only through Tor with `tor` (TorHttpDataSource.kt).
+   */
+  class Item(val file: SealedFile?, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "", val url: String? = null, val tor: Boolean = false)
 
   private fun Item.close() {
     file?.close()
@@ -278,13 +281,16 @@ internal object Playing {
     // A station is asked for over https only, with no cookies, a User-Agent that says only "Erevos",
     // and no redirect to plain http; ExoPlayer asks for its ICY titles (Icy-MetaData), which then
     // come as what the stream says of itself (its title), shown as a file's is.
+    // With Play through Tor (`tor`, of any item), every link it opens, an HLS stream's pieces too,
+    // goes only through Tor, asked the same way (TorHttpDataSource), and never straight.
     val http = DefaultHttpDataSource.Factory()
       .setUserAgent(AGENT)
       .setAllowCrossProtocolRedirects(false)
       .setConnectTimeoutMs(15_000)
       .setReadTimeoutMs(20_000)
+    val tor = list.any { it.tor }
     val made = ExoPlayer.Builder(appContext)
-      .setMediaSourceFactory(DefaultMediaSourceFactory(DataSource.Factory { BySchemeDataSource(SealedDataSource(folder), http.createDataSource()) }, extractors()))
+      .setMediaSourceFactory(DefaultMediaSourceFactory(DataSource.Factory { BySchemeDataSource(SealedDataSource(folder), if (tor) TorHttpDataSource(AGENT) else http.createDataSource()) }, extractors()))
       .setAudioAttributes(
         AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(if (video) C.AUDIO_CONTENT_TYPE_MOVIE else C.AUDIO_CONTENT_TYPE_MUSIC).build(),
         true,
@@ -599,7 +605,7 @@ internal class SealedDataSource(private val folder: File) : BaseDataSource(false
 
 /**
  * Where ExoPlayer reads from, by the link: a file of the list (SealedDataSource) or a station over
- * https (Media3's own HTTP source); any other link is refused.
+ * https (Media3's own HTTP source, or TorHttpDataSource through Tor); any other link is refused.
  */
 @OptIn(UnstableApi::class)
 internal class BySchemeDataSource(private val sealed: DataSource, private val http: DataSource) : DataSource {
