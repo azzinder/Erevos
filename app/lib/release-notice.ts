@@ -7,7 +7,8 @@ import { canVerify, verifySignature } from './core';
 import { httpFor } from './net-http';
 import { hostOf } from './relay-host';
 import { secureGet, secureSet } from './secure';
-import { RELEASE_KEY } from './update-signature';
+import { channelOf, channelsOf, loadChannel, type Channel, type ChannelName } from './update-channel';
+import { RELEASE_KEY, readChannelStatement } from './update-signature';
 import { VERSION_NAME } from './version-name';
 import { START_RELAY } from './welcome';
 
@@ -85,6 +86,11 @@ export async function setNoticeOn(on: boolean): Promise<void> {
 export async function setUpdatesTor(on: boolean): Promise<void> {
   const { tor: _was, ...kept } = await loadNotice();
   await save(on ? { ...kept, tor: true } : kept);
+}
+
+/** Another channel was chosen (lib/update-channel.ts): the server is asked again soon, and what it told of before is forgotten. */
+export async function noticeAnew(): Promise<void> {
+  await save({ ...(await loadNotice()), at: 0, build: 0, name: '', seen: true });
 }
 
 /** The release told of was opened: it no longer counts as unread. */
@@ -165,17 +171,52 @@ export async function latestTold(get: NoticeGet, key = RELEASE_KEY): Promise<Tol
 }
 
 /**
+ * The newest release of `channel` (lib/update-channel.ts) the server says, fetched with `get`: from
+ * each of its channels' statements (android-update-<channel>.json), signed with `key` and naming
+ * that channel. For Erevos's own channel, while the server has no statement of it yet, as before
+ * (latestTold). Null when none is signed. Throws when the server cannot be asked.
+ */
+export async function latestToldIn(get: NoticeGet, channel: Channel, key = RELEASE_KEY): Promise<Told | null> {
+  let newest: Told | null = null;
+  for (const name of channelsOf(channel)) {
+    const told = await toldIn(get, name, key);
+    if (told && (!newest || told.build > newest.build)) newest = told;
+  }
+  return newest;
+}
+
+async function toldIn(get: NoticeGet, name: ChannelName, key: string): Promise<Told | null> {
+  const { status, bytes } = await get(`${NOTICE_SERVER}android-update-${name}.json`);
+  if (status === 404) return name === 'erevos' ? latestTold(get, key) : null;
+  if (status < 200 || status >= 300) throw new Error(`android-update-${name}.json: ${status}`);
+  const read = await readChannelStatement(utf8Decode(bytes), key);
+  return read && read.channel === name && VERSION_NAME.test(read.name) ? { build: read.build, name: read.name } : null;
+}
+
+/** The channel Updates offers now, as chosen there, else as this app is (`version`). */
+export async function channelNow(version: string): Promise<Channel> {
+  return channelOf(await loadChannel(), version);
+}
+
+/**
  * Asks the server once a day, while the notice is on and the space may ask (mayAsk), and keeps the
  * release it tells of when it is newer than this app (`current`, its build) and than the one told
  * before. Straight through `fetchImpl`, or only through Tor with Updates' own Tor switch on. Says
  * that release, to be told now, or null. Throws when the server cannot be asked.
  */
-export async function lookForRelease(space: { url: string; tor: string }, current: number, now = Date.now(), fetchImpl: typeof fetch = fetch, key = RELEASE_KEY): Promise<Told | null> {
+export async function lookForRelease(
+  space: { url: string; tor: string },
+  current: number,
+  now = Date.now(),
+  fetchImpl: typeof fetch = fetch,
+  key = RELEASE_KEY,
+  channel: Channel = { edition: 'erevos', beta: false },
+): Promise<Told | null> {
   const kept = await loadNotice();
   const tor = kept.tor === true;
   if (!kept.on || !mayAsk(space, tor) || now - kept.at < NOTICE_EVERY) return null;
   await save({ ...kept, at: now });
-  const told = await latestTold(tor ? torGet : straightGet(fetchImpl), key);
+  const told = await latestToldIn(tor ? torGet : straightGet(fetchImpl), channel, key);
   if (!told || told.build <= current || told.build <= kept.build) return null;
   await save({ ...(await loadNotice()), build: told.build, name: told.name, seen: false });
   return told;

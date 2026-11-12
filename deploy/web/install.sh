@@ -68,6 +68,14 @@ base=/var/www/erevos-web
 mkdir -p "$base"
 rm -rf "$base/$version.new"
 cp -r "$release" "$base/$version.new"
+# The statements of the Android releases of the other channels (deploy/web/publish-android.sh), kept
+# in $base/channels, stay beside each new web app.
+mkdir -p "$base/channels"
+for kept in "$base"/channels/android-update-*.json; do
+	if [ -f "$kept" ] && [ ! -f "$base/$version.new/$(basename "$kept")" ]; then
+		cp "$kept" "$base/$version.new/"
+	fi
+done
 chmod -R a+rX,go-w "$base/$version.new"
 rm -rf "$base/$version"
 mv "$base/$version.new" "$base/$version"

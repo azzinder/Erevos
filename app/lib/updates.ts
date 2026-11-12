@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { t } from './i18n';
+import { channelsOf, type Channel, type ChannelName } from './update-channel';
 import { VERSION_NAME } from './version-name';
 // New versions, as in LPHL FASOULI. Every release (.github/workflows/release.yml) also goes to the
 // public repository RELEASES_REPO, one release per version (tag v2.0.0 and up; v0.1.<build> until
@@ -13,6 +14,21 @@ import { VERSION_NAME } from './version-name';
 export const RELEASES_REPO = 'azzinder/erevos-releases';
 export const RELEASES_PAGE = `https://github.com/${RELEASES_REPO}/releases/latest`;
 export const LATEST_URL = `https://github.com/${RELEASES_REPO}/releases/latest/download/version.json`;
+
+// Each channel but Erevos's own (lib/update-channel.ts) has a release of its own in the public
+// repository, under a tag that stays (channel-plus, channel-erevos-beta, channel-plus-beta), whose
+// version.json the release workflow replaces with each release of that channel; Erevos's own is the
+// repository's latest release, as every Erevos before read it.
+
+/** Where a channel's version.json is. */
+export function channelUrl(name: ChannelName): string {
+  return name === 'erevos' ? LATEST_URL : `https://github.com/${RELEASES_REPO}/releases/download/channel-${name}/version.json`;
+}
+
+/** A channel's download page. */
+export function channelPage(name: ChannelName): string {
+  return name === 'erevos' ? RELEASES_PAGE : `https://github.com/${RELEASES_REPO}/releases/tag/channel-${name}`;
+}
 
 export interface Release {
   /** 2.0.0 and up, or a test release such as 4.0.0-rc.1; 0.1.<build> until 0.1.16. */
@@ -89,6 +105,30 @@ export function parseRelease(text: string): Release | null {
     date,
     apk: apkOk ? { url: apk.url as string, size: apk.size as number, sha256: (apk.sha256 as string).toLowerCase() } : null,
   };
+}
+
+/** A release, with the channel it was found in. */
+export type ChannelRelease = Release & { channel: ChannelName };
+
+/**
+ * The newest release of `channel` (lib/update-channel.ts): of its edition, and, when it takes betas,
+ * the newer of the regular release and the beta. Null when there is none yet. Throws when a
+ * channel's version.json cannot be reached; a beta channel that has none yet is passed over.
+ */
+export async function fetchChannelRelease(channel: Channel, fetchImpl: typeof fetch = fetch): Promise<ChannelRelease | null> {
+  const [regular, beta] = channelsOf(channel);
+  const one = async (name: ChannelName): Promise<ChannelRelease | null> => {
+    const res = await fetchImpl(channelUrl(name), { headers: { 'Cache-Control': 'no-cache' } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(t('GitHub answered {status}.', { status: res.status }));
+    const release = parseRelease(await res.text());
+    return release ? { ...release, channel: name } : null;
+  };
+  const first = await one(regular!);
+  const second = beta ? await one(beta).catch(() => null) : null;
+  if (!first) return second;
+  if (!second) return first;
+  return second.build > first.build ? second : first;
 }
 
 /** Whether `release` is newer than the running build (a build made on a computer, 0, never updates). */

@@ -14,6 +14,14 @@
 //       statement that names the Android app of the same release, by its build and SHA-256, into
 //       <web app>/android-update.json, which the server serves beside the web app: Check for
 //       updates installs an APK only when it is signed so (app/lib/update-signature.ts).
+//       It signs Erevos's own channel's statement too (android-update-erevos.json), which names
+//       the release; see `channel`.
+//   node pwa/release.mjs channel <folder> <private key file> <channel> <name> <build> <sha256>
+//       Signs the statement of an Android release of a channel (erevos, erevos-beta, plus,
+//       plus-beta: app/lib/update-channel.ts), by its channel, name, build and SHA-256, into
+//       <folder>/android-update-<channel>.json, which the server serves beside the web app
+//       (deploy/web/publish-android.sh): Check for updates installs a release of that channel only
+//       when it is signed so (app/lib/update-signature.ts).
 //   node pwa/release.mjs verify <web app folder, or https://address> [public key file]
 //       Checks a release, in a folder or as a server serves it: the signature, every file's hash,
 //       and that the service worker carries the key. From a server, Element Call's files
@@ -85,6 +93,33 @@ async function keygen(file, publicFile = PUBLIC) {
 /** What the release key signs for the Android app, as app/lib/update-signature.ts statementOf makes it. */
 export const androidStatement = (build, sha256) => `erevos android update v1\nbuild ${build}\nsha256 ${sha256}\n`;
 
+/** The channels an Android release is published in (app/lib/update-channel.ts). */
+export const CHANNELS = ['erevos', 'erevos-beta', 'plus', 'plus-beta'];
+const NAME = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(alpha|beta|rc)\.[1-9]\d*)?$/;
+
+/** What the release key signs for a channel's Android release, as app/lib/update-signature.ts channelStatementOf makes it. */
+export const channelStatement = (channel, name, build, sha256) =>
+  `erevos android update v2\nchannel ${channel}\nname ${name}\nbuild ${build}\nsha256 ${sha256}\n`;
+const CHANNEL_STATEMENT = /^erevos android update v2\nchannel (erevos|erevos-beta|plus|plus-beta)\nname ([0-9a-z.-]{1,40})\nbuild [1-9]\d*\nsha256 [0-9a-f]{64}\n$/;
+
+function channelUsage() {
+  fail('usage: node pwa/release.mjs channel <folder> <private key file> <erevos|erevos-beta|plus|plus-beta> <name, e.g. 7.1.0> <build> <sha256, lowercase hex>');
+}
+
+function writeChannel(dir, key, channel, name, build, sha256) {
+  const statement = channelStatement(channel, name, Number(build), sha256);
+  const signature = sign(null, Buffer.from(statement), key).toString('base64');
+  fs.writeFileSync(path.join(dir, `android-update-${channel}.json`), `${JSON.stringify({ statement, signature })}\n`);
+  console.log(`Signed the Android release of ${channel}: ${name}, build ${build}, SHA-256 ${sha256}.`);
+}
+
+async function signChannel(dir, file, channel, name, build, sha256) {
+  if (!dir || !file || !CHANNELS.includes(channel) || !NAME.test(name ?? '') || !/^[1-9]\d*$/.test(build ?? '') || !/^[0-9a-f]{64}$/.test(sha256 ?? '')) channelUsage();
+  if (!fs.statSync(dir, { throwIfNoEntry: false })?.isDirectory()) fail(`${dir} is not a folder.`);
+  const key = createPrivateKey({ key: fs.readFileSync(file), passphrase: await passphrase('Passphrase for the release key: ') });
+  writeChannel(dir, key, channel, name, build, sha256);
+}
+
 async function signRelease(dir, file, ...more) {
   if (!dir || !file) fail('usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>]');
   let android = null;
@@ -107,6 +142,8 @@ async function signRelease(dir, file, ...more) {
     const signature = sign(null, Buffer.from(android), key).toString('base64');
     fs.writeFileSync(path.join(dir, 'android-update.json'), `${JSON.stringify({ statement: android, signature })}\n`);
     console.log(`Signed the Android app of the same release: ${android.trim().split('\n').slice(1).join(', ')}.`);
+    // The same, as Erevos's own channel says it, with the release's name.
+    if (NAME.test(release.label ?? '')) writeChannel(dir, key, 'erevos', release.label, more[1], more[2]);
   }
 }
 
@@ -157,6 +194,14 @@ async function verifyRelease(from, keyFile = PUBLIC) {
     if (!verify(null, Buffer.from(statement), publicFromRaw(raw), Buffer.from(signed ?? '', 'base64'))) fail(`android-update.json is NOT SIGNED with the key ${fingerprint(raw)}.`);
     console.log(`OK: the Android app, ${statement.trim().split('\n').slice(1).join(', ')}.`);
   }
+  for (const channel of CHANNELS) {
+    const text = await read(from, `android-update-${channel}.json`).catch(() => null);
+    if (!text) continue;
+    const { statement, signature: signed } = JSON.parse(text);
+    if (CHANNEL_STATEMENT.exec(statement ?? '')?.[1] !== channel) fail(`android-update-${channel}.json does not say what it should.`);
+    if (!verify(null, Buffer.from(statement), publicFromRaw(raw), Buffer.from(signed ?? '', 'base64'))) fail(`android-update-${channel}.json is NOT SIGNED with the key ${fingerprint(raw)}.`);
+    console.log(`OK: the Android release of ${channel}, ${statement.trim().split('\n').slice(2).join(', ')}.`);
+  }
   console.log(`OK: release ${release.version}${release.label ? ` (${release.label})` : ''} from ${release.created} (commit ${release.commit ?? 'unknown'}), ${Object.keys(release.files).length} files, signed with ${fingerprint(raw)}.`);
   console.log(`SHA-256 of release.json: ${createHash('sha256').update(body).digest('hex')}`);
 }
@@ -166,6 +211,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const [command, ...rest] = process.argv.slice(2);
   if (command === 'keygen') await keygen(...rest);
   else if (command === 'sign') await signRelease(...rest);
+  else if (command === 'channel') await signChannel(...rest);
   else if (command === 'verify') await verifyRelease(...rest);
-  else fail('usage: node pwa/release.mjs keygen|sign|verify …');
+  else fail('usage: node pwa/release.mjs keygen|sign|channel|verify …');
 }

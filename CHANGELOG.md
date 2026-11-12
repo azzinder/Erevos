@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or
+  **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas or leave
+  them. Erevos+ is published in the same public download repository as Erevos, and each edition and its betas are
+  signed apart by the release computer.
+
 ### Under the hood
 
 ## 7.0.0-rc.10 (2026-11-12)

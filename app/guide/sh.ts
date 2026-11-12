@@ -3957,6 +3957,23 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
 Verzija poput **4.0.0-rc.1** je probna verzija prije 4.0.0 (kandidat za izdanje): instalira se i ažurira kao svaka
 druga, a 4.0.0 dolazi poslije nje.
 
+### Erevos ili Erevos+, i beta verzije {#update-channel}
+
+Na Androidu, **Ažuriranja** kažu i koje se verzije nude ovom telefonu:
+
+- **Sljedeće ažuriranje**: **Erevos** (njegovi razgovori, Telefon, SMS i Zbirka; verzije 7.0.x) ili **Erevos+** (sve
+  to, s Telegramom, Messengerom, Signalom, Sessionom, Matrixom, XMPP-om i Nostrom; verzije 7.1.x). Na početku je
+  izabrano ono što imate. Izaberite drugo, i sljedeće ažuriranje je tog izdanja, čim izađe neko s brojem builda većim
+  od vašeg, jer Android ne instalira ništa starije. Instalira se preko onog što imate i sve zadržava: pri prelasku na
+  Erevos, razgovori i računi drugih mreža ostaju na telefonu, nekorišteni, i ponovo su tu u Erevosu+.
+- **Beta verzije**: isključeno, nude se samo redovne verzije. Uključeno, i beta verzije (kao **7.0.1-beta.1**): izlaze
+  prve, za isprobavanje, i mogu imati problema. Beta ga na početku ima uključenog. Isključite ga da napustite beta
+  verzije: sljedeća redovna verzija s brojem builda većim od bete koju imate instalira se preko nje i sve zadržava, bez
+  deinstaliranja.
+
+Obavještenje o novoj verziji prati isti izbor. Računar za izdanja potpisuje svako izdanje i njegove bete posebno, pa se
+jedno nikad ne instalira kao drugo.
+
 ### Šta je novo {#whats-new}
 
 **Postavke** → **Općenito** → **Šta je novo** (i **Šta je novo** u **Ažuriranja**) ukratko kaže šta je svaka verzija

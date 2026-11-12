@@ -4124,6 +4124,24 @@ versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una ver
 Una versión como **4.0.0-rc.1** es una versión de prueba anterior a la 4.0.0 (una versión candidata): se instala y se
 actualiza como cualquier otra, y la 4.0.0 llega después.
 
+### Erevos o Erevos+, y betas {#update-channel}
+
+En Android, **Actualizaciones** dice también qué versiones se ofrecen a este teléfono:
+
+- **Próxima actualización**: **Erevos** (sus propios chats, el Teléfono, los SMS y la Colección; versiones 7.0.x) o
+  **Erevos+** (todo eso, con Telegram, Messenger, Signal, Session, Matrix, XMPP y Nostr; versiones 7.1.x). Al principio
+  está elegida la que tienes. Elige la otra, y la próxima actualización es de esa edición, en cuanto salga una con un
+  número de compilación mayor que el tuyo, ya que Android no instala nada más antiguo. Se instala sobre la que tienes y
+  lo conserva todo: al pasar a Erevos, los chats y las cuentas de las otras redes se quedan en el teléfono, sin usar, y
+  vuelven a estar en Erevos+.
+- **Versiones beta**: desactivado, solo se ofrecen las versiones normales. Activado, también las betas (como
+  **7.0.1-beta.1**): salen antes, para probar, y pueden tener problemas. Una beta lo tiene activado al principio.
+  Desactívalo para salir de las betas: la próxima versión normal con un número de compilación mayor que la beta que
+  tienes se instala sobre ella y lo conserva todo, sin desinstalar.
+
+El aviso de una versión nueva sigue la misma elección. El ordenador de las versiones firma cada edición y sus betas
+por separado, así que una nunca se instala como otra.
+
 ### Novedades {#whats-new}
 
 **Ajustes** → **General** → **Novedades** (también **Novedades** en **Actualizaciones**) dice en breve qué cambió cada

@@ -3778,6 +3778,22 @@ asking GitHub, as **Told when a new version is out** below says. To update:
 A version such as **4.0.0-rc.1** is a test version before 4.0.0 (a release candidate): it installs and updates like
 any other, and 4.0.0 comes after it.
 
+### Erevos or Erevos+, and betas {#update-channel}
+
+On Android, **Updates** also says which releases are offered to this phone:
+
+- **Next update**: **Erevos** (its own chats, the Phone, SMS and the Collection; versions 7.0.x) or **Erevos+** (all of
+  that, with Telegram, Messenger, Signal, Session, Matrix, XMPP and Nostr; versions 7.1.x). The one you have is chosen
+  at first. Choose the other, and the next update is of that edition, once one is out with a build number above the
+  one you have, since Android installs nothing older. It installs over the one you have and keeps everything: moving to
+  Erevos, the chats and accounts of the other networks stay on the phone, unused, and are there again in Erevos+.
+- **Beta versions**: off, only regular versions are offered. On, betas too (such as **7.0.1-beta.1**): they come out
+  first, for trying, and may have problems. A beta has it on at first. Turn it off to leave the betas: the next regular
+  version with a build number above the beta you have installs over it and keeps everything, with no uninstalling.
+
+The notice of a new version follows the same choice. Each edition and its betas are signed apart by the release
+computer, so one never installs as another.
+
 ### What's new {#whats-new}
 
 **Settings** → **General** → **What's new** (also **What's new** in **Updates**) says in short what each version

@@ -21,7 +21,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas, which come out first for trying, or leave them. See [Erevos or Erevos+, and betas](#updates)."),
+  ],
   underTheHood: [],
 };
 

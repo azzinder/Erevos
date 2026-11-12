@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { device } from '../modules/erevos-device';
 import { FDROID } from './distribution';
-import { lookForRelease } from './release-notice';
+import { channelNow, lookForRelease } from './release-notice';
 import { buildNumber } from './updates';
 
 // Looks for a new Erevos while a space is open (lib/release-notice.ts): a minute after it opens,
@@ -30,7 +30,8 @@ export function watchReleases(): void {
   if (Platform.OS !== 'android' || FDROID || !CURRENT_BUILD) return;
   const mine = watch;
   const look = async () => {
-    const told = await lookForRelease(await loadCurrentSpaceData(), CURRENT_BUILD).catch(() => null);
+    const told = await (async () =>
+      lookForRelease(await loadCurrentSpaceData(), CURRENT_BUILD, Date.now(), fetch, undefined, await channelNow(Constants.expoConfig?.version ?? '0.0.0')))().catch(() => null);
     if (told && mine === watch) device?.tellUpdate?.(told.name);
   };
   const again = () => {

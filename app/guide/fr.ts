@@ -4358,6 +4358,24 @@ version sort** plus bas. Pour mettre à jour :
 Une version comme **4.0.0-rc.1** est une version de test avant la 4.0.0 (une version candidate) : elle s’installe et
 se met à jour comme les autres, et la 4.0.0 vient après elle.
 
+### Erevos ou Erevos+, et bêtas {#update-channel}
+
+Sur Android, **Mises à jour** indique aussi quelles versions sont proposées à ce téléphone :
+
+- **Prochaine mise à jour** : **Erevos** (ses propres discussions, le Téléphone, les SMS et la Collection ; versions
+  7.0.x) ou **Erevos+** (tout cela, avec Telegram, Messenger, Signal, Session, Matrix, XMPP et Nostr ; versions 7.1.x).
+  Au début, c’est celle que vous avez. Choisissez l’autre, et la prochaine mise à jour est de cette édition, dès qu’il
+  en sort une avec un numéro de build supérieur au vôtre, car Android n’installe rien de plus ancien. Elle s’installe
+  par-dessus la vôtre et garde tout : en passant à Erevos, les discussions et les comptes des autres réseaux restent sur
+  le téléphone, inutilisés, et sont de nouveau là dans Erevos+.
+- **Versions bêta** : désactivé, seules les versions normales sont proposées. Activé, les bêtas aussi (comme
+  **7.0.1-beta.1**) : elles sortent d’abord, pour essayer, et peuvent avoir des problèmes. Une bêta l’a activé au
+  début. Désactivez-le pour quitter les bêtas : la prochaine version normale avec un numéro de build supérieur à la
+  bêta que vous avez s’installe par-dessus et garde tout, sans désinstaller.
+
+L’avis d’une nouvelle version suit le même choix. L’ordinateur des versions signe chaque édition et ses bêtas à part,
+si bien que l’une ne s’installe jamais comme une autre.
+
 ### Nouveautés {#whats-new}
 
 **Réglages** → **Général** → **Nouveautés** (aussi **Nouveautés** dans **Mises à jour**) dit en bref ce que chaque

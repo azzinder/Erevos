@@ -152,7 +152,8 @@ test('the server is asked once a day, and a release is told once, while it is ne
     const v321 = serving(computer.publish(29, '3.2.1'));
     // Signed by a key that is not the app's: asked, and nothing told.
     assert.equal(await lookForRelease(lphl, 28, day, v321.fetchImpl), null);
-    assert.deepEqual([...v321.asked].sort(), ['android-update.json', 'release.json', 'release.sig'].map((n) => NOTICE_SERVER + n).sort());
+    // Erevos's own channel's statement first; while the server has none, as before.
+    assert.deepEqual([...v321.asked].sort(), ['android-update-erevos.json', 'android-update.json', 'release.json', 'release.sig'].map((n) => NOTICE_SERVER + n).sort());
     // Not asked again the same day, nor by a space that may not ask, nor when turned off.
     v321.asked.length = 0;
     assert.equal(await lookForRelease(lphl, 28, day + NOTICE_EVERY - 1, v321.fetchImpl, computer.pub), null);
@@ -192,4 +193,63 @@ test('what is kept says which release to show, until it is installed, and whethe
   assert.equal(shownRelease({ ...kept, name: '' }, 28), null);
   await noticeSeen();
   assert.equal((await loadNotice()).seen, true);
+});
+
+test("a channel's release installs only with its own channel's statement, and the notice reads its name from it", async () => {
+  const { channelSigningOf, channelStatementOf, readChannelStatement } = await import('../lib/update-signature');
+  const { latestToldIn } = await import('../lib/release-notice');
+  const dir = mkdtempSync(join(tmpdir(), 'erevos-channel-'));
+  setCore(nodeCore());
+  try {
+    const env = { ...process.env, EREVOS_RELEASE_PASSPHRASE: 'only-for-this-check' };
+    const run = (...args: string[]) => execFileSync('node', [join(PWA, 'release.mjs'), ...args], { env, stdio: 'pipe' });
+    run('keygen', join(dir, 'key'), join(dir, 'key.pub'));
+    const pub = readFileSync(join(dir, 'key.pub'), 'utf8').trim();
+    const tool = (await import('../../pwa/release.mjs')) as { channelStatement: (c: string, n: string, b: number, s: string) => string };
+    assert.equal(tool.channelStatement('plus', '7.1.0', 70, SHA), channelStatementOf('plus', '7.1.0', 70, SHA));
+    run('channel', dir, join(dir, 'key'), 'plus', '7.1.0', '70', SHA);
+    const text = readFileSync(join(dir, 'android-update-plus.json'), 'utf8');
+    assert.deepEqual(await readChannelStatement(text, pub), { channel: 'plus', name: '7.1.0', build: 70, sha256: SHA });
+    const plus = { version: '7.1.0', build: 70, date: '', apk: { url: 'https://github.com/x', size: 1, sha256: SHA }, channel: 'plus' as const };
+    assert.equal(await channelSigningOf(text, plus, pub), 'signed');
+    // Another channel, name, build or APK; another key: not this one's.
+    assert.equal(await channelSigningOf(text, { ...plus, channel: 'erevos' }, pub), 'refused');
+    assert.equal(await channelSigningOf(text, { ...plus, version: '7.1.1' }, pub), 'refused');
+    assert.equal(await channelSigningOf(text, { ...plus, build: 71 }, pub), 'not yet');
+    assert.equal(await channelSigningOf(text, { ...plus, build: 69 }, pub), 'refused');
+    assert.equal(await channelSigningOf(text, { ...plus, apk: { ...plus.apk, sha256: 'cd'.repeat(32) } }, pub), 'refused');
+    assert.equal(await channelSigningOf(text, plus), 'refused');
+    assert.equal(await channelSigningOf(null, plus, pub), 'not yet');
+    // A beta channel's statement is not the regular one's, nor the other way round.
+    run('channel', dir, join(dir, 'key'), 'plus-beta', '7.1.1-beta.1', '72', 'cd'.repeat(32));
+    const beta = readFileSync(join(dir, 'android-update-plus-beta.json'), 'utf8');
+    assert.equal(await channelSigningOf(beta, { ...plus, channel: 'plus-beta', version: '7.1.1-beta.1', build: 72, apk: { ...plus.apk, sha256: 'cd'.repeat(32) } }, pub), 'signed');
+    assert.equal(await channelSigningOf(beta, { ...plus, version: '7.1.1-beta.1', build: 72, apk: { ...plus.apk, sha256: 'cd'.repeat(32) } }, pub), 'refused');
+    // The notice: the newest of the channels asked, each only by its own file.
+    const files: Record<string, string> = { 'android-update-plus.json': text, 'android-update-plus-beta.json': beta };
+    const get = async (url: string) => {
+      const name = url.slice(NOTICE_SERVER.length);
+      return files[name] ? { status: 200, bytes: new TextEncoder().encode(files[name]) } : { status: 404, bytes: new Uint8Array(0) };
+    };
+    assert.deepEqual(await latestToldIn(get, { edition: 'plus', beta: false }, pub), { build: 70, name: '7.1.0' });
+    assert.deepEqual(await latestToldIn(get, { edition: 'plus', beta: true }, pub), { build: 72, name: '7.1.1-beta.1' });
+    // A statement of one channel served as another's counts for nothing.
+    files['android-update-plus.json'] = beta;
+    assert.deepEqual(await latestToldIn(get, { edition: 'plus', beta: true }, pub), { build: 72, name: '7.1.1-beta.1' });
+    assert.equal(await latestToldIn(get, { edition: 'plus', beta: false }, pub), null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the channel follows what is installed until one is chosen', async () => {
+  const { channelOf, channelsOf, isTestVersion } = await import('../lib/update-channel');
+  assert.equal(isTestVersion('7.0.1-beta.2'), true);
+  assert.equal(isTestVersion('7.0.0-rc.10'), false);
+  assert.equal(isTestVersion('7.0.1'), false);
+  assert.deepEqual(channelOf({}, '7.0.1', 'erevos'), { edition: 'erevos', beta: false });
+  assert.deepEqual(channelOf({}, '7.1.0-beta.5', 'plus'), { edition: 'plus', beta: true });
+  assert.deepEqual(channelOf({ edition: 'plus', beta: false }, '7.0.1-beta.1', 'erevos'), { edition: 'plus', beta: false });
+  assert.deepEqual(channelsOf({ edition: 'erevos', beta: true }), ['erevos', 'erevos-beta']);
+  assert.deepEqual(channelsOf({ edition: 'plus', beta: false }), ['plus']);
 });

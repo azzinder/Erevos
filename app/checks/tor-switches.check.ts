@@ -294,7 +294,7 @@ test('updates with their own switch on ask only through Tor, also with Everythin
   assert.equal('tor' in (await loadNotice()), false);
   await setUpdatesTor(true);
   assert.equal((await loadNotice()).tor, true);
-  const files = ['android-update.json', 'release.json', 'release.sig'].map((name) => NOTICE_SERVER + name).sort();
+  const files = ['android-update-erevos.json', 'android-update.json', 'release.json', 'release.sig'].map((name) => NOTICE_SERVER + name).sort();
   const fetched: string[] = [];
   const fetchImpl = (async (url: string) => {
     fetched.push(url);
@@ -320,6 +320,7 @@ test('updates with their own switch on ask only through Tor, also with Everythin
   assert.deepEqual(fetched, []);
   setThroughTor('messages');
   assert.equal(await lookForRelease({ url: LPHL, tor: 'messages' }, 28, day + NOTICE_EVERY, fetchImpl), null);
-  assert.deepEqual([...fetched].sort(), files);
+  // Erevos's own channel's statement answers, so only it is asked.
+  assert.deepEqual([...fetched].sort(), [NOTICE_SERVER + 'android-update-erevos.json']);
   assert.equal(asked.length, before);
 });

@@ -18,10 +18,14 @@ name: release
 # The version: the one named when started by hand (Run workflow, version), else the one after the
 # latest release, 2.0.1 after 2.0.0. Releases until 0.1.16 were 0.1.<run number>; the one after them
 # is 2.0.0. A test release before a version is named as in 4.0.0-rc.1 (a release candidate; also
-# -alpha.<n> and -beta.<n>): it comes after 3.x and before 4.0.0, the one after it is 4.0.0-rc.2, and
-# it goes out as the latest release like any other, so Check for updates finds it
-# (app/lib/version-name.ts reads the same names). Every build still has its own number, the run's,
-# which Android and Check for updates go by.
+# -alpha.<n> and -beta.<n>): it comes after 3.x and before 4.0.0, the one after it is 4.0.0-rc.2
+# (app/lib/version-name.ts reads the same names). A release candidate goes out as the latest
+# release like any other. A beta or an alpha (7.0.1-beta.1) is a prerelease, never the latest: it
+# goes to Erevos's beta channel (app/lib/update-channel.ts), a release tagged channel-erevos-beta
+# whose version.json each beta replaces, and only an Erevos that joined the betas (Updates, Beta
+# versions) is offered it. Every build still has its own number, the run's, which Android and Check
+# for updates go by. Erevos+'s releases (7.1.x, from the erevos-plus branch) are in the same
+# repositories, titled "Erevos+ …"; they count for nothing here.
 #
 # The jobs hand their files to the publish job through a draft release, build-<run number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
@@ -85,7 +89,7 @@ jobs:
           fi
           # Every published release's version, oldest first. Sorted with "-" as "~", which sort -V
           # puts before the end: 4.0.0~rc.1 before 4.0.0.
-          published=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | .tag_name | ltrimstr("v")' 2>/dev/null |
+          published=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | select(.name | startswith("Erevos+") | not) | .tag_name | ltrimstr("v")' 2>/dev/null |
             grep -E '^[1-9][0-9]*\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$' | tr '-' '~' | sort -V | tr '~' '-' || true)
           if [ -n "$series" ]; then
             # A series' branch: its own last release, whatever main released since.
@@ -117,7 +121,11 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           # GitHub's latest only when no published release is newer (a fix of an older series is not).
           top=$(printf '%s\n%s\n' "$published" "$version" | grep . | tr '-' '~' | sort -V | tail -n1 | tr '~' '-')
-          if [ "$top" = "$version" ]; then echo "latest=true" >> "$GITHUB_OUTPUT"; else echo "latest=false" >> "$GITHUB_OUTPUT"; fi
+          # A beta or an alpha never is: only those who joined the betas take it.
+          if [[ "$version" =~ -(alpha|beta)\. ]]; then
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+            top="(a beta is never the latest)"
+          elif [ "$top" = "$version" ]; then echo "latest=true" >> "$GITHUB_OUTPUT"; else echo "latest=false" >> "$GITHUB_OUTPUT"; fi
           echo "GitHub's latest release after it: $([ "$top" = "$version" ] && echo this one || echo "still $top")."
           echo "This release: $version (build $EREVOS_BUILD; the latest is ${latest:-none})."
           if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
@@ -541,9 +549,12 @@ jobs:
               --argjson size "$(stat -c %s files/erevos-android.apk)" --arg sha256 "$(sha256sum files/erevos-android.apk | cut -d' ' -f1)" \
               '{url: $url, size: $size, sha256: $sha256}')
           fi
+          # Its channel (app/lib/update-channel.ts): a beta or an alpha is in Erevos's beta channel.
+          if [[ "$EREVOS_VERSION" =~ -(alpha|beta)\. ]]; then CHANNEL=erevos-beta; else CHANNEL=erevos; fi
+          echo "CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
           jq -n --arg name "$EREVOS_VERSION" --arg version "0.1.$EREVOS_BUILD" --argjson build "$EREVOS_BUILD" \
-            --arg date "$(TZ=Europe/Athens date +%F)" --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" \
-            '{name: $name, version: $version, build: $build, date: $date, commit: $commit, apk: $apk}' > files/version.json
+            --arg date "$(TZ=Europe/Athens date +%F)" --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" --arg channel "$CHANNEL" \
+            '{name: $name, version: $version, build: $build, date: $date, commit: $commit, channel: $channel, apk: $apk}' > files/version.json
           cat files/version.json
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }
@@ -572,10 +583,13 @@ jobs:
           Updating keeps your contacts and chats; make a backup first. In Erevos: Updates → Check for updates; by hand: User guide → Updates.
           NOTES
           cat notes.md
-          gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST"
+          PRE=""
+          if [ "$CHANNEL" = erevos-beta ]; then PRE=--prerelease; fi
+          echo "PRE=$PRE" >> "$GITHUB_ENV"
+          gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST" $PRE
           gh release delete "build-$EREVOS_BUILD" --yes
           # The five newest releases stay.
-          gh release list --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+          gh release list --limit 100 --exclude-drafts --json tagName --jq '[.[] | select(.tagName | startswith("channel-") | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --cleanup-tag --yes
 
       # The public repository holds only the releases: Erevos's own repository stays private.
@@ -584,6 +598,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          gh release create "v$EREVOS_VERSION" files/* --repo "$RELEASES_REPO" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST"
-          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+          gh release create "v$EREVOS_VERSION" files/* --repo "$RELEASES_REPO" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST" $PRE
+          # A beta: its channel's release, whose version.json Check for updates reads, now says it.
+          if [ "$CHANNEL" != erevos ]; then
+            if ! gh release view "channel-$CHANNEL" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
+              gh release create "channel-$CHANNEL" --repo "$RELEASES_REPO" --title "Erevos betas" --prerelease --latest=false \
+                --notes "The newest Erevos beta, for Updates → Beta versions. Its files are in the release this version.json names."
+            fi
+            gh release upload "channel-$CHANNEL" files/version.json --repo "$RELEASES_REPO" --clobber
+          fi
+          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '[.[] | select(.tagName | startswith("channel-") | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes

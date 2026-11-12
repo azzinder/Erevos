@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, View } from 'react-native';
 
 import { TorSwitch } from '../components/tor-switch';
-import { Button, Card, Page, Text, Toggle } from '../components/ui';
+import { Button, Card, Chip, Page, Row, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
@@ -19,9 +19,10 @@ import { readNearbyLink } from '../lib/nearby-link';
 import { readQrPhoto } from '../lib/read-qr';
 import { throughTor } from '../lib/relay';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
-import { latestTold, loadNotice, noticeSeen, onNotice, setNoticeOn, setUpdatesTor, torGet, type Told } from '../lib/release-notice';
-import { fetchStatement, signingOf } from '../lib/update-signature';
-import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
+import { latestToldIn, loadNotice, noticeAnew, noticeSeen, onNotice, setNoticeOn, setUpdatesTor, torGet, type Told } from '../lib/release-notice';
+import { channelOf, INSTALLED_EDITION, loadChannel, onChannel, setChannel, type Channel } from '../lib/update-channel';
+import { fetchStatement, releaseSigning, signingOf } from '../lib/update-signature';
+import { buildNumber, channelPage, fetchChannelRelease, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type ChannelRelease, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -45,6 +46,7 @@ const supported = (Platform.OS === 'android' && !FDROID) || SHELL !== null;
 const VERSION = Constants.expoConfig?.version ?? '0.0.0';
 const CURRENT_BUILD = buildNumber(Constants.expoConfig?.extra?.build, VERSION);
 // A page cannot read GitHub's downloads itself, so on a computer and Sailfish OS the shell asks.
+const isChannelRelease = (release: Release | ChannelRelease): release is ChannelRelease => 'channel' in release;
 const latestFrom = (SHELL ? (_url: unknown, init?: RequestInit) => shellFetch('/__latest', init) : fetch) as typeof fetch;
 
 export default function UpdatesScreen() {
@@ -57,6 +59,26 @@ export default function UpdatesScreen() {
   const [telling, setTelling] = useState<boolean | null>(null);
   // Whether updates go only through Tor (Kept.tor); null until read, and where they never do.
   const [torOn, setTorOn] = useState<boolean | null>(null);
+  // Which releases are offered (lib/update-channel.ts): Erevos or Erevos+, betas or not; null until
+  // read, and where Erevos does not install its updates itself.
+  const [channel, setChannelShown] = useState<Channel | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || FDROID) return;
+    const read = () => void loadChannel().then((kept) => setChannelShown(channelOf(kept, VERSION)), () => undefined);
+    read();
+    return onChannel(read);
+  }, []);
+
+  function choose(change: Partial<Channel>) {
+    if (!channel) return;
+    tap();
+    setNote('');
+    setChannelShown({ ...channel, ...change });
+    void setChannel(change)
+      .then(() => noticeAnew())
+      .catch(() => setChannelShown(channel));
+  }
 
   // A new version told of is seen once this opens.
   useEffect(() => {
@@ -136,7 +158,7 @@ export default function UpdatesScreen() {
     setChecking(true);
     let told: Told | null;
     try {
-      told = await latestTold(torGet);
+      told = channel ? await latestToldIn(torGet, channel) : null;
     } catch (error) {
       setNote(t("The web app's server could not be reached through Tor ({error}). Tor may still be starting: try again in a while.", { error: error instanceof Error ? error.message : String(error) }));
       return;
@@ -171,9 +193,10 @@ export default function UpdatesScreen() {
       return;
     }
     setChecking(true);
-    let release: Release | null;
+    let release: Release | ChannelRelease | null;
     try {
-      release = await fetchLatestRelease(latestFrom);
+      // On Android, the channel chosen; on a computer and Sailfish OS, Erevos's own releases.
+      release = channel ? await fetchChannelRelease(channel) : await fetchLatestRelease(latestFrom);
     } catch {
       setNote(t('GitHub could not be reached. Check the internet connection and try again.'));
       return;
@@ -199,9 +222,9 @@ export default function UpdatesScreen() {
     // bad signature.
     if (installable) {
       setChecking(true);
-      let signing: Awaited<ReturnType<typeof signingOf>>;
+      let signing: Awaited<ReturnType<typeof releaseSigning>>;
       try {
-        signing = await signingOf(await fetchStatement(), found);
+        signing = isChannelRelease(found) ? await releaseSigning(found) : await signingOf(await fetchStatement(), found);
       } catch (error) {
         setNote(
           t("Erevos {version} is out, but the web app's server, which holds the release computer's signature of it, could not be reached ({error}), so it does not install. Check the internet connection and try again.", {
@@ -245,7 +268,10 @@ export default function UpdatesScreen() {
           text: installable ? t('Install') : t('Open download page'),
           onPress: () => {
             if (installable) void install(found);
-            else void Linking.openURL(RELEASES_PAGE).catch(() => setNote(t('Open {url} in a browser.', { url: RELEASES_PAGE })));
+            else {
+              const page = isChannelRelease(found) ? channelPage(found.channel) : RELEASES_PAGE;
+              void Linking.openURL(page).catch(() => setNote(t('Open {url} in a browser.', { url: page })));
+            }
           },
         },
       ],
@@ -310,6 +336,40 @@ export default function UpdatesScreen() {
                     : t('Straight: GitHub and the web app’s server see this phone’s internet address.')
               }
             />
+          ) : null}
+          {channel ? (
+            <View style={{ gap: space.xs }}>
+              <Text variant="bodyStrong">{t('Next update')}</Text>
+              <Row wrap>
+                <Chip label="Erevos" selected={channel.edition === 'erevos'} onPress={() => choose({ edition: 'erevos' })} />
+                <Chip label="Erevos+" selected={channel.edition === 'plus'} onPress={() => choose({ edition: 'plus' })} />
+              </Row>
+              <Text variant="caption" tone="muted">
+                {channel.edition === INSTALLED_EDITION
+                  ? channel.edition === 'plus'
+                    ? t('Erevos+ updates as Erevos+: with Telegram, Messenger, Signal, Session, Matrix, XMPP and Nostr. Choose Erevos to move to the plain Erevos with the next update.')
+                    : t('Erevos updates as Erevos: its own chats, the Phone, SMS and the Collection. Choose Erevos+ to move to it with the next update, with Telegram, Messenger, Signal, Session, Matrix, XMPP and Nostr too.')
+                  : channel.edition === 'plus'
+                    ? t('The next update is Erevos+, once one is out with a build number above this one. It installs over this Erevos and keeps everything.')
+                    : t('The next update is the plain Erevos, once one is out with a build number above this one. It installs over Erevos+ and keeps everything: the chats and accounts of the other networks stay on the phone, unused, and are there again in Erevos+.')}
+              </Text>
+              <Pressable
+                onPress={() => choose({ beta: !channel.beta })}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: channel.beta }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}
+              >
+                <Text variant="bodyStrong" style={{ flex: 1 }}>
+                  {t('Beta versions')}
+                </Text>
+                <Toggle on={channel.beta} />
+              </Pressable>
+              <Text variant="caption" tone="muted">
+                {channel.beta
+                  ? t('Betas are offered too: they come out first, for trying, and may have problems. Turn this off to leave: the next regular version with a build number above this one installs over the beta and keeps everything.')
+                  : t('Only regular versions are offered. Turn this on to join the betas: they come out first, for trying, and may have problems.')}
+              </Text>
+            </View>
           ) : null}
           {progress ? (
             <View style={{ gap: space.sm }}>
