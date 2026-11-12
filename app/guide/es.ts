@@ -1745,14 +1745,15 @@ Donde Tor está bloqueado, **Puentes** en la misma pantalla deja que Tor llegue 
 
 ## A través de Nostr {#nostr}
 
-En **Ajustes** → **Relay y redes** → **Nostr**, **Textos por Nostr** está **Activado** salvo que lo cambies. Entonces lo
-que escribes a un contacto cuyo Erevos también lee en Nostr va por relays públicos de Nostr en lugar
-de por tu relay. Cada espacio tiene su propia elección, y sus propios relays de Nostr.
+En **Ajustes** → **Relay y redes** → **Nostr**, **Textos por Nostr** está **Activado** salvo que lo cambies. Entonces
+lo que escribes a un contacto cuyo Erevos también lee en Nostr va primero por tus relays: tu relay, luego los relays de
+casa de tu contacto, luego tu relay de casa; y por relays públicos de Nostr solo cuando ninguno lo aceptó. Cada espacio
+tiene su propia elección, y sus propios relays de Nostr.
 
 - **Cómo se sella:** cifrado de extremo a extremo como siempre, luego sellado una vez más para una clave que tu contacto
   dio solo para este chat, y firmado por una clave hecha para ese único texto (un gift wrap NIP-59). Los relays de Nostr
   ven que alguien escribió a una clave que no nombra a nadie, cuándo, y de qué tamaño; no quién lo escribió, ni a quién.
-  Tu relay no lo ve en absoluto.
+  Tu relay no ve lo que fue por ese camino.
 - **Lo que pueden saber los relays de Nostr:** tu teléfono pide a cada uno todas sus claves a la vez:
   un relay puede saber que esas claves se leen juntas. Por Tor, nunca desde dónde: a cada relay se llega por circuitos
   de Tor propios, así que ninguna salida de Tor lleva lo que va a dos de ellos, y ninguna puede saber que es de un mismo
@@ -1765,22 +1766,24 @@ de por tu relay. Cada espacio tiene su propia elección, y sus propios relays de
   mucho. A tus contactos se les dicen los relays en los que lees, y te escriben ahí; basta con uno que acepte un texto.
 - **Lo que se queda en tu relay:** llamadas, reacciones, y las marcas de que un mensaje llegó o se leyó; y lo que escribes a contactos en un iPhone o un ordenador, que no leen en Nostr. Las imágenes, los archivos y los mensajes de voz van por tu relay cuando hay uno entre vosotros; sin relay entre vosotros van también por Nostr (ver Sin ningún relay).
 - **Por dónde fue:** mantén pulsado un mensaje: su menú dice **Enviado por Nostr** o **Llegó por Nostr** cuando un relay
-  de Nostr lo aceptó. Desde ahora también dice **Enviado por el relay**, **Llegó por el relay**, **Enviado a su teléfono cercano**, **Llegó de un teléfono cercano** o **Enviado por LoRa**; un mensaje anterior no dice nada. La nota bajo los mensajes también dice
-  **Enviado por Nostr**. Dos teléfonos uno al lado del otro se dan los textos de cerca primero: para probar Nostr,
-  desactiva Bluetooth y **Buscar Erevos en la misma Wi-Fi** en los dos.
+  de Nostr lo aceptó. Desde ahora también dice **Enviado por el relay**, **Llegó por el relay**, **Enviado a su teléfono
+  cercano**, **Llegó de un teléfono cercano** o **Enviado por LoRa**; un mensaje anterior no dice nada. La nota bajo los
+  mensajes también dice **Enviado por Nostr**. Dos teléfonos uno al lado del otro se dan los textos de cerca primero,
+  luego por los relays; Nostr lleva un texto solo cuando los relays no lo aceptaron.
 - **Lo último que hicieron los relays:** la pantalla de **Nostr** muestra, para cada relay, si aceptó el último texto
   que se le dio y cuántos segundos después, o por qué no, y si tu teléfono lee en él. Se guarda solo en este teléfono,
-  hasta que Erevos se cierra. Un relay que aceptó un texto pero no lo dijo en 20 segundos cuenta como uno que no lo
-  aceptó: el texto va entonces también por tu relay, y tu contacto lo ve una vez.
+  hasta que Erevos se cierra. Un texto nunca espera a los relays de Nostr mientras tus relays lo aceptan.
 - **Solo en Android,** como Tor.
 
-**Por qué:** los relays de Nostr son públicos, así que, con Tor activado en el espacio, Erevos llega a ellos por Tor, y nunca saben dónde
-está tu teléfono; con **Nada** llega a ellos directo. Solo van ahí los textos: un texto tiene tu relay como respaldo, por si no llega, mientras que las
-marcas de que un mensaje llegó o se leyó no tendrían ninguno, y un mensaje enviado para más tarde necesita que tu relay
-lo guarde hasta su hora. Sin relay entre vosotros, las imágenes, los archivos y los mensajes de voz van también ahí (ver Sin ningún relay).
+**Por qué:** los relays de Nostr son públicos, así que, con Tor activado en el espacio, Erevos llega a ellos por Tor, y
+nunca saben dónde está tu teléfono; con **Nada** llega a ellos directo. Solo van ahí los textos, como respaldo de tus
+relays: un texto que fue ahí va otra vez por tu relay por si no llega, mientras que las marcas de que un mensaje llegó o
+se leyó no tendrían ninguno, y un mensaje enviado para más tarde necesita que tu relay lo guarde hasta su hora. Sin
+relay entre vosotros, las imágenes, los archivos y los mensajes de voz van también ahí (ver Sin ningún relay).
 
-> Si el teléfono de tu contacto no dice en cinco minutos que un texto llegó, va también por tu relay, y lo ve una vez.
-> Cuando ningún relay de Nostr lo acepta, va por tu relay al instante.
+> Un texto que fue por Nostr va otra vez por tu relay si el teléfono de tu contacto no dice en cinco minutos que llegó,
+> y lo ve una vez. Cuando ni tus relays ni ningún relay de Nostr lo aceptan, espera y vuelve a ir, como cualquier
+> mensaje.
 
 - **Chats ocultos:** también leen en Nostr, mientras están abiertos, y también cerrados mientras **Recibir estando
   cerrados** está activado para ellos y el espacio está abierto (ver [Chats ocultos](#hidden)). Cerrados, siguen

@@ -29,6 +29,11 @@ On main, not released yet:
   home relay through Tor by itself. Turning it off now also lets go of the home relay it took, the ones you typed
   staying as they are, so Tor does not run for it. Before, it was on unless turned off, and turning it off kept the
   home relay it had taken, still reached through Tor. A space that has it on keeps it on until you turn it off.
+- **Your relays first, Nostr only after them**: a text to a contact who reads on Nostr goes through your relay, then
+  their home relays, then your home relay, and through the public Nostr relays only when none of them took it, so
+  Nostr never holds a text back. Before, it went to the Nostr relays first, and through your relay only when none took
+  it within four seconds; a text that goes through Nostr still goes through your relay again should their phone not
+  say it came within five minutes.
 - **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
   (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
   posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were

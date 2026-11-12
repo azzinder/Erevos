@@ -2489,8 +2489,8 @@ export class E2E {
   // what is sent for later), and it is not from a linked device or for the account's phone to pass
   // on. With no relay between the two, as this chat has no queue (`from`) or they said none, all of
   // it goes there, the first packet with it. `words`: whether these are texts, which go there
-  // even when a relay is between; photos and voice messages go too, as the contact's phone puts
-  // them together.
+  // when a relay is between only should the relays not take them (orNostr); photos and voice
+  // messages go too, as the contact's phone puts them together.
   private nostrWay(contact: Contact, from: string, sender: string, first: Uint8Array | null, packets: Uint8Array[], through: boolean, words: boolean, due: number): NostrTo | null {
     const only = !from || !sender;
     const fits = only ? nostrWraps(packets, first) !== null : words && !due && !first && nostrWraps(packets) !== null;

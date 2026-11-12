@@ -1604,12 +1604,13 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 ## Through Nostr {#nostr}
 
 Under **Settings** → **Relay and networks** → **Nostr**, **Texts through Nostr** is **On** unless you change it. Then
-what you write to a contact whose Erevos reads on Nostr too goes through public Nostr relays instead of through your
-relay. Each space has its own choice, and its own Nostr relays.
+what you write to a contact whose Erevos reads on Nostr too goes through your relays first: your relay, then their home
+relays, then your home relay; and through public Nostr relays only when none of them took it. Each space has its own
+choice, and its own Nostr relays.
 
 - **How it is sealed:** end-to-end encrypted as always, then sealed once more for a key your contact gave this chat
-  alone, and signed by a key made for that one text (a NIP-59 gift wrap). The Nostr relays see that someone wrote to
-  a key that names no one, when, and how big; not who wrote it, nor to whom. Your relay does not see it at all.
+  alone, and signed by a key made for that one text (a NIP-59 gift wrap). The Nostr relays see that someone wrote to a
+  key that names no one, when, and how big; not who wrote it, nor to whom. Your relay does not see what went that way.
 - **What the Nostr relays can tell:** your phone asks each of them for all its keys at once: a relay can tell that those
   keys are read together. Through Tor, never from where: each relay is reached on Tor circuits of its own, so no Tor
   exit carries what goes to two of them, and none can tell it is one phone's. With **Nothing** it goes straight, so
@@ -1622,21 +1623,24 @@ relay. Each space has its own choice, and its own Nostr relays.
   most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.
 - **What stays on your relay:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your relay when one is between you; with no relay between you they go through Nostr too (see With no relay at all).
 - **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
-  relay took it. From now on it also says **Went through the relay**, **Came through the relay**, **Went to their phone nearby**, **Came from a phone nearby** or **Went over LoRa**; a message from before says nothing. The note under the messages says **Sent
-  through Nostr** too. Two phones side by side give each other texts nearby first: to try Nostr, turn off Bluetooth and
-  **Find Erevos on the same Wi-Fi** on both.
+  relay took it. From now on it also says **Went through the relay**, **Came through the relay**, **Went to their phone
+  nearby**, **Came from a phone nearby** or **Went over LoRa**; a message from before says nothing. The note under the
+  messages says **Sent through Nostr** too. Two phones side by side give each other texts nearby first, then through
+  the relays; Nostr carries a text only when the relays did not take it.
 - **What the relays did last:** the **Nostr** screen shows, for each relay, whether it took the last text it was given
   and how many seconds after, or why not, and whether your phone reads on it. It is kept on this phone only, until
-  Erevos closes. A relay that took a text but did not say so within 20 seconds counts as one that did not: the text
-  then goes through your relay as well, and your contact sees it once.
+  Erevos closes. A text never waits for the Nostr relays while your relays take it.
 - **On Android only,** as Tor is.
 
 **Why:** the Nostr relays are public, so when Tor is on for the space Erevos reaches them through Tor, and they never
-learn where your phone is; with **Nothing** it reaches them straight. Only texts go there: a text has your relay as its backup, should it not come, while the marks that a message came
-or was read would have none, and a message sent for later needs your relay to hold it until its time. With no relay between you, pictures, files and voice messages go there too (see With no relay at all).
+learn where your phone is; with **Nothing** it reaches them straight. Only texts go there, as the backup of your
+relays: a text that went there goes through your relay again should it not come, while the marks that a message came or
+was read would have none, and a message sent for later needs your relay to hold it until its time. With no relay between
+you, pictures, files and voice messages go there too (see With no relay at all).
 
-> Should your contact's phone not say within five minutes that a text came, it goes through your relay as well, and
-> they see it once. When no Nostr relay takes it, it goes through your relay at once.
+> A text that went through Nostr goes through your relay again should your contact's phone not say within five minutes
+> that it came, and they see it once. When neither your relays nor a Nostr relay takes it, it waits and goes again, as
+> any message does.
 
 - **Hidden chats:** they read on Nostr too, while they are open, and closed as well while **Receive while closed** is
   on for them and the space is open (see [Hidden chats](#hidden)). Closed, they still show "New message": with each

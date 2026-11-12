@@ -1839,13 +1839,14 @@ par Tor.
 ## Par Nostr {#nostr}
 
 Sous **Réglages** → **Relais et réseaux** → **Nostr**, **Les textes par Nostr** est sur **Activé** tant que tu ne le
-changes pas. Alors ce que tu écris à un contact dont l’Erevos lit aussi sur Nostr passe par des relais Nostr publics,
-au lieu de passer par ton relais. Chaque espace a son propre choix, et ses propres relais Nostr.
+changes pas. Alors ce que tu écris à un contact dont l’Erevos lit aussi sur Nostr passe d’abord par tes relais : ton
+relais, puis les relais d’attache de ton contact, puis ton relais d’attache ; et par des relais Nostr publics seulement
+quand aucun ne l’a pris. Chaque espace a son propre choix, et ses propres relais Nostr.
 
 - **Comment c’est scellé :** chiffré de bout en bout comme toujours, puis scellé une fois de plus pour une clé que ton
   contact a donnée à cette discussion seule, et signé par une clé faite pour ce seul texte (un gift wrap NIP-59). Les
   relais Nostr voient que quelqu’un a écrit à une clé qui ne nomme personne, quand, et quelle taille ; pas qui l’a
-  écrit, ni à qui. Ton relais ne le voit pas du tout.
+  écrit, ni à qui. Ton relais ne voit pas ce qui est passé par là.
 - **Ce que les relais Nostr peuvent savoir :** ton téléphone demande à chacun d’eux toutes ses clés à la fois :
   un relais peut savoir que ces clés sont lues ensemble. Via Tor, jamais d’où : chaque relais est joint par ses propres
   circuits Tor, si bien qu’aucune sortie Tor ne porte ce qui va à deux d’entre eux, et aucune ne peut savoir que c’est le
@@ -1860,23 +1861,26 @@ au lieu de passer par ton relais. Chaque espace a son propre choix, et ses propr
   texte suffit.
 - **Ce qui reste sur ton relais :** les appels, réactions, et les marques qu’un message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas sur Nostr. Les images, fichiers et messages vocaux passent par ton relais quand il y en a un entre vous ; sans relais entre vous, ils passent aussi par Nostr (voir Sans aucun relais).
 - **Par où il est passé :** appuie longuement sur un message : son menu dit **Envoyé par Nostr** ou **Arrivé par Nostr**
-  quand un relais Nostr l’a pris. Désormais il dit aussi **Envoyé par le relais**, **Arrivé par le relais**, **Envoyé à son téléphone proche**, **Arrivé d’un téléphone proche** ou **Envoyé par LoRa** ; un message plus ancien ne dit rien. La note sous les
-  messages dit aussi **Envoyé par Nostr**. Deux téléphones côte à côte se donnent d’abord les textes à proximité : pour
-  essayer Nostr, désactive le Bluetooth et **Trouver Erevos sur le même Wi-Fi** sur les deux.
+  quand un relais Nostr l’a pris. Désormais il dit aussi **Envoyé par le relais**, **Arrivé par le relais**, **Envoyé à
+  son téléphone proche**, **Arrivé d’un téléphone proche** ou **Envoyé par LoRa** ; un message plus ancien ne dit rien.
+  La note sous les messages dit aussi **Envoyé par Nostr**. Deux téléphones côte à côte se donnent d’abord les textes à
+  proximité, puis par les relais ; Nostr ne porte un texte que quand les relais ne l’ont pas pris.
 - **Ce que les relais ont fait en dernier :** l’écran **Nostr** montre, pour chaque relais, s’il a pris le dernier texte
   qu’on lui a donné et combien de secondes après, ou pourquoi pas, et si ton téléphone y lit. C’est gardé sur ce
-  téléphone seulement, jusqu’à la fermeture d’Erevos. Un relais qui a pris un texte mais ne l’a pas dit dans les 20
-  secondes compte comme un relais qui ne l’a pas pris : le texte passe alors aussi par ton relais, et ton contact le
-  voit une fois.
+  téléphone seulement, jusqu’à la fermeture d’Erevos. Un texte n’attend jamais les relais Nostr tant que tes relais le
+  prennent.
 - **Sur Android seulement,** comme Tor.
 
-**Pourquoi :** les relais Nostr sont publics, donc, quand Tor est activé pour l’espace, Erevos les joint via Tor, et ils n’apprennent jamais où est
-ton téléphone ; avec **Rien**, il les joint en direct. Seuls les textes y vont : un texte a ton relais comme secours, s’il n’arrivait pas, alors que les marques
-qu’un message est arrivé ou a été lu n’en auraient aucun, et un message envoyé pour plus tard a besoin de ton relais
-pour le garder jusqu’à son heure. Sans relais entre vous, les images, fichiers et messages vocaux y vont aussi (voir Sans aucun relais).
+**Pourquoi :** les relais Nostr sont publics, donc, quand Tor est activé pour l’espace, Erevos les joint via Tor, et ils
+n’apprennent jamais où est ton téléphone ; avec **Rien**, il les joint en direct. Seuls les textes y vont, comme
+secours de tes relais : un texte qui y est allé repasse par ton relais s’il n’arrivait pas, alors que les marques qu’un
+message est arrivé ou a été lu n’en auraient aucun, et un message envoyé pour plus tard a besoin de ton relais pour le
+garder jusqu’à son heure. Sans relais entre vous, les images, fichiers et messages vocaux y vont aussi (voir Sans aucun
+relais).
 
-> Si le téléphone de ton contact ne dit pas dans les cinq minutes qu’un texte est arrivé, celui-ci passe aussi par ton
-> relais, et ton contact le voit une fois. Quand aucun relais Nostr ne le prend, il passe aussitôt par ton relais.
+> Un texte passé par Nostr repasse par ton relais si le téléphone de ton contact ne dit pas dans les cinq minutes qu’il
+> est arrivé, et ton contact le voit une fois. Quand ni tes relais ni aucun relais Nostr ne le prennent, il attend et
+> repart, comme tout message.
 
 - **Discussions masquées :** elles lisent aussi sur Nostr, tant qu’elles sont ouvertes, et fermées aussi tant que
   **Recevoir une fois fermées** est activé pour elles et que l’espace est ouvert (voir [Discussions masquées](#hidden)).

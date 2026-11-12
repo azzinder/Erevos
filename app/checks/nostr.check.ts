@@ -40,7 +40,7 @@ import { dropPieces, heldPieces, piecesCame, type PiecePlace } from '../lib/nost
 import { offerOnNostr } from '../lib/nostr-send-files';
 import { isFileRef } from '../lock/attachment-files';
 import { offerOf } from '../lib/relay-offer';
-import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
+import { createQueue, NO_NEWS, receiveMessage, RelayUnreachableError, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
 import { holdPlace, receivesPocket, startPlaceReceiver } from '../lib/place-receiver';
 import { handOverHidden } from '../lib/waiting';
@@ -445,7 +445,7 @@ t('a chat tells each contact the key it reads them with, once, again when its re
   assert.equal((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, null, 'Alice said she reads nowhere');
 });
 
-t('a text goes to the Nostr relays, comes out once on their phone, a bell goes to their relay, and it goes through the relay as well only should they not say it came', async (url) => {
+t('a text the relays did not take goes to the Nostr relays, comes out once on their phone, a bell goes to their relay, and it goes through the relay again only should they not say it came', async (url) => {
   const own: Relay = { url };
   setNostr([ONE, TWO]);
   const alice = await chat('space', 0, url);
@@ -463,13 +463,13 @@ t('a text goes to the Nostr relays, comes out once on their phone, a bell goes t
       const sealed = await alice.e2e.seal(toBob, text, alice.from);
       went = await orNostr(alice.e2e, bellTo, toBob, sealed, [sealed.packet], async () => {
         viaRelay++;
-        await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
+        throw new RelayUnreachableError('the relays are not reached');
       })();
       return sealed;
     };
 
     const first = await send('through Nostr');
-    assert.equal(viaRelay, 0);
+    assert.equal(viaRelay, 1, 'the relays were tried first');
     assert.equal(went, 'nostr', 'it says it went through Nostr, so the note says so');
     await until(() => relays.keptAt(ONE).length === 1 && relays.keptAt(TWO).length === 1);
     const [wrap] = relays.keptAt(ONE);
@@ -518,13 +518,13 @@ t('a text goes to the Nostr relays, comes out once on their phone, a bell goes t
     const third = await send('no bell went', { url: 'ws://127.0.0.1:9' });
     const due3 = alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS);
     assert.deepEqual(due3.map((due) => [due.tag, due.quiet]), [[third.tag, false]]);
-    assert.equal(viaRelay, 0);
+    assert.equal(viaRelay, 3, 'each tried the relays first');
   } finally {
     stop();
   }
 }, true);
 
-t('while Tor is not ready, or no Nostr relay takes it, a text goes through the relay at once and is not kept', async (url) => {
+t('a text goes through the relay first, and Nostr is asked only when the relays did not take it', async (url) => {
   const own: Relay = { url };
   setNostr([ONE, TWO]);
   const alice = await chat('space', 0, url);
@@ -532,33 +532,39 @@ t('while Tor is not ready, or no Nostr relay takes it, a text goes through the r
   const { toBob, toAlice } = await meet(alice, bob, url);
   message(await tell(bob, toAlice, alice));
   let viaRelay = 0;
-  let went: 'nostr' | void = undefined;
-  const send = async (text: string) => {
-    const sealed = await alice.e2e.seal(toBob, text, alice.from);
-    assert.deepEqual(sealed.nostr?.r, [ONE, TWO]);
-    went = await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
-      viaRelay++;
-      await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
-    })();
-  };
+  const send = (text: string, relayDown = false) =>
+    alice.e2e.seal(toBob, text, alice.from).then((sealed) => {
+      assert.deepEqual(sealed.nostr?.r, [ONE, TWO]);
+      return orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+        viaRelay++;
+        if (relayDown) throw new RelayUnreachableError('the relays are not reached');
+        await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
+      })();
+    });
   const taken = async () => {
     const packet = await receiveMessage(own, bob.recipient, false);
     return packet ? message(await bob.e2e.receive(packet)).text : null;
   };
 
-  setTorReady(false);
-  await send('Tor starts');
+  // The relay takes it: Nostr is not asked, and nothing is kept to go again.
+  assert.equal(await send('through the relay'), undefined, 'through the relay, it does not say Nostr');
   assert.equal(viaRelay, 1);
-  assert.equal(went, undefined, 'through the relay, it does not say Nostr');
-  assert.equal(await taken(), 'Tor starts');
+  assert.equal(await taken(), 'through the relay');
+  await new Promise((r) => setTimeout(r, 100));
+  assert.deepEqual([relays.keptAt(ONE).length, relays.keptAt(TWO).length], [0, 0], 'no Nostr relay was given it');
+  assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
+
+  // The relays down while Tor is not ready: it waits, as the relay said.
+  setTorReady(false);
+  await assert.rejects(send('Tor starts', true), RelayUnreachableError);
+  assert.equal(viaRelay, 2);
   setTorReady(true);
 
+  // The relays down, and no Nostr relay takes it either: it waits too, and the Nostr screen says why each did not.
   relays.down.add(ONE);
   relays.refusing.add(TWO);
-  await send('no Nostr relay');
-  assert.equal(viaRelay, 2);
-  assert.equal(await taken(), 'no Nostr relay');
-  // The Nostr screen says why each did not take it.
+  await assert.rejects(send('no Nostr relay', true), RelayUnreachableError);
+  assert.equal(viaRelay, 3);
   const [down, refusing] = [nostrStates().get(ONE)?.sent, nostrStates().get(TWO)?.sent];
   assert.equal(down?.took, false);
   assert.match(down?.why ?? '', /^Not reached: Tor took too long/);
@@ -566,17 +572,17 @@ t('while Tor is not ready, or no Nostr relay takes it, a text goes through the r
   assert.match(refusing?.why ?? '', /^It refused it/);
   assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
 
-  // One that takes it is enough; a space chat asks for no bell, so its backup is no quiet one.
+  // One Nostr relay that takes it is enough; a space chat asks for no bell, so its backup is no quiet one.
   relays.down.delete(ONE);
-  await send('one relay');
-  assert.equal(viaRelay, 2);
+  assert.equal(await send('one relay', true), 'nostr');
+  assert.equal(viaRelay, 4);
   assert.equal(nostrStates().get(ONE)?.sent?.took, true, 'and that one took it');
   assert.equal(relays.keptAt(ONE).length, 1);
   assert.equal(await taken(), null, 'no bell');
   assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS)[0]?.quiet, false);
 }, true);
 
-t('a text no Nostr relay takes at once goes through the relay as well, and counts as gone through Nostr only should the relay fail', async (url) => {
+t('slow Nostr relays never hold a text back: with the relay up they are not waited for', async (url) => {
   const own: Relay = { url };
   setNostr([ONE, TWO]);
   const alice = await chat('space', 0, url);
@@ -588,25 +594,22 @@ t('a text no Nostr relay takes at once goes through the relay as well, and count
   let viaRelay = 0;
   const send = async (text: string, relayDown = false) => {
     const sealed = await alice.e2e.seal(toBob, text, alice.from);
-    const went = await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+    return orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
       viaRelay++;
-      if (relayDown) throw new Error('the relay is not reached');
+      if (relayDown) throw new RelayUnreachableError('the relays are not reached');
       await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
-    }, 50)();
-    return went;
+    })();
   };
 
-  // Slow relays: the relay carries it too, at once, and nothing is kept to go again.
   const started = Date.now();
   assert.equal(await send('slow Nostr'), undefined);
   assert.ok(Date.now() - started < 400, 'it did not wait for the Nostr relays');
   assert.equal(viaRelay, 1);
   const packet = await receiveMessage(own, bob.recipient, false);
   assert.equal(packet ? message(await bob.e2e.receive(packet)).text : null, 'slow Nostr');
-  await until(() => relays.keptAt(ONE).length === 1, 3000);
   assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
 
-  // The relay down: Nostr took it in the end, so it went, and is kept to go through the relay later.
+  // The relays down: a slow Nostr relay takes it in the end, so it went, and is kept to go through the relay later.
   assert.equal(await send('relay down', true), 'nostr');
   assert.equal(viaRelay, 2);
   assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).length, 1);
@@ -637,12 +640,15 @@ t('a text their phone says came, and read, before the Nostr relay said it took i
   try {
     const sealed = await alice.e2e.seal(toBob, 'read before it went', alice.from);
     let viaRelay = 0;
-    const going = orNostr(alice.e2e, { url: 'ws://127.0.0.1:9' }, toBob, sealed, [sealed.packet], async () => void viaRelay++, 5000)();
+    const going = orNostr(alice.e2e, { url: 'ws://127.0.0.1:9' }, toBob, sealed, [sealed.packet], async () => {
+      viaRelay++;
+      throw new RelayUnreachableError('the relays are not reached');
+    })();
     // Alice's look takes what Bob said while her text is still going, as her chats do (lib/receiver.ts keep).
     await until(() => said.length === 2);
     for (const packet of said) await keepReceived(chats, await alice.e2e.receive(packet));
     assert.equal(await going, 'nostr');
-    assert.equal(viaRelay, 0);
+    assert.equal(viaRelay, 1, 'the relays were tried first');
     // The chat keeps what it sends once it went (app/chat.tsx sendShown): read, as Bob's phone said;
     // in that chat only, and once.
     await chats.history.add({ peer: `contact:${toAlice}`, text: 'another chat', mine: true, at: Date.now() - 2, tag: sealed.tag });

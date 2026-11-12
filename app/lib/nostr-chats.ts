@@ -3,19 +3,18 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // Contacts' texts through Nostr (lib/nostr.ts), for the chats: how a text sealed for Nostr goes,
-// with the relay as its backup, and how what comes there is read, as from the relay.
+// as the relays' backup, and how what comes there is read, as from the relay.
 //
-// A text whose contact said they read on Nostr (lib/e2e.ts seal, `nostr`) goes to their Nostr
-// relays while it can (lib/nostr.ts nostrReady: straight with Tor off, through Tor while it is
-// ready), and is kept: should no Nostr relay take it within NOSTR_FIRST_WAIT, it goes through our
-// relay at once as well; should their phone not say it came within
-// NOSTR_BACKUP_MS, it goes through our relay as well (sendNostrBackups, with each look at the
-// relay), and their phone, which may have it from both, shows it once. Should no Nostr relay take
-// it, it goes through our relay at once, as it would have. To a contact that asked for a bell
-// (their hidden chats, closed, hear of what came only from their relay queue), a bell goes to
-// their relay queue too, marked as a message (lib/e2e.ts bell): their relay counts it, and their
-// phone says something came; the backup then goes quiet, as it was counted once already. A bell
-// their relay did not take counted nothing: then the backup is the message that counts.
+// A text goes through the relays first: ours, their home relays, then our home relay. Only when
+// none of them took it, and the contact said they read on Nostr (lib/e2e.ts seal, `nostr`), it goes
+// to their Nostr relays while it can (lib/nostr.ts nostrReady: straight with Tor off, through Tor
+// while it is ready), and is kept: should their phone not say it came within NOSTR_BACKUP_MS, it
+// goes through our relay again (sendNostrBackups, with each look at the relay), and their phone,
+// which may have it from both, shows it once. To a contact that asked for a bell (their hidden
+// chats, closed, hear of what came only from their relay queue), a bell goes to their relay queue
+// too, marked as a message (lib/e2e.ts bell): their relay counts it, and their phone says
+// something came; the backup then goes quiet, as it was counted once already. A bell their relay
+// did not take counted nothing: then the backup is the message that counts.
 //
 // With no relay between the two (this phone has none, or the contact said none: lib/e2e.ts seal),
 // Nostr is the only way, for all that goes, not only words (nostrOnlyWay): the conversation's
@@ -40,24 +39,34 @@ export function onNostrWent(listener: (identity: string, tag: string) => void): 
   return () => wentListeners.delete(listener);
 }
 
-/** How long a text waits for a Nostr relay to take it before it goes through the relay as well, ms. */
-export const NOSTR_FIRST_WAIT = 4000;
-
 /** What a seal gives that a text needs to go through Nostr: its tag, and where they read there. */
 export type ForNostr = { tag?: string; nostr?: NostrTo | null };
 
 /**
- * How `packets` sealed for a contact go: through Nostr when the seal said so (`sealed.nostr`) and
- * Tor is ready, kept to go through the relay as well should they not say it came in time; otherwise,
- * and when no Nostr relay took it, as `relay` sends it. `own` reaches their relay queue for a bell.
- * Says 'nostr' when a Nostr relay took it.
+ * How `packets` sealed for a contact go: through the relays first, as `relay` sends them (ours, then
+ * their home relays, then our home relay), so Nostr never holds a text back; only when none of them
+ * took it, through Nostr when the seal said so (`sealed.nostr`) and Tor is ready, kept to go
+ * through the relay again should they not say it came in time. `own` reaches their relay queue for
+ * a bell. Says 'nostr' when a Nostr relay took it; throws the relay's error when none did.
  */
-export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>, firstWait = NOSTR_FIRST_WAIT): () => Promise<'nostr' | void> {
+export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>): () => Promise<'nostr' | void> {
   const to = sealed.nostr;
   const tag = sealed.tag ?? '';
   const wraps = nostrWraps(packets);
   if (!to || !own || !tag || !wraps) return relay;
-  const went = async (): Promise<'nostr'> => {
+  return async () => {
+    try {
+      await relay();
+      return;
+    } catch (error) {
+      // No relay took it: a Nostr relay still may.
+      if (!nostrReady()) throw error;
+      try {
+        for (const wrap of wraps) await publishNostr(to, wrap);
+      } catch {
+        throw error;
+      }
+    }
     wentListeners.forEach((listener) => listener(identity, tag));
     const length = wraps.reduce((sum, wrap) => sum + wrap.length, 0);
     const rang = to.b === true && (await ringBell(e2e, own, identity, length).then(
@@ -66,29 +75,6 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
     ));
     await e2e.nostrKeep(identity, tag, wraps, rang).catch(() => undefined);
     return 'nostr';
-  };
-  return async () => {
-    if (!nostrReady()) return relay();
-    const published = (async () => {
-      for (const wrap of wraps) await publishNostr(to, wrap);
-    })().then(
-      () => true,
-      () => false,
-    );
-    // A Nostr relay that is slow to connect or to answer does not hold the message back: after a
-    // short wait it goes through the relay as well, and their phone shows it once.
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const took = await Promise.race([published, new Promise<null>((resolve) => (timer = setTimeout(() => resolve(null), firstWait)))]);
-    if (timer) clearTimeout(timer);
-    if (took === true) return went();
-    if (took === false) return relay();
-    try {
-      await relay();
-    } catch (error) {
-      // The relay could not take it either: a Nostr relay still may.
-      if (await published) return went();
-      throw error;
-    }
   };
 }
 

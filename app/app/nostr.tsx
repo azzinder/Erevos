@@ -106,7 +106,7 @@ export default function NostrScreen() {
         <Text variant="bodyStrong">{t('Texts through Nostr')}</Text>
         <Text tone="muted">
           {t(
-            'What you write to a contact whose Erevos reads on Nostr too goes through public Nostr relays instead of through your relay. It is end-to-end encrypted as always, and sealed once more for a key your contact gave this chat alone, by a key made for that message alone: the Nostr relays see neither who wrote it nor to whom, and your relay does not see it at all.',
+            'What you write to a contact whose Erevos reads on Nostr too goes through your relays first: your relay, then their home relays, then your home relay. Only when none of them takes it does it go through public Nostr relays. There it is end-to-end encrypted as always, and sealed once more for a key your contact gave this chat alone, by a key made for that message alone: the Nostr relays see neither who wrote it nor to whom, and your relay does not see what went that way.',
           )}
         </Text>
         <Row wrap>
@@ -122,7 +122,7 @@ export default function NostrScreen() {
         ) : null}
         <Text tone="muted">
           {t(
-            "Should your contact's phone not say within five minutes that it came, it goes through your relay as well, and they see it once. While Tor starts, or when no Nostr relay takes it, it goes through your relay at once.",
+            "A text that went through Nostr goes through your relay again should your contact's phone not say within five minutes that it came, and they see it once. While Tor starts, or when no Nostr relay takes it either, it waits and goes again, as any message does.",
           )}
         </Text>
         <Text tone="muted">

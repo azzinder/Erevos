@@ -1680,13 +1680,14 @@ dok nešto ide preko Tora.
 ## Preko Nostra {#nostr}
 
 Pod **Postavke** → **Relay i mreže** → **Nostr**, **Tekstovi preko Nostra** je **Uključeno** dok to ne promijenite.
-Tada ono što pišete kontaktu čiji Erevos također čita na Nostru ide preko javnih Nostr relaya umjesto
-preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
+Tada ono što pišete kontaktu čiji Erevos također čita na Nostru ide prvo preko vaših relaya: vašeg relaya, pa kućnih
+relaya kontakta, pa vašeg kućnog relaya; a preko javnih Nostr relaya tek kad ga nijedan nije preuzeo. Svaki prostor ima
+vlastiti izbor i vlastite Nostr relaye.
 
 - **Kako je zapečaćeno:** šifrirano s kraja na kraj kao i uvijek, zatim zapečaćeno još jednom za ključ koji je vaš
   kontakt dao samo ovom razgovoru, i potpisano ključem napravljenim samo za taj jedan tekst (NIP-59 gift wrap). Nostr
   relayi vide da je neko pisao ključu koji ne imenuje nikoga, kada i koliko veliko; ne vide ko je pisao, ni kome. Vaš
-  relay to uopće ne vidi.
+  relay ne vidi ono što je išlo tim putem.
 - **Šta Nostr relayi mogu saznati:** vaš telefon traži od svakog od njih sve svoje ključeve odjednom:
   relay može saznati da se ti ključevi čitaju zajedno. Preko Tora nikad odakle: do svakog relaya dolazi se vlastitim Tor
   krugovima, pa nijedan izlaz iz Tora ne prenosi ono što ide do dva relaya, i nijedan ne može saznati da je to od
@@ -1698,22 +1699,25 @@ preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
 - **Relayi:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju relayi na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
 - **Šta ostaje na vašem relayu:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg relaya kad je jedan između vas; bez relaya između vas idu i preko Nostra (pogledajte Bez ikakvog relaya).
-- **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko
-  Nostra** kad ju je preuzeo neki Nostr relay. Od sada kaže i **Poslano preko relaya**, **Stiglo preko relaya**, **Poslano na njihov obližnji telefon**, **Stiglo s obližnjeg telefona** ili **Poslano preko LoRa**; starija poruka ne kaže ništa.
-  I napomena ispod poruka kaže **Poslano preko Nostra**. Dva telefona jedan pored drugog prvo predaju jedan drugom
-  tekstove u blizini: da isprobate Nostr, isključite Bluetooth i **Pronađi Erevos na istoj Wi-Fi mreži** na oba.
-- **Što su relayi zadnje učinili:** ekran **Nostr** za svaki relay pokazuje je li preuzeo posljednji tekst koji je
-  dobio i koliko sekundi nakon toga, ili zašto nije, te čita li vaš telefon na njemu. Čuva se samo na ovom telefonu,
-  dok se Erevos ne zatvori. Relay koji je preuzeo tekst, ali to nije rekao u roku od 20 sekundi, računa se kao da ga
-  nije preuzeo: tekst tada ide i preko vašeg relaya, a vaš kontakt ga vidi jednom.
+- **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko Nostra**
+  kad ju je preuzeo neki Nostr relay. Od sada kaže i **Poslano preko relaya**, **Stiglo preko relaya**, **Poslano na
+  njihov obližnji telefon**, **Stiglo s obližnjeg telefona** ili **Poslano preko LoRa**; starija poruka ne kaže ništa. I
+  napomena ispod poruka kaže **Poslano preko Nostra**. Dva telefona jedan pored drugog prvo predaju jedan drugom
+  tekstove u blizini, zatim preko relaya; Nostr nosi tekst samo kad ga relayi nisu preuzeli.
+- **Što su relayi zadnje učinili:** ekran **Nostr** za svaki relay pokazuje je li preuzeo posljednji tekst koji je dobio
+  i koliko sekundi nakon toga, ili zašto nije, te čita li vaš telefon na njemu. Čuva se samo na ovom telefonu, dok se
+  Erevos ne zatvori. Tekst nikad ne čeka Nostr relaye dok ga vaši relayi preuzimaju.
 - **Samo na Androidu,** kao i Tor.
 
-**Zašto:** Nostr relayi su javni, pa Erevos do njih, kad je Tor uključen za prostor, dolazi preko Tora, i oni nikad ne saznaju gdje je vaš
-telefon; s **Ništa** dolazi do njih izravno. Tamo idu samo tekstovi: tekst ima vaš relay kao rezervu, ako ne stigne, dok oznake da je poruka stigla ili
-pročitana ne bi imale nikakvu, a poruci poslanoj za kasnije potreban je vaš relay da je čuva do njenog vremena. Bez relaya između vas, tamo idu i slike, datoteke i glasovne poruke (pogledajte Bez ikakvog relaya).
+**Zašto:** Nostr relayi su javni, pa Erevos do njih, kad je Tor uključen za prostor, dolazi preko Tora, i oni nikad ne
+saznaju gdje je vaš telefon; s **Ništa** dolazi do njih izravno. Tamo idu samo tekstovi, kao rezerva vaših relaya:
+tekst koji je otišao tamo ide ponovno preko vašeg relaya, ako ne stigne, dok oznake da je poruka stigla ili pročitana ne
+bi imale nikakvu, a poruci poslanoj za kasnije potreban je vaš relay da je čuva do njenog vremena. Bez relaya između
+vas, tamo idu i slike, datoteke i glasovne poruke (pogledajte Bez ikakvog relaya).
 
-> Ako telefon vašeg kontakta u roku od pet minuta ne javi da je tekst stigao, on ide i preko vašeg relaya, a kontakt
-> ga vidi jednom. Kad ga nijedan Nostr relay ne preuzme, odmah ide preko vašeg relaya.
+> Tekst koji je išao preko Nostra ide ponovno preko vašeg relaya ako telefon vašeg kontakta u roku od pet minuta ne
+> javi da je stigao, a kontakt ga vidi jednom. Kad ga ne preuzmu ni vaši relayi ni neki Nostr relay, čeka i ide ponovno,
+> kao svaka poruka.
 
 - **Skriveni razgovori:** i oni čitaju na Nostru, dok su otvoreni, a i zatvoreni dok je za njih uključeno **Primanje
   dok su zatvoreni** i dok je prostor otvoren (pogledajte [Skriveni razgovori](#hidden)). Zatvoreni i dalje

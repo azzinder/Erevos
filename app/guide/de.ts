@@ -1864,13 +1864,14 @@ nur, solange etwas über Tor geht.
 ## Über Nostr {#nostr}
 
 Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte über Nostr** auf **An**, sofern du es nicht
-änderst. Dann geht, was du einem Kontakt schreibst, dessen Erevos auch auf Nostr liest, über öffentliche Nostr-Relays statt
-über dein Relay. Jeder Bereich hat seine eigene Wahl und seine eigenen Nostr-Relays.
+änderst. Dann geht, was du einem Kontakt schreibst, dessen Erevos auch auf Nostr liest, zuerst über deine Relays: dein
+Relay, dann seine Heim-Relays, dann dein Heim-Relay; über öffentliche Nostr-Relays nur, wenn keins davon es angenommen
+hat. Jeder Bereich hat seine eigene Wahl und seine eigenen Nostr-Relays.
 
-- **Wie es versiegelt wird:** Ende-zu-Ende-verschlüsselt wie immer, dann noch einmal versiegelt für einen Schlüssel,
-  den dein Kontakt nur diesem Chat gegeben hat, und signiert mit einem Schlüssel, der nur für diesen einen Text
-  gemacht wurde (ein NIP-59 Gift Wrap). Die Nostr-Relays sehen, dass jemand an einen Schlüssel geschrieben hat, der
-  niemanden nennt, wann und wie groß; nicht, wer es geschrieben hat, noch an wen. Dein Relay sieht es überhaupt nicht.
+- **Wie es versiegelt wird:** Ende-zu-Ende-verschlüsselt wie immer, dann noch einmal versiegelt für einen Schlüssel, den
+  dein Kontakt nur diesem Chat gegeben hat, und signiert mit einem Schlüssel, der nur für diesen einen Text gemacht
+  wurde (ein NIP-59 Gift Wrap). Die Nostr-Relays sehen, dass jemand an einen Schlüssel geschrieben hat, der niemanden
+  nennt, wann und wie groß; nicht, wer es geschrieben hat, noch an wen. Dein Relay sieht nicht, was diesen Weg ging.
 - **Was die Nostr-Relays erkennen können:** Dein Telefon fragt jedes von ihnen auf einmal nach all seinen Schlüsseln:
   Ein Relay kann erkennen, dass diese Schlüssel zusammen gelesen werden. Über Tor nie von wo: Jedes Relay wird über
   eigene Tor-Circuits erreicht, sodass kein Tor-Ausgang trägt, was an zwei von ihnen geht, und keines erkennen kann,
@@ -1884,24 +1885,28 @@ Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte übe
   hinzufügen, höchstens fünf. Deine Kontakte erfahren die Relays, auf denen du liest, und schreiben dir dort; eines,
   das einen Text annimmt, genügt.
 - **Was auf deinem Relay bleibt:** Anrufe, Reaktionen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht auf Nostr lesen. Bilder, Dateien und Sprachnachrichten gehen über dein Relay, wenn eines zwischen euch ist; ohne Relay zwischen euch gehen sie auch über Nostr (siehe Ganz ohne Relay).
-- **Welchen Weg sie ging:** Halte eine Nachricht gedrückt: Ihr Menü sagt **Über Nostr gesendet** oder
-  **Über Nostr gekommen**, wenn ein Nostr-Relay sie angenommen hat. Von jetzt an sagt es auch **Über das Relay gesendet**, **Über das Relay gekommen**, **An ihr Telefon in der Nähe gesendet**, **Von einem Telefon in der Nähe gekommen** oder **Über LoRa gesendet**; eine ältere Nachricht sagt nichts. Der Hinweis unter den Nachrichten sagt auch **Gesendet: über Nostr**. Zwei Telefone nebeneinander geben
-  sich Texte zuerst in der Nähe: Um Nostr auszuprobieren, schalte auf beiden Bluetooth und
-  **Erevos im selben WLAN finden** aus.
+- **Welchen Weg sie ging:** Halte eine Nachricht gedrückt: Ihr Menü sagt **Über Nostr gesendet** oder **Über Nostr
+  gekommen**, wenn ein Nostr-Relay sie angenommen hat. Von jetzt an sagt es auch **Über das Relay gesendet**, **Über das
+  Relay gekommen**, **An ihr Telefon in der Nähe gesendet**, **Von einem Telefon in der Nähe gekommen** oder **Über LoRa
+  gesendet**; eine ältere Nachricht sagt nichts. Der Hinweis unter den Nachrichten sagt auch **Gesendet: über Nostr**.
+  Zwei Telefone nebeneinander geben sich Texte zuerst in der Nähe, dann über die Relays; Nostr trägt einen Text nur,
+  wenn die Relays ihn nicht angenommen haben.
 - **Was die Relays zuletzt taten:** Der Bildschirm **Nostr** zeigt für jedes Relay, ob es den letzten Text, den es
   bekam, angenommen hat und wie viele Sekunden danach, oder warum nicht, und ob dein Telefon darauf liest. Das wird nur
-  auf diesem Telefon aufbewahrt, bis Erevos sich schließt. Ein Relay, das einen Text angenommen, das aber nicht
-  innerhalb von 20 Sekunden gesagt hat, zählt als eines, das es nicht tat: Der Text geht dann auch über dein Relay,
-  und dein Kontakt sieht ihn einmal.
+  auf diesem Telefon aufbewahrt, bis Erevos sich schließt. Ein Text wartet nie auf die Nostr-Relays, solange deine
+  Relays ihn annehmen.
 - **Nur auf Android,** wie Tor.
 
-**Warum:** Die Nostr-Relays sind öffentlich, also erreicht Erevos sie, wenn Tor für den Bereich an ist, über Tor, und sie erfahren nie, wo dein
-Telefon ist; mit **Nichts** erreicht es sie direkt. Nur Texte gehen dorthin: Ein Text hat dein Relay als Reserve, falls er nicht ankommt, während die Zeichen,
-dass eine Nachricht ankam oder gelesen wurde, keine hätten, und eine für später gesendete Nachricht dein Relay braucht,
-das sie bis zu ihrer Zeit aufbewahrt. Ohne Relay zwischen euch gehen auch Bilder, Dateien und Sprachnachrichten dorthin (siehe Ganz ohne Relay).
+**Warum:** Die Nostr-Relays sind öffentlich, also erreicht Erevos sie, wenn Tor für den Bereich an ist, über Tor, und
+sie erfahren nie, wo dein Telefon ist; mit **Nichts** erreicht es sie direkt. Nur Texte gehen dorthin, als Reserve
+deiner Relays: Ein Text, der dorthin ging, geht noch einmal über dein Relay, falls er nicht ankommt, während die
+Zeichen, dass eine Nachricht ankam oder gelesen wurde, keine hätten, und eine für später gesendete Nachricht dein Relay
+braucht, das sie bis zu ihrer Zeit aufbewahrt. Ohne Relay zwischen euch gehen auch Bilder, Dateien und Sprachnachrichten
+dorthin (siehe Ganz ohne Relay).
 
-> Sollte das Telefon deines Kontakts nicht innerhalb von fünf Minuten sagen, dass ein Text ankam, geht er auch über
-> dein Relay, und dein Kontakt sieht ihn einmal. Wenn kein Nostr-Relay ihn annimmt, geht er sofort über dein Relay.
+> Ein Text, der über Nostr ging, geht noch einmal über dein Relay, sollte das Telefon deines Kontakts nicht innerhalb
+> von fünf Minuten sagen, dass er ankam, und dein Kontakt sieht ihn einmal. Wenn weder deine Relays noch ein Nostr-Relay
+> ihn annehmen, wartet er und geht später noch einmal, wie jede Nachricht.
 
 - **Versteckte Chats:** Sie lesen auch auf Nostr, solange sie offen sind, und auch geschlossen, solange
   **Empfangen, wenn geschlossen** für sie an und der Bereich offen ist (siehe [Versteckte Chats](#hidden)).
