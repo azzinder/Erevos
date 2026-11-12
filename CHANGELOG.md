@@ -17,6 +17,13 @@ On main, not released yet:
 - **Call and Video on a hidden contact's card call**: opened over the contact's own hidden chat, they did nothing, as
   the chat that was to start the call was open already. Now the call starts there, as from the tiles at the top of the
   chat.
+- **Choose where a call's sound goes** (Android): with a Bluetooth or wired headset connected, the call screen's
+  **Speaker** becomes **Audio output**, which shows where the sound goes now (**Phone**, **Speaker**, **Headphones** or
+  **Bluetooth**) and lists them all, a Bluetooth headset by its own name, to choose; in Erevos calls and group calls,
+  and in XMPP and Matrix calls on the same screen. A headset connected as a call starts, or during it, takes the sound,
+  as in a phone call, and turning the camera on leaves it there; when it goes, the sound goes back to the earpiece, or
+  to the loudspeaker in a video call. Before, the call screen had only **Speaker**, on or off, so a Bluetooth headset
+  could not be chosen.
 - **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
   (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
   posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were

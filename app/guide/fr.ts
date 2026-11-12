@@ -1341,6 +1341,11 @@ appel manqué.
   en vidéo**, dans les appels d’Erevos et dans ceux de XMPP et de Matrix ; dans un appel de groupe, ce sont
   **Rejoindre** et **Rejoindre en vidéo**. Un appel vidéo auquel tu réponds en voix seulement commence avec ta caméra
   éteinte.
+- **Où va le son** (Android) : avec un casque Bluetooth ou filaire connecté, **Haut-parleur** devient **Sortie audio** :
+  il montre où va le son maintenant, **Téléphone**, **Haut-parleur**, **Casque** ou **Bluetooth**, et un appui les liste
+  tous, un casque Bluetooth sous son propre nom, pour choisir. Un casque connecté au début de l’appel, ou pendant, prend
+  le son, comme pour un appel téléphonique, et allumer ta caméra le laisse là ; quand il se déconnecte, le son revient au
+  téléphone, ou au haut-parleur dans un appel vidéo.
 - **Activer la caméra plus tard :** **Activer caméra**, sur l’écran d’appel, marche quand l’appli de l’autre côté peut
   modifier un appel en cours ; un appel de groupe reste comme tu l’as rejoint.
 - **Ajouter la vidéo à un appel vocal :** dans un appel vocal d’Erevos, **Ajouter la vidéo** allume ta caméra quand

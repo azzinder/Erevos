@@ -15,7 +15,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioAttributes
-import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -54,7 +53,8 @@ private val CHANNELS = mapOf(
 )
 
 // The phone's side of a call that WebRTC leaves to the app: the sound set up for talking, through
-// the earpiece or the loudspeaker, the screen off while the phone is at the ear, and on while a
+// the earpiece, the loudspeaker or a headset, wired or Bluetooth, as chosen (CallOutputs), the
+// screen off while the phone is at the ear, and on while a
 // call shows. Everything goes back as it was when the call ends. Also what lets a call ring while
 // Erevos is in the background: the service that keeps it running (ReceiveService), the ringtone,
 // the call notice over the lock screen and the notice that messages came (Notices), and the
@@ -114,13 +114,16 @@ class ErevosCallModule : Module() {
   private val context: Context?
     get() = appContext.reactContext
 
+  // Where a call's sound goes, and its changes told to the screen.
+  private val outputs = CallOutputs({ runCatching { sendEvent("onOutputs", mapOf()) } }, { atEar(it) })
+
   private val audio: AudioManager?
     get() = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
   override fun definition() = ModuleDefinition {
     Name("ErevosCall")
 
-    Events("onNetwork", "onSleepLook")
+    Events("onNetwork", "onSleepLook", "onOutputs")
 
     OnCreate {
       (context?.applicationContext as? Application)?.registerActivityLifecycleCallbacks(created)
@@ -172,22 +175,34 @@ class ErevosCallModule : Module() {
       val manager = audio ?: return@Function
       if (modeBefore == null) modeBefore = manager.mode
       manager.mode = AudioManager.MODE_IN_COMMUNICATION
-      route(manager, speaker)
+      outputs.start(manager, speaker)
       keepScreenOn(true)
     }
 
+    // The loudspeaker, or not: then a headset when one is connected, else the earpiece.
     Function("setSpeaker") { speaker: Boolean ->
-      audio?.let { route(it, speaker) }
+      audio?.let { outputs.setSpeaker(it, speaker) }
+    }
+
+    // Where the call's sound can go now (CallOutputs.kt), each by an id that setOutput takes.
+    Function("outputs") {
+      val manager = audio ?: return@Function listOf<Map<String, String>>()
+      outputs.list(manager).map { mapOf("id" to it.id, "kind" to it.kind, "name" to it.name) }
+    }
+
+    // The one the sound goes to now, by its id; null when not known.
+    Function("output") {
+      val manager = audio ?: return@Function null
+      outputs.current(manager)?.id
+    }
+
+    Function("setOutput") { id: String ->
+      audio?.let { outputs.choose(it, id) }
     }
 
     Function("stop") {
       audio?.let { manager ->
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-          manager.clearCommunicationDevice()
-        } else {
-          @Suppress("DEPRECATION")
-          manager.isSpeakerphoneOn = false
-        }
+        outputs.stop(manager)
         modeBefore?.let { manager.mode = it }
       }
       modeBefore = null
@@ -600,23 +615,6 @@ class ErevosCallModule : Module() {
       val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
       if (on) activity.window.addFlags(flags) else activity.window.clearFlags(flags)
     }
-  }
-
-  // The loudspeaker, or the earpiece (a headset when one is plugged in or paired). With the
-  // earpiece, the screen goes off while something is close to it, so a cheek presses nothing.
-  private fun route(manager: AudioManager, speaker: Boolean) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      val device = if (speaker) {
-        manager.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
-      } else {
-        null
-      }
-      if (device != null) manager.setCommunicationDevice(device) else manager.clearCommunicationDevice()
-    } else {
-      @Suppress("DEPRECATION")
-      manager.isSpeakerphoneOn = speaker
-    }
-    atEar(!speaker)
   }
 
   private fun atEar(on: Boolean) {

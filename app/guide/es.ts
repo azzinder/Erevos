@@ -1266,6 +1266,11 @@ trasera, y **Colgar**. Cada llamada deja una línea en el chat, como cuánto dur
 - **Responder con vídeo o solo con voz:** una llamada que suena ofrece **Responder**, solo con voz, y **Responder con
   vídeo**, en las llamadas de Erevos y en las de XMPP y Matrix; en una llamada de grupo son **Unirse** y **Unirse con
   vídeo**. Una videollamada respondida solo con voz empieza con tu cámara apagada.
+- **Adónde va el sonido** (Android): con unos auriculares Bluetooth o con cable conectados, **Altavoz** pasa a ser
+  **Salida de audio**: muestra adónde va ahora el sonido, **Teléfono**, **Altavoz**, **Auriculares** o **Bluetooth**, y un
+  toque los muestra todos, unos auriculares Bluetooth con su propio nombre, para elegir. Unos auriculares conectados al
+  empezar la llamada, o durante ella, se quedan con el sonido, como en una llamada de teléfono, y encender la cámara lo
+  deja ahí; cuando se desconectan, el sonido vuelve al teléfono, o al altavoz en una videollamada.
 - **Activar la cámara después:** **Activar cámara**, en la pantalla de la llamada, funciona cuando la app del otro lado
   puede cambiar una llamada mientras dura; una llamada de grupo queda como entraste.
 - **Añadir vídeo a una llamada de voz:** en una llamada de voz de Erevos, **Añadir vídeo** enciende tu cámara cuando la

@@ -1274,6 +1274,11 @@ una chiamata persa.
   **Rispondi con video**, nelle chiamate di Erevos e in quelle di XMPP e Matrix; in una chiamata di gruppo sono
   **Partecipa** e **Partecipa con video**. Una videochiamata a cui rispondi solo con la voce inizia con la fotocamera
   spenta.
+- **Dove va il suono** (Android): con cuffie Bluetooth o con filo collegate, **Altoparlante** diventa **Uscita audio**:
+  mostra dove va ora il suono, **Telefono**, **Altoparlante**, **Cuffie** o **Bluetooth**, e un tocco li elenca tutti, le
+  cuffie Bluetooth con il loro nome, per scegliere. Delle cuffie collegate all’inizio della chiamata, o durante, prendono
+  il suono, come in una telefonata, e accendere la fotocamera lo lascia lì; quando si scollegano, il suono torna al
+  telefono, o all’altoparlante in una videochiamata.
 - **Attivare la fotocamera dopo:** **Attiva fotocamera**, nella schermata della chiamata, funziona quando l’app
   dell’altra parte può cambiare una chiamata mentre è in corso; una chiamata di gruppo resta come vi sei entrato.
 - **Aggiungere il video a una chiamata vocale:** in una chiamata vocale di Erevos, **Aggiungi video** accende la tua

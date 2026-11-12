@@ -10,7 +10,7 @@ import { callClock } from '../lib/calls';
 import { MAX_VIDEO, type GroupCall } from '../lib/group-call';
 import { t } from '../lib/i18n';
 import { CallVideo } from './call-video';
-import { ENDED_SHOWN, RING, Round } from './call-screen';
+import { CallSound, ENDED_SHOWN, RING, Round } from './call-screen';
 import { KeyFace } from './key-face';
 import { Text } from './ui';
 
@@ -146,7 +146,7 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
         ) : state === 'ended' ? null : (
           <>
             <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
-            <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
+            <CallSound speaker={speaker} onSpeaker={onSpeaker} />
             {pictures && camera ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
             {pictures && camera && !call.cameraOff && call.cameras !== 1 ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
             <Round title={t('Leave')} color="#C62828" onPress={() => call.hangUp()} />

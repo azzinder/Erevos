@@ -1170,6 +1170,11 @@ a missed call.
 - **Answer with video or voice only:** a call that rings offers **Answer**, for voice only, and **Answer with video**,
   in Erevos's calls and in XMPP and Matrix calls; in a group call they are **Join** and **Join with video**. A video
   call answered with voice only starts with your camera off.
+- **Where the sound goes** (Android): with a Bluetooth or wired headset connected, **Speaker** becomes **Audio output**:
+  it shows where the sound goes now, **Phone**, **Speaker**, **Headphones** or **Bluetooth**, and a tap lists them all,
+  a Bluetooth headset by its own name, to choose. A headset connected as the call starts, or during it, takes the
+  sound, as in a phone call, and turning your camera on leaves it there; when it goes, the sound goes back to the
+  phone, or to the loudspeaker in a video call.
 - **Turn your camera on later:** **Camera on**, on the call screen, works when the other side's app can change a call
   while it goes on; a group call stays as you joined it.
 - **Add video to a voice call:** in an Erevos voice call, **Add video** turns your camera on once the other person says

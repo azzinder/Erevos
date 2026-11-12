@@ -9,12 +9,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { callClock } from '../lib/calls';
+import { headsetIn, soundInHeadset, soundName, soundShort, useCallSound } from '../lib/call-sound';
 import { press } from '../lib/haptics';
 import type { CallEnd } from '../lib/call-signal';
 import { t, mark } from '../lib/i18n';
 import { CallVideo } from './call-video';
 import { KeyFace } from './key-face';
-import { Text } from './ui';
+import { Button, Sheet, Text } from './ui';
 
 // A call over the whole chat, in every style: dark, as the picture shows best on it. Shows the other
 // phone's picture or their face drawn from their key, our own camera in a corner, how the call
@@ -23,7 +24,8 @@ import { Text } from './ui';
 // sends none, until the camera is turned on where the call's way can. Where it can (an Erevos call
 // with a phone that takes it, an XMPP or a Matrix one), video is added to a voice call from here,
 // and their asking to add it is asked here: a yes turns the camera on, and the sound to the
-// speaker. Flip shows with more than one camera, or while it is not known how many there are.
+// speaker, unless a headset has it. Flip shows with more than one camera, or while it is not known
+// how many there are. With a headset connected, Speaker becomes where the sound goes (CallSound).
 
 // Long buzz, pause, again, while a call rings here.
 export const RING = [0, 900, 1100];
@@ -115,7 +117,7 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         return;
       }
       await turnOn();
-      if (call.hasCamera) onSpeaker(true);
+      if (call.hasCamera && !soundInHeadset()) onSpeaker(true);
     });
 
   return (
@@ -160,7 +162,7 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         ) : state === 'ended' ? null : (
           <>
             <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
-            <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
+            <CallSound speaker={speaker} onSpeaker={onSpeaker} />
             {call.hasCamera ? (
               <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} />
             ) : call.video && (call.canTurnCameraOn || call.addingVideo) ? (
@@ -176,6 +178,38 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
         )}
       </View>
     </View>
+  );
+}
+
+/**
+ * Where the call's sound goes. With no headset connected, Speaker, on or off, as the phone says
+ * where it is now (lib/call-sound.ts); with one, where it goes now (Phone, Speaker, Headphones or
+ * Bluetooth), and a tap lists them all, a Bluetooth headset by its name, to choose.
+ */
+export function CallSound({ speaker, onSpeaker }: { speaker: boolean; onSpeaker: (on: boolean) => void }) {
+  const { outputs, current, choose } = useCallSound();
+  const [choosing, setChoosing] = useState(false);
+  if (!headsetIn(outputs)) {
+    const on = current ? current.kind === 'speaker' : speaker;
+    return <Round title={t('Speaker')} on={on} onPress={() => onSpeaker(!on)} />;
+  }
+  return (
+    <>
+      <Round title={current ? soundShort(current) : t('Audio output')} on={current?.kind === 'speaker'} onPress={() => setChoosing(true)} />
+      <Sheet visible={choosing} onClose={() => setChoosing(false)} title={t('Audio output')}>
+        {outputs.map((output) => (
+          <Button
+            key={output.id}
+            title={output.id === current?.id ? `✓ ${soundName(output)}` : soundName(output)}
+            kind={output.id === current?.id ? 'primary' : 'secondary'}
+            onPress={() => {
+              choose(output.id);
+              setChoosing(false);
+            }}
+          />
+        ))}
+      </Sheet>
+    </>
   );
 }
 

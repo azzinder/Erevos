@@ -6,7 +6,8 @@
 // ending, and the keystore (lib/secure) and the app's files (lib/files) are swapped for ones in
 // memory. The SMS module is swapped for a phone without SMS, and the phone's own module for one
 // that only keeps the reminders asked of it. The calls' module, the folders backups go to
-// (expo-file-system) and the panic button keep in memory what backups give them.
+// (expo-file-system) and the panic button keep in memory what backups give them. The call module
+// has only where a call's sound can go, in memory.
 import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -17,6 +18,7 @@ const DEVICE = new URL('./device-memory.ts', import.meta.url).href;
 const PHONE = new URL('./phone-memory.ts', import.meta.url).href;
 const FOLDERS = new URL('./folder-memory.ts', import.meta.url).href;
 const PANIC = new URL('./panic-memory.ts', import.meta.url).href;
+const CALL_AUDIO = new URL('./call-audio-memory.ts', import.meta.url).href;
 
 const LIB = new URL('../lib/', import.meta.url).href;
 
@@ -29,6 +31,7 @@ export async function resolve(specifier, context, next) {
   if (specifier.endsWith('/modules/erevos-sms')) return { url: SMS, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-device')) return { url: DEVICE, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-phone')) return { url: PHONE, shortCircuit: true };
+  if (specifier.endsWith('/modules/erevos-call')) return { url: CALL_AUDIO, shortCircuit: true };
   if (specifier === 'expo-file-system') return { url: FOLDERS, shortCircuit: true };
   if (specifier.endsWith('/lib/panic') || (inLib && specifier === './panic')) return { url: PANIC, shortCircuit: true };
   if ((specifier.startsWith('./') || specifier.startsWith('../')) && context.parentURL?.startsWith('file:')) {

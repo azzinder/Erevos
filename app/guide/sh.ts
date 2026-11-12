@@ -1229,6 +1229,11 @@ mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati s
 - **Javiti se s videom ili samo glasom:** poziv koji zvoni nudi **Javi se**, samo glasom, i **Javi se s videom**, u
   pozivima Erevosa te u XMPP i Matrix pozivima; u grupnom pozivu to su **Pridruži se** i **Pridruži se s videom**. Video
   poziv na koji se javite samo glasom počinje s isključenom kamerom.
+- **Kamo ide zvuk** (Android): s povezanim Bluetooth slušalicama ili slušalicama na kabel, **Zvučnik** postaje **Izlaz
+  zvuka**: pokazuje kamo zvuk ide sada, **Telefon**, **Zvučnik**, **Slušalice** ili **Bluetooth**, a dodir ih sve
+  nabraja, Bluetooth slušalice njihovim imenom, da izabereš. Slušalice povezane na početku poziva, ili tijekom njega,
+  preuzimaju zvuk, kao u telefonskom pozivu, a uključena kamera ga ostavlja tamo; kad se odspoje, zvuk se vraća na
+  telefon, ili na zvučnik u video pozivu.
 - **Uključiti kameru kasnije:** **Uključi kameru**, na ekranu poziva, radi kad aplikacija druge strane može promijeniti
   poziv dok traje; grupni poziv ostaje kako ste mu se pridružili.
 - **Dodati video glasovnom pozivu:** u glasovnom pozivu Erevosa **Dodaj video** uključuje vašu kameru kad druga osoba

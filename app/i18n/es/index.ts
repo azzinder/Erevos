@@ -67,6 +67,7 @@ import { voiceOpus } from './voice-opus';
 import { readAllText } from './read-all';
 import { servicesText } from './services';
 import { callAnswer } from './call-answer';
+import { callSound } from './call-sound';
 import { smsParts } from './sms-parts';
 import { xmppTools } from './xmpp-tools';
 import { nostrMore } from './nostr-more';
@@ -80,4 +81,4 @@ import { chatWriting } from './chat-writing';
 import { chatProtect } from './chat-protect';
 import { chatRules } from './chat-rules';
 
-export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe, ...modulesText, ...setupText, ...collectionText, ...collectionMedia, ...collectionTv, ...unreadSigns, ...lastSeen, ...publicFeed, ...payText, ...nextcloudText, ...myselfFolders, ...selectText, ...voiceOpus, ...readAllText, ...callAnswer, ...smsParts, ...xmppTools, ...nostrMore, ...matrixGroups, ...erevosChats, ...stickerSend, ...servicesText, ...chatShare, ...chatCarry, ...chatList, ...chatWriting, ...chatProtect, ...chatRules };
+export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe, ...modulesText, ...setupText, ...collectionText, ...collectionMedia, ...collectionTv, ...unreadSigns, ...lastSeen, ...publicFeed, ...payText, ...nextcloudText, ...myselfFolders, ...selectText, ...voiceOpus, ...readAllText, ...callAnswer, ...callSound, ...smsParts, ...xmppTools, ...nostrMore, ...matrixGroups, ...erevosChats, ...stickerSend, ...servicesText, ...chatShare, ...chatCarry, ...chatList, ...chatWriting, ...chatProtect, ...chatRules };

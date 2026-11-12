@@ -49,11 +49,20 @@ export type NoticeChannel = { importance: number; sound: boolean; lockScreen: nu
  *  a build from before a screen opens for it. */
 export type SettingsScreen = 'notices' | 'calls' | 'messages' | 'quiet' | 'own' | 'reminders' | 'data' | 'alarms' | 'unused' | 'saver' | 'sound' | 'app';
 
+/** Where a call's sound can go (modules/erevos-call, CallOutputs.kt): `name` is a Bluetooth headset's own, '' for the others. */
+export type CallOutput = { id: string; kind: 'earpiece' | 'speaker' | 'wired' | 'bluetooth'; name: string };
+
 // What came after the first calls is missing in a build made before it, so it is optional.
 type CallAudio = {
-  /** Sets the sound up for a call, through the loudspeaker or the earpiece. */
+  /** Sets the sound up for a call: through a headset when one is connected, else the loudspeaker or the earpiece. */
   start(speaker: boolean): void;
+  /** The loudspeaker, or not: then a headset when one is connected, else the earpiece. */
   setSpeaker(speaker: boolean): void;
+  /** Where the call's sound can go now. Missing in a build before it, as are output and setOutput. */
+  outputs?(): CallOutput[];
+  /** The one it goes to now, by id; null when not known. */
+  output?(): string | null;
+  setOutput?(id: string): void;
   /** Puts the sound and the screen back as they were before the call. */
   stop(): void;
   /** React Native's WebSocket and fetch keep no cookies from now on, so they load no WebView: how many of the two took it. */
@@ -111,6 +120,8 @@ type CallAudio = {
   addListener?(name: 'onNetwork', listener: () => void): EventSubscription;
   /** "onSleepLook": the alarm of the battery mode Sleep woke the phone, and holds it awake for a look (lib/sleep-look.ts). */
   addListener?(name: 'onSleepLook', listener: () => void): EventSubscription;
+  /** "onOutputs": during a call, a headset came or went, or the sound moved (components/call-sound.tsx). */
+  addListener?(name: 'onOutputs', listener: () => void): EventSubscription;
 };
 
 // The phone's side of a call on Android (sound route, screen, ringing in the background). In a page

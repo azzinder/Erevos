@@ -1262,6 +1262,11 @@ durou, ou uma chamada perdida.
 - **Atender com vídeo ou só com voz:** uma chamada que toca oferece **Atender**, só com voz, e **Atender com vídeo**,
   nas chamadas do Erevos e nas do XMPP e do Matrix; numa chamada de grupo são **Entrar** e **Entrar com vídeo**. Uma
   chamada de vídeo atendida só com voz começa com a sua câmera desligada.
+- **Para onde vai o som** (Android): com fones Bluetooth ou com fio conectados, **Alto-falante** passa a ser **Saída de
+  áudio**: mostra para onde vai o som agora, **Telefone**, **Alto-falante**, **Fones de ouvido** ou **Bluetooth**, e um
+  toque lista todos, uns fones Bluetooth pelo próprio nome, para escolher. Fones conectados ao começar a chamada, ou
+  durante ela, ficam com o som, como numa chamada telefônica, e ligar a câmera o deixa ali; quando se desconectam, o som
+  volta ao telefone, ou ao alto-falante numa videochamada.
 - **Ligar a câmera depois:** **Ligar câmera**, na tela da chamada, funciona quando o app do outro lado pode mudar uma
   chamada enquanto ela dura; uma chamada de grupo fica como você entrou.
 - **Adicionar vídeo a uma chamada de voz:** numa chamada de voz do Erevos, **Adicionar vídeo** liga a sua câmera quando

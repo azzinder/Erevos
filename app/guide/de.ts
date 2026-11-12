@@ -1360,6 +1360,11 @@ und **Auflegen**. Jeder Anruf hinterlässt eine Zeile im Chat, etwa wie lange er
 - **Mit Video oder nur mit Stimme annehmen:** Ein Anruf, der klingelt, bietet **Annehmen**, nur mit Stimme, und **Mit
   Video annehmen**, bei Erevos-Anrufen und bei XMPP- und Matrix-Anrufen; in einem Gruppenanruf heißen sie **Beitreten**
   und **Mit Video beitreten**. Ein Videoanruf, den du nur mit Stimme annimmst, beginnt mit ausgeschalteter Kamera.
+- **Wohin der Ton geht** (Android): Ist ein Bluetooth- oder Kabel-Headset verbunden, wird **Lautsprecher** zu
+  **Audioausgabe**: Es zeigt, wohin der Ton gerade geht, **Telefon**, **Lautsprecher**, **Kopfhörer** oder **Bluetooth**,
+  und ein Tippen listet alle auf, ein Bluetooth-Headset mit seinem eigenen Namen, zum Auswählen. Ein Headset, das beim
+  Start des Anrufs oder währenddessen verbunden wird, übernimmt den Ton, wie bei einem Telefonanruf, und das Einschalten
+  der Kamera lässt ihn dort; wird es getrennt, geht der Ton zurück ans Telefon, bei einem Videoanruf an den Lautsprecher.
 - **Die Kamera später einschalten:** **Kamera an** auf dem Anrufbildschirm geht, wenn die App der anderen Seite einen
   Anruf während des Gesprächs ändern kann; ein Gruppenanruf bleibt, wie du beigetreten bist.
 - **Video zu einem Sprachanruf hinzufügen:** In einem Erevos-Sprachanruf schaltet **Video dazu** deine Kamera ein,
