@@ -588,8 +588,9 @@ jobs:
           echo "PRE=$PRE" >> "$GITHUB_ENV"
           gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST" $PRE
           gh release delete "build-$EREVOS_BUILD" --yes
-          # The five newest releases stay.
-          gh release list --limit 100 --exclude-drafts --json tagName --jq '[.[] | select(.tagName | startswith("channel-") | not)][5:][].tagName' |
+          # Erevos's five newest releases stay. Erevos+'s (titled "Erevos+ …") and the channels' are
+          # not Erevos's to remove: a channel's version.json names an Erevos+ release that must stay.
+          gh release list --limit 100 --exclude-drafts --json tagName,name --jq '[.[] | select((.tagName | startswith("channel-")) or ((.name // "") | startswith("Erevos+")) | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --cleanup-tag --yes
 
       # The public repository holds only the releases: Erevos's own repository stays private.
@@ -607,5 +608,5 @@ jobs:
             fi
             gh release upload "channel-$CHANNEL" files/version.json --repo "$RELEASES_REPO" --clobber
           fi
-          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '[.[] | select(.tagName | startswith("channel-") | not)][5:][].tagName' |
+          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName,name --jq '[.[] | select((.tagName | startswith("channel-")) or ((.name // "") | startswith("Erevos+")) | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes

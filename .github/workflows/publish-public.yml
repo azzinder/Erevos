@@ -45,7 +45,10 @@ jobs:
           if gh release view "$TAG" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
             gh release upload "$TAG" files/* --repo "$RELEASES_REPO" --clobber
           else
-            gh release create "$TAG" files/* --repo "$RELEASES_REPO" --title "Erevos ${TAG#v}" --notes-file notes.md --latest
+            # A beta or an alpha is a prerelease, never the latest, as release.yml makes it.
+            if [[ "$TAG" =~ -(alpha|beta)\. ]]; then LATEST=(--prerelease --latest=false); else LATEST=(--latest); fi
+            gh release create "$TAG" files/* --repo "$RELEASES_REPO" --title "Erevos ${TAG#v}" --notes-file notes.md "${LATEST[@]}"
           fi
-          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+          # Erevos's five newest stay; Erevos+'s releases (titled "Erevos+ …") and the channels' are not its to remove.
+          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName,name --jq '[.[] | select((.tagName | startswith("channel-")) or ((.name // "") | startswith("Erevos+")) | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes
