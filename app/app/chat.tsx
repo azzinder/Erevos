@@ -1746,13 +1746,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       hiddenPlaceOpen(collection, false);
     };
   }, [hiddenKey, loaded, e2e, placeGroups]);
-  // The call asked for starts once its chat is open.
+  // The call asked for starts once its chat is open: also when it was open already, as when a
+  // hidden contact's card calls from over its own chat (`open` above counts another arrival).
   useEffect(() => {
     const wanted = pendingCall.current;
     if (!wanted || !loaded || !e2e || selected !== wanted.peer) return;
     pendingCall.current = null;
     void startCall(wanted.video);
-  }, [loaded, e2e, selected]);
+  }, [loaded, e2e, selected, arrival]);
 
   // Another chat starts with its latest imported messages and pinned message, and answers nothing yet.
   // The offer to connect a contact just added stays with its own chat only.

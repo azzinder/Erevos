@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Call and Video on a hidden contact's card call**: opened over the contact's own hidden chat, they did nothing, as
+  the chat that was to start the call was open already. Now the call starts there, as from the tiles at the top of the
+  chat.
 - **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
   (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
   posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were
