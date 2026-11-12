@@ -51,6 +51,10 @@ export type Contact = {
    *  timer. Missing while neither ever set it, or off. */
   shots?: true;
   shotsAt?: number;
+  /** What goes to them and comes from them goes only through Tor, on circuits of this chat's own,
+   *  whatever the space's Tor way (lib/tor-chats.ts): never straight, so it waits while Tor starts.
+   *  Calls do not: their sound goes as every call's does. Only this phone knows it. Missing: as the space. */
+  tor?: true;
   /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
    *  request. Their phone hears nothing back (not even that a message came) until it does. */
   request: boolean;
@@ -702,6 +706,7 @@ function checkedContact(value: unknown): Contact | null {
     avatar: checkedAvatar(v.avatar),
     ownIdentity: isHex(v.ownIdentity) && v.ownIdentity.length === 64 ? v.ownIdentity : '',
     hide: v.hide === true,
+    ...(v.tor === true ? { tor: true as const } : {}),
     heldGot: heldTags(v.heldGot),
     heldRead: heldTags(v.heldRead),
     phone: isText(v.phone) && /^\+?\d{3,20}$/.test(v.phone) ? v.phone : '',

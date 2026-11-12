@@ -228,7 +228,7 @@ export async function sendFile(
   const key = randomBytes(32);
   const id = newFileId();
   const ids: string[] = [];
-  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
+  const session = await RelaySession.open({ url: own.url, token: own.token, ...(own.torChat ? { torChat: own.torChat } : {}) }, true);
   try {
     for (let n = 0; n < count; n++) {
       const at = n * room(chunk);
@@ -284,7 +284,7 @@ export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, pro
 export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, from = 0): Promise<FileOffer> {
   if (ref.from) throw new FileMissingError();
   const ids: string[] = [];
-  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
+  const session = await RelaySession.open({ url: own.url, token: own.token, ...(own.torChat ? { torChat: own.torChat } : {}) }, true);
   try {
     for (let n = 0; n < ref.count; n++) {
       const sealed = await readChunk(ref.id, n);
@@ -308,9 +308,11 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
  * relay's /files path (only as takesItself says, when taken by itself).
  */
 export function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
-  if (sameRelay(relay, own.url)) return { at: { url: own.url, token: own.token } };
-  if (lentAway(own, relay)) return { at: relayPath(relay, '/files') };
-  return { at: { url: own.url, token: own.token }, via: relay };
+  // A chat that goes only through Tor takes its files on its own circuits (lib/tor-chats.ts).
+  const tor = own.torChat ? { torChat: own.torChat } : {};
+  if (sameRelay(relay, own.url)) return { at: { url: own.url, token: own.token, ...tor } };
+  if (lentAway(own, relay)) return { at: { ...relayPath(relay, '/files'), ...tor } };
+  return { at: { url: own.url, token: own.token, ...tor }, via: relay };
 }
 
 // Whether a file at `relay` is taken, from a place lent on ours, straight from that relay.
@@ -547,7 +549,7 @@ export function refSource(ref: FileRef): Source {
  * group's file deleted for everyone. One it cannot take off expires there.
  */
 export async function takeOffRelay(own: Relay, ids: string): Promise<void> {
-  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
+  const session = await RelaySession.open({ url: own.url, token: own.token, ...(own.torChat ? { torChat: own.torChat } : {}) }, true);
   try {
     for (let at = 0; at + ID_HEX <= ids.length; at += ID_HEX) await deleteChunk(session, fromHex(ids.slice(at, at + ID_HEX))).catch(() => false);
   } finally {

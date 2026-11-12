@@ -12,7 +12,7 @@
 
 import { bridgeLines, NO_BRIDGES, type Bridges } from './bridges';
 import { canTor, tor } from './core';
-import { setThroughTor, setTorReady, type TorWay } from './relay';
+import { setThroughTor, setTorReady, setTorStarter, type TorWay } from './relay';
 
 export type TorStatus = { text: string; ready: boolean };
 
@@ -85,8 +85,18 @@ async function startTor(bridges: Bridges): Promise<void> {
  */
 export async function ensureTor(): Promise<void> {
   if (!canTor()) throw new Error('noTor');
-  if (!started) await startTor(bridgesNow);
+  if (started) return;
+  // Asked by many at once (a chat that goes through Tor, each of its requests): started once.
+  starting ??= startTor(bridgesNow).finally(() => {
+    starting = null;
+  });
+  await starting;
 }
+
+let starting: Promise<void> | null = null;
+
+// A chat that goes only through Tor starts it, as a relay reached only through it does (lib/relay.ts setTorChats).
+setTorStarter(ensureTor);
 
 /** Stops sending through Tor, as the space closes. */
 export function leaveTor(): void {

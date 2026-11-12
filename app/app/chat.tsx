@@ -95,7 +95,8 @@ import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/r
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { connectReach } from '../lib/connect-reach';
 import { oldToken, ownToken } from '../lib/relay-signin';
-import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canXmpp, hasCore } from '../lib/core';
+import { circuitOf } from '../lib/tor-chats';
+import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canTor, canXmpp, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked, placeLinksNow } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -1927,6 +1928,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // one is. A chat that appears offline asks nothing, so it does not learn it either. It asks
   // again when a phone links nearby: the answer says whether it is theirs (lib/nearby.ts).
   const selectedHidden = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.hide);
+  const selectedTor = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.tor === true);
   const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request);
   const linked = hiddenKey ? 0 : nearby.count();
   useEffect(() => {
@@ -4203,7 +4205,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Takes a photo or file that came, from the relay it is on through ours, and keeps it here; by
   // itself (`itself`), never straight from where its sender chose (lib/attachments.ts takesItself).
-  async function take(own: Relay | null, peer: string, tag: string, ref: FileRef, itself = false) {
+  async function take(given: Relay | null, peer: string, tag: string, ref: FileRef, itself = false) {
+    const own = given ? torOwn(given, peer) : given;
     const key = `${peer}|${tag}`;
     if (takingNow.current.has(key) || !ref.from) return;
     takingNow.current.add(key);
@@ -4495,7 +4498,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           await deleteChunks(ref.id, ref.count).catch(() => undefined);
           throw failed;
         }
-      } else sent = await sendFile(own!, picked.source, meta, progress);
+      } else sent = await sendFile(torOwn(own!, to), picked.source, meta, progress);
       kept = sent.ref;
       offer = sent.offer;
       const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
@@ -4741,6 +4744,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           ? t("When nothing else can take a text to {name}, it goes by SMS, end-to-end encrypted. Each SMS costs what your plan says, and the phone company sees that you wrote to their number, and when.", { name: label(peer, shownContacts) })
           : t('Messages to {name} no longer go by SMS.', { name: label(peer, shownContacts) }),
       );
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Our relay as a chat's files go through it: on that chat's own circuits through Tor when it goes only through Tor.
+  function torOwn(own: Relay, peer: string): Relay {
+    const identity = peer.startsWith(CONTACT_PREFIX) ? peer.slice(CONTACT_PREFIX.length) : '';
+    return identity && contacts.some((c) => c.identity === identity && c.tor === true) ? { ...own, torChat: circuitOf(identity) } : own;
+  }
+
+  // The chat goes only through Tor, on circuits of its own, whatever the space's way (lib/tor-chats.ts).
+  async function changeTor(peer: string, on: boolean) {
+    if (!e2e) return;
+    try {
+      await e2e.setTor(peer.slice(CONTACT_PREFIX.length), on);
+      setContacts(e2e.contacts());
+      setNote(on ? t('Messages and files with {name} now go only through Tor. They wait while Tor starts.', { name: label(peer, shownContacts) }) : t('Messages with {name} go as the space’s Tor setting says.', { name: label(peer, shownContacts) }));
     } catch (error) {
       setNote(errorText(error));
     }
@@ -6512,6 +6533,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             <DetailRow title={t('SMS when nothing else works')} checked={selectedSmsWay} onPress={() => void changeSmsWay(selectedContact, !selectedSmsWay)} />
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
                               {t('Texts go by SMS to their number, end-to-end encrypted, only when the relay, Nostr, the phones nearby and LoRa all fail. Each costs SMS, and the phone company sees who wrote to whom, and when. Both phones need Erevos as the SMS app.')}
+                            </Text>
+                          </>
+                        ) : null}
+                        {canTor() ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Through Tor')} checked={selectedTor} onPress={() => void changeTor(selectedContact, !selectedTor)} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {selectedTor
+                                ? t('This chat goes only through Tor, on its own circuits, whatever the space’s Tor setting: the relay does not see your address for it. Slower, and it waits while Tor starts. Calls do not go through Tor.')
+                                : t('This chat goes as the space’s Tor setting says. Turn on to send it only through Tor.')}
                             </Text>
                           </>
                         ) : null}

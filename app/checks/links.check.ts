@@ -296,3 +296,12 @@ test('Erevos\'s invite and contact pages open their screens in the app', () => {
   assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i#a<b'), '');
   assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i'), '');
 });
+
+test('a bare web name with a known ending is a link too, as Telegram and Signal show it; e-mail and file names are not', () => {
+  assert.deepEqual(urls('join t.me/erevos now'), ['https://t.me/erevos']);
+  assert.deepEqual(urls('see example.org/page?x=1.'), ['https://example.org/page?x=1']);
+  assert.deepEqual(urls('lphl.nekten.eu'), ['https://lphl.nekten.eu']);
+  assert.deepEqual(urls('write to me@example.org'), []);
+  assert.deepEqual(urls('photo.jpg and notes.txt, v1.2'), []);
+  assert.deepEqual(urls('https://example.org/a.com'), ['https://example.org/a.com']);
+});

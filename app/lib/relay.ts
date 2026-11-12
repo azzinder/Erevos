@@ -177,7 +177,8 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 /** A relay, its token, and how it is reached; `torOnly` only through Tor, never straight (lib/closed-notices.ts).
  *  `tor`: always through Tor, whatever the space's way, files too, never straight: a backup relay
  *  that is not to see this phone's address (lib/spare.ts). */
-export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay; torOnly?: boolean; tor?: boolean };
+/** `torChat`: for a chat that goes only through Tor (setTorChats), the name of its own circuits there. */
+export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay; torOnly?: boolean; tor?: boolean; torChat?: string };
 export type Fallback = { relay: Relay; senderId?: Uint8Array };
 
 export class RelayError extends Error {
@@ -397,15 +398,47 @@ export function torFor(files: boolean, now = Date.now()): boolean {
 // of its own host alone, so that its requests never share a circuit, and so an exit, with those of
 // the space's relay or of another home relay; `way` within them, when given.
 function torWayOf(relay: Relay, way?: string): string | undefined {
+  if (relay.torChat && relay.tor !== true) return `chat ${relay.torChat}${way ? ` ${way}` : ''}`;
   if (relay.tor !== true) return way;
   const host = relay.url.replace(/^wss?:\/\//i, '').split('/')[0].toLowerCase();
   return `home ${host}${way ? ` ${way}` : ''}`;
 }
 
 // Whether a request to `relay` goes through Tor now: always for one reached only through Tor
-// (Relay.tor), else as the space's way says.
+// (Relay.tor) and for a chat set to go through Tor (Relay.torChat), else as the space's way says.
 function torTo(relay: Relay, files: boolean): boolean {
-  return relay.tor === true || torFor(files);
+  return relay.tor === true || !!relay.torChat || torFor(files);
+}
+
+// Chats set to go only through Tor, each by itself (lock/e2e-data.ts Contact.tor), whatever the
+// space's way: what is sent to them, by the sender ids of their queues, and what is read from
+// them, their queues' recipient ids (lib/contact-queues.ts bunches). Each on circuits of its own,
+// so the relay sees neither this phone's address nor one exit for two such chats. Never straight:
+// with Tor not ready, what goes to them waits and is tried again, as for a relay reached only
+// through Tor. Starting Tor is lib/tor.ts's, told here (setTorStarter), as it imports this.
+let torChatSenders = new Map<string, string>();
+let torChatReaders = new Set<string>();
+let torStarter: (() => Promise<void>) | null = null;
+
+/** The chats that go only through Tor now: their queues' sender ids (hex) with each one's circuit name, and the recipient ids (hex) of the queues they write to. */
+export function setTorChats(senders: ReadonlyMap<string, string>, readers: ReadonlySet<string>): void {
+  torChatSenders = new Map(senders);
+  torChatReaders = new Set(readers);
+  if (senders.size > 0 || readers.size > 0) void torStarter?.().catch(() => undefined);
+}
+
+/** Whether what comes into the queue `recipient` (hex) is read only through Tor. */
+export const readsThroughTor = (recipient: string): boolean => torChatReaders.has(recipient.toLowerCase());
+
+/** How Tor is started for a chat that goes through it (lib/tor.ts ensureTor). */
+export function setTorStarter(start: () => Promise<void>): void {
+  torStarter = start;
+}
+
+// `relay` for a send with `senderId`: on its chat's own circuits through Tor when that chat goes only through Tor.
+function forSender(relay: Relay, senderId: Uint8Array): Relay {
+  const circuit = torChatSenders.get(toHex(senderId));
+  return circuit ? { ...relay, torChat: circuit } : relay;
 }
 
 // The core's Tor says what failed in its own words: a RelayError, as a direct connection's failure is.
@@ -774,7 +807,9 @@ class TorLine implements Line {
     const token = channel ? '' : (relay.token ?? '');
     const open = () =>
       way && canTorWays() ? torOpenOn(relay.url, token, way, channel) : channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, token);
-    return new TorLine(await viaTor(open, !channel && !relay.tor), relay.tor === true);
+    // A relay reached only through Tor, or a chat that goes only through it, says nothing of how the space's other requests go.
+    const own = relay.tor === true || !!relay.torChat;
+    return new TorLine(await viaTor(open, !channel && !own), own);
   }
 
   call(bytes: Uint8Array, within: number, rest = true): Promise<Uint8Array> {
@@ -890,7 +925,7 @@ async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, wa
   try {
     return await requestOnce(relay, bytes, signal, way);
   } catch (error) {
-    if (!tor || torWay !== 'messages' || relay.torOnly || relay.tor || signal?.aborted || !(error instanceof RelayUnreachableError) || error instanceof RelayKeyError) throw error;
+    if (!tor || torWay !== 'messages' || relay.torOnly || relay.tor || relay.torChat || signal?.aborted || !(error instanceof RelayUnreachableError) || error instanceof RelayKeyError) throw error;
     torRestUntil = Math.max(torRestUntil, Date.now() + TOR_REST_MS);
     return requestOnce(relay, bytes, signal, way);
   }
@@ -903,6 +938,8 @@ async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal
   // A space that goes through Tor, waited on while another is open: never straight.
   if (relay.torOnly && !torFor(false)) throw new RelayUnreachableError(t('Tor is not ready.'));
   if (relay.tor && !canTor()) throw new RelayUnreachableError(t('This relay is reached only through Tor, which this build of Erevos does not have.'));
+  if (relay.torChat && !canTor()) throw new RelayUnreachableError(t('This chat goes only through Tor, which this build of Erevos does not have.'));
+  if (relay.torChat) await torStarter?.();
   const pin = channelPin(relay);
   if (!pin) return plainRequest(relay, bytes, signal, way);
   try {
@@ -931,14 +968,14 @@ function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way
         ? TorLine.open(relay, false, way).then((line) =>
             line.call(bytes, within).finally(() => line.close()),
           )
-        : viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes), !relay.tor);
+        : viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes), !relay.tor && !relay.torChat);
     // Tor's request runs on until it ends; its reply is not waited for once the request ended
     // here, or took too long (twice as long as straight, as Tor is slower).
     return new Promise((resolve, reject) => {
       const end = () => reject(new Ended());
       const late = setTimeout(() => {
         // A relay reached only through Tor says nothing of how the space's other requests go.
-        if (torWay === 'messages' && !relay.tor) torRestUntil = Date.now() + TOR_REST_MS;
+        if (torWay === 'messages' && !relay.tor && !relay.torChat) torRestUntil = Date.now() + TOR_REST_MS;
         reject(lateError());
       }, 2 * within);
       signal?.addEventListener('abort', end);
@@ -1139,7 +1176,7 @@ export async function sendMessage(relay: Relay, senderId: Uint8Array, message: U
 
 async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array, mark: Mark | undefined): Promise<void> {
   const { to, bytes } = await sendRequest(relay, senderId, message);
-  check(await request(to, marked(bytes, mark)), 'send');
+  check(await request(forSender(to, senderId), marked(bytes, mark)), 'send');
 }
 
 // The request that queues one message, and the relay it goes to: the second relay with the message
@@ -1221,7 +1258,9 @@ export async function sendMessageLater(relay: Relay, senderId: Uint8Array, messa
     let holder: Relay | null = null;
     try {
       for (const [i, message] of messages.entries()) {
-        const { to, bytes } = await sendRequest(route.relay, route.senderId, message);
+        const made = await sendRequest(route.relay, route.senderId, message);
+        const to = forSender(made.to, route.senderId);
+        const bytes = made.bytes;
         if (!(await canHoldAt(to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: to.url }));
         holder = to;
         const id = randomBytes(16);
@@ -1310,7 +1349,7 @@ export async function ackTaken(relay: Relay, recipientId: Uint8Array, way?: stri
   bytes[0] = ACK;
   bytes.set(recipientId, 1);
   bytes.set(number, 25);
-  const reply = way === undefined ? await request(relay, bytes) : await readRequest(relay, bytes, way);
+  const reply = way === undefined ? await request(relay, bytes) : await readRequest(relay, bytes, way, undefined, [recipientId]);
   if (reply === null || reply === 'ended') return;
   if (reply[0] !== NOT_FOUND) check(reply, 'receive');
   if (held.get(key) === number) held.delete(key);
@@ -1518,7 +1557,7 @@ export async function readsManyAt(relay: Relay, way: string): Promise<boolean> {
  */
 export async function receiveOnRead(relay: Relay, recipientId: Uint8Array, way: string, shown = onScreen()): Promise<Uint8Array | null> {
   const key = heldKey(relay, recipientId);
-  const reply = await readRequest(relay, receiveBytes(recipientId, shown, held.get(key)), way);
+  const reply = await readRequest(relay, receiveBytes(recipientId, shown, held.get(key)), way, undefined, [recipientId]);
   if (reply === null || reply === 'ended') return null;
   const taken = receivedOf(reply, key);
   lastTaken = Date.now();
@@ -1534,7 +1573,7 @@ export type AnyFound = 'none' | 'waiting' | 'gone';
  * With the relay's key, for its channel, and as reached through Tor as the relay is.
  */
 function readerOf(relay: Relay): Relay {
-  return { url: relayPath(relay.url, '/read').url, ...(relay.key ? { key: relay.key } : {}), ...(relay.torOnly ? { torOnly: true } : {}) };
+  return { url: relayPath(relay.url, '/read').url, ...(relay.key ? { key: relay.key } : {}), ...(relay.torOnly ? { torOnly: true } : {}), ...(relay.torChat ? { torChat: relay.torChat } : {}) };
 }
 
 /**
@@ -1544,7 +1583,10 @@ function readerOf(relay: Relay): Relay {
  * answered there this run, as then its connection died on the way. Throws when the relay cannot be
  * reached.
  */
-async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?: AbortSignal): Promise<Uint8Array | null | 'ended'> {
+async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?: AbortSignal, recipients: Uint8Array[] = []): Promise<Uint8Array | null | 'ended'> {
+  // Queues of a chat that goes only through Tor (setTorChats) are read on circuits of their own,
+  // never with others (lib/contact-queues.ts bunches keeps them apart), and never straight.
+  if (!relay.torChat && recipients.some((id) => torChatReaders.has(toHex(id)))) relay = { ...relay, torChat: `read ${way}` };
   try {
     return await request(readerOf(relay), bytes, signal, way);
   } catch (error) {
@@ -1578,7 +1620,7 @@ export async function waitForAny(relay: Relay, recipients: Uint8Array[], seconds
   bytes[1] = recipients.length;
   recipients.forEach((id, i) => bytes.set(id, 2 + 24 * i));
   bytes[bytes.length - 1] = Math.max(0, Math.min(60, Math.round(seconds)));
-  const reply = await readRequest(relay, bytes, way, signal);
+  const reply = await readRequest(relay, bytes, way, signal, recipients);
   if (reply === null) return null;
   if (reply === 'ended') return recipients.map(() => 'none');
   check(reply, 'wait');
@@ -1610,7 +1652,7 @@ export async function newsOfAny(
     [heard.round, heard.messages, heard.unmarked, heard.rings].forEach((n, j) => view.setUint32(2 + 40 * i + 24 + 4 * j, n >>> 0));
   });
   bytes[bytes.length - 1] = Math.max(0, Math.min(60, Math.round(seconds)));
-  const reply = await readRequest(relay, bytes, way, signal);
+  const reply = await readRequest(relay, bytes, way, signal, asked.map((a) => a.recipient));
   if (reply === null) return null;
   if (reply === 'ended') return asked.map((a) => a.heard);
   check(reply, 'news');
@@ -2043,6 +2085,8 @@ export class RelaySession {
   static async open(relay: Relay, files = false): Promise<RelaySession> {
     if (stopped && clearing === 0) throw new SpaceStoppedError();
     if (relay.tor && !canTor()) throw new RelayUnreachableError(t('This relay is reached only through Tor, which this build of Erevos does not have.'));
+    if (relay.torChat && !canTor()) throw new RelayUnreachableError(t('This chat goes only through Tor, which this build of Erevos does not have.'));
+    if (relay.torChat) await torStarter?.();
     const throughTor = torTo(relay, files);
     const pin = channelPin(relay);
     if (pin) {
@@ -2101,7 +2145,8 @@ export class RelaySends {
   private readonly sessions = new Map<string, Promise<RelaySession | null>>();
 
   async send(relay: Relay, senderId: Uint8Array, message: Uint8Array, mark?: Mark): Promise<void> {
-    if (relay.via || message.length > MAX_MESSAGE) return sendMessage(relay, senderId, message, mark);
+    // A chat that goes only through Tor, on its own circuits: never on a connection shared with others.
+    if (relay.via || message.length > MAX_MESSAGE || torChatSenders.has(toHex(senderId))) return sendMessage(relay, senderId, message, mark);
     const key = `${relay.url}\n${relay.token ?? ''}`;
     let opened = this.sessions.get(key);
     if (!opened) {

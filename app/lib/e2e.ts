@@ -19,6 +19,7 @@ import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_
 import { bodyOf, checkedList, checkedPass, PASS_MARGIN, readPass, verifyList, verifyPass, type DeviceList, type Pass } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { tellTorChats } from './tor-chats';
 import { canTryLater, isQueueFull, sameRelay } from './relay';
 import { TooLargeForSlowWayError } from './nearby';
 import type { Look } from '../theme/look';
@@ -588,6 +589,8 @@ export type ContactInfo = {
   look: Look | null;
   avatar: Avatar | null;
   hide: boolean;
+  /** The chat goes only through Tor (Contact.tor). */
+  tor?: boolean;
   /** Locked with a PIN of its own (lock/chat-pin.ts). */
   locked: boolean;
   /** Its own notifications (lock/chat-notify.ts); missing while it has none. */
@@ -963,6 +966,7 @@ export class E2E {
     this.store = store;
     this.takesPart = takesPart;
     this.keepFanout = keepFanout;
+    tellTorChats(toHex(identity), data.contacts);
   }
 
   /** The space's own chat, or its hidden chats (`holder`), sealed with `key`. Makes the account the first time. */
@@ -1539,6 +1543,7 @@ export class E2E {
   private async save(data: E2EData): Promise<void> {
     this.data = data;
     this.link?.changed(data.contacts);
+    tellTorChats(toHex(this.identity), data.contacts);
     await this.store(data);
     await this.dropStale();
   }
@@ -1600,7 +1605,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, said, timer, shots, request, look, avatar, hide, pin, notify }) => ({
+    return this.data.contacts.map(({ identity, sender, name, said, timer, shots, request, look, avatar, hide, tor, pin, notify }) => ({
       identity,
       sender,
       // The name this chat gives them, or else the one they go by.
@@ -1613,6 +1618,7 @@ export class E2E {
       look,
       avatar,
       hide,
+      ...(tor === true ? { tor: true } : {}),
       locked: !!pin,
       ...(notify ? { notify } : {}),
     }));
@@ -1698,6 +1704,16 @@ export class E2E {
    * Makes the chat with a contact appear offline to them, or not. Shown again, what was held
    * goes with the next message to them, whatever it is.
    */
+  /** Whether the chat with a contact goes only through Tor (Contact.tor), or as the space's way says. */
+  setTor(identity: string, on: boolean): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      const { tor: _was, ...rest } = contact;
+      await this.save(this.withContact(on ? { ...rest, tor: true } : rest));
+    });
+  }
+
   setHidden(identity: string, hide: boolean): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -3488,6 +3504,7 @@ export class E2E {
       avatar: known?.avatar ?? null,
       ownIdentity: known?.ownIdentity ?? '',
       hide: known?.hide ?? false,
+      ...(known?.tor ? { tor: true as const } : {}),
       heldGot: known?.heldGot ?? [],
       heldRead: known?.heldRead ?? [],
       phone: known?.phone ?? '',

@@ -24,7 +24,7 @@
 
 import type { Mine } from '../lock/e2e-data';
 import { onNetworkChange } from './network-change';
-import { fromHex, MAX_ANY, sameRelay, throughTor, waitForAny, type AnyFound, type Relay } from './relay';
+import { fromHex, MAX_ANY, readsThroughTor, sameRelay, throughTor, waitForAny, type AnyFound, type Relay } from './relay';
 import { joinSleepLooks, waitBegan, waitEnded, type LookPart } from './sleep-look';
 
 /** How many contacts' queues are read together, on one way through Tor. */
@@ -58,6 +58,16 @@ export function contactQueuesAt(mines: { identity: string; mine: Mine }[], url: 
  * relay takes, as it sees one address anyway.
  */
 export function bunches(queues: ContactQueue[], way: string, tor = throughTor()): Bunch[] {
+  // The chats that go only through Tor (lib/tor-chats.ts) are read apart, through Tor, whatever the
+  // space's way: each group of them on a way of its own, never with the others.
+  const torOnes = queues.filter((q) => readsThroughTor(q.r));
+  if (torOnes.length > 0) {
+    const rest = queues.filter((q) => !readsThroughTor(q.r));
+    const groups = new Map<number, ContactQueue[]>();
+    for (const q of torOnes) groups.set(q.g, [...(groups.get(q.g) ?? []), q]);
+    const own = [...groups.entries()].sort(([a], [b]) => a - b).map(([g, list]) => ({ way: `${way}-tor-${g}`, queues: list.slice(0, MAX_ANY) }));
+    return [...bunches(rest, way, tor), ...own];
+  }
   if (!tor) {
     const all: Bunch[] = [];
     for (let i = 0; i < queues.length; i += MAX_ANY) all.push({ way, queues: queues.slice(i, i + MAX_ANY) });
