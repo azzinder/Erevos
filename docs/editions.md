@@ -17,7 +17,8 @@ update and keeps everything.
 
 ## What the edition changes
 
-- `app/app.config.js` reads `EREVOS_EDITION`; `lite` is kept as `extra.edition` (`app/lib/edition.ts`).
+- `app/app.config.js` reads `EREVOS_EDITION`; `lite` is kept as `extra.edition` (`app/lib/edition.ts`). The name
+  under the icon is the edition's: **Erevos+**, or **Erevos** for the plain one.
 - `app/lib/modules.ts`: `modulesHere()` gives only the edition's modules, so the first start,
   Settings → Modules, the home screen and the menus offer nothing else. A module the plain Erevos
   does not have is never part of a choice made there (`known`), so it is on after moving to Erevos+.

@@ -24,6 +24,8 @@ module.exports = ({ config }) => {
   if (edition !== 'plus' && edition !== 'lite') throw new Error(`EREVOS_EDITION is "${edition}": only "plus" and "lite" are known`);
   return {
     ...config,
+    // The name under the icon is the edition's: Erevos+, or Erevos for the plain one.
+    name: edition === 'lite' ? 'Erevos' : 'Erevos+',
     version: process.env.EREVOS_VERSION || config.version,
     android: {
       ...config.android,
