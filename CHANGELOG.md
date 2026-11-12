@@ -24,6 +24,11 @@ On main, not released yet:
   as in a phone call, and turning the camera on leaves it there; when it goes, the sound goes back to the earpiece, or
   to the loudspeaker in a video call. Before, the call screen had only **Speaker**, on or off, so a Bluetooth headset
   could not be chosen.
+- **Nothing goes through Tor unless you turn it on** (Android): **Automatically from your relay** under **Home relay**
+  is now off in a new space, as every Tor switch is, so a space no longer takes the relay its relay is paired with as a
+  home relay through Tor by itself. Turning it off now also lets go of the home relay it took, the ones you typed
+  staying as they are, so Tor does not run for it. Before, it was on unless turned off, and turning it off kept the
+  home relay it had taken, still reached through Tor. A space that has it on keeps it on until you turn it off.
 - **The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found
   (with how each relay answered, as **Show the people you follow** says), or they were found but no relay sent their
   posts, or posts came but none could be shown. Before, with Matrix on too, it said only that no public posts were

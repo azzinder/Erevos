@@ -54,10 +54,9 @@ export type SpaceData = {
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
   // keep none, as they show in the look of their space.
   look: Look | null;
-  // Which of the space's relay requests go through Tor (lib/tor.ts): none ('off') in a new space,
-  // as Tor makes messages slower. A space made before keeps the way it had, 'messages' unless
-  // changed then; one from before the ways, when only all or none could, keeps all as 'all', and
-  // goes from none to 'messages'.
+  // Which of the space's relay requests go through Tor (lib/tor.ts): none ('off') unless turned on,
+  // as Tor makes messages slower. A space made before keeps the way it kept; one from before the
+  // ways, when only all or none could, keeps all as 'all', and goes from none to 'messages'.
   tor: TorWay;
   // The bridges Tor goes through, for where it is blocked (lib/bridges.ts). None unless chosen.
   bridges: Bridges;
@@ -69,8 +68,9 @@ export type SpaceData = {
   // MORE_SPARES others, each with its own queue, said beside it (a list of home relays).
   spare: SpareRelay;
   // Whether a space with no home relay takes the one its relay is paired with, only through Tor
-  // (lib/pair.ts): on unless turned off, on the Home relay screen or by removing the home relay
-  // there. Only the space's: a hidden place never does.
+  // (lib/pair.ts): off unless turned on, on the Home relay screen, as nothing goes through Tor
+  // unless asked. Turned off there, or by removing the home relay there, the one taken goes. Only
+  // the space's: a hidden place never does.
   pairHome: boolean;
   // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
   push: boolean;
@@ -155,7 +155,7 @@ export const EMPTY_SPACE: SpaceData = {
   bridges: NO_BRIDGES,
   nostr: NOSTR_DEFAULT,
   spare: NO_SPARE,
-  pairHome: true,
+  pairHome: false,
   push: false,
   pushLeft: false,
   pushScope: '',
@@ -219,9 +219,9 @@ export function checkedNostr(value: unknown): NostrSetting {
   return { on: v.on, relays: [...new Set(v.relays.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) };
 }
 
-/** The Tor way stored: from before the ways, true (all) stays all, and false (none) becomes 'messages'. */
+/** The Tor way stored: none unless one was kept; from before the ways, true (all) stays all, and false (none) becomes 'messages'. */
 export function torWayOf(value: unknown): TorWay {
-  return value === true || value === 'all' ? 'all' : value === 'off' ? 'off' : 'messages';
+  return value === true || value === 'all' ? 'all' : value === false || value === 'messages' ? 'messages' : 'off';
 }
 
 /** What was stored, with anything of the wrong shape left out. */
@@ -249,7 +249,7 @@ function checked(value: unknown): SpaceData {
     bridges: checkedBridges(v.bridges),
     nostr: checkedNostr(v.nostr),
     spare: checkedSpareRelay(v.spare),
-    pairHome: v.pairHome !== false,
+    pairHome: v.pairHome === true,
     push: v.push === true,
     pushLeft: v.pushLeft === true,
     pushScope: typeof v.pushScope === 'string' && /^[0-9a-f]{32}$/.test(v.pushScope) ? v.pushScope : '',

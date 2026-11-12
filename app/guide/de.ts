@@ -1792,10 +1792,10 @@ vertraust. Es ist optional.
   [Zweites Passwort](#second)) jeweils das Relay des anderen als Heim-Relay nutzen, und kein Relay verbindet sie
   miteinander. Beide Relays müssen Gutscheine eingeschaltet haben, und es braucht einen Build mit Tor, auf Android
   (siehe [Über Tor](#tor)).
-- **Automatisch von deinem Relay:** ein Schalter, an, solange du ihn nicht ausschaltest, auf Android, wo Erevos Tor
+- **Automatisch von deinem Relay:** ein Schalter, aus, solange du ihn nicht einschaltest, auf Android, wo Erevos Tor
   hat. Nennt dein Relay ein Relay, mit dem es gepaart ist (das richtet sein Betreiber ein), nimmt ein Bereich ohne
   Heim-Relay dieses von selbst, nur über Tor, mit seinem Token aus einem Gutschein wie oben: nichts zu tippen, und
-  nichts zu tun, wenn dein Relay ein anderes nennt. Entfernst du das Heim-Relay von Hand, schaltet sich das für diesen
+  nichts zu tun, wenn dein Relay ein anderes nennt. Schaltest du ihn aus, lässt er das Heim-Relay los, das er genommen hat, und entfernst du das Heim-Relay von Hand, schaltet sich das für diesen
   Bereich aus; ein Heim-Relay, das du selbst eingetippt hast, bleibt, wie es ist. Versteckte Plätze nehmen nie so eins.
 - **Für versteckte Chats:** Jeder versteckte Platz kann ein eigenes Heim-Relay haben, unter **Für Fortgeschrittene**
   auf seinem Bildschirm ohne gewählten Chat, solange er offen ist. Es wird nur bei diesem Platz aufbewahrt, versiegelt

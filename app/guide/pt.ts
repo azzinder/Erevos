@@ -1662,10 +1662,10 @@ própria: um em casa, num Raspberry Pi ou num computador velho, ou qualquer outr
   espaços (veja [Segunda senha](#second)) podem usar cada um o relay do outro como relay de casa, e nenhum relay os liga
   entre si. Os dois relays precisam ter os cupons ativados, e é preciso uma versão com Tor, no Android (veja
   [Pelo Tor](#tor)).
-- **Automaticamente pelo seu relay:** um interruptor, ligado a menos que você o desligue, no Android, onde o Erevos tem
+- **Automaticamente pelo seu relay:** um interruptor, desligado a menos que você o ligue, no Android, onde o Erevos tem
   Tor. Quando o seu relay nomeia um relay pareado com ele (quem o administra configura isso), um espaço sem relay de
   casa pega esse sozinho, só por Tor, com o token dele de um cupom como acima: nada para digitar, e nada a fazer quando
-  o seu relay nomear outro. Remover o relay de casa à mão desliga isso para esse espaço; um relay de casa que você
+  o seu relay nomear outro. Desligá-lo larga o relay de casa que ele pegou, e remover o relay de casa à mão desliga isso para esse espaço; um relay de casa que você
   digitou fica como está. Posições ocultas nunca pegam um assim.
 - **Para as conversas ocultas:** cada posição oculta pode ter um relay de casa próprio, em **Para usuários avançados**
   na tela dela sem nenhuma conversa escolhida, enquanto ela está aberta. Ele fica guardado só com aquela posição,

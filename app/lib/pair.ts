@@ -7,7 +7,7 @@ import { canTor } from './core';
 import { relayPair, sameRelay, type Relay } from './relay';
 import type { SpareStore } from './spare';
 
-// The home relay a space takes by itself (SpaceData.pairHome, on unless turned off). Its relay may
+// The home relay a space takes by itself (SpaceData.pairHome, off unless turned on). Its relay may
 // name relays it is paired with (crates/erevos-relay coupons.rs, EREVOS_RELAY_PAIR): ones that take
 // its coupons. A space with no home relay takes the first that is not its own relay as its home
 // relay, only through Tor and with no token, so the coupon steps give it one (lib/coupons.ts):
@@ -16,7 +16,7 @@ import type { SpareStore } from './spare';
 // only on Android, where Erevos has Tor. A home relay set so (SpareRelay.auto) follows the pair: it
 // goes for the new one when the relay names others, and when it became the space's own relay. One
 // typed on the Home relay screen is the owner's and stays; removing the home relay there turns this
-// off (app/home-relay.tsx).
+// off (app/home-relay.tsx). Turned off, the ones set so go, so nothing of it goes through Tor.
 
 /** How long what a relay said of its pair holds before it is asked again; and after a failure. */
 const ASK_EVERY = 24 * 60 * 60_000;
@@ -69,8 +69,10 @@ export function pairChange(data: Pick<SpaceData, 'url' | 'pairHome' | 'stopped' 
  * changed, and the home relays are then made ready again.
  */
 export async function takePair(store: SpareStore, again = false, now = Date.now()): Promise<boolean> {
-  if (!store.space || !pairHere()) return false;
+  if (!store.space) return false;
   const data = await store.load();
+  if (!data.pairHome) return dropPair(store, data);
+  if (!pairHere()) return false;
   const url = data.url.trim();
   if (!data.pairHome || data.stopped > 0 || !url || (data.spare.url.trim() && data.spare.auto !== true)) return false;
   const seen = said.get(store.of);
@@ -101,5 +103,20 @@ export async function takePair(store: SpareStore, again = false, now = Date.now(
     spare = head ? (rest.length > 0 ? { ...head, more: rest } : head) : next;
   }
   await store.update({ spare });
+  return true;
+}
+
+/**
+ * The home relays set from the relay's pair (SpareRelay.auto) left out, the owner's own kept in
+ * their order: what the space keeps with the switch off. True when one went.
+ */
+export async function dropPair(store: SpareStore, data?: Pick<SpaceData, 'spare'>): Promise<boolean> {
+  const { spare } = data ?? (await store.load());
+  const { more, ...first } = spare;
+  const list = [first, ...(more ?? [])].filter((one) => one.url.trim());
+  const kept = list.filter((one) => one.auto !== true);
+  if (kept.length === list.length) return false;
+  const [head, ...rest] = kept;
+  await store.update({ spare: head ? (rest.length > 0 ? { ...head, more: rest } : head) : NONE });
   return true;
 }

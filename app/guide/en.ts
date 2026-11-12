@@ -1535,10 +1535,10 @@ one at home, on a Raspberry Pi or an old computer, or any other relay you trust.
   could still guess by the times alone. So two spaces (see [Second password](#second)) can each use the other's relay as
   their home relay, and no relay ties them together. Both relays must have coupons turned on, and it needs a build with
   Tor, on Android (see [Through Tor](#tor)).
-- **Automatically from your relay:** a switch, on unless turned off, on Android, where Erevos has Tor. When your relay
+- **Automatically from your relay:** a switch, off unless you turn it on, on Android, where Erevos has Tor. When your relay
   names a relay paired with it (its operator sets that up), a space with no home relay takes that one by itself, only
   through Tor, with its token from a coupon as above: nothing to type, and nothing to do when your relay names another.
-  Removing the home relay by hand turns it off for that space; a home relay you typed yourself stays as it is. Hidden
+  Turning it off lets go of the home relay it took, and removing the home relay by hand turns it off for that space; a home relay you typed yourself stays as it is. Hidden
   places never take one so.
 - **For hidden chats:** each hidden place can have a home relay of its own, under **For advanced users** on its
   screen with no chat picked, while it is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked

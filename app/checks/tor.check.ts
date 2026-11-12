@@ -290,13 +290,13 @@ test("bridges none usable: the way 'messages' stops Tor and sends straight", asy
   assert.equal(straight, 1);
 });
 
-test("a space's Tor way: none in a new space, the way of one made before kept; from before the ways, all stays all", () => {
+test("a space's Tor way: none unless turned on, the way one kept stays; from before the ways, all stays all", () => {
   assert.equal(EMPTY_SPACE.tor, 'off', 'Tor makes messages slower: a new space sends nothing through it');
   assert.equal(torWayOf(true), 'all');
   assert.equal(torWayOf(false), 'messages');
-  assert.equal(torWayOf(undefined), 'messages');
+  assert.equal(torWayOf(undefined), 'off');
   assert.equal(torWayOf('all'), 'all');
   assert.equal(torWayOf('off'), 'off');
   assert.equal(torWayOf('messages'), 'messages');
-  assert.equal(torWayOf('anything'), 'messages');
+  assert.equal(torWayOf('anything'), 'off');
 });

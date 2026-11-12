@@ -1676,10 +1676,10 @@ en casa, en una Raspberry Pi o en un ordenador viejo, o cualquier otro relay en 
   horas. Así, dos espacios (mira [Segunda contraseña](#second)) pueden usar cada uno el relay del otro como relay de
   casa, y ningún relay los relaciona. Los dos relays deben tener los cupones activados, y hace falta una versión con
   Tor, en Android (mira [A través de Tor](#tor)).
-- **Automáticamente desde tu relay:** un interruptor, activado salvo que lo apagues, en Android, donde Erevos tiene
+- **Automáticamente desde tu relay:** un interruptor, apagado salvo que lo actives, en Android, donde Erevos tiene
   Tor. Cuando tu relay nombra un relay emparejado con él (lo configura quien lo gestiona), un espacio sin relay de casa
   toma ese por sí solo, solo por Tor, con su token de un cupón como arriba: nada que escribir, y nada que hacer cuando
-  tu relay nombra otro. Quitar a mano el relay de casa lo desactiva para ese espacio; un relay de casa que escribiste
+  tu relay nombra otro. Al apagarlo suelta el relay de casa que tomó, y quitar a mano el relay de casa lo desactiva para ese espacio; un relay de casa que escribiste
   tú queda como está. Los lugares ocultos nunca toman uno así.
 - **Para los chats ocultos:** cada lugar oculto puede tener un relay de casa propio, en **Para usuarios avanzados** de
   su pantalla sin ningún chat elegido, mientras está abierto. Se guarda solo con ese lugar, sellado con su PIN, así que

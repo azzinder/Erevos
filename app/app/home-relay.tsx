@@ -9,7 +9,7 @@ import { Button, Card, Field, Input, Page, Text, Toggle } from '../components/ui
 import { canTor } from '../lib/core';
 import { CouponWaitError } from '../lib/coupons';
 import { t } from '../lib/i18n';
-import { pairHere, takePair } from '../lib/pair';
+import { dropPair, pairHere, takePair } from '../lib/pair';
 import { sameRelay } from '../lib/relay';
 import { forgetSpare, homeRelays, readySpare, setSpareRelays, spaceSpare } from '../lib/spare';
 import { loadCurrentSpaceData, MORE_SPARES, updateCurrentSpaceData, type SpareRelay } from '../lock/space-data';
@@ -37,7 +37,7 @@ export default function HomeRelay() {
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState('');
   const [mainUrl, setMainUrl] = useState('');
-  const [pairOn, setPairOn] = useState(true);
+  const [pairOn, setPairOn] = useState(false);
 
   useEffect(() => {
     loadCurrentSpaceData()
@@ -82,7 +82,8 @@ export default function HomeRelay() {
     }
   }
 
-  // Automatically from your relay: turned on, the relay's pair is taken now when there is no home relay.
+  // Automatically from your relay: turned on, the relay's pair is taken now when there is no home relay;
+  // turned off, the one taken so goes.
   async function switchPair() {
     const on = !pairOn;
     setNote('');
@@ -93,7 +94,15 @@ export default function HomeRelay() {
       return;
     }
     setPairOn(on);
-    if (!on) return;
+    if (!on) {
+      // Off: the home relay taken from the relay goes, so nothing of it goes through Tor.
+      if (await dropPair(spaceSpare()).catch(() => false)) {
+        forgetSpare(spaceSpare());
+        setReady(false);
+        await reload().catch(() => undefined);
+      }
+      return;
+    }
     if (!(await takePair(spaceSpare(), true).catch(() => false))) {
       const data = await loadCurrentSpaceData().catch(() => null);
       if (data && !data.spare.url.trim()) setNote(t('Your relay names no home relay for this phone, or could not be reached.'));

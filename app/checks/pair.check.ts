@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { before, test } from 'node:test';
 
 import { sha256Bytes } from '../lib/crypto';
-import { pairChange, pairHere } from '../lib/pair';
+import { dropPair, pairChange, pairHere, takePair } from '../lib/pair';
 import { newPhoneToken, pairOf, relayPair, toHex, type Relay } from '../lib/relay';
 import { EMPTY_SPACE, type SpaceData, type SpareRelay } from '../lock/space-data';
 import { freePort, ready, relayNote, startRelay } from './real-relay';
@@ -30,12 +30,23 @@ const OTHER = 'wss://other.example.org';
 const none: SpareRelay = { url: '', token: '', queue: null };
 const taken = (url: string): SpareRelay => ({ url, token: '', queue: null, tor: true, auto: true });
 
+// A space with the switch turned on, as only then is anything taken.
 function space(patch: Partial<SpaceData> = {}): SpaceData {
-  return { ...EMPTY_SPACE, url: OWN, ...patch };
+  return { ...EMPTY_SPACE, url: OWN, pairHome: true, ...patch };
 }
 
+// A space's settings kept in memory, as the open space's.
+function stored(data: SpaceData) {
+  let kept = data;
+  return { of: {}, space: true, load: async () => kept, update: async (patch: Partial<SpaceData>) => void (kept = { ...kept, ...patch }), now: () => kept };
+}
+
+test('nothing goes through Tor unless asked: the switch is off in a new space', () => {
+  assert.equal(EMPTY_SPACE.pairHome, false);
+  assert.equal(pairChange({ ...EMPTY_SPACE, url: OWN }, [HOME]), null);
+});
+
 test('a space with no home relay takes the first of the pair that is not its own relay, through Tor', () => {
-  assert.equal(EMPTY_SPACE.pairHome, true);
   assert.deepEqual(pairChange(space(), [HOME]), taken(HOME));
   assert.deepEqual(pairChange(space(), [`${OWN}/`, HOME, OTHER]), taken(HOME));
   assert.equal(pairChange(space(), []), null);
@@ -75,6 +86,37 @@ test('one the space has among its other home relays is not taken again', () => {
 
 test('only on Android, where Erevos has Tor', () => {
   assert.equal(pairHere(), false);
+});
+
+test('turned off, the home relays taken from the pair go and the owner\'s own stay, in their order', async () => {
+  const queue = { recipientHex: 'a'.repeat(48), senderHex: 'b'.repeat(48) };
+  const own: SpareRelay = { url: OTHER, token: 'typed', queue };
+  // Only the one taken: none is left.
+  const alone = stored(space({ pairHome: false, spare: { ...taken(HOME), queue } }));
+  assert.equal(await dropPair(alone), true);
+  assert.deepEqual(alone.now().spare, none);
+  // The one taken first, the owner's after it: the owner's becomes the first.
+  const first = stored(space({ pairHome: false, spare: { ...taken(HOME), more: [own] } }));
+  assert.equal(await dropPair(first), true);
+  assert.deepEqual(first.now().spare, own);
+  // The owner's first, the one taken among the others.
+  const among = stored(space({ pairHome: false, spare: { ...own, more: [taken(HOME), { ...own, url: 'wss://third.example.org' }] } }));
+  assert.equal(await dropPair(among), true);
+  assert.deepEqual(among.now().spare, { ...own, more: [{ ...own, url: 'wss://third.example.org' }] });
+  // Nothing taken: nothing changes.
+  const mine = stored(space({ pairHome: false, spare: own }));
+  assert.equal(await dropPair(mine), false);
+  assert.deepEqual(mine.now().spare, own);
+  // Each look does the same while the switch is off, here as anywhere; on, it keeps the one taken.
+  const look = stored(space({ pairHome: false, spare: taken(HOME) }));
+  assert.equal(await takePair(look), true);
+  assert.deepEqual(look.now().spare, none);
+  const on = stored(space({ spare: taken(HOME) }));
+  assert.equal(await takePair(on), false);
+  assert.deepEqual(on.now().spare, taken(HOME));
+  // A hidden place never took one, and is left as it is.
+  const hidden = { ...stored(space({ pairHome: false, spare: taken(HOME) })), space: false };
+  assert.equal(await takePair(hidden), false);
 });
 
 function reply(urls: string[], count = urls.length): Uint8Array {
