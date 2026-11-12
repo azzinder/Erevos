@@ -132,7 +132,7 @@ chmodSync(join(numberDir, 'gh'), 0o755);
 writeFileSync(join(numberDir, 'number.sh'), stepScript('number'));
 
 /** The build number the version job gives run `run`; an error's words when it refuses. */
-function numbered(run: number, builds: { published?: string; drafts?: string; runs?: string[]; fail?: string } = {}): string {
+function numbered(run: number, builds: { published?: string; drafts?: string; runs?: string[]; built?: string; fail?: string } = {}): string {
   const output = join(numberDir, 'output');
   writeFileSync(output, '');
   const env = {
@@ -142,6 +142,7 @@ function numbered(run: number, builds: { published?: string; drafts?: string; ru
     DRAFTS: builds.drafts ?? '',
     RUNS: (builds.runs ?? []).join('\n'),
     FAIL: builds.fail ?? '',
+    EREVOS_BUILT: builds.built ?? '',
     GITHUB_OUTPUT: output,
     GITHUB_RUN_NUMBER: String(run),
     GH_REPO: 'example/erevos',
@@ -166,6 +167,9 @@ test("a build's number is the run's, unless an Erevos or Erevos+ build already t
   // A build of this workflow under way, by its draft.
   assert.equal(numbered(67, { drafts: 'build-69' }), '70');
   assert.equal(numbered(67, { published: 'v7.1.0-beta.5:67', drafts: 'build-65', runs: ['Erevos+ 7.1.0-beta.5, build 67'] }), '68');
+  // A build out that nothing names, written into the workflow.
+  assert.equal(numbered(67, { built: '67', runs: ['erevosgram'] }), '68');
+  assert.equal(numbered(67, { built: '62 67' }), '68');
 });
 
 test('a build whose number is not sure does not go out', () => {

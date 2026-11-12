@@ -86,6 +86,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          # Builds out that nothing below names: Erevos+ 7.1.0-beta.5 (67), whose run named no build.
+          EREVOS_BUILT: "67"
         run: |
           # Every build so far: each published release's, Erevos's and Erevos+'s (its version.json),
           # the builds under way here (their drafts, build-<n>), and Erevos+'s and ErevosGram's
@@ -93,6 +95,7 @@ jobs:
           # Should any of them not be read, no build: two with one number would not install.
           builds=$(mktemp)
           if ! {
+            printf '%s\n' $EREVOS_BUILT &&
             gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | select(any(.assets[]; .name == "version.json")) | .tag_name' |
               while read -r tag; do gh release download "$tag" --repo "$GH_REPO" -p version.json -O - | jq -r '.build // empty' || exit 1; done &&
             gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft) | .tag_name | select(startswith("build-")) | ltrimstr("build-")' &&
