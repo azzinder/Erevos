@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.10 (2026-11-12)
+
+### For you
+
 - **Call and Video on a hidden contact's card call**: opened over the contact's own hidden chat, they did nothing, as
   the chat that was to start the call was open already. Now the call starts there, as from the tiles at the top of the
   chat.
