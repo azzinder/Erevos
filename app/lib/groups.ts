@@ -267,6 +267,16 @@ function decodeSaid(bytes: Uint8Array): Said | null {
   return null;
 }
 
+// Whether a group message asks the admin or owner for new keys ('renew'), which may come from an
+// epoch gone by.
+function askedRenew(text: Uint8Array): boolean {
+  try {
+    return (JSON.parse(utf8Decode(text)) as { t?: unknown } | null)?.t === 'renew';
+  } catch {
+    return false;
+  }
+}
+
 function aboutOf(bytes: Uint8Array | string): About | null {
   try {
     return checkedAbout(JSON.parse(typeof bytes === 'string' ? bytes : utf8Decode(bytes)));
@@ -634,6 +644,13 @@ export class Groups {
   }
 
   // The members of a group as `state` has them: the one kept here, or another not kept yet.
+  // Whether the group has a leaf `sender` now, saying `about` of itself.
+  private async stillMember(id: string, sender: number, about: Uint8Array): Promise<boolean> {
+    const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(id)))) as { members: { leaf: number; about: string }[] };
+    const said = utf8Decode(about);
+    return json.members.some((m) => m.leaf === sender && m.about === said);
+  }
+
   protected async membersIn(id: string, state = this.kept()): Promise<GroupMember[]> {
     const json = JSON.parse(utf8Decode(await core.group.members(state, fromHex(id)))) as {
       own: number;
@@ -1646,6 +1663,10 @@ export class Groups {
     if (opened.kind === 'changed' && !(await this.keeperStays(id, result.state).catch(() => false))) return;
     await this.save({ ...this.data, state: toBase64(result.state) });
     if (opened.kind === 'message') {
+      // A message still opens for a few commits after its epoch (PAST_EPOCHS in the core), so a
+      // member taken out keeps that epoch's keys: what it seals there is dropped, unless it asks to
+      // be renewed. Only a leaf the group has now, saying the same of itself, is heard.
+      if (!askedRenew(opened.text) && !(await this.stillMember(id, opened.sender, opened.about).catch(() => false))) return;
       if (await this.heard(id, opened, message, transport)) return;
       const said = decodeSaid(opened.text);
       const from = aboutOf(opened.about)?.id;

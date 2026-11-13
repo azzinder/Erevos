@@ -188,6 +188,27 @@ test('three phones make a group, talk, and one is taken out', { skip: !existsSyn
   await assert.rejects(bob.groups.send(id, 'still here?', bob.transport));
 });
 
+test('a member taken out who never reads the commit cannot write into the group in the epoch before', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const bobLeaf = (await alice.groups.members(id)).find((m) => m.about?.id === bob.identity)!.leaf;
+  await alice.groups.remove(id, bobLeaf, alice.transport);
+  // Bob's queue is never looked at: he still holds the epoch before, and seals in it.
+  await net.settle([alice, carol]);
+  await bob.groups.send(id, 'still here', bob.transport);
+  await net.settle([alice, carol]);
+  assert.ok(!texts(alice, id).includes('still here'));
+  assert.ok(!texts(carol, id).includes('still here'));
+  // The members still there are heard as before.
+  await carol.groups.send(id, 'only us', carol.transport);
+  await net.settle([alice, carol]);
+  assert.ok(texts(alice, id).includes('only us'));
+});
+
 test('a message written before the commit reached a member waits for it', { skip: !existsSync(built) }, async () => {
   const net = network();
   const alice = net.phone('alice');
