@@ -1291,7 +1291,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // An invite to a contact's relay that came in their message (lib/relay-offer.ts), taken by itself
-  // while this phone has no relay of its own, or only a place lent on one: access of its own there
+  // while this phone has no relay of its own, or only a place lent on one, once the IP warning for
+  // that relay was gone on from (or the space goes all through Tor): access of its own there
   // and a queue, and then its contacts are told quietly where it reads now (tellJoined). Tried once:
   // a contact sends one only once.
   const tellJoined = useRef(false);
@@ -1300,6 +1301,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e || hiddenKey || !takesOffer({ url: relayUrl, token: relayToken }, invite.relayUrl)) return;
     const url = invite.relayUrl;
     const name = cleanName(e2e.contacts().find((c) => c.identity === from)?.name ?? '');
+    // Their relay is an address the contact chose: it sees this phone's, so that is said first.
+    if (!throughTor() && !(await ipGate({ network: 'Erevos', act: 'relay', of: `relay ${url}` }))) return;
     try {
       const { token } = await redeemInvite(url, invite.code);
       const ids = await createQueue({ url, token });

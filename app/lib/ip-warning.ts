@@ -19,10 +19,10 @@ import { IP_SEEN_MOST, loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceD
  * What is about to happen that may show this phone's internet address: something sent in a chat
  * (`send`), a call (`call`), a file fetched from a server someone else chose (`file`), a web page
  * opened (`link`) or fetched for its preview (`preview`), a group or room joined through a server
- * (`join`), or a radio station (`station`) or TV channel (`channel`) of the Collection played
+ * (`join`), a place taken on a contact's relay from their invite (`relay`), or a radio station (`station`) or TV channel (`channel`) of the Collection played
  * straight, without its Play through Tor.
  */
-export type IpAct = 'send' | 'call' | 'file' | 'link' | 'preview' | 'join' | 'station' | 'channel';
+export type IpAct = 'send' | 'call' | 'file' | 'link' | 'preview' | 'join' | 'relay' | 'station' | 'channel';
 
 /**
  * Where a warning that was said is kept: in the open space's data when none is given; in a hidden
@@ -77,6 +77,8 @@ export function ipWarningText(warning: IpWarning): { title: string; message: str
       return { title, message: t("To show a link's preview, the page is fetched from its site. Without Tor, the site sees this phone's internet address (IP address).") };
     case 'join':
       return { title, message: t("On {network}, joining goes through a server. Without Tor, it sees this phone's internet address (IP address).", { network }) };
+    case 'relay':
+      return { title, message: t("A contact invited this phone to a place on their relay. Taken without Tor, that relay sees this phone's internet address (IP address), though not what you send. Not taken, the invite is let go.") };
     case 'station':
       return { title, message: t("A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.") };
     case 'channel':

@@ -12,6 +12,7 @@ export const ipWarningStrings: Record<string, string> = {
   "The site sees this phone's internet address (IP address), as any web page you open does. To hide it, open links in Tor Browser.": "Stranica vidi IP adresu ovog telefona, kao i svaka web-stranica koju otvoriš. Da je sakriješ, otvaraj linkove u Tor Browseru.",
   "To show a link's preview, the page is fetched from its site. Without Tor, the site sees this phone's internet address (IP address).": "Da bi se prikazao pregled linka, stranica se preuzima s njenog sajta. Bez Tora, sajt vidi IP adresu ovog telefona.",
   "On {network}, joining goes through a server. Without Tor, it sees this phone's internet address (IP address).": "Na {network}, pridruživanje ide preko servera. Bez Tora, on vidi IP adresu ovog telefona.",
+  "A contact invited this phone to a place on their relay. Taken without Tor, that relay sees this phone's internet address (IP address), though not what you send. Not taken, the invite is let go.": "Kontakt je pozvao ovaj telefon na mjesto na svom releju. Ako ga prihvatiš bez Tora, taj relej vidi internet adresu (IP adresu) ovog telefona, ali ne i ono što šalješ. Ako ga ne prihvatiš, poziv se odbacuje.",
   "Guide": "Vodič",
   "Through Tor for this chat": "Preko Tora za ovaj razgovor",
   "A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Stanica svira direktno sa svog servera, koji tada vidi IP adresu ovog telefona sve dok svira, kao i svaki sajt.",
