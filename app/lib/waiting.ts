@@ -184,10 +184,12 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
       tries.delete(tag);
       await pieceWent(e2e, tag).catch(() => undefined);
       if (await history.sent(peer, tag, lasts, { bare })) went.push({ peer, tag, lasts, ...(bare ? { bare: true as const } : {}) });
-    } catch {
+    } catch (error) {
       const count = (tried?.count ?? 0) + 1;
       tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
-      stuck.add(peer);
+      // Nothing could take it now: the ones after it wait too, so they go in their order. One that
+      // failed of itself (its sound gone, say) holds none of the others back.
+      if (canWait(error)) stuck.add(peer);
     }
   }
   return went;
