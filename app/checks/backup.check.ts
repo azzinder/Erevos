@@ -79,6 +79,7 @@ import { setCore, type Core } from '../lib/core';
 import { setThroughTor, setTorReady } from '../lib/relay';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
+import { addNote, loadNotes, newNoteId } from '../lock/myself-data';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
 import { keepsPlace } from '../lock/hidden-keep';
 import { loadRinged, ringPocket } from '../lock/hidden-ring';
@@ -92,7 +93,7 @@ import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-
 import { loadStars, starMessage } from '../lock/stars-data';
 import { prepareQueueEntries } from '../lock/queues-data';
 import { lastRestore, lostAt, lostMark, markLost, phoneId, restoredAt, restoredFromOther } from '../lock/restored';
-import { sealedFile } from '../lock/sealed-file';
+import { letGoOfPages, PAGE_PREFIX, sealedFile } from '../lock/sealed-file';
 import { PhoneSims } from '../lib/phone-sims';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
@@ -172,6 +173,40 @@ async function phone() {
   const sticker = await addOwnSticker({ holder: 'space', space: 0, key }, new Uint8Array([8, 9]));
   return { key, clip, photo, sticker };
 }
+
+t('a backup made while a value in pages is saved holds every page its files name', async () => {
+  const { key } = await phone();
+  const place = { holder: 'space' as const, space: 0, key };
+  // Chat with myself, large enough for several pages.
+  for (let i = 0; i < 12; i++) await addNote(place, { id: newNoteId(), at: 1000 + i, text: `${i}`.padEnd(6000, 'σ') });
+  const made = await backupKey('backup-pass');
+  // As the backup reads its first page, after the files, a save lets go of every other page the
+  // files it read name, as one that changed them all would.
+  let letGo = false;
+  const get = blobs.get.bind(blobs);
+  blobs.get = (name: string) => {
+    if (name.startsWith(PAGE_PREFIX) && !letGo) {
+      letGo = true;
+      void letGoOfPages([...blobs.keys()].filter((other) => other.startsWith(PAGE_PREFIX) && other !== name).map((other) => other.slice(PAGE_PREFIX.length)));
+    }
+    return get(name);
+  };
+  let file: Uint8Array;
+  try {
+    file = await backUp(made);
+  } finally {
+    blobs.get = get;
+  }
+  assert.ok(letGo);
+  // Let go of, they are gone from the phone once the backup is made; only the one read first is left.
+  assert.equal([...blobs.keys()].filter((name) => name.startsWith(PAGE_PREFIX)).length, 1);
+
+  wipe();
+  await restoreBackup(await openBackup(file, 'backup-pass'), fromShelf);
+  const opened = await unlock(await loadLockConfig(), 'real-1111');
+  assert.ok(opened);
+  assert.equal((await loadNotes({ holder: 'space', space: 0, key: opened.key })).length, 12);
+});
 
 t('puts everything back: the lock opens the same space, with its relay, messages, voice and stickers', async () => {
   const { key, clip, photo, sticker } = await phone();

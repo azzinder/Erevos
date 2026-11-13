@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { encryptText, randomBytes } from '../lib/crypto';
-import { DamagedValueError, PAGE, PAGE_PREFIX, sealedFile } from '../lock/sealed-file';
+import { DamagedValueError, holdPages, PAGE, PAGE_PREFIX, sealedFile } from '../lock/sealed-file';
 import { blobs, files } from './files-memory';
 
 const t = (name: string, fn: () => Promise<void>) =>
@@ -102,4 +102,27 @@ t('a value whose page is missing is not read as empty, so nothing saves over it'
   await make().save('space', 0, key, many(300));
   blobs.delete(pages()[0]);
   await assert.rejects(make().load('space', 0, key), DamagedValueError);
+});
+
+t('while pages are held, as a backup reads, the ones let go of stay until it lets go', async () => {
+  const key = randomBytes(32);
+  await make().save('space', 0, key, many(300));
+  const first = pages();
+  const release = holdPages();
+  await make().save('space', 0, key, many(300, 'y'));
+  // The old pages are all still there, beside the new ones: a file read before still finds them.
+  assert.ok(first.every((name) => blobs.has(name)));
+  const second = pages().filter((name) => !first.includes(name));
+  assert.ok(second.length > 0);
+  // Two holding at once: the pages go only when both let go.
+  const other = holdPages();
+  await release();
+  await release();
+  assert.ok(first.every((name) => blobs.has(name)));
+  await other();
+  assert.deepEqual(pages(), second);
+  assert.deepEqual(await make().load('space', 0, key), many(300, 'y'));
+  // And with nothing held, they go at once again.
+  await make().save('space', 0, key, many(300, 'z'));
+  assert.ok(second.every((name) => !blobs.has(name)));
 });

@@ -4,13 +4,13 @@
 
 import { checkedCard, checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
-import { deleteFile, readBytes, writeBytes } from '../lib/files';
+import { readBytes, writeBytes } from '../lib/files';
 import { checkedPay, type Pay } from '../lib/pay';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
 import { isSafetyHours } from '../lib/safety';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
-import { PAGE, PAGE_PREFIX, sealedFile, sealedSize, type Holder } from './sealed-file';
+import { letGoOfPages, PAGE, PAGE_PREFIX, sealedFile, sealedSize, type Holder } from './sealed-file';
 import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 
 // The messages each chat keeps on the phone, a space's own chat and its hidden chats, with no limit
@@ -636,7 +636,7 @@ export class History {
       .then(async () => {
         for (const { id, sealed } of writes) await writeBytes(PAGE_PREFIX + id, sealed);
         if (reindex) await store.save(this.holder, this.space, this.key, { pages: index, chats: {} });
-        for (const id of gone) await deleteFile(PAGE_PREFIX + id).catch(() => undefined);
+        await letGoOfPages(gone);
       });
     this.writes = run;
     return run;

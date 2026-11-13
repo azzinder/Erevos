@@ -6,7 +6,7 @@ import { decryptBytes, encryptBytes, randomBytes, sha256Bytes, toHex } from './c
 import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from './files';
 import { NOSTR_PIECE } from '../lock/attachment-files';
 import { loadPiecesData, savePiecesData, type KeptPiece } from '../lock/nostr-pieces-data';
-import { PAGE, PAGE_PREFIX, type Holder } from '../lock/sealed-file';
+import { letGoOfPages, PAGE, PAGE_PREFIX, type Holder } from '../lock/sealed-file';
 
 // The pieces of a photo that goes through Nostr (lib/nostr-send-files.ts). A wrap carries 48 KB at
 // most, so a photo goes in pieces of 32 KB, each sealed with the file's own key (lib/attachments.ts
@@ -123,7 +123,9 @@ async function readPages(key: Uint8Array, [id, , pages]: KeptPiece): Promise<Uin
 
 async function deletePages(gone: KeptPiece[]): Promise<void> {
   for (const [, , pages] of gone) {
-    for (let n = 0; n < pages.length; n += PAGE_ID) await deleteFile(PAGE_PREFIX + pages.slice(n, n + PAGE_ID)).catch(() => undefined);
+    const ids: string[] = [];
+    for (let n = 0; n < pages.length; n += PAGE_ID) ids.push(pages.slice(n, n + PAGE_ID));
+    await letGoOfPages(ids);
   }
 }
 

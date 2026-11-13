@@ -30,7 +30,7 @@ import { FILE as PHONE } from './phone-data';
 import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { prepareQueueEntries } from './queues-data';
 import { markRestore, phoneId, thisPhone } from './restored';
-import { POCKETS } from './sealed-file';
+import { holdPages, POCKETS } from './sealed-file';
 import { FILE as SMS, ORDER_FILE as SMS_ORDER, smsDataChanged } from './sms-data';
 import { FILE as STARS } from './stars-data';
 import { FILE as STICKERS } from './sticker-data';
@@ -430,8 +430,19 @@ function keptHere(name: string, value: string, here: string | null): string {
 }
 
 // What the backup itself holds: everything but the photos, files and voice messages. The copies
-// and carried packets are read before the chats' keys and messages (LATER_FILES).
+// and carried packets are read before the chats' keys and messages (LATER_FILES). The files are
+// read before the pages, and no page is deleted until all are read, so every page a file read
+// here names is in the backup, even when the app saves meanwhile.
 async function collect(): Promise<Entry[]> {
+  const release = holdPages();
+  try {
+    return await collectHeld();
+  } finally {
+    await release();
+  }
+}
+
+async function collectHeld(): Promise<Entry[]> {
   const entries: Entry[] = [];
   for (const name of [...KEYS, ...HEARD, ...LATER_KEYS]) {
     const value = await secureGet(name);

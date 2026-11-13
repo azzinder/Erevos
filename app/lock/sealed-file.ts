@@ -72,6 +72,36 @@ function pagedOf(value: unknown): Paged | null {
 }
 
 /** A value's pages could not all be read: it is not read as empty, which a save would then keep. */
+// While a backup reads the app's files (backup.ts), pages no longer named are not deleted yet:
+// a file it read earlier may still name them, and the backup must hold every page such a file
+// names. They are deleted when the last backup reading lets go.
+let holding = 0;
+let held: string[] = [];
+
+/** Keeps pages that are let go of from being deleted until the returned function is called. */
+export function holdPages(): () => Promise<void> {
+  holding++;
+  let done = false;
+  return async () => {
+    if (done) return;
+    done = true;
+    holding--;
+    if (holding > 0) return;
+    const ids = held;
+    held = [];
+    for (const id of ids) await deleteFile(PAGE_PREFIX + id).catch(() => undefined);
+  };
+}
+
+/** Deletes the pages `ids`, no longer named by anything, or, while pages are held, once they are let go. */
+export async function letGoOfPages(ids: Iterable<string>): Promise<void> {
+  if (holding > 0) {
+    held.push(...ids);
+    return;
+  }
+  for (const id of ids) await deleteFile(PAGE_PREFIX + id).catch(() => undefined);
+}
+
 export class DamagedValueError extends Error {
   constructor(name: string) {
     super(`${name}: a page of this value is missing or damaged`);
@@ -219,7 +249,7 @@ export function sealedFile<T>({ name, empty, checked, block, fixed = false }: {
           const { sealed, gone } = await seal(holder, space, key, data, before);
           values[holder][space] = sealed;
           await writeFile(name, JSON.stringify(values));
-          for (const id of gone) await deleteFile(PAGE_PREFIX + id).catch(() => undefined);
+          await letGoOfPages(gone);
         });
       writes = run;
       return run;
