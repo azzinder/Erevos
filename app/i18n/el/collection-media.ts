@@ -40,6 +40,7 @@ export const collectionMedia: Record<string, string> = {
   "There are too many stations here.": "Υπάρχουν πάρα πολλοί σταθμοί εδώ.",
   "The station could not be played. It may be off the air, or its stream is in a form this device does not play.": "Ο σταθμός δεν έπαιξε. Μπορεί να μην εκπέμπει, ή η ροή του να είναι σε μορφή που αυτή η συσκευή δεν παίζει.",
   "The station sees this device’s IP address while it plays.": "Ο σταθμός βλέπει τη διεύθυνση IP αυτής της συσκευής όσο παίζει.",
+  "Through Tor: the station does not see this device’s IP address.": "Μέσω Tor: ο σταθμός δεν βλέπει τη διεύθυνση IP αυτής της συσκευής.",
   "Stations play from their https links. The station sees this device’s IP address while it plays, as any site does.": "Οι σταθμοί παίζουν από τους συνδέσμους https τους. Ο σταθμός βλέπει τη διεύθυνση IP αυτής της συσκευής όσο παίζει, όπως κάθε ιστότοπος.",
   "No stations yet. Add one by its link with +.": "Κανένας σταθμός ακόμα. Πρόσθεσε έναν με τον σύνδεσμό του με το +.",
   "Add a station": "Προσθήκη σταθμού",

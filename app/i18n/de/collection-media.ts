@@ -40,6 +40,7 @@ export const collectionMedia: Record<string, string> = {
   "There are too many stations here.": "Hier gibt es zu viele Sender.",
   "The station could not be played. It may be off the air, or its stream is in a form this device does not play.": "Der Sender ließ sich nicht abspielen. Vielleicht sendet er nicht, oder sein Stream hat eine Form, die dieses Gerät nicht abspielt.",
   "The station sees this device’s IP address while it plays.": "Der Sender sieht die IP-Adresse dieses Geräts, solange er läuft.",
+  "Through Tor: the station does not see this device’s IP address.": "Über Tor: Der Sender sieht die IP-Adresse dieses Geräts nicht.",
   "Stations play from their https links. The station sees this device’s IP address while it plays, as any site does.": "Sender laufen über ihre https-Links. Der Sender sieht die IP-Adresse dieses Geräts, solange er läuft, wie jede Website.",
   "No stations yet. Add one by its link with +.": "Noch keine Sender. Füge einen über seinen Link mit + hinzu.",
   "Add a station": "Sender hinzufügen",

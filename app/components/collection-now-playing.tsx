@@ -21,6 +21,7 @@ import {
   shufflePlaying,
   speedPlaying,
   stationPlaying,
+  stationThroughTor,
   stopPlaying,
   usePlayer,
   usePlayingArt,
@@ -125,7 +126,7 @@ function Playing({ state, art, colors }: { state: PlayerState; art: string | nul
       ) : null}
       {live ? (
         <Text variant="caption" tone="muted" style={styles.centered}>
-          {state.buffering ? t('Loading…') : t('The station sees this device’s IP address while it plays.')}
+          {state.buffering ? t('Loading…') : stationThroughTor() ? t('Through Tor: the station does not see this device’s IP address.') : t('The station sees this device’s IP address while it plays.')}
         </Text>
       ) : null}
       {live ? null : <SeekBar position={state.position} duration={state.duration} colors={colors} />}

@@ -40,6 +40,7 @@ export const collectionMedia: Record<string, string> = {
   "There are too many stations here.": "Ovdje ima previše stanica.",
   "The station could not be played. It may be off the air, or its stream is in a form this device does not play.": "Stanica se nije mogla pustiti. Možda ne emituje, ili je njen tok u obliku koji ovaj uređaj ne pušta.",
   "The station sees this device’s IP address while it plays.": "Stanica vidi IP adresu ovog uređaja dok svira.",
+  "Through Tor: the station does not see this device’s IP address.": "Preko Tora: stanica ne vidi IP adresu ovog uređaja.",
   "Stations play from their https links. The station sees this device’s IP address while it plays, as any site does.": "Stanice sviraju sa svojih https linkova. Stanica vidi IP adresu ovog uređaja dok svira, kao i svaki sajt.",
   "No stations yet. Add one by its link with +.": "Još nema stanica. Dodaj jednu po njenom linku sa +.",
   "Add a station": "Dodaj stanicu",

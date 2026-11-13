@@ -131,6 +131,12 @@ let station = false;
 /** Whether what plays now is an internet radio station. */
 export const stationPlaying = (): boolean => station;
 
+// Whether the station or channel that plays now goes through Tor.
+let stationTor = false;
+
+/** Whether the station or channel that plays now plays through Tor. */
+export const stationThroughTor = (): boolean => station && stationTor;
+
 /** Whether this device plays a station or a channel through Tor: Android's player, with Tor in its core. */
 export const canPlayThroughTor = (): boolean => canTorHttp() && !!collectionNative?.canPlayThroughTor?.();
 
@@ -175,17 +181,18 @@ async function playLive(live: CollectionStation | CollectionChannel, video: bool
   else if (collectionNative) {
     await collectionNative.playList([{ url: live.url, name: showTitle ? live.name : '', mime: live.mime, video, ...(viaTor ? { tor: true } : {}) }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
   } else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
-  rememberLive(live, video);
+  rememberLive(live, video, viaTor && !DESK);
 }
 
 // What plays is a stream with no length (a station or a channel): nothing of it is kept.
-function rememberLive(live: { id: string; name: string }, video: boolean): void {
+function rememberLive(live: { id: string; name: string }, video: boolean, viaTor: boolean): void {
   names = [live.name];
   ids = [live.id];
   videos = [video];
   listPlace = null;
   pendingPlace = null;
   station = true;
+  stationTor = viaTor;
 }
 
 /** The name of the file at `index` in the list playing, and its id in the Collection. */
