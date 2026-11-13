@@ -158,7 +158,8 @@ touche-le encore pour revenir. Les discussions masquées ont leurs propres discu
   **Public** et **Nostr** les leurs. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
   lit la partie affichée. Maintiens une carte appuyée pour l’avancer, la reculer ou la masquer avec **Masquer** : un
   service masqué reste activé et notifie toujours, mais ses conversations quittent aussi **Tous** (la recherche les
-  trouve encore), et il attend au pied de la fenêtre, où un appui le réaffiche. Les conversations et groupes en **En
+  trouve encore), et il attend au pied de la fenêtre, où un appui le réaffiche. Toute carte maintenue, **Tous** aussi, peut devenir
+  **S’ouvre en premier** : Erevos s’ouvre dessus depuis son icône, et sur **Tous** tant qu’aucune n’est choisie. Les conversations et groupes en **En
   sourdine** ne comptent pas, comme pour le nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche ne
   change pas les nombres. Sous le bouton, sans recherche, viennent d’abord les conversations avec des messages non
   lus, sous **Non lus**, avec **Tout marquer comme lu** à côté, puis les autres sous **Récents**.

@@ -16,4 +16,7 @@ export const servicesText: Record<string, string> = {
   "Move later": "Sposta dopo",
   "Hidden · tap one to show it again": "Nascosti · toccane uno per mostrarlo di nuovo",
   "Hold a card to move or hide it": "Tieni premuta una scheda per spostarla o nasconderla",
+  "Opens first": "Si apre per prima",
+  "Erevos opens on this one from its icon": "Erevos si apre qui dalla sua icona",
+  "Hold a card to move it, hide it, or open Erevos on it": "Tieni premuta una scheda per spostarla, nasconderla o aprire Erevos lì",
 };

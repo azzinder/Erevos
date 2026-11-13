@@ -154,7 +154,8 @@ einmal, um zurückzugehen. Versteckte Chats haben ihre eigenen angehefteten und 
   um mehr einzuschalten, und **Alle als gelesen markieren** liest den gezeigten Teil. Halte eine Karte gedrückt, um
   sie nach vorn oder hinten zu verschieben oder mit **Ausblenden** auszublenden: Ein ausgeblendeter Dienst bleibt an
   und benachrichtigt weiter, aber seine Chats verschwinden auch aus **Alle** (die Suche findet sie noch), und er
-  wartet unten im Fenster, wo ein Tippen ihn wieder zeigt. Chats und Gruppen auf **Stumm** zählen nicht mit, wie bei
+  wartet unten im Fenster, wo ein Tippen ihn wieder zeigt. Jede gehaltene Karte, auch **Alle**, kann **Öffnet
+  zuerst** werden: Dort öffnet Erevos von seinem Symbol aus, und bei **Alle**, solange keine gewählt ist. Chats und Gruppen auf **Stumm** zählen nicht mit, wie bei
   der Zahl auf dem Erevos-Symbol, und was in die Suche getippt ist, ändert die Zahlen nicht. Unter der Schaltfläche
   kommen ohne Suche zuerst die Chats mit ungelesenen Nachrichten, unter **Ungelesen**, mit **Alle als gelesen
   markieren** daneben, dann die übrigen unter **Zuletzt**.

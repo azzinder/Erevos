@@ -145,7 +145,9 @@ svoje prikvačene i arhivirane razgovore.
   kontakta, šta god da je stiglo posljednje, a **Matrix**, **XMPP**, **Javno** i **Nostr** svoje. **Dodaj** otvara
   Module, da uključite još, a **Označi sve kao pročitano** čita prikazani dio. Držite karticu da je pomjerite naprijed
   ili nazad ili sakrijete sa **Sakrij**: skrivena usluga ostaje uključena i i dalje obavještava, ali njeni razgovori
-  nestaju i iz **Sve poruke** (pretraga ih i dalje nalazi), a čeka na dnu prozora, gdje je dodir ponovo prikazuje.
+  nestaju i iz **Sve poruke** (pretraga ih i dalje nalazi), a čeka na dnu prozora, gdje je dodir ponovo prikazuje. Svaka
+  držana kartica, i **Sve poruke**, može postati **Otvara se prvo**: tu se Erevos otvara sa svoje ikone, a na **Sve
+  poruke** dok nijedna nije izabrana.
   Razgovori i grupe na **Utišano** se ne broje, kao ni u broju na ikoni Erevosa, a ono što se upiše u pretragu ne
   mijenja brojeve. Ispod dugmeta, bez pretrage, prvo dolaze razgovori s nepročitanim porukama, pod **Nepročitano**, s
   **Označi sve kao pročitano** pored, pa ostali pod **Nedavno**.

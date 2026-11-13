@@ -16,4 +16,7 @@ export const servicesText: Record<string, string> = {
   "Move later": "Reculer",
   "Hidden · tap one to show it again": "Masqués · appuie sur l’un pour le réafficher",
   "Hold a card to move or hide it": "Maintiens une carte appuyée pour la déplacer ou la masquer",
+  "Opens first": "S’ouvre en premier",
+  "Erevos opens on this one from its icon": "Erevos s’ouvre ici depuis son icône",
+  "Hold a card to move it, hide it, or open Erevos on it": "Garde une carte appuyée pour la déplacer, la masquer ou y ouvrir Erevos",
 };

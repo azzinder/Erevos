@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { arrangeServices, readServiceOrder, servicePart } from '../lib/service-order';
+import { arrangeServices, readServiceOrder, servicePart, startPart } from '../lib/service-order';
 
 test('All messages stays first and is never hidden; the rest follow the order kept, new ones after', () => {
   const kept = { order: ['nostr', 'sms'], hidden: ['xmpp'] };
@@ -26,4 +26,12 @@ test('a chat is of its network, the SMS, or Erevos', () => {
   assert.equal(servicePart({ sms: '', network: 'matrix' }), 'matrix');
   assert.equal(servicePart({ sms: '+300000000001' }), 'sms');
   assert.equal(servicePart({ sms: '' }), 'erevos');
+});
+
+test('the part Erevos opens on: kept, All messages when none or when hidden', () => {
+  assert.deepEqual(readServiceOrder('{"order":[],"hidden":[],"start":"telegram"}'), { order: [], hidden: [], start: 'telegram' });
+  assert.deepEqual(readServiceOrder('{"order":[],"hidden":[],"start":"all"}'), { order: [], hidden: [] });
+  assert.equal(startPart({ order: [], hidden: [] }), 'all');
+  assert.equal(startPart({ order: [], hidden: [], start: 'erevos' }), 'erevos');
+  assert.equal(startPart({ order: [], hidden: ['erevos'], start: 'erevos' }), 'all');
 });

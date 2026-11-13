@@ -94,7 +94,7 @@ const count99 = (n: number) => (n > 99 ? '99+' : String(n));
  * where services are turned on (Settings → General → Modules); `onReadAll`, when the part shown
  * has messages not read, marks them read (lib/read-all.ts).
  */
-export function Services({ services, hidden = [], current, onPick, onAdd, onReadAll, onMove, onHide }: {
+export function Services({ services, hidden = [], current, onPick, onAdd, onReadAll, onMove, onHide, start = 'all', onStart }: {
   services: Service[];
   /** The services hidden from home (lib/service-order.ts), offered at the window's foot to show again. */
   hidden?: Pick<Service, 'key' | 'label'>[];
@@ -105,6 +105,9 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
   /** A card held down moves one place earlier (-1) or later (1), or is hidden (true) or shown again (false). */
   onMove?: (key: string, by: -1 | 1) => void;
   onHide?: (key: string, hidden: boolean) => void;
+  /** The card Erevos opens on (lib/service-order.ts startPart), and choosing it when one is held. */
+  start?: string;
+  onStart?: (key: string) => void;
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -141,7 +144,7 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
   const pick = (key: string) => {
     if (held) {
       // While a card is held, a tap chooses which card the moves are for.
-      setHeld(key === 'all' ? null : key);
+      setHeld(key);
       return;
     }
     close();
@@ -149,7 +152,8 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
   };
   const movable = services.filter((s) => s.key !== 'all');
   const heldAt = held ? movable.findIndex((s) => s.key === held) : -1;
-  const heldOne = heldAt >= 0 ? movable[heldAt] : null;
+  // All messages can be held too, only to be opened on.
+  const heldOne = heldAt >= 0 ? movable[heldAt] : held === 'all' ? (services.find((s) => s.key === 'all') ?? null) : null;
   // Four to a row on a phone; on a wide screen the window is no wider than 520.
   const panel = Math.min(width - space.md * 2, 520);
   const rows = Math.ceil((services.length + 1) / 4);
@@ -204,7 +208,7 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
                   <Pressable
                     onPress={() => pick(s.key)}
                     onLongPress={
-                      s.key !== 'all' && onMove
+                      onMove
                         ? () => {
                             tap();
                             setHeld(s.key);
@@ -259,17 +263,29 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
             // The card held: one place earlier or later, or hidden from home.
             <View style={styles.heldRow}>
               <Text variant="label" numberOfLines={1} style={styles.heldName}>
-                {heldOne.label}
+                {heldOne.key === 'all' ? t('All messages') : heldOne.label}
               </Text>
-              <SmallButton label="‹" hint={t('Move earlier')} disabled={heldAt === 0} onPress={() => onMove?.(heldOne.key, -1)} />
-              <SmallButton label="›" hint={t('Move later')} disabled={heldAt === movable.length - 1} onPress={() => onMove?.(heldOne.key, 1)} />
-              <SmallButton
-                label={t('Hide')}
-                onPress={() => {
-                  onHide?.(heldOne.key, true);
-                  setHeld(null);
-                }}
-              />
+              {onStart ? (
+                <SmallButton
+                  label={start === heldOne.key ? `✓ ${t('Opens first')}` : t('Opens first')}
+                  hint={t('Erevos opens on this one from its icon')}
+                  disabled={start === heldOne.key}
+                  onPress={() => onStart(heldOne.key)}
+                />
+              ) : null}
+              {heldOne.key !== 'all' ? (
+                <>
+                  <SmallButton label="‹" hint={t('Move earlier')} disabled={heldAt === 0} onPress={() => onMove?.(heldOne.key, -1)} />
+                  <SmallButton label="›" hint={t('Move later')} disabled={heldAt === movable.length - 1} onPress={() => onMove?.(heldOne.key, 1)} />
+                  <SmallButton
+                    label={t('Hide')}
+                    onPress={() => {
+                      onHide?.(heldOne.key, true);
+                      setHeld(null);
+                    }}
+                  />
+                </>
+              ) : null}
               <SmallButton label={t('Done')} strong onPress={() => setHeld(null)} />
             </View>
           ) : null}
@@ -298,7 +314,7 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
           ) : null}
           {!heldOne && onMove ? (
             <Text variant="caption" tone="faint" style={styles.holdHint}>
-              {t('Hold a card to move or hide it')}
+              {onStart ? t('Hold a card to move it, hide it, or open Erevos on it') : t('Hold a card to move or hide it')}
             </Text>
           ) : null}
           {onReadAll && !heldOne ? (
@@ -505,6 +521,7 @@ const makeStyles = (colors: Colors) =>
     },
     heldRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       alignItems: 'center',
       gap: space.xs + 2,
       marginTop: space.sm,
@@ -514,7 +531,7 @@ const makeStyles = (colors: Colors) =>
     },
     heldName: {
       flex: 1,
-      minWidth: 0,
+      minWidth: 80,
     },
     small: {
       minWidth: 38,

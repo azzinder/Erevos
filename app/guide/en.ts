@@ -140,7 +140,8 @@ SMS too, and tap it again to go back. Hidden chats keep their own pinned and arc
   **Nostr** theirs. **Add** opens Modules, to turn more on, and **Mark all as read** reads the part shown. Hold a card
   down to move it earlier or later or to **Hide** it: a hidden service stays on and still notifies, but its chats
   leave **All messages** too (a search still finds them), and it waits at the foot of the window, where a tap shows it
-  again. Chats and groups on **Muted** are left out of the numbers, as they are of the number on Erevos's icon, and
+  again. Any card held, **All messages** too, can be made **Opens first**: Erevos's icon opens on it, and on
+  **All messages** while none is chosen. Chats and groups on **Muted** are left out of the numbers, as they are of the number on Erevos's icon, and
   what is typed in the search changes nothing in them. Under the button, with no search, the chats with messages not
   read come first, under **Unread**, with **Mark all as read** beside it, then the others under **Recent**.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the

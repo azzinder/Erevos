@@ -37,7 +37,7 @@ import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-no
 import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { askReadAll, toReadIn } from '../lib/read-all';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
-import { arrangeServices, hideService, moveService, servicePart, useServiceOrder } from '../lib/service-order';
+import { arrangeServices, hideService, moveService, servicePart, startOn, startPart, useServiceOrder } from '../lib/service-order';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { directOther, matrixPresence } from '../lib/matrix';
 import { isOn } from '../lib/net-presence';
@@ -153,14 +153,23 @@ function Home() {
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
-  const params = useLocalSearchParams<{ show?: string; opened?: string }>();
-  const [chosenShow, setShow] = useState<InboxShow>(showOf(params.show));
+  const params = useLocalSearchParams<{ show?: string; opened?: string; from?: string }>();
+  // Erevos's launcher icon (from=launcher) and a start with no link open on the part the owner
+  // chose (lib/service-order.ts startPart), All messages when none; any other link on its own part.
+  const start = startPart(useServiceOrder());
+  const linked = typeof params.show === 'string' && params.from !== 'launcher';
+  const [chosenShow, setShow] = useState<InboxShow>(showOf(linked ? params.show : start));
   // A part whose module is off (an icon or the widget may still name it) shows all.
   // The public feed is of the Nostr and the Matrix parts: with both off it shows all too.
   const show: InboxShow = chosenShow === 'all' || (chosenShow === 'public' ? modules.has('nostr') || modules.has('matrix') : modules.has(chosenShow)) ? chosenShow : 'all';
   useEffect(() => {
-    if (typeof params.show === 'string') setShow(showOf(params.show));
-  }, [params.show, params.opened]);
+    setShow(showOf(linked ? params.show : start));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a link, or the icon again; the part chosen to open on below
+  }, [params.show, params.opened, linked]);
+  useEffect(() => {
+    if (!linked) setShow(showOf(start));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the part to open on is read or chosen
+  }, [start]);
   // After a new version, the permissions check shows by itself once, when calls and messages in
   // the background need something (lib/permissions.ts), and on Android once after a backup was
   // restored; in the web app after a new signed release, when messages, calls or the data need
@@ -748,6 +757,8 @@ function Home() {
           onAdd={() => router.push('/modules')}
           onReadAll={readAll}
           onMove={(key, by) => void moveService(tabs, key, by)}
+          start={start}
+          onStart={(key) => void startOn(key)}
           onHide={(key, hide) => {
             void hideService(key, hide);
             if (hide && show === key) setShow('all');

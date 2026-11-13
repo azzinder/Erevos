@@ -10,10 +10,12 @@ import { secureGet, secureSet } from './secure';
 // the device, outside the spaces, as the modules are (lib/modules.ts). A hidden service stays on
 // and still notifies, but its card, its part and its chats under All messages are left out (a
 // search still finds them), until it is shown again. All messages is always first and never hidden.
+// `start` is the part Erevos opens on from its launcher icon or with no link (app/index.tsx): All
+// messages when none was chosen.
 
 const KEY = 'erevos.home-services';
 
-export type ServiceOrder = { order: string[]; hidden: string[] };
+export type ServiceOrder = { order: string[]; hidden: string[]; start?: string };
 
 const NONE: ServiceOrder = { order: [], hidden: [] };
 let now: ServiceOrder = NONE;
@@ -26,8 +28,9 @@ const strings = (value: unknown): string[] => (Array.isArray(value) ? value.filt
 export function readServiceOrder(raw: string | null): ServiceOrder {
   if (!raw) return NONE;
   try {
-    const kept = JSON.parse(raw) as { order?: unknown; hidden?: unknown };
-    return { order: strings(kept.order), hidden: strings(kept.hidden).filter((key) => key !== 'all') };
+    const kept = JSON.parse(raw) as { order?: unknown; hidden?: unknown; start?: unknown };
+    const start = typeof kept.start === 'string' && kept.start.length > 0 && kept.start.length <= 64 && kept.start !== 'all' ? kept.start : undefined;
+    return { order: strings(kept.order), hidden: strings(kept.hidden).filter((key) => key !== 'all'), ...(start ? { start } : {}) };
   } catch {
     return NONE;
   }
@@ -83,13 +86,26 @@ export function moveService(shown: readonly string[], key: string, by: -1 | 1): 
   [list[at], list[to]] = [list[to], list[at]];
   // The hidden keep their places among the rest, after those shown.
   const rest = now.order.filter((k) => !list.includes(k));
-  return keep({ order: [...list, ...rest], hidden: now.hidden });
+  return keep({ ...now, order: [...list, ...rest] });
 }
 
 export function hideService(key: string, hidden: boolean): Promise<void> {
   if (key === 'all') return Promise.resolve();
   const others = now.hidden.filter((k) => k !== key);
-  return keep({ order: now.order, hidden: hidden ? [...others, key] : others });
+  // A hidden part is not opened on: All messages is, until it shows again and is chosen again.
+  const start = hidden && now.start === key ? undefined : now.start;
+  return keep({ order: now.order, hidden: hidden ? [...others, key] : others, ...(start ? { start } : {}) });
+}
+
+/** The part Erevos opens on (`start`): All messages ('all') when none was chosen. */
+export function startPart(kept: ServiceOrder): string {
+  return kept.start && !kept.hidden.includes(kept.start) ? kept.start : 'all';
+}
+
+/** Chooses the part Erevos opens on; 'all' for All messages. */
+export function startOn(key: string): Promise<void> {
+  const rest: ServiceOrder = { order: now.order, hidden: now.hidden };
+  return keep(key === 'all' ? rest : { ...rest, start: key });
 }
 
 /** The service a chat is of, for leaving a hidden one's chats out of All messages: its network's, the
