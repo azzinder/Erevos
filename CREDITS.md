@@ -696,7 +696,7 @@ Electron, which the computer app runs on, and the packages it needs (`desktop/pa
 | @electron/get | 5.1.0 | MIT |
 | @types/node | 24.19.2 | MIT |
 | debug | 4.4.3 | MIT |
-| electron | 44.4.5 | MIT |
+| electron | 44.10.0 | MIT |
 | env-paths | 3.0.0 | MIT |
 | graceful-fs | 4.2.11 | ISC |
 | ms | 2.1.3 | MIT |
@@ -1113,7 +1113,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [rustc-hash](https://github.com/rust-lang/rustc-hash) | 2.1.3 | Apache-2.0 OR MIT |
 | [rustc_version](https://github.com/djc/rustc-version-rs) | 0.4.1 | MIT OR Apache-2.0 |
 | [rusticata-macros](https://github.com/rusticata/rusticata-macros) | 4.1.0 | MIT OR Apache-2.0 |
-| [rustix](https://github.com/bytecodealliance/rustix) | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
+| [rustix](https://github.com/bytecodealliance/rustix) | 1.1.6 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [rustls](https://github.com/rustls/rustls) | 0.23.46 | Apache-2.0 OR ISC OR MIT |
 | [rustls-pki-types](https://github.com/rustls/pki-types) | 1.15.1 | MIT OR Apache-2.0 |
 | [rustls-webpki](https://github.com/rustls/webpki) | 0.103.16 | ISC |
