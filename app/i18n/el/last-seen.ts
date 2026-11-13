@@ -9,7 +9,7 @@ export const lastSeen: Record<string, string> = {
   'last seen yesterday at {time}': 'τελευταία φορά χθες {time}',
   'last seen {date} at {time}': 'τελευταία φορά {date} {time}',
   'Last seen': 'Τελευταία φορά ενεργός',
-  'Who sees when you last had Erevos open: on, unless changed': 'Ποιος βλέπει πότε άνοιξες τελευταία το Erevos: ανοικτό, εκτός αν αλλάξει',
+  'Who sees when you last had Erevos open: off in a new space, until you turn it on': 'Ποιος βλέπει πότε άνοιξες τελευταία το Erevos: κλειστό σε νέο χώρο, μέχρι να το ανοίξεις',
   'Your contacts see the exact time you last had Erevos open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. In all chats of this space; hidden chats have their own switch.':
     'Οι επαφές σου βλέπουν την ακριβή ώρα που είχες τελευταία φορά ανοικτό το Erevos, κι εσύ τη δική τους. Πηγαίνει κρυπτογραφημένο από άκρη σε άκρη μόνο σε αυτές, ποτέ στο relay. Σε όλες τις συνομιλίες αυτού του χώρου· οι κρυφές συνομιλίες έχουν δικό τους διακόπτη.',
   'Your contacts here see the exact time you last had these hidden chats open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. Only in these hidden chats, with a time of their own: the space’s chats have their own switch.':

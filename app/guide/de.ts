@@ -939,13 +939,14 @@ eine Nachricht, wie bei jedem Chat.
 Wenn ein Kontakt nicht online ist, sagt sein Chat, wann er Erevos zuletzt offen hatte, auf die Minute genau: **zuletzt
 online heute um 14:32**. Dein Telefon sagt deinen Kontakten deine Zeit auf dieselbe Weise, innerhalb dessen, was
 ohnehin an sie geht (eine Nachricht oder dass eine angekommen ist), und einmal, wenn einer deinen Chat öffnet, während
-Erevos auf deinem Telefon geschlossen ist, nur wenn es offen war, seit ihm zuletzt Bescheid gegeben wurde. Es ist an,
-solange du es nicht ausschaltest, unter **Einstellungen** → **Datenschutz und Sicherheit** → **Zuletzt online** oder
-in den Details eines beliebigen Chats. Es gilt in beide Richtungen: Ist es aus, sieht niemand deine, und du siehst
-auch niemandes; wer sie sah, verliert sie mit deiner nächsten Nachricht. Es wird für den ganzen Bereich und seine
-verknüpften Geräte eingestellt, jeder Bereich für sich. Jeder Ort mit versteckten Chats hat seinen eigenen Schalter,
-in den Details eines Chats dort, und seine eigene Zeit: Solange sie offen sind, zählen nur sie als offen, nicht der
-Bereich.
+Erevos auf deinem Telefon geschlossen ist, nur wenn es offen war, seit ihm zuletzt Bescheid gegeben wurde. Es ist in
+einem neuen Bereich aus, bis du es einschaltest, unter **Einstellungen** → **Datenschutz und Sicherheit** → **Zuletzt
+online** oder in den Details eines beliebigen Chats; ein Bereich, der vor 7.0.1 angelegt wurde, behält es, wie es war:
+an, solange du es nicht ausgeschaltet hast. Es gilt in beide Richtungen: Ist es aus, sieht niemand deine, und du
+siehst auch niemandes; wer sie sah, verliert sie mit deiner nächsten Nachricht. Es wird für den ganzen Bereich und
+seine verknüpften Geräte eingestellt, jeder Bereich für sich. Jeder Ort mit versteckten Chats hat seinen eigenen
+Schalter, in den Details eines Chats dort, und seine eigene Zeit: Solange sie offen sind, zählen nur sie als offen,
+nicht der Bereich.
 
 Mit **Sagen, wenn ich Erevos öffne** an (unter **Zuletzt online**, an, solange du es nicht ausschaltest) erfahren deine
 Kontakte beim Öffnen von Erevos sofort davon, ohne auf eine Nachricht zu warten: nur die, mit denen du in den letzten 30

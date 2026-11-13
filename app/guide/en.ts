@@ -809,8 +809,9 @@ only between you and that contact: the relay sees a message now and then, as wit
 
 When they are not online, the chat says when they last had Erevos open, to the minute: **last seen today at 14:32**. Your
 phone tells your contacts yours the same way, inside what goes to them anyway (a message, or that one came), and once
-when one opens your chat while Erevos is closed on your phone, only if it was open since they were last told. It is on
-unless you turn it off, in **Settings** → **Privacy and security** → **Last seen**, or in any chat's details. It goes both
+when one opens your chat while Erevos is closed on your phone, only if it was open since they were last told. It is off
+in a new space until you turn it on, in **Settings** → **Privacy and security** → **Last seen**, or in any chat's
+details; a space made before 7.0.1 keeps it as it was, on unless you turned it off. It goes both
 ways: turned off, no one sees yours, and you see no one's either; those who saw it lose it with your next message. It is
 set for the whole space and its linked devices, each space on its own. Each place of hidden chats has its own switch,
 in a chat's details there, and its own time: while they are open, only they count as open, not the space.

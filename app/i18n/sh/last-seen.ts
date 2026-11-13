@@ -9,8 +9,8 @@ export const lastSeen: Record<string, string> = {
   'last seen yesterday at {time}': 'posljednji put viđen jučer u {time}',
   'last seen {date} at {time}': 'posljednji put viđen {date} u {time}',
   'Last seen': 'Posljednji put viđen',
-  'Who sees when you last had Erevos open: on, unless changed':
-    'Ko vidi kad ste posljednji put imali otvoren Erevos: uključeno, osim ako promijenite',
+  'Who sees when you last had Erevos open: off in a new space, until you turn it on':
+    'Ko vidi kad ste posljednji put imali otvoren Erevos: isključeno u novom prostoru, dok ne uključite',
   'Your contacts see the exact time you last had Erevos open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. In all chats of this space; hidden chats have their own switch.':
     'Vaši kontakti vide tačno vrijeme kad ste posljednji put imali otvoren Erevos, a vi vidite njihovo. Ide šifrirano s kraja na kraj samo njima, nikad relayu. U svim razgovorima ovog prostora; skriveni razgovori imaju vlastiti prekidač.',
   'Your contacts here see the exact time you last had these hidden chats open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. Only in these hidden chats, with a time of their own: the space’s chats have their own switch.':

@@ -153,7 +153,7 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'my-name', title: mark('My name'), detail: mark('The name your contacts see in place of a code'), href: '/security?part=myname', when: uses('erevos') },
       { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
       { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden', when: uses('erevos') },
-      { id: 'last-seen', title: mark('Last seen'), detail: mark('Who sees when you last had Erevos open: on, unless changed'), href: '/security?part=lastseen', when: uses('erevos') },
+      { id: 'last-seen', title: mark('Last seen'), detail: mark('Who sees when you last had Erevos open: off in a new space, until you turn it on'), href: '/security?part=lastseen', when: uses('erevos') },
       { id: 'forget-me', title: mark('Delete me from everywhere'), detail: mark('Delete what the servers keep for this space, and stop it'), href: '/forget-me', when: uses('erevos', 'nostr', 'matrix', 'xmpp') },
       { id: 'panic', title: mark('Panic button'), detail: mark('Wipe Erevos at once, from here, a panic app or a panic password'), href: '/panic' },
       { id: 'calculator', title: mark('Calculator in place of Erevos'), detail: mark("Hide Erevos's icon behind a calculator that works"), href: '/appearance?part=icons', when: (place) => place.launcher },

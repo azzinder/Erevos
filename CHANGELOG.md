@@ -46,6 +46,8 @@ On main, not released yet:
 - **Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer
   now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or
   **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it.
+- **Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you
+  last had Erevos open, and you see no one's either. A space you already have keeps it as it was.
 - **Smaller fixes you may see**: a radio station playing through Tor says so under **Now playing**; on Android older
   than 8.0, **Updates** says Erevos+ needs Android 8.0 and stays on Erevos; the palette once named after a site is
   now **Erevos**.

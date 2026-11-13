@@ -628,3 +628,8 @@ t('another space opens from a search with its password; the open one\'s own, or 
   assert.equal(await searchOpens(0, 'decoy-2222', true, now + 1), null);
   await assertNotLockedOut(now);
 });
+
+test('last seen is off in a space made now (one from before keeps it, as above)', () => {
+  assert.equal(EMPTY_SPACE.lastSeen, false);
+  assert.equal(EMPTY_SPACE.tellOpen, true);
+});

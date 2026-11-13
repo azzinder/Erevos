@@ -106,8 +106,9 @@ export type SpaceData = {
   // unless set.
   sign: boolean;
   // Whether the space's contacts are told when this space was last open on the screen, and are
-  // shown when theirs was (lib/last-seen.ts): on unless turned off, and both ways, as one who tells
-  // nothing sees nothing. Only the space's own chats: hidden chats and hidden places never say it.
+  // shown when theirs was (lib/last-seen.ts): off in a space made since 7.0.1, on in one from
+  // before unless turned off (what it kept says so), and both ways, as one who tells nothing sees
+  // nothing. Only the space's own chats: hidden chats and hidden places never say it.
   lastSeen: boolean;
   // With "last seen" on, whether its contacts are told, unasked, that it opened (lib/receiver.ts
   // tellOpenLater, Say when I open Erevos): on unless turned off.
@@ -172,7 +173,7 @@ export const EMPTY_SPACE: SpaceData = {
   relayKeys: {},
   stopped: 0,
   sign: false,
-  lastSeen: true,
+  lastSeen: false,
   tellOpen: true,
   publicImages: 'always',
   publicCards: true,

@@ -931,10 +931,11 @@ Quand un contact n’est pas en ligne, sa discussion indique quand il a eu Erevo
 minute près : **vu pour la dernière fois aujourd’hui à 14:32**. Ton téléphone dit la tienne à tes contacts de la même
 façon, à l’intérieur de ce qui leur part de toute façon (un message, ou l’arrivée d’un message), et une fois quand
 l’un d’eux ouvre ta discussion alors qu’Erevos est fermé sur ton téléphone, seulement s’il a été ouvert depuis la
-dernière fois qu’on le lui a dit. C’est activé sauf si tu le désactives, dans **Réglages** → **Confidentialité et
-sécurité** → **Vu pour la dernière fois**, ou dans les détails d’une discussion quelconque. C’est réciproque :
-désactivé, personne ne voit la tienne, et tu ne vois celle de personne ; ceux qui la voyaient la perdent avec ton
-message suivant. C’est réglé pour tout l’espace et ses appareils associés, chaque espace séparément. Chaque lieu de
+dernière fois qu’on le lui a dit. C’est désactivé dans un nouvel espace jusqu’à ce que tu l’actives, dans **Réglages**
+→ **Confidentialité et sécurité** → **Vu pour la dernière fois**, ou dans les détails d’une discussion quelconque ; un
+espace créé avant la 7.0.1 le garde comme il était, activé sauf si tu l’avais désactivé. C’est réciproque : désactivé,
+personne ne voit la tienne, et tu ne vois celle de personne ; ceux qui la voyaient la perdent avec ton message
+suivant. C’est réglé pour tout l’espace et ses appareils associés, chaque espace séparément. Chaque lieu de
 discussions masquées a son propre interrupteur, dans les détails d’une discussion de là-bas, et sa propre heure : tant
 qu’elles sont ouvertes, elles seules comptent comme ouvertes, pas l’espace.
 

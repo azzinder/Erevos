@@ -854,8 +854,9 @@ poruku, kao i kod svakog razgovora.
 Kad kontakt nije na mreži, njegov razgovor kaže kad je posljednji put imao otvoren Erevos, na minut tačno:
 **posljednji put viđen danas u 14:32**. Vaš telefon vaše vrijeme javlja vašim kontaktima na isti način, unutar onoga
 što im ionako ide (poruka, ili da je jedna stigla), i jednom kad neko otvori vaš razgovor dok je Erevos na vašem
-telefonu zatvoren, samo ako je bio otvoren otkako im je posljednji put javljeno. Uključeno je dok ga ne isključite, u
-**Postavke** → **Privatnost i sigurnost** → **Posljednji put viđen**, ili u detaljima bilo kojeg razgovora. Djeluje u
+telefonu zatvoren, samo ako je bio otvoren otkako im je posljednji put javljeno. Isključeno je u novom prostoru dok ga
+ne uključite, u **Postavke** → **Privatnost i sigurnost** → **Posljednji put viđen**, ili u detaljima bilo kojeg
+razgovora; prostor napravljen prije 7.0.1 ga zadržava kakav je bio, uključeno osim ako ste ga isključili. Djeluje u
 oba smjera: isključeno, niko ne vidi vaše, a ni vi ne vidite ničije; oni koji su ga vidjeli gube ga s vašom sljedećom
 porukom. Postavlja se za cijeli prostor i njegove povezane uređaje, svaki prostor posebno. Svako mjesto skrivenih
 razgovora ima vlastiti prekidač, u detaljima razgovora tamo, i vlastito vrijeme: dok su otvoreni, samo oni se računaju

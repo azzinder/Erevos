@@ -877,12 +877,13 @@ como con cualquier chat.
 Cuando un contacto no está en línea, su chat dice cuándo tuvo Erevos abierto por última vez, al minuto: **última vez
 hoy a las 14:32**. Tu teléfono les dice la tuya a tus contactos de la misma manera, dentro de lo que ya les va de
 todos modos (un mensaje, o que ha llegado uno), y una vez cuando uno abre tu chat mientras Erevos está cerrado en tu
-teléfono, solo si estuvo abierto desde la última vez que se les dijo. Está activada salvo que la desactives, en
-**Ajustes** → **Privacidad y seguridad** → **Última vez**, o en los detalles de cualquier chat. Va en los dos
-sentidos: desactivada, nadie ve la tuya, y tú tampoco ves la de nadie; quienes la veían la pierden con tu siguiente
-mensaje. Se ajusta para todo el espacio y sus dispositivos vinculados, cada espacio por separado. Cada lugar de chats
-ocultos tiene su propio interruptor, en los detalles de un chat de allí, y su propia hora: mientras están abiertos,
-solo ellos cuentan como abiertos, no el espacio.
+teléfono, solo si estuvo abierto desde la última vez que se les dijo. Está desactivada en un espacio nuevo hasta que
+la actives, en **Ajustes** → **Privacidad y seguridad** → **Última vez**, o en los detalles de cualquier chat; un
+espacio creado antes de la 7.0.1 la conserva como estaba, activada salvo que la desactivaras. Va en los dos sentidos:
+desactivada, nadie ve la tuya, y tú tampoco ves la de nadie; quienes la veían la pierden con tu siguiente mensaje. Se
+ajusta para todo el espacio y sus dispositivos vinculados, cada espacio por separado. Cada lugar de chats ocultos
+tiene su propio interruptor, en los detalles de un chat de allí, y su propia hora: mientras están abiertos, solo ellos
+cuentan como abiertos, no el espacio.
 
 Con **Avisar cuando abro Erevos** activado (bajo **Última vez**, activado salvo que lo apagues), al abrir Erevos tus
 contactos también lo saben al momento, sin esperar a un mensaje: solo aquellos con los que hablaste en los últimos 30

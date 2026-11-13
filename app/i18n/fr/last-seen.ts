@@ -9,8 +9,8 @@ export const lastSeen: Record<string, string> = {
   'last seen yesterday at {time}': 'vu pour la dernière fois hier à {time}',
   'last seen {date} at {time}': 'vu pour la dernière fois le {date} à {time}',
   'Last seen': 'Vu pour la dernière fois',
-  'Who sees when you last had Erevos open: on, unless changed':
-    'Qui voit quand tu as eu Erevos ouvert pour la dernière fois : activé, sauf si tu le changes',
+  'Who sees when you last had Erevos open: off in a new space, until you turn it on':
+    'Qui voit quand tu as eu Erevos ouvert pour la dernière fois : désactivé dans un nouvel espace, jusqu’à ce que tu l’actives',
   'Your contacts see the exact time you last had Erevos open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. In all chats of this space; hidden chats have their own switch.':
     'Tes contacts voient l’heure exacte à laquelle tu as eu Erevos ouvert pour la dernière fois, et tu vois la leur. Elle part chiffrée de bout en bout vers eux seuls, jamais vers le relais. Dans toutes les discussions de cet espace ; les discussions masquées ont leur propre interrupteur.',
   'Your contacts here see the exact time you last had these hidden chats open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. Only in these hidden chats, with a time of their own: the space’s chats have their own switch.':

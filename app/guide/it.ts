@@ -877,8 +877,9 @@ chat.
 Quando un contatto non è online, la sua chat dice quando ha avuto Erevos aperto l’ultima volta, al minuto: **ultimo
 accesso oggi alle 14:32**. Il tuo telefono dice il tuo ai tuoi contatti nello stesso modo, dentro quello che va
 comunque a loro (un messaggio, o che ne è arrivato uno), e una volta quando uno apre la tua chat mentre Erevos è
-chiuso sul tuo telefono, solo se è stato aperto da quando gli è stato detto l’ultima volta. È attivo finché non lo
-disattivi, in **Impostazioni** → **Privacy e sicurezza** → **Ultimo accesso**, o nei dettagli di una chat qualsiasi.
+chiuso sul tuo telefono, solo se è stato aperto da quando gli è stato detto l’ultima volta. È disattivato in un nuovo
+spazio finché non lo attivi, in **Impostazioni** → **Privacy e sicurezza** → **Ultimo accesso**, o nei dettagli di una
+chat qualsiasi; uno spazio creato prima della 7.0.1 lo tiene com’era, attivo a meno che tu non l’avessi disattivato.
 Vale in entrambe le direzioni: disattivato, nessuno vede il tuo, e tu non vedi quello di nessuno; chi lo vedeva lo
 perde con il tuo messaggio successivo. Si imposta per tutto lo spazio e i suoi dispositivi collegati, ogni spazio per
 conto suo. Ogni luogo di chat nascoste ha un interruttore proprio, nei dettagli di una chat di lì, e un’ora propria:

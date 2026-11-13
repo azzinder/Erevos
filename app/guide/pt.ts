@@ -870,12 +870,13 @@ quando, como em qualquer conversa.
 Quando um contato não está online, a conversa dele diz quando ele esteve com o Erevos aberto pela última vez, até o
 minuto: **visto por último hoje às 14:32**. O seu celular diz o seu aos seus contatos do mesmo jeito, dentro do que já
 vai para eles de qualquer forma (uma mensagem, ou que uma chegou), e uma vez quando um deles abre a sua conversa
-enquanto o Erevos está fechado no seu celular, só se ele esteve aberto desde a última vez que foi dito. Fica ativado,
-a menos que você desative, em **Configurações** → **Privacidade e segurança** → **Visto por último**, ou nos detalhes
-de qualquer conversa. Vale nos dois sentidos: desativado, ninguém vê o seu, e você também não vê o de ninguém; quem o
-via o perde com a sua próxima mensagem. É definido para todo o espaço e seus dispositivos conectados, cada espaço
-separadamente. Cada lugar de conversas ocultas tem o seu próprio interruptor, nos detalhes de uma conversa de lá, e a
-sua própria hora: enquanto estão abertas, só elas contam como abertas, não o espaço.
+enquanto o Erevos está fechado no seu celular, só se ele esteve aberto desde a última vez que foi dito. Fica
+desativado em um espaço novo até você ativar, em **Configurações** → **Privacidade e segurança** → **Visto por
+último**, ou nos detalhes de qualquer conversa; um espaço criado antes da 7.0.1 o mantém como estava, ativado a não
+ser que você tivesse desativado. Vale nos dois sentidos: desativado, ninguém vê o seu, e você também não vê o de
+ninguém; quem o via o perde com a sua próxima mensagem. É definido para todo o espaço e seus dispositivos conectados,
+cada espaço separadamente. Cada lugar de conversas ocultas tem o seu próprio interruptor, nos detalhes de uma conversa
+de lá, e a sua própria hora: enquanto estão abertas, só elas contam como abertas, não o espaço.
 
 Com **Avisar quando eu abrir o Erevos** ligado (em **Visto por último**, ligado a não ser que você desligue), abrir o Erevos
 também avisa seus contatos na hora, sem esperar uma mensagem: só aqueles com quem você conversou nos últimos 30 dias e
