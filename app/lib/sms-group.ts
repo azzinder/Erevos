@@ -12,6 +12,8 @@ import { plainNumber, sameNumber } from './sms-invite';
 export function smsNumbers(address: string): string[] {
   const numbers: string[] = [];
   for (const part of address.split(/[,;\n]/)) {
+    // A sender's name ("PROMO2024") is no number, whatever digits it has.
+    if (/\p{L}/u.test(part)) continue;
     const number = plainNumber(part);
     if (number.replace('+', '').length >= 3 && !numbers.some((n) => sameNumber(n, number))) numbers.push(number);
   }

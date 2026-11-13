@@ -162,6 +162,10 @@ test('a sender that writes with a name is one conversation by that name, and nev
   assert.ok(sameConversation('BANK', ' bank'));
   assert.ok(!sameConversation('BANK', 'SHOP'));
   assert.ok(!sameConversation('BANK', '+306911111111'));
+  // A name with digits is a name, not the number its digits make.
+  assert.ok(!sameConversation('PROMO2024', 'SALE2024'));
+  assert.ok(sameConversation('PROMO2024', 'promo2024'));
+  assert.deepEqual(smsNumbers('PROMO2024'), []);
   assert.ok(!sameConversation('+306911111111', 'BANK'));
   assert.ok(sameConversation('+306911111111,+306922222222', '6922222222, 6911111111'));
   assert.ok(!sameConversation('', ''));
