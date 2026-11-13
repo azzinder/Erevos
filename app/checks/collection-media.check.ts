@@ -236,6 +236,10 @@ t('SubRip becomes WebVTT for the page, in any line breaks, and its text is UTF-8
   assert.equal(srtToVtt('WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n'), 'WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n');
   assert.equal(subtitlesText(utf8Encode('Καλημέρα')), 'Καλημέρα');
   assert.equal(subtitlesText(Uint8Array.from([0x63, 0x61, 0x66, 0xe9])), 'café');
+  // An older Greek .srt: ISO-8859-7, and Windows-1253 (its Ά at 0xa2).
+  assert.equal(subtitlesText(Uint8Array.from([0xca, 0xe1, 0xeb, 0xe7, 0xec, 0xdd, 0xf1, 0xe1])), 'Καλημέρα');
+  assert.equal(subtitlesText(Uint8Array.from([0x31, 0x0a, 0xa2, 0xed, 0xe8, 0xf1, 0xf9, 0xf0, 0xef, 0xf2])), '1\nΆνθρωπος');
+  assert.equal(subtitlesText(Uint8Array.from([0xb6, 0xed, 0xe8, 0xf1, 0xf9, 0xf0, 0xef, 0xf2])), 'Άνθρωπος');
 });
 
 t('playlists are kept sealed with the place, in their order, and a deleted one leaves a mark', async () => {

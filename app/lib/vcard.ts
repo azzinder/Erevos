@@ -53,7 +53,8 @@ const WINDOWS_GREEK: Record<number, number> = {
 };
 const LATIN_IN_GREEK = new Set([0xb7, 0xbb, 0xbd]);
 
-function greek(bytes: Uint8Array, windows: boolean): string {
+/** Greek bytes as text: Windows-1253 when `windows`, else ISO-8859-7. */
+export function greek(bytes: Uint8Array, windows: boolean): string {
   const own = windows ? WINDOWS_GREEK : ISO_GREEK;
   let out = '';
   for (const b of bytes) out += String.fromCharCode(own[b] ?? (b >= 0xb4 && !LATIN_IN_GREEK.has(b) ? b + 0x2d0 : b));

@@ -4,6 +4,7 @@
 
 import type { CollectionItem } from '../lock/collection-data';
 import { fileEnding } from './collection-view';
+import { greek } from './vcard';
 
 // A video's subtitles: an .srt or .vtt file of the Collection in the same folder, with the same
 // name but for its ending (film.mkv, film.srt), or with a language between (film.en.srt), plays
@@ -59,13 +60,29 @@ export function srtToVtt(text: string): string {
   return `WEBVTT\n\n${cues.join('\n\n')}\n`;
 }
 
-/** Subtitles' bytes as text: UTF-8, or, when they are not, Latin-1, as older .srt files often are something of the kind. */
+/**
+ * Subtitles' bytes as text: UTF-8; or, when they are not, an older .srt's own: Greek (Windows-1253,
+ * or ISO-8859-7) when most of its letters are Greek ones, else Latin-1, as near as it comes.
+ */
 export function subtitlesText(bytes: Uint8Array): string {
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
+    if (looksGreek(bytes)) return greek(bytes, bytes.some((b) => (b >= 0x80 && b <= 0x9f) || b === 0xa2));
     let out = '';
     for (const byte of bytes) out += String.fromCharCode(byte);
     return out;
   }
+}
+
+// Greek letters sit at 0xc1–0xfe in both Greek sets; in Latin-1 text the letters there are now and
+// then among many plain ones, in Greek most of the letters are there.
+function looksGreek(bytes: Uint8Array): boolean {
+  let high = 0;
+  let plain = 0;
+  for (const b of bytes) {
+    if (b >= 0xc1 && b <= 0xfe) high++;
+    else if ((b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a)) plain++;
+  }
+  return high > 0 && high >= plain;
 }
