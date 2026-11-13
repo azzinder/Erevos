@@ -240,10 +240,17 @@ class ShareActivity : Activity() {
     }
   }
 
+  // Only another app's content: never a file or one of Erevos's own providers, which another app
+  // could name to have Erevos read its own files into Send to.
   @Suppress("DEPRECATION")
-  private fun streamOf(intent: Intent): Uri? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-    else intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+  private fun streamOf(intent: Intent): Uri? {
+    val stream =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+      else intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+    if (stream?.scheme != "content") return null
+    val authority = stream.authority ?: return null
+    return if (authority == packageName || authority.startsWith("$packageName.")) null else stream
+  }
 
   // What an Erevos before this left: a plain copy from a share that was never sent. And the file
   // of a share before this one, still waiting, encrypted: one share waits at a time.
