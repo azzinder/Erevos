@@ -4,11 +4,12 @@
 
 import { useEffect, useState } from 'react';
 
+import { setHiddenServices } from './network-notices';
 import { secureGet, secureSet } from './secure';
 
 // The order of the services on home, and those hidden from it (components/services.tsx): kept for
 // the device, outside the spaces, as the modules are (lib/modules.ts). A hidden service stays on
-// and still notifies, but its card, its part and its chats under All messages are left out (a
+// but tells of nothing and counts on no icon (lib/network-notices.ts), and its card, its part and its chats under All messages are left out (a
 // search still finds them), until it is shown again. All messages is always first and never hidden.
 // `start` is the part Erevos opens on from its launcher icon or with no link (app/index.tsx): All
 // messages when none was chosen.
@@ -40,6 +41,7 @@ function load(): Promise<void> {
   loaded ??= secureGet(KEY).then(
     (raw) => {
       now = readServiceOrder(raw);
+      setHiddenServices(now.hidden);
       for (const listener of listeners) listener(now);
     },
     () => undefined,
@@ -49,8 +51,14 @@ function load(): Promise<void> {
 
 async function keep(next: ServiceOrder): Promise<void> {
   now = next;
+  setHiddenServices(now.hidden);
   for (const listener of listeners) listener(now);
   await secureSet(KEY, JSON.stringify(next)).catch(() => undefined);
+}
+
+/** Reads what was kept, so a hidden service is silent from the start (lib/background.ts). */
+export function loadServiceOrder(): Promise<void> {
+  return load();
 }
 
 /** The order and the hidden ones, read again whenever they change. */

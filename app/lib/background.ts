@@ -25,6 +25,7 @@ import { iconNumberOn } from './icon-number';
 import { networkChanged } from './network-change';
 import { laterTheirs, showsAt } from './later';
 import { onNetworkMessage, onNetworkRead, onPlaceNetworkMessage, onPlaceNetworkRing } from './network-notices';
+import { loadServiceOrder } from './service-order';
 import { NoticeCount, onReadElsewhere } from './notice-count';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
@@ -640,6 +641,7 @@ export function startBackground(): () => void {
       for (const m of laterTheirs(history.messages())) messageCameAt(m.at, !!m.quiet, screenOfChat(m.peer.slice(CONTACT_PREFIX.length)), undefined, m.tag);
     })
     .catch(() => undefined);
+  void loadServiceOrder();
   const told = [
     onMessage((received) => {
       if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfChat(received.identity), undefined, received.tag);

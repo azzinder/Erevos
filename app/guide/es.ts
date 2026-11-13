@@ -149,7 +149,8 @@ chats fijados y archivados.
   Erevos aún no es la app de SMS), **Erevos** solo los chats de Erevos, los de cada contacto, llegara lo que llegara
   al final, y **Matrix**, **XMPP**, **Público** y **Nostr** los suyos. **Añadir** abre Módulos, para activar más, y
   **Marcar todo como leído** lee la parte que se ve. Mantén pulsada una tarjeta para moverla antes o después u
-  ocultarla con **Ocultar**: un servicio oculto sigue activado y sigue avisando, pero sus chats salen también de
+  ocultarla con **Ocultar**: un servicio oculto sigue activado, pero no avisa ni cuenta en el número del icono
+  (Telegram, cuyas carpetas pueden verse en el inicio, sí), y sus chats salen también de
   **Todos** (la búsqueda aún los encuentra), y espera al pie de la ventana, donde un toque lo muestra de nuevo. Cualquier tarjeta que mantengas pulsada, también
   **Todos**, puede ser **Abre primero**: Erevos se abre en ella desde su icono, y en **Todos** mientras no elijas ninguna. Los
   chats y grupos en **Silenciado** no cuentan, como en el número del icono de Erevos, y lo que se escribe en la

@@ -50,6 +50,9 @@ On main, not released yet:
   last had Erevos open, and you see no one's either. A space you already have keeps it as it was.
 - **A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one
   shared in many pieces, could close Erevos at once. Now it opens.
+- **A hidden service stays quiet**: a service you hide in the **Services** window no longer sends notifications
+  or counts on Erevos's icon, as a muted chat; it stays connected. Telegram, whose folders can stand on home, keeps
+  telling.
 - **Smaller fixes you may see**: a radio station playing through Tor says so under **Now playing**; on Android older
   than 8.0, **Updates** says Erevos+ needs Android 8.0 and stays on Erevos; the palette once named after a site is
   now **Erevos**.

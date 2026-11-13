@@ -147,7 +147,8 @@ conversas fixadas e arquivadas.
   aparece se o Erevos ainda não é o app de SMS), **Erevos** só as conversas do Erevos, as de cada contato, o que quer
   que tenha chegado por último, e **Matrix**, **XMPP**, **Público** e **Nostr** as deles. **Adicionar** abre Módulos,
   para ligar mais, e **Marcar tudo como lido** lê a parte mostrada. Toque e segure um cartão para movê-lo para antes
-  ou depois ou ocultá-lo com **Ocultar**: um serviço oculto continua ligado e avisando, mas suas conversas saem também
+  ou depois ou ocultá-lo com **Ocultar**: um serviço oculto continua ligado, mas não avisa nem conta no número do ícone
+  (o Telegram, cujas pastas podem aparecer no início, sim), e suas conversas saem também
   de **Todos** (a busca ainda as encontra), e fica no pé da janela, onde um toque o mostra de novo. Qualquer cartão segurado, também **Todos**, pode virar
   **Abre primeiro**: o Erevos abre nele pelo ícone, e em **Todos** enquanto nenhum for escolhido. Conversas e grupos
   em **Em silêncio** não contam, como no número no ícone do Erevos, e o que se digita na busca não muda os números.

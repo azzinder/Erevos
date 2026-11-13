@@ -157,7 +157,8 @@ touche-le encore pour revenir. Les discussions masquées ont leurs propres discu
   conversations Erevos, celles de chaque contact, quoi qu’il soit arrivé en dernier, et **Matrix**, **XMPP**,
   **Public** et **Nostr** les leurs. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
   lit la partie affichée. Maintiens une carte appuyée pour l’avancer, la reculer ou la masquer avec **Masquer** : un
-  service masqué reste activé et notifie toujours, mais ses conversations quittent aussi **Tous** (la recherche les
+  service masqué reste activé, mais ne notifie plus et ne compte plus sur l’icône (Telegram, dont les dossiers
+  peuvent s’afficher à l’accueil, si), et ses conversations quittent aussi **Tous** (la recherche les
   trouve encore), et il attend au pied de la fenêtre, où un appui le réaffiche. Toute carte maintenue, **Tous** aussi, peut devenir
   **S’ouvre en premier** : Erevos s’ouvre dessus depuis son icône, et sur **Tous** tant qu’aucune n’est choisie. Les conversations et groupes en **En
   sourdine** ne comptent pas, comme pour le nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche ne

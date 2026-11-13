@@ -144,7 +144,8 @@ svoje prikvačene i arhivirane razgovore.
   posljednja poruka bila SMS; tu piše ako Erevos još nije SMS aplikacija), **Erevos** samo Erevos razgovore, svakog
   kontakta, šta god da je stiglo posljednje, a **Matrix**, **XMPP**, **Javno** i **Nostr** svoje. **Dodaj** otvara
   Module, da uključite još, a **Označi sve kao pročitano** čita prikazani dio. Držite karticu da je pomjerite naprijed
-  ili nazad ili sakrijete sa **Sakrij**: skrivena usluga ostaje uključena i i dalje obavještava, ali njeni razgovori
+  ili nazad ili sakrijete sa **Sakrij**: skrivena usluga ostaje uključena, ali ne šalje obavještenja i ne broji se na ikoni
+  (Telegram, čije se mape mogu vidjeti na početnom ekranu, i dalje da), a njeni razgovori
   nestaju i iz **Sve poruke** (pretraga ih i dalje nalazi), a čeka na dnu prozora, gdje je dodir ponovo prikazuje. Svaka
   držana kartica, i **Sve poruke**, može postati **Otvara se prvo**: tu se Erevos otvara sa svoje ikone, a na **Sve
   poruke** dok nijedna nije izabrana.

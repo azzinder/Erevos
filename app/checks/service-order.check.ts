@@ -35,3 +35,23 @@ test('the part Erevos opens on: kept, All messages when none or when hidden', ()
   assert.equal(startPart({ order: [], hidden: [], start: 'erevos' }), 'erevos');
   assert.equal(startPart({ order: [], hidden: ['erevos'], start: 'erevos' }), 'all');
 });
+
+test('a service hidden on home tells of nothing and counts on no icon; Telegram has its own way', async () => {
+  const { addNetwork, hearing, inHiddenService, networkUnreadAt, onNetworkMessage, setHiddenServices } = await import('../lib/network-notices');
+  addNetwork('sms:', { unread: () => new Map([['sms:7', 2]]), notifyOf: () => null });
+  const told: string[] = [];
+  const stop = onNetworkMessage((where) => told.push(where));
+  const ear = hearing();
+  ear.hear(new Map());
+  setHiddenServices(['sms', 'telegram']);
+  assert.equal(inHiddenService('sms:7'), true);
+  assert.equal(inHiddenService('telegram:1'), false);
+  assert.equal(networkUnreadAt().has('sms:7'), false);
+  ear.hear(new Map([['sms:7', 1]]));
+  assert.deepEqual(told, []);
+  setHiddenServices([]);
+  assert.equal(networkUnreadAt().get('sms:7'), 2);
+  ear.hear(new Map([['sms:7', 2]]));
+  assert.deepEqual(told, ['sms:7']);
+  stop();
+});

@@ -33,6 +33,7 @@ export const NEXT: Changes = {
     mark("**Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it any more. See [Appearance](#appearance)."),
     mark("**Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you last had Erevos open, and you see no one's either. A space you already have keeps it as it was. See [Chat through a relay](#relay)."),
     mark("**A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one shared in many pieces, could close Erevos at once. Now it opens. See [Chat through a relay](#relay)."),
+    mark("**A hidden service stays quiet**: a service you hide in the **Services** window, Messenger, Matrix, SMS or any other, no longer sends notifications or counts on Erevos's icon, as a muted chat. It stays connected and tells again once you show it. Telegram, whose folders can stand on home of their own, keeps telling. See [Getting started](#start)."),
   ],
   underTheHood: [],
 };

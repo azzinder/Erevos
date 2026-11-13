@@ -152,8 +152,9 @@ einmal, um zurückzugehen. Versteckte Chats haben ihre eigenen angehefteten und 
   steht, wenn Erevos noch nicht die SMS-App ist), **Erevos** nur die Erevos-Chats, die jedes Kontakts, was auch
   zuletzt kam, und **Matrix**, **XMPP**, **Öffentlich** und **Nostr** ihre eigenen. **Hinzufügen** öffnet die Module,
   um mehr einzuschalten, und **Alle als gelesen markieren** liest den gezeigten Teil. Halte eine Karte gedrückt, um
-  sie nach vorn oder hinten zu verschieben oder mit **Ausblenden** auszublenden: Ein ausgeblendeter Dienst bleibt an
-  und benachrichtigt weiter, aber seine Chats verschwinden auch aus **Alle** (die Suche findet sie noch), und er
+  sie nach vorn oder hinten zu verschieben oder mit **Ausblenden** auszublenden: Ein ausgeblendeter Dienst bleibt an,
+  benachrichtigt aber nicht mehr und zählt nicht im Symbol (Telegram, dessen Ordner auf der Startseite
+  stehen können, schon), und seine Chats verschwinden auch aus **Alle** (die Suche findet sie noch), und er
   wartet unten im Fenster, wo ein Tippen ihn wieder zeigt. Jede gehaltene Karte, auch **Alle**, kann **Öffnet
   zuerst** werden: Dort öffnet Erevos von seinem Symbol aus, und bei **Alle**, solange keine gewählt ist. Chats und Gruppen auf **Stumm** zählen nicht mit, wie bei
   der Zahl auf dem Erevos-Symbol, und was in die Suche getippt ist, ändert die Zahlen nicht. Unter der Schaltfläche

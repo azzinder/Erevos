@@ -31,6 +31,22 @@ export type NetworkChats = {
 
 const networks = new Map<string, NetworkChats>();
 
+// The services hidden on home (lib/service-order.ts): their chats tell of nothing and the icon's
+// number leaves them out, as for a muted chat, until the service shows again. Telegram's are told
+// by lib/telegram-store.ts, which has its folders shown on home as services of their own.
+let hiddenServices: ReadonlySet<string> = new Set();
+
+/** The services hidden on home now, by their keys ('messenger', 'matrix', 'sms' and so on). */
+export function setHiddenServices(keys: readonly string[]): void {
+  hiddenServices = new Set(keys.filter((key) => key !== 'telegram' && !key.startsWith('tg:')));
+}
+
+/** Whether `where` is a chat of a service hidden on home. */
+export const inHiddenService = (where: string): boolean => {
+  const at = where.indexOf(':');
+  return at > 0 && hiddenServices.has(where.slice(0, at));
+};
+
 /** A store says how to read its chats, under its `prefix`. */
 export function addNetwork(prefix: (typeof NETWORK_PREFIXES)[number], chats: NetworkChats): void {
   networks.set(prefix, chats);
@@ -43,7 +59,7 @@ export function networkUnreadAt(now = Date.now()): Map<string, number> {
   const at = new Map<string, number>();
   for (const chats of networks.values()) {
     try {
-      for (const [where, n] of chats.unread()) if (n > 0 && !mutedNow(chats.notifyOf(where), now)) at.set(where, n);
+      for (const [where, n] of chats.unread()) if (n > 0 && !mutedNow(chats.notifyOf(where), now) && !inHiddenService(where)) at.set(where, n);
     } catch {
       // Its account is not open.
     }
@@ -145,7 +161,7 @@ export function hearing(
         }
         return;
       }
-      for (const [where, times] of came) cameListeners.forEach((listener) => listener(where, times));
+      for (const [where, times] of came) if (!inHiddenService(where)) cameListeners.forEach((listener) => listener(where, times));
       if (read.length) readListeners.forEach((listener) => listener(read));
     },
   };

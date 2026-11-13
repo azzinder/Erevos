@@ -149,7 +149,8 @@ nascoste hanno le proprie chat fissate e archiviate.
   SMS), **Erevos** solo le chat di Erevos, quelle di ogni contatto, qualunque cosa sia arrivata per ultima, e
   **Matrix**, **XMPP**, **Pubblico** e **Nostr** le loro. **Aggiungi** apre Moduli, per attivarne altri, e **Segna
   tutto come letto** legge la parte mostrata. Tieni premuta una scheda per spostarla prima o dopo o per nasconderla
-  con **Nascondi**: un servizio nascosto resta attivo e continua ad avvisare, ma le sue chat escono anche da **Tutti**
+  con **Nascondi**: un servizio nascosto resta attivo, ma non avvisa e non conta nel numero sull’icona
+  (Telegram, le cui cartelle possono stare in home, sì), e le sue chat escono anche da **Tutti**
   (la ricerca le trova ancora), e aspetta in fondo alla finestra, dove un tocco lo mostra di nuovo. Ogni scheda tenuta premuta, anche **Tutti**, può
   diventare **Si apre per prima**: Erevos si apre lì dalla sua icona, e su **Tutti** finché non ne scegli nessuna. Le chat e i gruppi
   in **In silenzio** non contano, come nel numero sull’icona di Erevos, e ciò che scrivi nella ricerca non cambia i
