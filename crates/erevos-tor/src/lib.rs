@@ -129,7 +129,7 @@ fn named_ways() -> std::sync::MutexGuard<'static, HashMap<String, IsolationToken
 /// `frames`, put there by `reader` as it comes, until the relay closes the connection.
 struct Text {
     sink: tokio::sync::Mutex<futures_util::stream::SplitSink<Socket, Message>>,
-    frames: tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<String>>,
+    frames: tokio::sync::Mutex<tokio::sync::mpsc::Receiver<String>>,
     reader: tokio::task::JoinHandle<()>,
     /// The relay's host, and the circuits the connection went on.
     way: (String, IsolationToken),
@@ -449,6 +449,11 @@ pub fn close(id: u64) {
     }
 }
 
+/// The most frames of a Nostr relay's that wait to be taken: past it, its
+/// connection is read no further until some are, so a relay that sends and
+/// sends fills no more than this of the phone's memory.
+const TEXT_BACKLOG: usize = 256;
+
 /// Opens a connection to the Nostr relay at `url` through Tor. Returns its
 /// handle for [`text_send`], [`text_next`] and [`text_close`].
 pub fn text_open(url: &str) -> Result<u64> {
@@ -465,12 +470,12 @@ pub fn text_open(url: &str) -> Result<u64> {
         })
         .inspect_err(|_| nostr_way_failed(&host, way))?;
     let (sink, mut stream) = socket.split();
-    let (sender, frames) = tokio::sync::mpsc::unbounded_channel();
+    let (sender, frames) = tokio::sync::mpsc::channel(TEXT_BACKLOG);
     let reader = runtime.spawn(async move {
         while let Some(Ok(message)) = stream.next().await {
             match message {
                 Message::Text(text) => {
-                    if sender.send(text.to_string()).is_err() {
+                    if sender.send(text.to_string()).await.is_err() {
                         break;
                     }
                 }
