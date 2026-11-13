@@ -26,6 +26,10 @@ On main, not released yet:
   can come before its time, and shows only then. Until then its chat was marked read again and again without end, so
   it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a
   message is read once it shows.
+- **Choose the part Erevos opens on**: under **All services**, hold any card, **All messages** too, and choose
+  **Opens first**. Erevos's icon in the launcher, and Erevos started with nothing else to open, then open on it; with
+  none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The
+  widget's buttons still open their own.
 
 ### Under the hood
 
