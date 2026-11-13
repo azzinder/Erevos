@@ -28,10 +28,13 @@ export const CHAT_TRIES = 'erevos.chat-tries';
 export const FREE_TRIES = 5;
 const FIRST_WAIT_MS = 30_000;
 const MAX_WAIT_MS = 3_600_000;
-/** A search's wrong tries are forgotten after this long without another: a search is typed by
- *  anyone, for anything, and five searches that found nothing an hour ago are no attack. The
- *  wait a search brings stays short for the same reason; a PIN is still tried five times at most
- *  in any such while, which is no way to guess one. */
+/** A search's wrong tries are let go of after this long without another: a search is typed by
+ *  anyone, for anything, and searches that found nothing an hour ago are no attack. The first
+ *  while brings the count back under FREE_TRIES, and each further one takes one more off, so a
+ *  search is never made to wait for long by searching, while guessing a PIN by searching stays at
+ *  about one try a while. The while is measured on the clock the owner cannot set, like the waits:
+ *  moving the date forward lets nothing go, and neither does a new start of the phone, after which
+ *  how long passed cannot be known. The wait a search brings stays short for the same reason. */
 const SEARCH_FORGET_MS = 15 * 60_000;
 const SEARCH_MAX_WAIT_MS = 5 * 60_000;
 
@@ -62,8 +65,11 @@ export function setUptimeForChecks(clock: (() => Uptime | null) | null): void {
 
 interface Tries {
   fails: number;
-  /** When the last wrong one was tried (ms, the date and time), for the searches' forgetting. */
+  /** When the last wrong one was tried (ms, the date and time), for the searches' forgetting where there is no clock of the phone's own. */
   at?: number;
+  /** When the last wrong one was tried on the clock the owner cannot set, and in which start: for the searches' forgetting. */
+  lastUp?: number;
+  lastBoot?: string;
   /** When the wait ends by the date and time (ms): what the lock screen says, and the measure with no clock of the phone's own. */
   until: number;
   /** How long the wait is, from `up` on the clock of start `boot`; 0 with none, or once it is over. */
@@ -95,7 +101,15 @@ async function load(entry = KEY): Promise<Tries> {
         const wait = typeof data.wait === 'number' ? data.wait : data.until > 0 ? waitAfter(data.fails, entry) : 0;
         const up = typeof data.up === 'number' ? data.up : 0;
         const boot = typeof data.boot === 'string' ? data.boot : '';
-        return { fails: data.fails, until: data.until, wait, up, boot, ...(typeof data.at === 'number' ? { at: data.at } : {}) };
+        return {
+          fails: data.fails,
+          until: data.until,
+          wait,
+          up,
+          boot,
+          ...(typeof data.at === 'number' ? { at: data.at } : {}),
+          ...(typeof data.lastUp === 'number' && typeof data.lastBoot === 'string' ? { lastUp: data.lastUp, lastBoot: data.lastBoot } : {}),
+        };
       }
     }
   } catch {
@@ -132,15 +146,36 @@ export async function assertNotLockedOut(now = Date.now(), entry = KEY): Promise
   await save(entry, { ...tries, until: 0, wait: 0 });
 }
 
+// How long passed since the search's last wrong try: on the clock the owner cannot set when
+// there is one (nothing known across a new start), by the date and time only where there is none.
+function sinceLast(before: Tries, now: number, clock: Uptime | null): number {
+  if (clock) return before.lastBoot === clock.boot && before.lastUp !== undefined && clock.up >= before.lastUp ? clock.up - before.lastUp : 0;
+  return before.at !== undefined ? Math.max(0, now - before.at) : 0;
+}
+
+/** What is left of a search's wrong tries `fails` after `since` ms without another. */
+export function searchFailsLeft(fails: number, since: number): number {
+  const whiles = Math.floor(since / SEARCH_FORGET_MS);
+  return whiles > 0 ? Math.max(0, Math.min(fails, FREE_TRIES - 1) - (whiles - 1)) : fails;
+}
+
 /** Counts a wrong password; returns when the next check may run (now, while tries are free). */
 export async function recordWrongPassword(now = Date.now(), entry = KEY): Promise<number> {
   const before = await load(entry);
-  const forgotten = entry === SEARCH_TRIES && before.at !== undefined && now - before.at > SEARCH_FORGET_MS;
-  const fails = (forgotten ? 0 : before.fails) + 1;
+  const search = entry === SEARCH_TRIES;
+  const clock = uptimeNow();
+  const fails = (search ? searchFailsLeft(before.fails, sinceLast(before, now, clock)) : before.fails) + 1;
   const wait = waitAfter(fails, entry);
-  const clock = wait ? uptimeNow() : null;
   const until = wait ? now + wait : 0;
-  await save(entry, { fails, until, wait, up: clock?.up ?? 0, boot: clock?.boot ?? '', ...(entry === SEARCH_TRIES ? { at: now } : {}) });
+  const waitClock = wait ? clock : null;
+  await save(entry, {
+    fails,
+    until,
+    wait,
+    up: waitClock?.up ?? 0,
+    boot: waitClock?.boot ?? '',
+    ...(search ? { at: now, ...(clock ? { lastUp: clock.up, lastBoot: clock.boot } : {}) } : {}),
+  });
   return until;
 }
 

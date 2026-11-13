@@ -30,7 +30,7 @@ import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden,
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
 import { changedRelaySettings, EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, relaySettingsOf, saveHiddenData, saveSpaceData, updateSpaceData, watchSpaceData, type SpaceData } from '../lock/space-data';
 import { POCKETS } from '../lock/sealed-file';
-import { assertNotLockedOut, FREE_TRIES, LockedOutError, recordRightPassword, recordWrongPassword, SEARCH_TRIES, setUptimeForChecks, type Uptime } from '../lock/tries';
+import { assertNotLockedOut, FREE_TRIES, LockedOutError, recordRightPassword, recordWrongPassword, SEARCH_TRIES, searchFailsLeft, setUptimeForChecks, type Uptime } from '../lock/tries';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
 
@@ -552,22 +552,55 @@ t('hidden chats open from a search with their PIN, and a wrong one is only a sea
   assert.deepEqual((await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000))?.key, key);
 });
 
-t('wrong searches are forgotten after a quarter of an hour, and never make a search wait more than five minutes', async () => {
+t('wrong searches are let go of a quarter of an hour at a time, and never make a search wait more than five minutes', async () => {
   await setLockPassword(0, 'real-1111', real);
   await prepareHidden();
   const key = await setHiddenPassword(0, 3, 'pin-0', null);
   const now = Date.now();
-  // Four that found nothing, then a quarter of an hour: the next four are free again.
+  // Four that found nothing, then a quarter of an hour: the count is under the free ones again, one
+  // more each further quarter.
   for (let i = 0; i < FREE_TRIES - 1; i++) assert.equal(await searchHidden(0, `search ${i}`, now + i), null);
-  const later = now + 16 * 60_000;
-  for (let i = 0; i < FREE_TRIES - 1; i++) assert.equal(await searchHidden(0, `again ${i}`, later + i), null);
+  const later = now + 31 * 60_000;
+  // Two quarters: two under the free ones, so one more search is free, and the PIN after it opens.
+  assert.equal(await searchHidden(0, 'again', later), null);
   await assertNotLockedOut(later + FREE_TRIES, SEARCH_TRIES);
   assert.deepEqual((await searchHidden(0, 'pin-0', later + FREE_TRIES + 1))?.key, key);
-  // Many in a row: the wait grows, to five minutes at most, then a quarter of an hour clears them.
+  // Many in a row: the wait grows, to five minutes at most, then a quarter of an hour lets a search try again.
   const at = later + 60_000;
   for (let i = 0; i < 20; i++) assert.equal(await searchHidden(0, `more ${i}`, at + i), null);
   await assert.rejects(assertNotLockedOut(at + 20, SEARCH_TRIES), (e: LockedOutError) => e.until <= at + 19 + 5 * 60_000);
   assert.deepEqual((await searchHidden(0, 'pin-0', at + 20 + 16 * 60_000))?.key, key);
+});
+
+t('guessing by searching stays at about one try a quarter of an hour, and moving the date lets nothing go', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await prepareHidden();
+  let up = 0;
+  setUptimeForChecks(() => ({ up, boot: 'boot-1' }));
+  try {
+    const now = Date.now();
+    for (let i = 0; i < FREE_TRIES - 1; i++) await recordWrongPassword(now, SEARCH_TRIES);
+    // The date sixteen minutes on, the phone's own clock not: the next is the fifth, and waits.
+    assert.ok((await recordWrongPassword(now + 16 * 60_000, SEARCH_TRIES)) > 0);
+    // A quarter of an hour on the phone's own clock: the wait is over, and the count is down only
+    // to under the free ones, so one more try is made and brings a wait again.
+    up += 16 * 60_000;
+    await assertNotLockedOut(now, SEARCH_TRIES);
+    assert.ok((await recordWrongPassword(now, SEARCH_TRIES)) > 0);
+    // A new start of the phone: how long passed is not known, so nothing is let go of.
+    setUptimeForChecks(() => ({ up: 20 * 60_000, boot: 'boot-2' }));
+    assert.ok((await recordWrongPassword(now, SEARCH_TRIES)) > 0);
+  } finally {
+    setUptimeForChecks(null);
+  }
+});
+
+test('a search\'s wrong tries let go of: under the free ones after a quarter of an hour, one more each further one', () => {
+  assert.equal(searchFailsLeft(9, 14 * 60_000), 9);
+  assert.equal(searchFailsLeft(9, 15 * 60_000), FREE_TRIES - 1);
+  assert.equal(searchFailsLeft(2, 15 * 60_000), 2);
+  assert.equal(searchFailsLeft(9, 30 * 60_000), FREE_TRIES - 2);
+  assert.equal(searchFailsLeft(9, 24 * 3600_000), 0);
 });
 
 t('another space opens from a search with its password; the open one\'s own, or the panic password, is only a search', async () => {
