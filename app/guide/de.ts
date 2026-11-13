@@ -1985,6 +1985,11 @@ Tor.
   Browser. Die Vorschau eines Links wird auch von seiner Seite geholt, und die Seite sieht die Adresse genauso.
   Mit **Über Tor** für Linkvorschauen sieht sie die Seite nicht.
 
+- **Das Relay eines Kontakts:** Solange dein Bereich kein eigenes Relay hat, oder nur einen geliehenen Platz auf
+  einem, kann dir ein Kontakt einen Platz auf seinem geben, und er kommt mit seiner Nachricht. Sein Relay sieht dann
+  die Adresse, darum fragt Erevos, bevor es ihn nimmt, außer der Bereich schickt alles über Tor. Nicht genommen, wird
+  die Einladung fallen gelassen.
+
 - **Gruppen:** Eine Nachricht in einer Erevos-Gruppe geht über einen Server, der die Adresse sieht. Tor für den
   Bereich verbirgt sie; eine Gruppe hat keinen eigenen Schalter.
 
@@ -2659,8 +2664,10 @@ Liste.
 - **Versteckte Einladungen:** Mit der ersten SMS an eine Nummer, die kein Kontakt ist, sendet Erevos auch eine kurze
   versteckte Einladung. An die Nummer eines Erevos-Kontakts, verknüpft oder auf seiner Kontaktkarte, geht keine. Ein
   Telefon ohne Erevos zeigt nichts; ein Telefon mit Erevos antwortet über das Relay, und die beiden werden Kontakte.
-  Jede Nummer wird höchstens einmal im Monat gefragt, und **Einladungen ausschalten**, unter **Einstellungen** →
-  **Telefon und SMS** → **SMS** → **Erevos hinter einer Nummer finden**, beendet sie.
+  Von selbst antwortet es nur auf eine Nummer, die es kennt, aus deinen Kontakten oder eine, der du per SMS
+  geschrieben hast; bei jeder anderen fragt es zuerst, **Eine Einladung per SMS**, denn der Absender einer SMS kann
+  gefälscht sein. Jede Nummer wird höchstens einmal im Monat gefragt, und **Einladungen ausschalten**, unter
+  **Einstellungen** → **Telefon und SMS** → **SMS** → **Erevos hinter einer Nummer finden**, beendet sie.
 
 **Warum:** Damit sich zwei Erevos-Telefone allein über eine Telefonnummer finden, ohne einen Server, der Nummern kennt.
 Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt ein Telefon ohne Erevos nichts.
@@ -3979,7 +3986,9 @@ Text immer gut lesbar ist, auch auf Glas.
   andere Rechnung ist nur eine Rechnung. **Code ändern** ändert ihn; **Symbol von Erevos wieder zeigen** bringt das
   Symbol in seiner Farbe zurück und vergisst den Code. Nur das Symbol ist versteckt: Die App-Liste von Android, die
   Benachrichtigungen, die letzten Apps und die Symbole Telefon, SMS und Kontakte zeigen weiterhin Erevos. Das Telefon
-  behält nur einen Hash des Codes: Er ist eine Tür, nicht das Schloss.
+  behält nur einen Hash des Codes: Er ist eine Tür, nicht das Schloss. Ist Erevos gelöscht, durch das Panik-Passwort
+  oder Androids **Speicher löschen**, öffnet kein Code es mehr: Der Taschenrechner öffnet dann Erevos, als neu, und
+  das eigene Symbol von Erevos kommt an seine Stelle zurück.
 
   **Warum:** Wer einen Blick auf das Telefon wirft, sieht einen Taschenrechner, keinen Messenger; das Passwort schützt
   weiterhin, was darin ist.

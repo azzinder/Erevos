@@ -1792,6 +1792,10 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
   Browseru. Pregled linka također se preuzima s njegovog sajta, pa sajt vidi adresu na isti način.
   S uključenim **Preko Tora** za preglede linkova, ne vidi.
 
+- **Relay kontakta:** dok vaš prostor nema vlastiti relay, ili samo posuđeno mjesto na jednom, kontakt vam može dati
+  mjesto na svom, i ono stiže s njegovom porukom. Njegov relay tada vidi adresu, pa Erevos pita prije nego ga
+  prihvati, osim ako prostor sve šalje preko Tora. Ako se ne prihvati, pozivnica se odbacuje.
+
 - **Grupe:** poruka u Erevos grupi ide preko servera, koji vidi adresu. Tor za prostor je sakriva; grupa nema vlastiti
   prekidač.
 
@@ -2393,9 +2397,10 @@ na jednom popisu.
   poruku, Erevos to kaže kad pita.
 - **Skrivene pozivnice:** s prvim SMS-om na broj koji nije kontakt, Erevos šalje i kratku skrivenu pozivnicu. Nijedna
   ne ide na broj Erevos kontakta, povezan ili na kartici njegovog kontakta. Telefon bez Erevosa ne prikazuje ništa;
-  telefon s Erevosom odgovara preko relaya i njih dvoje postaju kontakti. Svaki broj se pita najviše jednom mjesečno,
-  a **Isključi pozivnice**, pod **Postavke** → **Telefon i SMS** → **SMS** → **Pronađi Erevos na broju**, ih
-  zaustavlja.
+  telefon s Erevosom odgovara preko relaya i njih dvoje postaju kontakti. Sam odgovara samo na broj koji poznaje, u
+  vašim kontaktima ili onaj kojem ste pisali SMS-om; za svaki drugi prvo pita, **Poziv putem SMS-a**, jer pošiljatelj
+  SMS-a može biti lažan. Svaki broj se pita najviše jednom mjesečno, a **Isključi pozivnice**, pod **Postavke** →
+  **Telefon i SMS** → **SMS** → **Pronađi Erevos na broju**, ih zaustavlja.
 
 **Zašto:** kako bi se dva Erevos telefona pronašla samo na osnovu broja telefona, bez servera koji zna brojeve.
 Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon bez Erevosa ne prikazuje ništa.
@@ -3603,7 +3608,8 @@ tekst uvijek bio dobro čitljiv, i na staklu.
   traži svoju lozinku kao uvijek. Svaki drugi račun samo je račun. **Promijeni kod** ga mijenja; **Ponovo prikaži
   ikonu Erevosa** vraća ikonu, u njenoj boji, i zaboravlja kod. Skrivena je samo ikona: Androidov popis aplikacija,
   obavijesti, nedavne aplikacije te ikone Telefon, SMS i Kontakti i dalje pokazuju Erevos. Telefon čuva samo hash
-  koda: to su vrata, a ne brava.
+  koda: to su vrata, a ne brava. Kad se Erevos obriše, lozinkom za paniku ili Androidovim **Obriši pohranu**, nijedan
+  kod ga više ne otvara: kalkulator tada otvara Erevos, kao novi, a Erevosova ikona vraća se na njegovo mjesto.
 
   **Zašto:** ko god baci pogled na telefon vidi kalkulator, a ne aplikaciju za poruke; lozinka i dalje čuva ono što je
   unutra.

@@ -36,6 +36,20 @@ On main, not released yet:
   none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The
   widget's buttons still open their own.
 
+- **Asked before strangers reach this phone**: an Erevos invite that comes by SMS is answered by itself only from a
+  number in your contacts or one you have written to; from any other, Erevos asks first, as the sender of an SMS can
+  be made up. A contact's invite to a place on their relay now says first that their relay sees your IP address, and
+  is taken only if you go on.
+- **Notices in your language**: Android's own notices and screens, new versions, reminders, birthdays, calls, SMS
+  codes and the contact picker, now speak German, Spanish, French, Italian, Portuguese and Serbo-Croatian too, not
+  only Greek and English. Older Greek subtitles, not saved as UTF-8, now show as Greek on the computer.
+- **Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer
+  now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or
+  **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it.
+- **Smaller fixes you may see**: a radio station playing through Tor says so under **Now playing**; on Android older
+  than 8.0, **Updates** says Erevos+ needs Android 8.0 and stays on Erevos; the palette once named after a site is
+  now **Erevos**.
+
 ### Under the hood
 
 - The plain Erevos is built with `EREVOS_EDITION=lite` (docs/editions.md): its core has no Matrix, XMPP or chats with
@@ -57,6 +71,24 @@ On main, not released yet:
   what comes before it is read, and the journal as it was is kept beside it before it is written again. A journal
   from an older relay is read as it is. `erevos-relay downgrade-journal` writes it back as older relays read it,
   losing nothing, for going back to one (deploy/relay/README.md).
+- Group messages from a member no longer in the group are dropped (only their own request for new keys is read).
+- A relay address is checked before Erevos connects to it, files' too, and at most 512 characters long.
+- The sync log refuses names such as `__proto__` or `constructor`, which could change how every entry reads.
+- The Collection's WebDAV copy deletes an unnamed piece only once it has stayed unnamed for an hour across copies.
+- A Nostr message that could not be opened is tried again when it comes again, rather than taken as seen.
+- A message is held to wait for a contact only when the error is one waiting can mend.
+- An SMS group's numbers leave out any part with letters, such as a name the phone added.
+- A call between two phones on the same network answers with all its paths, not only through a call relay, when the
+  offer had only local addresses.
+- Share to Erevos takes only another app's content, never a file or one of Erevos's own providers.
+- The computer allows the camera only to the app's own calls, and follows a link inside the app only to its exact
+  origin. macOS says why it uses the camera.
+- Element Call is built only into Erevos+.
+- The relay's XMPP push gives a stream a minute for its whole start, and one address at most 8 of its 64 places.
+- Nostr through Tor keeps at most 256 frames waiting to be read.
+- Damaged stored state gives an error, not a crash: a group's length that would wrap on 32 bits (the web app), a
+  ratchet with a receiving chain but no peer key, and a counter at its end.
+- The release counts on from plain Erevos's own last release, not GitHub's latest, which may be Erevos+.
 
 ## 7.0.0-rc.10 (2026-11-12)
 

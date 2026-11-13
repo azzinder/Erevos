@@ -1845,6 +1845,11 @@ usa. Não mostra o que você escreve. Quem se conecta ao seu celular o vê, a me
   Browser. A prévia de um link também é baixada do site dele, e o site vê o endereço do mesmo jeito.
   Com o **Pelo Tor** ligado nas prévias de links, ele não vê.
 
+- **O relay de um contato:** enquanto o seu espaço não tem relay próprio, ou só um lugar emprestado em um, um contato
+  pode lhe dar um lugar no dele, e ele vem com a mensagem dele. O relay dele então vê o endereço, por isso o Erevos
+  pergunta antes de aceitá-lo, a menos que o espaço envie tudo pelo Tor. Se não for aceito, o convite é deixado de
+  lado.
+
 - **Os grupos:** uma mensagem num grupo do Erevos passa por um servidor, que vê o endereço. O Tor para o espaço o
   esconde; um grupo não tem botão próprio.
 
@@ -2472,7 +2477,9 @@ conversas do Erevos numa lista só.
   sendo respondida, o Erevos avisa quando pergunta.
 - **Convites ocultos:** com o primeiro SMS para um número que não é contato, o Erevos também envia um convite oculto
   curto. Nenhum vai para o número de um contato do Erevos, vinculado ou no cartão de contato dele. Um celular sem
-  Erevos não mostra nada; um celular com Erevos responde pelo relay e os dois viram contatos. Cada número é consultado
+  Erevos não mostra nada; um celular com Erevos responde pelo relay e os dois viram contatos. Ele responde sozinho só
+  a um número que conhece, entre os seus contatos ou um para o qual você escreveu por SMS; para qualquer outro
+  pergunta antes, **Um convite por SMS**, porque o remetente de um SMS pode ser falsificado. Cada número é consultado
   no máximo uma vez por mês, e **Desativar convites**, em **Configurações** → **Telefone e SMS** → **SMS** →
   **Descobrir o Erevos num número**, os interrompe.
 
@@ -3718,7 +3725,9 @@ texto seja sempre bem legível, também sobre o vidro.
   Erevos abre, pedindo a senha dele como sempre. Qualquer outra conta é só uma conta. **Mudar o código** o muda;
   **Mostrar de novo o ícone do Erevos** traz o ícone de volta, na cor dele, e esquece o código. Só o ícone fica
   escondido: a lista de apps do Android, os avisos, os apps recentes e os ícones Telefone, SMS e Contatos continuam
-  mostrando o Erevos. O celular guarda só um hash do código: é uma porta, não a fechadura.
+  mostrando o Erevos. O celular guarda só um hash do código: é uma porta, não a fechadura. Depois que o Erevos é
+  apagado, pela senha de pânico ou pelo **Limpar armazenamento** do Android, nenhum código o abre mais: a calculadora
+  então abre o Erevos, como novo, e o ícone do próprio Erevos volta ao lugar dela.
 
   **Por quê:** quem der uma olhada no celular vê uma calculadora, não um mensageiro; a senha continua guardando o que
   há dentro.

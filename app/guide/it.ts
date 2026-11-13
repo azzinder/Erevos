@@ -1871,6 +1871,11 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
   l’anteprima di un link viene scaricata dal suo sito, e il sito vede l’indirizzo allo stesso modo.
   Con **Tramite Tor** attivo per le anteprime dei link, non lo vede.
 
+- **Il relay di un contatto:** finché il tuo spazio non ha un relay suo, o solo un posto prestato su uno, un contatto
+  può darti un posto sul suo, e arriva con il suo messaggio. Il suo relay vede allora l’indirizzo, perciò Erevos
+  chiede prima di prenderlo, a meno che lo spazio non mandi tutto tramite Tor. Se non lo prendi, l’invito viene
+  lasciato cadere.
+
 - **I gruppi:** un messaggio in un gruppo Erevos passa da un server, che vede l’indirizzo. Tor per lo spazio lo
   nasconde; un gruppo non ha un interruttore suo.
 
@@ -2499,10 +2504,12 @@ chat Erevos in un unico elenco.
   telefonico può leggerlo. Un SMS non può scomparire né rispondere a un messaggio: con il cronometro attivo, o con un
   messaggio a cui stai rispondendo, Erevos lo dice quando chiede.
 - **Inviti nascosti:** con il primo SMS a un numero che non è un contatto, Erevos invia anche un breve invito
-  nascosto. Non ne va nessuno al numero di un contatto Erevos, collegato o sulla sua scheda contatto. Un telefono senza
-  Erevos non mostra nulla; un telefono con Erevos risponde tramite il relay e i due diventano contatti. Ogni numero
-  viene interpellato al massimo una volta al mese, e **Disattiva gli inviti**, in **Impostazioni** → **Telefono e
-  SMS** → **SMS** → **Scopri Erevos dietro un numero**, li ferma.
+  nascosto. Non ne va nessuno al numero di un contatto Erevos, collegato o sulla sua scheda contatto. Un telefono
+  senza Erevos non mostra nulla; un telefono con Erevos risponde tramite il relay e i due diventano contatti. Risponde
+  da solo soltanto a un numero che conosce, tra i tuoi contatti o uno a cui hai scritto via SMS; per ogni altro chiede
+  prima, **Un invito via SMS**, perché il mittente di un SMS può essere inventato. Ogni numero viene interpellato al
+  massimo una volta al mese, e **Disattiva gli inviti**, in **Impostazioni** → **Telefono e SMS** → **SMS** → **Scopri
+  Erevos dietro un numero**, li ferma.
 
 **Perché:** così due telefoni con Erevos si trovano solo da un numero di telefono, senza un server che conosca i
 numeri. L’invito è un SMS di dati, che le app di messaggistica non mostrano, quindi un telefono senza Erevos non mostra
@@ -3758,7 +3765,9 @@ perché il testo si legga sempre bene, anche sul vetro.
   Erevos si apre, chiedendo la sua password come sempre. Qualsiasi altro calcolo è solo un calcolo. **Cambia il
   codice** lo cambia; **Mostra di nuovo l’icona di Erevos** riporta l’icona, nel suo colore, e dimentica il codice. È
   nascosta solo l’icona: l’elenco delle app di Android, le notifiche, le app recenti e le icone Telefono, SMS e
-  Contatti mostrano ancora Erevos. Il telefono conserva solo un hash del codice: è una porta, non la serratura.
+  Contatti mostrano ancora Erevos. Il telefono conserva solo un hash del codice: è una porta, non la serratura. Una
+  volta cancellato Erevos, con la password di panico o con **Cancella spazio di archiviazione** di Android, nessun
+  codice lo apre più: la calcolatrice allora apre Erevos, come nuovo, e l’icona di Erevos torna al suo posto.
 
   **Perché:** chi dà un’occhiata al telefono vede una calcolatrice, non un messenger; la password protegge comunque
   ciò che c’è dentro.

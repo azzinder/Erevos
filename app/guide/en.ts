@@ -1712,6 +1712,10 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
   preview is fetched from its site too, and the site sees the address the same way.
   With **Through Tor** on for link previews, it does not.
 
+- **A contact's relay:** while your space has no relay of its own, or only a place lent on one, a contact can give
+  you a place on theirs, and it comes with their message. Their relay then sees the address, so Erevos asks before it
+  takes it, unless the space sends everything through Tor. Not taken, the invite is let go.
+
 - **Groups:** a message in an Erevos group goes through a server, which sees the address. Tor for the space hides it;
   a group has no switch of its own.
 
@@ -2290,7 +2294,9 @@ app**, tap **Make Erevos the SMS app**. The home screen then shows SMS and Erevo
   disappear nor answer a message: with the stopwatch on, or a message being answered, Erevos says so when it asks.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden invite.
   None goes to an Erevos contact's number, linked or on their contact card. A phone without Erevos shows nothing; a
-  phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most,
+  phone with Erevos answers through the relay and the two become contacts. It answers by itself only a number it
+  knows, in its contacts or one you have written to by SMS; for any other it asks first, **An invite by SMS**, as the
+  sender of an SMS can be made up. Each number is asked once a month at most,
   and **Turn invites off**, under **Settings** → **Phone and SMS** → **SMS** → **Find Erevos on a number**, stops
   them.
 
@@ -3435,7 +3441,8 @@ always reads well, on glass too.
   as always. Any other sum is only a sum. **Change the code** changes it; **Show Erevos's icon again** brings the icon
   back, in its colour, and forgets the code. Only the icon is hidden: Android's list of apps, the notices, the recent
   apps, and the Phone, SMS and Contacts icons still show Erevos. The phone keeps only a hash of the code: it is a door,
-  not the lock.
+  not the lock. Once Erevos is wiped, by the panic password or Android's **Clear storage**, no code opens it any more:
+  the calculator then opens Erevos, as new, and Erevos's own icon comes back in its place.
 
   **Why:** whoever glances at the phone sees a calculator, not a messenger; the password still guards what is inside.
 - **Widget** (Android): the order of the widget's four buttons, from left to right, with the widget drawn as it will

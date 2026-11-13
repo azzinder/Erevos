@@ -1859,6 +1859,10 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
   Browser. La vista previa de un enlace también se descarga de su sitio, y el sitio ve la dirección igual.
   Con **Por Tor** activado para las vistas previas de enlaces, no la ve.
 
+- **El relay de un contacto:** mientras tu espacio no tenga relay propio, o solo un lugar prestado en uno, un contacto
+  puede darte un lugar en el suyo, y llega con su mensaje. Su relay ve entonces la dirección, así que Erevos pregunta
+  antes de aceptarlo, salvo que el espacio lo envíe todo por Tor. Si no se acepta, la invitación se deja.
+
 - **Los grupos:** un mensaje en un grupo de Erevos pasa por un servidor, que ve la dirección. Tor para el espacio la
   oculta; un grupo no tiene interruptor propio.
 
@@ -2494,9 +2498,11 @@ Erevos en una sola lista.
   mensaje respondido, Erevos lo dice al preguntar.
 - **Invitaciones ocultas:** con el primer SMS a un número que no es un contacto, Erevos también envía una invitación
   oculta corta. No va ninguna al número de un contacto de Erevos, vinculado o en la ficha de su contacto. Un teléfono
-  sin Erevos no muestra nada; un teléfono con Erevos responde por el relay y los dos se hacen contactos. A cada número
-  se le pregunta como mucho una vez al mes, y **Desactivar invitaciones**, en **Ajustes** → **Teléfono y SMS** →
-  **SMS** → **Descubrir Erevos en un número**, las detiene.
+  sin Erevos no muestra nada; un teléfono con Erevos responde por el relay y los dos se hacen contactos. Responde por
+  sí mismo solo a un número que conoce, en tus contactos o uno al que has escrito por SMS; para cualquier otro
+  pregunta primero, **Una invitación por SMS**, porque el remitente de un SMS puede ser inventado. A cada número se le
+  pregunta como mucho una vez al mes, y **Desactivar invitaciones**, en **Ajustes** → **Teléfono y SMS** → **SMS** →
+  **Descubrir Erevos en un número**, las detiene.
 
 **Por qué:** para que dos teléfonos con Erevos se encuentren solo a partir de un número de teléfono, sin ningún servidor
 que conozca números. La invitación es un SMS de datos, que las apps de mensajería no muestran, así que un teléfono sin
@@ -3747,7 +3753,9 @@ para que el texto siempre se lea bien, también sobre cristal.
   **=**: Erevos se abre y pide su contraseña como siempre. Cualquier otra operación es solo una operación. **Cambiar
   el código** lo cambia; **Mostrar de nuevo el icono de Erevos** devuelve el icono, con su color, y olvida el código.
   Solo se oculta el icono: la lista de apps de Android, los avisos, las apps recientes y los iconos de Teléfono, SMS y
-  Contactos siguen mostrando Erevos. El teléfono guarda solo un hash del código: es una puerta, no la cerradura.
+  Contactos siguen mostrando Erevos. El teléfono guarda solo un hash del código: es una puerta, no la cerradura. Una
+  vez borrado Erevos, por la contraseña de pánico o por **Borrar almacenamiento** de Android, ningún código lo abre
+  ya: entonces la calculadora abre Erevos, como nuevo, y el icono propio de Erevos vuelve a su lugar.
 
   **Por qué:** quien eche un vistazo al teléfono ve una calculadora, no un mensajero; la contraseña sigue guardando lo
   que hay dentro.
