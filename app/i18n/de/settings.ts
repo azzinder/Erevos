@@ -133,7 +133,7 @@ export const settings: Record<string, string> = {
   '{style} draws its own scene behind the screens, so it takes no glass.': '{style} malt seine eigene Szene hinter die Bildschirme und hat deshalb kein Glas.',
   'Custom takes no glass: its background is the one you chose.': '„Eigener“ hat kein Glas: Seine Grundfarbe ist die, die du gewählt hast.',
   'Kind of glass': 'Art des Glases',
-  'Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.': 'Scheiben: Jede Karte ist eine Glasscheibe über dem Hintergrund, wie im LPHL-Adminbereich. Eine Scheibe: Jeder Bildschirm liegt auf einer einzigen Milchglasscheibe, wie auf lphl.nekten.eu.',
+  "Panes: each card is a pane of glass over the wallpaper. One pane: each screen lies on one frosted pane.": "Scheiben: Jede Karte ist eine Glasscheibe über dem Hintergrund. Eine Scheibe: Jeder Bildschirm liegt auf einer Milchglasscheibe.",
   'Style': 'Stil',
   'Custom: background': 'Eigener: Grundfarbe',
   'Custom: accent': 'Eigener: Akzentfarbe',

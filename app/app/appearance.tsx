@@ -79,7 +79,7 @@ const THEME_LABELS: Record<ThemePref, string> = { system: mark('System'), light:
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: mark('White'), palette: mark('As in the palette'), custom: mark('My color') };
 const PALETTE_LABELS: Record<PaletteChoice, string> = {
   auto: mark('Style default'),
-  house: 'LPHL House',
+  house: 'Erevos',
   thermaikos: mark('Thermaikos'),
   vardaris: mark('Vardaris'),
   kipos: mark('Garden'),
@@ -218,7 +218,7 @@ export function AppearanceEditor({ title, top, part = null }: { title?: string; 
                 ))}
               </Row>
               <Text variant="caption" tone="faint">
-                {t('Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.')}
+                {t('Panes: each card is a pane of glass over the wallpaper. One pane: each screen lies on one frosted pane.')}
               </Text>
         </>
       ) : null}

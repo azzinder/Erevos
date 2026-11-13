@@ -132,7 +132,7 @@ export const settings: Record<string, string> = {
   '{style} draws its own scene behind the screens, so it takes no glass.': 'Το {style} ζωγραφίζει τη δική του σκηνή πίσω από τις οθόνες, οπότε δεν παίρνει γυαλί.',
   'Custom takes no glass: its background is the one you chose.': 'Το Προσαρμοσμένο δεν παίρνει γυαλί: το φόντο του είναι αυτό που διάλεξες.',
   'Kind of glass': 'Είδος γυαλιού',
-  'Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.': 'Τζάμια: κάθε κάρτα είναι ένα τζάμι πάνω στην ταπετσαρία, όπως στον πίνακα διαχείρισης του LPHL. Ένα τζάμι: κάθε οθόνη βρίσκεται πάνω σε ένα παγωμένο τζάμι, όπως στο lphl.nekten.eu.',
+  "Panes: each card is a pane of glass over the wallpaper. One pane: each screen lies on one frosted pane.": "Τζάμια: κάθε κάρτα είναι ένα τζάμι πάνω στην ταπετσαρία. Ένα τζάμι: κάθε οθόνη βρίσκεται πάνω σε ένα παγωμένο τζάμι.",
   'Style': 'Στυλ',
   'Custom: background': 'Προσαρμοσμένο: φόντο',
   'Custom: accent': 'Προσαρμοσμένο: χρώμα',

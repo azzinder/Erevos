@@ -133,7 +133,7 @@ export const settings: Record<string, string> = {
   '{style} draws its own scene behind the screens, so it takes no glass.': '{style} dessine sa propre scène derrière les écrans, il ne prend donc pas de verre.',
   'Custom takes no glass: its background is the one you chose.': '« Personnalisé » ne prend pas de verre : son fond est celui que tu as choisi.',
   'Kind of glass': 'Type de verre',
-  'Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.': 'Vitres : chaque carte est une vitre posée sur le fond d’écran, comme dans le panneau d’administration LPHL. Une vitre : chaque écran repose sur une seule vitre dépolie, comme sur lphl.nekten.eu.',
+  "Panes: each card is a pane of glass over the wallpaper. One pane: each screen lies on one frosted pane.": "Vitres : chaque carte est une vitre posée sur le fond d’écran. Une vitre : chaque écran repose sur une seule vitre dépolie.",
   'Style': 'Style',
   'Custom: background': 'Personnalisé : fond',
   'Custom: accent': 'Personnalisé : accent',

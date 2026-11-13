@@ -133,7 +133,7 @@ export const settings: Record<string, string> = {
   '{style} draws its own scene behind the screens, so it takes no glass.': '{style} iza ekrana crta vlastiti prizor, pa nema staklo.',
   'Custom takes no glass: its background is the one you chose.': '„Prilagođeno“ nema staklo: pozadina je ona koju ste izabrali.',
   'Kind of glass': 'Vrsta stakla',
-  'Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.': 'Ploče: svaka kartica je staklena ploča iznad pozadine, kao na LPHL administratorskom panelu. Jedna ploča: svaki ekran leži na jednoj mat staklenoj ploči, kao na lphl.nekten.eu.',
+  "Panes: each card is a pane of glass over the wallpaper. One pane: each screen lies on one frosted pane.": "Okna: svaka kartica je staklo preko pozadine. Jedno okno: svaki ekran leži na jednom mutnom staklu.",
   'Style': 'Stil',
   'Custom: background': 'Prilagođeno: pozadina',
   'Custom: accent': 'Prilagođeno: naglasak',
