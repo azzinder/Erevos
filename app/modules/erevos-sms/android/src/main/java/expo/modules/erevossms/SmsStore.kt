@@ -524,13 +524,12 @@ internal object SmsStore {
   fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
-    val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
       // "SMS", apart from Erevos's own "Messages" in Android's notice settings; made again, an older one takes the name.
       notifications.createNotificationChannel(NotificationChannel(CHANNEL, "SMS", NotificationManager.IMPORTANCE_HIGH))
       if (quiet) {
         notifications.createNotificationChannel(
-          NotificationChannel(OWN_CHANNEL, if (greek) "SMS με δικό τους ήχο" else "SMS with a sound of their own", NotificationManager.IMPORTANCE_HIGH).apply {
+          NotificationChannel(OWN_CHANNEL, Words.say(context, "SMS with a sound of their own", "SMS με δικό τους ήχο"), NotificationManager.IMPORTANCE_HIGH).apply {
             setSound(null, null as AudioAttributes?)
             enableVibration(false)
           },
@@ -545,13 +544,13 @@ internal object SmsStore {
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, if (quiet) OWN_CHANNEL else CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     builder
       .setSmallIcon(android.R.drawable.stat_notify_chat)
-      .setContentTitle(if (greek) "Νέο μήνυμα" else "New message")
+      .setContentTitle(Words.say(context, "New message", "Νέο μήνυμα"))
       .setContentIntent(open)
       .setAutoCancel(true)
     if (code != null) {
       val copy = Intent(context, CopyCodeReceiver::class.java).putExtra(CopyCodeReceiver.EXTRA_CODE, code)
       val copying = PendingIntent.getBroadcast(context, NEW_ID, copy, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-      val action = Notification.Action.Builder(null, if (greek) "Αντιγραφή κωδικού" else "Copy code", copying)
+      val action = Notification.Action.Builder(null, Words.say(context, "Copy code", "Αντιγραφή κωδικού"), copying)
       if (Build.VERSION.SDK_INT >= 31) action.setAuthenticationRequired(true)
       builder.addAction(action.build())
     }

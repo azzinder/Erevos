@@ -142,7 +142,7 @@ class CallActivity : Activity() {
     }
   }
 
-  private fun say(en: String, el: String) = Words.say(this, en, el)
+  private fun say(en: String, el: String, vararg args: String) = Words.say(this, en, el, *args)
 
   private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
@@ -302,7 +302,7 @@ class CallActivity : Activity() {
     status.text = statusOf(shown, state)
     val parts = ArrayList<String>()
     if (caller.name != null && caller.number.isNotEmpty() && !conference) parts.add(Callers.shown(this, caller.number))
-    if (conference) shown.children.size.takeIf { it > 0 }?.let { parts.add(say("$it people", "$it άτομα")) }
+    if (conference) shown.children.size.takeIf { it > 0 }?.let { parts.add(say("{0} people", "{0} άτομα", "$it")) }
     if (shown.details.hasProperty(Call.Details.PROPERTY_WIFI)) parts.add(say("Wi-Fi calling", "Κλήση μέσω Wi-Fi"))
     if (shown.details.hasProperty(Call.Details.PROPERTY_HIGH_DEF_AUDIO)) parts.add(say("HD voice", "Φωνή HD"))
     simLabel(shown)?.let { parts.add(it) }
@@ -315,10 +315,10 @@ class CallActivity : Activity() {
       val who = nameOf(second)
       other.visibility = View.VISIBLE
       if (ringing != null) {
-        other.text = say("In a call with $who", "Σε κλήση με: $who")
+        other.text = say("In a call with {0}", "Σε κλήση με: {0}", who)
         other.setOnClickListener(null)
       } else {
-        other.text = say("On hold: $who. Tap to talk.", "Σε αναμονή: $who. Πάτα για να μιλήσεις.")
+        other.text = say("On hold: {0}. Tap to talk.", "Σε αναμονή: {0}. Πάτα για να μιλήσεις.", who)
         other.setOnClickListener { Calls.front()?.let { Calls.swap(it) } }
       }
     } else {
@@ -336,7 +336,7 @@ class CallActivity : Activity() {
     }
     val key = listOf(
       layout, Calls.id(shown), state, Calls.muted, route?.kind, route?.name, Calls.routes.size, Calls.canAdd,
-      Calls.canHold(shown), Calls.canMerge(shown), second?.let { Calls.state(it) }, Words.greek(this),
+      Calls.canHold(shown), Calls.canMerge(shown), second?.let { Calls.state(it) }, Words.lang(this),
       shown.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT),
     ).joinToString("|")
     if (key != built) {

@@ -38,10 +38,10 @@ internal object Replies {
     edit.apply()
   }
 
-  private fun usual(context: Context): List<String> =
-    if (Words.greek(context)) {
-      listOf("Δεν μπορώ να μιλήσω τώρα. Τι έγινε;", "Σε παίρνω αμέσως πίσω.", "Σε παίρνω αργότερα.", "Δεν μπορώ να μιλήσω τώρα. Με παίρνεις αργότερα;")
-    } else {
-      listOf("Can't talk now. What's up?", "I'll call you right back.", "I'll call you later.", "Can't talk now. Call me later?")
-    }
+  private fun usual(context: Context): List<String> = listOf(
+    Words.say(context, "Can't talk now. What's up?", "Δεν μπορώ να μιλήσω τώρα. Τι έγινε;"),
+    Words.say(context, "I'll call you right back.", "Σε παίρνω αμέσως πίσω."),
+    Words.say(context, "I'll call you later.", "Σε παίρνω αργότερα."),
+    Words.say(context, "Can't talk now. Call me later?", "Δεν μπορώ να μιλήσω τώρα. Με παίρνεις αργότερα;"),
+  )
 }

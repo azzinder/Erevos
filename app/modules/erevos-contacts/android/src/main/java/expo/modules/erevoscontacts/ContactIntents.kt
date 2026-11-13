@@ -41,10 +41,6 @@ import org.json.JSONObject
 
 private const val TAG = "ErevosContacts"
 
-/** Whether the app shows in Greek, as the call module keeps it (erevos-call Notices.kt). */
-private fun greek(context: Context): Boolean =
-  context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
-
 /**
  * Opens what another app asks for in Erevos, behind its lock: a new contact with the fields it
  * gave (INSERT), the contacts to choose one to add them to (INSERT_OR_EDIT), or a contact to
@@ -225,7 +221,6 @@ class PickContactActivity : Activity() {
     setTheme(if (night) android.R.style.Theme_DeviceDefault else android.R.style.Theme_DeviceDefault_Light)
     super.onCreate(savedInstanceState)
     setResult(RESULT_CANCELED)
-    val el = greek(this)
     val type = intent.type ?: intent.resolveType(this).orEmpty()
     val picked = when {
       type.endsWith("/phone_v2") -> Picked.PHONE
@@ -234,10 +229,10 @@ class PickContactActivity : Activity() {
       else -> Picked.CONTACT
     }
     title = when (picked) {
-      Picked.PHONE -> if (el) "Διάλεξε αριθμό" else "Choose a number"
-      Picked.EMAIL -> if (el) "Διάλεξε email" else "Choose an email"
-      Picked.POSTAL -> if (el) "Διάλεξε διεύθυνση" else "Choose an address"
-      Picked.CONTACT -> if (el) "Διάλεξε επαφή" else "Choose a contact"
+      Picked.PHONE -> Words.say(this, "Choose a number", "Διάλεξε αριθμό")
+      Picked.EMAIL -> Words.say(this, "Choose an email", "Διάλεξε email")
+      Picked.POSTAL -> Words.say(this, "Choose an address", "Διάλεξε διεύθυνση")
+      Picked.CONTACT -> Words.say(this, "Choose a contact", "Διάλεξε επαφή")
     }
     val pad = (16 * resources.displayMetrics.density).toInt()
     val layout = LinearLayout(this).apply {
@@ -246,15 +241,18 @@ class PickContactActivity : Activity() {
     }
     if (!ContactsStore.canRead(this)) {
       layout.addView(TextView(this).apply {
-        text = if (el) "Το Erevos δεν μπορεί ακόμα να διαβάσει τις επαφές του τηλεφώνου. Άνοιξε τις Επαφές στο Erevos για να το επιτρέψεις."
-          else "Erevos may not read the phone's contacts yet. Open Contacts in Erevos to allow it."
+        text = Words.say(
+          this,
+          "Erevos may not read the phone's contacts yet. Open Contacts in Erevos to allow it.",
+          "Το Erevos δεν μπορεί ακόμα να διαβάσει τις επαφές του τηλεφώνου. Άνοιξε τις Επαφές στο Erevos για να το επιτρέψεις.",
+        )
         setPadding(0, pad, 0, pad)
       })
       setContentView(layout)
       return
     }
     val search = EditText(this).apply {
-      hint = if (el) "Αναζήτηση" else "Search"
+      hint = Words.say(this, "Search", "Αναζήτηση")
       inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_FILTER
       isSingleLine = true
     }

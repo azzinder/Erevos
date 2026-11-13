@@ -152,17 +152,13 @@ internal object Reminders {
   private fun notify(context: Context, count: Int, quietly: Boolean = false) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
-    val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
-      notifications.createNotificationChannel(NotificationChannel(CHANNEL, if (greek) "Υπενθυμίσεις" else "Reminders", NotificationManager.IMPORTANCE_HIGH))
+      notifications.createNotificationChannel(NotificationChannel(CHANNEL, Words.say(context, "Reminders", "Υπενθυμίσεις"), NotificationManager.IMPORTANCE_HIGH))
     }
-    val title = when {
-      count > 1 && greek -> "$count υπενθυμίσεις"
-      count > 1 -> "$count reminders"
-      greek -> "Υπενθύμιση"
-      else -> "Reminder"
-    }
-    val text = if (greek) "Άνοιξε τη Συνομιλία με τον εαυτό μου" else "Open Chat with myself to read it"
+    val title =
+      if (count > 1) Words.say(context, "{0} reminders", "{0} υπενθυμίσεις", count.toString())
+      else Words.say(context, "Reminder", "Υπενθύμιση")
+    val text = Words.say(context, "Open Chat with myself to read it", "Άνοιξε τη Συνομιλία με τον εαυτό μου")
     val open = Intent(Intent.ACTION_VIEW, Uri.parse("erevos://myself")).setPackage(context.packageName)
     val launch = if (open.resolveActivity(context.packageManager) != null) open else context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val tap = PendingIntent.getActivity(context, NOTICE, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)

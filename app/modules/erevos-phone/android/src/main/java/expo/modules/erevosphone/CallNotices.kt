@@ -41,7 +41,7 @@ internal object CallNotices {
   // What each notice shows now, so one is posted again only when that changes.
   private val shown = HashMap<Int, String>()
   // The language the channels were named in at this start.
-  private var named: Boolean? = null
+  private var named: String? = null
 
   fun update(context: Context) {
     val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -101,7 +101,7 @@ internal object CallNotices {
     val name = caller.name ?: caller.number.takeIf { it.isNotEmpty() }?.let { Callers.shown(context, it) }
       ?: Callers.hidden(context, call) ?: Words.say(context, "Unknown number", "Άγνωστος αριθμός")
     val state = Calls.state(call)
-    val key = listOf(Calls.id(call), name, caller.photo != null, state, call.details.connectTimeMillis, Words.greek(context)).joinToString("|")
+    val key = listOf(Calls.id(call), name, caller.photo != null, state, call.details.connectTimeMillis, Words.lang(context)).joinToString("|")
     if (shown[id] == key) return
     val notice = try {
       notice(context, call, name, caller, ringing, true)
@@ -191,11 +191,11 @@ internal object CallNotices {
 
   private fun channels(context: Context, manager: NotificationManager) {
     if (Build.VERSION.SDK_INT < 26) return
-    val greek = Words.greek(context)
-    val incoming = if (greek) "Εισερχόμενες κλήσεις" else "Incoming calls"
-    val ongoing = if (greek) "Κλήσεις σε εξέλιξη" else "Ongoing calls"
-    if (named != greek) {
-      named = greek
+    val lang = Words.lang(context)
+    val incoming = Words.say(context, "Incoming calls", "Εισερχόμενες κλήσεις")
+    val ongoing = Words.say(context, "Ongoing calls", "Κλήσεις σε εξέλιξη")
+    if (named != lang) {
+      named = lang
       // A channel made again under its id keeps its settings and takes the new name.
       manager.getNotificationChannel(INCOMING_CHANNEL)?.let { it.name = incoming; manager.createNotificationChannel(it) }
       manager.getNotificationChannel(ONGOING_CHANNEL)?.let { it.name = ongoing; manager.createNotificationChannel(it) }

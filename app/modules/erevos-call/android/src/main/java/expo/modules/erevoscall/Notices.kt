@@ -41,8 +41,8 @@ object Notices {
   // That Erevos stopped receiving in the background, closed by Android or locked: shows, without sound.
   private const val STOPPED_CHANNEL = "erevos-stopped"
 
-  // The app's language, as the app last set it: "el" for Greek, English otherwise. The SMS
-  // module reads the same (erevos-sms SmsStore.kt).
+  // The app's language, as the app last set it ("en", "el", "de", "es", "fr", "it", "pt" or
+  // "sh"; English until it is set). The other modules read the same (erevos-sms SmsStore.kt).
   private const val LANG_PREFS = "erevos-lang"
 
   fun setLanguage(context: Context, lang: String) {
@@ -52,13 +52,45 @@ object Notices {
     channels(context)
   }
 
-  private fun greek(context: Context) =
-    context.getSharedPreferences(LANG_PREFS, Context.MODE_PRIVATE).getString("lang", null) == "el"
+  private fun lang(context: Context): String =
+    context.getSharedPreferences(LANG_PREFS, Context.MODE_PRIVATE).getString("lang", null) ?: "en"
 
-  private fun say(context: Context, en: String, el: String) = if (greek(context)) el else en
+  // The words in the app's language: `en` and `el` are given at the call, the others come from
+  // OTHERS, keyed by the English. `{0}` in a text is put in place by `arg`.
+  private fun say(context: Context, en: String, el: String, arg: String? = null): String {
+    val lang = lang(context)
+    val text = when (lang) {
+      "en" -> en
+      "el" -> el
+      else -> OTHERS[en]?.get(lang) ?: en
+    }
+    return if (arg != null) text.replace("{0}", arg) else text
+  }
+
+  private fun t(de: String, es: String, fr: String, it: String, pt: String, sh: String) =
+    mapOf("de" to de, "es" to es, "fr" to fr, "it" to it, "pt" to pt, "sh" to sh)
+
+  // German, Spanish, French, Italian, Portuguese and Serbo-Croatian (Latin script, ijekavian), by the English.
+  private val OTHERS: Map<String, Map<String, String>> = mapOf(
+    "Receiving in the background" to t("Empfang im Hintergrund", "Recepción en segundo plano", "Réception en arrière-plan", "Ricezione in background", "Recepção em segundo plano", "Primanje u pozadini"),
+    "Calls" to t("Anrufe", "Llamadas", "Appels", "Chiamate", "Chamadas", "Pozivi"),
+    "Messages" to t("Nachrichten", "Mensajes", "Messages", "Messaggi", "Mensagens", "Poruke"),
+    "Messages without sound" to t("Nachrichten ohne Ton", "Mensajes sin sonido", "Messages sans son", "Messaggi senza suono", "Mensagens sem som", "Poruke bez zvuka"),
+    "Messages with a chat's own sound" to t("Nachrichten mit dem Ton des Chats", "Mensajes con el sonido propio del chat", "Messages avec le son propre à la discussion", "Messaggi con il suono proprio della chat", "Mensagens com o som próprio da conversa", "Poruke sa zvukom razgovora"),
+    "Not receiving" to t("Kein Empfang", "Sin recepción", "Pas de réception", "Nessuna ricezione", "Sem recepção", "Primanje je isključeno"),
+    "Locked: says only that messages came" to t("Gesperrt: sagt nur, dass Nachrichten gekommen sind", "Bloqueado: solo avisa de que llegaron mensajes", "Verrouillé : indique seulement que des messages sont arrivés", "Bloccato: dice solo che sono arrivati messaggi", "Bloqueado: só avisa que chegaram mensagens", "Zaključano: samo javlja da su stigle poruke"),
+    "Ready for calls and messages" to t("Bereit für Anrufe und Nachrichten", "Listo para llamadas y mensajes", "Prêt pour les appels et les messages", "Pronto per chiamate e messaggi", "Pronto para chamadas e mensagens", "Spremno za pozive i poruke"),
+    "Locked. Open it to receive calls and messages again." to t("Gesperrt. Öffne es, um wieder Anrufe und Nachrichten zu empfangen.", "Bloqueado. Ábrelo para volver a recibir llamadas y mensajes.", "Verrouillé. Ouvre-le pour recevoir de nouveau les appels et les messages.", "Bloccato. Aprilo per ricevere di nuovo chiamate e messaggi.", "Bloqueado. Abra para voltar a receber chamadas e mensagens.", "Zaključano. Otvori ga da opet primaš pozive i poruke."),
+    "Closed by Android. Open it to receive calls and messages again." to t("Von Android beendet. Öffne es, um wieder Anrufe und Nachrichten zu empfangen.", "Android lo ha cerrado. Ábrelo para volver a recibir llamadas y mensajes.", "Fermé par Android. Ouvre-le pour recevoir de nouveau les appels et les messages.", "Chiuso da Android. Aprilo per ricevere di nuovo chiamate e messaggi.", "Fechado pelo Android. Abra para voltar a receber chamadas e mensagens.", "Android ga je zatvorio. Otvori ga da opet primaš pozive i poruke."),
+    "Incoming video call" to t("Eingehender Videoanruf", "Videollamada entrante", "Appel vidéo entrant", "Videochiamata in arrivo", "Videochamada recebida", "Dolazni videopoziv"),
+    "Incoming call" to t("Eingehender Anruf", "Llamada entrante", "Appel entrant", "Chiamata in arrivo", "Chamada recebida", "Dolazni poziv"),
+    "Open Erevos to answer" to t("Öffne Erevos, um anzunehmen", "Abre Erevos para responder", "Ouvre Erevos pour répondre", "Apri Erevos per rispondere", "Abra o Erevos para atender", "Otvori Erevos da se javiš"),
+    "New message" to t("Neue Nachricht", "Mensaje nuevo", "Nouveau message", "Nuovo messaggio", "Nova mensagem", "Nova poruka"),
+    "{0} new messages" to t("{0} neue Nachrichten", "{0} mensajes nuevos", "{0} nouveaux messages", "{0} nuovi messaggi", "{0} novas mensagens", "Nove poruke: {0}"),
+  )
 
   // The language the channels were named in at this start.
-  private var named: Boolean? = null
+  private var named: String? = null
 
   private fun manager(context: Context) = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -86,9 +118,9 @@ object Notices {
   private fun channels(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val manager = manager(context)
-    val greek = greek(context)
-    if (named != greek) {
-      named = greek
+    val lang = lang(context)
+    if (named != lang) {
+      named = lang
       // A channel made again under its id keeps its settings and takes the new name.
       manager.getNotificationChannel(RECEIVING_CHANNEL)?.let { it.name = say(context, "Receiving in the background", "Λήψη στο παρασκήνιο"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(CALLS_CHANNEL)?.let { it.name = say(context, "Calls", "Κλήσεις"); manager.createNotificationChannel(it) }
@@ -289,7 +321,7 @@ object Notices {
 
   // `silent`: it shows or counts on without sound.
   private fun show(context: Context, count: Int, channel: String, silent: Boolean) {
-    val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "$count new messages", "$count νέα μηνύματα")
+    val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "{0} new messages", "{0} νέα μηνύματα", count.toString())
     @Suppress("DEPRECATION")
     val locked = builder(context, channel)
       .setSmallIcon(R.drawable.erevos_call_notice)

@@ -141,21 +141,17 @@ internal object Birthdays {
   private fun notify(context: Context, today: List<Pair<String, Int?>>) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
-    val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
-      notifications.createNotificationChannel(NotificationChannel(CHANNEL, if (greek) "Γενέθλια" else "Birthdays", NotificationManager.IMPORTANCE_DEFAULT))
+      notifications.createNotificationChannel(NotificationChannel(CHANNEL, Words.say(context, "Birthdays", "Γενέθλια"), NotificationManager.IMPORTANCE_DEFAULT))
     }
     val names = today.joinToString(", ") { (name, age) -> if (age != null) "$name ($age)" else name }
-    val title = when {
-      today.size > 1 && greek -> "${today.size} γενέθλια σήμερα"
-      today.size > 1 -> "${today.size} birthdays today"
-      greek -> "Γενέθλια σήμερα: ${today[0].first}"
-      else -> "${today[0].first}'s birthday today"
-    }
+    val title =
+      if (today.size > 1) Words.say(context, "{0} birthdays today", "{0} γενέθλια σήμερα", today.size.toString())
+      else Words.say(context, "{0}'s birthday today", "Γενέθλια σήμερα: {0}", today[0].first)
+    val age = today[0].second
     val text = when {
       today.size > 1 -> names
-      today[0].second != null && greek -> "Κλείνει τα ${today[0].second}"
-      today[0].second != null -> "Turns ${today[0].second}"
+      age != null -> Words.say(context, "Turns {0}", "Κλείνει τα {0}", age.toString())
       else -> null
     }
     val open = Intent(Intent.ACTION_VIEW, Uri.parse("erevos://contacts")).setPackage(context.packageName)
@@ -164,7 +160,7 @@ internal object Birthdays {
     fun builder() = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     val public = builder()
       .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
-      .setContentTitle(if (greek) "Γενέθλια σήμερα" else "A birthday today")
+      .setContentTitle(Words.say(context, "A birthday today", "Γενέθλια σήμερα"))
       .build()
     val notice = builder()
       .setSmallIcon(android.R.drawable.ic_menu_my_calendar)

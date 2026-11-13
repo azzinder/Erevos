@@ -104,8 +104,7 @@ class CopyCodeReceiver : BroadcastReceiver() {
     }
     // Android 13 and later say themselves that something was copied.
     if (Build.VERSION.SDK_INT < 33) {
-      val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
-      Toast.makeText(context, if (greek) "Ο κωδικός αντιγράφηκε" else "The code is copied", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, Words.say(context, "The code is copied", "Ο κωδικός αντιγράφηκε"), Toast.LENGTH_SHORT).show()
     }
     SmsStore.clearNew(context)
   }
