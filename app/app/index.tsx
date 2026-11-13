@@ -70,6 +70,7 @@ import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
 import { editionNote } from '../lib/edition-notice';
+import { answerAsked, invitesToAsk, onInvitesToAsk } from '../lib/sms-relay';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -476,6 +477,23 @@ function Home() {
         const again = await againNote();
         if (again && active) ask(t('Linked devices'), again, [{ text: t('Not now'), style: 'cancel' }, { text: t('Open'), onPress: () => router.push('/devices') }]);
       });
+      // An SMS invite from a number not known here waits for the owner: its sender can be made up.
+      let asking = false;
+      const askInvite = () => {
+        const from = invitesToAsk()[0];
+        if (!from || asking || !active) return;
+        asking = true;
+        const done = (yes: boolean) => {
+          asking = false;
+          answerAsked(from, yes);
+        };
+        ask(t('An invite by SMS'), t('{number} sent you an Erevos invite by SMS. Answer it with your contact link, so they can write to you here? Only if you know this number: the sender of an SMS can be made up.', { number: from }), [
+          { text: t('No'), style: 'cancel', onPress: () => done(false) },
+          { text: t('Answer it'), onPress: () => done(true) },
+        ]);
+      };
+      askInvite();
+      const stopAsk = onInvitesToAsk(askInvite);
       // Once in a space, in the plain Erevos: its accounts on networks only Erevos+ has are kept.
       void editionNote(current, key)
         .then((text) => {
@@ -506,6 +524,7 @@ function Home() {
         sms?.remove();
         stopOrder();
         stopGroups();
+        stopAsk();
       };
     }, [again]),
   );

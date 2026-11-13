@@ -22,14 +22,52 @@ import { spaceLinkSender } from './queue-move';
 import { inviteId, TEXT_INVITE_DAYS, textInviteLink, type TextInvite } from './text-invite';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
-import { takeSmsInvites } from '../modules/erevos-sms';
+import { smsConversations } from './sms-chat';
+import { smsMessages, smsThreads, takeSmsInvites } from '../modules/erevos-sms';
 
 const DAY = 24 * 3600 * 1000;
 
 let opened: { of: object; link: Promise<SmsLink> } | null = null;
+// An invite that came: its number ('' by plain SMS), and whether the owner said yes to it.
+type Asked = { from: string; invite: SmsInvite; name?: string; asked?: true };
 // Invites that came and could not be answered yet, answered with the next look; one by plain SMS
 // taken here has no number (`from` is '') and the name given there to whoever sent it.
-let unanswered: { from: string; invite: SmsInvite; name?: string }[] = [];
+let unanswered: Asked[] = [];
+// Invites from a number this phone does not know (not a contact, never written to here): the
+// sender's number of an SMS can be made up, so none is answered by itself. Each waits for the owner
+// to answer it or not (`invitesToAsk`, the home screen asks). Kept in memory, the newest of each number.
+let toAsk: Asked[] = [];
+const ASK_MOST = 20;
+const askWatchers = new Set<() => void>();
+
+/** The numbers whose SMS invites wait for the owner's answer. */
+export const invitesToAsk = (): string[] => toAsk.map((item) => item.from);
+
+/** Called when an invite starts or stops waiting for the owner. */
+export function onInvitesToAsk(listener: () => void): () => void {
+  askWatchers.add(listener);
+  return () => askWatchers.delete(listener);
+}
+
+/** The owner's answer to the invite from `from`: yes answers it with the next look, no drops it. */
+export function answerAsked(from: string, yes: boolean): void {
+  const item = toAsk.find((i) => sameNumber(i.from, from));
+  toAsk = toAsk.filter((i) => i !== item);
+  if (item && yes) unanswered.push({ ...item, asked: true });
+  askWatchers.forEach((listener) => listener());
+}
+
+// Whether the owner knows `number`: one of the contacts, or a conversation with it where this
+// phone wrote. The phone's own contacts not readable: not known.
+async function knownNumber(number: string): Promise<boolean> {
+  // Loaded only when asked: the contacts' module is the phone's own, not there in the checks.
+  const contacts = await import('./contact-book').catch(() => null);
+  if ((await contacts?.isContactNumber(number).catch(() => null)) === true) return true;
+  for (const address of smsConversations(number, await smsThreads().catch(() => []))) {
+    if ((await smsMessages(address).catch(() => [])).some((m) => m.mine)) return true;
+  }
+  return false;
+}
 
 /** The open space's SMS invite state, opened the first time it is asked for. */
 export function spaceSmsLink(): Promise<SmsLink> {
@@ -123,6 +161,12 @@ export async function answerInvites(e2e: E2E, linkSender: string, here: Where, s
   for (const item of invites) {
     const { from, invite } = item;
     if (from && e2e.phones().some((p) => sameNumber(p.phone, from))) continue;
+    // From a number not known here, and not answered yes by the owner: asked first.
+    if (from && !item.asked && !(await knownNumber(from))) {
+      toAsk = [...toAsk.filter((i) => !sameNumber(i.from, from)), item].slice(-ASK_MOST);
+      askWatchers.forEach((listener) => listener());
+      continue;
+    }
     try {
       const own = contactLink({ senderHex: linkSender, relayUrl: here.relay, key: toBase64Url(e2e.bundle), relayKey: here.relayKey || undefined });
       const sealed = await relaySeal(invite.key, fromHex(linkSender), inviteAnswer(own));
