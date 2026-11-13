@@ -54,6 +54,14 @@ class CalculatorActivity : Activity() {
     val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     setTheme(if (night) android.R.style.Theme_Material_NoActionBar else android.R.style.Theme_Material_Light_NoActionBar)
     super.onCreate(savedInstanceState)
+    // No code kept: Erevos's data was wiped (the panic password, or Android's Clear storage), while
+    // Android keeps which icons are on. No code could open Erevos any more: its own icon comes back
+    // in place of the calculator, and Erevos opens, as new.
+    if (!Calculator.hasCode(this)) {
+      calculatorOff(this)
+      launchErevos()
+      return
+    }
     val look = Look(night)
     setContentView(layout(look).also(::keepClearOfBars))
     bars(night, look)
@@ -292,6 +300,10 @@ class CalculatorActivity : Activity() {
   private fun openErevos() {
     clear()
     show()
+    launchErevos()
+  }
+
+  private fun launchErevos() {
     val open = packageManager.getLaunchIntentForPackage(packageName)?.apply {
       action = Intent.ACTION_VIEW
       data = Uri.parse("erevos://?show=erevos&from=launcher")
@@ -346,6 +358,8 @@ object Calculator {
     val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
     prefs(context).edit().putString(SALT, hex(salt)).putString(HASH, hex(hashOf(salt, code))).apply()
   }
+
+  fun hasCode(context: Context): Boolean = prefs(context).getString(HASH, null) != null
 
   fun forgetCode(context: Context) {
     prefs(context).edit().remove(SALT).remove(HASH).apply()

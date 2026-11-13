@@ -101,17 +101,22 @@ class ErevosIconsModule : Module() {
     // Erevos's own icon again, in its colour, and no calculator, nor its code.
     Function("calculatorOff") {
       val context = context() ?: return@Function false
-      val color = Calculator.prefs(context).getString(Calculator.EREVOS_COLOR, null)?.takeIf { it in COLORS } ?: ICONS.getValue("erevos").first
-      show(context, "erevos", color)
-      context.packageManager.setComponentEnabledSetting(Calculator.component(context), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
-      Calculator.forgetCode(context)
-      Calculator.prefs(context).edit().remove(Calculator.EREVOS_COLOR).apply()
-      recount(context)
+      calculatorOff(context)
       true
     }
   }
 
   private fun context(): Context? = appContext.reactContext ?: appContext.currentActivity
+}
+
+/** Erevos's own icon again, in its colour (the first after a wipe), and no calculator, nor its code. */
+internal fun calculatorOff(context: Context) {
+  val color = Calculator.prefs(context).getString(Calculator.EREVOS_COLOR, null)?.takeIf { it in COLORS } ?: ICONS.getValue("erevos").first
+  show(context, "erevos", color)
+  context.packageManager.setComponentEnabledSetting(Calculator.component(context), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+  Calculator.forgetCode(context)
+  Calculator.prefs(context).edit().remove(Calculator.EREVOS_COLOR).apply()
+  recount(context)
 }
 
 // Shows the icon in that colour: the new alias goes on before the old one goes off, so the launcher
