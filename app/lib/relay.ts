@@ -2090,6 +2090,8 @@ export class RelaySession {
   /** Opens it; `files` for the requests of files, which go through Tor only the way 'all'. */
   static async open(relay: Relay, files = false): Promise<RelaySession> {
     if (stopped && clearing === 0) throw new SpaceStoppedError();
+    // As a single request (requestOnce): an address that may come from a contact, never opened unread.
+    if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
     if (relay.tor && !canTor()) throw new RelayUnreachableError(t('This relay is reached only through Tor, which this build of Erevos does not have.'));
     if (relay.torChat && !canTor()) throw new RelayUnreachableError(t('This chat goes only through Tor, which this build of Erevos does not have.'));
     if (relay.torChat) await torStarter?.();

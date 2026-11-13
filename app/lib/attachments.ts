@@ -17,7 +17,7 @@
 
 import { decryptBytes, encryptBytes, fromHex, randomBytes, sha256Bytes, toHex } from './crypto';
 import { gcm } from '@noble/ciphers/aes.js';
-import { deleteChunk, getChunk, isLentToken, putChunk, RelaySession, relayPath, sameRelay, torFor, type Relay } from './relay';
+import { deleteChunk, getChunk, isLentToken, isRelayAddress as relayAddress, putChunk, RelaySession, relayPath, sameRelay, torFor, type Relay } from './relay';
 import {
   CHUNK_SIZES,
   cleanFileName,
@@ -133,7 +133,8 @@ export function openChunk(key: Uint8Array, index: number, sealed: Uint8Array, ch
   return plain.slice(HEAD, HEAD + length);
 }
 
-const isRelayAddress = (value: unknown): value is string => typeof value === 'string' && /^wss?:\/\/\S+$/.test(value) && value.length <= 512;
+// An address a contact gives for a file is opened only as the relay connection opens one (lib/relay.ts).
+const isRelayAddress = (value: unknown): value is string => typeof value === 'string' && value.length <= 512 && relayAddress(value);
 
 /**
  * A FileOffer from a message, or null if it is not a well-formed one. `most`: the largest file it
