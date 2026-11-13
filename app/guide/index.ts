@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { EDITION, type Edition } from '../lib/edition';
 import { parseGuide, type GuideSection } from '../lib/guide';
 import { lang, type Lang } from '../lib/i18n';
 
@@ -129,13 +130,16 @@ export const GUIDE_UI: Record<GuideLang, {
 
 const parsed = new Map<GuideLang, GuideSection[]>();
 
-export function guideFor(lang: GuideLang): GuideSection[] {
+/** The sections of networks only Erevos+ has (lib/edition.ts): the plain Erevos leaves them out. */
+export const PLUS_SECTIONS: readonly string[] = ['matrix', 'xmpp', 'nostr-chats'];
+
+export function guideFor(lang: GuideLang, edition: Edition = EDITION): GuideSection[] {
   let sections = parsed.get(lang);
   if (!sections) {
     sections = parseGuide(GUIDE_SOURCES[lang]);
     parsed.set(lang, sections);
   }
-  return sections;
+  return edition === 'lite' ? sections.filter((section) => !PLUS_SECTIONS.includes(section.id)) : sections;
 }
 
 /** The guide shows in the app's language (lib/i18n.ts). */

@@ -69,6 +69,7 @@ import { searchHidden, searchOpens } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
+import { editionNote } from '../lib/edition-notice';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -475,6 +476,12 @@ function Home() {
         const again = await againNote();
         if (again && active) ask(t('Linked devices'), again, [{ text: t('Not now'), style: 'cancel' }, { text: t('Open'), onPress: () => router.push('/devices') }]);
       });
+      // Once in a space, in the plain Erevos: its accounts on networks only Erevos+ has are kept.
+      void editionNote(current, key)
+        .then((text) => {
+          if (text && active) ask('Erevos+', text, [{ text: t('OK') }]);
+        })
+        .catch(() => undefined);
       // What comes while this screen shows moves its chat to the top.
       const stop = onReceived(() => {
         load();

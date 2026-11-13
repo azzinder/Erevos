@@ -20,5 +20,8 @@ const remap = [`--remap-path-prefix=${cargoHome}=/cargo`, `--remap-path-prefix=$
 const env = { ...process.env, CARGO_ENCODED_RUSTFLAGS: remap.join('\x1f') };
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit', env });
 
-run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', 'web,networks']);
+// The plain Erevos (EREVOS_EDITION=lite, docs/editions.md) has no Matrix, XMPP or chats with other
+// Nostr apps in its core; Erevos+, the default, has them.
+const lite = process.env.EREVOS_EDITION === 'lite';
+run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'erevos-ffi', '--features', lite ? 'web' : 'web,networks']);
 run('wasm-bindgen', ['--target', 'web', '--no-typescript', '--out-dir', out, 'target/wasm32-unknown-unknown/release/erevos_ffi.wasm']);

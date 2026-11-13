@@ -26,6 +26,11 @@ On main, not released yet:
   can come before its time, and shows only then. Until then its chat was marked read again and again without end, so
   it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a
   message is read once it shows.
+- **Matrix, XMPP and Nostr chats are in Erevos+**: Erevos now has its own chats, the Phone, SMS and the Collection,
+  and Erevos+ has Matrix, XMPP and the chats with other Nostr apps besides. An account you had on them stays on the
+  phone, encrypted, and Erevos says so once in each space; choose **Erevos+** in **Updates** to have it again.
+  Erevos's own messages still go through Nostr relays when no relay of yours takes them. On Android, Erevos+ needs
+  Android 8.0 or newer.
 - **Choose the part Erevos opens on**: under **All services**, hold any card, **All messages** too, and choose
   **Opens first**. Erevos's icon in the launcher, and Erevos started with nothing else to open, then open on it; with
   none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The
@@ -33,6 +38,14 @@ On main, not released yet:
 
 ### Under the hood
 
+- The plain Erevos is built with `EREVOS_EDITION=lite` (docs/editions.md): its core has no Matrix, XMPP or chats with
+  other Nostr apps in it, its guide leaves their sections out, and its icon says Erevos.
+- A backup reads every page the files it holds name, even while the app saves: pages let go of meanwhile are deleted
+  only once it is done. Before, a save at that moment could leave a backup whose value would not open after a restore.
+- Wrong PINs tried by searching are let go of a quarter of an hour at a time on the phone's own clock, which moving
+  the date does not change, rather than all at once by the date.
+- The relay's log says a damaged last record of its journal is cut short or damaged, rather than only a write that did
+  not finish.
 - Every Erevos build's number is above every Erevos+ build so far, so Updates moves between the two and Android
   installs each over the other.
 - The core opens HTTPS streams through Tor (no ALPN, held back when the player pauses), and Android's player reads a

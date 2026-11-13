@@ -1,0 +1,56 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// What the plain Erevos (lib/edition.ts, docs/editions.md) leaves out besides its modules: the
+// guide's sections of the networks only Erevos+ has, and, once in each space that had an account
+// on one of them, a word that it is kept for Erevos+ (lib/edition-notice.ts). Run with: npm run check
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { guideFor, PLUS_SECTIONS } from '../guide/index';
+import { randomBytes } from '../lib/crypto';
+import { editionNote } from '../lib/edition-notice';
+import { newNostrDm } from '../lib/nostr-dm';
+import { saveNostrDm } from '../lock/nostr-dm-data';
+import { useWasmCore } from './wasm-core';
+import { blobs, files } from './files-memory';
+import { store } from './secure-memory';
+
+useWasmCore();
+
+test('the plain Erevos guide leaves out Matrix, XMPP and the chats with other Nostr apps; Erevos+ has them', () => {
+  for (const lang of ['en', 'el'] as const) {
+    const plus = guideFor(lang, 'plus').map((section) => section.id);
+    const lite = guideFor(lang, 'lite').map((section) => section.id);
+    for (const id of PLUS_SECTIONS) {
+      assert.ok(plus.includes(id), `${lang} ${id}`);
+      assert.ok(!lite.includes(id), `${lang} ${id}`);
+    }
+    // Erevos's own Nostr, which carries its messages, stays.
+    assert.ok(lite.includes('nostr'));
+    assert.equal(lite.length, plus.length - PLUS_SECTIONS.length);
+  }
+});
+
+test('the plain Erevos says once in a space that its Nostr account is kept for Erevos+, and nothing in Erevos+', async () => {
+  store.clear();
+  files.clear();
+  blobs.clear();
+  const key = randomBytes(32);
+  const other = randomBytes(32);
+  await saveNostrDm(0, key, await newNostrDm());
+  assert.equal(await editionNote(0, key, 'plus'), null);
+  const said = await editionNote(0, key, 'lite');
+  assert.ok(said?.includes('Nostr'));
+  assert.ok(said?.includes('Erevos+'));
+  // Once only in that space.
+  assert.equal(await editionNote(0, key, 'lite'), null);
+  // A space with no such account: nothing to say.
+  assert.equal(await editionNote(1, other, 'lite'), null);
+  // What is kept shows neither the spaces' keys nor the networks.
+  const kept = store.get('erevos.edition-told') ?? '';
+  assert.doesNotMatch(kept, /nostr|matrix|xmpp/i);
+  assert.equal((JSON.parse(kept) as string[]).length, 2);
+});

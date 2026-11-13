@@ -63,8 +63,12 @@ concurrency:
   cancel-in-progress: false
 
 # Each job also has EREVOS_VERSION and EREVOS_BUILD, from the version job.
+# This workflow releases the plain Erevos (docs/editions.md): Erevos's own chats, the Phone, the SMS
+# and the Collection, its core without Matrix, XMPP and chats with other Nostr apps. Erevos+ is
+# built by erevosgram.yml.
 env:
   EXPO_NO_TELEMETRY: "1"
+  EREVOS_EDITION: lite
 
 jobs:
   # Decides whether to build at all and the build's number, then opens the draft release the jobs

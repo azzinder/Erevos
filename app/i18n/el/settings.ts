@@ -160,6 +160,7 @@ export const settings: Record<string, string> = {
   'No release was found yet.': 'Δεν βρέθηκε ακόμα καμία έκδοση.',
   'Erevos+ is not out yet, so this phone stays on Erevos for now. Check again later.': 'Το Erevos+ δεν έχει βγει ακόμα, οπότε αυτό το τηλέφωνο μένει στο Erevos προς το παρόν. Έλεγξε ξανά αργότερα.',
   'Erevos+ needs Android 8.0 or newer, so this phone stays on Erevos.': 'Το Erevos+ χρειάζεται Android 8.0 ή νεότερο, οπότε αυτό το τηλέφωνο μένει στο Erevos.',
+  'Your {networks} account and chats are still on this phone, encrypted, but this Erevos does not have them: they are in Erevos+. To have them again, choose Erevos+ in Settings → General → Updates.': 'Ο λογαριασμός και οι συνομιλίες σου στο {networks} είναι ακόμα σε αυτό το τηλέφωνο, κρυπτογραφημένα, αλλά αυτό το Erevos δεν τα έχει: είναι στο Erevos+. Για να τα έχεις ξανά, διάλεξε Erevos+ στις Ρυθμίσεις → Γενικά → Ενημερώσεις.',
   'This Erevos was built on a computer, so it does not update itself. The newest release is {version}: User guide → Updates says how to switch to it.': 'Αυτό το Erevos φτιάχτηκε σε υπολογιστή, οπότε δεν ενημερώνεται μόνο του. Η νεότερη έκδοση είναι η {version}: ο «Οδηγός χρήσης → Ενημερώσεις» λέει πώς να περάσεις σε αυτήν.',
   'Erevos is up to date ({version}).': 'Το Erevos είναι ενημερωμένο ({version}).',
   'Erevos {version} is out': 'Βγήκε το Erevos {version}',

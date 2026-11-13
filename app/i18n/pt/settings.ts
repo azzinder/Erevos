@@ -161,6 +161,7 @@ export const settings: Record<string, string> = {
   'No release was found yet.': 'Nenhuma versão encontrada ainda.',
   'Erevos+ is not out yet, so this phone stays on Erevos for now. Check again later.': 'O Erevos+ ainda não saiu, então este celular fica no Erevos por enquanto. Verifique de novo mais tarde.',
   'Erevos+ needs Android 8.0 or newer, so this phone stays on Erevos.': 'O Erevos+ precisa do Android 8.0 ou mais recente, então este celular fica no Erevos.',
+  'Your {networks} account and chats are still on this phone, encrypted, but this Erevos does not have them: they are in Erevos+. To have them again, choose Erevos+ in Settings → General → Updates.': 'Sua conta e suas conversas do {networks} continuam neste celular, criptografadas, mas este Erevos não as tem: estão no Erevos+. Para tê-las de novo, escolha Erevos+ em Configurações → Geral → Atualizações.',
   'This Erevos was built on a computer, so it does not update itself. The newest release is {version}: User guide → Updates says how to switch to it.': 'Este Erevos foi compilado num computador, então não se atualiza sozinho. A versão mais nova é a {version}: “Guia de uso → Atualizações” explica como mudar para ela.',
   'Erevos is up to date ({version}).': 'O Erevos está atualizado ({version}).',
   'Erevos {version} is out': 'Saiu o Erevos {version}',
