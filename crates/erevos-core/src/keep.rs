@@ -141,6 +141,10 @@ impl Session {
         let rk = ChainKey(r.array::<32>()?);
         let cks = read_key(&mut r)?;
         let ckr = read_key(&mut r)?;
+        // A receiving chain without the peer's key could not be ratcheted on.
+        if ckr.is_some() && dhr.is_none() {
+            return Err(Error::Malformed);
+        }
         let (ns, nr, pn) = (r.u32()?, r.u32()?, r.u32()?);
         let count = r.u32()? as usize;
         if count > MAX_STORED_SKIPPED {
@@ -238,5 +242,19 @@ mod tests {
         let copy = swapped[first_id..first_id + 4].to_vec();
         swapped[second_id..second_id + 4].copy_from_slice(&copy);
         assert!(Prekeys::from_secret_bytes(&swapped).is_err());
+    }
+
+    #[test]
+    fn a_receiving_chain_without_a_peer_key_is_refused() {
+        let mut bytes = vec![VERSION];
+        bytes.extend_from_slice(&[7u8; 32]); // dhs
+        bytes.push(0); // no dhr
+        bytes.extend_from_slice(&[1u8; 32]); // rk
+        bytes.push(0); // no cks
+        bytes.push(1); // ckr
+        bytes.extend_from_slice(&[2u8; 32]);
+        bytes.extend_from_slice(&[0u8; 12]); // ns, nr, pn
+        bytes.extend_from_slice(&[0u8; 4]); // no skipped keys
+        assert!(matches!(Session::from_secret_bytes(&bytes), Err(Error::Malformed)));
     }
 }

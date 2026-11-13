@@ -185,7 +185,7 @@ impl Session {
         self.skip_until(header.n)?;
         let (next, mk) = kdf_ck(self.ckr.as_ref().ok_or(Error::NotReady)?);
         self.ckr = Some(next);
-        self.nr += 1;
+        self.nr = self.nr.checked_add(1).ok_or(Error::ChainExhausted)?;
         open(&mk, ciphertext, &ad)
     }
 
@@ -196,7 +196,8 @@ impl Session {
         if until.saturating_sub(self.nr) > MAX_SKIP {
             return Err(Error::TooManySkipped);
         }
-        let dhr = self.dhr.expect("receiving chain implies a peer key").to_bytes();
+        // A receiving chain implies a peer key; damaged state that says otherwise is refused.
+        let dhr = self.dhr.ok_or(Error::Malformed)?.to_bytes();
         while self.nr < until {
             let (next, mk) = kdf_ck(&ck);
             self.keep_skipped((dhr, self.nr), mk);

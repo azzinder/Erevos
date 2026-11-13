@@ -230,7 +230,8 @@ fn take<'a>(rest: &mut &'a [u8]) -> Result<&'a [u8]> {
         return Err(Error::State);
     }
     let len = u32::from_be_bytes(rest[..4].try_into().unwrap()) as usize;
-    if rest.len() < 4 + len {
+    // Not 4 + len: on 32 bits (wasm) a damaged length would wrap past it.
+    if rest.len() - 4 < len {
         return Err(Error::State);
     }
     let bytes = &rest[4..4 + len];
@@ -1158,5 +1159,12 @@ mod tests {
         // A relay takes 64 KiB in one message: the welcome, sealed for its member, fits.
         assert!(welcome.len() < 60_000, "{} bytes", welcome.len());
         others.last_mut().unwrap().join(&welcome).unwrap();
+    }
+
+    #[test]
+    fn a_damaged_length_is_refused_not_wrapped() {
+        let bytes = [0xff, 0xff, 0xff, 0xff, 1, 2, 3];
+        let mut rest: &[u8] = &bytes;
+        assert!(take(&mut rest).is_err());
     }
 }
