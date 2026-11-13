@@ -38,12 +38,13 @@
 
 use std::fs;
 use std::io::{self, BufReader, ErrorKind, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::collections::HashMap;
+use std::net::{IpAddr, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use rand::RngCore;
 use rustls::pki_types::pem::PemObject;
@@ -58,6 +59,9 @@ use crate::tokens::to_hex;
 pub const DEFAULT_ADDR: &str = "0.0.0.0:5269";
 /// Server-to-server streams open at once; more are closed at once.
 const MAX_CONNECTIONS: usize = 64;
+/// At most this many of them from one address, so that one host cannot
+/// hold every place.
+const MAX_PER_ADDRESS: usize = 8;
 /// The longest stream header or stanza taken: a push is well under 4 KB.
 const MAX_STANZA: usize = 64 * 1024;
 /// How deep elements may go in a stanza.
@@ -68,6 +72,9 @@ const MAX_ATTRS: usize = 32;
 const MAX_NAME: usize = 256;
 /// How long the other server has to start TLS and say who it is.
 const HANDSHAKE: Duration = Duration::from_secs(30);
+/// How long the whole of a stream's start may take, header, TLS and the
+/// other server's word for who it is, however slowly its bytes come.
+const HANDSHAKE_WHOLE: Duration = Duration::from_secs(60);
 /// How long a stream stays open with nothing on it: servers keep theirs
 /// open between pushes, and open them again when they were closed.
 const IDLE: Duration = Duration::from_secs(10 * 60);
@@ -88,6 +95,7 @@ pub struct XmppPush {
     key: PathBuf,
     tls: Mutex<Option<(Stamp, Arc<rustls::ServerConfig>)>>,
     open: Arc<AtomicUsize>,
+    by_address: Arc<Mutex<HashMap<IpAddr, usize>>>,
 }
 
 /// When the certificate's and key's files were last changed.
@@ -115,6 +123,7 @@ impl XmppPush {
             key,
             tls: Mutex::new(None),
             open: Arc::new(AtomicUsize::new(0)),
+            by_address: Arc::new(Mutex::new(HashMap::new())),
         };
         push.tls()?;
         Ok(push)
@@ -160,25 +169,54 @@ impl XmppPush {
     }
 }
 
-/// A place among the streams open at once, given back when dropped.
-struct Open(Arc<AtomicUsize>);
+/// A place among the streams open at once, and among those of its address,
+/// given back when dropped.
+struct Open {
+    count: Arc<AtomicUsize>,
+    by_address: Arc<Mutex<HashMap<IpAddr, usize>>>,
+    address: IpAddr,
+}
 
 impl Open {
-    fn take(count: &Arc<AtomicUsize>) -> Option<Open> {
+    fn take(push: &XmppPush, address: IpAddr) -> Option<Open> {
+        let count = &push.open;
+        {
+            let mut by_address = push.by_address.lock().unwrap_or_else(|e| e.into_inner());
+            let mine = by_address.entry(address).or_insert(0);
+            if *mine >= MAX_PER_ADDRESS {
+                return None;
+            }
+            *mine += 1;
+        }
+        let open = Open {
+            count: Arc::clone(count),
+            by_address: Arc::clone(&push.by_address),
+            address,
+        };
         let mut n = count.load(Ordering::Acquire);
         while n < MAX_CONNECTIONS {
             match count.compare_exchange_weak(n, n + 1, Ordering::AcqRel, Ordering::Acquire) {
-                Ok(_) => return Some(Open(Arc::clone(count))),
+                Ok(_) => return Some(open),
                 Err(now) => n = now,
             }
         }
+        // No place: dropping `open` gives the address's back, and the count's,
+        // raised first so that it evens out.
+        open.count.fetch_add(1, Ordering::AcqRel);
         None
     }
 }
 
 impl Drop for Open {
     fn drop(&mut self) {
-        self.0.fetch_sub(1, Ordering::AcqRel);
+        self.count.fetch_sub(1, Ordering::AcqRel);
+        let mut by_address = self.by_address.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(mine) = by_address.get_mut(&self.address) {
+            *mine -= 1;
+            if *mine == 0 {
+                by_address.remove(&self.address);
+            }
+        }
     }
 }
 
@@ -186,7 +224,8 @@ impl Drop for Open {
 pub fn serve(listener: TcpListener, push: Arc<XmppPush>, shared: Arc<Shared>) {
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
-        let Some(open) = Open::take(&push.open) else {
+        let Ok(peer) = stream.peer_addr() else { continue };
+        let Some(open) = Open::take(&push, peer.ip()) else {
             continue;
         };
         let push = Arc::clone(&push);
@@ -205,7 +244,8 @@ fn stream_of(stream: TcpStream, push: &XmppPush, shared: &Shared) -> io::Result<
     stream.set_write_timeout(Some(HANDSHAKE))?;
     // Unbuffered: the other server says nothing more before it is told to
     // proceed, and what it says then is TLS.
-    let mut clear = Xml::new(&stream);
+    let until = Instant::now() + HANDSHAKE_WHOLE;
+    let mut clear = Xml::new(&stream).until(until);
     let mut out = &stream;
     let (head, go_on) = opened(&mut clear, push)?;
     out.write_all(head.as_bytes())?;
@@ -222,7 +262,7 @@ fn stream_of(stream: TcpStream, push: &XmppPush, shared: &Shared) -> io::Result<
     }
     let tls = rustls::ServerConnection::new(push.tls()?).map_err(io::Error::other)?;
     let tls = rustls::StreamOwned::new(tls, stream);
-    let mut xml = Xml::new(BufReader::new(tls));
+    let mut xml = Xml::new(BufReader::new(tls)).until(until);
     secure(&mut xml, push, shared)
 }
 
@@ -256,6 +296,7 @@ fn secure<S: Read + Write + Idle>(
                 ("auth", false) if el.ns() == Some(NS_SASL) => {
                     xml.send(b"<success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>")?;
                     known = true;
+                    xml.settled();
                     xml.inner_mut().set_idle()?;
                     break;
                 }
@@ -268,6 +309,7 @@ fn secure<S: Read + Write + Idle>(
                     xml.send(reply.as_bytes())?;
                     if !known {
                         known = true;
+                        xml.settled();
                         xml.inner_mut().set_idle()?;
                     }
                 }
@@ -453,6 +495,8 @@ struct Xml<R> {
     back: Option<u8>,
     /// Bytes read of the header or stanza being read.
     read: usize,
+    /// When the stream's start must be over by, until its server is known.
+    until: Option<Instant>,
 }
 
 impl<R: Read> Xml<R> {
@@ -461,7 +505,19 @@ impl<R: Read> Xml<R> {
             inner,
             back: None,
             read: 0,
+            until: None,
         }
+    }
+
+    /// The start must be over by `until`.
+    fn until(mut self, until: Instant) -> Self {
+        self.until = Some(until);
+        self
+    }
+
+    /// The other server is known: no deadline any more but the idle one.
+    fn settled(&mut self) {
+        self.until = None;
     }
 
     fn inner_mut(&mut self) -> &mut R {
@@ -480,6 +536,9 @@ impl<R: Read> Xml<R> {
         self.read += 1;
         if self.read > MAX_STANZA {
             return Err(invalid("stanza too long"));
+        }
+        if self.until.is_some_and(|until| Instant::now() >= until) {
+            return Err(ErrorKind::TimedOut.into());
         }
         let mut b = [0u8; 1];
         loop {
@@ -1033,5 +1092,45 @@ mod tests {
         );
         assert_eq!(unescape(b"a&amp;b&#x3c;&#62;").unwrap(), "a&b<>");
         assert!(unescape(b"&nbsp;").is_err());
+    }
+
+    #[test]
+    fn a_start_past_its_deadline_ends() {
+        let bytes: &[u8] = b"<?xml version='1.0'?>";
+        let mut xml = Xml::new(bytes).until(Instant::now() - Duration::from_secs(1));
+        assert_eq!(xml.byte().unwrap_err().kind(), ErrorKind::TimedOut);
+        let mut xml = Xml::new(bytes).until(Instant::now() + Duration::from_secs(60));
+        assert_eq!(xml.byte().unwrap(), b'<');
+        let mut xml = Xml::new(bytes).until(Instant::now() - Duration::from_secs(1));
+        xml.settled();
+        assert_eq!(xml.byte().unwrap(), b'<');
+    }
+
+    #[test]
+    fn one_address_holds_only_its_share() {
+        let push = push();
+        let one: IpAddr = "192.0.2.1".parse().unwrap();
+        let other: IpAddr = "192.0.2.2".parse().unwrap();
+        let held: Vec<Open> = (0..MAX_PER_ADDRESS)
+            .map(|_| Open::take(&push, one).unwrap())
+            .collect();
+        assert!(Open::take(&push, one).is_none());
+        let theirs = Open::take(&push, other).unwrap();
+        assert_eq!(push.open.load(Ordering::Acquire), MAX_PER_ADDRESS + 1);
+        drop(held);
+        drop(theirs);
+        assert_eq!(push.open.load(Ordering::Acquire), 0);
+        assert!(push.by_address.lock().unwrap().is_empty());
+        assert!(Open::take(&push, one).is_some());
+    }
+
+    #[test]
+    fn a_full_relay_gives_the_address_back() {
+        let push = push();
+        push.open.store(MAX_CONNECTIONS, Ordering::Release);
+        let one: IpAddr = "192.0.2.1".parse().unwrap();
+        assert!(Open::take(&push, one).is_none());
+        assert_eq!(push.open.load(Ordering::Acquire), MAX_CONNECTIONS);
+        assert!(push.by_address.lock().unwrap().is_empty());
     }
 }
