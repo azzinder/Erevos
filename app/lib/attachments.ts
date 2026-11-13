@@ -25,6 +25,7 @@ import {
   deleteChunks,
   fitsSticker,
   isFileMeta,
+  isIdList,
   newFileId,
   readChunk,
   saveChunk,
@@ -152,7 +153,7 @@ export function readOffer(value: unknown, most = MAX_FILE): FileOffer | null {
     ...(v.h !== undefined ? { h: v.h } : {}),
   };
   if (!isFileMeta(meta) || meta.size > most) return null;
-  if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !/^(?:[0-9a-f]{48})+$/.test(v.ids)) return null;
+  if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !isIdList(v.ids)) return null;
   // A sticker made from a photo, when it is small enough to be one; otherwise a photo, maybe hidden till tapped.
   // Or, a file, the imported chats a contact shared: to an Erevos from before, a file like any other.
   const history = meta.kind === 'file' ? readSharedMark(v.history) : null;

@@ -4,6 +4,7 @@
 
 import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isNostrRelay, isRelay, isRelayKey, isTimer, MAX_BLOCKED, MAX_NOSTR_RELAYS, type Avatar, type Blocked, type Contact, type Spare } from '../lock/e2e-data';
 import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
+import { isIdList } from '../lock/attachment-files';
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
 import { isEvery, type Every } from './note-repeat';
@@ -495,7 +496,7 @@ function checkedEnvelope(v: Json): Envelope | null {
       return offer ? { k: 'history', offer, last: v.last === true } : null;
     }
     case 'took': {
-      const ids = Array.isArray(v.ids) ? v.ids.filter((i): i is string => isText(i) && /^(?:[0-9a-f]{48})+$/.test(i)).slice(0, MAX_TOOK) : [];
+      const ids = Array.isArray(v.ids) ? v.ids.filter((i): i is string => isText(i) && isIdList(i)).slice(0, MAX_TOOK) : [];
       return ids.length > 0 ? { k: 'took', ids } : null;
     }
     case 'call':

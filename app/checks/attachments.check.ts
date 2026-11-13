@@ -399,3 +399,14 @@ test('a file on a file server is fetched by itself through Tor alone, and never 
     setCore(null);
   }
 });
+
+test('chunk ids are read without a regular expression of repeats: a big file has thousands', async () => {
+  const { isIdList } = await import('../lock/attachment-files');
+  const one = 'ab'.repeat(24);
+  assert.equal(isIdList(one.repeat(20000)), true);
+  assert.equal(isIdList(''), false);
+  assert.equal(isIdList('', true), true);
+  assert.equal(isIdList(one + 'a'), false);
+  assert.equal(isIdList(one.toUpperCase()), false);
+  assert.equal(isIdList(one.slice(0, 47) + 'g'), false);
+});

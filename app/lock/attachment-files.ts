@@ -68,7 +68,14 @@ export const NOSTR_PIECE = 32 * 1024;
 export const PREFIX = 'erevos-file-';
 const ID = /^[0-9a-f]{32}$/;
 const KEY = /^[0-9a-f]{64}$/;
-const IDS = /^(?:[0-9a-f]{48})+$/;
+/**
+ * Whether `ids` is chunk ids one after another, each 24 bytes in hex (48 marks): at least one, or
+ * none too when `empty`. Not one regular expression of repeated groups: on Android (Hermes) each
+ * repeat is a step deeper, and a big file's thousands of ids threw «Maximum regex stack depth».
+ */
+export function isIdList(ids: string, empty = false): boolean {
+  return (ids.length > 0 || empty) && ids.length % 48 === 0 && /^[0-9a-f]*$/.test(ids);
+}
 export const CHUNK_SIZES = [64 * 1024, 256 * 1024, 1024 * 1024];
 const MIME = /^[a-z0-9][a-z0-9.+-]*\/[a-z0-9][a-z0-9.+-]*$/;
 /** The longest file name kept. */
@@ -157,7 +164,7 @@ export function isFileRef(value: unknown, mostChunks = MOST_CHUNKS): value is Fi
   if (!(CHUNK_SIZES.includes(v.chunk as number) || v.chunk === NOSTR_PIECE) || !whole(v.count, mostChunks) || v.count === 0) return false;
   if (v.from === undefined) return true;
   const from = v.from as Partial<FileFrom> | null;
-  if (typeof from?.relay !== 'string' || typeof from.ids !== 'string' || !IDS.test(from.ids) || from.ids.length !== 48 * v.count) return false;
+  if (typeof from?.relay !== 'string' || typeof from.ids !== 'string' || !isIdList(from.ids) || from.ids.length !== 48 * v.count) return false;
   if (from.via === undefined) return true;
   if (from.via === 'nostr') return from.relay === 'nostr' && v.chunk === NOSTR_PIECE;
   return from.via === 'blossom' && from.relay === 'blossom' && typeof from.url === 'string' && /^https:\/\/\S+$/.test(from.url) && from.url.length <= 2048 && typeof from.x === 'string' && KEY.test(from.x) && from.ids === from.x.slice(0, 48);

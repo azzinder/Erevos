@@ -7,6 +7,7 @@ import { isGroupId } from '../lib/group-signal';
 import { checkedGiven, checkedPlace, checkedSeat, checkedSynced, type GivenAccounts, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
 import { checkedErased, checkedRemoved, checkedSiblings, type Siblings } from '../lib/siblings';
 
+import { isIdList } from './attachment-files';
 import { isRelayKey, MAX_BACK, type Endpoint } from './e2e-data';
 import { sealedFile, type Holder } from './sealed-file';
 
@@ -226,7 +227,7 @@ function checkedJob(value: unknown): Job | null {
 
 function checkedLeft(value: unknown): Left | null {
   const v = (value ?? {}) as Partial<Record<keyof Left, unknown>>;
-  if (!isText(v.relay) || !isText(v.ids) || !/^(?:[0-9a-f]{48})+$/.test(v.ids) || !isTime(v.at)) return null;
+  if (!isText(v.relay) || !isText(v.ids) || !isIdList(v.ids) || !isTime(v.at)) return null;
   const devices = Array.isArray(v.devices) ? v.devices.filter((id): id is string => isHex(id, 64)) : [];
   return { relay: v.relay, ids: v.ids, at: v.at, phone: v.phone === true, devices };
 }

@@ -4,7 +4,7 @@
 
 import { checkedRounds, type Rounds } from '../lib/chat-parts';
 
-import { HISTORY_CHUNKS, isFileRef, type FileRef } from './attachment-files';
+import { HISTORY_CHUNKS, isFileRef, isIdList, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
 
 // Imported chats shared with a contact whose files still go, or still come, in rounds (lib/share-rounds.ts):
@@ -108,7 +108,6 @@ export const MOST_WAIT = 16;
 const ID = /^[0-9a-f]{32}$/;
 const IDENTITY = /^[0-9a-f]{64}$/;
 const TAG = /^[0-9a-f]{12}$/;
-const IDS = /^(?:[0-9a-f]{48})*$/;
 const count = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
 const text = (v: unknown, most = 512): v is string => typeof v === 'string' && v.length <= most;
 const listOk = (v: unknown): v is FileRef => isFileRef(v, HISTORY_CHUNKS) && !(v as FileRef).from;
@@ -116,7 +115,7 @@ const listOk = (v: unknown): v is FileRef => isFileRef(v, HISTORY_CHUNKS) && !(v
 function checkedOut(value: unknown): OutShare | null {
   const v = value as Partial<OutShare> | null;
   if (!v || typeof v !== 'object' || !text(v.s) || !ID.test(v.s) || !text(v.to) || !IDENTITY.test(v.to) || !text(v.tag)) return null;
-  if (!listOk(v.list) || !count(v.total) || !count(v.took) || v.took > v.total || !text(v.r) || typeof v.out !== 'string' || !IDS.test(v.out)) return null;
+  if (!listOk(v.list) || !count(v.total) || !count(v.took) || v.took > v.total || !text(v.r) || typeof v.out !== 'string' || !isIdList(v.out, true)) return null;
   const outs = v.out.length / ID_HEX;
   return {
     s: v.s,
@@ -139,7 +138,7 @@ function checkedOut(value: unknown): OutShare | null {
 }
 
 const isWait = (w: unknown): w is InShare['wait'][number] =>
-  Array.isArray(w) && w.length === 3 && count(w[0]) && text(w[1]) && typeof w[2] === 'string' && w[2].length > 0 && IDS.test(w[2]);
+  Array.isArray(w) && w.length === 3 && count(w[0]) && text(w[1]) && typeof w[2] === 'string' && w[2].length > 0 && isIdList(w[2], true);
 
 function checkedIn(value: unknown): InShare | null {
   const v = value as Partial<InShare> | null;

@@ -4,7 +4,7 @@
 
 import { checkedCard, checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import type { Mark } from '../lib/relay';
-import { isFileRef, type FileRef } from './attachment-files';
+import { isFileRef, isIdList, type FileRef } from './attachment-files';
 import { checkedChatNotify, type ChatNotify } from './chat-notify';
 import { checkedChatPin, type ChatPin } from './chat-pin';
 import { cleanName, isRelay, isRelayKey } from './e2e-data';
@@ -238,7 +238,7 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
     ...(isTime(v.edited) && v.edited > 0 ? { edited: v.edited } : {}),
     ...(poll && isTime(v.closed) && v.closed > 0 ? { closed: v.closed } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
-    ...(mine && isText(v.put) && /^(?:[0-9a-f]{48})+$/.test(v.put) ? { put: v.put } : {}),
+    ...(mine && isText(v.put) && isIdList(v.put) ? { put: v.put } : {}),
     ...(mine && v.unsent === true ? { unsent: true as const } : {}),
     ...(mine ? seenBy(v.got, v.read) : {}),
   };
