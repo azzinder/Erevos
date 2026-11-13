@@ -169,6 +169,8 @@ test("a build's number is the run's, unless an Erevos or Erevos+ build already t
   assert.equal(numbered(67, { published: 'v7.1.0-beta.5:67', drafts: 'build-65', runs: ['Erevos+ 7.1.0-beta.5, build 67'] }), '68');
   // A build out that nothing names, written into the workflow.
   assert.equal(numbered(67, { built: '67', runs: ['erevosgram'] }), '68');
+  // Several, one kept before its run names it.
+  assert.equal(numbered(67, { built: '67 68', runs: ['erevosgram'] }), '69');
   assert.equal(numbered(67, { built: '62 67' }), '68');
 });
 

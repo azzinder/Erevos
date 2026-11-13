@@ -86,8 +86,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          # Builds out that nothing below names: Erevos+ 7.1.0-beta.5 (67), whose run named no build.
-          EREVOS_BUILT: "67"
+          # Builds that nothing below names: Erevos+ 7.1.0-beta.5 (67), whose run named no build; and 68,
+          # kept for Erevos+'s next build (beta.5 with Messenger's start fixed) before its run names it.
+          EREVOS_BUILT: "67 68"
         run: |
           # Every build so far: each published release's, Erevos's and Erevos+'s (its version.json),
           # the builds under way here (their drafts, build-<n>), and Erevos+'s and ErevosGram's
