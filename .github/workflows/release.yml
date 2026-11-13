@@ -138,8 +138,13 @@ jobs:
             latest=$(grep -E "^$series\." <<< "$published" | tail -n1 || true)
             last=""
           else
-            read -r latest last <<< "$(gh api "repos/$GH_REPO/releases/latest" --jq '"\(.tag_name) \(.target_commitish)"' 2>/dev/null || true)"
-            latest=${latest#v}
+            # The newest plain Erevos release that is not a beta or an alpha, not GitHub's latest,
+            # which can be an Erevos+ one.
+            latest=$(grep -vE -- '-(alpha|beta)\.' <<< "$published" | tail -n1 || true)
+            last=""
+            if [ -n "$latest" ]; then
+              last=$(gh api "repos/$GH_REPO/releases/tags/v$latest" --jq '.target_commitish' 2>/dev/null || true)
+            fi
           fi
           if [ -n "$WANTED" ]; then
             version=${WANTED#v}
