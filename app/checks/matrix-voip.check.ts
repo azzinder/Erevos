@@ -37,7 +37,7 @@ before(() => {
 after(() => setCore(null));
 
 const ANSWER = 'v=0\r\no=- 3 4 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n';
-const OFFER = 'v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=candidate:1 1 udp 1 192.0.2.1 5000 typ host\r\n';
+const OFFER = 'v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=candidate:1 1 udp 1 192.168.2.1 5000 typ host\r\n';
 
 class IceConnection extends FakeConnection {
   ice: { candidate: string; sdpMid: string }[] = [];
@@ -92,13 +92,14 @@ test("their call as FluffyChat makes it rings, is answered encrypted, takes thei
   assert.equal(call?.state, 'incoming');
   assert.equal(call?.peer, `${MATRIX_VOIP_PREFIX}${roomId}`);
   assert.equal(call?.video, false);
-  await sendEvent(bob, roomId, 'm.call.candidates', { call_id: 'fluffy1', party_id: 'bobparty', version: '1', candidates: [{ candidate: 'candidate:2 1 udp 1 192.0.2.9 6000 typ host', sdpMid: '0', sdpMLineIndex: 0 }] });
+  // With no call relay here, only addresses on the same network are taken (lib/call.ts remoteSdp).
+  await sendEvent(bob, roomId, 'm.call.candidates', { call_id: 'fluffy1', party_id: 'bobparty', version: '1', candidates: [{ candidate: 'candidate:2 1 udp 1 192.168.2.9 6000 typ host', sdpMid: '0', sdpMLineIndex: 0 }] });
   await sync(alice, 0);
   await call!.answer();
   await wait();
   // Its answer went encrypted, and Bob's app reads it.
   assert.equal(server.log.at(-1)!.event.type, 'm.room.encrypted');
-  assert.deepEqual(connections[0].ice.map((c) => c.candidate), ['candidate:2 1 udp 1 192.0.2.9 6000 typ host']);
+  assert.deepEqual(connections[0].ice.map((c) => c.candidate), ['candidate:2 1 udp 1 192.168.2.9 6000 typ host']);
   await sendEvent(bob, roomId, 'm.call.hangup', { call_id: 'fluffy1', party_id: 'bobparty', version: '1', reason: 'user_hangup' });
   await sync(alice, 0);
   assert.equal(call!.state, 'ended');
