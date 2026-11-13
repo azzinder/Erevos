@@ -389,6 +389,11 @@ test('anything in another form is refused', () => {
     { ...ok, x: 'add' },
     { ...ok, extra: 1 },
     { d: DELL, s: 1, at: ok.at, k: 'note', id: 'n', x: 'gone' },
+    // Names a plain object has already, which would reach Object itself.
+    { ...ok, k: 'constructor' },
+    { ...ok, k: 'constructor', id: 'prototype' },
+    { ...ok, f: 'constructor' },
+    { d: DELL, s: 1, at: ok.at, k: 'constructor', id: 'prototype', x: 'add' },
   ];
   for (const b of bad) assert.equal(isOp(b), false, JSON.stringify(b));
   assert.equal(readSaid({ k: 'have', vv: { [DELL]: -1 } }), null);

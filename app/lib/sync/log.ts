@@ -462,6 +462,9 @@ export function idsOf(log: Log, kind: string): string[] {
 // What comes from another device is checked in full before anything of it is used.
 
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
+// A kind's or a field's name, a key of a plain object too: never one it has already (`constructor`,
+// `valueOf`...), with which an op would reach Object itself through `data[kind]`.
+const isName = (x: string): boolean => NAME.test(x) && !(x in Object.prototype);
 
 // A record's id names a key of a plain object: never one the object has already (`__proto__`,
 // `constructor`, `toString`...), with which a device's op would reach into every object here.
@@ -496,10 +499,10 @@ export function isOp(x: unknown): x is Op {
   if (typeof x !== 'object' || x === null) return false;
   const o = x as Record<string, unknown>;
   if (!isDevice(o.d) || !Number.isSafeInteger(o.s) || (o.s as number) < 1 || !isStamp(o.at) || o.at.d !== o.d) return false;
-  if (typeof o.k !== 'string' || !NAME.test(o.k) || !isId(o.id)) return false;
+  if (typeof o.k !== 'string' || !isName(o.k) || !isId(o.id)) return false;
   const keys = Object.keys(o).sort().join();
   if (o.x !== undefined) return (o.x === 'add' || o.x === 'del') && keys === 'at,d,id,k,s,x';
-  return typeof o.f === 'string' && NAME.test(o.f) && 'v' in o && isValue(o.v) && keys === 'at,d,f,id,k,s,v';
+  return typeof o.f === 'string' && isName(o.f) && 'v' in o && isValue(o.v) && keys === 'at,d,f,id,k,s,v';
 }
 
 function isEntry(x: unknown): x is Entry {
@@ -512,7 +515,7 @@ function isEntry(x: unknown): x is Entry {
     if (typeof by !== 'object' || by === null || !isDevice(by.d) || !Number.isSafeInteger(by.s)) return false;
   }
   if (typeof e.f !== 'object' || e.f === null) return false;
-  return Object.entries(e.f).every(([name, f]) => NAME.test(name) && typeof f === 'object' && f !== null && isStamp((f as Field).at) && isValue((f as Field).v));
+  return Object.entries(e.f).every(([name, f]) => isName(name) && typeof f === 'object' && f !== null && isStamp((f as Field).at) && isValue((f as Field).v));
 }
 
 export function isVector(x: unknown, most = MAX_DEVICES): x is Record<string, number> {
@@ -529,7 +532,7 @@ export function isWhole(x: unknown): x is Whole {
 
 function isData(x: unknown): x is Whole['data'] {
   return typeof x === 'object' && x !== null && Object.entries(x).every(([k, entries]) =>
-    NAME.test(k) && typeof entries === 'object' && entries !== null &&
+    isName(k) && typeof entries === 'object' && entries !== null &&
     Object.entries(entries).every(([id, e]) => isId(id) && isEntry(e)));
 }
 
