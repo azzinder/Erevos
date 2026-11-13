@@ -23,7 +23,7 @@ export const settings: Record<string, string> = {
   'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Važi u prostoru sa zaključavanjem lozinkom: ovaj ga nema, pa snimci ekrana rade.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Uključeno: Erevos se ne pojavljuje na snimcima ekrana, pri snimanju ekrana ni među nedavnim aplikacijama, pa se tamo ne vidi njegov posljednji ekran.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Isključeno: snimci ekrana su mogući, a nedavne aplikacije prikazuju posljednji ekran Erevosa.',
-  'Hidden chats always stay out of them.': 'Skriveni razgovori se tamo nikad ne pojavljuju.',
+  'While it is on, hidden chats stay out of them too.': 'Dok je uključeno, ni skriveni razgovori se tamo ne pojavljuju.',
   'Change password': 'Promijeni lozinku',
   'Second password': 'Druga lozinka',
   'If someone forces you to open the app, type the second password instead. It opens a separate, empty Erevos with its own contacts and relay. Your real chats stay hidden, and nothing in the app shows that they exist.': 'Ako vas prisile da otvorite aplikaciju, umjesto prave upišite drugu lozinku. Ona otvara zaseban, prazan Erevos s vlastitim kontaktima i relayem. Vaši pravi razgovori ostaju skriveni i ništa u aplikaciji ne pokazuje da postoje.',

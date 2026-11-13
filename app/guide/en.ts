@@ -2695,8 +2695,8 @@ the wait is measured where moving the clock cannot shorten it.
 With the password lock on, Android keeps Erevos out of screenshots, screen recordings and the recent apps: there the
 last screen of Erevos shows blank, so whoever holds the unlocked phone a moment does not see your chats in it. Under
 **Settings** → **Privacy and security** → **Screenshots**, **Turn off** lets screenshots work again (to send one, say),
-and **Turn on** brings it back. Hidden
-chats always stay out of them while they are open, whatever the setting. The setting is the phone's, the same in
+and **Turn on** brings it back. While it is on, hidden
+chats stay out of them too, even in a space without the password lock; turned off, screenshots work in them as well. The setting is the phone's, the same in
 every space. On a computer and in the web app it does not exist.
 
 **Why:** without it, the last screen of Erevos stays as a picture among the recent apps until Erevos opens again, so
@@ -2924,7 +2924,7 @@ its PIN.
   SMS conversation under its **Plain SMS** line, working the same way: its name with a lock in the list, none of its
   messages in the search, and the space's password takes a forgotten PIN off. **Block screenshots** sits beside it, on
   this phone only (Android): the others are not told. A hidden place's chats offer neither, as its own PIN guards them
-  and they always stay out of screenshots.
+  and they stay out of screenshots while **Screenshots** is on.
 
 **Why:** some chats should stay where they are, but not open for whoever holds the phone a moment. The PIN is kept
 only as Argon2id of it, so it cannot be read from the phone, and guesses are slow. It is a lock on the screen, not a

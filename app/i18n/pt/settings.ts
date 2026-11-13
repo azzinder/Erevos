@@ -23,7 +23,7 @@ export const settings: Record<string, string> = {
   'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Vale em um espaço com bloqueio por senha: este não tem, então as capturas dele funcionam.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Ativada: o Erevos não aparece em capturas de tela, gravações de tela nem nos apps recentes, para ninguém ver ali a última tela dele.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Desativada: as capturas de tela funcionam, e os apps recentes mostram a última tela do Erevos.',
-  'Hidden chats always stay out of them.': 'As conversas ocultas nunca aparecem ali.',
+  'While it is on, hidden chats stay out of them too.': 'Enquanto estiver ativo, também as conversas ocultas não aparecem ali.',
   'Change password': 'Alterar senha',
   'Second password': 'Segunda senha',
   'If someone forces you to open the app, type the second password instead. It opens a separate, empty Erevos with its own contacts and relay. Your real chats stay hidden, and nothing in the app shows that they exist.': 'Se alguém forçar você a abrir o app, digite a segunda senha. Ela abre um Erevos separado e vazio, com contatos e relay próprios. Suas conversas reais continuam ocultas, e nada no app mostra que elas existem.',

@@ -307,7 +307,7 @@ export default function Security() {
                 ? t('On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.')
                 : t('Off: screenshots work, and the recent apps show the last screen of Erevos.')}{' '}
               {locked ? '' : `${t('It counts in a space with a password lock: this one has none, so screenshots of it work.')} `}
-              {t('Hidden chats always stay out of them.')}
+              {t('While it is on, hidden chats stay out of them too.')}
             </Text>
             <Row wrap>
               <Button title={screenPrivate ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void setScreenPrivacy(!screenPrivate)} />

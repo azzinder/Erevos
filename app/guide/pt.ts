@@ -2916,8 +2916,8 @@ Com o bloqueio com senha ativado, o Android mantém o Erevos fora das capturas d
 apps recentes: ali a última tela do Erevos aparece em branco, para que quem segura o celular desbloqueado por um
 momento não veja as suas conversas nela. Em **Configurações** → **Privacidade e segurança** → **Capturas de tela**,
 **Desativar** deixa as capturas de tela funcionarem de novo (para enviar uma, por exemplo), e **Ativar** traz a
-proteção de volta. As conversas ocultas sempre ficam fora delas enquanto estão abertas, seja qual for a configuração.
-A configuração é do celular, a mesma em todos os espaços. Num computador e no app web ela não existe.
+proteção de volta. Enquanto está ativada, as conversas ocultas também ficam fora delas, mesmo num espaço sem bloqueio com senha;
+desativada, as capturas de tela funcionam nelas também. A configuração é do celular, a mesma em todos os espaços. Num computador e no app web ela não existe.
 
 **Por quê:** sem ela, a última tela do Erevos fica como uma imagem entre os apps recentes até o Erevos abrir de novo,
 por isso as conversas ocultas sempre ficam de fora, para nunca aparecerem ali sem o PIN delas. A configuração é a
@@ -3164,7 +3164,8 @@ abre com o PIN dele.
   uma conversa por SMS abaixo da linha **SMS comum**, e funciona do mesmo jeito: na lista o nome dela com um cadeado,
   nenhuma mensagem dela na busca, e a senha do espaço tira um PIN esquecido. **Bloquear capturas de tela** fica ao
   lado, só neste celular (Android): os outros não ficam sabendo. As conversas de um lugar oculto não oferecem nenhum
-  dos dois, pois o PIN dele as protege e elas ficam sempre fora das capturas.
+  dos dois, pois o PIN dele as protege e elas ficam fora das capturas
+  de tela enquanto **Capturas de tela** estiver ativado.
 
 **Por quê:** algumas conversas devem ficar onde estão, mas não abertas para quem segura o celular por um momento. O
 PIN só é guardado como Argon2id dele, para que não possa ser lido do celular, e as tentativas de adivinhar são lentas.

@@ -3094,8 +3094,8 @@ Avec le verrou par mot de passe activé, Android tient Erevos à l’écart des 
 et des applis récentes : là, le dernier écran d’Erevos apparaît vide, si bien que celui qui tient un moment le téléphone
 déverrouillé n’y voit pas tes discussions. Sous **Réglages** → **Confidentialité et sécurité** → **Captures d’écran**,
 **Désactiver** permet de nouveau les captures d’écran (pour en envoyer une, par exemple), et **Activer** rétablit la
-protection. Les discussions masquées en restent toujours à l’écart tant qu’elles sont ouvertes, quel que soit le
-réglage. Le réglage est celui du téléphone, le même dans chaque espace. Sur un ordinateur et dans l’app web, il n’existe
+protection. Tant qu’il est activé, les discussions masquées en restent aussi à l’écart, même dans un espace sans verrou par mot de
+passe ; désactivé, les captures fonctionnent aussi dans ces discussions. Le réglage est celui du téléphone, le même dans chaque espace. Sur un ordinateur et dans l’app web, il n’existe
 pas.
 
 **Pourquoi :** sans cela, le dernier écran d’Erevos reste comme une image parmi les applis récentes jusqu’à ce qu’Erevos
@@ -3366,7 +3366,7 @@ discussions, mais ne s’ouvre qu’avec son code PIN.
   nom avec un cadenas, aucun de ses messages dans la recherche, et le mot de passe de l’espace retire un code PIN
   oublié. **Bloquer les captures d’écran** est à côté, sur ce téléphone seulement (Android) : les autres ne sont pas
   prévenus. Les discussions d’un lieu caché n’offrent ni l’un ni l’autre, car leur propre code PIN les garde et elles
-  restent toujours hors des captures.
+  restent hors des captures tant que **Captures d’écran** est activé.
 
 **Pourquoi :** certaines discussions doivent rester où elles sont, mais sans s’ouvrir pour quiconque tient un moment le
 téléphone. Le code PIN n’est gardé que sous forme d’Argon2id, si bien qu’il ne peut pas être lu sur le téléphone, et les

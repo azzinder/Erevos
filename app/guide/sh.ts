@@ -2823,8 +2823,9 @@ dolazi prije nego što se otvori bilo koji prostor, a čekanje se mjeri tamo gdj
 S uključenim zaključavanjem lozinkom, Android drži Erevos izvan snimaka ekrana, snimanja ekrana i nedavnih aplikacija:
 tamo je posljednji ekran Erevosa prazan, pa onaj ko na trenutak drži otključan telefon u njemu ne vidi vaše razgovore.
 Pod **Postavke** → **Privatnost i sigurnost** → **Snimci ekrana**, **Isključi** ponovo omogućava snimke ekrana (da
-pošaljete neki, na primjer), a **Uključi** vraća zaštitu. Skriveni
-razgovori uvijek ostaju izvan njih dok su otvoreni, bez obzira na postavku. Postavka pripada telefonu i ista je u
+pošaljete neki, na primjer), a **Uključi** vraća zaštitu. Dok je uključena, i skriveni
+razgovori ostaju izvan njih, čak i u prostoru bez zaključavanja lozinkom; isključena, snimci ekrana rade i u njima.
+Postavka pripada telefonu i ista je u
 svakom prostoru. Na računaru i u web-aplikaciji ne postoji.
 
 **Zašto:** bez nje, posljednji ekran Erevosa ostaje kao slika među nedavnim aplikacijama dok se Erevos ponovo ne
@@ -3060,7 +3061,7 @@ otvara samo svojim PIN-om.
   a SMS razgovor ispod reda **Običan SMS**, i radi isto: na popisu njegovo ime s lokotom, nijedna njegova poruka u
   pretrazi, a lozinka prostora skida zaboravljeni PIN. **Blokiraj snimke ekrana** je pored, samo na ovom telefonu
   (Android): drugima se ne javlja. Razgovori skrivenog mjesta ne nude ni jedno ni drugo, jer ih čuva njihov PIN i
-  uvijek su izvan snimaka ekrana.
+  izvan snimaka ekrana su dok su **Snimci ekrana** uključeni.
 
 **Zašto:** neki razgovori trebaju ostati tamo gdje jesu, ali ne i biti otvoreni za onoga ko na trenutak drži
 telefon. PIN se čuva samo kao njegov Argon2id, pa se ne može pročitati s telefona, a pogađanje je sporo. To je brava

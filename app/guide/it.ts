@@ -2950,8 +2950,9 @@ Con il blocco con password attivo, Android tiene Erevos fuori dagli screenshot, 
 dalle app recenti: lì l’ultima schermata di Erevos appare vuota, così chi ha in mano per un momento il telefono
 sbloccato non vi vede le tue chat. In
 **Impostazioni** → **Privacy e sicurezza** → **Screenshot**, **Disattiva** fa funzionare di nuovo gli screenshot (per
-inviarne uno, per esempio), e **Attiva** ripristina la protezione. Le chat
-nascoste restano sempre fuori da essi mentre sono aperte, qualunque sia l’impostazione. L’impostazione è del telefono,
+inviarne uno, per esempio), e **Attiva** ripristina la protezione. Finché è attiva, anche le chat
+nascoste restano fuori da essi, pure in uno spazio senza blocco con password; disattivata, gli screenshot funzionano
+anche in quelle. L’impostazione è del telefono,
 la stessa in ogni spazio. Su un computer e nella web app non esiste.
 
 **Perché:** senza, l’ultima schermata di Erevos resta come immagine tra le app recenti finché Erevos non si riapre,
@@ -3200,7 +3201,8 @@ PIN.
   conversazione SMS sotto la riga **SMS normale**, e funziona allo stesso modo: nell’elenco il suo nome con un
   lucchetto, nessuno dei suoi messaggi nella ricerca, e la password dello spazio toglie un PIN dimenticato. **Blocca
   gli screenshot** è accanto, solo su questo telefono (Android): gli altri non vengono avvisati. Le chat di un luogo
-  nascosto non offrono né l’uno né l’altro, perché le protegge il loro PIN e restano sempre fuori dagli screenshot.
+  nascosto non offrono né l’uno né l’altro, perché le protegge il loro PIN e restano fuori dagli screenshot
+  finché **Screenshot** è attivo.
 
 **Perché:** alcune chat dovrebbero restare dove sono, ma non aprirsi per chi ha in mano il telefono per un momento. Il
 PIN è conservato solo come suo Argon2id, quindi non si può leggere dal telefono, e i tentativi sono lenti. È un blocco

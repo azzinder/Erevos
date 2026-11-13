@@ -34,6 +34,7 @@ export const NEXT: Changes = {
     mark("**Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you last had Erevos open, and you see no one's either. A space you already have keeps it as it was. See [Chat through a relay](#relay)."),
     mark("**A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one shared in many pieces, could close Erevos at once. Now it opens. See [Chat through a relay](#relay)."),
     mark("**A hidden service stays quiet**: a service you hide in the **Services** window, Messenger, Matrix, SMS or any other, no longer sends notifications or counts on Erevos's icon, as a muted chat. It stays connected and tells again once you show it. Telegram, whose folders can stand on home of their own, keeps telling. See [Getting started](#start)."),
+    mark("**Screenshots in hidden chats too, if you want**: hidden chats now follow **Screenshots** in **Privacy and security**: on, as it starts, they stay out of screenshots and the recent apps; turned off, screenshots work in them as in the other chats. Before, hidden chats always kept them out. See [Hidden chats](#hidden)."),
   ],
   underTheHood: [],
 };

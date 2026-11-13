@@ -53,6 +53,9 @@ On main, not released yet:
 - **A hidden service stays quiet**: a service you hide in the **Services** window no longer sends notifications
   or counts on Erevos's icon, as a muted chat; it stays connected. Telegram, whose folders can stand on home, keeps
   telling.
+- **Screenshots in hidden chats too, if you want**: hidden chats now follow **Screenshots** in **Privacy and
+  security**: on, as it starts, they stay out of screenshots and the recent apps; turned off, screenshots work in them
+  as in the other chats. Before, hidden chats always kept them out.
 - **Smaller fixes you may see**: a radio station playing through Tor says so under **Now playing**; on Android older
   than 8.0, **Updates** says Erevos+ needs Android 8.0 and stays on Erevos; the palette once named after a site is
   now **Erevos**.

@@ -23,7 +23,7 @@ export const settings: Record<string, string> = {
   'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Ισχύει σε χώρο με κλείδωμα με κωδικό: αυτός εδώ δεν έχει, οπότε τα στιγμιότυπά του δουλεύουν.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Ενεργό: το Erevos δεν φαίνεται σε στιγμιότυπα, εγγραφές οθόνης και στις πρόσφατες εφαρμογές, ώστε κανείς να μη βλέπει εκεί την τελευταία του οθόνη.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Ανενεργό: τα στιγμιότυπα οθόνης δουλεύουν, και οι πρόσφατες εφαρμογές δείχνουν την τελευταία οθόνη του Erevos.',
-  'Hidden chats always stay out of them.': 'Οι κρυφές συνομιλίες δεν φαίνονται ποτέ εκεί.',
+  'While it is on, hidden chats stay out of them too.': 'Όσο είναι ενεργό, ούτε οι κρυφές συνομιλίες φαίνονται εκεί.',
   'Change password': 'Αλλαγή κωδικού',
   'Second password': 'Δεύτερος κωδικός',
   'If someone forces you to open the app, type the second password instead. It opens a separate, empty Erevos with its own contacts and relay. Your real chats stay hidden, and nothing in the app shows that they exist.': 'Αν κάποιος σε αναγκάσει να ανοίξεις την εφαρμογή, πληκτρολόγησε τον δεύτερο κωδικό. Ανοίγει ένα ξεχωριστό, άδειο Erevos με δικές του επαφές και δικό του relay. Οι πραγματικές σου συνομιλίες μένουν κρυφές, και τίποτα στην εφαρμογή δεν δείχνει ότι υπάρχουν.',

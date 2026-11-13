@@ -19,7 +19,7 @@ import { sameConversation } from './sms-group';
 // encrypted data: a Matrix room, an XMPP chat and a Nostr chat in their account's value, a hidden
 // place's in its own; an SMS conversation in the space's SMS data (lock/sms-own.ts), with its own
 // look and notifications. The PIN never: only Argon2id of it (lock/chat-pin.ts). Hidden chats ask
-// no PIN of their own, as the hidden chats' PIN guards them, and keep out of screenshots always.
+// no PIN of their own, as the hidden chats' PIN guards them, and keep out of screenshots while the setting is on.
 
 /** What a chat keeps of it, beside its notifications and look: its PIN, as kept, and whether its
  *  screenshots are blocked. */

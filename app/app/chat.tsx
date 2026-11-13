@@ -7,7 +7,7 @@ import { AppState, BackHandler, Linking, Modal, Platform, Pressable, ScrollView,
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
-import { CAN_KEEP_PRIVATE, keepPrivate } from '../lib/screen-privacy';
+import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
@@ -300,11 +300,24 @@ export default function ChatScreen() {
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
-  // Hidden chats always keep out of screenshots and the recent apps preview while open.
+  // Hidden chats keep out of screenshots and the recent apps preview while open, as long as
+  // Screenshots in Privacy and security is on (the default); turned off, they allow them as the
+  // other chats do.
   useEffect(() => {
     if (!hiddenKey) return;
-    keepPrivate('hidden', true);
-    return () => keepPrivate('hidden', false);
+    let live = true;
+    let kept = false;
+    void loadScreenPrivacy()
+      .catch(() => true)
+      .then((on) => {
+        if (!live || !on) return;
+        kept = true;
+        keepPrivate('hidden', true);
+      });
+    return () => {
+      live = false;
+      if (kept) keepPrivate('hidden', false);
+    };
   }, [hiddenKey]);
   // Hidden chats opened from the search close back to the home screen, with their contacts
   // screens over them (app/contacts.tsx).

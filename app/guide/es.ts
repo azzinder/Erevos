@@ -2940,7 +2940,8 @@ Con el bloqueo con contraseña activado, Android deja Erevos fuera de las captur
 pantalla y las apps recientes: ahí la última pantalla de Erevos aparece en blanco, así que quien tenga un momento el
 teléfono desbloqueado no ve tus chats en ella. En **Ajustes** → **Privacidad y seguridad** → **Capturas de pantalla**,
 **Desactivar** deja que las capturas vuelvan a funcionar (para enviar una, por ejemplo), y **Activar** lo restablece.
-Los chats ocultos siempre se quedan fuera de ellas mientras están abiertos, sea cual sea el ajuste. El ajuste es del
+Mientras está activado, los chats ocultos también se quedan fuera, incluso en un espacio sin bloqueo con contraseña;
+desactivado, las capturas funcionan en ellos también. El ajuste es del
 teléfono, el mismo en todos los espacios. En un ordenador y en la app web no existe.
 
 **Por qué:** sin esto, la última pantalla de Erevos se queda como imagen entre las apps recientes hasta que Erevos se
@@ -3186,7 +3187,8 @@ con su PIN.
   una conversación SMS bajo su línea **SMS normal**, y funciona igual: en la lista su nombre con un candado, ninguno
   de sus mensajes en la búsqueda, y la contraseña del espacio quita un PIN olvidado. **Bloquear capturas de pantalla**
   está al lado, solo en este teléfono (Android): los demás no se enteran. Los chats de un lugar oculto no ofrecen
-  ninguno de los dos, ya que su propio PIN los guarda y siempre quedan fuera de las capturas.
+  ninguno de los dos, ya que su propio PIN los guarda y quedan fuera de las capturas
+  mientras **Capturas de pantalla** esté activado.
 
 **Por qué:** algunos chats deben quedarse donde están, pero sin abrirse para quien tenga el teléfono un momento. El PIN
 solo se guarda como su Argon2id, así que no se puede leer del teléfono, y los intentos de adivinarlo son lentos. Es un

@@ -3130,9 +3130,9 @@ Mit eingeschalteter Passwortsperre hält Android Erevos aus Screenshots, Bildsch
 heraus: Dort erscheint der letzte Bildschirm von Erevos leer, sodass, wer das entsperrte Telefon einen Moment in der
 Hand hat, deine Chats darin nicht sieht. Unter **Einstellungen** → **Datenschutz und Sicherheit** →
 **Bildschirmfotos** lässt **Ausschalten** Screenshots wieder funktionieren (etwa um einen zu verschicken), und
-**Einschalten** stellt den Schutz wieder her. Versteckte
-Chats bleiben immer draußen, solange sie offen sind, egal wie die Einstellung ist. Die Einstellung gehört dem Telefon
-und ist in jedem Bereich gleich. Auf einem Computer und in der Web-App gibt es sie nicht.
+**Einschalten** stellt den Schutz wieder her. Solange sie eingeschaltet ist, bleiben auch versteckte
+Chats draußen, selbst in einem Bereich ohne Passwortsperre; ausgeschaltet funktionieren Screenshots auch in ihnen. Die
+Einstellung gehört dem Telefon und ist in jedem Bereich gleich. Auf einem Computer und in der Web-App gibt es sie nicht.
 
 **Warum:** Ohne sie bleibt der letzte Bildschirm von Erevos als Bild unter den letzten Apps, bis Erevos wieder öffnet,
 deshalb bleiben versteckte Chats immer draußen, damit sie dort nie ohne ihre PIN erscheinen. Die Einstellung ist in
@@ -3399,8 +3399,8 @@ Chats, öffnet sich aber nur mit seiner PIN.
   SMS-Unterhaltung unter ihrer Zeile **Normale SMS**, und es wirkt genauso: in der Liste ihr Name mit einem Schloss,
   keine ihrer Nachrichten in der Suche, und das Passwort des Bereichs nimmt eine vergessene PIN ab. **Bildschirmfotos
   blockieren** steht daneben, nur auf diesem Telefon (Android): Die anderen erfahren es nicht. Die Chats eines
-  versteckten Ortes bieten beides nicht, da ihre eigene PIN sie schützt und sie immer aus Bildschirmfotos
-  herausbleiben.
+  versteckten Ortes bieten beides nicht, da ihre eigene PIN sie schützt und sie aus Screenshots
+  herausbleiben, solange **Bildschirmfotos** eingeschaltet ist.
 
 **Warum:** Manche Chats sollen bleiben, wo sie sind, aber nicht offen für jeden, der das Telefon einen Moment in der
 Hand hat. Die PIN wird nur als ihr Argon2id aufbewahrt, sodass sie sich nicht vom Telefon lesen lässt und Raten

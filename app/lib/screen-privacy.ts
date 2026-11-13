@@ -8,8 +8,8 @@ import { secureGet, secureSet } from './secure';
 // Keeping Erevos's screen out of screenshots, screen recordings and the recent apps preview
 // (Android's FLAG_SECURE, modules/erevos-device). Without it, the last screen shown stays as a
 // picture among the recent apps until Erevos opens again, so whoever holds the unlocked phone a
-// moment sees a hidden chat without its PIN. Hidden chats always keep out of it while they are
-// open (app/chat.tsx), and the Collection does while it is shown (app/collection.tsx), and a chat
+// moment sees a hidden chat without its PIN. Hidden chats keep out of it while they are open and
+// the setting is on (app/chat.tsx), and the Collection does while it is shown (app/collection.tsx), and a chat
 // either phone set to block screenshots (`shots`, Contact.shots) while it shows. A space with a password lock does too, unless the owner turns it off in
 // Lock: the setting is the phone's, the same in every space, so it tells nothing of which opened.
 // Other platforms have no such switch, and nothing happens there.
