@@ -256,6 +256,19 @@ export function localOnlySdp(sdp: string): string {
     .join(eol);
 }
 
+/** The other side's description as this device takes it: `direct`, with no call relay, only its
+ *  addresses on this network, so that this device's checks never reach an internet address and
+ *  show it its own. */
+export function remoteSdp(sdp: string, direct: boolean): string {
+  return direct ? localOnlySdp(sdp) : sdp;
+}
+
+/** Whether a candidate the other side sent apart may be tried: any through a call relay, only one
+ *  on this network when `direct`. */
+export function candidateFits(candidate: { candidate: string }, direct: boolean): boolean {
+  return !direct || isLocalAddress(candidateAddress(candidate.candidate));
+}
+
 /** A connection's session description once the addresses to try are in it, or after GATHER_MS
  *  with those found by then. `direct`: with no call relay, only its addresses on this network. */
 export function describedSdp(connection: Connection, direct = false): Promise<string> {
@@ -429,7 +442,7 @@ export class Call {
       if (!this.offer && this.options.events.offer) this.offer = await this.options.events.offer();
       if ((this.state as CallState) === 'ended') return;
       const connection = await this.connect(camera);
-      await connection.setRemoteDescription({ type: 'offer', sdp: this.offer });
+      await connection.setRemoteDescription({ type: 'offer', sdp: remoteSdp(this.offer, !this.options.relay) });
       this.described = true;
       this.addCandidates([]);
       if (this.video && !camera && this.options.events.bothWays) this.keepBothWays(connection);
@@ -475,7 +488,7 @@ export class Call {
       this.set('connecting');
       this.wait(CONNECT_MS, 'failed', true);
       this.connection
-        ?.setRemoteDescription({ type: 'answer', sdp: signal.sdp })
+        ?.setRemoteDescription({ type: 'answer', sdp: remoteSdp(signal.sdp, !this.options.relay) })
         .then(() => {
           this.described = true;
           this.addCandidates([]);
@@ -498,7 +511,7 @@ export class Call {
     this.candidates.push(...candidates);
     const connection = this.connection;
     if (!this.described || !connection?.addIceCandidate || this.state === 'ended') return;
-    for (const candidate of this.candidates.splice(0)) connection.addIceCandidate(candidate).catch(() => undefined);
+    for (const candidate of this.candidates.splice(0)) if (candidateFits(candidate, !this.options.relay)) connection.addIceCandidate(candidate).catch(() => undefined);
   }
 
   setMuted(muted: boolean): void {
@@ -562,7 +575,7 @@ export class Call {
       const sdp = await describedSdp(connection, !this.options.relay);
       const answer = await this.changeMedia(sdp);
       if ((this.state as CallState) === 'ended') return;
-      await connection.setRemoteDescription({ type: 'answer', sdp: answer });
+      await connection.setRemoteDescription({ type: 'answer', sdp: remoteSdp(answer, !this.options.relay) });
       this.video = true;
       this.cameraOff = false;
     } catch {
@@ -639,7 +652,7 @@ export class Call {
     let camera: { track: Track; sender: unknown } | null = null;
     try {
       camera = await this.camera(connection);
-      await connection.setRemoteDescription({ type: 'offer', sdp: offer });
+      await connection.setRemoteDescription({ type: 'offer', sdp: remoteSdp(offer, !this.options.relay) });
       await connection.setLocalDescription(await connection.createAnswer());
       const sdp = await describedSdp(connection, !this.options.relay);
       if ((this.state as CallState) === 'ended') return;
@@ -703,7 +716,7 @@ export class Call {
     if (!connection) return;
     this.taking = true;
     try {
-      await connection.setRemoteDescription({ type: 'offer', sdp: offer });
+      await connection.setRemoteDescription({ type: 'offer', sdp: remoteSdp(offer, !this.options.relay) });
       await connection.setLocalDescription(await connection.createAnswer());
       const sdp = await describedSdp(connection, !this.options.relay);
       if ((this.state as CallState) === 'ended') return;

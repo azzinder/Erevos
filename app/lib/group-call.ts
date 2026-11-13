@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { cameraCount, callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, RING_MS, turnCamera, type Connection, type Rtc, type Stream } from './call';
+import { cameraCount, callNow, connectionConfig, CONNECT_MS, currentCall, candidateFits, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, remoteSdp, RING_MS, turnCamera, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 import { t } from './i18n';
@@ -248,7 +248,7 @@ export class GroupCall {
         if (!peer?.offered || peer.answered) return;
         peer.answered = true;
         peer.connection
-          .setRemoteDescription({ type: 'answer', sdp: signal.sdp })
+          .setRemoteDescription({ type: 'answer', sdp: remoteSdp(signal.sdp, peer.direct) })
           .then(() => this.described(peer))
           .catch(() => this.drop(from));
         break;
@@ -334,7 +334,7 @@ export class GroupCall {
   private async answerOffer(identity: string, offer: string): Promise<void> {
     const peer = this.connect(identity, false, offer);
     try {
-      await peer.connection.setRemoteDescription({ type: 'offer', sdp: offer });
+      await peer.connection.setRemoteDescription({ type: 'offer', sdp: remoteSdp(offer, peer.direct) });
       this.described(peer);
       if (this.video && !this.hasCamera && this.options.bothWays) {
         const idle = peer.connection.getTransceivers?.().find((t) => t.receiver.track?.kind === 'video' && !t.sender.track);
@@ -361,7 +361,7 @@ export class GroupCall {
   private tryCandidates(peer: Peer) {
     const connection = peer.connection;
     if (this.peerMap.get(peer.identity) !== peer || !connection.addIceCandidate) return;
-    for (const candidate of peer.candidates.splice(0)) connection.addIceCandidate(candidate).catch(() => undefined);
+    for (const candidate of peer.candidates.splice(0)) if (candidateFits(candidate, peer.direct)) connection.addIceCandidate(candidate).catch(() => undefined);
   }
 
   private connectionChanged(peer: Peer, state: string) {

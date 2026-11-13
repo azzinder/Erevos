@@ -779,6 +779,6 @@ export function whatsNewFor(running: string, edition: Edition = EDITION): (Chang
 
 // What the plain Erevos (lib/edition.ts) shows: not what is of networks only Erevos+ has, but the
 // word that they are there.
-const PLUS_ONLY = /\bMatrix\b|\bXMPP\b|other Nostr apps|Nostr chats|Nostr accounts?\b|\bElement\b|\bPublic\b/;
+const PLUS_ONLY = /\bMatrix\b|\bXMPP\b|other Nostr apps|Nostr chats|Nostr accounts?\b|\bElement Call\b|\bPublic\b/;
 const IN_PLUS = '**Matrix, XMPP and Nostr chats are in Erevos+**';
 const inLite = (text: string): boolean => text.startsWith(IN_PLUS) || !PLUS_ONLY.test(text);

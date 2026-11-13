@@ -67,4 +67,6 @@ test("the plain Erevos's What's new leaves out what is of Matrix, XMPP and chats
     assert.doesNotMatch(text, /\bMatrix\b|\bXMPP\b|other Nostr apps/, text);
   }
   assert.ok(all(lite).some((text) => text.startsWith('**Matrix, XMPP and Nostr chats are in Erevos+**')));
+  // A change of Erevos's own that only names another app in passing stays.
+  assert.ok(all(lite).some((text) => text.startsWith('**Voice messages in Opus**')));
 });

@@ -309,7 +309,7 @@ class CalculatorActivity : Activity() {
       data = Uri.parse("erevos://?show=erevos&from=launcher")
       categories?.toList()?.forEach { removeCategory(it) }
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    } ?: return
+    } ?: return finishAndRemoveTask()
     startActivity(open)
     finishAndRemoveTask()
   }

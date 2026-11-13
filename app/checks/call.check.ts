@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { ASK_MS, Call, callNow, connectionConfig, currentCall, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { ASK_MS, Call, callNow, connectionConfig, currentCall, candidateFits, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, remoteSdp, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -114,6 +114,13 @@ test('a call goes direct only between addresses on the same network; else throug
   assert.equal(relayToAnswer(`${sdp('192.168.1.4')}\r\n${line('1.2.3.4', 'relay')}`, TURN), TURN);
   // What a direct call says of this device: its local addresses only.
   assert.equal(localOnlySdp(sdp('192.168.1.4', '2a02:587:1::5', '8.8.8.8')), sdp('192.168.1.4'));
+  // And what it takes of the other side's: with no call relay, their local addresses only, so its
+  // checks never reach an internet address; through a call relay, all of it.
+  assert.equal(remoteSdp(sdp('192.168.1.4', '8.8.8.8'), true), sdp('192.168.1.4'));
+  assert.equal(remoteSdp(sdp('192.168.1.4', '8.8.8.8'), false), sdp('192.168.1.4', '8.8.8.8'));
+  assert.ok(candidateFits({ candidate: 'candidate:1 1 udp 2122260223 192.168.1.9 50000 typ host' }, true));
+  assert.ok(!candidateFits({ candidate: 'candidate:1 1 udp 1686052607 8.8.8.8 50000 typ srflx' }, true));
+  assert.ok(candidateFits({ candidate: 'candidate:1 1 udp 1686052607 8.8.8.8 50000 typ srflx' }, false));
 });
 
 test('a call that rings here: ringing said, answered, and ended by them', async () => {
