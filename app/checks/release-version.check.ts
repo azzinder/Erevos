@@ -37,19 +37,33 @@ function stepScript(id: string): string {
 
 const dir = mkdtempSync(join(tmpdir(), 'erevos-release-version-'));
 after(() => rmSync(dir, { recursive: true, force: true }));
-// gh api repos/…/releases/latest --jq '"<tag> <commit>"', or no release at all.
-writeFileSync(join(dir, 'gh'), '#!/bin/sh\n[ -n "$LATEST" ] || exit 1\nprintf "%s abc1234\\n" "$LATEST"\n');
+// gh api, its --jq done already: the published plain Erevos releases (`LATEST`, or none at all), a
+// tag's commit, and GitHub's latest release (`GITHUB_LATEST`, an Erevos+ one, which the job no
+// longer counts on from).
+writeFileSync(
+  join(dir, 'gh'),
+  [
+    '#!/bin/sh',
+    'case "$2" in',
+    '  *releases/latest) [ -n "$GITHUB_LATEST" ] || exit 1; printf "%s abc1234\\n" "$GITHUB_LATEST" ;;',
+    '  *releases/tags/*) echo abc1234 ;;',
+    '  *) [ -n "$LATEST" ] || exit 1; printf "%s\\n" "${LATEST#v}" ;;',
+    'esac',
+    '',
+  ].join('\n'),
+);
 chmodSync(join(dir, 'gh'), 0o755);
 writeFileSync(join(dir, 'check.sh'), stepScript('check'));
 
 /** The version the job names, with `latest` the latest release's tag and `wanted` the one asked for; an error's words when it refuses. */
-function named(latest: string, wanted: string): string {
+function named(latest: string, wanted: string, githubLatest = latest): string {
   const output = join(dir, 'output');
   writeFileSync(output, '');
   const env = {
     ...process.env,
     PATH: `${dir}:${process.env.PATH}`,
     LATEST: latest,
+    GITHUB_LATEST: githubLatest,
     WANTED: wanted,
     GITHUB_OUTPUT: output,
     GITHUB_REF_NAME: 'main',
@@ -75,6 +89,8 @@ test('a release is named as asked, or the one after the latest', () => {
   assert.match(named('v3.4.2', '3.4.2'), /not newer/);
   assert.match(named('v3.4.2', '3.4.1'), /not newer/);
   assert.match(named('v3.4.2', '3.4'), /Not a version/);
+  // GitHub's latest is an Erevos+ release: the plain Erevos counts on from its own.
+  assert.equal(named('v7.0.0', '', 'v7.1.0'), '7.0.1');
 });
 
 test('a test release before a version: 4.0.0-rc.1, after 3.x, before 4.0.0, and the one after it is rc.2', () => {
