@@ -14,6 +14,14 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0 (2026-11-13)
+
+The stable release: everything from 7.0.0-rc.1 to 7.0.0-rc.10, and what came after them, in one.
+
+### For you
+
 - **Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or
   **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas or leave
   them. Erevos+ is published in the same public download repository as Erevos, and each edition and its betas are
@@ -35,7 +43,6 @@ On main, not released yet:
   **Opens first**. Erevos's icon in the launcher, and Erevos started with nothing else to open, then open on it; with
   none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The
   widget's buttons still open their own.
-
 - **Asked before strangers reach this phone**: an Erevos invite that comes by SMS is answered by itself only from a
   number in your contacts or one you have written to; from any other, Erevos asks first, as the sender of an SMS can
   be made up. A contact's invite to a place on their relay now says first that their relay sees your IP address, and
@@ -59,54 +66,6 @@ On main, not released yet:
 - **Smaller fixes you may see**: a radio station playing through Tor says so under **Now playing**; on Android older
   than 8.0, **Updates** says Erevos+ needs Android 8.0 and stays on Erevos; the palette once named after a site is
   now **Erevos**.
-
-### Under the hood
-
-- The app is built on Expo SDK 58 and React Native 0.88, with the tools that build it updated too: this closes
-  the known weaknesses in the router's address reading and in the build tools. Files are still written whole before
-  the app goes on, and Android release builds are still not shrunk, as before.
-- The plain Erevos is built with `EREVOS_EDITION=lite` (docs/editions.md): its core has no Matrix, XMPP or chats with
-  other Nostr apps in it, its guide leaves their sections out, and its icon says Erevos.
-- A backup reads every page the files it holds name, even while the app saves: pages let go of meanwhile are deleted
-  only once it is done. Before, a save at that moment could leave a backup whose value would not open after a restore.
-- Wrong PINs tried by searching are let go of a quarter of an hour at a time on the phone's own clock, which moving
-  the date does not change, rather than all at once by the date.
-- The relay's log says a damaged last record of its journal is cut short or damaged, rather than only a write that did
-  not finish.
-- Every Erevos build's number is above every Erevos+ build so far, so Updates moves between the two and Android
-  installs each over the other.
-- The core opens HTTPS streams through Tor (no ALPN, held back when the player pauses), and Android's player reads a
-  station or a channel over them, HLS pieces too, speaking HTTP/1.1 itself.
-- A chat's thread, and its media list while the details show, are no longer worked out again each time the clock moves
-  or another chat changes; marking messages read finds them by tag in one pass, and a link followed by a long run of
-  marks or brackets is trimmed in one pass too, where before it took ever longer with each mark.
-- The relay checks each record of its journal (CRC-32C, `EREVOSJ3`): a record the disk changed is found at start,
-  what comes before it is read, and the journal as it was is kept beside it before it is written again. A journal
-  from an older relay is read as it is. `erevos-relay downgrade-journal` writes it back as older relays read it,
-  losing nothing, for going back to one (deploy/relay/README.md).
-- Group messages from a member no longer in the group are dropped (only their own request for new keys is read).
-- A relay address is checked before Erevos connects to it, files' too, and at most 512 characters long.
-- The sync log refuses names such as `__proto__` or `constructor`, which could change how every entry reads.
-- The Collection's WebDAV copy deletes an unnamed piece only once it has stayed unnamed for an hour across copies.
-- A Nostr message that could not be opened is tried again when it comes again, rather than taken as seen.
-- A message is held to wait for a contact only when the error is one waiting can mend.
-- An SMS group's numbers leave out any part with letters, such as a name the phone added.
-- A call between two phones on the same network answers with all its paths, not only through a call relay, when the
-  offer had only local addresses.
-- Share to Erevos takes only another app's content, never a file or one of Erevos's own providers.
-- The computer allows the camera only to the app's own calls, and follows a link inside the app only to its exact
-  origin. macOS says why it uses the camera.
-- Element Call is built only into Erevos+.
-- The relay's XMPP push gives a stream a minute for its whole start, and one address at most 8 of its 64 places.
-- Nostr through Tor keeps at most 256 frames waiting to be read.
-- Damaged stored state gives an error, not a crash: a group's length that would wrap on 32 bits (the web app), a
-  ratchet with a receiving chain but no peer key, and a counter at its end.
-- The release counts on from plain Erevos's own last release, not GitHub's latest, which may be Erevos+.
-
-## 7.0.0-rc.10 (2026-11-12)
-
-### For you
-
 - **Call and Video on a hidden contact's card call**: opened over the contact's own hidden chat, they did nothing, as
   the chat that was to start the call was open already. Now the call starts there, as from the tiles at the top of the
   chat.
@@ -251,17 +210,6 @@ On main, not released yet:
   XMPP app (as Conversations shows it) or of their Nostr key. Timers, deleted-here, the Nostr block and appearing
   offline are this device's own, not synced to linked devices. A starred message that disappears, or is deleted on
   this phone, takes its star along, as in an Erevos chat.
-
-### Under the hood
-
-- **Nostr gift wraps can carry an expiration** (crates/erevos-nostr/src/chat.rs): the rumor's exact NIP-40 time, each
-  wrap's that time plus 0–3600 s at random, so relays cannot match the two. The core packages need their usual rebuild
-  for it to go out.
-
-## 7.0.0-rc.9 (2026-11-11)
-
-### For you
-
 - **Share an imported chat with the other person**: the Telegram, WhatsApp and Viber chats that go on with an Erevos
   contact can go to that contact alone, from the chat's Details or Settings → Data and devices → Imported chats, after
   one question that says how many messages and MB go, whatever their size. All of them go together, every message and
@@ -352,40 +300,6 @@ On main, not released yet:
   off the screen's thread, and compares it with the SHA-256 the backup wrote down for it, with its progress and Cancel.
   A backup the check after it does not find whole counts as failed: Backups say why, and it is made again an hour
   later, with what was missing or cut short.
-
-### Under the hood
-
-- **Ticks**: a text the other phone had, and read, before it showed as sent here (through a slow Nostr relay) no longer
-  stays at one tick.
-- **Ticks from a contact on another relay**: they no longer stop when a message from your phone did not yet carry your
-  relay's key, and a "came" that could not go right away goes with the next look.
-- **A text no longer waits for slow Nostr relays**: with Nostr on, a text to a contact waited for one of the Nostr
-  relays to say it took it, up to 20 seconds when none answered, before it went through their relay. Now, when none
-  says so within 4 seconds, it goes through the relay as well at once; their phone shows it once.
-- **A change in a chat is saved faster**: only the chat that changed, and the pages that hold its messages, are looked
-  at when a message comes, is read or is deleted, each message is unpacked once, and a page is no longer written out
-  whole to measure it for every message put in it. With many chats, or after a large import, each change took
-  longer the more there was.
-- **A large import notes its files in small parts**: the list of files an import is still writing, which the next
-  start deletes if it stopped, was written whole for every file, and for an export of thousands of files grew past
-  what one keystore entry holds well. It is kept in parts of 40 now, and only the last part is written.
-- **An open chat is drawn again only when something is due**: the chat screen drew itself again every five seconds,
-  and the home screen asked who is online as often. Each now waits for the next moment something changes: a message
-  that disappears, one sent for later that goes, a contact who is no longer online.
-- **The chat screen's file is smaller**: the lines of a thread, the rows of a chat's details and the screen's styles
-  moved to a file of their own (`components/chat-thread-lines.tsx`), and what they share with the screen to
-  `lib/chat-screen.ts`. Nothing changes in what the screen does.
-- **A note keeps its folder when an older Erevos changes it**: a linked device with a version from before the folders
-  of Chat with myself said nothing of a note's folder, and a note changed there left its folder on the others. A
-  device now says so when a note is in no folder, and one that says nothing leaves the note where it is.
-- **Leftovers say when wrong tries make it wait**: several PINs or passwords typed together that open nothing count
-  as wrong tries of a search, and after five nothing opens for a while, a right one neither. The screen now says
-  so, with how long.
-
-## 7.0.0-rc.8 (2026-11-10)
-
-### For you
-
 - **A new first start**: the first screen now says what you do not give, no phone number, email, user name or
   account (you add people with a QR code or a link, or they invite you), and asks for a name for your contacts, if
   you want one. After the modules comes a short screen for each module chosen, with how to begin with it and what
@@ -398,38 +312,10 @@ On main, not released yet:
   now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password
   of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it
   once you say so. A file written in the last day is never taken, and nothing leaves the phone.
-
-### Under the hood
-
-- **An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a
-  Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is
-  deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good.
-- **The clearing of leftovers is more careful**: a file is kept when its name carries an identifier that is in use
-  with something written before or after it, and nothing is taken for a leftover while a part of what Erevos keeps
-  cannot be read. SMS that could not be read for a linked device are looked at again on the next pass.
-
-## 7.0.0-rc.7 (2026-11-10)
-
-### For you
-
 - **What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the
   phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes
   that did not end left over. Each automatic backup holds it all, so it tells why one is large. Only the files' names
   and sizes are looked at, on the phone, and nothing is sent.
-
-### Under the hood
-
-- **Backups to a server get there again**: a backup sent to a server, such as a Nextcloud, no longer stops when the
-  server misses one of its pieces for a moment, as when it closes for a few minutes at night (503) or is slow to take
-  one (408). That piece goes again, after a few seconds and then up to a few minutes, and the backup carries on; before,
-  it deleted all it had sent and started over the next time, and a large backup could fail day after day.
-- A text that is not proper UTF-8, such as the name in a damaged invite by SMS, is read without failing: bytes that
-  start no character read as �, as the phone's own decoder reads them, instead of stopping the reading with an error.
-
-## 7.0.0-rc.6 (2026-11-10)
-
-### For you
-
 - **Choose the name others see**: under Settings → Privacy and security → **My name**, a space can go by a name you
   choose, which your accepted contacts and your private groups see, encrypted, in place of a code (up to 40
   characters, none at first). A contact you gave a name of your own keeps showing under yours; their chosen name shows
@@ -439,55 +325,6 @@ On main, not released yet:
 - **Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens
   the Collection of that chat's place (the space's, or the hidden chats' own). Tap what to send, then **Send**, and it
   goes in the chat. Before, **Photo** opened only the phone's own gallery.
-
-### Under the hood
-
-- Messages say the sender's chosen name (`nm`), only when it changes; group members say it in their keys (About.name).
-- **A chat opens at its last message again**: a chat opened as a screen of its own (from the home screen or a
-  notification) first shows its empty thread while its history is read, and that empty thread used up the jump to the
-  end made at once; when the messages came, the thread went to its end animated from the top, which on Android can
-  stop short of rows not yet on screen, or count as the person scrolling and draw earlier messages there. Now the
-  first jump is made once messages show, a thread that grew by a screen or more goes to its end at once, and a jump
-  made at once is made again a frame later, after its rows are on screen. Inferred from the code, not seen on a phone.
-- **A new sign-in to a relay is no longer undone**: signing in again (with LPHL, or by an invite) gives the phone a
-  new token and the relay takes the old one's line away. The token went into the space's settings only when the chat
-  screen saved all of its relay settings, and a chat screen opened from before, holding the old token, could write all of
-  its own back the next time any of them changed: the relay then refused the phone ("cannot reach the relay…, or the
-  token is wrong") until it signed in once more. Now the new token is written at once with which token it is, a chat
-  screen writes only the relay settings it changed itself, and every chat screen open follows what another writes to
-  them (lock/space-data.ts watchSpaceData, changedRelaySettings).
-
-## 7.0.0-rc.5 (2026-11-09)
-
-### Under the hood
-
-- **A message sent offline is no longer lost when you leave the chat**: while a chat screen's chats are still opening
-  (a look at the relay under way ends first, which with no connection can take a while), what is sent there is held
-  by the screen, marked Sending…, and goes once they open. Leaving the chat before then lost it, words and voice
-  messages alike. Now what the screen still holds as it closes is kept in the chats' history marked waiting
-  (lib/waiting.ts keepUnsent), each with a tag of its own, and goes by itself with the next look that reaches the
-  relay, or to their phone nearby, as any message that waits. A walkie-talkie message is for now only, and is not
-  kept.
-
-## 7.0.0-rc.4 (2026-11-08)
-
-### Under the hood
-
-- **No more freezing after a space opens**: an automatic backup, which starts ten seconds
-  after a space opens, could keep the screen from answering for minutes on Android, more so the first one after
-  7.0.0-rc.3. Its files are now written, listed with their names and sizes in one look, and deleted in their folder away
-  from the thread the screen answers on (Folders.kt in modules/erevos-device), where expo-file-system asked Android
-  again for each file's name and size there. SHA-256 is native (OpenSSL, through react-native-quick-crypto) for what is
-  4 KB or more, kept only if it hashes as the JavaScript one does: in JavaScript it hashed a megabyte or two a second on
-  a phone, and each 4 MB part of an automatic backup is hashed. The stamps of the files a backup holds are read 200 at a
-  time, the screen answering between.
-- **Matrix photos and files hashed natively**: the SHA-256 that an encrypted Matrix file is checked against, when it
-  is sent and when it is opened, is the native one too (lib/matrix-media.ts), so a large one no longer holds the screen.
-
-## 7.0.0-rc.3 (2026-11-08)
-
-### For you
-
 - **Your SMS on your linked devices**: with **On my linked devices too** turned on under Settings → Phone and SMS →
   SMS on the phone (off unless turned on; each space its own), the phone's SMS show on the space's linked devices too:
   the latest 50 conversations of the list and Archived, each with its latest 50 messages, their names only as the phone
@@ -569,36 +406,6 @@ On main, not released yet:
   **Notifications** with **Muted** only, as hidden chats do; muted, they give no "New message" and no unread sign
   (lib/network-notices.ts `hearing`). A Nostr chat's notifications no longer offer a ringtone, as Nostr does not
   ring. Requested by the maintainer.
-
-### Under the hood
-
-- **The phone's SMS in the space's log** (docs/sync.md, phase S8; lib/sync/sms.ts): a kind only the phone writes,
-  `sms`, a record for each conversation and message, whole in one field and written again only when it changed, the
-  phone reading a conversation again only when it changed or every 10 minutes (lib/sms-share.ts). Devices write
-  `sms-ask` (an SMS to send, 16 random hex as its id) and `sms-read`. The phone keeps in the space's sealed SMS data
-  what it took of each ask before sending it, so none goes twice, even if Erevos stops on the way, and sends at most
-  60 an hour from the devices; asks older than a day are refused, those not sent are removed after a week. On a
-  device the SMS module (modules/erevos-sms) reads the phone's in place of its own (lib/sms-mirror.ts), so the screens
-  are those of the phone, without the tools only the phone has. Requested by the maintainer.
-- **Groups after a restore**: a member put back from a backup asks its admin, once, to put it in anew in each group,
-  which brings it back while the group moved on fewer than 5 key changes; an admin asks nothing, as its own commit
-  from an old key change would only fork the group (lib/groups.ts `renewAgain`). Requested by the maintainer.
-- **The time of a message that waited**: each message now says, inside its encryption, when its sender sealed it
-  (`st`), and a message that waited on the relay, as for a linked computer or for hidden chats that were closed,
-  shows at that time instead of when it came, unless that time is ahead of this clock or more than 30 days back
-  (lib/later.ts `cameAt`). The phone's own messages copied to a device do the same. Reported by the maintainer.
-- **TV and HLS radio in the computer app, whatever their servers allow**: the desktop app's shell now fetches an HLS
-  stream's playlists and pieces for the page's hls.js (desktop/stream.js, `/__stream`), so a channel whose server does
-  not let a web page read it (CORS), as most of iptv-org's, plays there too: only the stream's own link and the links
-  its playlists name, each by a number given to the page alone, over https only (never a redirect to plain http),
-  with no cookies and the User-Agent "Erevos". A station or channel the page's player asks for itself, and the radio
-  search, playlists, TV lists and logos the shell fetches (`/__webdav`), now say only "Erevos" too, as the
-  Collection says they do. Requested by the maintainer.
-
-## 7.0.0-rc.2 (2026-11-07)
-
-### For you
-
 - **Reminders that come again**: `erevos://myself?…&every=1m` (or `Nd`, `Nw`, `Nm`, `Ny`) keeps a note whose reminder
   repeats, as Fasouli asks for a scheduled payment. Once seen it moves to its next time (lib/note-repeat.ts), on the
   same clock time, a month's last day kept for the 29th to 31st; it goes to linked devices with the note.
@@ -728,46 +535,6 @@ On main, not released yet:
   reached, or the computer cannot use the relay, the computer says so and **Link another way** keeps the old way (the
   relay address, signing in with LPHL, comparing the code). Only the space, never hidden chats: they still link with
   the full code inside them. See [Linked devices](#devices).
-
-### Under the hood
-
-- **An invite that opened Erevos for the first time** opens once the first start's setup is done, however long the
-  setup took; before, after five minutes on the setup screens it was lost and had to be scanned again (lib/open-link.ts).
-- **The invite page reads contact cards**: opened from the short contact QR code, `/i` now shows "{name} on
-  Erevos" and says it adds a contact for someone who has Erevos already, with no end date, instead of offering it as
-  an invite from a newer Erevos; an invite that is over no longer says invites last two days (pwa/i/invite.js).
-- **The web app's site says which app may open its links**: every web release now has
-  `/.well-known/assetlinks.json`, naming `app.erevos` signed with the release key, which Android needs before it
-  opens a tapped invite or contact link in Erevos instead of the browser (pwa/build.mjs).
-- **Sailfish OS, notices while Erevos is closed**: since 7.0.0-rc.1 the helper erevos-watch takes the queues to wait
-  on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
-  on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and
-  told of nothing. Now it also takes a booster that has Erevos's program loaded to run (sailfish/watch/src/watcher.cpp).
-- **Internet radio in the web app and on Sailfish OS**: their Content-Security-Policy now lets the page's player
-  play a station's https link (media-src https:; pwa/build.mjs, pwa/sw.js, deploy/web/install.sh,
-  sailfish/src/shellserver.cpp). On Sailfish OS the station search and playlists are asked by the page itself, as in a
-  browser, instead of refused: only a server that lets the page in (CORS) answers, as Radio Browser does. A page cannot
-  say its own User-Agent, so there the browser's goes instead of "Erevos" (lib/backup-http.web.ts).
-- **The relay names its pair**: `EREVOS_RELAY_PAIR`, the address of a relay that takes this one's coupons (up to 3,
-  apart by spaces), is told to each phone that may have coupons signed here, with the new `PAIR` request (38), and
-  `NOT_FOUND` to every other; an older relay closes the connection, which the app takes as none
-  (crates/erevos-relay coupons.rs, server.rs; deploy/relay/README.md).
-- **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
-  also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
-  now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).
-- **Short link code**: the computer's QR code is erevos://link?n=<its Nostr key>&s=<secret>&name=<name>, small enough
-  for any camera (components/quick-link.tsx, lib/link-quick.ts). The messages between phone and computer are Nostr
-  gift wraps (NIP-59: a rumor sealed to the other's key, wrapped with a one-time key) sent to and read from three
-  relays (relay.damus.io, nos.lol, relay.primal.net; lib/link-nostr.ts), so the relays see neither who nor what. The
-  phone's grant carries its relay address and an invite, from which the computer makes a relay token of its own, or
-  the shared relay token typed into the phone, never the phone's own. The computer then answers with an offer of its
-  full code, the phone links it as with the full code read, and the computer compares the safety code itself. Without
-  Nostr, or where the computer cannot use the relay, the screen falls back to the old way (app/app/devices.tsx).
-
-## 7.0.0-rc.1 (2026-11-07)
-
-### For you
-
 - **Sign in with Nextcloud**: a Collection's server and the backups' server can be a Nextcloud, as LPHL's, the
   one Fasouli syncs with, through Nextcloud's Login Flow v2 in the browser (through Authentik or however it signs in),
   with no password typed. Erevos gets an app password of its own and its own folder, `Erevos/Collection` or
@@ -881,10 +648,8 @@ On main, not released yet:
   in the folder is touched. A phone that lacks a file, as after a backup restored on a new phone, fetches its pieces
   from there as it opens, keeping only those that open with the file's key. While everything is copied, backups made
   while the place is open leave its pieces out. See [Collection](#collection).
-
 - **Chats open at their end**: a long chat, or one with imported messages, could open at a message read long ago,
   often a photo. Now it opens at the newest message, and the arrow to where you left off is there when new ones came.
-
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
   A space you already have keeps its choice, under **Settings** → **Relay and networks** → **Tor**, where the choices
@@ -913,12 +678,177 @@ On main, not released yet:
 
 ### Under the hood
 
+- The app is built on Expo SDK 58 and React Native 0.88, with the tools that build it updated too: this closes
+  the known weaknesses in the router's address reading and in the build tools. Files are still written whole before
+  the app goes on, and Android release builds are still not shrunk, as before.
+- The plain Erevos is built with `EREVOS_EDITION=lite` (docs/editions.md): its core has no Matrix, XMPP or chats with
+  other Nostr apps in it, its guide leaves their sections out, and its icon says Erevos.
+- A backup reads every page the files it holds name, even while the app saves: pages let go of meanwhile are deleted
+  only once it is done. Before, a save at that moment could leave a backup whose value would not open after a restore.
+- Wrong PINs tried by searching are let go of a quarter of an hour at a time on the phone's own clock, which moving
+  the date does not change, rather than all at once by the date.
+- The relay's log says a damaged last record of its journal is cut short or damaged, rather than only a write that did
+  not finish.
+- Every Erevos build's number is above every Erevos+ build so far, so Updates moves between the two and Android
+  installs each over the other.
+- The core opens HTTPS streams through Tor (no ALPN, held back when the player pauses), and Android's player reads a
+  station or a channel over them, HLS pieces too, speaking HTTP/1.1 itself.
+- A chat's thread, and its media list while the details show, are no longer worked out again each time the clock moves
+  or another chat changes; marking messages read finds them by tag in one pass, and a link followed by a long run of
+  marks or brackets is trimmed in one pass too, where before it took ever longer with each mark.
+- The relay checks each record of its journal (CRC-32C, `EREVOSJ3`): a record the disk changed is found at start,
+  what comes before it is read, and the journal as it was is kept beside it before it is written again. A journal
+  from an older relay is read as it is. `erevos-relay downgrade-journal` writes it back as older relays read it,
+  losing nothing, for going back to one (deploy/relay/README.md).
+- Group messages from a member no longer in the group are dropped (only their own request for new keys is read).
+- A relay address is checked before Erevos connects to it, files' too, and at most 512 characters long.
+- The sync log refuses names such as `__proto__` or `constructor`, which could change how every entry reads.
+- The Collection's WebDAV copy deletes an unnamed piece only once it has stayed unnamed for an hour across copies.
+- A Nostr message that could not be opened is tried again when it comes again, rather than taken as seen.
+- A message is held to wait for a contact only when the error is one waiting can mend.
+- An SMS group's numbers leave out any part with letters, such as a name the phone added.
+- A call between two phones on the same network answers with all its paths, not only through a call relay, when the
+  offer had only local addresses.
+- Share to Erevos takes only another app's content, never a file or one of Erevos's own providers.
+- The computer allows the camera only to the app's own calls, and follows a link inside the app only to its exact
+  origin. macOS says why it uses the camera.
+- Element Call is built only into Erevos+.
+- The relay's XMPP push gives a stream a minute for its whole start, and one address at most 8 of its 64 places.
+- Nostr through Tor keeps at most 256 frames waiting to be read.
+- Damaged stored state gives an error, not a crash: a group's length that would wrap on 32 bits (the web app), a
+  ratchet with a receiving chain but no peer key, and a counter at its end.
+- The release counts on from plain Erevos's own last release, not GitHub's latest, which may be Erevos+.
+- **Nostr gift wraps can carry an expiration** (crates/erevos-nostr/src/chat.rs): the rumor's exact NIP-40 time, each
+  wrap's that time plus 0–3600 s at random, so relays cannot match the two. The core packages need their usual rebuild
+  for it to go out.
+- **Ticks**: a text the other phone had, and read, before it showed as sent here (through a slow Nostr relay) no longer
+  stays at one tick.
+- **Ticks from a contact on another relay**: they no longer stop when a message from your phone did not yet carry your
+  relay's key, and a "came" that could not go right away goes with the next look.
+- **A text no longer waits for slow Nostr relays**: with Nostr on, a text to a contact waited for one of the Nostr
+  relays to say it took it, up to 20 seconds when none answered, before it went through their relay. Now, when none
+  says so within 4 seconds, it goes through the relay as well at once; their phone shows it once.
+- **A change in a chat is saved faster**: only the chat that changed, and the pages that hold its messages, are looked
+  at when a message comes, is read or is deleted, each message is unpacked once, and a page is no longer written out
+  whole to measure it for every message put in it. With many chats, or after a large import, each change took
+  longer the more there was.
+- **A large import notes its files in small parts**: the list of files an import is still writing, which the next
+  start deletes if it stopped, was written whole for every file, and for an export of thousands of files grew past
+  what one keystore entry holds well. It is kept in parts of 40 now, and only the last part is written.
+- **An open chat is drawn again only when something is due**: the chat screen drew itself again every five seconds,
+  and the home screen asked who is online as often. Each now waits for the next moment something changes: a message
+  that disappears, one sent for later that goes, a contact who is no longer online.
+- **The chat screen's file is smaller**: the lines of a thread, the rows of a chat's details and the screen's styles
+  moved to a file of their own (`components/chat-thread-lines.tsx`), and what they share with the screen to
+  `lib/chat-screen.ts`. Nothing changes in what the screen does.
+- **A note keeps its folder when an older Erevos changes it**: a linked device with a version from before the folders
+  of Chat with myself said nothing of a note's folder, and a note changed there left its folder on the others. A
+  device now says so when a note is in no folder, and one that says nothing leaves the note where it is.
+- **Leftovers say when wrong tries make it wait**: several PINs or passwords typed together that open nothing count
+  as wrong tries of a search, and after five nothing opens for a while, a right one neither. The screen now says
+  so, with how long.
+- **An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a
+  Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is
+  deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good.
+- **The clearing of leftovers is more careful**: a file is kept when its name carries an identifier that is in use
+  with something written before or after it, and nothing is taken for a leftover while a part of what Erevos keeps
+  cannot be read. SMS that could not be read for a linked device are looked at again on the next pass.
+- **Backups to a server get there again**: a backup sent to a server, such as a Nextcloud, no longer stops when the
+  server misses one of its pieces for a moment, as when it closes for a few minutes at night (503) or is slow to take
+  one (408). That piece goes again, after a few seconds and then up to a few minutes, and the backup carries on; before,
+  it deleted all it had sent and started over the next time, and a large backup could fail day after day.
+- A text that is not proper UTF-8, such as the name in a damaged invite by SMS, is read without failing: bytes that
+  start no character read as �, as the phone's own decoder reads them, instead of stopping the reading with an error.
+- Messages say the sender's chosen name (`nm`), only when it changes; group members say it in their keys (About.name).
+- **A chat opens at its last message again**: a chat opened as a screen of its own (from the home screen or a
+  notification) first shows its empty thread while its history is read, and that empty thread used up the jump to the
+  end made at once; when the messages came, the thread went to its end animated from the top, which on Android can
+  stop short of rows not yet on screen, or count as the person scrolling and draw earlier messages there. Now the
+  first jump is made once messages show, a thread that grew by a screen or more goes to its end at once, and a jump
+  made at once is made again a frame later, after its rows are on screen. Inferred from the code, not seen on a phone.
+- **A new sign-in to a relay is no longer undone**: signing in again (with LPHL, or by an invite) gives the phone a
+  new token and the relay takes the old one's line away. The token went into the space's settings only when the chat
+  screen saved all of its relay settings, and a chat screen opened from before, holding the old token, could write all of
+  its own back the next time any of them changed: the relay then refused the phone ("cannot reach the relay…, or the
+  token is wrong") until it signed in once more. Now the new token is written at once with which token it is, a chat
+  screen writes only the relay settings it changed itself, and every chat screen open follows what another writes to
+  them (lock/space-data.ts watchSpaceData, changedRelaySettings).
+- **A message sent offline is no longer lost when you leave the chat**: while a chat screen's chats are still opening
+  (a look at the relay under way ends first, which with no connection can take a while), what is sent there is held
+  by the screen, marked Sending…, and goes once they open. Leaving the chat before then lost it, words and voice
+  messages alike. Now what the screen still holds as it closes is kept in the chats' history marked waiting
+  (lib/waiting.ts keepUnsent), each with a tag of its own, and goes by itself with the next look that reaches the
+  relay, or to their phone nearby, as any message that waits. A walkie-talkie message is for now only, and is not
+  kept.
+- **No more freezing after a space opens**: an automatic backup, which starts ten seconds
+  after a space opens, could keep the screen from answering for minutes on Android, more so the first one after
+  7.0.0-rc.3. Its files are now written, listed with their names and sizes in one look, and deleted in their folder away
+  from the thread the screen answers on (Folders.kt in modules/erevos-device), where expo-file-system asked Android
+  again for each file's name and size there. SHA-256 is native (OpenSSL, through react-native-quick-crypto) for what is
+  4 KB or more, kept only if it hashes as the JavaScript one does: in JavaScript it hashed a megabyte or two a second on
+  a phone, and each 4 MB part of an automatic backup is hashed. The stamps of the files a backup holds are read 200 at a
+  time, the screen answering between.
+- **Matrix photos and files hashed natively**: the SHA-256 that an encrypted Matrix file is checked against, when it
+  is sent and when it is opened, is the native one too (lib/matrix-media.ts), so a large one no longer holds the screen.
+- **The phone's SMS in the space's log** (docs/sync.md, phase S8; lib/sync/sms.ts): a kind only the phone writes,
+  `sms`, a record for each conversation and message, whole in one field and written again only when it changed, the
+  phone reading a conversation again only when it changed or every 10 minutes (lib/sms-share.ts). Devices write
+  `sms-ask` (an SMS to send, 16 random hex as its id) and `sms-read`. The phone keeps in the space's sealed SMS data
+  what it took of each ask before sending it, so none goes twice, even if Erevos stops on the way, and sends at most
+  60 an hour from the devices; asks older than a day are refused, those not sent are removed after a week. On a
+  device the SMS module (modules/erevos-sms) reads the phone's in place of its own (lib/sms-mirror.ts), so the screens
+  are those of the phone, without the tools only the phone has. Requested by the maintainer.
+- **Groups after a restore**: a member put back from a backup asks its admin, once, to put it in anew in each group,
+  which brings it back while the group moved on fewer than 5 key changes; an admin asks nothing, as its own commit
+  from an old key change would only fork the group (lib/groups.ts `renewAgain`). Requested by the maintainer.
+- **The time of a message that waited**: each message now says, inside its encryption, when its sender sealed it
+  (`st`), and a message that waited on the relay, as for a linked computer or for hidden chats that were closed,
+  shows at that time instead of when it came, unless that time is ahead of this clock or more than 30 days back
+  (lib/later.ts `cameAt`). The phone's own messages copied to a device do the same. Reported by the maintainer.
+- **TV and HLS radio in the computer app, whatever their servers allow**: the desktop app's shell now fetches an HLS
+  stream's playlists and pieces for the page's hls.js (desktop/stream.js, `/__stream`), so a channel whose server does
+  not let a web page read it (CORS), as most of iptv-org's, plays there too: only the stream's own link and the links
+  its playlists name, each by a number given to the page alone, over https only (never a redirect to plain http),
+  with no cookies and the User-Agent "Erevos". A station or channel the page's player asks for itself, and the radio
+  search, playlists, TV lists and logos the shell fetches (`/__webdav`), now say only "Erevos" too, as the
+  Collection says they do. Requested by the maintainer.
+- **An invite that opened Erevos for the first time** opens once the first start's setup is done, however long the
+  setup took; before, after five minutes on the setup screens it was lost and had to be scanned again (lib/open-link.ts).
+- **The invite page reads contact cards**: opened from the short contact QR code, `/i` now shows "{name} on
+  Erevos" and says it adds a contact for someone who has Erevos already, with no end date, instead of offering it as
+  an invite from a newer Erevos; an invite that is over no longer says invites last two days (pwa/i/invite.js).
+- **The web app's site says which app may open its links**: every web release now has
+  `/.well-known/assetlinks.json`, naming `app.erevos` signed with the release key, which Android needs before it
+  opens a tapped invite or contact link in Erevos instead of the browser (pwa/build.mjs).
+- **Sailfish OS, notices while Erevos is closed**: since 7.0.0-rc.1 the helper erevos-watch takes the queues to wait
+  on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
+  on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and
+  told of nothing. Now it also takes a booster that has Erevos's program loaded to run (sailfish/watch/src/watcher.cpp).
+- **Internet radio in the web app and on Sailfish OS**: their Content-Security-Policy now lets the page's player
+  play a station's https link (media-src https:; pwa/build.mjs, pwa/sw.js, deploy/web/install.sh,
+  sailfish/src/shellserver.cpp). On Sailfish OS the station search and playlists are asked by the page itself, as in a
+  browser, instead of refused: only a server that lets the page in (CORS) answers, as Radio Browser does. A page cannot
+  say its own User-Agent, so there the browser's goes instead of "Erevos" (lib/backup-http.web.ts).
+- **The relay names its pair**: `EREVOS_RELAY_PAIR`, the address of a relay that takes this one's coupons (up to 3,
+  apart by spaces), is told to each phone that may have coupons signed here, with the new `PAIR` request (38), and
+  `NOT_FOUND` to every other; an older relay closes the connection, which the app takes as none
+  (crates/erevos-relay coupons.rs, server.rs; deploy/relay/README.md).
+- **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
+  also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
+  now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).
+- **Short link code**: the computer's QR code is erevos://link?n=<its Nostr key>&s=<secret>&name=<name>, small enough
+  for any camera (components/quick-link.tsx, lib/link-quick.ts). The messages between phone and computer are Nostr
+  gift wraps (NIP-59: a rumor sealed to the other's key, wrapped with a one-time key) sent to and read from three
+  relays (relay.damus.io, nos.lol, relay.primal.net; lib/link-nostr.ts), so the relays see neither who nor what. The
+  phone's grant carries its relay address and an invite, from which the computer makes a relay token of its own, or
+  the shared relay token typed into the phone, never the phone's own. The computer then answers with an offer of its
+  full code, the phone links it as with the full code read, and the computer compares the safety code itself. Without
+  Nostr, or where the computer cannot use the relay, the screen falls back to the old way (app/app/devices.tsx).
 - **Matrix's encryption wipes its keys again** (vodozemac 0.11.2): vodozemac 0.11.1, which does the Olm and Megolm
   encryption of Matrix chats, left copies of keys in memory after use: each step of Olm's ratchet left the new root and
   chain key behind (RUSTSEC-2026-0451), and the ciphers and hashes under it were built without their wiping
   (RUSTSEC-2026-0445). Someone who could read the app's memory might then have read earlier Matrix messages of that
   chain. 0.11.2 wipes them; nothing else changes.
-
 - **Twelve more fixes from the review before 7**: acknowledged receive at the relay (`RECEIVE` with `HOLD`, new `ACK`
   opcode; an older relay answers as before and the app takes the old path), so a message is deleted there only once the
   phone kept it; relay caps `EREVOS_RELAY_QUEUED_MB` (1024) in all and `EREVOS_RELAY_QUEUED_PER_PHONE_MB` (64) per
@@ -1007,7 +937,6 @@ On main, not released yet:
   the thread's own way to its end (`lib/thread-follow.ts`, `checks/thread-follow.check.ts`) draws nothing and does
   not leave the end, the first one in a chat goes there at once, and a chat opened after another starts at its end
   again rather than keep the other's scroll state.
-
 - **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
   queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
   with this space's relay**, which that space then keeps (the relay can then tell that both spaces are on one phone), and
@@ -1036,7 +965,6 @@ On main, not released yet:
   (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
   coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and
   `site/donate/build.mjs` draws the same two for the web page.
-
 - **Tor off in a new space**: `EMPTY_SPACE.tor` is `'off'` (`lock/space-data.ts`); a stored way is left as it is by
   `torWayOf`, so a space from before keeps its way (**Messages** unless changed). `nostrOf` no longer takes the Tor way.
   `Line` in `lib/nostr.ts` opens its sockets straight (`openNostrStraight` in `lib/nostr-dm-net.ts`) when `torOff()`,

@@ -22,27 +22,26 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas, which come out first for trying, or leave them. See [Erevos or Erevos+, and betas](#updates)."),
-    mark("**Radio and TV through Tor**: the Collection's settings on Android have **Play through Tor**, off unless you turn it on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment. Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on. Before, they always played straight. See [Collection](#collection)."),
-    mark("**A chat no longer freezes before a message sent for later shows**: a message your contact sends with **Send later** can come before its time, and shows only then. Until then its chat was marked read again and again without end, so it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a message is read once it shows. See [Chat through a relay](#relay)."),
-    mark("**Matrix, XMPP and Nostr chats are in Erevos+**: Erevos now has its own chats, the Phone, SMS and the Collection, and Erevos+ has Matrix, XMPP and the chats with other Nostr apps besides. An account you had on them stays on the phone, encrypted, and Erevos says so once; choose **Erevos+** in **Updates** to have it again. Erevos's own messages still go through Nostr relays when no relay of yours takes them. See [Erevos or Erevos+, and betas](#updates)."),
-    mark("**Choose the part Erevos opens on**: under **All services**, hold any card, **All messages** too, and choose **Opens first**. Erevos's icon in the launcher, and Erevos started with nothing else to open, then open on it; with none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The widget's buttons still open their own. See [Getting started](#start)."),
-    mark("**Asked before strangers reach this phone**: an Erevos invite that comes by SMS is answered by itself only from a number in your contacts or one you have written to; from any other, Erevos asks first, as the sender of an SMS can be made up. A contact's invite to a place on their relay now says first that their relay sees your IP address, and is taken only if you go on. See [Who sees your internet address](#ip)."),
-    mark("**Notices in your language**: Android's own notices and screens, new versions, reminders, birthdays, calls, SMS codes and the contact picker, now speak German, Spanish, French, Italian, Portuguese and Serbo-Croatian too, not only Greek and English. Older Greek subtitles, not saved as UTF-8, now show as Greek on the computer. See [Collection](#collection)."),
-    mark("**Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it any more. See [Appearance](#appearance)."),
-    mark("**Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you last had Erevos open, and you see no one's either. A space you already have keeps it as it was. See [Chat through a relay](#relay)."),
-    mark("**A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one shared in many pieces, could close Erevos at once. Now it opens. See [Chat through a relay](#relay)."),
-    mark("**A hidden service stays quiet**: a service you hide in the **Services** window, Messenger, Matrix, SMS or any other, no longer sends notifications or counts on Erevos's icon, as a muted chat. It stays connected and tells again once you show it. Telegram, whose folders can stand on home of their own, keeps telling. See [Getting started](#start)."),
-    mark("**Screenshots in hidden chats too, if you want**: hidden chats now follow **Screenshots** in **Privacy and security**: on, as it starts, they stay out of screenshots and the recent apps; turned off, screenshots work in them as in the other chats. Before, hidden chats always kept them out. See [Hidden chats](#hidden)."),
-  ],
+  forYou: [],
   underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
   {
-    version: '7.0.0-rc.10',
+    version: '7.0.0',
     forYou: [
+      mark("**Erevos or Erevos+, and betas, in Updates**: on Android, **Updates** now chooses the next update: **Erevos** or **Erevos+**, moving from one to the other with everything kept, and **Beta versions**, to join the betas, which come out first for trying, or leave them. See [Erevos or Erevos+, and betas](#updates)."),
+      mark("**Radio and TV through Tor**: the Collection's settings on Android have **Play through Tor**, off unless you turn it on. On, stations and channels play only through Tor, so they do not see your IP address; TV may stall for a moment. Off, Erevos says before the first one plays that its server sees your IP address, with a button that turns it on. Before, they always played straight. See [Collection](#collection)."),
+      mark("**A chat no longer freezes before a message sent for later shows**: a message your contact sends with **Send later** can come before its time, and shows only then. Until then its chat was marked read again and again without end, so it could stop answering: **⋮** opened nothing and **Back** did not leave it until Erevos was closed. Now such a message is read once it shows. See [Chat through a relay](#relay)."),
+      mark("**Matrix, XMPP and Nostr chats are in Erevos+**: Erevos now has its own chats, the Phone, SMS and the Collection, and Erevos+ has Matrix, XMPP and the chats with other Nostr apps besides. An account you had on them stays on the phone, encrypted, and Erevos says so once; choose **Erevos+** in **Updates** to have it again. Erevos's own messages still go through Nostr relays when no relay of yours takes them. See [Erevos or Erevos+, and betas](#updates)."),
+      mark("**Choose the part Erevos opens on**: under **All services**, hold any card, **All messages** too, and choose **Opens first**. Erevos's icon in the launcher, and Erevos started with nothing else to open, then open on it; with none chosen, or the chosen one hidden, on **All messages**. Before, the icon always opened the Erevos chats. The widget's buttons still open their own. See [Getting started](#start)."),
+      mark("**Asked before strangers reach this phone**: an Erevos invite that comes by SMS is answered by itself only from a number in your contacts or one you have written to; from any other, Erevos asks first, as the sender of an SMS can be made up. A contact's invite to a place on their relay now says first that their relay sees your IP address, and is taken only if you go on. See [Who sees your internet address](#ip)."),
+      mark("**Notices in your language**: Android's own notices and screens, new versions, reminders, birthdays, calls, SMS codes and the contact picker, now speak German, Spanish, French, Italian, Portuguese and Serbo-Croatian too, not only Greek and English. Older Greek subtitles, not saved as UTF-8, now show as Greek on the computer. See [Collection](#collection)."),
+      mark("**Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it any more. See [Appearance](#appearance)."),
+      mark("**Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you last had Erevos open, and you see no one's either. A space you already have keeps it as it was. See [Chat through a relay](#relay)."),
+      mark("**A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one shared in many pieces, could close Erevos at once. Now it opens. See [Chat through a relay](#relay)."),
+      mark("**A hidden service stays quiet**: a service you hide in the **Services** window, Messenger, Matrix, SMS or any other, no longer sends notifications or counts on Erevos's icon, as a muted chat. It stays connected and tells again once you show it. Telegram, whose folders can stand on home of their own, keeps telling. See [Getting started](#start)."),
+      mark("**Screenshots in hidden chats too, if you want**: hidden chats now follow **Screenshots** in **Privacy and security**: on, as it starts, they stay out of screenshots and the recent apps; turned off, screenshots work in them as in the other chats. Before, hidden chats always kept them out. See [Hidden chats](#hidden)."),
       mark("**The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found, or they were found but no relay sent their posts, or their posts came but could not be shown, and how each relay answered. Before, it said only that no public posts were found. See [Chats with other Nostr apps](#nostr-chats)."),
       mark("**A new computer links to the end**: a computer with no relay before linking now takes the phone's answer at once, so linking with the small code finishes by itself, and with the full code **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more until Erevos started again. See [Linked devices](#devices)."),
       mark("**Sharing into Erevos reaches every service**: **Send to** now lists the chats of your Matrix, XMPP and Nostr accounts too, beside Erevos chats, groups and SMS conversations. A photo or file shared from another app no longer goes missing when Erevos locks as it opens: after the password, **Send to** shows it again, where before it said that nothing came to send. See [Chat through a relay](#relay)."),
@@ -63,12 +62,6 @@ export const VERSIONS: WhatsNew[] = [
       mark("**Erevos warns before your internet address can be seen**: once before the first message, voice message or file in an Erevos chat that can go without Tor, with **Through Tor for this chat** to fix it or **Go on**; before the first message in an Erevos group that can go without Tor; before a call, as calls never go through Tor, unless the contact is nearby on the same network; before fetching a file from a server your contact chose; and in every **Open this link?** question, where the site sees the address. Each has a **Guide** button. Before, Erevos did not say it. See [Who sees your internet address](#ip)."),
       mark("**A Tor switch of their own**: backups to a server, the Collection's server copy, radio and TV lists, link previews and updates each have a **Through Tor** switch in their own screen, off unless you turn it on. On, that goes only through Tor, whatever the space's Tor setting, and waits while Tor starts; nothing goes straight. Off, it goes as before. It only adds Tor. For updates, the switch makes the daily new-version notice and **Check for updates** ask the web app's server instead of GitHub; a new version is told, but it does not download through Tor: to install it, turn the switch off for a moment. Playing a radio station or a TV channel always goes straight. Before, backups, the Collection and radio and TV followed only the space's Tor setting, and link previews and updates never went through Tor. See [Who sees your internet address](#ip)."),
       mark("**Bare web addresses open too**: t.me/name, example.org/page and the like are now tappable in every chat, as in Telegram and Signal, and show whole before they open; e-mail addresses and file names are not. See [Chat through a relay](#relay)."),
-    ],
-    underTheHood: [],
-  },
-  {
-    version: '7.0.0-rc.9',
-    forYou: [
       mark("**Share an imported chat with the other person**: a Telegram, WhatsApp or Viber chat that goes on with an Erevos contact can now go to them too, from the chat's **Details** or **Settings** → **Data and devices** → **Imported chats**: every message, photo, video, voice message and file, end-to-end encrypted, to them alone, whatever its size. Their Erevos keeps the messages at once and shows them ahead of the new messages, the sides swapped; the files follow in rounds through your relay while both phones run Erevos, each up to 4 GB, as large as an import now keeps. See [Imported chats](#import)."),
       mark("**Stickers on other networks**: a built-in sticker sent on Matrix, XMPP, Nostr or by MMS arrives as its picture, made on your device, its words in your language. See [Chat through a relay](#relay)."),
       mark("**One button for all your services**: under the search on the home screen, one button says which service shows, with the messages not read and any service not connected now. Tap it for a window with every service as a card, each with its own number and a dot for its connection; **Add** turns more on, and holding a card moves it or hides it. With no search, the chats with messages not read come first, under **Unread**, then the rest under **Recent**. See [Getting started](#start)."),
@@ -86,61 +79,11 @@ export const VERSIONS: WhatsNew[] = [
       mark("**Messages come at once while Erevos shows**: Erevos now waits at your relay with the connection open also while it is on the screen, so a message or a call comes the moment it is sent, not at the next look every 3 seconds, and the phone's radio rests in between."),
       mark("**The battery mode And sleep spares more**: each time it wakes the phone to look, about once a minute, the phone now sleeps again within a second or two when nothing came, not after 25 seconds."),
       mark("**A new battery mode, And light sleep**: under Settings → Notifications → In the background. The phone may sleep, and what comes to your relay wakes it, so messages and calls still come at once where the network and Android allow it. It is new: if messages come late with it, choose another."),
-    ],
-    underTheHood: [
-      mark("**Ticks**: a text the other phone had, and read, before it showed as sent here (through a slow Nostr relay) now shows as read, not with one tick. Ticks from a contact on another relay no longer stop, and a text that reaches a phone while Erevos is in the background there gets its second tick at that phone's next check."),
-      mark("**Chats are saved faster**: a message that comes, is read or is deleted is saved by looking only at its own chat, which shows most with many chats or after a large import. The chat screen is no longer drawn again every 5 seconds."),
-      mark("**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file."),
-      mark("**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.8',
-    forYou: [
       mark("**A new first start**: the first screen now says what you do not give, no phone number, email, user name or account, and asks for a name for your contacts, if you want one. After the modules comes a short screen for each, with how to begin with it and what Android should allow for it, **Allow all, one by one** among it; then the password lock and backups, then what is ready and what is missing. **I already have Erevos on another phone** goes straight to restoring a backup. See [Modules](#modules)."),
       mark("**Leftovers**: photos and files that nothing names any more, as those of an import that stopped in its middle, can now be found and deleted, under Backups → **Leftovers**. Type the PIN of each of your hidden chats and the password of any other space, tap **Find leftovers**, and Erevos shows how much none of them names; **Delete them** deletes it once you say so. See [Backups](#backup)."),
-    ],
-    underTheHood: [
-      mark("**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import)."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.7',
-    forYou: [
       mark("**What takes room**: Backups now have **What takes room**, which shows on Android how much room Erevos takes on the phone, by kind: the Collection with the chats' photos and files, voice messages, chat history, Tor, and what writes that did not end left over. Each automatic backup holds it all, so it tells why one is large. See [Backups](#backup)."),
-    ],
-    underTheHood: [
-      mark("**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup)."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.6',
-    forYou: [
       mark("**Choose the name others see**: under Settings → Privacy and security → **My name**, give this space a name that your contacts and your private groups see instead of a code, always encrypted. Hidden chats have a name of their own, in their settings, empty at first. See [Chat through a relay](#relay)."),
       mark("**Photos and files from the Collection, straight from a chat**: **+** in a chat now has **Collection**, which opens the Collection of that chat's place, its photos and its other files. Tap what to send, then **Send**, and it goes in the chat. Before, **Photo** opened only the phone's own gallery. See [Collection](#collection)."),
-    ],
-    underTheHood: [
-      mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),
-      mark("**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay)."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.5',
-    forYou: [],
-    underTheHood: [
-      mark("**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay)."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.4',
-    forYou: [],
-    underTheHood: [
-      mark("**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.3',
-    forYou: [
       mark("**Your SMS on your computer**: the phone's SMS can now show on this space's linked devices too, a computer, a browser or a tablet, end-to-end encrypted: read them there and answer, and the phone sends the answer. The latest 50 conversations go, each with its latest 50 messages; photos stay on the phone. Off until you turn it on, on the phone, under Settings → Phone and SMS → SMS → **On my linked devices too**. See [SMS](#sms)."),
       mark("**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection)."),
       mark("**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping."),
@@ -156,15 +99,6 @@ export const VERSIONS: WhatsNew[] = [
       mark("**Every chat in its own look**: groups, Chat with myself and chats on Matrix, XMPP and Nostr now have **Chat look** too, as a contact's chat had, for that chat only. See [Chat through a relay](#relay)."),
       mark("**Letters and text size**: Settings → Appearance has **Letters** (the style's own, the phone's, serif or monospace) and the messages' **Text size**, for the whole app or, from **Chat look**, for one chat. See [Appearance](#appearance)."),
       mark("**Muting hidden Matrix, XMPP and Nostr chats**: a hidden place's own Matrix, XMPP and Nostr chats can now be muted, as hidden chats are, and then say nothing at all. See [Hidden chats](#hidden)."),
-    ],
-    underTheHood: [
-      mark("**Groups after a restore**: a member restored from a backup asks the group's admin to put it in again, which works while the group moved on only a little."),
-      mark("**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.2',
-    forYou: [
       mark("**Reminders that come again**: a note Fasouli keeps for a scheduled payment now reminds you each time it is due, every month or as the payment repeats, and shows how often. Once you see it, it moves to its next time. See [Getting started](#start)."),
       mark("**Who is online on Matrix and XMPP**: under a contact's name it says, as their server does, **Online**, **Away** or **Do not disturb**, with the words they set, or when they were last online, and their picture in the chat list has a green dot. On Matrix, Erevos no longer says you are online unless you turn on **Say when I am online** on the Matrix screen. See [Matrix](#matrix)."),
       mark("**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules)."),
@@ -187,15 +121,6 @@ export const VERSIONS: WhatsNew[] = [
       mark("**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection)."),
       mark("**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection)."),
       mark("**Link a computer with one tap**: on the computer, **Linked devices** now shows a small code at once. Scan it with the phone and tap **Link**: the phone gives the computer what it needs through Nostr, end-to-end encrypted, and nothing has to be typed or compared. If Nostr cannot be reached, **Link another way** keeps the old way. See [Linked devices](#devices)."),
-    ],
-    underTheHood: [
-      mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),
-      mark("**An invite that opened Erevos for the first time** opens once the first start's setup is done, however long it took; before, after five minutes on the setup screens it was lost."),
-    ],
-  },
-  {
-    version: '7.0.0-rc.1',
-    forYou: [
       mark('**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.'),
       mark('**Chats open at their end**: a long chat, or one with imported messages, could open at a message read long ago, often a photo, as it drew earlier messages on its way to the end. Now it opens at the newest message, and the arrow to where you left off is there when new ones came.'),
       mark("**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor)."),
@@ -223,6 +148,20 @@ export const VERSIONS: WhatsNew[] = [
       mark("**Sign in with Nextcloud**: a Collection's server and the backups' server can now be your Nextcloud, as LPHL's, the one Fasouli syncs with, without typing a password: tap **Sign in with Nextcloud**, sign in in the browser and grant access. Erevos gets an app password of its own and its own folder there, Erevos/Collection or Erevos/Backups. See [Collection](#collection)."),
     ],
     underTheHood: [
+      mark("**Ticks**: a text the other phone had, and read, before it showed as sent here (through a slow Nostr relay) now shows as read, not with one tick. Ticks from a contact on another relay no longer stop, and a text that reaches a phone while Erevos is in the background there gets its second tick at that phone's next check."),
+      mark("**Chats are saved faster**: a message that comes, is read or is deleted is saved by looking only at its own chat, which shows most with many chats or after a large import. The chat screen is no longer drawn again every 5 seconds."),
+      mark("**Large imports write less**: the note of the files an import is still writing is kept in small parts, not written whole for every file."),
+      mark("**A text no longer waits for slow Nostr relays**: with Nostr on, a text waited for a Nostr relay to say it took it, up to 20 seconds when none answered, before it went through the relay. Now, when none says so within 4 seconds, it goes through the relay as well at once."),
+      mark("**An import that stops leaves nothing behind**: when Erevos stops while it brings in the photos and files of a Telegram, WhatsApp or Viber export, as when Android closes it or the battery runs out, what it had written of them is deleted the next time it starts. Before, it stayed on the phone, and in every backup, for good. See [Imported chats](#import)."),
+      mark("**Backups to a server get there again**: a backup to your own server, such as a Nextcloud, no longer stops when the server misses one of its pieces for a moment, as when it closes for a few minutes at night. That piece goes again a little later and the backup carries on; before, it started over the next time, and a large backup could fail day after day. See [Backups](#backup)."),
+      mark("**A chat opens at its last message again**: opened from the home screen or a notification, a chat could stop above its newest messages, often above the unread ones. Now it goes to its end at once, and once more as its messages come into view."),
+      mark("**A new sign-in to a relay is no longer undone**: after you signed in to your relay again, a chat screen open from before could later write back the token from before, which the relay no longer lets in, and the relay then refused this phone. Now the new token is kept at once, and every chat screen open takes it. See [Chat through a relay](#relay)."),
+      mark("**A message sent offline is no longer lost when you leave the chat**: what you sent while your chats were still opening, as they do for a while with no connection, was lost if you left the chat before it went. Now it waits, marked **Waiting**, and goes by itself once the relay or their phone nearby can take it, a voice message too. See [Chat through a relay](#relay)."),
+      mark("**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster."),
+      mark("**Groups after a restore**: a member restored from a backup asks the group's admin to put it in again, which works while the group moved on only a little."),
+      mark("**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came."),
+      mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),
+      mark("**An invite that opened Erevos for the first time** opens once the first start's setup is done, however long it took; before, after five minutes on the setup screens it was lost."),
       mark("**Large files saved from the Collection on Sailfish OS**: **Save to phone** writes a file of any size to Downloads a piece at a time, as the desktop app now does too, and when the disk has no room left Erevos says so and leaves nothing half-written. See [Collection](#collection)."),
       mark("**Backups skip what is on the WebDAV server after a restart too**: that a Collection's copies on its server are complete is kept with it, so a backup made after Erevos starts again still leaves its pieces out, as long as no file was added or deleted since. **The connection works.** now shows in the colour of success, not of a warning. See [Collection](#collection)."),
       mark("**Moving a chat to a space with no relay**: **Move to another space** stopped there, as that space had no relay of its own. Now it offers this space's relay, which that space then keeps, and it makes that space's relay queue when it has a relay but no queue yet. See [Second password](#second)."),
