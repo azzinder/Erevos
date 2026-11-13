@@ -32,6 +32,7 @@ export const NEXT: Changes = {
     mark("**Notices in your language**: Android's own notices and screens, new versions, reminders, birthdays, calls, SMS codes and the contact picker, now speak German, Spanish, French, Italian, Portuguese and Serbo-Croatian too, not only Greek and English. Older Greek subtitles, not saved as UTF-8, now show as Greek on the computer. See [Collection](#collection)."),
     mark("**Video calls on the computer, and the calculator after a wipe**: a video call started or answered on the computer now opens its camera. With the calculator in place of Erevos's icon, once Erevos is wiped by the panic password or **Clear storage**, the calculator opens Erevos as new and gives Erevos's icon back, where before no code opened it any more. See [Appearance](#appearance)."),
     mark("**Last seen starts off**: in a new space, **Last seen** is now off until you turn it on, so no contact sees when you last had Erevos open, and you see no one's either. A space you already have keeps it as it was. See [Chat through a relay](#relay)."),
+    mark("**A chat with a big file no longer closes Erevos**: on Android, opening a chat that held a large file, or one shared in many pieces, could close Erevos at once. Now it opens. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };
