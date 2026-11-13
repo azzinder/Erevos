@@ -469,7 +469,7 @@ impl Store {
             );
         } else if skipped > 0 {
             elog!(
-                "erevos-relay: skipped {skipped} bytes at the end of {}, left by a write that did not finish",
+                "erevos-relay: skipped {skipped} bytes at the end of {}: its last record is cut short or damaged, most likely by a write that did not finish",
                 path.display()
             );
         }

@@ -664,7 +664,9 @@ the disk changed is found as the relay reads the journal back at start. What
 comes before it is read; the journal as it was is kept beside it, in
 `queues.journal.damaged-<time>`, before the relay writes it again without what
 came after, and the log says so. A record cut short at the end, as a stop in the
-middle of a write leaves it, is skipped as before. A journal written by an
+middle of a write leaves it, is skipped as before and not kept beside. Damage in
+the last record, or a damaged length that runs past the end of the file, looks the
+same and is skipped the same way; the log calls it cut short or damaged. A journal written by an
 older relay is read as it is and checked from the first start of this one.
 
 To go back to a relay from before the checks, stop this one, write the journal

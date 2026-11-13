@@ -26,7 +26,10 @@
 //! was is kept beside it before it is rewritten (`keep_damaged`), so what
 //! comes after is not lost with it. The last record cut short, or with a
 //! check that does not match, is what a stop in the middle of a write leaves:
-//! it is skipped, as before.
+//! it is skipped, as before, and not kept. Damage the disk made there, or to
+//! a length that then runs past the end of the file, cannot be told from such
+//! a write: it is skipped the same way, and the log says it is cut short or
+//! damaged.
 //!
 //! A journal written by relays from before queues expired starts with
 //! `OLD_HEADER`, one written by relays from before records were checked with

@@ -435,7 +435,7 @@ fn downgrade_journal(file: Option<String>) -> ExitCode {
                 );
             } else if skipped.skipped > 0 {
                 println!(
-                    "The last {} bytes of {} were a record written in part, left out.",
+                    "The last {} bytes of {} were a record cut short or damaged, most likely written in part, left out.",
                     skipped.skipped,
                     path.display()
                 );
