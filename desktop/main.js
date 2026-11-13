@@ -877,7 +877,7 @@ function createWindow() {
     return { action: 'deny' };
   });
   window.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith(ORIGIN)) {
+    if (url !== ORIGIN && !url.startsWith(`${ORIGIN}/`)) {
       event.preventDefault();
       if (/^https?:/.test(url)) shell.openExternal(url);
     }
@@ -948,15 +948,16 @@ if (!app.requestSingleInstanceLock()) {
   app.on('will-quit', dropSaving);
   app.whenReady().then(() => {
     // The microphone, for voice messages, while Voice is held, and the notice that messages came
-    // (app/lib/desktop.ts); the camera only for Element Call's frame, for a Matrix video call;
-    // nothing else (location) is asked for, and anything else is refused without a prompt.
-    // Copying a contact link is allowed too.
+    // (app/lib/desktop.ts); the camera for Erevos's own video calls (app/lib/webrtc.web.ts) and
+    // Element Call's frame, for a Matrix video call; nothing else (location) is asked for, and
+    // anything else is refused without a prompt. Copying a contact link is allowed too.
     const fromCall = (...urls) => urls.some((url) => typeof url === 'string' && (url === CALL_ORIGIN || url.startsWith(`${CALL_ORIGIN}/`)));
+    const fromApp = (...urls) => urls.some((url) => typeof url === 'string' && (url === ORIGIN || url.startsWith(`${ORIGIN}/`)));
     const allowed = (permission, details = {}) =>
       permission === 'clipboard-sanitized-write' ||
       permission === 'notifications' ||
       (permission === 'media' &&
-        (details.mediaTypes ?? ['audio']).every((type) => type === 'audio' || (type === 'video' && fromCall(details.securityOrigin, details.requestingUrl))));
+        (details.mediaTypes ?? ['audio']).every((type) => type === 'audio' || (type === 'video' && (fromCall(details.securityOrigin, details.requestingUrl) || fromApp(details.securityOrigin, details.requestingUrl)))));
     session.defaultSession.setPermissionRequestHandler((_contents, permission, callback, details) => callback(allowed(permission, details)));
     session.defaultSession.setPermissionCheckHandler((_contents, permission) => allowed(permission));
     // As on Android: Element Call's frame reaches no tracker, and not the homeserver itself, which
