@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { EDITION, type Edition } from './edition';
 import { mark } from './i18n';
 import { laterThan } from './version-name';
 
@@ -765,9 +766,16 @@ export const VERSIONS: WhatsNew[] = [
  * comes after the last release, else (a build of main for testing) with no number, then every
  * release.
  */
-export function whatsNewFor(running: string): (Changes & { version: string | null })[] {
+export function whatsNewFor(running: string, edition: Edition = EDITION): (Changes & { version: string | null })[] {
   const released = VERSIONS[0]?.version ?? '0';
   const pending = NEXT.forYou.length + NEXT.underTheHood.length > 0;
   const next = pending && !VERSIONS.some((v) => v.version === running) ? [{ version: laterThan(running, released) ? running : null, ...NEXT }] : [];
-  return [...next, ...VERSIONS];
+  const all = [...next, ...VERSIONS];
+  return edition === 'lite' ? all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(inLite), underTheHood: underTheHood.filter(inLite) })) : all;
 }
+
+// What the plain Erevos (lib/edition.ts) shows: not what is of networks only Erevos+ has, but the
+// word that they are there.
+const PLUS_ONLY = /\bMatrix\b|\bXMPP\b|other Nostr apps|Nostr chats|Nostr accounts?\b|\bElement\b|\bPublic\b/;
+const IN_PLUS = '**Matrix, XMPP and Nostr chats are in Erevos+**';
+const inLite = (text: string): boolean => text.startsWith(IN_PLUS) || !PLUS_ONLY.test(text);

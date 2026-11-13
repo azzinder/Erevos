@@ -13,6 +13,7 @@ import { guideFor, PLUS_SECTIONS } from '../guide/index';
 import { randomBytes } from '../lib/crypto';
 import { editionNote } from '../lib/edition-notice';
 import { newNostrDm } from '../lib/nostr-dm';
+import { whatsNewFor } from '../lib/whats-new';
 import { saveNostrDm } from '../lock/nostr-dm-data';
 import { useWasmCore } from './wasm-core';
 import { blobs, files } from './files-memory';
@@ -53,4 +54,17 @@ test('the plain Erevos says once in a space that its Nostr account is kept for E
   const kept = store.get('erevos.edition-told') ?? '';
   assert.doesNotMatch(kept, /nostr|matrix|xmpp/i);
   assert.equal((JSON.parse(kept) as string[]).length, 2);
+});
+
+test("the plain Erevos's What's new leaves out what is of Matrix, XMPP and chats with other Nostr apps, but says they are in Erevos+", () => {
+  const plus = whatsNewFor('99.0.0', 'plus');
+  const lite = whatsNewFor('99.0.0', 'lite');
+  assert.equal(lite.length, plus.length);
+  const all = (list: typeof plus) => list.flatMap((v) => [...v.forYou, ...v.underTheHood]);
+  assert.ok(all(lite).length < all(plus).length);
+  for (const text of all(lite)) {
+    if (text.startsWith('**Matrix, XMPP and Nostr chats are in Erevos+**')) continue;
+    assert.doesNotMatch(text, /\bMatrix\b|\bXMPP\b|other Nostr apps/, text);
+  }
+  assert.ok(all(lite).some((text) => text.startsWith('**Matrix, XMPP and Nostr chats are in Erevos+**')));
 });
