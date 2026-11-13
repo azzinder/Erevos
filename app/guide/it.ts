@@ -4158,6 +4158,9 @@ Su Android, **Aggiornamenti** dice anche quali versioni sono proposte a questo t
   Disattivalo per uscire dalle beta: la prossima versione normale con un numero di build più alto della beta che hai si
   installa sopra e tiene tutto, senza disinstallare.
 
+Erevos+ richiede Android 8.0 o successivo: su un telefono più vecchio non si può scegliere, e il telefono resta su
+Erevos. Finché Erevos+ non è ancora uscito, il controllo lo dice e il telefono resta su Erevos.
+
 L’avviso di una nuova versione segue la stessa scelta. Il computer delle versioni firma ogni edizione e le sue beta a
 parte, così una non si installa mai come un’altra.
 

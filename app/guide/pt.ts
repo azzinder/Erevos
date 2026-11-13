@@ -4107,6 +4107,9 @@ No Android, **Atualizações** diz também quais versões são oferecidas a este
   das betas: a próxima versão normal com número de build maior que a beta que você tem é instalada por cima e mantém
   tudo, sem desinstalar.
 
+O Erevos+ precisa do Android 8.0 ou mais recente: num celular mais antigo ele não pode ser escolhido, e o celular fica
+no Erevos. Enquanto o Erevos+ ainda não saiu, a verificação diz isso e o celular fica no Erevos.
+
 O aviso de nova versão segue a mesma escolha. O computador das versões assina cada edição e suas betas à parte, então
 uma nunca é instalada como outra.
 

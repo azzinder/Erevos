@@ -42,6 +42,8 @@ import { useColors } from '../theme/context';
 // the note says how to install it.
 
 const supported = (Platform.OS === 'android' && !FDROID) || SHELL !== null;
+// Erevos+ needs Android 8.0 (API 26): its Session library does not install on older phones.
+const PLUS_FITS = Platform.OS !== 'android' || Number(Platform.Version) >= 26;
 // This app's version and its build number (app.config.js sets both for releases).
 const VERSION = Constants.expoConfig?.version ?? '0.0.0';
 const CURRENT_BUILD = buildNumber(Constants.expoConfig?.extra?.build, VERSION);
@@ -204,7 +206,11 @@ export default function UpdatesScreen() {
       setChecking(false);
     }
     if (!release) {
-      setNote(t('No release was found yet.'));
+      setNote(
+        channel?.edition === 'plus' && INSTALLED_EDITION !== 'plus'
+          ? t('Erevos+ is not out yet, so this phone stays on Erevos for now. Check again later.')
+          : t('No release was found yet.'),
+      );
       return;
     }
     if (!CURRENT_BUILD) {
@@ -342,7 +348,7 @@ export default function UpdatesScreen() {
               <Text variant="bodyStrong">{t('Next update')}</Text>
               <Row wrap>
                 <Chip label="Erevos" selected={channel.edition === 'erevos'} onPress={() => choose({ edition: 'erevos' })} />
-                <Chip label="Erevos+" selected={channel.edition === 'plus'} onPress={() => choose({ edition: 'plus' })} />
+                <Chip label="Erevos+" selected={channel.edition === 'plus'} disabled={!PLUS_FITS && channel.edition !== 'plus'} onPress={() => choose({ edition: 'plus' })} />
               </Row>
               <Text variant="caption" tone="muted">
                 {channel.edition === INSTALLED_EDITION
@@ -353,6 +359,11 @@ export default function UpdatesScreen() {
                     ? t('The next update is Erevos+, once one is out with a build number above this one. It installs over this Erevos and keeps everything.')
                     : t('The next update is the plain Erevos, once one is out with a build number above this one. It installs over Erevos+ and keeps everything: the chats and accounts of the other networks stay on the phone, unused, and are there again in Erevos+.')}
               </Text>
+              {PLUS_FITS ? null : (
+                <Text variant="caption" tone="muted">
+                  {t('Erevos+ needs Android 8.0 or newer, so this phone stays on Erevos.')}
+                </Text>
+              )}
               <Pressable
                 onPress={() => choose({ beta: !channel.beta })}
                 accessibilityRole="switch"

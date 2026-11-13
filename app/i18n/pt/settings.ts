@@ -159,6 +159,8 @@ export const settings: Record<string, string> = {
   'Everything in this space goes through Tor, and this check would go to GitHub without it, showing your internet address. Choose Messages under Tor for a moment to check, or open the releases page in Tor Browser.': 'Neste espaço tudo passa pelo Tor, e esta verificação iria ao GitHub sem ele, mostrando o seu endereço de internet. Escolha Mensagens no Tor por um momento para verificar, ou abra a página de versões no Tor Browser.',
   'GitHub could not be reached. Check the internet connection and try again.': 'Não foi possível acessar o GitHub. Verifique a conexão com a internet e tente de novo.',
   'No release was found yet.': 'Nenhuma versão encontrada ainda.',
+  'Erevos+ is not out yet, so this phone stays on Erevos for now. Check again later.': 'O Erevos+ ainda não saiu, então este celular fica no Erevos por enquanto. Verifique de novo mais tarde.',
+  'Erevos+ needs Android 8.0 or newer, so this phone stays on Erevos.': 'O Erevos+ precisa do Android 8.0 ou mais recente, então este celular fica no Erevos.',
   'This Erevos was built on a computer, so it does not update itself. The newest release is {version}: User guide → Updates says how to switch to it.': 'Este Erevos foi compilado num computador, então não se atualiza sozinho. A versão mais nova é a {version}: “Guia de uso → Atualizações” explica como mudar para ela.',
   'Erevos is up to date ({version}).': 'O Erevos está atualizado ({version}).',
   'Erevos {version} is out': 'Saiu o Erevos {version}',

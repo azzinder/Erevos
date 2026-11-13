@@ -4379,6 +4379,9 @@ Sur Android, **Mises à jour** indique aussi quelles versions sont proposées à
   début. Désactivez-le pour quitter les bêtas : la prochaine version normale avec un numéro de build supérieur à la
   bêta que vous avez s’installe par-dessus et garde tout, sans désinstaller.
 
+Erevos+ nécessite Android 8.0 ou plus récent : sur un téléphone plus ancien, il ne peut pas être choisi, et le
+téléphone reste sur Erevos. Tant qu’aucun Erevos+ n’est sorti, la vérification le dit et le téléphone reste sur Erevos.
+
 L’avis d’une nouvelle version suit le même choix. L’ordinateur des versions signe chaque édition et ses bêtas à part,
 si bien que l’une ne s’installe jamais comme une autre.
 
