@@ -165,6 +165,13 @@ export async function forgetCollectionServer(place: CollectionPlace): Promise<vo
 }
 
 // Each place's status, and who watches it.
+// A chunk on the server that the catalogue here does not name is deleted only once it has not been
+// named for this long, over copies one after another: with the Collection on linked devices that
+// copy to the same folder, one whose catalogue has not yet heard of another's new file would else
+// delete that file's chunks. When each was first seen unnamed, by place, folder and name.
+const UNNAMED_MS = 60 * 60_000;
+const unnamedSince = new Map<string, number>();
+
 const statuses = new Map<string, ServerStatus>();
 const statusWatchers = new Map<string, Set<(status: ServerStatus) => void>>();
 
@@ -235,11 +242,22 @@ export async function copyToServer(place: CollectionPlace, signal?: AbortSignal,
       status = { ...status, done: status.done + size };
       setStatus(place, status);
     }
-    // Only names of chunks, and only those the catalogue does not name.
+    // Only names of chunks, and only those the catalogue has not named for a while.
+    const prefix = `${nameOf(place)}|${server.folder}|`;
+    for (const key of [...unnamedSince.keys()]) {
+      if (key.startsWith(prefix) && (wanted.has(key.slice(prefix.length)) || !there.has(key.slice(prefix.length)))) unnamedSince.delete(key);
+    }
     for (const name of there.keys()) {
       if (wanted.has(name)) continue;
       if (signal?.aborted) throw new Stopped();
+      const since = unnamedSince.get(prefix + name);
+      if (since === undefined) {
+        unnamedSince.set(prefix + name, now());
+        continue;
+      }
+      if (now() - since < UNNAMED_MS) continue;
       await retried(async () => check(await askServer(folder, 'DELETE', name), [404]), signal);
+      unnamedSince.delete(prefix + name);
     }
     const last = now();
     serverWhole(place, generation);

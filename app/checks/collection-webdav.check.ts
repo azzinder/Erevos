@@ -209,7 +209,7 @@ t('a copy cut short by the network goes on where it stopped; a chunk there of an
   assert.deepEqual(await chunksThere(dav, p), localChunks());
 });
 
-t('deleting a file deletes its chunks there, and its small picture, but nothing that is not a chunk of this place', async () => {
+t('deleting a file deletes its chunks there an hour later, and its small picture, but nothing that is not a chunk of this place', async () => {
   const dav = davServer();
   const p = place();
   await connectCollectionServer(p, ROOT, 'me', 'app-pass');
@@ -221,7 +221,13 @@ t('deleting a file deletes its chunks there, and its small picture, but nothing 
   dav.there.set(`${folder}/holiday.jpg`, new Uint8Array(5));
   dav.there.set(`${folder}/erevos-file-xyz`, new Uint8Array(5));
   await deleteItems(p, [a.id]);
-  await copyToServer(p);
+  // The first copy after only notes that the catalogue no longer names them: a linked device's
+  // new file, not yet heard of here, is kept so. An hour on, they go.
+  await copyToServer(p, undefined, () => 1_000);
+  assert.ok(dav.there.has(`${folder}/${PREFIX}${a.file.id}-0`));
+  await copyToServer(p, undefined, () => 1_000 + 30 * 60_000);
+  assert.ok(dav.there.has(`${folder}/${PREFIX}${a.file.id}-0`));
+  await copyToServer(p, undefined, () => 1_000 + 61 * 60_000);
   const left = await chunksThere(dav, p);
   assert.deepEqual([...left.keys()].sort(), [...localChunks().keys()].sort());
   assert.ok([...left.keys()].every((name) => name.includes(b.file.id)));
