@@ -540,6 +540,8 @@ async function takeWrap(event: unknown): Promise<void> {
     try {
       opened = await nostrCore().nostrUnwrap(fromHex(key.s), JSON.stringify(event));
     } catch {
+      // Not opened, perhaps only for now: the same event, from this relay or another, is tried again.
+      seen.delete(wrap.id);
       return;
     }
     // Its id (32 bytes) and time (8) first, then what it carried: one packet, or several in order.
