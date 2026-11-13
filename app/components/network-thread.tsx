@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { useRef, useState, type ElementRef, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { Keyboard, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
 import { leftOff } from '../lib/left-off';
 import { space } from '../theme/colors';
-import type { KeyboardAwareScrollView } from './keyboard';
+import type { KeyboardAwareScrollView, KeyboardAwareScrollViewRef } from './keyboard';
 import { BELOW_TOP, ThreadArrows } from './thread-arrows';
 
 // What the chats with Matrix, XMPP and Nostr share, as the Erevos chat, a group and SMS have it
@@ -49,7 +49,7 @@ export function useNetworkThread<T>({
   at?: string;
   onAt?: (found: boolean) => void;
 }) {
-  const scroll = useRef<ElementRef<typeof KeyboardAwareScrollView>>(null);
+  const scroll = useRef<KeyboardAwareScrollViewRef>(null);
   const view = useRef({ y: 0, height: 0 });
   const thread = useRef<Place>({ y: 0, height: 0 });
   const end = useRef<Place>({ y: 0, height: 0 });

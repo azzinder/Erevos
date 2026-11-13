@@ -4,7 +4,7 @@
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type ScrollViewInstance, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
 import { bytesSource, takeOffRelay } from '../lib/attachments';
@@ -97,7 +97,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   messages: GroupMessage[];
   name: (identity: string) => string;
   onNote: (text: string) => void;
-  scroll: RefObject<ScrollView | null>;
+  scroll: RefObject<ScrollViewInstance | null>;
   at?: string;
   draft?: DraftBox;
 }) {

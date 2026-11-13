@@ -87,7 +87,7 @@ async function writeEntry(folder: string, name: string, bytes: Uint8Array): Prom
   }
   const file = new Directory(folder).createFile(name, 'application/octet-stream');
   try {
-    file.write(bytes);
+    file.writeSync(bytes);
   } catch (error) {
     deleteQuietly(file);
     throw error;

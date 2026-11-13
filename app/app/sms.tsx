@@ -4,7 +4,7 @@
 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, BackHandler, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatHistory, historyRows, useHistoryTools } from '../components/chat-history';
@@ -287,7 +287,7 @@ function Sms({ tools }: { tools: ReactNode }) {
   const draftNow = useRef(draft);
   draftNow.current = draft;
   const twoSims = (smsStatus()?.slots ?? 0) >= 2;
-  const thread = useRef<ScrollView>(null);
+  const thread = useRef<ScrollViewInstance>(null);
   // Gone to its start by its arrow, the thread keeps where it is read, until its end or a new SMS is.
   const keepsPlace = useRef(false);
   const { away, onScroll, spot } = useThreadAway();

@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type HostInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '../lock/gate';
@@ -116,7 +116,7 @@ export function Services({ services, hidden = [], current, onPick, onAdd, onRead
   const [open, setOpen] = useState(false);
   // Where the window opens: under the button, as long as it has room there.
   const [at, setAt] = useState(0);
-  const button = useRef<View>(null);
+  const button = useRef<HostInstance>(null);
   // The card held down: what can be done with it shows under the cards, until Done.
   const [held, setHeld] = useState<string | null>(null);
   const close = () => {

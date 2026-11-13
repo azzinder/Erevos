@@ -4,7 +4,7 @@
 
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confirm } from '../lib/alert';
@@ -126,7 +126,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
   const [played, setPlayed] = useState(0);
   const stopPlaying = useRef<(() => void) | null>(null);
   const [now, setNow] = useState(Date.now());
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const atEnd = useRef(true);
   const { away, onScroll: awayOnScroll } = useThreadAway();
 

@@ -852,7 +852,7 @@ function Home() {
           onEndReached={feed.more}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            feedShown ? feed.empty : everyRow === null || hits.length > 0 ? null : archiveOn && !query ? (
+            feedShown ? (feed.empty ?? undefined) : everyRow === null || hits.length > 0 ? undefined : archiveOn && !query ? (
               <Text tone="muted" style={styles.emptyText}>
                 {t('Nothing archived.')}
               </Text>
@@ -920,7 +920,7 @@ function Home() {
             )
           }
           ListFooterComponent={
-            feedShown ? feed.footer : hits.length > 0 ? (
+            feedShown ? (feed.footer ?? undefined) : hits.length > 0 ? (
               <View style={styles.found}>
                 <Text variant="overline" tone="muted">
                   {t('Messages')}
@@ -936,7 +936,7 @@ function Home() {
                   />
                 ))}
               </View>
-            ) : null
+            ) : undefined
           }
         />
       </SwipeTabs>

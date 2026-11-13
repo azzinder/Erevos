@@ -17,6 +17,7 @@ import { device } from '../modules/erevos-device';
  * before the next.
  */
 export { KeyboardAvoidingView, KeyboardAwareScrollView, KeyboardProvider } from 'react-native-keyboard-controller';
+export type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 
 /**
  * A screen that reaches the bottom of the window, and ends above the keyboard while it is open. It

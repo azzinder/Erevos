@@ -4,7 +4,7 @@
 
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, View, type ListViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Attachment, FileViewer, SHOWN_PHOTOS, useShownPhotos } from '../components/attachment';
@@ -203,7 +203,7 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
   const group = useMemo(() => new Set(messages.map((m) => m[1]).filter((name) => name && name !== chat.me)).size > 1, [messages, chat.me]);
   // The photos of the messages on the screen, read as the list is scrolled, so they show as they were.
   const [seenPhotos, setSeenPhotos] = useState<FileRef[]>([]);
-  const onSeen = useRef(({ viewableItems }: { viewableItems: ViewToken<ArchivedMessage>[] }) => {
+  const onSeen = useRef(({ viewableItems }: { viewableItems: (Omit<ListViewToken, 'item'> & { item: ArchivedMessage })[] }) => {
     const files = viewableItems.flatMap(({ item }) => (item[4] ?? []).filter((file) => file.kind === 'photo')).slice(0, SEEN_PHOTOS);
     setSeenPhotos((now) => (now.map((file) => file.id).join() === files.map((file) => file.id).join() ? now : files));
   }).current;

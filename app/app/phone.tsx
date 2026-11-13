@@ -4,7 +4,7 @@
 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
+import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View, type LayoutChangeEvent, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchIcon } from '../components/icons';
@@ -169,7 +169,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   const [room, setRoom] = useState(0);
   const [simHeight, setSimHeight] = useState(0);
   const [noteHeight, setNoteHeight] = useState(0);
-  const keypad = useRef<ScrollView>(null);
+  const keypad = useRef<ScrollViewInstance>(null);
   // The keys' scroll: its height on the screen, and its content's.
   const keysFrame = useRef(0);
   const keysContent = useRef(0);
@@ -407,7 +407,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            mayRead ? null : (
+            mayRead ? undefined : (
               <Card>
                 <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text>
                 <Button title={t('Allow the contacts')} onPress={() => void allowContacts()} />
@@ -416,7 +416,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
             )
           }
           ListEmptyComponent={
-            dialable === null ? null : (
+            dialable === null ? undefined : (
               <Text tone="muted" style={styles.empty}>
                 {t('No contact with a number matches.')}
               </Text>
@@ -907,7 +907,7 @@ function Recents({ accounts, locked, onCall, onEdit }: {
             <Text tone="muted" style={styles.empty}>
               {calls.length ? t('No calls of this kind.') : t('No calls yet.')}
             </Text>
-          ) : null
+          ) : undefined
         }
         renderItem={({ item }) =>
           item.kind === 'day' ? (

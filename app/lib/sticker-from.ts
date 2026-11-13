@@ -30,7 +30,7 @@ export async function stickerFrom(bytes: Uint8Array): Promise<Uint8Array> {
   const copy = new File(Paths.cache, `erevos-sticker-${toHex(randomBytes(8))}`);
   try {
     copy.create();
-    copy.write(bytes);
+    copy.writeSync(bytes);
     const whole = await ImageManipulator.manipulate(copy.uri).renderAsync();
     const large = Math.max(whole.width, whole.height) > STICKER_SIDE;
     const image = large ? await ImageManipulator.manipulate(copy.uri).resize(whole.width >= whole.height ? { width: STICKER_SIDE } : { height: STICKER_SIDE }).renderAsync() : whole;

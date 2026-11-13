@@ -77,7 +77,7 @@ export async function pickSource(most: number): Promise<PickedSource | null> {
   }
   const read = async (at: number, length: number) => {
     if (handle.offset !== at) handle.offset = at;
-    return handle.readBytes(length);
+    return handle.readBytesSync(length);
   };
   const close = () => {
     handle.close();

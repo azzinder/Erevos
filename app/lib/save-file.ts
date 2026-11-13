@@ -56,17 +56,17 @@ function namesIn(folder: string): Set<string> | null {
  * the owner went back.
  */
 export function saveFile(ref: FileRef, choose = false): Promise<string | null> {
-  return save(ref.name, choose, (handle) => eachPiece(ref, (piece) => handle.writeBytes(piece)));
+  return save(ref.name, choose, (handle) => eachPiece(ref, (piece) => handle.writeBytesSync(piece)));
 }
 
 /** Saves bytes as a file named `name`, as saveFile does (a Matrix chat's file, lib/matrix-media.ts). */
 export function saveBytes(name: string, _mime: string, bytes: Uint8Array, choose = false): Promise<string | null> {
-  return save(name, choose, (handle) => handle.writeBytes(bytes));
+  return save(name, choose, (handle) => handle.writeBytesSync(bytes));
 }
 
 /** Saves words as a file named `name`, as saveFile does. */
 export function saveText(name: string, text: string, choose = false): Promise<string | null> {
-  return save(name, choose, (handle) => handle.writeBytes(utf8Encode(text)));
+  return save(name, choose, (handle) => handle.writeBytesSync(utf8Encode(text)));
 }
 
 async function save(named: string, choose: boolean, write: (handle: FileHandle) => unknown): Promise<string | null> {

@@ -45,7 +45,7 @@ async function writePieces(item: CollectionItem, file: File): Promise<void> {
   file.create();
   const handle = file.open(FileMode.Truncate);
   try {
-    await eachPiece(item.file, (piece) => handle.writeBytes(piece));
+    await eachPiece(item.file, (piece) => handle.writeBytesSync(piece));
   } finally {
     handle.close();
   }

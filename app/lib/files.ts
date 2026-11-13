@@ -53,7 +53,7 @@ export async function writeFile(name: string, text: string): Promise<void> {
   const fs = fileSystem();
   if (fs) {
     const next = new fs.File(fs.Paths.document, `${name}.new`);
-    next.write(text);
+    next.writeSync(text);
     next.moveSync(new fs.File(fs.Paths.document, name), { overwrite: true });
     return;
   }
@@ -86,7 +86,7 @@ export async function writeBytes(name: string, bytes: Uint8Array): Promise<void>
   const fs = fileSystem();
   if (fs) {
     const next = new fs.File(fs.Paths.document, `${name}.new`);
-    next.write(bytes);
+    next.writeSync(bytes);
     next.moveSync(new fs.File(fs.Paths.document, name), { overwrite: true });
     return;
   }

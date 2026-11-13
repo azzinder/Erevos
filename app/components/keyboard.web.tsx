@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import type { ReactNode } from 'react';
-import { Keyboard, KeyboardAvoidingView as PlainKeyboardAvoidingView, ScrollView, View, type ScrollViewProps, type ViewProps } from 'react-native';
+import { Keyboard, KeyboardAvoidingView as PlainKeyboardAvoidingView, ScrollView, View, type ScrollViewInstance, type ScrollViewProps, type ViewProps } from 'react-native';
 
 /**
  * In browsers the keyboard library has nothing to do: the browser itself keeps the field being
@@ -15,6 +15,9 @@ export function KeyboardProvider({ children }: { children?: ReactNode }) {
 }
 
 export const KeyboardAvoidingView = PlainKeyboardAvoidingView;
+
+/** What a ref on KeyboardAwareScrollView reaches, as the library's own type. */
+export type KeyboardAwareScrollViewRef = Pick<ScrollViewInstance, 'scrollTo'>;
 
 export function KeyboardAwareScrollView(props: ScrollViewProps & { bottomOffset?: number }) {
   const rest = { ...props };

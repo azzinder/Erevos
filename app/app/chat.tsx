@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, BackHandler, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, BackHandler, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
@@ -846,7 +846,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The photo or file shown on its own, to look at or save; one of an imported message's apart.
   const [viewing, setViewing] = useState<Message | null>(null);
   const [viewingImported, setViewingImported] = useState<FileRef | null>(null);
-  const thread = useRef<ScrollView>(null);
+  const thread = useRef<ScrollViewInstance>(null);
   // Whether the thread shows its end, so it keeps to it as it grows shorter.
   const atEnd = useRef(true);
   // Whether it is away from its start and its end, for the arrows to them, and from where it was left.

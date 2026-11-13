@@ -158,7 +158,7 @@ function endingFor(audio: Uint8Array, ending: string): string {
 export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void, ending = 'm4a'): () => void {
   playing?.();
   const file = new File(Paths.cache, `erevos-play-${toHex(randomBytes(8))}.${endingFor(audio, ending)}`);
-  file.write(audio);
+  file.writeSync(audio);
   const player = createAudioPlayer({ uri: file.uri }, { updateInterval: 250 });
   let done = false;
   const stop = () => {

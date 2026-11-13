@@ -143,7 +143,7 @@ export async function readShared(shared: SharedFile): Promise<SharedSource> {
   }
   const read = async (at: number, length: number) => {
     if (handle.offset !== at) handle.offset = at;
-    return handle.readBytes(length);
+    return handle.readBytesSync(length);
   };
   const close = () => {
     handle.close();
@@ -162,7 +162,7 @@ async function readSealed(shared: SharedFile & { sealed: SealedRef }): Promise<S
     copy.create();
     const handle = copy.open(FileMode.Truncate);
     try {
-      await eachPiece(ref, (piece) => handle.writeBytes(piece));
+      await eachPiece(ref, (piece) => handle.writeBytesSync(piece));
     } finally {
       handle.close();
     }

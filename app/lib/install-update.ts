@@ -46,7 +46,7 @@ async function fileSha256(file: File): Promise<string> {
   const handle = file.open(FileMode.ReadOnly);
   try {
     for (;;) {
-      const bytes = handle.readBytes(PIECE);
+      const bytes = handle.readBytesSync(PIECE);
       if (bytes.length === 0) break;
       hash.update(bytes);
       // The screen gets to draw between pieces.

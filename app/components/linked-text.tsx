@@ -31,7 +31,7 @@ const MONO = Platform.OS === 'web' ? 'ui-monospace, Menlo, Consolas, monospace' 
 // How a run of words looks (lib/text-style.ts). What is hidden shows as a grey bar, its words
 // the same grey, until tapped.
 function lookStyle(look: Look, shown: boolean): TextStyle {
-  const style: TextStyle = {};
+  const style: { -readonly [K in keyof TextStyle]: TextStyle[K] } = {};
   if (look.bold) style.fontWeight = '700';
   if (look.italic) style.fontStyle = 'italic';
   if (look.strike) style.textDecorationLine = 'line-through';

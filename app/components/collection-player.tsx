@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View, type HostInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { attachDeskVideo } from '../lib/collection-desk-player';
@@ -81,7 +81,7 @@ export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: (
   const state = usePlayer(visible);
   const Video = DESK ? null : collectionVideoView();
   // On a computer, the box (a <div> in the page) the player is put in while the screen shows.
-  const box = useRef<View>(null);
+  const box = useRef<HostInstance>(null);
   useEffect(() => {
     if (!DESK || !visible) return;
     let detach: (() => void) | null = null;

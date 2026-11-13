@@ -62,6 +62,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- The app is built on Expo SDK 58 and React Native 0.88, with the tools that build it updated too: this closes
+  the known weaknesses in the router's address reading and in the build tools. Files are still written whole before
+  the app goes on, and Android release builds are still not shrunk, as before.
 - The plain Erevos is built with `EREVOS_EDITION=lite` (docs/editions.md): its core has no Matrix, XMPP or chats with
   other Nostr apps in it, its guide leaves their sections out, and its icon says Erevos.
 - A backup reads every page the files it holds name, even while the app saves: pages let go of meanwhile are deleted

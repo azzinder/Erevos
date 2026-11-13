@@ -4,7 +4,7 @@
 
 import { router, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatLookSheet } from './chat-look';
@@ -127,7 +127,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
   // The group's photos, files, voice messages and links, apart (components/chat-media.tsx).
   const [mediaOpen, setMediaOpen] = useState(false);
   const [, setCalls] = useState(0);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   // Whether the thread is away from its start and its end, for the arrows to them, and from where it was left.
   const { away, onScroll, spot } = useThreadAway();
   // Where the group was left: the first message that was new when it opened, taken before it is read.

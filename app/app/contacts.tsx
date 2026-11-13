@@ -363,7 +363,7 @@ export default function Contacts() {
           initialNumToRender={20}
           windowSize={11}
           ListEmptyComponent={
-            cards === null ? null : (
+            cards === null ? undefined : (
               <Text tone="muted" style={styles.empty}>
                 {query.trim()
                   ? t('No contact has “{query}” in it.', { query: query.trim() })
@@ -386,7 +386,7 @@ export default function Contacts() {
               <Text variant="caption" tone="faint" style={styles.footer}>
                 {plural(cards.length, '{n} contact', '{n} contacts')}
               </Text>
-            ) : null
+            ) : undefined
           }
         />
       </SwipeTabs>

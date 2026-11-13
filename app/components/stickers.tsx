@@ -82,7 +82,7 @@ const about = (k: number, [x, y]: [number, number], turns: object[]) => [
 /** How a move shows as `progress` goes from 0 to 1: its part's shift, turn, size and fading. */
 function moveStyle(move: Move, progress: Animated.Value, k: number) {
   const along = <T extends number | string>(values: T[]) =>
-    progress.interpolate({ inputRange: move.at, outputRange: values as number[] | string[], easing: move.ease === 'linear' ? Easing.linear : EASE });
+    progress.interpolate({ inputRange: move.at, outputRange: values as unknown as number[], easing: move.ease === 'linear' ? Easing.linear : EASE });
   const shifts = [
     ...(move.x ? [{ translateX: along(move.x.map((x) => x * k)) }] : []),
     ...(move.y ? [{ translateY: along(move.y.map((y) => y * k)) }] : []),
@@ -96,7 +96,7 @@ function moveStyle(move: Move, progress: Animated.Value, k: number) {
   return {
     transform: [...shifts, ...(turns.length > 0 ? about(k, move.about ?? [50, 50], turns) : [])],
     ...(move.opacity ? { opacity: along(move.opacity) } : {}),
-  } as unknown as Animated.WithAnimatedObject<ViewStyle>;
+  } as unknown as Animated.WithAnimatedValue<ViewStyle>;
 }
 
 const corners = (r: Corners, k: number): ViewStyle =>

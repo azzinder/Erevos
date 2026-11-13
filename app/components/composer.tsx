@@ -4,23 +4,7 @@
 
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  BackHandler,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-  useWindowDimensions,
-  type AccessibilityActionEvent,
-  type GestureResponderEvent,
-  type NativeSyntheticEvent,
-  type TextInputKeyPressEventData,
-  type TextStyle,
-} from 'react-native';
+import { ActivityIndicator, BackHandler, Keyboard, Modal, Platform, Pressable, ScrollView, TextInput, View, useWindowDimensions, type AccessibilityActionEvent, type GestureResponderEvent, type NativeSyntheticEvent, type TextInputKeyPressEvent, type TextStyle, type HostInstance, type TextInputInstance } from 'react-native';
 
 import { press, tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
@@ -331,8 +315,8 @@ export function Composer({
   const { colors, look, scheme } = useTheme();
   const blur = useGlassBlur();
   const window = useWindowDimensions();
-  const input = useRef<TextInput>(null);
-  const bar = useRef<View>(null);
+  const input = useRef<TextInputInstance>(null);
+  const bar = useRef<HostInstance>(null);
   const canSend = value.trim().length > 0;
   const button = buttonColors('primary', colors);
   // While the microphone is held (or, for a screen reader, on), from when, and how far it slid left.
@@ -497,8 +481,8 @@ export function Composer({
   }
 
   // On a computer Enter sends and Shift+Enter starts a new line; on a phone the keyboard's own key sends.
-  function onKeyPress(event: NativeSyntheticEvent<TextInputKeyPressEventData>) {
-    const key = event.nativeEvent as TextInputKeyPressEventData & { shiftKey?: boolean; isComposing?: boolean };
+  function onKeyPress(event: TextInputKeyPressEvent) {
+    const key = event.nativeEvent as TextInputKeyPressEvent['nativeEvent'] & { shiftKey?: boolean; isComposing?: boolean };
     if (key.key !== 'Enter' || key.shiftKey || key.isComposing) return;
     (event as unknown as { preventDefault: () => void }).preventDefault();
     onSend();

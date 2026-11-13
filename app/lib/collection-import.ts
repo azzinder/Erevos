@@ -74,7 +74,7 @@ export async function thumbOf(bytes: Uint8Array): Promise<Uint8Array | undefined
   const copy = new File(Paths.cache, `erevos-thumb-${toHex(randomBytes(8))}`);
   try {
     copy.create();
-    copy.write(bytes);
+    copy.writeSync(bytes);
     return await thumbAt(copy.uri, photoSize(bytes));
   } finally {
     if (copy.exists) copy.delete();

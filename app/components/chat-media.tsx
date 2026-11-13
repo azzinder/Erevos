@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type ViewToken } from 'react-native';
+import { FlatList, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type ListViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize, readFile } from '../lib/attachments';
@@ -179,7 +179,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
   }, [rows, cell]);
   const days = useMemo(() => new Set(ofTab.filter((item) => item.at > 0).map((item) => dayKey(item.at))), [ofTab]);
 
-  const onSeen = useRef(({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+  const onSeen = useRef(({ viewableItems }: { viewableItems: (Omit<ListViewToken, 'item'> & { item: Row })[] }) => {
     const files = viewableItems
       .flatMap(({ item }) => (item.kind === 'cells' ? item.items : []))
       .flatMap((item) => (item.file && !item.file.from ? [item.file] : []))

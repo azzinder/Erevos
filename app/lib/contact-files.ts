@@ -61,7 +61,7 @@ export async function saveVCards(cards: Card[], name: string): Promise<string | 
     parts.push(writeVCard({ ...card, photo: photo ? fromBase64(photo) : null, groups: groupTitles(card, groups) }));
   }
   const file = new Directory(folder).createFile(name, 'text/x-vcard');
-  file.write(utf8Encode(parts.join('')));
+  file.writeSync(utf8Encode(parts.join('')));
   return file.name || name;
 }
 

@@ -179,7 +179,7 @@ export function SmsHome() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
         renderItem={({ item }) => <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />}
         ListEmptyComponent={
-          rows === null ? null : (
+          rows === null ? undefined : (
             <Text tone="muted" style={styles.emptyText}>
               {!isApp ? t('Erevos is not the SMS app') : query.trim() ? t('No chat has “{query}” in it.', { query: query.trim() }) : t('No SMS yet.')}
             </Text>

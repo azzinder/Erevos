@@ -41,7 +41,12 @@ export class File {
     return folders.get(this.folder)?.get(this.name)?.length ?? 0;
   }
 
-  write(bytes: Uint8Array): void {
+  // As SDK 58: write() is async, writeSync() writes before it returns.
+  async write(bytes: Uint8Array): Promise<void> {
+    this.writeSync(bytes);
+  }
+
+  writeSync(bytes: Uint8Array): void {
     if (writes.failAt > 0 && --writes.failAt === 0) throw new Error('No room left.');
     inFolder(this.folder).set(this.name, bytes.slice());
   }
