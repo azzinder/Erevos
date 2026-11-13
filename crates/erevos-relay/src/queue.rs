@@ -452,8 +452,22 @@ impl Store {
             clock,
             ..Store::default()
         };
-        let skipped = journal::replay(path, |record| store.apply(record))?;
-        if skipped > 0 {
+        let replayed = journal::replay(path, |record| store.apply(record))?;
+        let skipped = replayed.skipped;
+        if replayed.damaged {
+            // Rewritten below without what comes after the damage: kept as it was first.
+            let kept = journal::keep_damaged(path, (store.clock)()).map_err(|e| {
+                io::Error::new(
+                    e.kind(),
+                    format!("{} is damaged {skipped} bytes before its end, and cannot be kept as it is before it is rewritten without them: {e}", path.display()),
+                )
+            })?;
+            elog!(
+                "erevos-relay: {} is damaged {skipped} bytes before its end: what comes before was read, what comes after was not; the file as it was is kept in {}",
+                path.display(),
+                kept.display()
+            );
+        } else if skipped > 0 {
             elog!(
                 "erevos-relay: skipped {skipped} bytes at the end of {}, left by a write that did not finish",
                 path.display()
@@ -1181,10 +1195,28 @@ mod tests {
         }
     }
 
+    impl TempPath {
+        /// The files beside it named `<it>.<ending>` with an ending that starts with `start`.
+        fn beside(&self, start: &str) -> Vec<PathBuf> {
+            let prefix = format!("{}.{start}", self.0.file_name().unwrap().to_string_lossy());
+            let mut found: Vec<PathBuf> = std::fs::read_dir(self.0.parent().unwrap())
+                .unwrap()
+                .flatten()
+                .filter(|entry| entry.file_name().to_string_lossy().starts_with(&prefix))
+                .map(|entry| entry.path())
+                .collect();
+            found.sort();
+            found
+        }
+    }
+
     impl Drop for TempPath {
         fn drop(&mut self) {
             let _ = std::fs::remove_file(&self.0);
             let _ = std::fs::remove_file(news_path(&self.0));
+            for kept in self.beside("") {
+                let _ = std::fs::remove_file(kept);
+            }
         }
     }
 
@@ -1227,8 +1259,8 @@ mod tests {
         drop(Store::open(&path.0).unwrap());
         let after = std::fs::metadata(&path.0).unwrap().len();
         assert!(before > 50 * 1000);
-        // The queue alone, with the day it was last used.
-        assert_eq!(after, (journal::HEADER.len() + 1 + 24 + 24 + 8) as u64);
+        // The queue alone, with the day it was last used, and its check.
+        assert_eq!(after, (journal::HEADER.len() + 1 + 24 + 24 + 8 + 4) as u64);
     }
 
     #[test]
@@ -1255,6 +1287,111 @@ mod tests {
         let mut s = Store::open(&path.0).unwrap();
         assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"whole");
         assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+    }
+
+    /// A journal holding one queue with three messages, "one", "two" and
+    /// "three", and where each record of it starts.
+    fn three_messages(path: &Path) -> (NewQueue, Vec<usize>) {
+        let q = {
+            let mut s = Store::open(path).unwrap();
+            let q = s.create().unwrap();
+            for message in [b"one".as_slice(), b"two", b"three"] {
+                s.send(&q.sender_id, message.to_vec()).unwrap();
+            }
+            q
+        };
+        let bytes = std::fs::read(path).unwrap();
+        assert_eq!(&bytes[..8], journal::HEADER);
+        // CREATE_AT, then each SEND_AT: its tag, ids, time, length and words, and the check.
+        let mut starts = vec![8];
+        let mut at = 8 + 1 + 24 + 24 + 8 + 4;
+        for message in [b"one".as_slice(), b"two", b"three"] {
+            starts.push(at);
+            at += 1 + 24 + 8 + 4 + message.len() + 4;
+        }
+        assert_eq!(at, bytes.len());
+        (q, starts)
+    }
+
+    #[test]
+    fn a_damaged_record_is_found_and_the_journal_kept_as_it_was() {
+        let path = TempPath::new();
+        let (q, starts) = three_messages(&path.0);
+        let mut bytes = std::fs::read(&path.0).unwrap();
+        // A bit the disk changed in the words "two".
+        bytes[starts[3] - 4 - 1] ^= 0x10;
+        std::fs::write(&path.0, &bytes).unwrap();
+
+        let mut s = Store::open(&path.0).unwrap();
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"one");
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+        let kept = path.beside("damaged-");
+        assert_eq!(kept.len(), 1);
+        assert_eq!(std::fs::read(&kept[0]).unwrap(), bytes);
+    }
+
+    #[test]
+    fn the_last_record_written_in_part_is_skipped_and_nothing_kept() {
+        let path = TempPath::new();
+        let (q, _) = three_messages(&path.0);
+        let mut bytes = std::fs::read(&path.0).unwrap();
+        let last = bytes.len() - 4 - 1;
+        bytes[last] ^= 0x10;
+        std::fs::write(&path.0, &bytes).unwrap();
+
+        let mut s = Store::open(&path.0).unwrap();
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"one");
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"two");
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+        assert!(path.beside("damaged-").is_empty());
+    }
+
+    #[test]
+    fn a_journal_from_before_records_were_checked_still_opens_and_is_checked_after() {
+        let path = TempPath::new();
+        let mut old = journal::J2_HEADER.to_vec();
+        let (recipient, sender) = ([5u8; 24], [6u8; 24]);
+        old.push(6);
+        old.extend_from_slice(&recipient);
+        old.extend_from_slice(&sender);
+        old.extend_from_slice(&(fixed_now() / DAY * DAY).to_be_bytes());
+        old.push(5);
+        old.extend_from_slice(&recipient);
+        old.extend_from_slice(&(fixed_now() - 60).to_be_bytes());
+        old.extend_from_slice(&5u32.to_be_bytes());
+        old.extend_from_slice(b"hello");
+        std::fs::write(&path.0, &old).unwrap();
+        drop(Store::open_clocked(&path.0, DEFAULT_TTL, DEFAULT_MAX_BYTES, fixed_now).unwrap());
+        let bytes = std::fs::read(&path.0).unwrap();
+        assert_eq!(&bytes[..8], journal::HEADER);
+        assert_eq!(bytes.len(), old.len() + 2 * 4);
+        let mut s = Store::open_clocked(&path.0, DEFAULT_TTL, DEFAULT_MAX_BYTES, fixed_now).unwrap();
+        assert_eq!(s.receive(&recipient).unwrap().unwrap(), b"hello");
+    }
+
+    #[test]
+    fn a_journal_written_again_for_an_older_relay_keeps_every_record() {
+        let path = TempPath::new();
+        let (q, _) = three_messages(&path.0);
+        let checked = std::fs::read(&path.0).unwrap();
+        let journal::Downgraded::Done { records, skipped, kept } = journal::downgrade(&path.0, 1).unwrap() else {
+            panic!("not written again");
+        };
+        assert_eq!((records, skipped), (4, journal::Replayed::default()));
+        assert_eq!(std::fs::read(&kept).unwrap(), checked);
+        let bytes = std::fs::read(&path.0).unwrap();
+        assert_eq!(&bytes[..8], journal::J2_HEADER);
+        // Each record as before, without its check.
+        assert_eq!(bytes.len(), checked.len() - 4 * 4);
+        assert_eq!(journal::downgrade(&path.0, 2).unwrap(), journal::Downgraded::Already);
+
+        // Read by this relay too, and checked again when it rewrites it.
+        let mut s = Store::open(&path.0).unwrap();
+        for message in [b"one".as_slice(), b"two", b"three"] {
+            assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), message);
+        }
+        drop(s);
+        assert_eq!(&std::fs::read(&path.0).unwrap()[..8], journal::HEADER);
     }
 
     #[test]
@@ -1395,7 +1532,7 @@ mod tests {
         let bytes = std::fs::read(&path.0).unwrap();
         assert_eq!(&bytes[..8], journal::HEADER);
         assert_ne!(journal::HEADER, journal::OLD_HEADER);
-        assert_eq!(&bytes[bytes.len() - 8..], &day.to_be_bytes());
+        assert_eq!(&bytes[bytes.len() - 12..bytes.len() - 4], &day.to_be_bytes());
     }
 
     static QUEUE_NOW: AtomicU64 = AtomicU64::new(1_800_000_000);
@@ -1426,9 +1563,9 @@ mod tests {
         // The next day, its first use is written, and only that one.
         QUEUE_NOW.fetch_add(DAY, Ordering::SeqCst);
         assert_eq!(s.has_waiting(&used.recipient_id), Ok(false));
-        assert_eq!(written(&s), before + 1 + 24 + 8);
+        assert_eq!(written(&s), before + 1 + 24 + 8 + 4);
         assert_eq!(s.receive(&used.recipient_id).unwrap(), None);
-        assert_eq!(written(&s), before + 1 + 24 + 8);
+        assert_eq!(written(&s), before + 1 + 24 + 8 + 4);
         // Only the day is kept, not the second.
         assert_eq!(s.queues[&used.recipient_id].used % DAY, 0);
 

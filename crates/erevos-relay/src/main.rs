@@ -104,6 +104,12 @@
 //! found it empty in `<journal>.news` until it next starts (see `stop.rs`),
 //! so a phone is not told again of messages it was told of already.
 //!
+//! Each record of the journal is checked as it is read back: one the disk
+//! changed is reported, and the journal as it was kept beside it. An older
+//! relay does not read a journal written now; to go back to one, stop this
+//! relay and run `erevos-relay downgrade-journal`, which writes it again as
+//! older relays read it, with nothing left out (see `journal.rs`).
+//!
 //! Messages nobody takes expire after 14 days. Set `EREVOS_RELAY_TTL_DAYS`
 //! to change that.
 //!
@@ -387,6 +393,71 @@ fn free_line(name: &str) -> ExitCode {
     }
 }
 
+/// `erevos-relay downgrade-journal [FILE]`: writes the journal in `FILE`, or
+/// in the file `EREVOS_RELAY_JOURNAL` names, again as relays from before
+/// journal records were checked read it, for going back to one (see
+/// `journal.rs`), and keeps the file as it was beside it. Run with the relay
+/// stopped, since a running relay goes on writing to the file as it was; as
+/// root, the journal stays its owner's.
+fn downgrade_journal(file: Option<String>) -> ExitCode {
+    let Some(path) = file
+        .filter(|p| !p.trim().is_empty())
+        .or_else(|| env::var("EREVOS_RELAY_JOURNAL").ok().filter(|p| !p.is_empty()))
+    else {
+        elog!("erevos-relay: downgrade-journal needs the journal, as in erevos-relay downgrade-journal /var/lib/erevos-relay/queues.journal, or EREVOS_RELAY_JOURNAL set");
+        return ExitCode::FAILURE;
+    };
+    let path = PathBuf::from(path);
+    let owner = owner_of(&path);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    match journal::downgrade(&path, now) {
+        Ok(journal::Downgraded::Already) => {
+            println!(
+                "{} is written as older relays read it already: nothing to do.",
+                path.display()
+            );
+            ExitCode::SUCCESS
+        }
+        Ok(journal::Downgraded::Done {
+            records,
+            skipped,
+            kept,
+        }) => {
+            give_back(&path, owner);
+            give_back(&kept, owner);
+            if skipped.damaged {
+                println!(
+                    "{} is damaged {} bytes before its end: only the records before were written again.",
+                    path.display(),
+                    skipped.skipped
+                );
+            } else if skipped.skipped > 0 {
+                println!(
+                    "The last {} bytes of {} were a record written in part, left out.",
+                    skipped.skipped,
+                    path.display()
+                );
+            }
+            println!(
+                "{} now holds its {records} {} as older relays read them; the file as it was is kept in {}. Start the older relay now.",
+                path.display(),
+                if records == 1 { "record" } else { "records" },
+                kept.display()
+            );
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            elog!(
+                "erevos-relay: cannot write the journal {} again: {e}",
+                path.display()
+            );
+            ExitCode::FAILURE
+        }
+    }
+}
+
 /// Who owns the file at `path`, if it is there.
 #[cfg(unix)]
 fn owner_of(path: &Path) -> Option<(u32, u32)> {
@@ -431,6 +502,9 @@ fn main() -> ExitCode {
     }
     if env::args().nth(1).as_deref() == Some("new-coupon-key") {
         return new_coupon_key(env::args().nth(2));
+    }
+    if env::args().nth(1).as_deref() == Some("downgrade-journal") {
+        return downgrade_journal(env::args().nth(2));
     }
     // Before any thread starts, so that every one has them blocked.
     let signals = stop::block();

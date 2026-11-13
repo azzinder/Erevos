@@ -40,6 +40,10 @@ On main, not released yet:
 - A chat's thread, and its media list while the details show, are no longer worked out again each time the clock moves
   or another chat changes; marking messages read finds them by tag in one pass, and a link followed by a long run of
   marks or brackets is trimmed in one pass too, where before it took ever longer with each mark.
+- The relay checks each record of its journal (CRC-32C, `EREVOSJ3`): a record the disk changed is found at start,
+  what comes before it is read, and the journal as it was is kept beside it before it is written again. A journal
+  from an older relay is read as it is. `erevos-relay downgrade-journal` writes it back as older relays read it,
+  losing nothing, for going back to one (deploy/relay/README.md).
 
 ## 7.0.0-rc.10 (2026-11-12)
 

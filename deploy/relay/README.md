@@ -655,10 +655,30 @@ connection, through Tor or as the phone's network changes, is handed over again
 at the next look instead of being lost. Older phones take as before, and the
 app takes as before from an older relay.
 
-The journal is now written so that an older relay does not take it: put back
-in place of this one, an older relay stops at start with a line saying the
-file is not a journal, rather than cutting it short. Going back means moving
-the journal aside, which loses the queues in it.
+The journal is written so that an older relay does not take it: put back in
+place of this one, an older relay stops at start with a line saying the file is
+not a journal, rather than cutting it short.
+
+Each record of the journal ends with a check (CRC-32C, `EREVOSJ3`), so a record
+the disk changed is found as the relay reads the journal back at start. What
+comes before it is read; the journal as it was is kept beside it, in
+`queues.journal.damaged-<time>`, before the relay writes it again without what
+came after, and the log says so. A record cut short at the end, as a stop in the
+middle of a write leaves it, is skipped as before. A journal written by an
+older relay is read as it is and checked from the first start of this one.
+
+To go back to a relay from before the checks, stop this one, write the journal
+again as the older relay reads it, and start that one:
+
+```sh
+systemctl stop erevos-relay
+/usr/local/bin/erevos-relay downgrade-journal /var/lib/erevos-relay/queues.journal
+```
+
+`downgrade-journal` leaves out no queue or message and keeps the file as it was
+in `queues.journal.j3-<time>`. Run as root, it gives both files back to the
+journal's owner, the relay's service user. Without the file named, it takes
+`EREVOS_RELAY_JOURNAL`.
 
 What came into each queue since its phone last found it empty (its news, which
 the app asks for to tell of messages while a hidden chat or a space is
