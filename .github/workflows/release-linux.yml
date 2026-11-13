@@ -102,8 +102,9 @@ jobs:
           node scripts/build-web-core.mjs
           npx expo export --clear --platform web --output-dir ../desktop/web
           test -f ../desktop/web/core/erevos_ffi_bg.wasm
-          # Element Call, for Matrix calls, served apart at app://element-call (desktop/main.js).
-          node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call
+          # Element Call, for Matrix calls, served apart at app://element-call (desktop/main.js):
+          # Erevos+ only, as the plain Erevos has no Matrix.
+          if [ "$EREVOS_EDITION" != lite ]; then node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call; fi
       - run: npm ci
         working-directory: desktop
       - name: Start it and wait for its first screen
