@@ -242,7 +242,7 @@ class PickContactActivity : Activity() {
     if (!ContactsStore.canRead(this)) {
       layout.addView(TextView(this).apply {
         text = Words.say(
-          this,
+          this@PickContactActivity,
           "Erevos may not read the phone's contacts yet. Open Contacts in Erevos to allow it.",
           "Το Erevos δεν μπορεί ακόμα να διαβάσει τις επαφές του τηλεφώνου. Άνοιξε τις Επαφές στο Erevos για να το επιτρέψεις.",
         )
@@ -252,7 +252,7 @@ class PickContactActivity : Activity() {
       return
     }
     val search = EditText(this).apply {
-      hint = Words.say(this, "Search", "Αναζήτηση")
+      hint = Words.say(this@PickContactActivity, "Search", "Αναζήτηση")
       inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_FILTER
       isSingleLine = true
     }
