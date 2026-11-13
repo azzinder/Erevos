@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { ASK_MS, Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { ASK_MS, Call, callNow, connectionConfig, currentCall, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -102,6 +102,20 @@ test('a call we make: offer, ringing, answer, connected, hung up', async () => {
   assert.equal(currentCall(), null);
 });
 
+test('a call goes direct only between addresses on the same network; else through the call relay, never showing an internet address', () => {
+  const line = (address: string, typ = 'host') => `a=candidate:1 1 udp 2122260223 ${address} 50000 typ ${typ}`;
+  const sdp = (...addresses: string[]) => ['v=0', ...addresses.map((a) => line(a))].join('\r\n');
+  for (const local of ['192.168.1.4', '10.0.0.2', '172.20.1.1', '169.254.3.3', 'fe80::1', 'fd12::5', 'abcd-1234.local']) assert.ok(isLocalAddress(local), local);
+  for (const open of ['8.8.8.8', '172.32.0.1', '2a02:587:1::5', '']) assert.ok(!isLocalAddress(open), open);
+  // An offer with no call relay and only local addresses: answered direct.
+  assert.equal(relayToAnswer(sdp('192.168.1.4', 'fe80::1'), TURN), null);
+  // One with an internet address and no call relay, as a changed app might send: through ours all the same.
+  assert.equal(relayToAnswer(sdp('192.168.1.4', '2a02:587:1::5'), TURN), TURN);
+  assert.equal(relayToAnswer(`${sdp('192.168.1.4')}\r\n${line('1.2.3.4', 'relay')}`, TURN), TURN);
+  // What a direct call says of this device: its local addresses only.
+  assert.equal(localOnlySdp(sdp('192.168.1.4', '2a02:587:1::5', '8.8.8.8')), sdp('192.168.1.4'));
+});
+
 test('a call that rings here: ringing said, answered, and ended by them', async () => {
   const { rtc, connections } = fakeRtc();
   const ours = events();
@@ -115,10 +129,10 @@ test('a call that rings here: ringing said, answered, and ended by them', async 
 
   await call.answer();
   const [connection] = connections;
-  // No call relay: straight between the phones.
+  // No call relay: straight between the phones, saying only addresses on this network.
   assert.deepEqual(connection.config, { iceServers: [], iceTransportPolicy: 'all' });
   assert.deepEqual(connection.remote, { type: 'offer', sdp: offer.sdp });
-  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer\r\na=candidate:relay', reoffer: true });
+  assert.deepEqual(ours.sent.at(-1), { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer', reoffer: true });
   assert.equal(call.state, 'connecting');
 
   call.receive({ id: offer.id, kind: 'end', reason: 'hangup' });

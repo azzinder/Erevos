@@ -221,13 +221,49 @@ export function connectionConfig(relay: CallRelay | null): ConnectionConfig {
     : { iceServers: [], iceTransportPolicy: 'all' };
 }
 
+// An address on this network only: private IPv4, link-local, loopback, unique-local IPv6, or a
+// name the network's own mDNS gives (`….local`), which no one outside it can reach.
+export function isLocalAddress(address: string): boolean {
+  const a = address.toLowerCase().replace(/^\[|\]$/g, '');
+  if (a.endsWith('.local')) return true;
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(a);
+  if (v4) {
+    const [x, y] = [Number(v4[1]), Number(v4[2])];
+    return x === 10 || x === 127 || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || (x === 169 && y === 254);
+  }
+  if (a.includes(':')) return a === '::1' || /^fe[89ab]/.test(a) || /^f[cd]/.test(a);
+  return false;
+}
+
+// The address of an SDP candidate line (`a=candidate:…` or `candidate:…`), its fifth field.
+const candidateAddress = (line: string): string => line.replace(/^a=/, '').split(' ')[4] ?? '';
+
+/** Whether every address an SDP offers is on its own network only (none at all counts so). */
+export function offersOnlyLocal(sdp: string): boolean {
+  return sdp
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith('a=candidate:'))
+    .every((line) => isLocalAddress(candidateAddress(line)));
+}
+
+/** An SDP without the addresses that are not on its own network only: what a direct call, with
+ *  no call relay, may say of this device, so that it never shows its internet address. */
+export function localOnlySdp(sdp: string): string {
+  const eol = sdp.includes('\r\n') ? '\r\n' : '\n';
+  return sdp
+    .split(/\r?\n/)
+    .filter((line) => !line.startsWith('a=candidate:') || isLocalAddress(candidateAddress(line)))
+    .join(eol);
+}
+
 /** A connection's session description once the addresses to try are in it, or after GATHER_MS
- *  with those found by then. */
-export function describedSdp(connection: Connection): Promise<string> {
+ *  with those found by then. `direct`: with no call relay, only its addresses on this network. */
+export function describedSdp(connection: Connection, direct = false): Promise<string> {
   return new Promise((resolve, reject) => {
     const done = () => {
       clearTimeout(timer);
-      const sdp = connection.localDescription?.sdp ?? '';
+      const given = connection.localDescription?.sdp ?? '';
+      const sdp = direct ? localOnlySdp(given) : given;
       if (!sdp || sdp.length > MAX_SDP) reject(new Error('No session description to send.'));
       else resolve(sdp);
     };
@@ -237,10 +273,12 @@ export function describedSdp(connection: Connection): Promise<string> {
   });
 }
 
-/** The call relay to answer an offer with: none when the offer has no call relay address, as
- *  from a phone with no internet on the same Wi-Fi, where only a direct connection can work. */
+/** The call relay to answer an offer with: none when the offer has no call relay address and
+ *  offers only addresses on its own network, as from a phone with no internet on the same Wi-Fi,
+ *  where only a direct connection can work. One with no call relay but an internet address is
+ *  answered through ours all the same: a direct connection would show each side's address. */
 export function relayToAnswer(offer: string, relay: CallRelay | null): CallRelay | null {
-  return / typ relay/.test(offer) ? relay : null;
+  return / typ relay/.test(offer) || !offersOnlyLocal(offer) ? relay : null;
 }
 
 /** How many cameras `rtc` says there are; 0 when it cannot say. */
@@ -396,7 +434,7 @@ export class Call {
       this.addCandidates([]);
       if (this.video && !camera && this.options.events.bothWays) this.keepBothWays(connection);
       await connection.setLocalDescription(await connection.createAnswer());
-      const sdp = await describedSdp(connection);
+      const sdp = await describedSdp(connection, !this.options.relay);
       // Hung up while it connected.
       if ((this.state as CallState) === 'ended') return;
       await this.options.events.send({ id: this.id, kind: 'answer', sdp, reoffer: true });
@@ -521,7 +559,7 @@ export class Call {
       camera = await this.camera(connection);
       await connection.setLocalDescription(await connection.createOffer());
       offered = true;
-      const sdp = await describedSdp(connection);
+      const sdp = await describedSdp(connection, !this.options.relay);
       const answer = await this.changeMedia(sdp);
       if ((this.state as CallState) === 'ended') return;
       await connection.setRemoteDescription({ type: 'answer', sdp: answer });
@@ -603,7 +641,7 @@ export class Call {
       camera = await this.camera(connection);
       await connection.setRemoteDescription({ type: 'offer', sdp: offer });
       await connection.setLocalDescription(await connection.createAnswer());
-      const sdp = await describedSdp(connection);
+      const sdp = await describedSdp(connection, !this.options.relay);
       if ((this.state as CallState) === 'ended') return;
       await this.answerChange(sdp);
       this.video = true;
@@ -667,7 +705,7 @@ export class Call {
     try {
       await connection.setRemoteDescription({ type: 'offer', sdp: offer });
       await connection.setLocalDescription(await connection.createAnswer());
-      const sdp = await describedSdp(connection);
+      const sdp = await describedSdp(connection, !this.options.relay);
       if ((this.state as CallState) === 'ended') return;
       await this.answerChange(sdp);
       // Their picture, added to a voice call: it shows, and our camera stays off until turned on.
@@ -749,7 +787,7 @@ export class Call {
     try {
       const connection = await this.connect(this.video);
       await connection.setLocalDescription(await connection.createOffer());
-      const sdp = await describedSdp(connection);
+      const sdp = await describedSdp(connection, !this.options.relay);
       if (this.state === 'ended') return;
       await this.options.events.send({ id: this.id, kind: 'offer', video: this.video, sdp, at: callNow(), reoffer: true });
       // Gone: their phone may ring for it until it is OFFER_FRESH_MS old (calls.ts), so this waits

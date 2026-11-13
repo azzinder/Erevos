@@ -76,6 +76,8 @@ type Peer = CallPeer & {
   described: boolean;
   /** Their addresses that came before their description was set. */
   candidates: Candidate[];
+  /** With no call relay: our description says only our addresses on this network. */
+  direct: boolean;
 };
 
 let current: GroupCall | null = null;
@@ -292,7 +294,7 @@ export class GroupCall {
   private connect(identity: string, offered: boolean, offer = ''): Peer {
     const relay = offered || this.options.relayAlways ? this.options.relay : relayToAnswer(offer, this.options.relay);
     const connection = this.options.rtc.connect(connectionConfig(relay));
-    const peer: Peer = { identity, state: 'connecting', remote: null, connection, offered, answered: false, timer: null, described: false, candidates: this.early.get(identity) ?? [] };
+    const peer: Peer = { identity, state: 'connecting', remote: null, connection, offered, answered: false, timer: null, described: false, candidates: this.early.get(identity) ?? [], direct: !relay };
     this.early.delete(identity);
     this.peerMap.set(identity, peer);
     const local = this.local!;
@@ -321,7 +323,7 @@ export class GroupCall {
     const peer = this.connect(identity, true);
     try {
       await peer.connection.setLocalDescription(await peer.connection.createOffer());
-      const sdp = await describedSdp(peer.connection);
+      const sdp = await describedSdp(peer.connection, peer.direct);
       if (this.peerMap.get(identity) !== peer) return;
       await this.options.events.send({ id: this.id, kind: 'offer', to: identity, sdp });
     } catch {
@@ -343,7 +345,7 @@ export class GroupCall {
         }
       }
       await peer.connection.setLocalDescription(await peer.connection.createAnswer());
-      const sdp = await describedSdp(peer.connection);
+      const sdp = await describedSdp(peer.connection, peer.direct);
       if (this.peerMap.get(identity) !== peer) return;
       await this.options.events.send({ id: this.id, kind: 'answer', to: identity, sdp });
     } catch {
