@@ -207,12 +207,28 @@ jobs:
   # release key. Without the key's four secrets the job stops and the release goes out without
   # an APK, rather than sign with the public debug key, which would let anyone's APK install
   # over Erevos.
+  # Two APKs from the same commit, both signed with the release key: the one Updates installs, and
+  # the F-Droid one (EREVOS_DISTRIBUTION=fdroid: no Check for updates, no permission to install
+  # packages), which F-Droid builds again from the tag and compares with this one, to hand out
+  # this signed copy (a reproducible build). One key for both, and for Erevos+, so each installs
+  # over the other.
   apk:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: ""
+            file: erevos-android.apk
+          - distribution: fdroid
+            file: erevos-android-fdroid.apk
+    name: apk ${{ matrix.file }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
       EREVOS_BUILD: ${{ needs.version.outputs.number }}
+      EREVOS_DISTRIBUTION: ${{ matrix.distribution }}
+      APK: ${{ matrix.file }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -297,29 +313,36 @@ jobs:
 
       - name: Check the APK
         run: |
-          cp app/android/app/build/outputs/apk/release/app-release.apk erevos-android.apk
+          cp app/android/app/build/outputs/apk/release/app-release.apk "$APK"
           rm -f app/android/app/release.keystore
           # It carries the Rust core.
-          unzip -l erevos-android.apk 'lib/arm64-v8a/*' | grep -q 'erevos' \
-            || { echo "::error::The Erevos core is missing from the APK"; unzip -l erevos-android.apk 'lib/*'; exit 1; }
+          unzip -l "$APK" 'lib/arm64-v8a/*' | grep -q 'erevos' \
+            || { echo "::error::The Erevos core is missing from the APK"; unzip -l "$APK" 'lib/*'; exit 1; }
           # And lyrebird for Tor bridges, compressed, so Android unpacks it to where it may run
           # (plugins/with-native-programs.js).
-          unzip -v erevos-android.apk 'lib/arm64-v8a/liblyrebird.so' | grep -q 'Defl.*liblyrebird' \
-            || { echo "::error::lyrebird (Tor bridges) is missing from the APK, or Android would not unpack it"; unzip -v erevos-android.apk 'lib/*'; exit 1; }
+          unzip -v "$APK" 'lib/arm64-v8a/liblyrebird.so' | grep -q 'Defl.*liblyrebird' \
+            || { echo "::error::lyrebird (Tor bridges) is missing from the APK, or Android would not unpack it"; unzip -v "$APK" 'lib/*'; exit 1; }
           # Signed by the release key, never by the public debug key (SHA-1 5E:8F:16:06:2E:A3:…).
           apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
-          "$apksigner" verify --print-certs erevos-android.apk | tee signature
+          "$apksigner" verify --print-certs "$APK" | tee signature
           if grep -i 'certificate SHA-1 digest' signature | tr -d ':' | grep -qi 5e8f16062ea3cd2c4a0d547876baa6f38cabf625; then
             echo "::error::The APK is signed with the debug key"; exit 1
           fi
           grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
             || { echo "::error::The APK is not signed with the release key"; exit 1; }
+          # The F-Droid build may not install packages: F-Droid updates it.
+          if [ "$EREVOS_DISTRIBUTION" = fdroid ]; then
+            aapt2="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt2"
+            if "$aapt2" dump permissions "$APK" | grep -q REQUEST_INSTALL_PACKAGES; then
+              echo "::error::The F-Droid APK asks to install packages"; exit 1
+            fi
+          fi
 
       - name: Hand the APK to the publish job
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "build-$EREVOS_BUILD" erevos-android.apk --clobber
+        run: gh release upload "build-$EREVOS_BUILD" "$APK" --clobber
 
   # Linux, and the web build with its core that the macOS and Windows jobs package too.
   linux:
@@ -624,6 +647,7 @@ jobs:
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }
           package erevos-android.apk "**Android** 7 or newer (64-bit): in Erevos, Updates → Check for updates → Install. Or open this page on the phone and tap erevos-android.apk."
+          package erevos-android-fdroid.apk "**Android, the F-Droid build**: erevos-android-fdroid.apk, the same Erevos without Check for updates, signed with the same key. F-Droid builds it again from this release's source and hands out this signed copy when the two match."
           package erevos-linux-x86_64.pacman "**Arch Linux / CachyOS** (x86_64): \`sudo pacman -U erevos-linux-x86_64.pacman\`"
           package erevos-linux-x86_64.AppImage "**Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."
           package erevos-macos.dmg "**macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. It has no paid Apple signature: the first time, and after each update, allow it under System Settings → Privacy & Security → Open Anyway."

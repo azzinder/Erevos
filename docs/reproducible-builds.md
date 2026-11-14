@@ -42,6 +42,18 @@ in, so build in the folder GitHub's runner used, `/home/runner/work/Erevos/Erevo
 `reproduce-apk` does all this on a fresh GitHub runner, started by hand; it uses about as many
 Actions minutes as a release's Android build.
 
+## The F-Droid APK
+
+Each release also carries `erevos-android-fdroid.apk`: the same commit built with
+`EREVOS_DISTRIBUTION=fdroid` (no Check for updates, no permission to install packages), signed
+with the same release key. F-Droid builds the release's tag again and, when its APK matches this
+one byte for byte apart from the signature, hands out this signed copy. Erevos from F-Droid,
+from the releases and Erevos+ then share one key, and each installs over the other.
+
+F-Droid builds in its own folder (`/home/vagrant/build/app.erevos`), not GitHub's, so everything
+listed below has to hold for any folder, the C++ that CMake builds for React Native's modules
+included, before F-Droid's build can match.
+
 ## What makes it the same
 
 - **One Rust**: `rust-toolchain.toml` names the exact version. It moves forward by hand.
@@ -61,5 +73,6 @@ Actions minutes as a release's Android build.
 
 ## Next
 
-Run `reproduce-apk` on the first release built with the Android path fixes, and fix what still differs. Then the desktop packages and
+Make the Android build the same in any folder (React Native's CMake builds), then check it with
+the F-Droid APK built in `/home/vagrant/build/app.erevos`. Run `reproduce-apk` on the first release built with the Android path fixes, and fix what still differs. Then the desktop packages and
 the Sailfish RPM.

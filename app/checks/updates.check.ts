@@ -81,7 +81,7 @@ test("the running app's build number: apart from the version since 2.0.0, in it 
 const appJson = () => (JSON.parse(readFileSync(join(import.meta.dirname, '../app.json'), 'utf8')) as { expo: Record<string, unknown> }).expo;
 const INSTALL_PACKAGES = 'android.permission.REQUEST_INSTALL_PACKAGES';
 
-test('the F-Droid build may not install packages, and knows F-Droid updates it; the release build may', () => {
+test('the F-Droid build may not install packages, and knows F-Droid updates it; the release build may; a release makes both', () => {
   const config = createRequire(import.meta.url)('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
   const env = { ...process.env };
   try {
@@ -102,7 +102,12 @@ test('the F-Droid build may not install packages, and knows F-Droid updates it; 
     process.env = env;
   }
   const workflow = readFileSync(join(import.meta.dirname, '../../.github/workflows/release.yml'), 'utf8');
-  assert.equal(workflow.includes('EREVOS_DISTRIBUTION'), false);
+  // The release builds both: the APK Updates installs as the release build, and the F-Droid one,
+  // signed with the same key, for F-Droid to compare with its own build of the tag.
+  assert.match(workflow, /- distribution: ""\n\s+file: erevos-android\.apk\n/);
+  assert.match(workflow, /- distribution: fdroid\n\s+file: erevos-android-fdroid\.apk\n/);
+  assert.equal(workflow.match(/EREVOS_DISTRIBUTION:/g)?.length, 1);
+  assert.match(workflow, /EREVOS_DISTRIBUTION: \$\{\{ matrix\.distribution \}\}/);
 });
 
 test("no build's manifest names Google Play services: expo-image-picker's service is taken out", async () => {

@@ -16,6 +16,7 @@ On main, not released yet:
 
 ### Under the hood
 
+- Every release also carries `erevos-android-fdroid.apk`, the F-Droid build (`EREVOS_DISTRIBUTION=fdroid`), signed with the release key, for F-Droid to compare with its own build of the tag and hand out the signed copy (`docs/reproducible-builds.md`).
 - Every copy of Erevos carries its licences: `app/public/NOTICES.txt` holds Erevos's licence, AUTHORS.md and every package Erevos is built from with its licence text (`node scripts/credits.mjs` writes it, `credits.check.ts` checks it). The web export carries it, so the web, computer and Sailfish apps do; on Android the plugin `with-notices` puts it in the app's assets.
 
 ## 7.0.0 (2026-11-13)
