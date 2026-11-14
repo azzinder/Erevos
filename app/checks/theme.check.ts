@@ -33,7 +33,7 @@ import {
 } from '../theme/colors';
 import { rawAccent, withAlpha } from '../theme/colors';
 import { backdropKind, GLASS_KINDS, glassSide, inkGround, paneFrame, withLook } from '../theme/glass';
-import { changeLook, checkedLook, DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook } from '../theme/look';
+import { changeLook, checkedLook, DEFAULT_LOOK, KEPT_LOOK, loadLockScreenLook, saveLockScreenLook } from '../theme/look';
 import { LPHL_PALETTES } from '../theme/lphl-palettes';
 import { store } from './secure-memory';
 
@@ -53,8 +53,21 @@ test("keeps Erevos's own dark and gold in Classic", () => {
   assert.equal(c.primary, '#D9A441');
   assert.equal(c.onPrimary, '#0D0B09');
   assert.equal(c.ground, c.background);
-  assert.equal(resolveScheme('classic', DEFAULT_LOOK.theme, 'light'), 'dark');
+  assert.equal(resolveScheme('classic', 'dark', 'light'), 'dark');
   assert.equal(resolveScheme('nocturne', 'light', 'light'), 'dark');
+});
+
+test('a new space looks as the maintainer chose; a kept look missing them keeps the old defaults', () => {
+  const { style, theme, palette, customAccent, frameText, look, glassKind, bubbles, font } = DEFAULT_LOOK;
+  assert.deepEqual(
+    { style, theme, palette, customAccent, frameText, look, glassKind, bubbles, font },
+    { style: 'modernist', theme: 'system', palette: 'custom', customAccent: '#0EA5E9', frameText: 'palette', look: 'glass', glassKind: 'cards', bubbles: 'square', font: 'sans' },
+  );
+  assert.equal(resolveScheme(style, theme, 'light'), 'light');
+  assert.equal(resolveScheme(style, theme, 'dark'), 'dark');
+  const kept = checkedLook({ wallpaper: 'dots' });
+  assert.deepEqual([kept.style, kept.theme, kept.palette, kept.look, kept.bubbles, kept.font], ['classic', 'dark', 'auto', 'flat', 'round', 'style']);
+  assert.deepEqual(checkedLook(null), DEFAULT_LOOK);
 });
 
 test("keeps the palette's own fills and text when asked, or puts your own text color on them", () => {
@@ -124,7 +137,7 @@ test('reads well in every style, scheme, palette and text setting', () => {
 
 test('a kept look is checked, and Nocturne remembers the style it was chosen over', () => {
   assert.deepEqual(checkedLook(null), DEFAULT_LOOK);
-  assert.deepEqual(checkedLook({ style: 'glass', theme: 'dusk', palette: 'nope', customAccent: 'red' }), DEFAULT_LOOK);
+  assert.deepEqual(checkedLook({ style: 'glass', theme: 'dusk', palette: 'nope', customAccent: 'red' }), KEPT_LOOK);
   assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, style: 'modernist', customAccent: '#2f7fc4' }), {
     ...DEFAULT_LOOK,
     style: 'modernist',
@@ -218,7 +231,7 @@ test('under glass every ink reads on the wallpaper or the pane, in every kind, s
 
 test('a kept look keeps flat or glass and the kind of glass', () => {
   assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' }), { ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' });
-  assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'frosted', glassKind: 'bowl' }), DEFAULT_LOOK);
+  assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'frosted', glassKind: 'bowl' }), { ...DEFAULT_LOOK, look: KEPT_LOOK.look, glassKind: KEPT_LOOK.glassKind });
 });
 
 test('Neon and Matrix are dark in their own colours, take no glass, and draw their scenes', () => {

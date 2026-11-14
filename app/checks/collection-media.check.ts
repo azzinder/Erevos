@@ -16,7 +16,7 @@ import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionTo
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
-import { foundStations, HLS, httpsLink, linkStations, playableStations, playlistLinks, playlistStations, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
+import { foundStations, HLS, httpsLink, linkStations, playableStations, playlistLinks, playlistStations, radioCountryUrl, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
 import {
   channelGroups,
   channelLink,
@@ -359,6 +359,9 @@ t('stations of a playlist are added at once, skipping those already here and htt
 });
 
 t('Radio Browser is asked only the words typed, and only its stations with an https link are offered', () => {
+  assert.equal(radioCountryUrl('gr'), 'https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/GR?hidebroken=true&order=clickcount&reverse=true&limit=200');
+  assert.equal(radioCountryUrl('greece'), null);
+  assert.equal(radioCountryUrl(''), null);
   assert.equal(radioSearchUrl('   '), null);
   assert.equal(radioSearchUrl(' jazz & blues '), 'https://de1.api.radio-browser.info/json/stations/search?name=jazz%20%26%20blues&limit=30&hidebroken=true');
   const answer = [
@@ -373,6 +376,7 @@ t('Radio Browser is asked only the words typed, and only its stations with an ht
     { name: 'Live', url: 'https://hls.example/x', mime: HLS, about: '' },
   ]);
   assert.deepEqual(foundStations(utf8Encode('not json')), []);
+  assert.equal(foundStations(utf8Encode(JSON.stringify(answer)), 1).length, 1);
   assert.deepEqual(foundStations(utf8Encode('{"a":1}')), []);
 });
 

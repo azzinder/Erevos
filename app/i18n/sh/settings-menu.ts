@@ -48,4 +48,5 @@ export const settingsMenu: Record<string, string> = {
   "Touches make no buzz.": "Dodiri ne vibriraju.",
   "Modules": "Moduli",
   "Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use": "Erevos, Telefon, SMS, Nostr, Matrix, XMPP i Zbirka: oni koje koristite",
+  "Erevos, Phone, SMS and the Collection: the ones you use": "Erevos, Telefon, SMS i Zbirka: oni koje koristite",
 };

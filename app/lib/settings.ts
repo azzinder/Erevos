@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { EDITION } from './edition';
 import { mark } from './i18n';
 import { makerContact } from './maker';
 import type { Module } from './modules';
@@ -71,8 +72,13 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       // Its detail is the language chosen, by its own name.
       { id: 'language', title: mark('Language'), detail: '', language: true },
-      // Which parts of Erevos are on (lib/modules.ts).
-      { id: 'modules', title: mark('Modules'), detail: mark('Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use'), href: '/modules' },
+      // Which parts of Erevos are on (lib/modules.ts): the plain Erevos names only the ones it has (lib/edition.ts).
+      {
+        id: 'modules',
+        title: mark('Modules'),
+        detail: EDITION === 'lite' ? mark('Erevos, Phone, SMS and the Collection: the ones you use') : mark('Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use'),
+        href: '/modules',
+      },
       { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
       { id: 'give-app', title: mark('Give Erevos to a phone nearby'), detail: mark('Over Wi-Fi or a hotspot, with no internet'), href: '/give-app', when: phone },
       // What each version changed, by its number (lib/whats-new.ts).

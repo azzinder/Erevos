@@ -56,21 +56,35 @@ export const TEXT_SIZES: TextSize[] = ['small', 'normal', 'large', 'larger'];
 export const TEXT_SCALE: Record<TextSize, number> = { small: 0.87, normal: 1, large: 1.15, larger: 1.3 };
 
 export const DEFAULT_LOOK: Look = {
+  style: 'modernist',
+  theme: 'system',
+  palette: 'custom',
+  customAccent: '#0EA5E9',
+  frameText: 'palette',
+  frameTextColor: '#FFFFFF',
+  prevStyle: 'modernist',
+  look: 'glass',
+  glassKind: 'cards',
+  bubbles: 'square',
+  customGround: DEFAULT_CUSTOM_GROUND,
+  wallpaper: 'auto',
+  wallpaperPhoto: null,
+  font: 'sans',
+  textSize: 'normal',
+};
+
+/** What a field missing from a kept look meant when it was kept: the defaults before 7.0.1, so a
+ *  look kept by an older version looks as it did. DEFAULT_LOOK is only for a new one. */
+export const KEPT_LOOK: Look = {
+  ...DEFAULT_LOOK,
   style: 'classic',
   theme: 'dark',
   palette: 'auto',
   customAccent: '#D9A441',
-  frameText: 'palette',
-  frameTextColor: '#FFFFFF',
   prevStyle: 'classic',
   look: 'flat',
-  glassKind: 'cards',
   bubbles: 'round',
-  customGround: DEFAULT_CUSTOM_GROUND,
-  wallpaper: 'auto',
-  wallpaperPhoto: null,
   font: 'style',
-  textSize: 'normal',
 };
 
 const KEY = 'erevos.look';
@@ -83,22 +97,22 @@ export function checkedLook(value: unknown): Look {
   const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T => list.find((x) => x === v) ?? fallback;
   const hex = (v: unknown, fallback: string) => (typeof v === 'string' && HEX.test(v) ? v.toUpperCase() : fallback);
   return {
-    style: pick(STYLES, o.style, DEFAULT_LOOK.style),
-    theme: pick(THEMES, o.theme, DEFAULT_LOOK.theme),
-    palette: pick(PALETTE_CHOICES, o.palette, DEFAULT_LOOK.palette),
-    customAccent: hex(o.customAccent, DEFAULT_LOOK.customAccent),
-    frameText: pick(FRAME_TEXTS, o.frameText, DEFAULT_LOOK.frameText),
-    frameTextColor: hex(o.frameTextColor, DEFAULT_LOOK.frameTextColor),
-    prevStyle: pick(['classic', 'modernist'] as const, o.prevStyle, DEFAULT_LOOK.prevStyle),
-    look: pick(LOOK_NAMES, o.look, DEFAULT_LOOK.look),
-    glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
-    bubbles: pick(BUBBLE_SHAPES, o.bubbles, DEFAULT_LOOK.bubbles),
-    customGround: hex(o.customGround, DEFAULT_LOOK.customGround),
+    style: pick(STYLES, o.style, KEPT_LOOK.style),
+    theme: pick(THEMES, o.theme, KEPT_LOOK.theme),
+    palette: pick(PALETTE_CHOICES, o.palette, KEPT_LOOK.palette),
+    customAccent: hex(o.customAccent, KEPT_LOOK.customAccent),
+    frameText: pick(FRAME_TEXTS, o.frameText, KEPT_LOOK.frameText),
+    frameTextColor: hex(o.frameTextColor, KEPT_LOOK.frameTextColor),
+    prevStyle: pick(['classic', 'modernist'] as const, o.prevStyle, KEPT_LOOK.prevStyle),
+    look: pick(LOOK_NAMES, o.look, KEPT_LOOK.look),
+    glassKind: pick(GLASS_KINDS, o.glassKind, KEPT_LOOK.glassKind),
+    bubbles: pick(BUBBLE_SHAPES, o.bubbles, KEPT_LOOK.bubbles),
+    customGround: hex(o.customGround, KEPT_LOOK.customGround),
     // A photo wallpaper without its photo (as on the password screen's copy) is the style's own.
-    wallpaper: o.wallpaper === 'photo' && !isPhotoRef(o.wallpaperPhoto) ? 'auto' : pick(WALLPAPERS, o.wallpaper, DEFAULT_LOOK.wallpaper),
+    wallpaper: o.wallpaper === 'photo' && !isPhotoRef(o.wallpaperPhoto) ? 'auto' : pick(WALLPAPERS, o.wallpaper, KEPT_LOOK.wallpaper),
     wallpaperPhoto: isPhotoRef(o.wallpaperPhoto) ? { id: o.wallpaperPhoto.id, key: o.wallpaperPhoto.key } : null,
-    font: pick(FONT_CHOICES, o.font, DEFAULT_LOOK.font),
-    textSize: pick(TEXT_SIZES, o.textSize, DEFAULT_LOOK.textSize),
+    font: pick(FONT_CHOICES, o.font, KEPT_LOOK.font),
+    textSize: pick(TEXT_SIZES, o.textSize, KEPT_LOOK.textSize),
   };
 }
 

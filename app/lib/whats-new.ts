@@ -21,14 +21,20 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 
 export type WhatsNew = Changes & { version: string };
 
-export const NEXT: Changes = {
-  forYou: [],
-  underTheHood: [
-    mark("**Every copy carries its licences**: the Android app, the computer and Sailfish apps and the web app now carry the file NOTICES.txt, with Erevos's licence, AUTHORS.md and every package Erevos is built from, each with its licence text. See [Licence](#licence)."),
-  ],
-};
+export const NEXT: Changes = { forYou: [], underTheHood: [] };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.0.1',
+    forYou: [
+      mark("**A ready list of radio stations**: **Add a station** in the Collection's Radio now adds a country's most listened stations from Radio Browser at once, up to 100, with **Add the stations of this country**; the country is the phone's, and **Change** picks another. See [Collection](#collection)."),
+      mark("**A new look to start with**: Erevos, newly installed, starts in Glass (Panes), Modernist, System, My color in sky blue, the phone's letters and square messages. A look you chose before stays as it was. See [Appearance](#appearance)."),
+      mark("**Modules names only what Erevos has**: under **Settings** → **General**, **Modules** no longer lists Nostr, Matrix and XMPP, which are in Erevos+."),
+    ],
+    underTheHood: [
+      mark("**Every copy carries its licences**: the Android app, the computer and Sailfish apps and the web app now carry the file NOTICES.txt, with Erevos's licence, AUTHORS.md and every package Erevos is built from, each with its licence text. See [Licence](#licence)."),
+    ],
+  },
   {
     version: '7.0.0',
     forYou: [

@@ -168,6 +168,15 @@ export const IPTV_ORG_COUNTRIES = (
   'ua ug us uy uz va vc ve vg vi vn ye yt za zm zw'
 ).split(' ');
 
+// The device's own locale, for its region, when the app writes in English (locale() then says none).
+export function safeLocale(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Which country's list to offer first: the device's region, or the app's language's own. */
 export function homeCountry(locale: string | undefined, lang: string): string {
   const region = /[-_]([A-Za-z]{2})(?:$|[-_@])/.exec(locale ?? '')?.[1]?.toLowerCase();

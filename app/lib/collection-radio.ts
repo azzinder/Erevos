@@ -195,8 +195,21 @@ export function radioSearchUrl(words: string): string | null {
 /** A station Radio Browser found: its name, its https link and type, and a few words of it (country, codec, bitrate). */
 export type FoundStation = { name: string; url: string; mime: string; about: string };
 
-/** The stations in Radio Browser's answer that have an https link, at most MOST_FOUND. */
-export function foundStations(bytes: Uint8Array): FoundStation[] {
+/** The most stations a country's ready list adds. */
+export const MOST_COUNTRY = 100;
+/** The most of Radio Browser's answer for a country read. */
+export const MOST_COUNTRY_BYTES = 1024 * 1024;
+
+/** The address Radio Browser gives a country's ready list at: its most listened stations that
+ *  work, by the country's ISO 3166 code; null for no such code. */
+export function radioCountryUrl(code: string): string | null {
+  const cc = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return null;
+  return `https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${cc}?hidebroken=true&order=clickcount&reverse=true&limit=${MOST_COUNTRY * 2}`;
+}
+
+/** The stations in Radio Browser's answer that have an https link, at most `most` (MOST_FOUND). */
+export function foundStations(bytes: Uint8Array, most = MOST_FOUND): FoundStation[] {
   let list: unknown;
   try {
     list = JSON.parse(utf8Decode(bytes));
@@ -215,7 +228,7 @@ export function foundStations(bytes: Uint8Array): FoundStation[] {
     seen.add(link);
     const words = [v.country, v.codec, typeof v.bitrate === 'number' && v.bitrate > 0 ? `${v.bitrate} kbps` : null].filter((w): w is string => typeof w === 'string' && w.trim() !== '').map((w) => w.trim().slice(0, 40));
     out.push({ name, url: link, mime: v.hls === 1 || isHlsLink(link) ? HLS : '', about: words.join(' · ') });
-    if (out.length >= MOST_FOUND) break;
+    if (out.length >= most) break;
   }
   return out;
 }

@@ -16,6 +16,7 @@ import {
   countryName,
   folded,
   homeCountry,
+  safeLocale,
   IPTV_ORG_ALL,
   IPTV_ORG_COUNTRIES,
   iptvOrgCountry,
@@ -494,15 +495,6 @@ export function AddChannelsSheet({ visible, place, tor = false, playTor = false,
       <Button title={t('Add')} disabled={!link.trim() || busy} onPress={() => void addLink()} />
     </Sheet>
   );
-}
-
-// The device's own locale, for its region, when the app writes in English (locale() then says none).
-function safeLocale(): string | undefined {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().locale;
-  } catch {
-    return undefined;
-  }
 }
 
 const hostOf = (url: string) => {

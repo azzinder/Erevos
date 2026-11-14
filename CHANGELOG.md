@@ -16,6 +16,16 @@ On main, not released yet:
 
 ### Under the hood
 
+## 7.0.1 (2026-11-14)
+
+### For you
+
+- A ready list of radio stations: **Add a station** adds a country's most listened stations from Radio Browser at once, up to 100 (`radioCountryUrl`).
+- A new look to start with: Erevos, newly installed, starts in Glass (Panes), Modernist, System, My color #0EA5E9, text as in the palette, the phone's letters and square messages (`DEFAULT_LOOK`). A look kept before keeps the old defaults for what it lacks (`KEPT_LOOK`).
+- **Modules** in the plain Erevos no longer names Nostr, Matrix and XMPP.
+
+### Under the hood
+
 - Every release also carries `erevos-android-fdroid.apk`, the F-Droid build (`EREVOS_DISTRIBUTION=fdroid`), signed with the release key, for F-Droid to compare with its own build of the tag and hand out the signed copy (`docs/reproducible-builds.md`).
 - Every copy of Erevos carries its licences: `app/public/NOTICES.txt` holds Erevos's licence, AUTHORS.md and every package Erevos is built from with its licence text (`node scripts/credits.mjs` writes it, `credits.check.ts` checks it). The web export carries it, so the web, computer and Sailfish apps do; on Android the plugin `with-notices` puts it in the app's assets.
 

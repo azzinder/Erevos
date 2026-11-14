@@ -48,4 +48,5 @@ export const settingsMenu: Record<string, string> = {
   "Touches make no buzz.": "Les touches ne font pas vibrer le téléphone.",
   "Modules": "Modules",
   "Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use": "Erevos, Téléphone, SMS, Nostr, Matrix, XMPP et Collection : ceux que tu utilises",
+  "Erevos, Phone, SMS and the Collection: the ones you use": "Erevos, Téléphone, SMS et Collection : ceux que tu utilises",
 };

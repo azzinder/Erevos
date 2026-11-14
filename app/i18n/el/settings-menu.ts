@@ -49,4 +49,5 @@ export const settingsMenu: Record<string, string> = {
   "Touches make no buzz.": "Τα αγγίγματα δεν κάνουν δόνηση.",
   'Modules': 'Ενότητες',
   'Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use': 'Erevos, Τηλέφωνο, SMS, Nostr, Matrix, XMPP και Συλλογή: όσα χρησιμοποιείς',
+  'Erevos, Phone, SMS and the Collection: the ones you use': 'Erevos, Τηλέφωνο, SMS και Συλλογή: όσα χρησιμοποιείς',
 };

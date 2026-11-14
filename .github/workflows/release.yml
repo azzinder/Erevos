@@ -93,8 +93,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           # Builds that nothing below names: Erevos+ 7.1.0-beta.5 (67), whose run named no build; and 68,
           # kept for Erevos+'s next build (beta.5 with Messenger's start fixed) before its run names it;
-          # 70, kept for Erevos+ 7.1.0, which its own repository (azzinder/ErevosPlus) builds.
-          EREVOS_BUILT: "67 68 70"
+          EREVOS_BUILT: "67 68"
           RELEASES_REPO: azzinder/erevos-releases
         run: |
           # Every build so far: each published release's, Erevos's and Erevos+'s (its version.json),

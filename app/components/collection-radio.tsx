@@ -3,15 +3,16 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { router } from 'expo-router';
-import { useState, type ReactElement, type ReactNode } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { confirm } from '../lib/alert';
 import { cloudRequest } from '../lib/backup-http';
 import { canPlayThroughTor, playStation, playsThroughTor } from '../lib/collection-play';
-import { foundStations, linkStations, MOST_FOUND_BYTES, MOST_LIST_BYTES, nameFromLink, playableStations, playlistStations, RADIO_AGENT, radioSearchUrl, type FoundStation, type StationLink } from '../lib/collection-radio';
+import { foundStations, linkStations, MOST_COUNTRY, MOST_COUNTRY_BYTES, MOST_FOUND_BYTES, radioCountryUrl, MOST_LIST_BYTES, nameFromLink, playableStations, playlistStations, RADIO_AGENT, radioSearchUrl, type FoundStation, type StationLink } from '../lib/collection-radio';
 import { utf8Decode } from '../lib/crypto';
-import { plural, t } from '../lib/i18n';
+import { countryName, homeCountry, IPTV_ORG_COUNTRIES, safeLocale } from '../lib/collection-tv';
+import { lang, locale, plural, t } from '../lib/i18n';
 import { type IpFix } from '../lib/ip-warning';
 import { throughTorNow } from '../lib/net-http';
 import { pickFile, TooLargeError } from '../lib/pick-file';
@@ -246,6 +247,9 @@ export function AddStationSheet({ visible, place, tor = false, playTor = false, 
   const [note, setNote] = useState('');
   const [words, setWords] = useState('');
   const [found, setFound] = useState<FoundStation[] | null>(null);
+  const [country, setCountry] = useState(() => homeCountry(locale() ?? safeLocale(), lang()));
+  const [picking, setPicking] = useState(false);
+  const countries = useMemo(() => (picking ? IPTV_ORG_COUNTRIES.map((code) => ({ code, name: countryName(code, locale()) })).sort((a, b) => a.name.localeCompare(b.name)) : []), [picking]);
   const colors = useColors();
 
   // Adds a station by its link (the one typed, or one found), named as given or by its server.
@@ -307,6 +311,24 @@ export function AddStationSheet({ visible, place, tor = false, playTor = false, 
     setBusy(false);
   }
 
+  // A ready list: Radio Browser's most listened stations of the country chosen, asked once, when
+  // the button is pressed, and each with an https link added at once.
+  async function addCountry() {
+    const url = radioCountryUrl(country);
+    if (!place || !url || busy) return;
+    setBusy(true);
+    setNote('');
+    try {
+      const answer = await get(MOST_COUNTRY_BYTES, tor)(url);
+      if (answer.status < 200 || answer.status >= 300) throw new Error(t('Radio Browser answered {status}.', { status: answer.status }));
+      const listed = foundStations(answer.bytes, MOST_COUNTRY);
+      await addMany(listed.map(({ name: called, url: link, mime }) => ({ name: called, url: link, mime })), 0);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+    setBusy(false);
+  }
+
   // Radio Browser is asked only for the words typed, and only when Search is pressed.
   async function search() {
     const url = radioSearchUrl(words);
@@ -353,6 +375,39 @@ export function AddStationSheet({ visible, place, tor = false, playTor = false, 
           </View>
         </Pressable>
       ))}
+      <Text variant="label">{t('Or a ready list of a country')}</Text>
+      <Text variant="caption" tone="muted">
+        {throughTorNow(tor)
+          ? t('Radio Browser gives the most listened stations of the country you choose, up to {n}, and each with an https link is added. It is asked once, when you press the button, through Tor, so it does not see this device’s IP address.', { n: MOST_COUNTRY })
+          : t('Radio Browser gives the most listened stations of the country you choose, up to {n}, and each with an https link is added. It is asked once, when you press the button, and sees this device’s IP address.', { n: MOST_COUNTRY })}
+      </Text>
+      <Pressable onPress={() => setPicking((p) => !p)} accessibilityRole="button" accessibilityLabel={t('Country')} style={({ pressed }) => [styles.sheetRow, pressed && { opacity: 0.6 }]}>
+        <Text variant="bodyStrong" style={styles.grow}>
+          {t('Country: {name}', { name: countryName(country, locale()) })}
+        </Text>
+        <Text variant="label" color={colors.primary}>
+          {picking ? t('Close') : t('Change')}
+        </Text>
+      </Pressable>
+      {picking ? (
+        <ScrollView style={styles.countries} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+          {countries.map((c) => (
+            <Pressable
+              key={c.code}
+              onPress={() => {
+                setCountry(c.code);
+                setPicking(false);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: c.code === country }}
+              style={({ pressed }) => [styles.country, c.code === country && { backgroundColor: withAlpha(colors.primary, 0.14) }, pressed && { opacity: 0.6 }]}
+            >
+              <Text>{c.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+      <Button title={t('Add the stations of this country')} kind="secondary" compact loading={busy && found === null && !words.trim() && !link.trim()} disabled={busy} onPress={() => void addCountry()} />
       <Text variant="label">{t('Or by its link')}</Text>
       <Input value={link} onChangeText={setLink} placeholder="https://…" accessibilityLabel={t('The station’s link')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2048} />
       <Input value={name} onChangeText={setName} placeholder={t('Name (optional)')} accessibilityLabel={t('Name (optional)')} maxLength={60} onSubmitEditing={() => void add()} />
@@ -409,4 +464,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   icon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  countries: { maxHeight: 260 },
+  country: { paddingVertical: space.sm, paddingHorizontal: space.sm, borderRadius: radius.md },
 });
