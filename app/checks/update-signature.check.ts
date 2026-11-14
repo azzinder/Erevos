@@ -7,12 +7,14 @@
 // the chats only with it too (lib/release-notice.ts). Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { createPublicKey, verify } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { test } from 'node:test';
+import { promisify } from 'node:util';
 
 import { setCore, type Core } from '../lib/core';
 import { loadNotice, lookForRelease, mayAsk, NOTICE_EVERY, NOTICE_SERVER, noticeSeen, setNoticeOn, shownRelease, toldBy } from '../lib/release-notice';
@@ -73,6 +75,40 @@ test('an APK signed by the release computer installs; any other, or another buil
     run('verify', dir, join(dir, 'key.pub'));
   } finally {
     setCore(null);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("the release tool checks a server that answers an address it has no file for with the app's page", async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'erevos-served-'));
+  const env = { ...process.env, EREVOS_RELEASE_PASSPHRASE: 'only-for-this-check' };
+  const run = (...args: string[]) => execFileSync('node', [join(PWA, 'release.mjs'), ...args], { env, stdio: 'pipe' });
+  // As Apache serves the web app: its files, and the app's page for any other address, with 200.
+  const server = createServer((req, res) => {
+    const name = basename(new URL(req.url ?? '/', 'http://x').pathname) || 'index.html';
+    res.writeHead(200).end(readFileSync(join(dir, existsSync(join(dir, name)) ? name : 'index.html')));
+  });
+  try {
+    run('keygen', join(dir, 'key'), join(dir, 'key.pub'));
+    const pub = readFileSync(join(dir, 'key.pub'), 'utf8').trim();
+    writeFileSync(join(dir, 'sw.js'), `const KEY = '${pub}';\n`);
+    writeFileSync(join(dir, 'index.html'), '<!doctype html><title>Erevos</title>\n');
+    writeFileSync(join(dir, 'release.json'), JSON.stringify({ version: 1, label: '7.0.0', files: {} }));
+    run('sign', dir, join(dir, 'key'), '--android', '69', SHA);
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as { port: number };
+    const verifyServer = () => promisify(execFile)('node', [join(PWA, 'release.mjs'), 'verify', `http://127.0.0.1:${port}/`, join(dir, 'key.pub')], { env });
+    // Only Erevos's own channel has a statement: the other channels' addresses give the page.
+    const { stdout } = await verifyServer();
+    assert.match(stdout, /OK: the Android app, build 69/);
+    assert.match(stdout, /OK: the Android release of erevos, name 7\.0\.0, build 69/);
+    assert.match(stdout, /OK: release 1 \(7\.0\.0\)/);
+    // A statement that is there but not one is still refused.
+    writeFileSync(join(dir, 'android-update-plus.json'), JSON.stringify({ statement: 'x', signature: 'y' }));
+    await assert.rejects(verifyServer(), /android-update-plus\.json does not say what it should/);
+    unlinkSync(join(dir, 'android-update-plus.json'));
+  } finally {
+    server.close();
     rmSync(dir, { recursive: true, force: true });
   }
 });

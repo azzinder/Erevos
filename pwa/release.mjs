@@ -156,6 +156,16 @@ async function read(from, name) {
   return fs.readFileSync(path.join(from, name));
 }
 
+/**
+ * A statement of the release (android-update*.json), or null where there is none. A server answers
+ * an address it has no file for with the app's page (index.html, as install.sh's settings do), so
+ * what starts as HTML, never as JSON, is no statement either.
+ */
+async function readStatement(from, name) {
+  const bytes = await read(from, name).catch(() => null);
+  return bytes && !/^\s*</.test(bytes.subarray(0, 64).toString()) ? bytes : null;
+}
+
 async function verifyRelease(from, keyFile = PUBLIC) {
   if (!from) fail('usage: node pwa/release.mjs verify <web app folder, or https://address> [public key file]');
   const raw = Buffer.from(fs.readFileSync(keyFile, 'utf8').trim(), 'base64');
@@ -187,7 +197,7 @@ async function verifyRelease(from, keyFile = PUBLIC) {
   }
   if (wrong.length) fail(`Signed release ${release.version}, but these files differ from it:\n  ${wrong.join('\n  ')}`);
   // The Android app's statement, where there is one.
-  const android = await read(from, 'android-update.json').catch(() => null);
+  const android = await readStatement(from, 'android-update.json');
   if (android) {
     const { statement, signature: signed } = JSON.parse(android);
     if (!/^erevos android update v1\nbuild [1-9]\d*\nsha256 [0-9a-f]{64}\n$/.test(statement ?? '')) fail('android-update.json does not say what it should.');
@@ -195,7 +205,7 @@ async function verifyRelease(from, keyFile = PUBLIC) {
     console.log(`OK: the Android app, ${statement.trim().split('\n').slice(1).join(', ')}.`);
   }
   for (const channel of CHANNELS) {
-    const text = await read(from, `android-update-${channel}.json`).catch(() => null);
+    const text = await readStatement(from, `android-update-${channel}.json`);
     if (!text) continue;
     const { statement, signature: signed } = JSON.parse(text);
     if (CHANNEL_STATEMENT.exec(statement ?? '')?.[1] !== channel) fail(`android-update-${channel}.json does not say what it should.`);
