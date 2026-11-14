@@ -45,7 +45,7 @@ base=${EREVOS_RELEASES_URL:-https://github.com/$repo/releases/download}/v$versio
 curl -fsSL "$base/SHA256SUMS" -o "$work/SHA256SUMS"
 curl -fsSL "$base/version.json" -o "$work/version.json"
 # The channel, name, build and APK as version.json says them; the APK's SHA-256 as SHA256SUMS says it.
-read_json() { node -e "const v = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log($1 ?? '')" "$work/version.json"; }
+read_json() { node -e "const v = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log(($1) ?? '')" "$work/version.json"; }
 channel=$(read_json 'v.channel')
 name=$(read_json 'v.name')
 build=$(read_json 'v.build')

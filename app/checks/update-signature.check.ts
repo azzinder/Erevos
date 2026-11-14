@@ -113,6 +113,52 @@ test("the release tool checks a server that answers an address it has no file fo
   }
 });
 
+test("publish-android.sh signs a channel's release as its version.json and SHA256SUMS name it, and the app takes it", async () => {
+  const { channelSigningOf } = await import('../lib/update-signature');
+  const dir = mkdtempSync(join(tmpdir(), 'erevos-android-'));
+  const env = { ...process.env, EREVOS_RELEASE_PASSPHRASE: 'only-for-this-check' };
+  const apk = 'https://github.com/x/releases/download/v7.1.1/erevos-plus-android.apk';
+  const files: Record<string, string> = {};
+  const publish = (name: string, sums: string) => {
+    files['version.json'] = JSON.stringify({ name, build: 71, date: '2026-11-14', channel: 'plus', apk: { url: apk, size: 1, sha256: SHA } });
+    files.SHA256SUMS = `${sums}  erevos-plus-android.apk\n`;
+  };
+  // The public download repository, as GitHub serves a release's files.
+  const server = createServer((req, res) => {
+    const path = new URL(req.url ?? '/', 'http://x').pathname;
+    const file = files[basename(path)];
+    if (path.startsWith('/v7.1.1/') && file) res.writeHead(200).end(file);
+    else res.writeHead(404).end();
+  });
+  try {
+    execFileSync('node', [join(PWA, 'release.mjs'), 'keygen', join(dir, 'key'), join(dir, 'key.pub')], { env, stdio: 'pipe' });
+    const pub = readFileSync(join(dir, 'key.pub'), 'utf8').trim();
+    // An ssh of this check's own: it keeps what would go to the server.
+    writeFileSync(join(dir, 'ssh'), `#!/bin/sh\ncase "$*" in *"cat > "*) cat > '${join(dir, 'sent.json')}' ;; esac\n`, { mode: 0o755 });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as { port: number };
+    const script = join(PWA, '../deploy/web/publish-android.sh');
+    const run = () =>
+      promisify(execFile)('sh', [script, '7.1.1', 'someone@server', join(dir, 'key')], {
+        env: { ...env, PATH: `${dir}:${process.env.PATH}`, EREVOS_RELEASES_URL: `http://127.0.0.1:${port}` },
+      });
+    publish('7.1.1', SHA);
+    assert.match((await run()).stdout, /Signing it: plus, 7\.1\.1, build 71/);
+    setCore(nodeCore());
+    const plus = { version: '7.1.1', build: 71, date: '', apk: { url: apk, size: 1, sha256: SHA }, channel: 'plus' as const };
+    assert.equal(await channelSigningOf(readFileSync(join(dir, 'sent.json'), 'utf8'), plus, pub), 'signed');
+    // A version.json of another release, or of another APK than SHA256SUMS names: nothing is signed.
+    publish('7.1.2', SHA);
+    await assert.rejects(run(), /says it is 7\.1\.2/);
+    publish('7.1.1', 'cd'.repeat(32));
+    await assert.rejects(run(), /name different APKs/);
+  } finally {
+    setCore(null);
+    server.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // A release computer of this check's own, signing a web app's list and an APK as publish.sh does.
 function releaseComputer() {
   const dir = mkdtempSync(join(tmpdir(), 'erevos-notice-'));
