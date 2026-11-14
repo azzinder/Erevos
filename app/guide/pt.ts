@@ -4351,7 +4351,7 @@ usadas amplamente para escrever o código e os textos, sempre por instruções e
 
 As partes feitas por outros mantêm os seus próprios autores e licenças, veja
 [Feito com o código aberto de outros](#about). Os textos completos vêm com o código-fonte do Erevos: \`AUTHORS.md\`,
-\`CREDITS.md\` e a pasta \`LICENSES\`. A própria licença está em
+\`CREDITS.md\` e a pasta \`LICENSES\`. Cada cópia do Erevos traz também o ficheiro \`NOTICES.txt\`, com a licença do Erevos, o \`AUTHORS.md\` e cada pacote de que o Erevos é feito, cada um com o texto da sua licença: dentro da app Android, na pasta das apps de computador e Sailfish, e na app web em \`/NOTICES.txt\`. A própria licença está em
 [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Por quê:** uma licença livre só protege você se você puder lê-la. Ela diz o que você pode fazer com o Erevos, e o que

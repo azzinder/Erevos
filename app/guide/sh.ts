@@ -4219,7 +4219,7 @@ za pisanje koda i tekstova, uvijek prema uputama i zamisli osobe koja ga održav
 
 Dijelovi koje su napravili drugi zadržavaju svoje autore i licence, pogledajte
 [Napravljeno uz otvoreni kod drugih](#about). Potpuni tekstovi dolaze s izvornim kodom Erevosa: \`AUTHORS.md\`,
-\`CREDITS.md\` i folder \`LICENSES\`. Sama licenca je na [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
+\`CREDITS.md\` i folder \`LICENSES\`. Svaka kopija Erevosa nosi i datoteku \`NOTICES.txt\`, s licencom Erevosa, \`AUTHORS.md\` i svakim paketom od kojeg je Erevos napravljen, svaki s tekstom svoje licence: unutar Android aplikacije, u folderu aplikacija za računalo i Sailfish, i u web aplikaciji na \`/NOTICES.txt\`. Sama licenca je na [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Zašto:** slobodna licenca štiti vas samo ako je možete pročitati. Ona kaže šta smijete raditi s Erevosom i šta vam
 duguje svako ko ga mijenja.

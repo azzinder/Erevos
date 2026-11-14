@@ -23,7 +23,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Every copy carries its licences**: the Android app, the computer and Sailfish apps and the web app now carry the file NOTICES.txt, with Erevos's licence, AUTHORS.md and every package Erevos is built from, each with its licence text. See [Licence](#licence)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

@@ -4637,7 +4637,7 @@ d’azzinder.
 
 Les parties faites par d’autres gardent leurs propres auteurs et leurs propres licences, voir
 [Fait avec l’open source des autres](#about). Les textes complets viennent avec le code source d’Erevos :
-\`AUTHORS.md\`, \`CREDITS.md\` et le dossier \`LICENSES\`. La licence elle-même est sur
+\`AUTHORS.md\`, \`CREDITS.md\` et le dossier \`LICENSES\`. Chaque copie d’Erevos contient aussi le fichier \`NOTICES.txt\`, avec la licence d’Erevos, \`AUTHORS.md\` et chaque paquet dont Erevos est fait, chacun avec le texte de sa licence : dans l’app Android, dans le dossier des apps pour ordinateur et Sailfish, et dans l’app web à l’adresse \`/NOTICES.txt\`. La licence elle-même est sur
 [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Pourquoi :** une licence libre ne te protège que si tu peux la lire. Elle dit ce que tu peux faire avec Erevos, et ce

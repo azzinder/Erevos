@@ -4650,7 +4650,7 @@ Entwurf von azzinder.
 
 Teile, die andere gemacht haben, behalten ihre eigenen Macher und Lizenzen, siehe
 [Mit der Open-Source-Arbeit anderer gebaut](#about). Die vollständigen Texte kommen mit dem Quellcode von Erevos:
-\`AUTHORS.md\`, \`CREDITS.md\` und der Ordner \`LICENSES\`. Die Lizenz selbst steht auf
+\`AUTHORS.md\`, \`CREDITS.md\` und der Ordner \`LICENSES\`. Jede Kopie von Erevos enthält außerdem die Datei \`NOTICES.txt\` mit der Lizenz von Erevos, \`AUTHORS.md\` und jedem Paket, aus dem Erevos gebaut ist, jeweils mit seinem Lizenztext: in der Android-App, im Ordner der Computer- und Sailfish-Apps und in der Web-App unter \`/NOTICES.txt\`. Die Lizenz selbst steht auf
 [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Warum:** Eine freie Lizenz schützt dich nur, wenn du sie lesen kannst. Sie sagt, was du mit Erevos tun darfst und was

@@ -4032,7 +4032,7 @@ and its structure, tests it on real devices and decides what goes into each rele
 write the code and the texts, always on the maintainer's instructions and from the maintainer's design.
 
 Parts made by others keep their own makers and licences, see [Made with others' open source](#about). The full texts
-come with Erevos's source code: \`AUTHORS.md\`, \`CREDITS.md\` and the folder \`LICENSES\`. The licence itself is on
+come with Erevos's source code: \`AUTHORS.md\`, \`CREDITS.md\` and the folder \`LICENSES\`. Every copy of Erevos also carries the file \`NOTICES.txt\`, with Erevos's licence, \`AUTHORS.md\` and every package Erevos is built from, each with its licence text: inside the Android app, in the folder of the computer and Sailfish apps, and in the web app at \`/NOTICES.txt\`. The licence itself is on
 [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Why:** a free licence protects you only if you can read it. It says what you may do with Erevos, and what anyone who

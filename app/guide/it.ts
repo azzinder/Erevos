@@ -4409,7 +4409,7 @@ sono stati usati ampiamente per scrivere il codice e i testi, sempre su istruzio
 
 Le parti fatte da altri mantengono i propri autori e le proprie licenze, vedi
 [Fatto con l’open source degli altri](#about). I testi completi arrivano con il codice sorgente di Erevos:
-\`AUTHORS.md\`, \`CREDITS.md\` e la cartella \`LICENSES\`. La licenza stessa è su
+\`AUTHORS.md\`, \`CREDITS.md\` e la cartella \`LICENSES\`. Ogni copia di Erevos contiene anche il file \`NOTICES.txt\`, con la licenza di Erevos, \`AUTHORS.md\` e ogni pacchetto con cui è fatto Erevos, ciascuno con il testo della sua licenza: dentro l’app Android, nella cartella delle app per computer e Sailfish, e nell’app web in \`/NOTICES.txt\`. La licenza stessa è su
 [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
 
 **Perché:** una licenza libera ti protegge solo se puoi leggerla. Dice che cosa puoi fare con Erevos, e che cosa ti deve

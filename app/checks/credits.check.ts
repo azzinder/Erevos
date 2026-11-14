@@ -18,6 +18,9 @@ type Differences = { missing: string[]; gone: string[] };
 const { check } = (await import('../../scripts/credits.mjs')) as { check: (root?: string) => Differences };
 
 const REPO = join(import.meta.dirname, '..', '..');
+const { checkNotices } = (await import('../../scripts/notices.mjs')) as {
+  checkNotices: (root?: string) => { missing: string[]; gone: string[]; stale: string[] };
+};
 const credits = readFileSync(join(REPO, 'CREDITS.md'), 'utf8');
 
 test('CREDITS.md lists every package in the lockfiles and no other: run node scripts/credits.mjs', () => {
@@ -81,4 +84,11 @@ test('a package CREDITS.md lists that the lockfiles no longer hold is gone, and 
 
 test('CREDITS.md without the marks around the list is refused, not taken for an empty one', () => {
   assert.throws(() => differences(credits.replace('<!-- generated:end -->', '')), /generated:start/);
+});
+
+test('app/public/NOTICES.txt, which every build carries, names the same packages and the AUTHORS.md and LICENSE of now: run node scripts/credits.mjs', () => {
+  const { missing, gone, stale } = checkNotices();
+  assert.deepEqual(missing, [], 'not in NOTICES.txt');
+  assert.deepEqual(gone, [], 'in NOTICES.txt, but not in the lockfiles any more');
+  assert.deepEqual(stale, [], 'NOTICES.txt holds an old copy');
 });

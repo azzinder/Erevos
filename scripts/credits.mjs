@@ -7,7 +7,9 @@
 // so a change that adds or updates a dependency lists it in the same change.
 //
 //   node scripts/credits.mjs            rewrites CREDITS.md between <!-- generated:start --> and
-//                                       <!-- generated:end -->, and nothing else in it
+//                                       <!-- generated:end -->, and nothing else in it, and then
+//                                       app/public/NOTICES.txt, the licence texts every build carries
+//                                       (scripts/notices.mjs)
 //   node scripts/credits.mjs --check    exits 1, saying what differs, when the packages in the lockfiles
 //                                       are not exactly the ones CREDITS.md lists
 //
@@ -44,7 +46,7 @@ const END = '<!-- generated:end -->';
 const UNKNOWN = 'see its source';
 
 /** The parts of "Every package", in order: what each is, and the words for what it counts. */
-const SECTIONS = [
+export const SECTIONS = [
   {
     id: 'app',
     title: "The app's JavaScript packages",
@@ -231,7 +233,7 @@ function androidLibraries(root) {
 }
 
 /** Every package the repository's lockfiles hold, by part of the list. */
-function lockedPackages(root) {
+export function lockedPackages(root) {
   return {
     app: appPackages(root),
     desktop: desktopPackages(root),
@@ -245,7 +247,7 @@ function lockedPackages(root) {
 
 const keyOf = (id, name, version) => `${id}\t${name}\t${version}`;
 
-function creditsText(root) {
+export function creditsText(root) {
   const file = path.join(root, 'CREDITS.md');
   if (!fs.existsSync(file)) throw new Error('CREDITS.md is missing');
   return fs.readFileSync(file, 'utf8');
@@ -259,7 +261,7 @@ function generatedRange(text) {
 }
 
 /** The packages CREDITS.md lists, by section id, name and version, with the licence and link it gives. */
-function listedPackages(text) {
+export function listedPackages(text) {
   const [from, to] = generatedRange(text);
   const rows = new Map();
   let section = null;
@@ -462,7 +464,7 @@ function describeCrates(crates, root, before) {
 }
 
 /** Go's module cache, or null without Go. */
-function goModuleCache() {
+export function goModuleCache() {
   try {
     return execFileSync('go', ['env', 'GOMODCACHE'], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, GOTOOLCHAIN: 'local' }, stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
   } catch {
@@ -553,7 +555,14 @@ function main(args) {
     process.exit(2);
   }
   try {
-    if (!args.includes('--check')) return generate();
+    if (!args.includes('--check')) {
+      generate();
+      // NOTICES.txt goes with the list: the same packages, with their licence texts (scripts/notices.mjs).
+      return import('./notices.mjs').then(({ writeNotices }) => {
+        const { packages, own, texts, changed } = writeNotices();
+        console.log(`app/public/NOTICES.txt ${changed ? 'written' : 'is up to date'}: ${packages} packages, ${own} with their own licence files, ${texts} licence texts`);
+      });
+    }
     const { missing, gone } = check();
     if (!missing.length && !gone.length) return console.log('CREDITS.md lists exactly the packages in the lockfiles.');
     const some = (lines) => (lines.length > 40 ? [...lines.slice(0, 40), `… and ${lines.length - 40} more`] : lines).map((line) => `  ${line}`);

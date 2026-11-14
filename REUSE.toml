@@ -24,3 +24,9 @@ path = "crates/erevos-nostr/tests/nip17-*.json"
 precedence = "override"
 SPDX-FileCopyrightText = "The Nostr NIPs contributors"
 SPDX-License-Identifier = "LicenseRef-Nostr-NIPs"
+
+[[annotations]]
+path = ["scripts/licence-texts/**", "app/public/NOTICES.txt"]
+precedence = "override"
+SPDX-FileCopyrightText = "The authors of each licence and the makers each notice names"
+SPDX-License-Identifier = "LicenseRef-Licence-Texts"

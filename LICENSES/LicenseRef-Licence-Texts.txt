@@ -1,0 +1,10 @@
+The texts of licences, and the licence and copyright notices of other
+projects, copied unchanged: scripts/licence-texts/ (the standard texts of
+the licences, from the SPDX licence list) and app/public/NOTICES.txt
+(Erevos's licence and AUTHORS.md, and each package's own licence files).
+
+Each licence text belongs to whoever wrote it (the Free Software
+Foundation, the Apache Software Foundation, the Mozilla Foundation and
+others), and each notice to the makers it names. They are here so that
+every copy of Erevos carries them, as the licences ask, and may be copied
+and given on unchanged, as each of them allows.
