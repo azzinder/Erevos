@@ -187,6 +187,10 @@ export type XmppChat = {
   messages: XmppMessage[];
   unread: number;
   lastAt: number;
+  /** The time of the newest message read here or on another device of the account (markXmppRead, a
+   *  read mark of ours, or one we sent): what comes from before it, from the archive after a restart
+   *  or as a group's history, is not counted as new. Missing while nothing was read. */
+  readAt?: number;
   /** The person chose to write without encryption, to someone whose app has none. */
   plain?: boolean;
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
@@ -898,6 +902,16 @@ function chatOf(state: XmppState, jid: string): XmppChat {
   return (state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
 }
 
+/**
+ * The chat is read up to `at`, here or on another device of the account: only what came after
+ * still counts as not read, and nothing from before is counted again.
+ */
+export function readUpTo(chat: XmppChat, at: number): void {
+  chat.readAt = Math.max(chat.readAt ?? 0, at);
+  const after = chat.messages.filter((m) => !m.mine && m.at > chat.readAt!).length;
+  chat.unread = Math.min(chat.unread, after);
+}
+
 function addMessage(chat: XmppChat, message: XmppMessage): void {
   chat.messages.push(message);
   chat.messages.sort((a, b) => a.at - b.at);
@@ -1036,10 +1050,11 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   // is read here too, all but what came after it.
   if (displayed && mine) {
     const chat = state.chats[peer];
-    const at = chat ? chat.messages.findIndex((m) => !m.mine && m.id === displayed) : -1;
-    const after = at >= 0 ? chat.messages.slice(at + 1).filter((m) => !m.mine).length : chat?.unread ?? 0;
-    if (chat && after < chat.unread) {
-      chat.unread = after;
+    if (chat) {
+      // The message it names; one not here (gone from this phone, or named otherwise) by the time of
+      // the mark itself: everything before it was read.
+      const named = chat.messages.find((m) => !m.mine && m.id === displayed);
+      readUpTo(chat, named ? named.at : how.at);
       taken.chats.push(peer);
     }
   }
@@ -1118,8 +1133,10 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
     ...(!encrypted && child(message, 'forwarded', NS.forward) ? { forwarded: true as const } : {}),
   });
-  if (!mine) chat.unread += 1;
-  else chat.unread = 0;
+  // One from before what was read already (the archive again after a restart, a message deleted
+  // here coming back) is not new.
+  if (mine) readUpTo(chat, how.at);
+  else if (how.at > (chat.readAt ?? 0)) chat.unread += 1;
   taken.chats.push(peer);
   // A receipt, when they asked and they are among the contacts (others do not learn we are here),
   // and we do not appear offline to them (lib/xmpp-rules.ts).
@@ -1231,8 +1248,8 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
     ...(!encrypted && child(message, 'forwarded', NS.forward) ? { forwarded: true as const } : {}),
   });
-  if (mine) chat.unread = 0;
-  else if (how.at > (room.readTo ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
+  if (mine) readUpTo(chat, how.at);
+  else if (how.at > Math.max(room.readTo ?? 0, chat.readAt ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
   taken.chats.push(jid);
 }
 
@@ -1855,7 +1872,9 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
     return replace;
   }
   addMessage(chat, message);
+  // Writing in it, everything in it was seen.
   chat.unread = 0;
+  chat.readAt = Math.max(chat.readAt ?? 0, chat.lastAt);
   try {
     await connection.send(stanza);
     if (!room) message.state = 'sent';
@@ -1969,6 +1988,8 @@ export async function markXmppRead(state: XmppState, connection: XmppConnection 
   const chat = state.chats[peer];
   if (!chat) return;
   chat.unread = 0;
+  // Read up to its newest message: what the archive or the group gives again from before is not new.
+  chat.readAt = Math.max(chat.readAt ?? 0, chat.lastAt, ...chat.messages.map((m) => m.at));
   const last = [...chat.messages].reverse().find((m) => !m.mine);
   // Nothing says it was read to one we appear offline to (lib/xmpp-rules.ts).
   if (last?.markable && connection?.isOpen && !state.unseenBy?.includes(peer.toLowerCase())) {
