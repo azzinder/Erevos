@@ -91,7 +91,7 @@ o WhatsApp, arrivano da soli man mano che scorri verso l’alto (li porta anche 
 di loro); andare a uno precedente (dalla ricerca, da un messaggio importante o da quello a cui risponde un messaggio)
 porta anche quello.
 Ogni chat si apre sul suo ultimo messaggio, con la barra dei messaggi sotto: le chat con i contatti, i gruppi e le
-conversazioni SMS, come le chat Matrix, XMPP e Nostr. Se scorri un po’ verso l’alto, in basso a destra compaiono frecce
+conversazioni SMS{+, come le chat Matrix, XMPP e Nostr}. Se scorri un po’ verso l’alto, in basso a destra compaiono frecce
 rotonde, in ognuna: quella in alto va all’inizio della chat, quella in basso torna alla fine. In mezzo, se all’apertura
 c’erano messaggi nuovi, una doppia spunta va al primo di essi, dove avevi lasciato, finché quel messaggio non si vede.
 Dall’inizio, **Mostra i messaggi successivi**, sotto quello che si vede, ne porta altri; scrivere un messaggio, o la
@@ -103,32 +103,32 @@ così che la schermata principale appaia uguale che uno spazio ne abbia o no: i 
 mentre il loro PIN le tiene aperte.
 
 **Fissate e archiviate:** tieni premuta una chat qualsiasi nella schermata principale, di un contatto o di un gruppo,
-su Matrix, XMPP, Nostr o SMS, per **Fissa in alto**, **Archivia** e, su Android, **Silenzia questa chat**. Al massimo
+{+su Matrix, XMPP, Nostr o SMS}{-o una conversazione SMS}, per **Fissa in alto**, **Archivia** e, su Android, **Silenzia questa chat**. Al massimo
 10 chat restano fissate. Una chat archiviata lascia l’elenco finché non ne arriva un nuovo messaggio; tocca
 **Archiviate** in alto per vedere ciò che hai archiviato, SMS compresi, e toccalo di nuovo per tornare. Le chat
 nascoste hanno le proprie chat fissate e archiviate.
 
-- **L’immagine** è disegnata dalla chiave del contatto: la stessa chiave dà sempre gli stessi colori e la stessa luna
-  (nei verdi con Matrix), così riconosci una chat a colpo d’occhio senza nessuna foto. Non è una verifica della chiave;
+- **L’immagine** è disegnata dalla chiave del contatto: la stessa chiave dà sempre gli stessi colori e la stessa luna{+
+  (nei verdi con Matrix)}, così riconosci una chat a colpo d’occhio senza nessuna foto. Non è una verifica della chiave;
   il [codice di sicurezza](#relay) lo è.
 - **La riga sotto la ricerca** dice se è impostato un relay e se la tua coda è pronta. Toccala per impostarne uno.
 - **Chat con me stesso**, sempre prima tra le chat, con una puntina, contiene le tue note per te stesso: vedi Chat con
   me stesso e promemoria più sotto.
-- **Le chat Matrix**, una volta che hai fatto l’accesso a Matrix, sono nell’elenco con le altre, le più recenti
+- [+] **Le chat Matrix**, una volta che hai fatto l’accesso a Matrix, sono nell’elenco con le altre, le più recenti
   prima, ognuna segnata **Matrix**, e un invito compare in cima. Il chip **Matrix** mostra solo loro, e lì
   **Nuova chat** avvia una chat Matrix: vedi [Matrix](#matrix).
-- **Le chat XMPP**, una volta che hai fatto l’accesso a XMPP, sono nell’elenco allo stesso modo, ognuna segnata
+- [+] **Le chat XMPP**, una volta che hai fatto l’accesso a XMPP, sono nell’elenco allo stesso modo, ognuna segnata
   **XMPP**, e chi chiede di aggiungerti, o un gruppo che ti invita, compare in cima. Il chip **XMPP** mostra solo loro,
   e lì **Nuova chat** avvia una chat XMPP: vedi [XMPP](#xmpp).
-- **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata **Nostr**.
+- [+] **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata **Nostr**.
   Il pulsante **Nostr** mostra solo loro, con quanti messaggi non sono letti, e lì **Nuova chat** apre la schermata
   delle chat Nostr: vedi [Chat con altre app Nostr](#nostr-chats).
 - **Segna tutto come letto**, nel menu ⋮, legge in un colpo ogni chat della parte dell’elenco in cui ti trovi (tutti i
-  messaggi, SMS, Erevos, Matrix, XMPP o Nostr), anche quelle silenziate e bloccate con PIN, dopo aver chiesto. Ognuna è
+  messaggi, SMS{- o Erevos}{+, Erevos, Matrix, XMPP o Nostr}), anche quelle silenziate e bloccate con PIN, dopo aver chiesto. Ognuna è
   letta come se l’aprissi, quindi chi ha scritto viene avvisato come allora; gli inviti e le persone che chiedono di
-  aggiungerti restano finché non rispondi. Le schermate di Matrix, XMPP e Nostr lo hanno sotto **Chat** per le proprie
-  chat. Le chat nascoste non le legge mai.
-- **Il feed pubblico**, quando lo spazio ha una chiave Nostr o è in una stanza Matrix pubblica, è un pulsante in più,
+  aggiungerti restano finché non rispondi.{+ Le schermate di Matrix, XMPP e Nostr lo hanno sotto **Chat** per le proprie
+  chat.} Le chat nascoste non le legge mai.
+- [+] **Il feed pubblico**, quando lo spazio ha una chiave Nostr o è in una stanza Matrix pubblica, è un pulsante in più,
   **Pubblico**: un solo feed, come in Amethyst, con i post pubblici delle persone che la tua chiave Nostr segue e i
   messaggi delle stanze Matrix pubbliche in cui sei, dai più recenti. Ognuno mostra chi l’ha scritto (una piccola N o M
   dice la rete), quando, le sue parole, le sue foto dentro il post e una scheda per il suo link. Con entrambe attive,
@@ -146,8 +146,8 @@ nascoste hanno le proprie chat fissate e archiviate.
   attiva, anche senza chat, ognuna con i suoi messaggi non letti (99+ oltre 99) e un punto, verde finché la sua rete è
   connessa, rosso con **Offline** quando non lo è. Una scheda mostra solo quella parte: **Tutti** tutte le chat,
   **SMS** solo gli SMS (con le chat il cui ultimo messaggio era un SMS; lì si dice se Erevos non è ancora l’app degli
-  SMS), **Erevos** solo le chat di Erevos, quelle di ogni contatto, qualunque cosa sia arrivata per ultima, e
-  **Matrix**, **XMPP**, **Pubblico** e **Nostr** le loro. **Aggiungi** apre Moduli, per attivarne altri, e **Segna
+  SMS), **Erevos** solo le chat di Erevos, quelle di ogni contatto, qualunque cosa sia arrivata per ultima{+, e
+  **Matrix**, **XMPP**, **Pubblico** e **Nostr** le loro}. **Aggiungi** apre Moduli, per attivarne altri, e **Segna
   tutto come letto** legge la parte mostrata. Tieni premuta una scheda per spostarla prima o dopo o per nasconderla
   con **Nascondi**: un servizio nascosto resta attivo, ma non avvisa e non conta nel numero sull’icona
   (Telegram, le cui cartelle possono stare in home, sì), e le sue chat escono anche da **Tutti**
@@ -196,11 +196,11 @@ giorno.
 contiene una chat; e vengono lette solo le foto sullo schermo, come nella chat, così una chat con migliaia di foto si
 apre veloce come una che non ne ha.
 
-**Anche su Matrix, XMPP, Nostr e negli SMS:** una chat su Matrix, XMPP o Nostr ha in fondo **Cerca in questa chat**,
-**Media, link e file**, **Vai a un giorno** ed **Esporta chat**, accanto a **Notifiche**, e una conversazione SMS li
-ha per primi nel suo **⋮**. Guardano solo ciò che questo telefono conserva della chat: i messaggi che una chat Matrix
+**Anche {+su Matrix, XMPP, Nostr e }negli SMS:** {+una chat su Matrix, XMPP o Nostr ha in fondo **Cerca in questa chat**,
+**Media, link e file**, **Vai a un giorno** ed **Esporta chat**, accanto a **Notifiche**, e }una conversazione SMS {-ha **Cerca in questa chat**, **Media, link e file**, **Vai a un giorno** ed **Esporta chat** }{+li
+ha }per primi nel suo **⋮**. Guardano solo ciò che questo telefono conserva della chat: {+i messaggi che una chat Matrix
 conserva (sotto la ricerca, **Carica i messaggi precedenti** ne prende di più vecchi dal suo server, come fa la cima
-della chat), quelli di una chat XMPP o Nostr, e ogni SMS e MMS della conversazione sul telefono; andare a un SMS più
+della chat), quelli di una chat XMPP o Nostr, e }ogni SMS e MMS della conversazione sul telefono; andare a un SMS più
 vecchio carica la conversazione fino a lì. Niente di ciò che scrivi nella ricerca lascia il telefono. Foto e file sono
 elencati, e un tocco porta a ciascuno nella chat, dove un tocco lo prende dal suo server come prima, così nessun
 server sa quali hai guardato; le immagini di un MMS si vedono nell’elenco stesso. **Esporta chat** scrive la chat come
@@ -257,7 +257,7 @@ promemoria resta crittografato nel suo spazio e ad Android viene detta solo la s
 nessuno che cosa volevi ricordare, né in quale spazio si trova. E le note non vanno a nessuno tranne ai tuoi
 dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le trasporta solo crittografate.
 
-- **Da altre chat:** un messaggio di una chat Matrix, XMPP, Nostr o SMS può venire anche qui, con un promemoria:
+- **Da altre chat:** un messaggio di una {+chat Matrix, XMPP, Nostr o SMS}{-conversazione SMS} può venire anche qui, con un promemoria:
   **Ricordamelo** nel suo menu.
 
 ### Spostarsi con gli scorrimenti
@@ -267,7 +267,7 @@ dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le tra
   indietro. Se lasci prima, resti dove sei. In una chat fa quello che fa la sua freccia indietro: torna all’elenco delle
   chat, o esce dalle chat nascoste, chiudendole. Nei **Dettagli** di una chat li chiude.
 - **Schede:** scorri verso sinistra o verso destra per andare alla scheda accanto, come quando tocchi la sua
-  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli
+  etichetta: **Tutti**, **SMS**{- e}{+,} **Erevos**{+, **Matrix**, **XMPP** e **Nostr**} nella schermata principale (quelli
   attivi in Moduli), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e le serie
   di sticker. Nella schermata principale le parti si scelgono nella finestra **Servizi**, con il pulsante sotto la
   ricerca.
@@ -288,7 +288,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
   parti, come **SMS**, le elenca, e ogni parte si apre da sola.
 - **Si vede solo ciò che funziona qui:** su un computer, su Sailfish OS e nella web app non ci sono **Telefono e SMS**,
   Tor, Nostr o LoRa, e un gruppo senza niente da impostare qui non appare.
-- **Solo i moduli attivi:** anche le impostazioni di un modulo disattivato, come **Matrix** o **Telefono e SMS**,
+- **Solo i moduli attivi:** anche le impostazioni di un modulo disattivato, come {+**Matrix** o }**Telefono e SMS**,
   non appaiono: vedi [Moduli](#modules).
 
 | Gruppo | Cosa contiene |
@@ -297,7 +297,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android), **Widget** (Android) e **Vibrazione al tocco** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android e l’app per computer): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi; su un computer, se Erevos continua a funzionare con la finestra chiusa. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone) e [Su un computer](#desktop). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
-| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** e **Chat Nostr**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats). |
+| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android){+,}{- e} **Radio LoRa** (Android){+, **Matrix**, **XMPP** e **Chat Nostr**}. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr){+,}{- e} [Con una radio LoRa](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats)}. |
 | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **SMS quando nient’altro funziona**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
 | **Dati e dispositivi** | **Backup**, **Pezzi del backup**, **Dispositivi collegati** e **Chat importate**. Vedi [Backup](#backup), [Pezzi del backup presso amici](#backup-pieces), [Dispositivi collegati](#devices) e [Chat importate](#import). |
 | **Per i test** | **Test del relay** e **Test radio** (Android). Vedi [Le schermate di test](#tests). |
@@ -325,15 +325,15 @@ subito.
 ## Moduli {#modules}
 
 Erevos è fatto di parti, i suoi moduli: **Erevos** stesso (le sue chat, i suoi gruppi e le sue chiamate,
-crittografati end-to-end, con le chat nascoste), il **Telefono**, gli **SMS** e le chat con app **Nostr**, **Matrix** e
-**XMPP**. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono e gli SMS ci sono solo su Android, la Raccolta su Android, nell’app per computer, nella web app e su Sailfish OS. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
+crittografati end-to-end, con le chat nascoste), il **Telefono**{- e}{+,} gli **SMS**{+ e le chat con app **Nostr**, **Matrix** e
+**XMPP**}. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono e gli SMS ci sono solo su Android, la Raccolta su Android, nell’app per computer, nella web app e su Sailfish OS. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
 più, almeno uno: **Impostazioni** → **Generali** → **Moduli** attiva o disattiva ciascuno in qualsiasi momento.
 
 La primissima volta che si avvia, Erevos si configura come fa un installer. Prima che si apra il suo primo spazio: ciò
 che non dai (né numero di telefono, né e-mail, né nome utente, né account: aggiungi persone con un codice QR o un link,
 oppure ti invitano loro), un nome per i tuoi contatti se lo vuoi, e la lingua; poi quali moduli usare, ciascuno con ciò
 che fa. Poi, nello spazio: una schermata per ogni modulo scelto, con come iniziare (per Erevos, come entri; per il
-Telefono e gli SMS, Erevos come app Telefono e come app SMS; per Nostr, Matrix e XMPP, il tuo account lì) e ciò che
+Telefono e gli SMS, Erevos come app Telefono e come app SMS{+; per Nostr, Matrix e XMPP, il tuo account lì}) e ciò che
 Android, o il browser, deve consentire per esso. Ogni autorizzazione è nella prima schermata che ne ha bisogno, e
 **Consenti tutto, uno per uno** pone le domande che Android pone, nello stesso Erevos, una dopo l’altra. Poi il blocco
 con password e i backup automatici, poi ciò che è pronto e ciò che manca, con **Invita qualcuno**. **Il resto più
@@ -844,11 +844,11 @@ resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a ques
   intero, da aprire nel browser solo se è dove vuoi andare. Prima di allora non viene scaricato nulla.
 - **Condividi da un’altra app** (Android): nel menu **Condividi** di un’altra app, come quello del browser per una
   pagina, scegli **Erevos**. Appena uno spazio è aperto, **Invia a** elenca le chat, i gruppi e le conversazioni SMS
-  che la schermata principale ha mostrato per ultimi, poi ogni altra chat e gruppo, e le chat dei tuoi account Matrix,
-  XMPP e Nostr, con una ricerca; mai le chat nascoste. Parole e link si aprono nel campo del messaggio di quella che
+  che la schermata principale ha mostrato per ultimi, poi ogni altra chat e gruppo{+, e le chat dei tuoi account Matrix,
+  XMPP e Nostr}, con una ricerca; mai le chat nascoste. Parole e link si aprono nel campo del messaggio di quella che
   scegli, da leggere e inviare lì; una foto o un file parte appena quella chat o quel gruppo si apre, una foto con la
-  qualità che hai scelto per le foto, e mai come SMS. Un file può essere al massimo di 100 MB in una chat di Erevos, di
-  50 MB su Matrix e XMPP e di 20 MB su Nostr. Viene cifrato appena arriva, con una chiave solo nella memoria di Erevos,
+  qualità che hai scelto per le foto, e mai come SMS. Un file può essere al massimo di 100 MB{+ in una chat di Erevos, di
+  50 MB su Matrix e XMPP e di 20 MB su Nostr}. Viene cifrato appena arriva, con una chiave solo nella memoria di Erevos,
   e così aspetta sul telefono, anche mentre dai la password se Erevos si blocca prima; se ne va una volta inviato, o
   quando lasci **Invia a**.
 - **Vede quando leggi:** il tuo telefono lo dice al suo, come il suo lo dice al tuo, a meno che quella chat non appaia
@@ -932,7 +932,7 @@ disegnata.
 Ogni chat può anche avere un aspetto tutto suo: tocca il suo nome e poi **Aspetto della chat** per le stesse scelte di
 **Aspetto** (stile, tema, colori, carattere, sfondo, messaggi e la dimensione del loro testo), solo per quella chat. Un
 gruppo ha **Aspetto della chat** dove si apre il suo nome (in un gruppo pubblico, sotto **⋯**), Chat con me stesso ce
-l’ha in cima, e una chat su Matrix, XMPP o Nostr in fondo, accanto a **Notifiche**. Come il nome, resta su questo
+l’ha in cima{+, e una chat su Matrix, XMPP o Nostr in fondo, accanto a **Notifiche**}. Come il nome, resta su questo
 telefono, sigillato con la chat. **Come l’app** le ridà l’aspetto dell’app.
 
 Per tenere una chat fuori da Erevos, tocca il suo nome e poi **Esporta chat**: i suoi messaggi vanno in un file di
@@ -1034,8 +1034,8 @@ Tieni premuto un messaggio per il suo menu: le reazioni in alto, poi quello che 
   non viene inoltrato, e dalle chat nascoste un messaggio va solo alle stesse chat nascoste.
 - **Importante:** lo segna come importante, solo su questo telefono, per ritrovarlo: **Messaggi importanti** nel menu
   della schermata principale li elenca da tutte le tue chat, e i dettagli di una chat elencano i suoi. Un tocco va al
-  messaggio. I messaggi importanti delle chat nascoste appaiono solo nei dettagli delle loro chat. Le chat su Matrix,
-  XMPP e Nostr, e le conversazioni SMS, hanno anch’esse **Importante**, conservato cifrato solo su questo telefono: i
+  messaggio. I messaggi importanti delle chat nascoste appaiono solo nei dettagli delle loro chat. {+Le chat su Matrix,
+  XMPP e Nostr, e le}{-Le} conversazioni SMS{+,} hanno anch’esse **Importante**, conservato cifrato solo su questo telefono: i
   **Messaggi importanti** di una chat elencano i suoi, e quelli della schermata principale li elencano con tutti gli
   altri, ognuno aprendo la sua chat al messaggio. In quelle chat, tenendo premuti una foto, un video, un messaggio
   vocale, un file o l’immagine di un MMS trovi anche **Salva nella Raccolta**, e tenendo premuti uno sticker o una
@@ -1126,8 +1126,8 @@ spazio, perché ogni telefono ha i suoi suoni: un dispositivo collegato tiene i 
 niente.
 
 - **Nelle chat nascoste** c’è solo **In silenzio**: un suono proprio direbbe a chiunque sia vicino di quale chat si
-  tratta. Lo stesso vale per le chat degli account Matrix, XMPP e Nostr di un posto nascosto: in silenzio, non dicono
-  nulla, nemmeno «New message».
+  tratta.{+ Lo stesso vale per le chat degli account Matrix, XMPP e Nostr di un posto nascosto: in silenzio, non dicono
+  nulla, nemmeno «New message».}
 - **Uno spazio chiuso, e le chat nascoste finché sono chiuse,** non sanno in quale chat è arrivato un messaggio, quindi
   lo segnalano come dicono le impostazioni dell’app.
 - **Solo su Android** per ora: la web app segnala ogni chat come dicono le sue impostazioni.
@@ -1278,7 +1278,7 @@ cambiare l’altoparlante, spegnere la tua fotocamera, passare dalla fotocamera 
 una chiamata persa.
 
 - **Rispondere con video o solo con la voce:** una chiamata che squilla offre **Rispondi**, solo con la voce, e
-  **Rispondi con video**, nelle chiamate di Erevos e in quelle di XMPP e Matrix; in una chiamata di gruppo sono
+  **Rispondi con video**, nelle chiamate di Erevos{+ e in quelle di XMPP e Matrix}; in una chiamata di gruppo sono
   **Partecipa** e **Partecipa con video**. Una videochiamata a cui rispondi solo con la voce inizia con la fotocamera
   spenta.
 - **Dove va il suono** (Android): con cuffie Bluetooth o con filo collegate, **Altoparlante** diventa **Uscita audio**:
@@ -3072,8 +3072,8 @@ cancellerebbe quello che contengono i posti tolti.
   vedono subito che un messaggio è arrivato, una notifica dice solo «New message», su Android una chiamata squilla con
   «Incoming call» e senza nome (sulla schermata dello squillo, tocca **Rispondi** o il piccolo segno, scrivi il PIN e
   tocca **Connetti**), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
-  **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr, e i loro account Matrix, XMPP e Nostr
-  restano collegati (vedi sotto). Una chiamata che è finita prima che le aprissi, o ha squillato troppo a lungo, appare
+  **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr{+, e i loro account Matrix, XMPP e Nostr
+  restano collegati (vedi sotto)}. Una chiamata che è finita prima che le aprissi, o ha squillato troppo a lungo, appare
   come persa. Niente di loro appare da nessuna parte finché il PIN non le apre. Un nuovo posto parte con questo attivo;
   i posti impostati prima restano com’erano finché non lo attivi. Per questo, la chiave del posto è conservata
   crittografata con lo spazio, tra una chiave casuale per ogni altro posto, così aprire lo spazio non mostra quali posti
@@ -3082,8 +3082,8 @@ cancellerebbe quello che contengono i posti tolti.
   disattivato, la loro chiave è solo dietro il PIN, e i loro messaggi aspettano sul relay finché non le apri. I backup
   conservano l’interruttore.
 - **Punto per i non letti:** con **Ricevere da chiuse** attivo, un interruttore sotto (spento a meno che non lo
-  accendi). Acceso, finché una delle chat o dei gruppi del posto ha un messaggio non letto, o una delle sue chat
-  Matrix, XMPP o Nostr ne ha avuto uno dall’ultima volta che lo hai aperto, un piccolo punto compare sulla lente di
+  accendi). Acceso, finché una delle chat o dei gruppi del posto ha un messaggio non letto{+, o una delle sue chat
+  Matrix, XMPP o Nostr ne ha avuto uno dall’ultima volta che lo hai aperto}, un piccolo punto compare sulla lente di
   **Cerca nelle chat** nella schermata principale: mai quanti, né dove. Se ne va appena li leggi. Chi vede le chat
   dello spazio lo vede anche lui, e può intuire che ci sono chat nascoste. I posti che hanno solo **Avvisa quando
   arriva un messaggio** non hanno il punto: l’interruttore dovrebbe stare dove lo spazio può leggerlo.
@@ -3105,7 +3105,7 @@ cancellerebbe quello che contengono i posti tolti.
   letto solo con **Ricevere da chiuse** attivo, e **Avvisa quando arriva un messaggio** non lo conta. Le sue chiamate
   squillano solo mentre le chat nascoste sono aperte: una avviata mentre sono chiuse appare come persa. Un gruppo lì
   non ha un PIN suo, e nessuno è pubblico.
-- **Matrix, XMPP e Nostr:** sotto il loro elenco, **Matrix**, **XMPP** e **Nostr** aprono le schermate di quelle reti
+- [+] **Matrix, XMPP e Nostr:** sotto il loro elenco, **Matrix**, **XMPP** e **Nostr** aprono le schermate di quelle reti
   (vedi [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats)) per account propri delle chat
   nascoste, a parte quelli dello spazio: un account Matrix e uno XMPP a cui accedere, e una chiave Nostr. Gli accessi e
   la chiave sono tenuti cifrati con la chiave delle chat nascoste, e niente di essi si vede fuori dalle chat nascoste:
@@ -3197,8 +3197,8 @@ PIN.
   perché le protegge il PIN delle chat nascoste stesse. Riportata tra le chat, lo stesso PIN chiede di nuovo.
 - **Per toglierlo:** **Dettagli** → di nuovo **Blocca con un PIN**, e scrivi il suo PIN.
 - **Lo conosce solo questo telefono,** e ogni dispositivo collegato ha il suo. I backup lo conservano.
-- **Anche su Matrix, XMPP, Nostr e SMS:** una chat su Matrix, XMPP o Nostr ha **Blocca con un PIN** in fondo, e una
-  conversazione SMS sotto la riga **SMS normale**, e funziona allo stesso modo: nell’elenco il suo nome con un
+- **Anche {+su Matrix, XMPP, Nostr e SMS}{-negli SMS}:** {+una chat su Matrix, XMPP o Nostr ha **Blocca con un PIN** in fondo, e }una
+  conversazione SMS {-ha **Blocca con un PIN** }sotto la riga **SMS normale**, e funziona allo stesso modo: nell’elenco il suo nome con un
   lucchetto, nessuno dei suoi messaggi nella ricerca, e la password dello spazio toglie un PIN dimenticato. **Blocca
   gli screenshot** è accanto, solo su questo telefono (Android): gli altri non vengono avvisati. Le chat di un luogo
   nascosto non offrono né l’uno né l’altro, perché le protegge il loro PIN e restano fuori dagli screenshot
@@ -3248,8 +3248,8 @@ La Raccolta è un posto cifrato per le tue foto, i tuoi file e le tue cartelle, 
 ## Backup {#backup}
 
 Un backup contiene tutto quello che Erevos conserva su questo telefono: ogni spazio, con i suoi contatti, le chiavi
-delle sue conversazioni, i suoi messaggi, foto, file, messaggi vocali, chat importate e chat nascoste, i suoi account
-Matrix, XMPP e Nostr, la sua Chat con me stesso, il blocco e la password di panico, e le impostazioni che ti seguono su
+delle sue conversazioni, i suoi messaggi, foto, file, messaggi vocali, chat importate e chat nascoste, {+i suoi account
+Matrix, XMPP e Nostr, }la sua Chat con me stesso, il blocco e la password di panico, e le impostazioni che ti seguono su
 un altro telefono. Al suo interno ogni spazio resta sigillato con la sua password, e il backup è sigillato di nuovo con
 una sua password. Le sue foto, i file e i messaggi vocali vanno in file a parte accanto a lui, di 4 MB al massimo
 ciascuno, il cui nome comincia come il suo; un backup automatico usa anche i file di quelli prima: tieni insieme tutta
@@ -3303,7 +3303,7 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   nome casuale e sigillato con la password del backup, legato a quel backup e al suo posto in esso, così nessuno può
   essere scambiato, tolto o preso da un altro backup senza che si veda; il server tiene ognuno finché ne ha bisogno
   uno dei backup che conserva, e poi lo elimina. I loro nomi sono lunghi quanto quello del backup, ma la loro dimensione li distingue da esso, quindi il server può contarli, e sapere così più o meno quanto contiene il backup. Quello che un backup interrotto ha lasciato lì viene eliminato prima che parta il successivo, così un server rimasto senza spazio ne ha di nuovo. Il server vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande. Su Android, i backup ci vanno come
-  dice la scelta dello spazio in **Impostazioni** → **Relay e reti** → **Tor**, come Matrix: con **Tutto** solo
+  dice la scelta dello spazio in **Impostazioni** → **Relay e reti** → **Tor**{+, come Matrix}: con **Tutto** solo
   tramite Tor, così il server non vede l’indirizzo del telefono; con **Messaggi** tramite Tor appena Tor è pronto, e
   direttamente mentre Tor parte o quando fallisce; con **Niente** direttamente, e il server vede l’indirizzo del
   telefono. Un backup aspetta prima fino a due minuti che Tor parta, e **Anche su un server** dice da dove passa ora.
@@ -3334,7 +3334,7 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   mai due messaggi: una usata due volte permetterebbe a chi ha conservato entrambi i pacchetti di leggerli insieme. In
   un gruppo, un membro ripristinato chiede all’Erevos dell’amministratore di rimetterlo dentro, cosa che funziona
   finché il gruppo è andato avanti solo di poco; altrimenti chiedi di essere aggiunto di nuovo.
-- **Matrix, XMPP e Nostr:** gli account di ogni spazio e delle sue chat nascoste sono nel backup. Una chiave **Nostr**
+- [+] **Matrix, XMPP e Nostr:** gli account di ogni spazio e delle sue chat nascoste sono nel backup. Una chiave **Nostr**
   torna con le sue chat, com’erano. Un account **XMPP** torna con il suo accesso, i contatti, le chat e le chiavi che
   conosce degli altri, e prosegue come nuovo dispositivo dell’account: tiene la sua chiave d’identità, così le app dei
   tuoi contatti ne riconoscono ancora la chiave, ma prende un nuovo ID dispositivo, una nuova risorsa e nuove chiavi,
@@ -3366,7 +3366,7 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   allora a nuove code sul relay, ognuno la prossima volta che si apre qui, e i tuoi contatti e gruppi vengono avvisati
   in silenzio. Le vecchie code vengono lette qui finché ogni contatto non scrive in quelle nuove, 14 giorni al
   massimo, e i link di contatto e i codici QR che hai dato prima valgono 14 giorni, poi più. Quello che passa da
-  Nostr, XMPP o Matrix arriva ancora al vecchio telefono. Dopo un altro ripristino, toccalo di nuovo.
+  Nostr{+, XMPP o Matrix} arriva ancora al vecchio telefono. Dopo un altro ripristino, toccalo di nuovo.
 - **Discrezione:** ogni spazio mostra la stessa schermata Backup, e un backup contiene ogni spazio, quindi né l’una né
   l’altro dicono quanti spazi ci sono o se ci sono chat nascoste impostate. I nomi dei file dicono che sono un backup di
   Erevos, e il loro numero e la loro dimensione mostrano più o meno quanto viene conservato.
@@ -3400,8 +3400,8 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
   solo sul telefono su cui sono state scelte; quello che Android consente a Erevos e quali app fanno le chiamate e
   mandano gli SMS, che solo tu puoi consentire su ogni telefono, per questo dopo un ripristino su Android si apre
   **Autorizzazioni** per i moduli attivi; la cronologia delle chiamate e la lista di numeri bloccati di Android
-  stesso, a meno che **Includi le chiamate nei backup** fosse attivo, come sopra; e il conteggio delle password sbagliate. Un account XMPP torna come un nuovo
-  dispositivo di sé stesso e Matrix accede di nuovo, come sopra, e i dispositivi collegati si collegano di nuovo, come
+  stesso, a meno che **Includi le chiamate nei backup** fosse attivo, come sopra; e il conteggio delle password sbagliate. {+Un account XMPP torna come un nuovo
+  dispositivo di sé stesso e Matrix accede di nuovo, come sopra, e i}{-I} dispositivi collegati si collegano di nuovo, come
   sotto.
 - **Dispositivi collegati:** un collegamento resta con il telefono e il computer su cui è stato fatto, e nessun backup
   lo tiene, ma un backup tiene ciò che permette al telefono su cui viene ripristinato di chiedere a ognuno di loro di
@@ -3470,8 +3470,8 @@ la sua password.
    [Erevos a un telefono vicino](#give-app).
 2. **Sul telefono vecchio, preparalo:** perché passino anche gli SMS del telefono, attiva **Includi gli SMS nei
    backup** sotto **Backup**, e per la sua cronologia delle chiamate **Includi le chiamate nei backup**. Una Raccolta lasciata fuori dai backup resta indietro: rimettila dentro, o dalle un
-   server WebDAV, vedi [Raccolta](#collection). Tieni a portata di mano la tua Chiave di sicurezza di Matrix, perché
-   Matrix accede di nuovo sul telefono nuovo.
+   server WebDAV, vedi [Raccolta](#collection).{+ Tieni a portata di mano la tua Chiave di sicurezza di Matrix, perché
+   Matrix accede di nuovo sul telefono nuovo.}
 3. **Sul telefono vecchio, fai il backup:** sotto **Impostazioni** → **Dati e dispositivi** → **Backup**, tocca **Crea
    un backup**, o **Fai il backup ora** con i backup automatici. Fallo per ultimo, subito prima del passaggio, e da
    quel momento non aprire più Erevos sul telefono vecchio: ciò che arriva dopo aspetta sul relay per quello nuovo.
@@ -3484,8 +3484,8 @@ la sua password.
    com’era il telefono vecchio, con le stesse password.
 6. **Sul telefono nuovo, reimposta ciò che è del telefono:** **Autorizzazioni** si apre per ciò che Android deve
    consentire. Poi attiva di nuovo l’impronta o il volto (vedi [Blocco con password](#lock)), scegli di nuovo la
-   cartella dei backup automatici sotto **Backup**, e la SIM per ogni numero, e accedi a Matrix con la sua Chiave di
-   sicurezza.
+   cartella dei backup automatici sotto **Backup**, e la SIM per ogni numero{+, e accedi a Matrix con la sua Chiave di
+   sicurezza}.
 7. **Sul telefono vecchio, cancella Erevos:** quando il telefono nuovo mostra le tue chat e i nuovi messaggi arrivano
    lì, tocca **Cancella tutto ora** sotto **Impostazioni** → **Privacy e sicurezza** → **Pulsante di panico**. Non
    **Cancellami da ovunque**: cancella le code del relay che legge il telefono nuovo.
@@ -3497,7 +3497,7 @@ la sua password.
   scrivere di nuovo né inviti da chiedere. I tuoi contatti ti scrivono come prima.
 - **Chat nascoste:** ogni posto nascosto arriva con il backup, ciascuno con il suo PIN, e niente sul telefono nuovo dice
   che ce ne sono, vedi [Chat nascoste](#hidden).
-- **Matrix, XMPP e Nostr:** una chiave Nostr continua com’era, un account XMPP come un nuovo dispositivo di sé stesso, e
+- [+] **Matrix, XMPP e Nostr:** una chiave Nostr continua com’era, un account XMPP come un nuovo dispositivo di sé stesso, e
   Matrix accede di nuovo come nuovo dispositivo, con la sua Chiave di sicurezza che apre i messaggi di prima, vedi
   [Backup](#backup).
 - **Dispositivi collegati:** sul telefono nuovo, sotto **Impostazioni** → **Dati e dispositivi** → **Dispositivi
@@ -3527,7 +3527,7 @@ di panico**: tocca **Cancella tutto ora** e conferma con **Cancella**. Su Androi
 Sailfish OS.
 
 - **Cosa va via:** ogni spazio con le sue chat nascoste, con i loro contatti, messaggi, foto, file e chiavi; il blocco
-  e le sue password; gli account Matrix, XMPP e Nostr e i token del relay; le impostazioni e la password dei backup
+  e le sue password; {+gli account Matrix, XMPP e Nostr e }i token del relay; le impostazioni e la password dei backup
   automatici, e del loro server. Su Android, Erevos poi si chiude e la volta dopo si apre come appena installato. Con
   **Anche i backup automatici in** scelto, prima vanno via i file di backup lì.
 - **Cosa resta:** ciò che Erevos non può raggiungere: i backup copiati altrove o inviati a un server (la loro password
@@ -3592,20 +3592,20 @@ ovunque**: tocca **Cancellami da ovunque** e di' sì due volte. Il tuo telefono 
 [Pulsante di panico](#panic), che cancella il telefono.
 
 - **Cosa sparisce:** ogni coda che questo spazio ha sui relay, con i messaggi che vi aspettano: la tua, quella che nomina il tuo
-  link di contatto, quelle dei tuoi gruppi, dei tuoi contatti, del tuo relay di casa, quelle per le notifiche di Matrix e XMPP, le
+  link di contatto, quelle dei tuoi gruppi, dei tuoi contatti, del tuo relay di casa, {+quelle per le notifiche di Matrix e XMPP, }le
   porte dei tuoi gruppi pubblici e quelle dei tuoi dispositivi collegati. Anche i messaggi che un relay tiene per inviarli dopo, i
   file arrivati che vi aspettano, e gli inviti che hai fatto e nessuno ha usato. Le chat nascoste che ricevono anche da chiuse se
   ne vanno con lo spazio; le altre quando le apri mentre lo spazio è fermo. Le liste della schermata lasciano fuori le chat
   nascoste, così non mostrano mai che ce ne sono. Erevos chiede anche a ogni relay Nostr di dimenticare le chiavi su cui
   leggono le tue chat (una richiesta di sparire, NIP-62): via Tor quando Tor è attivo, direttamente quando è spento. Con
   Tor attivo ma non ancora pronto, Nostr non viene interpellato; aspetta che lo sia e cancella ancora.
-- **Matrix, XMPP, Nostr:** con **Esci anche da Matrix e XMPP e cancella l'account Nostr creato qui**, quegli account escono da
+- [+] **Matrix, XMPP, Nostr:** con **Esci anche da Matrix e XMPP e cancella l'account Nostr creato qui**, quegli account escono da
   qui. Gli account restano sui loro server, che sono loro, non di Erevos. Un account Nostr portato da un'altra app resta com'è.
 - **Lo spazio si ferma:** non riceve né invia nulla, così nessuna coda viene rifatta subito (Erevos rifà da solo una coda
   persa). **Riavvia** lo termina: vengono create code nuove, come quando un relay le ha perse, e i tuoi contatti vengono avvisati
   in silenzio. Dai loro anche un nuovo link di contatto, perché i vecchi nominano code che non esistono più.
-- **Cosa non raggiunge:** i telefoni dei tuoi contatti, i relay Nostr che non fanno ciò che si chiede, i file inviati tramite un
-  file server e i server Matrix e XMPP. La schermata elenca cosa è stato cancellato, cosa era già sparito e cosa non è stato
+- **Cosa non raggiunge:** i telefoni dei tuoi contatti, i relay Nostr che non fanno ciò che si chiede,{- e} i file inviati tramite un
+  file server{+ e i server Matrix e XMPP}. La schermata elenca cosa è stato cancellato, cosa era già sparito e cosa non è stato
   raggiunto; **Cancella ancora** prova il resto.
 
 **Perché:** un relay, anche di fiducia, è un posto che conserva qualcosa di te. Questo è l'unico tocco che riprende tutto senza
@@ -3958,8 +3958,8 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   uno spazio solo uno spazio: letto dall’altro, semplicemente decade, e **Collega al mio telefono** ricomincia sul computer. Il posto ha
   allora un collegamento suo, con chiavi sue e un suo elenco di dispositivi, firmato dal suo account, così i suoi
   contatti con questa versione scrivono direttamente al posto del computer. I suoi messaggi, contatti, gruppi, chiamate,
-  foto e file e la sua Chat con me stesso vanno tra i due posti come quelli dello spazio tra dispositivi collegati, e
-  così i suoi account Matrix, XMPP e Nostr, sempre, e di nuovo quando cambiano. Niente
+  foto e file e la sua Chat con me stesso vanno tra i due posti come quelli dello spazio tra dispositivi collegati{+, e
+  così i suoi account Matrix, XMPP e Nostr, sempre, e di nuovo quando cambiano}. Niente
   di tutto questo si vede nello spazio, nelle sue schermate o sui suoi dispositivi collegati, e il collegamento dello
   spazio non porta mai niente di un posto: quello che un posto tiene del suo collegamento è crittografato con la sua
   chiave, tra valori fatti per niente per gli altri posti, in un file della stessa dimensione che un posto sia collegato
@@ -3978,7 +3978,7 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 - **Trasferisci di nuovo i messaggi**, sul telefono, invia di nuovo un periodo della cronologia, con le sue reazioni,
   i messaggi fissati, i voti e quelli segnati come importanti; quello che il computer ha già non viene conservato due
   volte.
-- **Matrix, XMPP e Nostr**: ogni dispositivo collegato li riceve, e seguono i cambiamenti sul telefono: un account da cui si esce lì, o sostituito da un altro, se ne va anche dai dispositivi. Il computer accede agli
+- [+] **Matrix, XMPP e Nostr**: ogni dispositivo collegato li riceve, e seguono i cambiamenti sul telefono: un account da cui si esce lì, o sostituito da un altro, se ne va anche dai dispositivi. Il computer accede agli
   account Matrix e XMPP di questo spazio e prende la chiave delle sue chat Nostr, ciascuno come nuovo dispositivo a
   sé: il telefono tiene il suo. Per un computer già collegato, tocca **Invia gli account** sotto di esso sul telefono.
   XMPP e Nostr arrivano da soli. Un server Matrix di rado lascia che il telefono faccia accedere un nuovo dispositivo:

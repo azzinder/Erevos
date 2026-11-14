@@ -21,7 +21,12 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 
 export type WhatsNew = Changes & { version: string };
 
-export const NEXT: Changes = { forYou: [], underTheHood: [] };
+export const NEXT: Changes = {
+  forYou: [
+    mark("**The guide tells only of what Erevos has**: in Erevos, the user guide no longer speaks of Matrix, XMPP and the chats with other Nostr apps, which are in Erevos+. See [Erevos or Erevos+, and betas](#updates)."),
+  ],
+  underTheHood: [],
+};
 
 export const VERSIONS: WhatsNew[] = [
   {

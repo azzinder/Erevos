@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- The plain Erevos's user guide no longer speaks of Matrix, XMPP and the chats with other Nostr apps: the guide's sources mark what only Erevos+ says (`{+…}`, `{-…}`, `- [+]`, `editionSource`), and Erevos+'s guide reads as before.
+
 ### Under the hood
 
 ## 7.0.1 (2026-11-14)

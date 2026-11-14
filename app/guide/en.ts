@@ -86,7 +86,7 @@ only from inside them. A long chat opens at its latest 100 messages, and earlier
 WhatsApp among them, come by themselves as you scroll up (**Show earlier messages**, above them, brings them too); going
 to an earlier one (from the search, a starred message or the one a message answers) brings it too.
 Every chat opens at its latest message, with the message bar under it: chats with contacts, groups and SMS
-conversations, and the Matrix, XMPP and Nostr chats alike. Scrolled up a little, round arrows show at the lower right in
+conversations{+, and the Matrix, XMPP and Nostr chats} alike. Scrolled up a little, round arrows show at the lower right in
 each of them: the upper one goes to the chat's start, the lower one back to its end. Between them, when some messages
 were new as you opened the chat, a double tick goes to the first of those, where you left off, for as long as that
 message is out of sight. From the start, **Show later messages**, under what shows, brings more; writing a message, or
@@ -96,30 +96,31 @@ the lower arrow, goes back to the end.
 on older phones most of all. Hidden chats are left out of the home screen's search so that the home screen looks the
 same whether a space has any or not: their messages can be read only while their PIN has them open.
 
-**Pinned and archived:** hold any chat down on the home screen, a contact's or a group's, on Matrix, XMPP, Nostr or
-SMS, for **Pin to the top**, **Archive** and, on Android, **Mute this chat**. At most 10 chats stay pinned. An
+**Pinned and archived:** hold any chat down on the home screen, a contact's or a group's, {+on Matrix, XMPP, Nostr or
+SMS}{-or an SMS conversation}, for **Pin to the top**, **Archive** and, on Android, **Mute this chat**. At most 10 chats stay pinned. An
 archived chat leaves the list until a new message comes from it; tap **Archived** at the top to see what you archived,
 SMS too, and tap it again to go back. Hidden chats keep their own pinned and archived chats.
 
-- **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
+- **The picture** is drawn from the contact's key: the same key always gives the same colours and moon{+ (in greens under Matrix)}, so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **Chat with myself**, always first in the chats, with a pin, holds your notes to yourself: see Chat with myself and
   reminders below.
-- **Matrix chats**, once you sign in to Matrix, are in the list with the others, newest first, each marked
+- [+] **Matrix chats**, once you sign in to Matrix, are in the list with the others, newest first, each marked
   **Matrix**, and an invite shows at the top. The **Matrix** chip shows only them, and there **New chat** starts a
   Matrix chat: see [Matrix](#matrix).
-- **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks to
+- [+] **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks to
   add you, or a group that invites you, shows at the top. The **XMPP** chip shows only them, and there **New chat**
   starts an XMPP chat: see [XMPP](#xmpp).
-- **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
+- [+] **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
   chip shows only them, with how many are not read, and there **New chat** opens the Nostr chats screen: see
   [Chats with other Nostr apps](#nostr-chats).
-- **Mark all as read**, in the ⋮ menu, reads at once every chat of the part of the list you are on (all messages, SMS,
-  Erevos, Matrix, XMPP or Nostr), muted and PIN-locked ones too, after asking. Each is read as if you opened it, so
-  those who wrote are told as then; invitations and people asking to add you stay until you answer them. The Matrix,
-  XMPP and Nostr screens have it under **Chats** for their own chats. Hidden chats are never read by it.
-- **The Public feed**, once the space has a Nostr key or is in a public Matrix room, is one more chip, **Public**: one
+- **Mark all as read**, in the ⋮ menu, reads at once every chat of the part of the list you are on (all messages, SMS{- or
+  Erevos}{+,
+  Erevos, Matrix, XMPP or Nostr}), muted and PIN-locked ones too, after asking. Each is read as if you opened it, so
+  those who wrote are told as then; invitations and people asking to add you stay until you answer them.{+ The Matrix,
+  XMPP and Nostr screens have it under **Chats** for their own chats.} Hidden chats are never read by it.
+- [+] **The Public feed**, once the space has a Nostr key or is in a public Matrix room, is one more chip, **Public**: one
   feed, as in Amethyst, of the public posts of the people your Nostr key follows and the messages of the public Matrix
   rooms you are in, newest first. Each shows who wrote it (a small N or M says the network), when, its words, its
   photos inside the post and a card for its link. With both on, **All**, **Nostr** and **Matrix** above the feed
@@ -136,8 +137,8 @@ SMS too, and tap it again to go back. Hidden chats keep their own pinned and arc
   also with no chat yet, each with the messages not read in it (99+ above 99) and a dot, green while its network is
   connected, red with **Offline** when it is not. A card shows only that part: **All messages** all of them, **SMS**
   only the SMS (with the chats whose last message was an SMS; it says so when Erevos is not the SMS app yet),
-  **Erevos** only the Erevos chats, every contact's whatever came last, and **Matrix**, **XMPP**, **Public** and
-  **Nostr** theirs. **Add** opens Modules, to turn more on, and **Mark all as read** reads the part shown. Hold a card
+  **Erevos** only the Erevos chats, every contact's whatever came last{+, and **Matrix**, **XMPP**, **Public** and
+  **Nostr** theirs}. **Add** opens Modules, to turn more on, and **Mark all as read** reads the part shown. Hold a card
   down to move it earlier or later or to **Hide** it: a hidden service stays on, but sends no notifications and counts on no icon (Telegram, whose folders
   can show on home, still does), and its chats leave **All messages** too (a search still finds them), and it waits at the foot of the window, where a tap shows it
   again. Any card held, **All messages** too, can be made **Opens first**: Erevos's icon opens on it, and on
@@ -180,11 +181,11 @@ does the same for the chat itself: it goes to that day's first message.
 **Why:** the lists are made on this phone from what it already keeps, so no server learns what a chat holds; and only
 the photos on the screen are read, as in the chat, so a chat with thousands of them opens as fast as one with none.
 
-**On Matrix, XMPP, Nostr and SMS too:** a chat on Matrix, XMPP or Nostr has **Search in this chat**, **Media, links
-and files**, **Go to a day** and **Export chat** at its foot, beside **Notifications**, and an SMS conversation has
-them first under its **⋮**. They look only at what this phone keeps of the chat: the messages a Matrix chat keeps
+**On {+Matrix, XMPP, Nostr and }SMS too:** {+a chat on Matrix, XMPP or Nostr has **Search in this chat**, **Media, links
+and files**, **Go to a day** and **Export chat** at its foot, beside **Notifications**, and }an SMS conversation has
+{-**Search in this chat**, **Media, links and files**, **Go to a day** and **Export chat** }{+them }first under its **⋮**. They look only at what this phone keeps of the chat: {+the messages a Matrix chat keeps
 (under the search, **Load earlier messages** fetches older ones from its server, as the top of the chat does), those
-of an XMPP or Nostr chat, and every SMS and MMS of the conversation on the phone; going to an older SMS loads the
+of an XMPP or Nostr chat, and }every SMS and MMS of the conversation on the phone; going to an older SMS loads the
 conversation back to it. Nothing you type in the search leaves the phone. Photos and files are listed, and a tap goes
 to each in the chat, where a tap fetches it from its server as before, so no server learns which ones you looked at;
 an MMS's pictures show in the list itself. **Export chat** writes the chat out as for a contact, after the same
@@ -239,7 +240,7 @@ space and Android is told only its time: the notice cannot tell anyone what you 
 is in. And the notes go to no one but your own devices, end-to-end encrypted between them as your chats are: the relay
 carries them only sealed.
 
-- **From other chats:** a message of a Matrix, XMPP, Nostr or SMS chat can come here too, with a reminder: **Remind
+- **From other chats:** a message of {+a Matrix, XMPP, Nostr or }{-an }SMS {+chat}{-conversation} can come here too, with a reminder: **Remind
   me** in its menu.
 
 ### Moving around with swipes
@@ -248,8 +249,8 @@ carries them only sealed.
   the left; let go once it is whole, or flick, and you are back. Let go sooner and you stay. In a chat it does what
   its back arrow does: back to the list of chats, or out of hidden chats, closing them. In a chat's **Details** it
   closes them.
-- **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**,
-  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those on in Modules), **Keypad**, **Recents** and
+- **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**{+,}{- and}
+  **Erevos**{+, **Matrix**, **XMPP** and **Nostr**} on the home screen (those on in Modules), **Keypad**, **Recents** and
   **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On the home screen the parts are
   chosen in the **Services** window, under the button below the search.
 - On a screen with tabs, a swipe only changes the tab, on the rows of its list too, and past the first or the last
@@ -269,7 +270,7 @@ phone's own settings do. In the other languages it is named in that language and
   lists them, and each part opens alone.
 - **Only what works here shows:** on a computer, on Sailfish OS and in the web app there is no **Phone and SMS**,
   Tor, Nostr or LoRa, and a group with nothing to set here does not show.
-- **Only the modules on show:** the settings of a module that is off, such as **Matrix** or **Phone and SMS**, do not
+- **Only the modules on show:** the settings of a module that is off, such as {+**Matrix** or }**Phone and SMS**, do not
   show either: see [Modules](#modules).
 
 | Group | What is in it |
@@ -278,7 +279,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android), **Widget** (Android) and **Vibrate on touch** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
-| **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** and **Nostr chats**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora), [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats). |
+| **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android){+,}{- and} **LoRa radio** (Android){+, **Matrix**, **XMPP** and **Nostr chats**}. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr){+,}{- and} [Over a LoRa radio](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)}. |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
 | **For testing** | **Relay test** and **Radio test** (Android). See [The test screens](#tests). |
@@ -305,14 +306,14 @@ at once.
 ## Modules {#modules}
 
 Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups and calls, end-to-end encrypted, with
-the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android, in the desktop app, in the web app and on Sailfish OS. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
+the hidden chats), the **Phone**{- and}{+,} the **SMS**{+, and the chats with **Nostr**, **Matrix** and **XMPP** apps}. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android, in the desktop app, in the web app and on Sailfish OS. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
 **General** → **Modules** turns each on or off at any time.
 
 The very first time Erevos starts, it sets itself up as an installer does. Before its first space opens: what you
 do not give (no phone number, email, user name or account: you add people with a QR code or a link, or they invite
 you), a name for your contacts if you want one, and the language; then which modules to use, each with what it does.
 Then, in the space: a screen for each module chosen, with how to begin with it (for Erevos, how you join; for the Phone
-and the SMS, Erevos as the phone app and as the SMS app; for Nostr, Matrix and XMPP, your account there) and what
+and the SMS, Erevos as the phone app and as the SMS app{+; for Nostr, Matrix and XMPP, your account there}) and what
 Android, or the browser, should allow for it. Each permission is on the first screen that needs it, and **Allow all,
 one by one** asks the questions Android asks in Erevos itself one after another. Then the password lock and automatic
 backups, then what is ready and what is missing, with **Invite someone**. **Do the rest later** leaves the rest for
@@ -780,10 +781,10 @@ message stays at **✓**. Public groups have no marks. A computer linked to this
   whole, to open in the browser only if it is where you want to go. Nothing is fetched before that.
 - **Share from another app** (Android): in another app's **Share**, such as the browser's for a page, pick
   **Erevos**. Once a space is open, **Send to** lists the chats, groups and SMS conversations the home screen showed
-  last, then every other chat and group, and the chats of your Matrix, XMPP and Nostr accounts, with a search; never
+  last, then every other chat and group{+, and the chats of your Matrix, XMPP and Nostr accounts}, with a search; never
   hidden chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file
   goes as soon as that chat or group opens, a photo at the quality you chose for photos, and never as an SMS. A file
-  can be 100 MB at most in an Erevos chat, 50 MB on Matrix and XMPP and 20 MB on Nostr. It is encrypted as it comes
+  can be 100 MB at most{+ in an Erevos chat, 50 MB on Matrix and XMPP and 20 MB on Nostr}. It is encrypted as it comes
   in, with a key only in Erevos's memory, and waits so on the phone, also while you give the password if Erevos locks
   first; it goes once sent, or when you leave **Send to**.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
@@ -858,8 +859,8 @@ picture (a place, a phone) is kept, then sealed in a file of its own. It too sta
 
 Each chat can also look its own way: tap its name and then **Chat look** for the same choices as **Appearance** (style, theme,
 colors, letters, wallpaper, messages and their text size), for that chat only. A group has **Chat look** where its name opens
-(in a public group, under **⋯**), Chat with myself has it at the top, and a chat on Matrix, XMPP or Nostr at its foot, beside
-**Notifications**. Like the name, it stays on this phone, sealed with the chat. **Same as the app** gives it the app's look again.
+(in a public group, under **⋯**), Chat with myself has it at the top{+, and a chat on Matrix, XMPP or Nostr at its foot, beside
+**Notifications**}. Like the name, it stays on this phone, sealed with the chat. **Same as the app** gives it the app's look again.
 
 To keep a chat outside Erevos, tap its name and then **Export chat**: its messages go into a text file, each day under its
 date and each message with its time and who wrote it, saved in the folder you pick (on a computer, where you choose). The
@@ -952,7 +953,7 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   is not forwarded, and from hidden chats a message goes only to the same hidden chats.
 - **Star:** stars it, on this phone only, to find it again: **Starred messages** in the home screen's menu lists them
   from all your chats, and a chat's details list its own. A tap goes to the message. Hidden chats' starred messages
-  show only in their chats' details. Chats on Matrix, XMPP and Nostr, and SMS conversations, have **Star** too, kept
+  show only in their chats' details. {+Chats on Matrix, XMPP and Nostr, and }SMS conversations{+,} have **Star** too, kept
   encrypted on this phone only: a chat's own **Starred messages** lists its stars, and the home screen's lists them
   with all the rest, each opening its chat at the message. In those chats, holding a photo, video, voice message or
   file, or an MMS's picture, also offers **Save to the Collection**, and holding a sticker or photo that came offers
@@ -1033,8 +1034,8 @@ time, or **Sounds of its own**.
 Its sounds are kept on this phone only, with the chat in the space's encrypted data, as each phone has sounds of its
 own: a linked device keeps its own, and the other phone learns nothing of them.
 
-- **In hidden chats** there is only **Muted**: a sound of its own would tell anyone near which chat it is. So it is for the
-  chats of a hidden place's own Matrix, XMPP and Nostr accounts: muted, they say nothing, not even "New message".
+- **In hidden chats** there is only **Muted**: a sound of its own would tell anyone near which chat it is.{+ So it is for the
+  chats of a hidden place's own Matrix, XMPP and Nostr accounts: muted, they say nothing, not even "New message".}
 - **A closed space, and hidden chats while closed,** do not know which chat a message came in, so they tell of it as
   the app's settings say.
 - **Only on Android** for now: the web app tells of every chat as its settings say.
@@ -1173,7 +1174,7 @@ between the front and back camera, and **End**. Each call leaves a line in the c
 a missed call.
 
 - **Answer with video or voice only:** a call that rings offers **Answer**, for voice only, and **Answer with video**,
-  in Erevos's calls and in XMPP and Matrix calls; in a group call they are **Join** and **Join with video**. A video
+  in Erevos's calls{+ and in XMPP and Matrix calls}; in a group call they are **Join** and **Join with video**. A video
   call answered with voice only starts with your camera off.
 - **Where the sound goes** (Android): with a Bluetooth or wired headset connected, **Speaker** becomes **Audio output**:
   it shows where the sound goes now, **Phone**, **Speaker**, **Headphones** or **Bluetooth**, and a tap lists them all,
@@ -2807,8 +2808,8 @@ what the places taken away hold.
   the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a message
   came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the ringing
   screen, tap **Answer** or the small sign, type the PIN and tap **Connect**), and a reminder of their Chat with myself
-  shows a notice that says only **Reminder**. What comes to them through Nostr is read then too, and their own Matrix,
-  XMPP and Nostr accounts stay connected (see below). A call that ended before you opened them, or rang too long, shows
+  shows a notice that says only **Reminder**. What comes to them through Nostr is read then too{+, and their own Matrix,
+  XMPP and Nostr accounts stay connected (see below)}. A call that ended before you opened them, or rang too long, shows
   as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts with it on; places set before
   stay as they were until you turn it on. For it, the place's key is kept encrypted with the space, among a random key
   for each other place, so opening the space does not show which places receive, or are set. But whoever opens the space
@@ -2816,8 +2817,8 @@ what the places taken away hold.
   whoever holds the phone, not of a forensic tool. Off, their key is only behind the PIN, and their messages wait on the
   relay until you open them. Backups keep the switch.
 - **Dot for unread messages:** with **Receive while closed** on, a switch under it (off unless you turn it on). On,
-  while one of the place's chats or groups has a message unread, or one of its own Matrix, XMPP or Nostr chats had one
-  since you last opened it, a small dot shows on the magnifier of **Search chats** on the home screen: never how many,
+  while one of the place's chats or groups has a message unread{+, or one of its own Matrix, XMPP or Nostr chats had one
+  since you last opened it}, a small dot shows on the magnifier of **Search chats** on the home screen: never how many,
   nor where. It goes once you read them. Whoever sees the space's chats sees it too, and may guess there are hidden
   chats. Places that only **Say when a message comes** get no dot: the switch would have to be kept where the space
   could read it.
@@ -2838,7 +2839,7 @@ what the places taken away hold.
   **Receive while closed** on, and **Say when a message comes** does not count it. Its calls ring only while the
   hidden chats are open: one started while they are closed shows as missed. A group there has no PIN of its own, and
   none is public.
-- **Matrix, XMPP and Nostr:** under their list, **Matrix**, **XMPP** and **Nostr** open the screens of those networks
+- [+] **Matrix, XMPP and Nostr:** under their list, **Matrix**, **XMPP** and **Nostr** open the screens of those networks
   (see [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)) for accounts of the hidden
   chats' own, apart from the space's: a Matrix account and an XMPP account to sign in to, and a Nostr key. The sign-ins
   and the key are kept encrypted with the hidden chats' key, and nothing of them shows outside the hidden chats: their
@@ -2920,8 +2921,8 @@ its PIN.
   hidden chats' own PIN guards them. Moved back to the chats, the same PIN asks again.
 - **To take it off:** **Details** → **Lock with a PIN** again, and type its PIN.
 - **Only this phone knows it,** and each linked device has its own. Backups keep it.
-- **On Matrix, XMPP, Nostr and SMS too:** a chat on Matrix, XMPP or Nostr has **Lock with a PIN** at its foot, and an
-  SMS conversation under its **Plain SMS** line, working the same way: its name with a lock in the list, none of its
+- **On {+Matrix, XMPP, Nostr and }SMS too:** {+a chat on Matrix, XMPP or Nostr has **Lock with a PIN** at its foot, and }an
+  SMS conversation {-has **Lock with a PIN** }under its **Plain SMS** line, working the same way: its name with a lock in the list, none of its
   messages in the search, and the space's password takes a forgotten PIN off. **Block screenshots** sits beside it, on
   this phone only (Android): the others are not told. A hidden place's chats offer neither, as its own PIN guards them
   and they stay out of screenshots while **Screenshots** is on.
@@ -2969,8 +2970,8 @@ The Collection is an encrypted place for your photos, files and folders, in ever
 ## Backups {#backup}
 
 A backup holds everything Erevos keeps on this phone: every space, with its contacts, the keys of its conversations,
-its messages, photos, files, voice messages, imported chats and hidden chats, its accounts on Matrix, XMPP and Nostr,
-its Chat with myself, the lock and the panic password, and the settings that go with you to another phone. Inside it
+its messages, photos, files, voice messages, imported chats and hidden chats, {+its accounts on Matrix, XMPP and Nostr,
+}its Chat with myself, the lock and the panic password, and the settings that go with you to another phone. Inside it
 each space stays sealed with its own password, and the backup is sealed again with a password of its own. Its photos,
 files and voice messages go in files of their own beside it, up to 4 MB each, whose names start as the backup's; an
 automatic backup uses the files of the ones before it too: keep the whole folder together. It is under **Settings** → **Data and devices** → **Backups**.
@@ -3015,7 +3016,7 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   to that backup and to their place in it, so none can be swapped, dropped or taken from another backup unseen; the
   server keeps each as long as one of the backups it keeps needs it, and then deletes it. Their names are as long as the backup's, but their size tells them from it, so the server can count them, and so tell roughly how much the backup holds. What a backup cut short left there is deleted before the next one goes, so a server that had no room left has some again. The server still sees your account, when one comes and
   roughly how big it is. On Android, backups go to it as the space's choice under **Settings** → **Relay
-  and networks** → **Tor** says, as Matrix does: with **Everything** only through Tor, so the server does not see the
+  and networks** → **Tor** says{+, as Matrix does}: with **Everything** only through Tor, so the server does not see the
   phone's address; with **Messages** through Tor once Tor is ready, and straight while Tor starts or when it fails;
   with **Nothing** straight, and the server sees the phone's address. A backup first waits up to two minutes for Tor
   to start, and **To a server too** says which way it goes now. In the desktop app the app itself sends them, not its
@@ -3043,7 +3044,7 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   one sealed twice would let whoever kept both packets read the two together. In a group, a restored member asks the
   admin's Erevos to put it in again, which works while the group moved on only a little; otherwise ask to be added
   again.
-- **Matrix, XMPP and Nostr:** the accounts of each space and of its hidden chats are in the backup. A **Nostr** key
+- [+] **Matrix, XMPP and Nostr:** the accounts of each space and of its hidden chats are in the backup. A **Nostr** key
   comes back with its chats, as they were. An **XMPP** account comes back with its sign-in, contacts, chats and the keys
   it knows of other people, and goes on as a new device of the account: it keeps its identity key, so your contacts'
   apps still know its key, but takes a new device id, resource and keys, every conversation begins again, and the old
@@ -3071,7 +3072,7 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   and say **Move the queues**. Every space and its hidden chats then move to new relay queues, each the next time it
   opens here, and your contacts and groups are told quietly. The old queues are read here until each contact writes
   to the new ones, 14 days at most, and the contact links and QR codes you gave before work for 14 days, then no more.
-  What comes through Nostr, XMPP or Matrix still reaches the old phone. After another restore, tap it again.
+  What comes through Nostr{+, XMPP or Matrix} still reaches the old phone. After another restore, tap it again.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
   many spaces there are or whether hidden chats are set. The files' names say they are an Erevos backup, and their
   number and size show roughly how much is kept.
@@ -3100,8 +3101,8 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   in, as that of automatic backups, which Android lets it into only on the phone they were chosen on; what Android lets
   Erevos do and which apps make calls and send SMS, which only you can allow on each phone, so after a restore on
   Android **Permissions** opens for the modules that are on; the call history and Android's own list of blocked
-  numbers, unless **Put the calls in backups** was on, as above; and the count of wrong passwords. An XMPP account comes
-  back as a new device of itself and Matrix signs in again, as above, and linked devices link again, as below.
+  numbers, unless **Put the calls in backups** was on, as above; and the count of wrong passwords.{+ An XMPP account comes
+  back as a new device of itself and Matrix signs in again, as above,}{- Linked devices link again, as below.}{+ and linked devices link again, as below.}
 - **Linked devices:** a link stays with the phone and the computer it was made on, and no backup holds it, but a
   backup holds what lets the phone it is restored on ask each of them to link again. After restoring a backup on
   another phone, open **Settings** → **Data and devices** → **Linked devices** there: under **From the backup**, tap
@@ -3161,7 +3162,7 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
    a backup a newer one made. With no internet, the old phone can give it, see [Erevos to a phone nearby](#give-app).
 2. **On the old phone, get it ready:** for the phone's SMS to come too, turn on **Put the SMS in backups** under
    **Backups**, and for its call history **Put the calls in backups**. A Collection left out of the backups stays behind: put it back in, or give it a WebDAV server, see
-   [Collection](#collection). Have your Matrix Security Key at hand, as Matrix signs in again on the new phone.
+   [Collection](#collection).{+ Have your Matrix Security Key at hand, as Matrix signs in again on the new phone.}
 3. **On the old phone, make the backup:** under **Settings** → **Data and devices** → **Backups**, tap **Make a
    backup**, or **Back up now** with automatic backups. Make it last, just before you move, and from then on do not
    open Erevos on the old phone: what comes after waits on the relays for the new one.
@@ -3173,7 +3174,7 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
    password and say yes. Erevos opens as the old phone was, with the same passwords.
 6. **On the new phone, set again what is the phone's:** **Permissions** opens for what Android should allow. Then
    turn on the fingerprint or face again (see [Password lock](#lock)), choose the folder of automatic backups again
-   under **Backups**, and the SIM for each number, and sign in to Matrix with its Security Key.
+   under **Backups**, and the SIM for each number{+, and sign in to Matrix with its Security Key}.
 7. **On the old phone, wipe Erevos:** once the new phone shows your chats and new messages come there, tap **Wipe
    everything now** under **Settings** → **Privacy and security** → **Panic button**. Not **Delete me from
    everywhere**: that deletes the relay queues the new phone reads.
@@ -3184,7 +3185,7 @@ keeps a copy of it for you, so nothing comes over by itself: the backup carries 
   no invite to ask for. Your contacts write to you as before.
 - **Hidden chats:** every hidden place comes with the backup, each with its PIN, and nothing on the new phone tells
   that there are any, see [Hidden chats](#hidden).
-- **Matrix, XMPP and Nostr:** a Nostr key goes on as it was, an XMPP account as a new device of itself, and Matrix
+- [+] **Matrix, XMPP and Nostr:** a Nostr key goes on as it was, an XMPP account as a new device of itself, and Matrix
   signs in again as a new device, its Security Key opening the messages from before, see [Backups](#backup).
 - **Linked devices:** on the new phone, under **Settings** → **Data and devices** → **Linked devices**, tap **Ask to
   link again** for each computer or browser that is still yours, then **Link again** on it: it keeps its chats, with
@@ -3211,7 +3212,7 @@ When you are in danger, Erevos can wipe itself at once, under **Settings** → *
 button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web app, on a computer and on Sailfish OS.
 
 - **What goes:** every space and its hidden chats, with their contacts, messages, photos, files and keys; the lock and
-  its passwords; the Matrix, XMPP and Nostr accounts and the relay tokens; the settings and password of automatic
+  its passwords; {+the Matrix, XMPP and Nostr accounts and }the relay tokens; the settings and password of automatic
   backups, and of their server. On Android, Erevos then closes, and opens next time as if just installed. With **Also the
   automatic backups in** the folder chosen, the backup files there go first.
 - **What stays:** what Erevos cannot reach: backups you copied elsewhere or sent to a server (their password still
@@ -3271,21 +3272,21 @@ everywhere**: tap **Delete me from everywhere** and say yes twice. Your phone ke
 [Panic button](#panic), which wipes the phone.
 
 - **What goes:** every queue this space has on the relays, with the messages waiting in them: your own, the one your
-  contact link names, your groups', your contacts', your home relay's, the ones for Matrix and XMPP notices, the doors of
+  contact link names, your groups', your contacts', your home relay's, {+the ones for Matrix and XMPP notices, }the doors of
   your public groups and those of your linked devices. Also the messages a relay holds for you to send later, the files
   that came and wait on it, and the invites you made and nobody used. Hidden chats that receive while closed go with the
   space; the others when you open them while the space is stopped. The screen's lists leave hidden chats out, so they
   never show that there are any. Erevos also asks every Nostr relay to forget the keys your chats read on (a
   request to vanish, NIP-62): through Tor when Tor is on, straight when it is off. With Tor on but not ready yet, Nostr
   is not asked; wait until it is, and delete again.
-- **Matrix, XMPP, Nostr:** with **Also sign out of Matrix and XMPP, and delete the Nostr account made here**, those
+- [+] **Matrix, XMPP, Nostr:** with **Also sign out of Matrix and XMPP, and delete the Nostr account made here**, those
   accounts are signed out here. Their accounts stay on their servers, which are theirs, not Erevos's. A Nostr account you
   brought from another app is left alone.
 - **The space is stopped:** it receives and sends nothing, so no queue is made again at once (Erevos makes a lost queue
   anew by itself). **Start again** ends it: new queues are made, as after a relay lost them, and your contacts are told
   quietly. Give them a new contact link too, as the old links name queues that are gone.
-- **What it cannot reach:** your contacts' phones, Nostr relays that do not do as asked, files you sent through a file
-  server, and the Matrix and XMPP servers. The screen lists what was deleted, what was gone already and what could not be
+- **What it cannot reach:** your contacts' phones, Nostr relays that do not do as asked,{- and} files you sent through a file
+  server{+, and the Matrix and XMPP servers}. The screen lists what was deleted, what was gone already and what could not be
   reached; **Delete again** tries the rest.
 
 **Why:** a relay, even one you trust, is a place that keeps something of you. This is the one tap that takes it all back
@@ -3609,8 +3610,8 @@ The chats then come to the computer, and after them the messages chosen.
   links only a place, and a space's only a space: read by the other, it just goes, and **Link to my phone** starts again on the computer. The
   place then has a link of its own, with keys of its own and its own list of devices, signed by its own account, so its
   contacts on this version write to the computer's place directly. Its messages, contacts, groups, calls, photos and
-  files and its Chat with myself go between the two places as the space's go between linked devices, and so do its own
-  Matrix, XMPP and Nostr accounts, always, and again as they change. Nothing of it
+  files and its Chat with myself go between the two places as the space's go between linked devices{+, and so do its own
+  Matrix, XMPP and Nostr accounts, always, and again as they change}. Nothing of it
   shows in the space, on its screens or on its linked devices, and the space's link never carries anything of a place:
   what a place keeps of its link is encrypted with its own key, among values made for nothing for the other places, in a
   file of the same size whether any place links or none. The link runs while the place is open, and while it is closed
@@ -3626,7 +3627,7 @@ The chats then come to the computer, and after them the messages chosen.
   space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
   and stars; what the computer has already is not kept twice.
-- **Matrix, XMPP and Nostr**: every device linked gets them, and they follow as they change on the phone: an account signed out of there, or another in its place, goes from the devices too. The computer signs in to
+- [+] **Matrix, XMPP and Nostr**: every device linked gets them, and they follow as they change on the phone: an account signed out of there, or another in its place, goes from the devices too. The computer signs in to
   this space's Matrix and XMPP accounts and takes the key of its Nostr chats, each as a new device of its own: the
   phone keeps its own. For a computer linked already, tap **Send the accounts** under it on the phone. XMPP and Nostr
   come by themselves. A Matrix server seldom lets the phone sign a new device in: then **Linked devices** on the

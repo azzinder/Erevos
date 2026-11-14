@@ -52,6 +52,45 @@ function cells(line: string): string[] {
     .map((c) => c.trim());
 }
 
+/**
+ * The guide's text for one edition (lib/edition.ts). Erevos+ has networks the plain Erevos has not,
+ * so the sources mark what only one of them says:
+ *
+ *   {+text}            only in Erevos+ (inside a line, or over lines)
+ *   {-text}            only in the plain Erevos
+ *   - [+] item         a list item, with the lines that continue it, only in Erevos+
+ *   [+] paragraph      a paragraph, note or table row, to the next blank line, only in Erevos+
+ *
+ * With Erevos+, the marks go and their text stays: the guide reads as if there were none.
+ */
+export function editionSource(source: string, edition: 'plus' | 'lite'): string {
+  const lite = edition === 'lite';
+  const text = source.replace(/\{([+-])([\s\S]*?)\}/g, (_all, which: string, inner: string) => ((which === '-') === lite ? inner : ''));
+  const lines = text.split('\n');
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const item = /^(\s*)- \[\+\] /.exec(line);
+    const block = /^(\| |> )?\[\+\] /.test(line);
+    if (!item && !block) {
+      out.push(line);
+      continue;
+    }
+    if (!lite) {
+      out.push(item ? line.replace('- [+] ', '- ') : line.replace('[+] ', ''));
+      continue;
+    }
+    // Left out, with what continues it: an item's more indented lines (its sub-items too), a
+    // paragraph's or note's lines to the next blank one; a table row alone.
+    const indent = item ? item[1].length : -1;
+    while (i + 1 < lines.length && lines[i + 1].trim() !== '' && !line.startsWith('| ')) {
+      if (item && /^(\s*)/.exec(lines[i + 1])![1].length <= indent) break;
+      i++;
+    }
+  }
+  return out.join('\n');
+}
+
 export function parseGuide(source: string): GuideSection[] {
   const sections: GuideSection[] = [];
   let section: GuideSection | null = null;

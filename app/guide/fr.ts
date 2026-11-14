@@ -95,7 +95,7 @@ discussion s’ouvre sur ses 100 derniers messages, et les plus anciens, dont ce
 arrivent tout seuls quand tu remontes (**Afficher les messages plus anciens**, au-dessus d’eux, les amène aussi) ; aller
 à un message plus ancien (depuis la recherche, un message avec étoile ou celui auquel un message répond) l’amène aussi.
 Chaque discussion s’ouvre sur son dernier message, avec la barre de message en dessous : les discussions avec des
-contacts, les groupes et les conversations SMS, comme les discussions Matrix, XMPP et Nostr. Quand tu as un peu remonté,
+contacts, les groupes et les conversations SMS{+, comme les discussions Matrix, XMPP et Nostr}. Quand tu as un peu remonté,
 des flèches rondes apparaissent en bas à droite, dans chacune : celle du haut va au début de la discussion, celle du bas
 revient à sa fin. Entre les deux, si des messages étaient nouveaux à l’ouverture, une double coche va au premier d’entre
 eux, là où tu en étais, tant que ce message n’est pas à l’écran. Depuis le début, **Afficher les messages suivants**, sous
@@ -107,34 +107,34 @@ d’accueil pour que l’écran d’accueil ait le même aspect, qu’un espace 
 que tant que leur code PIN les tient ouvertes.
 
 **Épinglées et archivées :** garde le doigt sur n’importe quelle discussion de l’écran d’accueil, d’un contact ou d’un
-groupe, sur Matrix, XMPP, Nostr ou en SMS, pour **Épingler en haut**, **Archiver** et, sur Android, **Mettre cette
+groupe, {+sur Matrix, XMPP, Nostr ou en SMS}{-ou d’une conversation SMS}, pour **Épingler en haut**, **Archiver** et, sur Android, **Mettre cette
 discussion en sourdine**. Au plus 10 discussions restent épinglées. Une discussion archivée quitte la liste jusqu’à ce
 qu’un nouveau message en vienne ; touche **Archivées** en haut pour voir ce que tu as archivé, SMS compris, et
 touche-le encore pour revenir. Les discussions masquées ont leurs propres discussions épinglées et archivées.
 
-- **L’image** est dessinée à partir de la clé du contact : la même clé donne toujours les mêmes couleurs et la même lune
-  (en verts sous Matrix), si bien que tu reconnais une discussion d’un coup d’œil sans aucune photo. Ce n’est pas une
+- **L’image** est dessinée à partir de la clé du contact : la même clé donne toujours les mêmes couleurs et la même lune{+
+  (en verts sous Matrix)}, si bien que tu reconnais une discussion d’un coup d’œil sans aucune photo. Ce n’est pas une
   vérification de la clé ; le [numéro de sécurité](#relay) en est une.
 - **La ligne sous la recherche** dit si un relais est configuré et si ta file d’attente est prête. Appuie dessus pour en
   configurer un.
 - **Discussion avec moi-même**, toujours la première des discussions, avec une épingle, contient tes notes pour
   toi-même : voir Discussion avec moi-même et rappels ci-dessous.
-- **Les discussions Matrix**, une fois que tu t’es connecté à Matrix, sont dans la liste avec les autres, les plus
+- [+] **Les discussions Matrix**, une fois que tu t’es connecté à Matrix, sont dans la liste avec les autres, les plus
   récentes d’abord, chacune marquée **Matrix**, et une invitation s’affiche en haut. La puce **Matrix** ne montre
   qu’elles, et là **Nouvelle discussion** commence une discussion Matrix : voir [Matrix](#matrix).
-- **Les discussions XMPP**, une fois que tu t’es connecté à XMPP, sont dans la liste de la même façon, chacune marquée
+- [+] **Les discussions XMPP**, une fois que tu t’es connecté à XMPP, sont dans la liste de la même façon, chacune marquée
   **XMPP**, et une personne qui demande à t’ajouter, ou un groupe qui t’invite, s’affiche en haut. La puce **XMPP** ne
   montre qu’elles, et là **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
-- **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
+- [+] **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
   marquée **Nostr**. Le bouton **Nostr** n’affiche qu’elles, avec le nombre de messages non lus, et là **Nouvelle
   discussion** ouvre l’écran des discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
 - **Tout marquer comme lu**, dans le menu ⋮, lit d’un coup toutes les discussions de la partie de la liste où tu es
-  (tous les messages, SMS, Erevos, Matrix, XMPP ou Nostr), celles en sourdine et celles verrouillées par PIN aussi,
+  (tous les messages, SMS{- ou Erevos}{+, Erevos, Matrix, XMPP ou Nostr}), celles en sourdine et celles verrouillées par PIN aussi,
   après avoir demandé. Chacune est lue comme si tu l’ouvrais, donc ceux qui ont écrit en sont informés comme alors ; les
-  invitations et les personnes qui demandent à t’ajouter restent jusqu’à ce que tu leur répondes. Les écrans Matrix,
-  XMPP et Nostr l’ont sous **Discussions** pour leurs propres discussions. Les discussions masquées ne sont jamais lues
+  invitations et les personnes qui demandent à t’ajouter restent jusqu’à ce que tu leur répondes.{+ Les écrans Matrix,
+  XMPP et Nostr l’ont sous **Discussions** pour leurs propres discussions.} Les discussions masquées ne sont jamais lues
   par lui.
-- **Le fil public**, une fois que l’espace a une clé Nostr ou est dans un salon Matrix public, est un bouton de plus,
+- [+] **Le fil public**, une fois que l’espace a une clé Nostr ou est dans un salon Matrix public, est un bouton de plus,
   **Public** : un seul fil, comme dans Amethyst, avec les publications publiques des personnes que suit ta clé Nostr et
   les messages des salons Matrix publics où tu es, les plus récents d’abord. Chacune montre qui l’a écrite (un petit N
   ou M dit le réseau), quand, ses mots, ses photos dans la publication et une carte pour son lien. Quand les deux sont
@@ -154,8 +154,8 @@ touche-le encore pour revenir. Les discussions masquées ont leurs propres discu
   au-delà de 99) et un point, vert tant que son réseau est connecté, rouge avec **Hors ligne** sinon. Une carte
   n’affiche que cette partie : **Tous** toutes les conversations, **SMS** seulement les SMS (avec les conversations
   dont le dernier message était un SMS ; elle indique si Erevos n’est pas encore l’app SMS), **Erevos** seulement les
-  conversations Erevos, celles de chaque contact, quoi qu’il soit arrivé en dernier, et **Matrix**, **XMPP**,
-  **Public** et **Nostr** les leurs. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
+  conversations Erevos, celles de chaque contact, quoi qu’il soit arrivé en dernier{+, et **Matrix**, **XMPP**,
+  **Public** et **Nostr** les leurs}. **Ajouter** ouvre Modules, pour en activer d’autres, et **Tout marquer comme lu**
   lit la partie affichée. Maintiens une carte appuyée pour l’avancer, la reculer ou la masquer avec **Masquer** : un
   service masqué reste activé, mais ne notifie plus et ne compte plus sur l’icône (Telegram, dont les dossiers
   peuvent s’afficher à l’accueil, si), et ses conversations quittent aussi **Tous** (la recherche les
@@ -204,12 +204,12 @@ détails, fait de même pour la discussion elle-même : il va au premier message
 n’apprend ce que contient une discussion ; et seules les photos à l’écran sont lues, comme dans la discussion, si bien
 qu’une discussion qui en a des milliers s’ouvre aussi vite qu’une qui n’en a aucune.
 
-**Aussi sur Matrix, XMPP, Nostr et en SMS :** une discussion Matrix, XMPP ou Nostr a en bas **Rechercher dans cette
+**Aussi {+sur Matrix, XMPP, Nostr et }en SMS :** {+une discussion Matrix, XMPP ou Nostr a en bas **Rechercher dans cette
 discussion**, **Médias, liens et fichiers**, **Aller à un jour** et **Exporter la discussion**, à côté de
-**Notifications**, et une conversation SMS les a en premier sous son **⋮**. Ils ne regardent que ce que ce téléphone
-garde de la discussion : les messages qu’une discussion Matrix garde (sous la recherche, **Charger les messages
+**Notifications**, et }une conversation SMS {+les }a{- **Rechercher dans cette discussion**, **Médias, liens et fichiers**, **Aller à un jour** et **Exporter la discussion**} en premier sous son **⋮**. Ils ne regardent que ce que ce téléphone
+garde de la discussion : {+les messages qu’une discussion Matrix garde (sous la recherche, **Charger les messages
 précédents** en récupère de plus anciens sur son serveur, comme le haut de la discussion), ceux d’une discussion XMPP
-ou Nostr, et chaque SMS et MMS de la conversation sur le téléphone ; aller à un SMS plus ancien charge la conversation
+ou Nostr, et }chaque SMS et MMS de la conversation sur le téléphone ; aller à un SMS plus ancien charge la conversation
 jusqu’à lui. Rien de ce que tu tapes dans la recherche ne quitte le téléphone. Les photos et les fichiers sont listés,
 et un appui mène à chacun dans la discussion, où un appui le récupère sur son serveur comme avant, donc aucun serveur
 n’apprend lesquels tu as regardés ; les images d’un MMS s’affichent dans la liste même. **Exporter la discussion**
@@ -271,7 +271,7 @@ rappel reste chiffré dans son espace et Android n’apprend que son heure : la 
 tu voulais te rappeler, ni dans quel espace il se trouve. Et les notes ne vont à personne d’autre qu’à tes propres
 appareils, chiffrées de bout en bout entre eux comme tes discussions : le relais ne les transporte que chiffrées.
 
-- **Depuis d’autres discussions :** un message d’une discussion Matrix, XMPP, Nostr ou SMS peut aussi venir ici, avec
+- **Depuis d’autres discussions :** un message d’une {+discussion Matrix, XMPP, Nostr ou }{-conversation }SMS peut aussi venir ici, avec
   un rappel : **Me rappeler** dans son menu.
 
 ### Se déplacer par balayage
@@ -282,7 +282,7 @@ appareils, chiffrées de bout en bout entre eux comme tes discussions : le relai
   la liste des discussions, ou sortie des discussions masquées, en les fermant. Dans les **Détails** d’une discussion,
   il les ferme.
 - **Onglets :** balaie vers la gauche ou la droite pour aller à l’onglet d’à côté, comme en appuyant sur sa puce :
-  **Tous**, **SMS**, **Erevos**, **Matrix**, **XMPP** et **Nostr** sur l’écran d’accueil (ceux activés dans Modules),
+  **Tous**, **SMS**{+,}{- et} **Erevos**{+, **Matrix**, **XMPP** et **Nostr**} sur l’écran d’accueil (ceux activés dans Modules),
   **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans **Contacts**, et les séries de
   stickers. Sur l’écran d’accueil, les parties se choisissent dans la fenêtre **Services**, avec le bouton sous la
   recherche.
@@ -303,8 +303,8 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
   **SMS**, les liste, et chaque partie s’ouvre seule.
 - **Seul ce qui marche ici s’affiche :** sur un ordinateur, sur Sailfish OS et dans l’app web, il n’y a ni **Téléphone
   et SMS**, ni Tor, ni Nostr, ni LoRa, et un groupe sans rien à régler ici ne s’affiche pas.
-- **Seuls les modules activés s’affichent :** les réglages d’un module désactivé, comme **Matrix** ou
-  **Téléphone et SMS**, ne s’affichent pas non plus : voir [Modules](#modules).
+- **Seuls les modules activés s’affichent :** les réglages d’un module désactivé, comme {+**Matrix** ou
+  }**Téléphone et SMS**, ne s’affichent pas non plus : voir [Modules](#modules).
 
 | Groupe | Ce qu’il contient |
 | --- | --- |
@@ -312,7 +312,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android), **Widget** (Android) et **Vibrer au toucher** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
 | **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (avec le mot de passe de panique), **Calculatrice à la place d’Erevos** (Android, dans Apparence), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
-| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
+| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android){+,}{- et} **Radio LoRa** (Android){+, **Matrix**, **XMPP** et **Discussions Nostr**}. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr){+,}{- et} [Par une radio LoRa](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)}. |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
 | **Pour les tests** | **Test du relais** et **Test radio** (Android). Voir [Les écrans de test](#tests). |
@@ -339,8 +339,8 @@ Dans les autres langues, les deux portent le nom dans cette langue et en anglais
 ## Modules {#modules}
 
 Erevos est fait de parties, ses modules : **Erevos** lui-même (ses propres discussions, groupes et appels, chiffrés de
-bout en bout, avec les discussions masquées), le **Téléphone**, les **SMS**, et les discussions avec des apps **Nostr**,
-**Matrix** et **XMPP**. La **Collection** (tes photos et tes fichiers, chiffrés) est aussi un module. Le Téléphone et les SMS n’existent que sur Android, la Collection sur Android, dans l’application de bureau, dans l’app web et sur Sailfish OS. N’importe lesquels peuvent être activés,
+bout en bout, avec les discussions masquées), le **Téléphone**{- et}{+,} les **SMS**{+, et les discussions avec des apps **Nostr**,
+**Matrix** et **XMPP**}. La **Collection** (tes photos et tes fichiers, chiffrés) est aussi un module. Le Téléphone et les SMS n’existent que sur Android, la Collection sur Android, dans l’application de bureau, dans l’app web et sur Sailfish OS. N’importe lesquels peuvent être activés,
 Erevos lui-même aussi, un ou plusieurs, au moins un : **Réglages** → **Général** → **Modules** active ou désactive
 chacun à tout moment.
 
@@ -349,7 +349,7 @@ ce que tu ne donnes pas (ni numéro de téléphone, ni e-mail, ni nom d’utilis
 un code QR ou un lien, ou ce sont eux qui t’invitent), un nom pour tes contacts si tu en veux un, et la langue ; puis
 quels modules utiliser, chacun avec ce qu’il fait. Ensuite, dans l’espace : un écran pour chaque module choisi, avec la
 façon de commencer (pour Erevos, comment tu entres ; pour le Téléphone et les SMS, Erevos comme app Téléphone et comme
-app SMS ; pour Nostr, Matrix et XMPP, ton compte là-bas) et ce qu’Android, ou le navigateur, doit autoriser pour lui.
+app SMS{+ ; pour Nostr, Matrix et XMPP, ton compte là-bas}) et ce qu’Android, ou le navigateur, doit autoriser pour lui.
 Chaque autorisation est sur le premier écran qui en a besoin, et **Tout autoriser, un par un** pose les questions
 qu’Android pose, dans Erevos même, l’une après l’autre. Puis le verrouillage par mot de passe et les sauvegardes
 automatiques, puis ce qui est prêt et ce qui manque, avec **Inviter quelqu’un**. **Le reste plus tard** laisse le reste
@@ -896,12 +896,12 @@ dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous 
   n’est chargé avant cela.
 - **Partager depuis une autre app** (Android) : dans **Partager** d’une autre app, comme celui du navigateur pour une
   page, choisis **Erevos**. Dès qu’un espace est ouvert, **Envoyer à** liste les discussions, groupes et conversations
-  SMS que l’écran d’accueil a montrés en dernier, puis toutes les autres discussions et tous les autres groupes, et les
-  discussions de tes comptes Matrix, XMPP et Nostr, avec une recherche ; jamais les discussions masquées. Les mots et
+  SMS que l’écran d’accueil a montrés en dernier, puis toutes les autres discussions et tous les autres groupes{+, et les
+  discussions de tes comptes Matrix, XMPP et Nostr}, avec une recherche ; jamais les discussions masquées. Les mots et
   les liens s’ouvrent dans le champ de message de celui que tu choisis, à relire et envoyer là ; une photo ou un
   fichier part dès que cette discussion ou ce groupe s’ouvre, une photo à la qualité que tu as choisie pour les photos,
-  et jamais en SMS. Un fichier peut faire 100 Mo au plus dans une discussion Erevos, 50 Mo sur Matrix et XMPP et 20 Mo
-  sur Nostr. Il est chiffré dès son arrivée, avec une clé seulement dans la mémoire d’Erevos, et attend ainsi sur le
+  et jamais en SMS. Un fichier peut faire 100 Mo au plus{+ dans une discussion Erevos, 50 Mo sur Matrix et XMPP et 20 Mo
+  sur Nostr}. Il est chiffré dès son arrivée, avec une clé seulement dans la mémoire d’Erevos, et attend ainsi sur le
   téléphone, aussi pendant que tu donnes le mot de passe si Erevos se verrouille d’abord ; il disparaît une fois
   envoyé, ou quand tu quittes **Envoyer à**.
 - **Ton contact voit quand tu lis :** ton téléphone le dit au sien, comme le sien le dit au tien, sauf si cette
@@ -990,8 +990,8 @@ clé** ramène celle qui est dessinée.
 Chaque discussion peut aussi avoir son propre aspect : appuie sur son nom puis sur **Apparence de la discussion** pour
 les mêmes choix que dans **Apparence** (style, thème, couleurs, police, fond d’écran, messages et la taille de leur
 texte), pour cette discussion seulement. Un groupe a **Apparence de la discussion** là où son nom s’ouvre (dans un
-groupe public, sous **⋯**), la Discussion avec moi-même l’a en haut, et une discussion sur Matrix, XMPP ou Nostr tout en
-bas, à côté de **Notifications**. Comme le nom, cet aspect reste sur ce téléphone, scellé avec la discussion. **Comme
+groupe public, sous **⋯**), la Discussion avec moi-même l’a en haut{+, et une discussion sur Matrix, XMPP ou Nostr tout en
+bas, à côté de **Notifications**}. Comme le nom, cet aspect reste sur ce téléphone, scellé avec la discussion. **Comme
 l’app** lui redonne l’aspect de l’app.
 
 Pour garder une discussion hors d’Erevos, appuie sur son nom puis sur **Exporter la discussion** : ses messages vont
@@ -1099,7 +1099,7 @@ Appuie longuement sur un message pour ouvrir son menu : les réactions en haut, 
 - **Ajouter une étoile :** lui ajoute une étoile, sur ce téléphone seulement, pour le retrouver : **Messages avec
   étoile** dans le menu de l’écran d’accueil les liste depuis toutes tes discussions, et les détails d’une discussion
   listent les siens. Un appui va au message. Les messages avec étoile des discussions masquées ne s’affichent que dans
-  les détails de leurs discussions. Les discussions Matrix, XMPP et Nostr, et les conversations SMS, ont aussi
+  les détails de leurs discussions. {+Les discussions Matrix, XMPP et Nostr, et les }{-Les }conversations SMS{+,} ont aussi
   **Ajouter une étoile**, gardé chiffré sur ce téléphone seulement : les **Messages avec étoile** d’une discussion
   listent les siens, et ceux de l’écran d’accueil les listent avec tous les autres, chacun ouvrant sa discussion au
   message. Dans ces discussions, garder le doigt sur une photo, une vidéo, un message vocal, un fichier ou l’image
@@ -1191,8 +1191,8 @@ données chiffrées de l’espace, car chaque téléphone a ses propres sons : u
 téléphone n’en sait rien.
 
 - **Dans les discussions masquées** il n’y a que **En sourdine** : un son à elle dirait à quiconque est près de quelle
-  discussion il s’agit. Il en va de même pour les discussions des comptes Matrix, XMPP et Nostr propres à un emplacement
-  masqué : en sourdine, elles ne disent rien, pas même « New message ».
+  discussion il s’agit.{+ Il en va de même pour les discussions des comptes Matrix, XMPP et Nostr propres à un emplacement
+  masqué : en sourdine, elles ne disent rien, pas même « New message ».}
 - **Un espace fermé, et les discussions masquées tant qu’elles sont fermées,** ne savent pas dans quelle discussion un
   message est arrivé, et le signalent donc comme le disent les réglages de l’app.
 - **Seulement sur Android** pour l’instant : l’app web signale chaque discussion comme le disent ses réglages.
@@ -1346,7 +1346,7 @@ caméra avant et arrière, et **Raccrocher**. Chaque appel laisse une ligne dans
 appel manqué.
 
 - **Répondre en vidéo ou en voix seulement :** un appel qui sonne propose **Répondre**, en voix seulement, et **Répondre
-  en vidéo**, dans les appels d’Erevos et dans ceux de XMPP et de Matrix ; dans un appel de groupe, ce sont
+  en vidéo**, dans les appels d’Erevos{+ et dans ceux de XMPP et de Matrix} ; dans un appel de groupe, ce sont
   **Rejoindre** et **Rejoindre en vidéo**. Un appel vidéo auquel tu réponds en voix seulement commence avec ta caméra
   éteinte.
 - **Où va le son** (Android) : avec un casque Bluetooth ou filaire connecté, **Haut-parleur** devient **Sortie audio** :
@@ -3225,8 +3225,8 @@ supprimerait ce que contiennent les emplacements retirés.
   arrière-plan : leurs contacts voient aussitôt qu’un message est arrivé, une notification dit seulement « Nouveau
   message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de sonnerie, appuie sur
   **Répondre** ou sur le petit signe, tape le code PIN et appuie sur **Connecter**), et un rappel de leur Discussion
-  avec moi-même affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi,
-  et leurs comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas). Un appel terminé avant que tu les
+  avec moi-même affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi{+,
+  et leurs comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas)}. Un appel terminé avant que tu les
   ouvres, ou qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche nulle part tant que le code
   PIN ne les ouvre pas. Un nouvel emplacement commence avec cet interrupteur activé ; les emplacements définis avant
   restent comme ils étaient jusqu’à ce que tu l’actives. Pour cela, la clé de l’emplacement est gardée chiffrée avec
@@ -3236,8 +3236,8 @@ supprimerait ce que contiennent les emplacements retirés.
   pas d’un outil d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs messages attendent
   sur le relais jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
 - **Point pour les non-lus :** avec **Recevoir une fois fermées** activé, un interrupteur en dessous (éteint sauf si
-  tu l’allumes). Allumé, tant qu’une des discussions ou un des groupes du lieu a un message non lu, ou qu’une de ses
-  propres discussions Matrix, XMPP ou Nostr en a eu un depuis la dernière fois que tu l’as ouvert, un petit point
+  tu l’allumes). Allumé, tant qu’une des discussions ou un des groupes du lieu a un message non lu{+, ou qu’une de ses
+  propres discussions Matrix, XMPP ou Nostr en a eu un depuis la dernière fois que tu l’as ouvert}, un petit point
   s’affiche sur la loupe de **Rechercher dans les discussions** sur l’écran d’accueil : jamais combien, ni où. Il part
   dès que tu les lis. Qui voit les discussions de l’espace le voit aussi, et peut deviner qu’il y a des discussions
   masquées. Les lieux qui ont seulement **Prévenir quand un message arrive** n’ont pas de point : l’interrupteur
@@ -3262,7 +3262,7 @@ supprimerait ce que contiennent les emplacements retirés.
   fermées** activé, et **Prévenir quand un message arrive** ne le compte pas. Ses appels ne sonnent que tant que les
   discussions masquées sont ouvertes : un appel lancé pendant qu’elles sont fermées s’affiche comme manqué. Un groupe
   là-bas n’a pas de code PIN à lui, et aucun n’est public.
-- **Matrix, XMPP et Nostr :** sous leur liste, **Matrix**, **XMPP** et **Nostr** ouvrent les écrans de ces réseaux (voir
+- [+] **Matrix, XMPP et Nostr :** sous leur liste, **Matrix**, **XMPP** et **Nostr** ouvrent les écrans de ces réseaux (voir
   [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)) pour des comptes à elles,
   à part de ceux de l’espace : un compte Matrix et un compte XMPP où se connecter, et une clé Nostr. Les connexions et
   la clé sont gardées chiffrées avec la clé des discussions masquées, et rien d’elles ne se voit en dehors des
@@ -3361,8 +3361,8 @@ discussions, mais ne s’ouvre qu’avec son code PIN.
   le même code PIN est de nouveau demandé.
 - **Pour le retirer :** **Détails** → **Verrouiller par un code PIN** de nouveau, et tape son code PIN.
 - **Seul ce téléphone le connaît,** et chaque appareil associé a le sien. Les sauvegardes le gardent.
-- **Aussi sur Matrix, XMPP, Nostr et en SMS :** une discussion Matrix, XMPP ou Nostr a **Verrouiller par un code PIN**
-  en bas, et une conversation SMS sous sa ligne **SMS ordinaire**, et cela marche de la même façon : dans la liste son
+- **Aussi {+sur Matrix, XMPP, Nostr et }en SMS :** {+une discussion Matrix, XMPP ou Nostr a **Verrouiller par un code PIN**
+  en bas, et }une conversation SMS {-a **Verrouiller par un code PIN** }sous sa ligne **SMS ordinaire**, et cela marche de la même façon : dans la liste son
   nom avec un cadenas, aucun de ses messages dans la recherche, et le mot de passe de l’espace retire un code PIN
   oublié. **Bloquer les captures d’écran** est à côté, sur ce téléphone seulement (Android) : les autres ne sont pas
   prévenus. Les discussions d’un lieu caché n’offrent ni l’un ni l’autre, car leur propre code PIN les garde et elles
@@ -3412,8 +3412,8 @@ La Collection est un endroit chiffré pour tes photos, tes fichiers et tes dossi
 ## Sauvegardes {#backup}
 
 Une sauvegarde contient tout ce qu’Erevos garde sur ce téléphone : chaque espace, avec ses contacts, les clés de ses
-conversations, ses messages, photos, fichiers, messages vocaux, discussions importées et discussions masquées, ses
-comptes Matrix, XMPP et Nostr, sa Discussion avec moi-même, le verrou et le mot de passe de panique, et les réglages qui
+conversations, ses messages, photos, fichiers, messages vocaux, discussions importées et discussions masquées, {+ses
+comptes Matrix, XMPP et Nostr, }sa Discussion avec moi-même, le verrou et le mot de passe de panique, et les réglages qui
 te suivent sur un autre téléphone. À l’intérieur, chaque espace reste scellé avec son propre mot de passe, et la
 sauvegarde est scellée de nouveau avec un mot de passe à elle. Ses photos, fichiers et messages vocaux vont dans des
 fichiers à part, à côté d’elle, de 4 Mo au plus chacun, dont le nom commence comme le sien ; une sauvegarde
@@ -3468,7 +3468,7 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   sauvegarde et à sa place en elle, si bien qu’aucun ne peut être échangé, retiré ou pris d’une autre sauvegarde sans
   que cela se voie ; le serveur garde chacun tant qu’une des sauvegardes qu’il garde en a besoin, puis le supprime. Leurs noms sont aussi longs que celui de la sauvegarde, mais leur taille les distingue d’elle : le serveur peut donc les compter, et savoir ainsi à peu près ce que la sauvegarde contient. Ce qu’une sauvegarde coupée en route a laissé là-bas est supprimé avant que la suivante parte, si bien qu’un serveur qui n’avait plus de place en a de nouveau. Le serveur voit quand même ton
   compte, quand une arrive et à peu près sa taille. Sur Android, les sauvegardes y vont comme le dit le choix de l’espace sous **Réglages** → **Relais et
-  réseaux** → **Tor**, comme Matrix : avec **Tout** seulement par Tor, donc le serveur ne voit pas l’adresse du
+  réseaux** → **Tor**{+, comme Matrix} : avec **Tout** seulement par Tor, donc le serveur ne voit pas l’adresse du
   téléphone ; avec **Messages** par Tor dès que Tor est prêt, et en direct tant que Tor démarre ou quand il échoue ;
   avec **Rien** en direct, et le serveur voit l’adresse du téléphone. Une sauvegarde attend d’abord jusqu’à deux
   minutes que Tor démarre, et **Aussi vers un serveur** dit par où elle passe en ce moment. Dans l’app de bureau,
@@ -3502,7 +3502,7 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   permettrait à celui qui a gardé les deux paquets de les lire ensemble. Dans un groupe, un membre restauré demande à
   l’Erevos de l’admin de le remettre dedans, ce qui marche tant que le groupe n’a avancé que de peu ; sinon demande à
   être ajouté de nouveau.
-- **Matrix, XMPP et Nostr :** les comptes de chaque espace et de ses discussions masquées sont dans la sauvegarde. Une
+- [+] **Matrix, XMPP et Nostr :** les comptes de chaque espace et de ses discussions masquées sont dans la sauvegarde. Une
   clé **Nostr** revient avec ses discussions, telles qu’elles étaient. Un compte **XMPP** revient avec sa connexion, ses
   contacts, ses discussions et les clés qu’il connaît des autres, et continue comme un nouvel appareil du compte : il
   garde sa clé d’identité, si bien que les applis de tes contacts connaissent toujours sa clé, mais il prend un nouvel
@@ -3536,8 +3536,8 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   **Changer les files**. Chaque espace et ses discussions masquées passent alors à de nouvelles files d’attente sur le
   relais, chacun la prochaine fois qu’il s’ouvre ici, et tes contacts et groupes sont prévenus sans bruit. Les
   anciennes files sont lues ici jusqu’à ce que chaque contact écrive dans les nouvelles, 14 jours au plus, et les
-  liens de contact et codes QR que tu as donnés avant marchent 14 jours, puis plus. Ce qui passe par Nostr, XMPP ou
-  Matrix arrive toujours sur l’ancien téléphone. Après une autre restauration, appuie dessus de nouveau.
+  liens de contact et codes QR que tu as donnés avant marchent 14 jours, puis plus. Ce qui passe par Nostr{+, XMPP ou
+  Matrix} arrive toujours sur l’ancien téléphone. Après une autre restauration, appuie dessus de nouveau.
 - **Discrétion :** chaque espace montre le même écran Sauvegardes, et une sauvegarde contient chaque espace, si bien que
   ni l’un ni l’autre ne dit combien il y a d’espaces ni si des discussions masquées sont définies. Le nom des fichiers dit
   que c’est une sauvegarde Erevos, et leur nombre et leur taille montrent à peu près combien est gardé.
@@ -3572,8 +3572,8 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   les appels et envoient les SMS, que toi seul peux autoriser sur chaque téléphone, c’est pourquoi après une
   restauration sur Android **Autorisations** s’ouvre pour les modules activés ; l’historique des appels et la liste de
   numéros bloqués d’Android elle-même, sauf si **Inclure les appels dans les sauvegardes** était activé, comme plus
-  haut ; et le compte des mots de passe erronés.
-  Un compte XMPP revient comme un nouvel appareil de lui-même et Matrix se reconnecte, comme plus haut, et les
+  haut ; et le compte des mots de passe erronés.{+
+  Un compte XMPP revient comme un nouvel appareil de lui-même et Matrix se reconnecte, comme plus haut, et les}{- Les}
   appareils associés s’associent de nouveau, comme plus bas.
 - **Appareils associés :** une association reste avec le téléphone et l’ordinateur où elle a été faite, et aucune
   sauvegarde ne la garde, mais une sauvegarde garde de quoi laisser le téléphone où elle est restaurée demander à
@@ -3647,8 +3647,8 @@ porte, scellée avec son mot de passe.
 2. **Sur l’ancien téléphone, prépare-le :** pour que les SMS du téléphone passent aussi, active **Inclure les SMS dans
    les sauvegardes** sous **Sauvegardes**, et pour son historique des appels **Inclure les appels dans les
    sauvegardes**. Une Collection laissée hors des sauvegardes reste derrière : remets-la, ou
-   donne-lui un serveur WebDAV, voir [Collection](#collection). Aie ta clé de sécurité Matrix sous la main, car Matrix
-   se reconnecte sur le nouveau téléphone.
+   donne-lui un serveur WebDAV, voir [Collection](#collection).{+ Aie ta clé de sécurité Matrix sous la main, car Matrix
+   se reconnecte sur le nouveau téléphone.}
 3. **Sur l’ancien téléphone, fais la sauvegarde :** sous **Réglages** → **Données et appareils** → **Sauvegardes**,
    appuie sur **Créer une sauvegarde**, ou sur **Sauvegarder maintenant** avec les sauvegardes automatiques. Fais-la en
    dernier, juste avant de changer, et ensuite n’ouvre plus Erevos sur l’ancien téléphone : ce qui arrive après attend
@@ -3664,8 +3664,8 @@ porte, scellée avec son mot de passe.
    mêmes mots de passe.
 6. **Sur le nouveau téléphone, remets ce qui est propre au téléphone :** **Autorisations** s’ouvre pour ce qu’Android
    doit permettre. Puis réactive l’empreinte ou le visage (voir [Verrou par mot de passe](#lock)), choisis de nouveau le
-   dossier des sauvegardes automatiques sous **Sauvegardes**, et la SIM de chaque numéro, et connecte-toi à Matrix avec
-   sa clé de sécurité.
+   dossier des sauvegardes automatiques sous **Sauvegardes**, et la SIM de chaque numéro{+, et connecte-toi à Matrix avec
+   sa clé de sécurité}.
 7. **Sur l’ancien téléphone, efface Erevos :** quand le nouveau téléphone montre tes discussions et que les nouveaux
    messages y arrivent, appuie sur **Tout effacer maintenant** sous **Réglages** → **Confidentialité et sécurité** →
    **Bouton de panique**. Pas sur **Me supprimer partout** : cela supprime les files d’attente des relais que lit le
@@ -3678,7 +3678,7 @@ porte, scellée avec son mot de passe.
   invitation à demander. Tes contacts t’écrivent comme avant.
 - **Discussions masquées :** chaque lieu caché vient avec la sauvegarde, chacun avec son code PIN, et rien sur le
   nouveau téléphone ne dit qu’il y en a, voir [Discussions masquées](#hidden).
-- **Matrix, XMPP et Nostr :** une clé Nostr continue comme avant, un compte XMPP comme un nouvel appareil de lui-même,
+- [+] **Matrix, XMPP et Nostr :** une clé Nostr continue comme avant, un compte XMPP comme un nouvel appareil de lui-même,
   et Matrix se reconnecte comme un nouvel appareil, sa clé de sécurité ouvrant les messages d’avant, voir
   [Sauvegardes](#backup).
 - **Appareils associés :** sur le nouveau téléphone, sous **Réglages** → **Données et appareils** → **Appareils
@@ -3710,7 +3710,7 @@ Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglage
 ordinateur et sur Sailfish OS.
 
 - **Ce qui part :** chaque espace avec ses discussions cachées, leurs contacts, messages, photos, fichiers et clés ; le
-  verrou et ses mots de passe ; les comptes Matrix, XMPP et Nostr et les jetons du relay ; les réglages et le mot de
+  verrou et ses mots de passe ; {+les comptes Matrix, XMPP et Nostr et }les jetons du relay ; les réglages et le mot de
   passe des sauvegardes automatiques, et de leur serveur. Sur Android, Erevos se ferme ensuite et s’ouvre la fois
   suivante comme fraîchement installé. Avec **Aussi les sauvegardes automatiques de** choisi, les fichiers de
   sauvegarde qui s’y trouvent partent d’abord.
@@ -3781,22 +3781,22 @@ Quand vous voulez que disparaisse ce que les serveurs gardent de vous, dans **R�
 n'est pas le [Bouton de panique](#panic), qui efface le téléphone.
 
 - **Ce qui part :** chaque file que cet espace a sur les relais, avec les messages qui y attendent : la vôtre, celle que nomme
-  votre lien de contact, celles de vos groupes, de vos contacts, de votre relais maison, celles des notifications Matrix et XMPP,
-  les portes de vos groupes publics et celles de vos appareils liés. Aussi les messages qu'un relais garde pour les envoyer plus
+  votre lien de contact, celles de vos groupes, de vos contacts, de votre relais maison, {+celles des notifications Matrix et XMPP,
+  }les portes de vos groupes publics et celles de vos appareils liés. Aussi les messages qu'un relais garde pour les envoyer plus
   tard, les fichiers arrivés qui y attendent, et les invitations que vous avez faites et que personne n'a utilisées. Les
   conversations cachées qui reçoivent même fermées partent avec l'espace ; les autres, quand vous les ouvrez alors que l'espace
   est arrêté. Les listes de l'écran laissent de côté les conversations cachées, pour ne jamais montrer qu'il y en a. Erevos
   demande aussi à chaque relais Nostr d'oublier les clés sur lesquelles vos conversations lisent (une demande de
   disparition, NIP-62) : via Tor quand Tor est activé, en direct quand il est désactivé. Avec Tor activé mais pas encore
   prêt, Nostr n'est pas sollicité ; attendez qu'il le soit, puis supprimez à nouveau.
-- **Matrix, XMPP, Nostr :** avec **Aussi me déconnecter de Matrix et XMPP, et supprimer le compte Nostr créé ici**, ces comptes
+- [+] **Matrix, XMPP, Nostr :** avec **Aussi me déconnecter de Matrix et XMPP, et supprimer le compte Nostr créé ici**, ces comptes
   sont déconnectés ici. Les comptes restent sur leurs serveurs, qui sont les leurs, pas ceux d'Erevos. Un compte Nostr apporté
   d'une autre appli est laissé tel quel.
 - **L'espace est arrêté :** il ne reçoit et n'envoie rien, pour qu'aucune file ne soit aussitôt refaite (Erevos refait seul une
   file perdue). **Relancer** y met fin : de nouvelles files sont créées, comme lorsqu'un relais les a perdues, et vos contacts
   sont prévenus discrètement. Donnez-leur aussi un nouveau lien de contact, car les anciens nomment des files qui n'existent plus.
-- **Ce que cela n'atteint pas :** les téléphones de vos contacts, les relais Nostr qui ne font pas ce qu'on leur demande, les
-  fichiers envoyés via un serveur de fichiers, et les serveurs Matrix et XMPP. L'écran liste ce qui a été supprimé, ce qui avait
+- **Ce que cela n'atteint pas :** les téléphones de vos contacts, les relais Nostr qui ne font pas ce qu'on leur demande,{- et} les
+  fichiers envoyés via un serveur de fichiers{+, et les serveurs Matrix et XMPP}. L'écran liste ce qui a été supprimé, ce qui avait
   déjà disparu et ce qui n'a pas pu être atteint ; **Supprimer à nouveau** essaie le reste.
 
 **Pourquoi :** un relais, même de confiance, est un endroit qui garde quelque chose de vous. C'est le seul geste qui reprend tout
@@ -4169,7 +4169,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   alors sa propre association, avec ses propres clés et sa propre liste d’appareils, signée par son propre compte, si
   bien que ses contacts sur cette version écrivent directement à l’emplacement de l’ordinateur. Ses messages, contacts,
   groupes, appels, photos et fichiers et sa Discussion avec moi-même vont entre les deux emplacements comme ceux de
-  l’espace entre appareils associés, et de même ses propres comptes Matrix, XMPP et Nostr, toujours, et à nouveau quand ils changent. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses
+  l’espace entre appareils associés{+, et de même ses propres comptes Matrix, XMPP et Nostr, toujours, et à nouveau quand ils changent}. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses
   appareils associés, et l’association de l’espace n’emporte jamais rien d’un emplacement : ce qu’un emplacement garde
   de son association est chiffré avec sa propre clé, parmi des valeurs faites pour rien pour les autres emplacements,
   dans un fichier de même taille qu’un emplacement soit associé ou aucun. L’association fonctionne tant que
@@ -4189,7 +4189,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   lui.
 - **Transférer de nouveau les messages**, sur le téléphone, renvoie une période de l’historique, avec ses réactions,
   épingles, votes et étoiles ; ce que l’ordinateur a déjà n’est pas gardé deux fois.
-- **Matrix, XMPP et Nostr** : chaque appareil associé les reçoit, et ils suivent les changements du téléphone : un compte déconnecté là-bas, ou remplacé par un autre, part aussi des appareils. L’ordinateur se
+- [+] **Matrix, XMPP et Nostr** : chaque appareil associé les reçoit, et ils suivent les changements du téléphone : un compte déconnecté là-bas, ou remplacé par un autre, part aussi des appareils. L’ordinateur se
   connecte aux comptes Matrix et XMPP de cet espace et prend la clé de ses discussions Nostr, chacun comme un nouvel
   appareil à lui : le téléphone garde le sien. Pour un ordinateur déjà associé, appuie sur **Envoyer les comptes**
   sous lui, sur le téléphone. XMPP et Nostr arrivent d’eux-mêmes. Un serveur Matrix laisse rarement le téléphone

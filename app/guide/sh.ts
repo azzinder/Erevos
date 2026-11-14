@@ -88,7 +88,7 @@ razgovor otvara se na svojih posljednjih 100 poruka, a ranije poruke, među njim
 WhatsAppa, dolaze same dok listate prema gore (donosi ih i **Prikaži ranije poruke**, iznad njih); odlazak na neku
 raniju poruku (iz pretrage, s poruke sa zvjezdicom ili na poruku na koju neka poruka odgovara) također je donosi.
 Svaki razgovor se otvara na svojoj posljednjoj poruci, s trakom za poruke ispod nje: razgovori s kontaktima, grupe i SMS
-razgovori, kao i razgovori preko Matrixa, XMPP-a i Nostra. Kad malo listate prema gore, dolje desno pojavljuju se
+razgovori{+, kao i razgovori preko Matrixa, XMPP-a i Nostra}. Kad malo listate prema gore, dolje desno pojavljuju se
 okrugle strelice, u svakom od njih: gornja vodi na početak razgovora, a donja nazad na njegov kraj. Između njih, ako je
 pri otvaranju razgovora bilo novih poruka, dvostruka kvačica vodi na prvu od njih, tamo gdje je stalo, dok ta poruka nije
 na ekranu. Od početka, **Prikaži kasnije poruke**, ispod onoga što je prikazano, donosi još; pisanje poruke ili donja
@@ -99,33 +99,33 @@ odjednom bilo bi sporo, naročito na starijim telefonima. Skriveni razgovori izo
 ekrana kako bi početni ekran izgledao isto, imao prostor skrivene razgovore ili ne: njihove poruke mogu se čitati samo
 dok ih njihov PIN drži otvorenima.
 
-**Prikvačeni i arhivirani:** na početnom ekranu zadržite bilo koji razgovor, s kontaktom ili grupom, na Matrixu,
-XMPP-u, Nostru ili u SMS-u, za **Prikvači na vrh**, **Arhiviraj** i, na Androidu, **Utišaj ovaj razgovor**. Najviše 10
+**Prikvačeni i arhivirani:** na početnom ekranu zadržite bilo koji razgovor, s kontaktom ili grupom{+, na Matrixu,
+XMPP-u, Nostru ili u SMS-u}{-, pa i SMS razgovor}, za **Prikvači na vrh**, **Arhiviraj** i, na Androidu, **Utišaj ovaj razgovor**. Najviše 10
 razgovora ostaje prikvačeno. Arhivirani razgovor napušta popis dok iz njega ne stigne nova poruka; dodirnite
 **Arhivirano** na vrhu da vidite šta ste arhivirali, i SMS, i dodirnite ponovo da se vratite. Skriveni razgovori imaju
 svoje prikvačene i arhivirane razgovore.
 
-- **Slika** se iscrtava iz ključa kontakta: isti ključ uvijek daje iste boje i isti mjesec (u zelenim tonovima pod
-  Matrixom), pa razgovor prepoznajete na prvi pogled, bez ikakve fotografije. To nije provjera ključa; to je
+- **Slika** se iscrtava iz ključa kontakta: isti ključ uvijek daje iste boje i isti mjesec{+ (u zelenim tonovima pod
+  Matrixom)}, pa razgovor prepoznajete na prvi pogled, bez ikakve fotografije. To nije provjera ključa; to je
   [sigurnosni broj](#relay).
 - **Linija ispod pretrage** kaže je li postavljen relay i je li vaš red spreman. Dodirnite je da ga postavite.
 - **Razgovor sa sobom**, uvijek prvi među razgovorima, prikvačen, čuva vaše bilješke za sebe: pogledajte Razgovor sa
   sobom i podsjetnici ispod.
-- **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen
+- [+] **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen
   **Matrix**, a pozivnica stoji na vrhu. Dugme **Matrix** pokazuje samo njih, i tamo **Novi razgovor** počinje
   Matrix razgovor: pogledajte [Matrix](#matrix).
-- **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži da
+- [+] **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži da
   vas doda ili grupa koja vas poziva stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje
   XMPP razgovor: pogledajte [XMPP](#xmpp).
-- **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
+- [+] **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
   **Nostr** prikazuje samo njih, s brojem nepročitanih poruka, a tamo **Novi razgovor** otvara ekran Nostr razgovora:
   pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
 - **Označi sve kao pročitano**, u meniju ⋮, odjednom čita svaki razgovor onog dijela liste u kojem se nalazite (sve
-  poruke, SMS, Erevos, Matrix, XMPP ili Nostr), i utišane i zaključane PIN-om, nakon što pita. Svaki se čita kao da ste
+  poruke, SMS{- ili Erevos}{+, Erevos, Matrix, XMPP ili Nostr}), i utišane i zaključane PIN-om, nakon što pita. Svaki se čita kao da ste
   ga otvorili, pa oni koji su pisali saznaju kao tada; pozivnice i ljudi koji traže da vas dodaju ostaju dok im ne
-  odgovorite. Ekrani Matrixa, XMPP-a i Nostra imaju je pod **Razgovori** za svoje razgovore. Skrivene razgovore nikad ne
+  odgovorite.{+ Ekrani Matrixa, XMPP-a i Nostra imaju je pod **Razgovori** za svoje razgovore.} Skrivene razgovore nikad ne
   čita.
-- **Javni feed**, kad prostor ima Nostr ključ ili je u javnoj Matrix sobi, još je jedno dugme, **Javno**: jedan feed,
+- [+] **Javni feed**, kad prostor ima Nostr ključ ili je u javnoj Matrix sobi, još je jedno dugme, **Javno**: jedan feed,
   kao u Amethystu, s javnim objavama ljudi koje prati vaš Nostr ključ i porukama javnih Matrix soba u kojima ste,
   najnovije prvo. Svaka pokazuje ko ju je napisao (malo N ili M kaže mrežu), kada, njene riječi, njene fotografije u
   objavi i karticu za njenu vezu. Kad su uključena oba, **Svi**, **Nostr** i **Matrix** iznad feeda biraju šta se vidi,
@@ -142,7 +142,7 @@ svoje prikvačene i arhivirane razgovore.
   nepročitanim porukama (99+ iznad 99) i tačkom, zelenom dok je njena mreža povezana, crvenom uz **Van mreže** kad
   nije. Kartica prikazuje samo taj dio: **Sve poruke** sve razgovore, **SMS** samo SMS (s razgovorima čija je
   posljednja poruka bila SMS; tu piše ako Erevos još nije SMS aplikacija), **Erevos** samo Erevos razgovore, svakog
-  kontakta, šta god da je stiglo posljednje, a **Matrix**, **XMPP**, **Javno** i **Nostr** svoje. **Dodaj** otvara
+  kontakta, šta god da je stiglo posljednje{+, a **Matrix**, **XMPP**, **Javno** i **Nostr** svoje}. **Dodaj** otvara
   Module, da uključite još, a **Označi sve kao pročitano** čita prikazani dio. Držite karticu da je pomjerite naprijed
   ili nazad ili sakrijete sa **Sakrij**: skrivena usluga ostaje uključena, ali ne šalje obavještenja i ne broji se na ikoni
   (Telegram, čije se mape mogu vidjeti na početnom ekranu, i dalje da), a njeni razgovori
@@ -191,11 +191,11 @@ imaju nešto te vrste. **Idi na dan**, ispod njega u detaljima, isto radi za sam
 sadrži; i čitaju se samo fotografije koje su na ekranu, kao u razgovoru, pa se razgovor s hiljadama fotografija
 otvara jednako brzo kao razgovor bez ijedne.
 
-**I na Matrixu, XMPP-u, Nostru i u SMS-u:** razgovor na Matrixu, XMPP-u ili Nostru ima na dnu **Traži u ovom
-razgovoru**, **Mediji, linkovi i fajlovi**, **Idi na dan** i **Izvezi razgovor**, pored **Obavijesti**, a SMS razgovor
-ih ima prve u svom **⋮**. Gledaju samo ono što ovaj telefon čuva od razgovora: poruke koje čuva razgovor na Matrixu
+**I {+na Matrixu, XMPP-u, Nostru i }u SMS-u:** {+razgovor na Matrixu, XMPP-u ili Nostru ima na dnu **Traži u ovom
+razgovoru**, **Mediji, linkovi i fajlovi**, **Idi na dan** i **Izvezi razgovor**, pored **Obavijesti**, a }SMS razgovor
+{-ima **Traži u ovom razgovoru**, **Mediji, linkovi i fajlovi**, **Idi na dan** i **Izvezi razgovor** }{+ih ima }prve u svom **⋮**. Gledaju samo ono što ovaj telefon čuva od razgovora: {+poruke koje čuva razgovor na Matrixu
 (ispod pretrage, **Učitaj ranije poruke** donosi starije s njegovog servera, kao vrh razgovora), poruke razgovora na
-XMPP-u ili Nostru, i svaki SMS i MMS razgovora na telefonu; odlazak na stariji SMS učitava razgovor do njega. Ništa
+XMPP-u ili Nostru, i }svaki SMS i MMS razgovora na telefonu; odlazak na stariji SMS učitava razgovor do njega. Ništa
 što upišete u pretragu ne napušta telefon. Fotografije i fajlovi su na popisu, a dodir vodi do svakog u razgovoru,
 gdje ga dodir donosi s njegovog servera kao i prije, pa nijedan server ne saznaje koje ste pogledali; slike MMS-a vide
 se na samom popisu. **Izvezi razgovor** ispisuje razgovor kao za kontakt, nakon istog pitanja; razgovori skrivenog
@@ -253,7 +253,7 @@ bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
 zapamtiti, niti u kojem je prostoru. A bilješke ne idu nikome osim vašim vlastitim uređajima, šifrirane s kraja na
 kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 
-- **Iz drugih razgovora:** poruka iz razgovora na Matrixu, XMPP-u, Nostru ili SMS-a može doći i ovdje, s podsjetnikom:
+- **Iz drugih razgovora:** poruka iz {+razgovora na Matrixu, XMPP-u, Nostru ili SMS-a}{-SMS razgovora} može doći i ovdje, s podsjetnikom:
   **Podsjeti me** u njenom meniju.
 
 ### Kretanje prevlačenjem
@@ -263,7 +263,7 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
   radi ono što radi njegova strelica nazad: nazad na popis razgovora, ili izlaz iz skrivenih razgovora, koji se
   zatvaraju. U **Detalji** razgovora ih zatvara.
 - **Kartice:** prevucite ulijevo ili udesno da pređete na susjednu karticu, kao kad dodirnete njeno dugme: **Sve
-  poruke**, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** na početnom ekranu (one uključene u Modulima),
+  poruke**, **SMS**, **Erevos**{+, **Matrix**, **XMPP** i **Nostr**} na početnom ekranu (one uključene u Modulima),
   **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti naljepnica.
   Na početnom ekranu dijelovi se biraju u prozoru **Usluge**, dugmetom ispod pretrage.
 - Na ekranu s karticama prevlačenje samo mijenja karticu, i na redovima njenog popisa, a iza prve ili posljednje
@@ -283,7 +283,7 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
   i svaki dio se otvara zasebno.
 - **Prikazuje se samo ono što ovdje radi:** na računaru, na Sailfish OS-u i u web-aplikaciji nema **Telefon i SMS**,
   Tora, Nostra ni LoRa, a grupa u kojoj ovdje nema šta da se podesi ne prikazuje se.
-- **Samo uključeni moduli:** postavke isključenog modula, kao što su **Matrix** ili **Telefon i SMS**, također se
+- **Samo uključeni moduli:** postavke isključenog modula, kao što su {+**Matrix** ili }**Telefon i SMS**, također se
   ne prikazuju: pogledajte [Moduli](#modules).
 
 | Grupa | Šta sadrži |
@@ -292,7 +292,7 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android), **Widget** (Android) i **Vibracija na dodir** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
-| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
+| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android){+,}{- i} **LoRa radio** (Android){+, **Matrix**, **XMPP** i **Nostr razgovori**}. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr){+,}{- i} [Preko LoRa radija](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)}. |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test relaya** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
@@ -320,15 +320,15 @@ mijenja odmah.
 ## Moduli {#modules}
 
 Erevos se sastoji od dijelova, svojih modula: samog **Erevosa** (njegovi vlastiti razgovori, grupe i pozivi, šifrirani
-s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora s **Nostr**, **Matrix** i **XMPP**
-aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu, u aplikaciji za računar, u web aplikaciji i na Sailfish OS-u. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
+s kraja na kraj, sa skrivenim razgovorima), **Telefona**{- i}{+,} **SMS-a**{+ i razgovora s **Nostr**, **Matrix** i **XMPP**
+aplikacijama}. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu, u aplikaciji za računar, u web aplikaciji i na Sailfish OS-u. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
 Pri sasvim prvom pokretanju Erevos se postavlja kao instalater. Prije nego se otvori njegov prvi prostor: što ne dajete
 (ni broj telefona, ni e-poštu, ni korisničko ime, ni račun: ljude dodajete QR kodom ili linkom, ili vas oni pozovu), ime
 za vaše kontakte ako ga želite, i jezik; zatim koje module koristiti, svaki s onim što radi. Zatim, u prostoru: ekran za
 svaki izabrani modul, s onim kako početi s njim (za Erevos, kako ulazite; za Telefon i SMS, Erevos kao aplikacija za
-telefon i kao aplikacija za SMS; za Nostr, Matrix i XMPP, vaš račun tamo) i što Android, ili preglednik, treba dozvoliti
+telefon i kao aplikacija za SMS{+; za Nostr, Matrix i XMPP, vaš račun tamo}) i što Android, ili preglednik, treba dozvoliti
 za njega. Svaka dozvola je na prvom ekranu koji je treba, a **Dozvoli sve, jedno po jedno** postavlja pitanja koja
 Android postavlja u samom Erevosu, jedno za drugim. Zatim zaključavanje lozinkom i automatske rezervne kopije, pa što je
 spremno i što nedostaje, uz **Pozovite nekoga**. **Ostalo kasnije** ostavlja ostalo za Postavke; dok ne završite ili
@@ -823,11 +823,11 @@ ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom 
   otvorite u pregledniku samo ako je to mjesto na koje želite ići. Prije toga se ništa ne preuzima.
 - **Dijeljenje iz druge aplikacije** (Android): u opciji **Dijeli** druge aplikacije, kao u pregledniku za stranicu,
   izaberite **Erevos**. Kad je prostor otvoren, **Pošalji u** navodi razgovore, grupe i SMS razgovore koje je početni
-  ekran posljednje prikazao, zatim sve ostale razgovore i grupe, i razgovore vaših naloga na Matrixu, XMPP-u i
-  Nostru, s pretragom; nikad skrivene razgovore. Riječi i linkovi otvaraju se u polju za poruku onog koji izaberete,
+  ekran posljednje prikazao, zatim sve ostale razgovore i grupe{+, i razgovore vaših naloga na Matrixu, XMPP-u i
+  Nostru}, s pretragom; nikad skrivene razgovore. Riječi i linkovi otvaraju se u polju za poruku onog koji izaberete,
   da ih tamo pročitate i pošaljete; fotografija ili datoteka ide čim se taj razgovor ili grupa otvori, fotografija u
-  kvalitetu koji ste izabrali za fotografije, i nikad kao SMS. Datoteka može imati najviše 100 MB u Erevos razgovoru,
-  50 MB na Matrixu i XMPP-u i 20 MB na Nostru. Šifrira se čim stigne, ključem samo u Erevosovoj memoriji, i tako čeka
+  kvalitetu koji ste izabrali za fotografije, i nikad kao SMS. Datoteka može imati najviše 100 MB{+ u Erevos razgovoru,
+  50 MB na Matrixu i XMPP-u i 20 MB na Nostru}. Šifrira se čim stigne, ključem samo u Erevosovoj memoriji, i tako čeka
   na telefonu, i dok unosite lozinku ako se Erevos prije zaključa; nestaje kad se pošalje, ili kad napustite
   **Pošalji u**.
 - **Vide kada čitate:** vaš telefon to javlja telefonu te osobe, kao što njen javlja vašem, osim ako se u tom
@@ -910,8 +910,8 @@ iscrtanu.
 
 Svaki razgovor može imati i vlastiti izgled: dodirnite njegovo ime, a zatim **Izgled razgovora** za iste izbore kao u
 **Izgled** (stil, tema, boje, font, pozadina, poruke i veličina njihova teksta), samo za taj razgovor. Grupa ima
-**Izgled razgovora** tamo gdje se otvara njeno ime (u javnoj grupi, pod **⋯**), Razgovor sa sobom ga ima na vrhu, a
-razgovor na Matrixu, XMPP-u ili Nostru na samom dnu, pored **Obavijesti**. Kao i ime, ostaje na ovom telefonu, zapečaćen
+**Izgled razgovora** tamo gdje se otvara njeno ime (u javnoj grupi, pod **⋯**), Razgovor sa sobom ga ima na vrhu{+, a
+razgovor na Matrixu, XMPP-u ili Nostru na samom dnu, pored **Obavijesti**}. Kao i ime, ostaje na ovom telefonu, zapečaćen
 s razgovorom. **Kao u aplikaciji** mu ponovo daje izgled aplikacije.
 
 Da biste razgovor sačuvali izvan Erevosa, dodirnite njegovo ime, a zatim **Izvezi razgovor**: njegove poruke idu u
@@ -1007,7 +1007,7 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
 - **Označi zvjezdicom:** označava je zvjezdicom, samo na ovom telefonu, da je ponovo pronađete: **Poruke sa
   zvjezdicom** u meniju početnog ekrana navodi ih iz svih vaših razgovora, a detalji razgovora navode njegove. Dodir
   vodi na poruku. Poruke sa zvjezdicom iz skrivenih razgovora prikazuju se samo u detaljima njihovih razgovora.
-  Razgovori na Matrixu, XMPP-u i Nostru, i SMS razgovori, takođe imaju **Označi zvjezdicom**, šifrovano samo na ovom
+  {+Razgovori na Matrixu, XMPP-u i Nostru, i }SMS razgovori{+,} takođe imaju **Označi zvjezdicom**, šifrovano samo na ovom
   telefonu: **Poruke sa zvjezdicom** jednog razgovora navode njegove, a one s početnog ekrana navode ih sa svim
   ostalima, svaku otvarajući njen razgovor na poruci. U tim razgovorima, kad zadržite fotografiju, video, glasovnu
   poruku, datoteku ili sliku MMS-a, nudi se i **Spremi u Zbirku**, a kad zadržite naljepnicu ili fotografiju koja je
@@ -1092,8 +1092,8 @@ više ne zove k njemu. Njegovi zvukovi se čuvaju samo na ovom telefonu, s razgo
 jer svaki telefon ima svoje zvukove: povezani uređaj čuva svoje, a drugi telefon ne saznaje ništa o njima.
 
 - **U skrivenim razgovorima** postoji samo **Utišano**: vlastiti zvuk bi svakome u blizini otkrio o kojem je razgovoru
-  riječ. Tako je i s razgovorima vlastitih Matrix, XMPP i Nostr računa skrivenog mjesta: utišani, ne govore ništa, čak
-  ni „Nova poruka“.
+  riječ.{+ Tako je i s razgovorima vlastitih Matrix, XMPP i Nostr računa skrivenog mjesta: utišani, ne govore ništa, čak
+  ni „Nova poruka“.}
 - **Zatvoren prostor, i skriveni razgovori dok su zatvoreni,** ne znaju u kojem je razgovoru stigla poruka, pa o njoj
   javljaju kako kažu postavke aplikacije.
 - **Samo na Androidu** zasad: web-aplikacija javlja o svakom razgovoru kako kažu njene postavke.
@@ -1234,7 +1234,7 @@ mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati s
 **Prekini**. Svaki poziv ostavlja red u razgovoru, na primjer koliko je trajao, ili propušteni poziv.
 
 - **Javiti se s videom ili samo glasom:** poziv koji zvoni nudi **Javi se**, samo glasom, i **Javi se s videom**, u
-  pozivima Erevosa te u XMPP i Matrix pozivima; u grupnom pozivu to su **Pridruži se** i **Pridruži se s videom**. Video
+  pozivima Erevosa{+ te u XMPP i Matrix pozivima}; u grupnom pozivu to su **Pridruži se** i **Pridruži se s videom**. Video
   poziv na koji se javite samo glasom počinje s isključenom kamerom.
 - **Kamo ide zvuk** (Android): s povezanim Bluetooth slušalicama ili slušalicama na kabel, **Zvučnik** postaje **Izlaz
   zvuka**: pokazuje kamo zvuk ide sada, **Telefon**, **Zvučnik**, **Slušalice** ili **Bluetooth**, a dodir ih sve
@@ -2940,8 +2940,8 @@ sadrže uklonjena mjesta.
   pozadini: njihovi kontakti odmah vide da je poruka stigla, obavijest kaže samo „New message“, na Androidu poziv zvoni
   s „Incoming call“ i bez imena (na ekranu koji zvoni dodirnite **Javi se** ili mali znak, upišite PIN i dodirnite
   **Poveži**), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
-  stigne preko Nostra tada se također čita, a njihovi vlastiti Matrix, XMPP i Nostr računi ostaju povezani (pogledajte
-  dolje). Poziv koji se završio prije nego što ste ih otvorili, ili je predugo zvonio, prikazuje se kao propušten. Ništa
+  stigne preko Nostra tada se također čita{+, a njihovi vlastiti Matrix, XMPP i Nostr računi ostaju povezani (pogledajte
+  dolje)}. Poziv koji se završio prije nego što ste ih otvorili, ili je predugo zvonio, prikazuje se kao propušten. Ništa
   od njih se nigdje ne prikazuje dok ih PIN ne otvori. Novo mjesto počinje s ovim uključenim; mjesta postavljena ranije
   ostaju kakva su bila dok to ne uključite. Za to se ključ mjesta čuva šifriran s prostorom, među nasumičnim ključem za
   svako drugo mjesto, pa otvaranje prostora ne pokazuje koja mjesta primaju, ni koja su postavljena. Ali onaj ko otvori
@@ -2949,8 +2949,8 @@ sadrže uklonjena mjesta.
   drži telefon, ali ne i od forenzičkog alata. Kad je isključen, njihov ključ je samo iza PIN-a, a njihove poruke čekaju
   na relayu dok ih ne otvorite. Rezervne kopije zadržavaju prekidač.
 - **Tačka za nepročitano:** uz uključeno **Primanje dok su zatvoreni**, prekidač ispod toga (isključen, osim ako ga
-  uključite). Uključen, dok neki od razgovora ili grupa tog mjesta ima nepročitanu poruku, ili je neki od njegovih
-  vlastitih Matrix, XMPP ili Nostr razgovora dobio poruku otkad ste ga zadnji put otvorili, mala tačka se pojavi na
+  uključite). Uključen, dok neki od razgovora ili grupa tog mjesta ima nepročitanu poruku{+, ili je neki od njegovih
+  vlastitih Matrix, XMPP ili Nostr razgovora dobio poruku otkad ste ga zadnji put otvorili}, mala tačka se pojavi na
   lupi u **Traži razgovore** na početnom ekranu: nikad koliko, ni gdje. Nestaje čim ih pročitate. Ko vidi razgovore
   prostora vidi i nju, i može pretpostaviti da postoje skriveni razgovori. Mjesta koja imaju samo **Javi kad stigne
   poruka** nemaju tačku: prekidač bi se morao čuvati tamo gdje ga prostor može pročitati.
@@ -2972,7 +2972,7 @@ sadrže uklonjena mjesta.
   zatvoreno, čita se samo s uključenim **Primanje dok su zatvoreni**, a **Javi kad stigne poruka** ga ne broji. Njeni
   pozivi zvone samo dok su skriveni razgovori otvoreni: poziv započet dok su zatvoreni prikazuje se kao propušten.
   Grupa tamo nema vlastiti PIN, i nijedna nije javna.
-- **Matrix, XMPP i Nostr:** ispod njihovog popisa, **Matrix**, **XMPP** i **Nostr** otvaraju ekrane tih mreža
+- [+] **Matrix, XMPP i Nostr:** ispod njihovog popisa, **Matrix**, **XMPP** i **Nostr** otvaraju ekrane tih mreža
   (pogledajte [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)) za vlastite
   račune skrivenih razgovora, odvojene od računa prostora: Matrix račun i XMPP račun za prijavu, te Nostr ključ. Prijave
   i ključ čuvaju se šifrovani ključem skrivenih razgovora, i ništa od toga ne vidi se izvan skrivenih razgovora: njihovi
@@ -3057,8 +3057,8 @@ otvara samo svojim PIN-om.
   traži, jer ih čuva vlastiti PIN skrivenih razgovora. Kad se vrati među razgovore, isti PIN ponovo se traži.
 - **Da ga uklonite:** **Detalji** → ponovo **Zaključaj PIN-om**, i upišite njegov PIN.
 - **Zna ga samo ovaj telefon,** a svaki povezani uređaj ima vlastiti. Rezervne kopije ga zadržavaju.
-- **I na Matrixu, XMPP-u, Nostru i u SMS-u:** razgovor na Matrixu, XMPP-u ili Nostru ima **Zaključaj PIN-om** na dnu,
-  a SMS razgovor ispod reda **Običan SMS**, i radi isto: na popisu njegovo ime s lokotom, nijedna njegova poruka u
+- **I {+na Matrixu, XMPP-u, Nostru i }u SMS-u:** {+razgovor na Matrixu, XMPP-u ili Nostru ima **Zaključaj PIN-om** na dnu,
+  a }SMS razgovor {-ima **Zaključaj PIN-om** }ispod reda **Običan SMS**, i radi isto: na popisu njegovo ime s lokotom, nijedna njegova poruka u
   pretrazi, a lozinka prostora skida zaboravljeni PIN. **Blokiraj snimke ekrana** je pored, samo na ovom telefonu
   (Android): drugima se ne javlja. Razgovori skrivenog mjesta ne nude ni jedno ni drugo, jer ih čuva njihov PIN i
   izvan snimaka ekrana su dok su **Snimci ekrana** uključeni.
@@ -3107,8 +3107,8 @@ Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom p
 ## Rezervne kopije {#backup}
 
 Rezervna kopija sadrži sve što Erevos čuva na ovom telefonu: svaki prostor, s njegovim kontaktima, ključevima
-njegovih razgovora, porukama, fotografijama, datotekama, glasovnim porukama, uvezenim i skrivenim razgovorima, njegovim
-Matrix, XMPP i Nostr računima, njegovim Razgovorom sa sobom, zaključavanje i lozinku za paniku, i postavke koje idu s
+njegovih razgovora, porukama, fotografijama, datotekama, glasovnim porukama, uvezenim i skrivenim razgovorima, {+njegovim
+Matrix, XMPP i Nostr računima, }njegovim Razgovorom sa sobom, zaključavanje i lozinku za paniku, i postavke koje idu s
 vama na drugi telefon. Unutar nje svaki prostor ostaje zapečaćen vlastitom lozinkom, a rezervna kopija je ponovo
 zapečaćena vlastitom lozinkom. Njene fotografije, datoteke i glasovne poruke idu u zasebne datoteke pored nje, do 4 MB
 svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke prethodnih: držite zajedno cijeli folder. Nalazi se pod **Postavke** → **Podaci i uređaji** →
@@ -3158,7 +3158,7 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   imenom i zapečaćeno lozinkom rezervne kopije, vezano za tu kopiju i za svoje mjesto u njoj, pa nijedno ne može
   neprimjetno biti zamijenjeno, izostavljeno ili uzeto iz druge kopije; server čuva svaku dok je treba jedna od kopija
   koje čuva, a zatim je briše. Imena su im iste dužine kao ime kopije, ali ih veličina razlikuje od nje, pa ih server može prebrojati i tako otprilike znati koliko kopija sadrži. Ono što je tamo ostavila prekinuta kopija briše se prije nego što ode sljedeća, pa server kojem je ponestalo mjesta opet ga ima. Server ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika. Na Androidu rezervne kopije idu tamo kako kaže izbor
-  prostora pod **Postavke** → **Relay i mreže** → **Tor**, kao i Matrix: sa **Sve** samo preko Tora, pa server ne vidi
+  prostora pod **Postavke** → **Relay i mreže** → **Tor**{+, kao i Matrix}: sa **Sve** samo preko Tora, pa server ne vidi
   adresu telefona; s **Poruke** preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; s
   **Ništa** direktno, i server vidi adresu telefona. Kopija prvo čeka do dvije minute da se Tor pokrene, a **I na
   server** kaže kojim putem ide sada. U aplikaciji za računar šalje ih sama aplikacija, ne njena stranica, jer
@@ -3187,7 +3187,7 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   poruka zapečaćena dvaput omogućila bi onome ko je sačuvao oba paketa da ih pročita zajedno. U grupi vraćeni član
   traži od Erevosa admina da ga ponovo unese, što uspijeva dok je grupa otišla samo malo dalje; inače tražite da vas
   ponovo dodaju.
-- **Matrix, XMPP i Nostr:** računi svakog prostora i njegovih skrivenih razgovora nalaze se u rezervnoj kopiji. Nostr
+- [+] **Matrix, XMPP i Nostr:** računi svakog prostora i njegovih skrivenih razgovora nalaze se u rezervnoj kopiji. Nostr
   ključ se vraća sa svojim razgovorima, kakvi su bili. XMPP račun se vraća sa svojom prijavom, kontaktima, razgovorima i
   ključevima koje poznaje od drugih, i nastavlja kao novi uređaj računa: zadržava svoj identitetski ključ, pa aplikacije
   vaših kontakata i dalje poznaju njegov ključ, ali dobija novi ID uređaja, novi resource i nove ključeve, svaki
@@ -3217,8 +3217,8 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   kopije s drugog telefona Erevos na to upozorava) i recite **Promijeni redove**. Svaki prostor i njegovi skriveni
   razgovori tada prelaze na nove redove na relayu, svaki sljedeći put kad se ovdje otvori, a vaši kontakti i grupe se
   obavještavaju tiho. Stari redovi se ovdje čitaju dok svaki kontakt ne počne pisati u nove, najviše 14 dana, a
-  linkovi za kontakt i QR kodovi koje ste dali prije vrijede 14 dana, a zatim više ne. Ono što dolazi preko Nostra,
-  XMPP-a ili Matrixa i dalje stiže na stari telefon. Nakon još jednog vraćanja, dodirnite ga ponovo.
+  linkovi za kontakt i QR kodovi koje ste dali prije vrijede 14 dana, a zatim više ne. Ono što dolazi preko Nostra{+,
+  XMPP-a ili Matrixa} i dalje stiže na stari telefon. Nakon još jednog vraćanja, dodirnite ga ponovo.
 - **Diskrecija:** svaki prostor prikazuje isti ekran Rezervne kopije, a rezervna kopija sadrži svaki prostor, pa ni
   jedno ni drugo ne govori koliko ima prostora ni jesu li postavljeni skriveni razgovori. Imena datoteka kažu da je to
   Erevos rezervna kopija, a njihov broj i veličina otprilike pokazuju koliko se čuva.
@@ -3250,8 +3250,8 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   dozvoliti na svakom telefonu, pa se nakon vraćanja na Androidu otvaraju **Dozvole** za uključene module; historija
   poziva i Androidova vlastita lista blokiranih brojeva, osim ako je **Stavljaj pozive u rezervne kopije** bilo
   uključeno, kao gore; i broj pogrešnih
-  lozinki. XMPP račun se vraća kao novi uređaj samog sebe, a Matrix se ponovo prijavljuje, kao gore, a povezani
-  uređaji se ponovo povezuju, kao dolje.
+  lozinki.{+ XMPP račun se vraća kao novi uređaj samog sebe, a Matrix se ponovo prijavljuje, kao gore,}{- Povezani uređaji se ponovo povezuju, kao dolje.}{+ a povezani
+  uređaji se ponovo povezuju, kao dolje.}
 - **Povezani uređaji:** veza ostaje s telefonom i računarom na kojima je napravljena, i nijedna rezervna kopija je ne
   čuva, ali rezervna kopija čuva ono što telefonu na kojem se vrati omogućava da zatraži od svakog od njih da se
   ponovo poveže. Nakon vraćanja rezervne kopije na drugom telefonu, tamo otvorite **Postavke** → **Podaci i uređaji**
@@ -3316,8 +3316,8 @@ svojom lozinkom.
    [Erevos obližnjem telefonu](#give-app).
 2. **Na starom telefonu ga pripremite:** da bi i SMS poruke telefona prešle, uključite **Stavljaj SMS poruke u
    rezervne kopije** pod **Rezervne kopije**, a za njegovu historiju poziva **Stavljaj pozive u rezervne kopije**. Zbirka izostavljena iz kopija ostaje iza: vratite je unutra, ili joj dajte
-   WebDAV server, pogledajte [Zbirka](#collection). Imajte pri ruci svoj sigurnosni ključ za Matrix, jer se Matrix
-   ponovo prijavljuje na novom telefonu.
+   WebDAV server, pogledajte [Zbirka](#collection).{+ Imajte pri ruci svoj sigurnosni ključ za Matrix, jer se Matrix
+   ponovo prijavljuje na novom telefonu.}
 3. **Na starom telefonu napravite kopiju:** pod **Postavke** → **Podaci i uređaji** → **Rezervne kopije** dodirnite
    **Napravi rezervnu kopiju**, ili **Napravi kopiju sada** s automatskim kopijama. Napravite je posljednju, tik prije
    prelaska, i od tada ne otvarajte Erevos na starom telefonu: ono što stigne poslije čeka na relayima novi.
@@ -3330,8 +3330,8 @@ svojom lozinkom.
    otvara kakav je bio stari telefon, s istim lozinkama.
 6. **Na novom telefonu ponovo podesite ono što pripada telefonu:** **Dozvole** se otvaraju za ono što Android treba
    dozvoliti. Zatim ponovo uključite otisak prsta ili lice (pogledajte [Zaključavanje lozinkom](#lock)), ponovo
-   izaberite folder automatskih kopija pod **Rezervne kopije**, i SIM za svaki broj, i prijavite se u Matrix njegovim
-   sigurnosnim ključem.
+   izaberite folder automatskih kopija pod **Rezervne kopije**, i SIM za svaki broj{+, i prijavite se u Matrix njegovim
+   sigurnosnim ključem}.
 7. **Na starom telefonu obrišite Erevos:** kad novi telefon pokaže vaše razgovore i nove poruke stižu tamo, dodirnite
    **Obriši sve sada** pod **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**. Ne **Obriši me odasvud**: to
    briše redove na relayima koje čita novi telefon.
@@ -3342,7 +3342,7 @@ svojom lozinkom.
   upisivanje ni pozivnice za traženje. Vaši kontakti vam pišu kao prije.
 - **Skriveni razgovori:** svako skriveno mjesto dolazi s kopijom, svako sa svojim PIN-om, a ništa na novom telefonu ne
   govori da ih ima, pogledajte [Skriveni razgovori](#hidden).
-- **Matrix, XMPP i Nostr:** Nostr ključ nastavlja kakav je bio, XMPP račun kao novi uređaj samog sebe, a Matrix se
+- [+] **Matrix, XMPP i Nostr:** Nostr ključ nastavlja kakav je bio, XMPP račun kao novi uređaj samog sebe, a Matrix se
   ponovo prijavljuje kao novi uređaj, a njegov sigurnosni ključ otvara ranije poruke, pogledajte
   [Rezervne kopije](#backup).
 - **Povezani uređaji:** na novom telefonu, pod **Postavke** → **Podaci i uređaji** → **Povezani uređaji**, dodirnite
@@ -3371,7 +3371,7 @@ Kad ste u opasnosti, Erevos se može odmah obrisati, u **Postavke** → **Privat
 dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web aplikaciji, na računalu i na Sailfish OS-u.
 
 - **Što se briše:** svaki prostor s njegovim skrivenim razgovorima, s njihovim kontaktima, porukama, fotografijama,
-  datotekama i ključevima; zaključavanje i njegove lozinke; Matrix, XMPP i Nostr računi i tokeni relaya; postavke i
+  datotekama i ključevima; zaključavanje i njegove lozinke; {+Matrix, XMPP i Nostr računi i }tokeni relaya; postavke i
   lozinka automatskih rezervnih kopija, i njihovog servera. Na Androidu se Erevos zatim zatvara, a sljedeći put se
   otvara kao tek instaliran. S odabranim **I automatske rezervne kopije u** prvo se brišu datoteke kopija ondje.
 - **Što ostaje:** ono do čega Erevos ne može doći: rezervne kopije koje ste kopirali drugdje ili poslali na server
@@ -3436,21 +3436,21 @@ dodirni **Obriši me odasvud** i dvaput reci da. Tvoj telefon zadržava sve što
 briše telefon.
 
 - **Što nestaje:** svaki red koji ovaj prostor ima na relejima, s porukama koje u njemu čekaju: tvoj, onaj koji imenuje tvoju
-  vezu za kontakt, redovi tvojih grupa, tvojih kontakata, tvog kućnog releja, oni za obavijesti Matrixa i XMPP-a, vrata tvojih
+  vezu za kontakt, redovi tvojih grupa, tvojih kontakata, tvog kućnog releja, {+oni za obavijesti Matrixa i XMPP-a, }vrata tvojih
   javnih grupa i povezanih uređaja. Također poruke koje relej drži da ih pošalje kasnije, datoteke koje su stigle i čekaju na
   njemu te pozivnice koje si napravio/napravila a nitko ih nije upotrijebio. Skriveni razgovori koji primaju i dok su zatvoreni
   odlaze s prostorom, ostali kad ih otvoriš dok je prostor zaustavljen. Popisi na ekranu izostavljaju skrivene razgovore, da
   nikad ne pokažu da ih ima. Erevos traži i od svakog Nostr releja da zaboravi ključeve na kojima tvoji razgovori
   čitaju (zahtjev da nestane, NIP-62): preko Tora kad je Tor uključen, izravno kad je isključen. Kad je Tor uključen, ali
   još nije spreman, Nostr se ne pita; pričekaj da bude i obriši ponovo.
-- **Matrix, XMPP, Nostr:** s opcijom **Odjavi se i s Matrixa i XMPP-a te obriši Nostr račun napravljen ovdje** ti se računi
+- [+] **Matrix, XMPP, Nostr:** s opcijom **Odjavi se i s Matrixa i XMPP-a te obriši Nostr račun napravljen ovdje** ti se računi
   ovdje odjavljuju. Sami računi ostaju na svojim serverima, koji su njihovi, a ne Erevosovi. Nostr račun donesen iz druge
   aplikacije ostaje kakav jest.
 - **Prostor se zaustavlja:** ne prima i ne šalje ništa, pa se nijedan red ne pravi odmah ponovo (Erevos sam iznova napravi izgubljen
   red). **Pokreni ponovo** to završava: prave se novi redovi, kao kad ih je relej izgubio, a kontakti se obavještavaju tiho. Daj im
   i novu vezu za kontakt, jer stare imenuju redove kojih više nema.
-- **Do čega ne dopire:** telefona tvojih kontakata, Nostr releja koji ne rade što se traži, datoteka poslanih preko servera za
-  datoteke te Matrix i XMPP servera. Zaslon navodi što je obrisano, što je već nestalo i što nije dosegnuto; **Obriši ponovo**
+- **Do čega ne dopire:** telefona tvojih kontakata, Nostr releja koji ne rade što se traži{-, te}{+,} datoteka poslanih preko servera za
+  datoteke{+ te Matrix i XMPP servera}. Zaslon navodi što je obrisano, što je već nestalo i što nije dosegnuto; **Obriši ponovo**
   pokušava ostalo.
 
 **Zašto:** relej, čak i onaj kojem vjeruješ, mjesto je koje čuva nešto od tebe. Ovo je jedan dodir koji sve uzima natrag bez
@@ -3788,7 +3788,7 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   drugo, jednostavno nestane, a **Poveži s mojim telefonom** počinje ispočetka na računaru. Mjesto tada ima vlastitu vezu, s vlastitim ključevima i vlastitim
   popisom uređaja, koji potpisuje njegov vlastiti račun, pa njegovi kontakti s ovom verzijom pišu izravno na mjesto
   računara. Njegove poruke, kontakti, grupe, pozivi, fotografije i datoteke i njegov Razgovor sa sobom idu između dva
-  mjesta kao oni prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, uvijek, i ponovo kad se promijene. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na
+  mjesta kao oni prostora između povezanih uređaja{+, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, uvijek, i ponovo kad se promijene}. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na
   njegovim povezanim uređajima, a veza prostora nikad ne nosi ništa od nekog mjesta: ono što mjesto čuva o svojoj vezi
   šifrirano je njegovim vlastitim ključem, među vrijednostima napravljenim ni za šta za ostala mjesta, u datoteci iste
   veličine bilo da je neko mjesto povezano ili nijedno. Veza radi dok je mjesto otvoreno, i dok je zatvoreno ako je
@@ -3805,7 +3805,7 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   uređajima.
 - **Ponovo prenesi poruke**, na telefonu, ponovo šalje dio historije, s njegovim reakcijama, prikvačenim porukama,
   glasovima i zvjezdicama; ono što računar već ima ne čuva se dvaput.
-- **Matrix, XMPP i Nostr**: dobija ih svaki povezani uređaj, i prate promjene na telefonu: račun iz kojeg se tamo odjavi, ili zamijenjen drugim, nestaje i s uređaja. Računar se prijavljuje na Matrix i
+- [+] **Matrix, XMPP i Nostr**: dobija ih svaki povezani uređaj, i prate promjene na telefonu: račun iz kojeg se tamo odjavi, ili zamijenjen drugim, nestaje i s uređaja. Računar se prijavljuje na Matrix i
   XMPP račune ovog prostora i uzima ključ njegovih Nostr razgovora, svaki kao novi uređaj za sebe: telefon zadržava
   svoj. Za računar koji je već povezan dodirnite na telefonu **Pošalji račune** ispod njega. XMPP i Nostr stižu sami.
   Matrix server rijetko dopušta da telefon prijavi novi uređaj: tada to kaže **Povezani uređaji** na računaru, a

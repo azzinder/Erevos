@@ -16,7 +16,7 @@ import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
 import { SH } from '../i18n/sh/index';
-import { blockTexts, parseGuide, parseInline, searchGuide, type GuideBlock } from '../lib/guide';
+import { blockTexts, editionSource, parseGuide, parseInline, searchGuide, type GuideBlock } from '../lib/guide';
 import { LANGS } from '../lib/i18n';
 
 const WORDS: Record<string, Record<string, string>> = { de: DE, el: EL, es: ES, fr: FR, it: IT, pt: PT, sh: SH };
@@ -134,6 +134,33 @@ test('the guide has the same sections, in the same order and shape, in every lan
       assert.deepEqual({ lang, id: section.id, blocks: section.blocks.map(shape) }, { lang, id: section.id, blocks: en[i].blocks.map(shape) });
     });
   }
+});
+
+test("the plain Erevos's guide leaves out what only Erevos+ has, the same in every language", () => {
+  const liteEn = guideFor('en', 'lite');
+  for (const lang of GUIDE_LANGS) {
+    const lite = guideFor(lang, 'lite');
+    assert.deepEqual(
+      lite.map((s) => ({ id: s.id, blocks: s.blocks.map(shape) })),
+      liteEn.map((s) => ({ id: s.id, blocks: s.blocks.map(shape) })),
+      lang,
+    );
+    // Matrix is also a style (Appearance), the About credits name the libraries, and Updates tells the editions apart.
+    const said = lite
+      .filter((s) => !['about', 'appearance', 'updates'].includes(s.id))
+      .flatMap((s) => s.blocks.flatMap(blockTexts).filter((t) => /Matrix|XMPP/.test(t)).map((t) => `${lang} ${s.id}: ${t.slice(0, 120)}`));
+    assert.deepEqual(said, [], lang);
+    for (const edition of ['plus', 'lite'] as const) {
+      const left = guideFor(lang, edition).flatMap((s) => s.blocks.flatMap(blockTexts)).filter((t) => /\{[+-]|\[\+\]/.test(t));
+      assert.deepEqual(left, [], `${lang} ${edition}`);
+    }
+  }
+});
+
+test('the marks of the editions: Erevos+ reads the text without them, the plain Erevos without what they keep for Erevos+', () => {
+  const source = 'A{+ and B}{- alone}.\n\n- [+] Plus only\n  goes on\n  - and its sub-item\n- Both\n\n[+] A paragraph\nof Erevos+.\n\n| a |\n| --- |\n| [+] b |\n| c |';
+  assert.equal(editionSource(source, 'plus'), 'A and B.\n\n- Plus only\n  goes on\n  - and its sub-item\n- Both\n\nA paragraph\nof Erevos+.\n\n| a |\n| --- |\n| b |\n| c |');
+  assert.equal(editionSource(source, 'lite'), 'A alone.\n\n- Both\n\n\n| a |\n| --- |\n| c |');
 });
 
 test('the guide links only to sections that exist, the same ones in every language, and leaves no mark unread', () => {
