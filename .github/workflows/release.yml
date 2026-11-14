@@ -528,7 +528,9 @@ jobs:
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
       EREVOS_BUILD: ${{ needs.version.outputs.number }}
-    runs-on: ubuntu-latest
+    # ubuntu-26.04 (ubuntu-latest since 11-2026) runs Docker where the Sailfish SDK's sb2d cannot
+    # create its server socket: the SDK builds on 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: write
