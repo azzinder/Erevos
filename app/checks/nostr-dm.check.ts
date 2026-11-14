@@ -34,6 +34,8 @@ import {
   followsLook,
   GROUP_MOST,
   groupKey,
+  KEEP_MESSAGES,
+  markRead,
   inboxEvent,
   LOOKUP_RELAYS,
   newNostrDm,
@@ -287,7 +289,8 @@ test("taking back in a wrap (NIP-09): only its writer's goes, and stays away sho
   const hello = await wrapped(ann, 14, [], 'hello', 1);
   const yo = await wrapped(bob, 14, [], 'yo', 2);
   const mine = await wrapped(me, 14, [], 'mine', 3);
-  for (const one of [hello, yo, mine]) assert.equal(await takeWrap(me, one.wrap), key);
+  // Ours first: theirs that come after it are not read yet (one of ours coming last would say they were).
+  for (const one of [mine, hello, yo]) assert.equal(await takeWrap(me, one.wrap), key);
   assert.equal(chat().unread, 2);
 
   // Ann reacts with a custom emoji (NIP-30): kept as its :shortcode:, with its id and where its picture is.
@@ -1111,6 +1114,33 @@ test('strangers cannot make chats without end', { skip: !coreReady }, async () =
   assert.equal(await takeWrap(me, first.theirs), someone.public);
   assert.equal(Object.keys(me.chats).length, CHATS_MOST);
   assert.equal(me.chats[(7).toString(16).padStart(64, '0')], undefined);
+});
+
+test('what is read stays read: a message again, one let go, and ours from another app', () => {
+  const state = { secret: '', public: 'a'.repeat(64), inbox: [], told: 0, chats: {}, people: {}, caught: 1, seen: [] } as unknown as NostrDmState;
+  const them = 'b'.repeat(64);
+  const theirs = (id: string, at: number) => ({ id, mine: false, at, text: id });
+  assert.ok(addMessage(state, them, theirs('m1', 1000)));
+  assert.ok(addMessage(state, them, theirs('m2', 2000)));
+  assert.equal(state.chats[them].unread, 2);
+  markRead(state, them);
+  // The same message again (from another relay, or after a restart) counts nothing.
+  assert.ok(!addMessage(state, them, theirs('m2', 2000)));
+  assert.equal(state.chats[them].unread, 0);
+  // Ours, sent from another app after theirs: what came before it was read.
+  assert.ok(addMessage(state, them, theirs('m3', 3000)));
+  assert.ok(addMessage(state, them, theirs('m4', 4000)));
+  assert.ok(addMessage(state, them, { id: 'o1', mine: true, at: 3500, text: 'ours' }));
+  assert.equal(state.chats[them].unread, 1);
+  assert.ok(addMessage(state, them, { id: 'o2', mine: true, at: 5000, text: 'ours' }));
+  assert.equal(state.chats[them].unread, 0);
+  // A full chat: one older than all it keeps, sent again after it was let go, is not new.
+  const many = 'c'.repeat(64);
+  for (let i = 0; i < KEEP_MESSAGES; i++) addMessage(state, many, theirs(`k${i}`, 10_000 + i));
+  markRead(state, many);
+  assert.ok(!addMessage(state, many, theirs('old', 5)));
+  assert.equal(state.chats[many].unread, 0);
+  assert.equal(state.chats[many].messages.length, KEEP_MESSAGES);
 });
 
 test('Nostr chats are rows of the home list, a part of their own', () => {

@@ -255,13 +255,15 @@ test('Nostr: a hidden place has its own key, apart from the space’s, telling n
     await until(() => nostrDmNow().state?.chats[place]?.messages.length === 1, 'the space’s message');
     await until(() => came.length === 1, 'its notice');
     assert.deepEqual(came, [[`nostr:${place}`, 1]]);
-    // The space writes back: only the place has it, and nothing tells.
+    assert.equal(nostrDmUnread(), 1);
+    assert.deepEqual([...networkUnreadAt().keys()], [`nostr:${place}`]);
+    // The space writes back: only the place has it, and nothing tells; answering read what came.
     await nostrDmSend(place, 'στο κρυφό');
     await until(() => nostrDmNow('place').state?.chats[space]?.messages.some((m) => m.text === 'στο κρυφό' && !m.mine) === true, 'the place’s message');
     await new Promise((resolve) => setTimeout(resolve, 50));
     assert.equal(came.length, 1);
-    assert.equal(nostrDmUnread(), 1);
-    assert.deepEqual([...networkUnreadAt().keys()], [`nostr:${place}`]);
+    assert.equal(nostrDmUnread(), 0);
+    assert.deepEqual([...networkUnreadAt().keys()], []);
 
     setOpenHiddenPlace(null);
     assert.equal(nostrDmNow('place').state, null);

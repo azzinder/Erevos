@@ -598,15 +598,22 @@ export async function signedOnce(kind: number, tags: string[][], content: string
   return (await chatCore<{ event: NostrEvent }>('sign', { secret: once.secret, created_at: seconds(now), kind, tags, content })).event;
 }
 
-/** Adds a message to its chat, once; answers whether it was new. */
+/**
+ * Adds a message to its chat, once; answers whether it was new. One older than every message the
+ * chat keeps (a relay sending again what this phone let go) is not: it is not counted as unread.
+ * One of ours, written here or in another app with this key, says its chat was read up to it:
+ * only theirs after it stay unread, as NIP-17 tells nothing of what was read elsewhere.
+ */
 export function addMessage(state: NostrDmState, key: string, message: NostrDmMessage): boolean {
   const chat = chatOf(state, key);
   if (chat.messages.some((m) => m.id === message.id)) return false;
   chat.messages.push(message);
   chat.messages.sort((a, b) => a.at - b.at);
   if (chat.messages.length > KEEP_MESSAGES) chat.messages = chat.messages.slice(-KEEP_MESSAGES);
+  if (!chat.messages.includes(message)) return false;
   chat.lastAt = Math.max(chat.lastAt, message.at);
   if (!message.mine) chat.unread += 1;
+  else if (chat.unread > 0) chat.unread = Math.min(chat.unread, chat.messages.filter((m) => !m.mine && m.at > message.at).length);
   return true;
 }
 
