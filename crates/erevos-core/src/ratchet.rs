@@ -7,7 +7,7 @@
 //! encryption for now.
 //!
 //! The shared secret that seeds a session comes from the handshake (PQXDH,
-//! not written yet). A failed decrypt leaves the session unchanged: every
+//! see pqxdh.rs). A failed decrypt leaves the session unchanged: every
 //! decrypt works on a copy and only commits it once the message has
 //! authenticated.
 

@@ -6,6 +6,11 @@ Erevos means to protect, and from whom, is in [threat-model.md](threat-model.md)
 in the [README](../README.md). Every source file starts with a comment that says what it does and
 what it trusts, so this page points to those rather than repeating them.
 
+The exact formats, key derivations and nonce handling (PQXDH, the double ratchet, sealed packets,
+the relay channel and queues, two-hop sending, MLS groups, password slots) are in
+[protocol.md](protocol.md), and the state diagrams of the ratchet, conversations, the lock screen
+with the panic password, hidden chats and group membership in [state-machines.md](state-machines.md).
+
 **Not audited.** Nothing here has been checked by anyone outside the project.
 
 ## Suggested scope
@@ -67,7 +72,8 @@ would help most.
    is used twice (`RESTORE_SKIP`). More than 900 messages sent between backup and restore would
    meet used keys.
 5. **Zero nonce** in two-hop sealing, safe only while every request uses a new X25519 key
-   (`relay_seal.rs`).
+   (`relay_seal.rs`). The sender refuses a non-contributory X25519 result; the relay's
+   `RelayKey::open` does not check it.
 6. **Secrets in JavaScript memory.** The core keeps nothing between calls; the app holds the
    conversations' state in JavaScript between them, where it cannot be wiped.
 7. **Groups**: only the keeper commits; a member's keys are made new by the keeper removing and

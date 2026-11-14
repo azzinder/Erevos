@@ -89,7 +89,7 @@ source and compared file by file: [docs/reproducible-builds.md](docs/reproducibl
 - **SMS are not private.** When Erevos is your SMS app, your carrier sees SMS as with any app.
 
 Read more: [threat model](docs/threat-model.md) (who Erevos protects you from, and what each one still learns) ·
-[security review map](docs/security-review.md) · [reporting a problem](SECURITY.md) · the guide's *Transparency* part
+[security review map](docs/security-review.md) · [protocol](docs/protocol.md) · [state diagrams](docs/state-machines.md) · [reporting a problem](SECURITY.md) · the guide's *Transparency* part
 (what the server keeps, for how long, and what has been asked of it).
 
 ## Learn more
