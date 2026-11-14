@@ -14,12 +14,16 @@ A first review fits best on the parts every platform shares and every message pa
 
 | Part | Where | Size (lines) | Why first |
 | --- | --- | --- | --- |
-| Conversation crypto | `crates/erevos-core` | ~2,400 Rust | PQXDH, double ratchet, padding, two-hop sealing. Every 1:1 message. |
-| Core as the apps call it | `crates/erevos-ffi` | ~1,300 Rust | The only way JavaScript reaches the core (JNI and WebAssembly). |
+| Conversation crypto | `crates/erevos-core` | ~3,200 Rust | PQXDH, double ratchet, padding, two-hop sealing. Every 1:1 message. |
+| Core as the apps call it | `crates/erevos-ffi` | ~1,600 Rust | The only way JavaScript reaches the core (JNI and WebAssembly). |
 | Groups | `crates/erevos-group` | ~1,200 Rust | MLS through OpenMLS, keeper-only commits, public group rules. |
-| Relay | `crates/erevos-relay` | ~16,000 Rust | Faces the internet: queues, tokens, invites, OpenID Connect sign-in, files, Web Push, forwarding. |
+| Relay | `crates/erevos-relay` | ~22,000 Rust | Faces the internet: queues, tokens, invites, OpenID Connect sign-in, files, Web Push, forwarding. |
 | App protocol layer | `app/lib/e2e.ts`, `app/lib/sealed-packet.ts`, `app/lib/attachments.ts`, `app/lib/device-list.ts`, `app/lib/queue-move.ts` | TypeScript | What the app builds on top of the core: contacts, the extra sealing for the relay, files, linked devices, queue moves. |
 | Storage on the device | `app/lock/` and `app/lib/crypto.ts` | TypeScript | Password slots, sealed files and pages, backups. |
+
+This is the plain Erevos, built with `EREVOS_EDITION=lite` ([editions.md](editions.md)): the chats
+with Matrix, XMPP and other Nostr apps (`crates/erevos-matrix`, `crates/erevos-xmpp`, the Nostr
+chats) are not built into it and belong to Erevos+, outside this scope.
 
 Left for later: Nostr (`crates/erevos-nostr`), Tor (`crates/erevos-tor`), imports
 (`crates/erevos-import`), nearby radios (`app/lib/nearby.ts` and the Android modules), calls
@@ -29,7 +33,7 @@ Left for later: Nostr (`crates/erevos-nostr`), Tor (`crates/erevos-tor`), import
 
 | What | Primitive | Code |
 | --- | --- | --- |
-| Starting a 1:1 conversation | PQXDH: X25519 and ML-KEM-768 (FIPS 203), HKDF-SHA256, info `Erevos PQXDH v1`. No one-time prekeys. | `crates/erevos-core/src/pqxdh.rs`, `conversation.rs` |
+| Starting a 1:1 conversation | PQXDH: X25519 and ML-KEM-768 (FIPS 203), HKDF-SHA256, info `Erevos PQXDH v1`. One-time prekeys exist in the core but the app does not use them yet. | `crates/erevos-core/src/pqxdh.rs`, `conversation.rs` |
 | Prekey bundle signature | Ed25519 (`verify_strict`), over `erevos prekey bundle v1` and every key in the bundle | `pqxdh.rs` `transcript` |
 | Other signed statements (device lists) | Ed25519 over `erevos signed v1\0`, a context, `\0`, the message | `pqxdh.rs` `signed_statement` |
 | Messages | Double ratchet: HKDF-SHA256 root chain, HMAC-SHA256 chain keys, ChaCha20-Poly1305 with key and nonce from HKDF of the message key. AD = both identity keys (initiator first) and the 40-byte header. `MAX_SKIP` 1000, 2000 skipped keys kept. | `ratchet.rs`, `conversation.rs` |
@@ -49,7 +53,8 @@ Left for later: Nostr (`crates/erevos-nostr`), Tor (`crates/erevos-tor`), import
 These are choices made on purpose, each with its reason in the code, where a reviewer's view
 would help most.
 
-1. **No one-time prekeys.** A contact link holds one bundle for good, so a relay can replay a
+1. **No one-time prekeys in the app.** The core can make and use them (`pqxdh.rs`), but the app's
+   contact links do not carry them yet. A contact link holds one bundle for good, so a relay can replay a
    first message. The app ignores first messages it has seen (the last 100, and each contact's
    last 16: `app/lib/e2e.ts`). Prekeys are renewed every 30 days inside each chat (`Contact.renew`).
 2. **Two identity keys.** The account signs with Ed25519 and does Diffie-Hellman with a separate
