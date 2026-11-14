@@ -30,10 +30,23 @@ const WHITE = '#ffffff';
 /** A small dot on a tile's corner, in `color` with a `ring` of what is behind it, said as `label`. */
 export type TileDot = { color: string; ring: string; label: string };
 
-export function ShortcutTile({ label, tint, onPress, dot, children }: { label: string; tint: TileTint; onPress: () => void; dot?: TileDot | null; children: ReactNode }) {
+export function ShortcutTile({ label, tint, onPress, onLongPress, hint, dot, children }: {
+  label: string;
+  tint: TileTint;
+  onPress: () => void;
+  /** What holding it down does, said by `hint` to a screen reader. */
+  onLongPress?: () => void;
+  hint?: string;
+  dot?: TileDot | null;
+  children: ReactNode;
+}) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityHint={hint}
+      accessibilityActions={onLongPress ? [{ name: 'longpress', label: hint }] : undefined}
+      onAccessibilityAction={onLongPress ? (event) => event.nativeEvent.actionName === 'longpress' && onLongPress() : undefined}
       accessibilityRole="button"
       accessibilityLabel={dot ? `${label}. ${dot.label}` : label}
       hitSlop={6}

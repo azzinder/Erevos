@@ -47,4 +47,11 @@ export const connect: Record<string, string> = {
   "Shown on the page, and their phone names you with it. Optional.": "Prikazuje se na stranici, i njegov telefon vas tako imenuje. Neobavezno.",
   "Your contact link has no keys yet, so there is no link for a website.": "Vaš link za kontakt još nema ključeve, pa nema linka za web stranicu.",
   "Copy the link": "Kopiraj link",
+  "Scan their QR code": "Skeniraj njegov QR kod",
+  "with the camera": "kamerom",
+  "from a photo of it": "sa fotografije",
+  "Show your QR code": "Pokaži svoj QR kod",
+  "for them to scan": "da ga drugi skenira",
+  "One of you scanning the other is enough.": "Dovoljno je da jedan od vas skenira drugog.",
+  "or": "ili",
 };

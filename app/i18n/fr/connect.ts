@@ -47,4 +47,11 @@ export const connect: Record<string, string> = {
   "Shown on the page, and their phone names you with it. Optional.": "Affiché sur la page, et son téléphone te nomme ainsi. Facultatif.",
   "Your contact link has no keys yet, so there is no link for a website.": "Ton lien de contact n’a pas encore de clés, donc il n’y a pas de lien pour un site web.",
   "Copy the link": "Copier le lien",
+  "Scan their QR code": "Scanner son code QR",
+  "with the camera": "avec l’appareil photo",
+  "from a photo of it": "depuis une photo",
+  "Show your QR code": "Montrer ton code QR",
+  "for them to scan": "pour qu’on le scanne",
+  "One of you scanning the other is enough.": "Il suffit que l’un de vous scanne l’autre.",
+  "or": "ou",
 };

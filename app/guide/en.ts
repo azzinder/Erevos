@@ -480,7 +480,10 @@ email to reach you: whoever has your contact link can write to your queue, and o
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Relay queue created**, and **How you connect now** says **Through your
    relay**: everything works, texts, photos, voice messages, calls and groups.
-4. Under **Your contact link**, tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
+4. At the top of **New chat**, two big buttons do what most need: **Scan their QR code** takes a photo of the QR code
+   on the other phone's screen (on a computer, on Sailfish OS and in the web app, it asks for a photo of it), and
+   **Show your QR code** shows yours. One of you scanning the other is enough; the rest of New chat is under them.
+   **Show your QR code**, or **Show my QR code** under **Your contact link**, opens it over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself. **Add and connect
    to one of my contacts** adds them too, linked to the contact you choose, whose name the chat takes.
    The code is short, so any camera reads it. Whoever scans it answers with their own contact link, and then this phone writes to them first. If they scan it while it shows here, or up to 2 minutes after, they are a contact at once; later, they write a message request first. **Large QR code, for no internet** shows the whole code instead, which works nearby with no internet. **Share my contact link** sends a short link that any app lets you tap; on Android it opens Erevos, which asks before it takes it. To add someone with their contact QR code, your phone needs a relay first.
@@ -489,9 +492,10 @@ email to reach you: whoever has your contact link can write to your queue, and o
    background, and never with the large QR code.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into the field under **Add a contact** and tap **Add**.
-6. Or the other way round: under **Add a contact**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
-   QR code** for a screenshot or a photo of it they sent you. Erevos reads it and adds them at once. On a computer, on
-   Sailfish OS and in the web app there is only **Choose a photo of the QR code**; on an iPhone it offers the camera too.
+6. Or the other way round: tap **Scan their QR code** at the top and take a photo of the QR code on their screen, or,
+   under **Add a contact**, **Choose a photo of the QR code** for a screenshot or a photo of it they sent you. Erevos
+   reads it and adds them at once. On a computer, on Sailfish OS and in the web app, **Scan their QR code** asks for a
+   photo of it; on an iPhone it offers the camera too.
    Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
 
 The new chat appears on the home screen named **contact** and the first characters of their key, until it has a name:
@@ -622,7 +626,7 @@ that phone's own, so no token is typed or passed on.
   Erevos, or tap **Share the invite** and send it to them. It is good for one phone for 7 days, and whoever takes it
   first has it, so show it to them only.
 - **To take one:** the link opens **Invite to a relay**, with the relay's address: tap **Use this relay** only if it
-  came from someone you know. In Erevos, **Take a photo of the QR code** and **Choose a photo of the QR code** under
+  came from someone you know. In Erevos, **Scan their QR code** on New chat and **Choose a photo of the QR code** under
   **Add a contact** read an invite too, and its link can be pasted into the field there. Erevos makes a token for this
   phone, keeps it with the relay's address in this space only, and makes your queue there. If the phone uses another
   relay, it asks first, and contacts learn your new queue from your next message. Erevos takes an invite to a wss://
@@ -3210,6 +3214,10 @@ phone. One backup, sealed with its password, carries all of it, and only you can
 
 When you are in danger, Erevos can wipe itself at once, under **Settings** → **Privacy and security** → **Panic
 button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web app, on a computer and on Sailfish OS.
+
+To find it fast in an emergency, it is also first, in red, in the **⋯** menu of the home screen, and holding down the
+lock at the top of the home screen opens it at once. A tap on the lock still locks; only holding it down opens the
+panic button, and there **Wipe everything now** still asks once more.
 
 - **What goes:** every space and its hidden chats, with their contacts, messages, photos, files and keys; the lock and
   its passwords; {+the Matrix, XMPP and Nostr accounts and }the relay tokens; the settings and password of automatic

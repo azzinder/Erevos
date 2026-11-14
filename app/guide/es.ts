@@ -513,7 +513,11 @@ de teléfono ni tu email para contactarte: quien tenga tu enlace de contacto pue
    relay en tu propia red, o \`wss://relay.example.org\` para uno en internet. Añade el **Token** si el relay lo pide.
 3. Toca **Crear mi cola en el relay**. Erevos dice **Cola del relay creada**, y **Cómo te conectas ahora** dice **A
    través de tu relay**: todo funciona, textos, fotos, mensajes de voz, llamadas y grupos.
-4. En **Tu enlace de contacto**, toca **Mostrar mi código QR**: se abre sobre la pantalla. Deja que el otro teléfono lo
+4. Arriba en **Chat nuevo**, dos botones grandes hacen lo que la mayoría necesita: **Escanear su código QR** hace una
+   foto del código QR en la pantalla del otro teléfono (en un ordenador, en Sailfish OS y en la app web, pide una foto
+   de él), y **Mostrar tu código QR** muestra el tuyo. Basta con que uno escanee al otro; el resto de Chat nuevo está
+   debajo.
+   **Mostrar tu código QR**, o **Mostrar mi código QR** en **Tu enlace de contacto**, lo abre sobre la pantalla. Deja que el otro teléfono lo
    escanee con su cámara, y que luego abra el enlace en Erevos. La pantalla **Añadir un contacto** muestra lo que
    contiene: toca **Añadir al chat** solo si lo escaneaste tú. **Añadir y vincular a uno de mis contactos** también lo
    añade, vinculado al contacto que elijas, cuyo nombre toma el chat.
@@ -523,10 +527,10 @@ de teléfono ni tu email para contactarte: quien tenga tu enlace de contacto pue
    segundo plano, y nunca con el código QR grande.
 5. Si su cámara solo muestra el texto, o está lejos, toca **Compartir mi enlace de contacto** y envíaselo.
    Lo pega en el campo bajo **Añadir un contacto** y toca **Añadir**.
-6. O al revés: en **Añadir un contacto**, toca **Hacer foto del código QR** en su pantalla, o **Elegir foto del código
-   QR** para una captura o una foto del código que te haya enviado. Erevos lo lee y lo añade al instante. En un
-   ordenador, en Sailfish OS y en la app web solo está **Elegir foto del código QR**; en un iPhone también ofrece la
-   cámara. Los chats ocultos no tienen ninguna de las dos, ya que una foto sale de Erevos, lo que los cierra: pega ahí
+6. O al revés: toca arriba **Escanear su código QR** y haz una foto del código en su pantalla, o, en **Añadir un
+   contacto**, **Elegir foto del código QR** para una captura o una foto del código que te haya enviado. Erevos lo lee
+   y lo añade al instante. En un ordenador, en Sailfish OS y en la app web, **Escanear su código QR** pide una foto de
+   él; en un iPhone también ofrece la cámara. Los chats ocultos no tienen ninguna de las dos, ya que una foto sale de Erevos, lo que los cierra: pega ahí
    su enlace.
 
 El chat nuevo aparece en la pantalla de inicio con el nombre **contacto** y los primeros caracteres de su clave, hasta
@@ -668,8 +672,8 @@ token propio de ese teléfono, así que no se escribe ni se pasa ningún token.
   cámara y abra el enlace en Erevos, o toca **Compartir la invitación** y envíasela. Vale para un teléfono durante 7
   días, y quien la use primero se la queda, así que muéstrasela solo a esa persona.
 - **Para usar una:** el enlace abre **Invitación a un relay**, con la dirección del relay: toca **Usar este relay** solo
-  si viene de alguien que conoces. En Erevos, **Hacer foto del código QR** y **Elegir foto del código QR** bajo **Añadir
-  un contacto** también leen una invitación, y su enlace se puede pegar en el campo de ahí. Erevos crea un token para
+  si viene de alguien que conoces. En Erevos, **Escanear su código QR** en Chat nuevo y **Elegir foto del código QR** bajo
+  **Añadir un contacto** también leen una invitación, y su enlace se puede pegar en el campo de ahí. Erevos crea un token para
   este teléfono, lo guarda con la dirección del relay solo en este espacio y crea tu cola ahí. Si el teléfono usa otro
   relay, pregunta antes, y los contactos conocen tu nueva cola con tu siguiente mensaje. Erevos acepta una invitación a
   un relay wss://, o a uno ws:// solo en una red doméstica (como \`ws://192.168.1.10:7879\`). Los chats ocultos no
@@ -3509,6 +3513,10 @@ un teléfono nuevo. Una copia, sellada con su contraseña, lo lleva todo, y solo
 
 Cuando estás en peligro, Erevos puede borrarse al instante, en **Ajustes** → **Privacidad y seguridad** → **Botón de
 pánico**: toca **Borrarlo todo ahora** y di **Borrar**. En Android, en la app web, en un ordenador y en Sailfish OS.
+
+Para encontrarlo rápido en una emergencia, también es el primero, en rojo, en el menú **⋯** de la pantalla de inicio, y
+mantener pulsado el candado de arriba de la pantalla de inicio lo abre al instante. Un toque en el candado sigue
+bloqueando; solo mantenerlo pulsado abre el botón de pánico, y allí **Borrarlo todo ahora** vuelve a preguntar una vez.
 
 - **Qué se borra:** cada espacio con sus chats ocultos, con sus contactos, mensajes, fotos, archivos y claves; el
   bloqueo y sus contraseñas; {+las cuentas de Matrix, XMPP y Nostr y }los tokens del relay; los ajustes y la contraseña de

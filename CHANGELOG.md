@@ -15,6 +15,8 @@ On main, not released yet:
 ### For you
 
 - The plain Erevos's user guide no longer speaks of Matrix, XMPP and the chats with other Nostr apps: the guide's sources mark what only Erevos+ says (`{+…}`, `{-…}`, `- [+]`, `editionSource`), and Erevos+'s guide reads as before.
+- New chat starts with two big buttons, **Scan their QR code** and **Show your QR code**, with the rest under them (`MeetWays`).
+- The panic button is first, in red, in the home screen's **⋯** menu, and holding down the lock on the home screen opens it.
 
 ### Under the hood
 

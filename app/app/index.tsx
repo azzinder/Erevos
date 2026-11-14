@@ -713,6 +713,9 @@ function Home() {
             label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
             tint="orange"
             onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
+            // Held down, the panic button at once (#10): found fast in an emergency, never pressed by a tap.
+            onLongPress={() => router.push('/panic')}
+            hint={t('Hold down for the panic button')}
             dot={lock.passwordLock && signs.spaces ? { color: colors.primary, ring: colors.background, label: t('Unread messages elsewhere') } : null}
           >
             <LockSign tint="orange" />
@@ -1038,6 +1041,30 @@ function Home() {
         )}
       </Sheet>
       <Sheet visible={menu} onClose={closeMenu}>
+        {/* The panic button first and red, so it is found at once in an emergency (#10). It opens
+            its screen, where Wipe now is first and asks once more, so a slip wipes nothing. */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setMenu(false);
+            router.push('/panic');
+          }}
+          style={({ pressed }) => [styles.panicRow, { backgroundColor: withAlpha(colors.danger, 0.12), borderColor: colors.danger }, pressed && styles.pressed]}
+        >
+          <View style={[styles.panicSign, { backgroundColor: colors.danger }]}>
+            <Text variant="bodyStrong" style={styles.panicMark}>
+              !
+            </Text>
+          </View>
+          <View style={styles.settingsText}>
+            <Text variant="bodyStrong" color={colors.danger}>
+              {t('Panic button')}
+            </Text>
+            <Text variant="caption" tone="muted">
+              {t('Wipe Erevos at once')}
+            </Text>
+          </View>
+        </Pressable>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
         {MENU.filter((item) => (!item.erevos || erevosOn) && (item.href !== '/starred' || messagesOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
@@ -1361,5 +1388,25 @@ const makeStyles = (colors: Colors) =>
     settingsText: {
       flex: 1,
       gap: 2,
+    },
+    panicRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      padding: space.md,
+      marginBottom: space.sm,
+      borderWidth: 2,
+      borderRadius: radius.lg,
+    },
+    panicSign: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    panicMark: {
+      color: '#ffffff',
+      fontSize: 19,
     },
   });

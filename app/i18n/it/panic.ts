@@ -46,4 +46,6 @@ export const panic: Record<string, string> = {
   'Tell other apps': 'Avvisa altre app',
   'As Erevos wipes, from the button, the panic password or a panic app, it can tell the apps you choose here, as a panic app does: Fasouli then locks itself. Each app decides what it does, and asks you first whether Erevos may.': 'Quando Erevos cancella, dal pulsante, dalla password di panico o da un’app di panico, può avvisare le app che scegli qui, come fa un’app di panico: Fasouli allora si blocca. Ogni app decide cosa fare, e ti chiede prima se Erevos può.',
   "No app on this phone takes a panic app's request.": 'Nessuna app di questo telefono accetta la richiesta di un’app di panico.',
+  "Hold down for the panic button": "Tieni premuto per il pulsante di panico",
+  "Wipe Erevos at once": "Cancella Erevos subito",
 };

@@ -511,8 +511,11 @@ a lê.
    na sua própria rede, ou \`wss://relay.example.org\` para um na internet. Adicione o **Token** se o relay pedir um.
 3. Toque em **Criar minha fila no relay**. O Erevos diz **Fila no relay criada**, e **Como você se conecta agora** diz
    **Pelo seu relay**: tudo funciona, textos, fotos, mensagens de voz, chamadas e grupos.
-4. Em **Seu link de contato**, toque em **Mostrar meu código QR**: ele abre sobre a tela. Deixe o outro celular lê-lo
-   com a câmera, e depois abrir o link no Erevos. A tela **Adicionar um contato** mostra o que ele contém: toque em
+4. No topo de **Nova conversa**, dois botões grandes fazem o que a maioria precisa: **Ler o código QR da outra pessoa**
+   tira uma foto do código QR na tela do outro celular (num computador, no Sailfish OS e no app web, pede uma foto
+   dele), e **Mostrar seu código QR** mostra o seu. Basta um ler o do outro; o resto de Nova conversa fica embaixo.
+   **Mostrar seu código QR**, ou **Mostrar meu código QR** em **Seu link de contato**, abre o código sobre a tela. Deixe
+   o outro celular lê-lo com a câmera, e depois abrir o link no Erevos. A tela **Adicionar um contato** mostra o que ele contém: toque em
    **Adicionar à conversa** só se você mesmo o leu. **Adicionar e vincular a um dos meus contatos** também adiciona a
    pessoa, vinculada ao contato que você escolher, cujo nome a conversa recebe.
    O código é curto, então qualquer câmera o lê. Quem o lê responde com o próprio link de contato, e depois este celular escreve para a pessoa primeiro. Se ela o ler enquanto ele aparece aqui, ou até 2 minutos depois, vira contato na hora; mais tarde, ela escreve primeiro um pedido de mensagem. **Código QR grande, sem internet** mostra o código inteiro no lugar, que funciona por perto sem internet. **Compartilhar meu link de contato** envia um link curto que qualquer app deixa tocar; no Android ele abre o Erevos, que pergunta antes de aceitá-lo. Para adicionar alguém com o código QR de contato dela, seu celular precisa antes de um relay.
@@ -521,10 +524,10 @@ a lê.
    plano, e nunca com o código QR grande.
 5. Se a câmera da outra pessoa mostrar só o texto, ou se ela estiver longe, toque em **Compartilhar meu link de
    contato** e envie para ela. Ela cola o link no campo abaixo de **Adicionar um contato** e toca em **Adicionar**.
-6. Ou ao contrário: em **Adicionar um contato**, toque em **Tirar foto do código QR** na tela da outra pessoa, ou em
-   **Escolher foto do código QR** para uma captura de tela ou uma foto dele que ela tenha enviado. O Erevos o lê e a
-   adiciona na hora. Num computador, no Sailfish OS e no app web há só **Escolher foto do código QR**; num iPhone ele
-   também oferece a câmera. As conversas ocultas não têm nenhum dos dois, pois uma foto sai do Erevos, o que as fecha:
+6. Ou ao contrário: toque em **Ler o código QR da outra pessoa** no topo e tire uma foto do código QR na tela dela, ou,
+   em **Adicionar um contato**, em **Escolher foto do código QR** para uma captura de tela ou uma foto dele que ela
+   tenha enviado. O Erevos o lê e a adiciona na hora. Num computador, no Sailfish OS e no app web, **Ler o código QR da
+   outra pessoa** pede uma foto dele; num iPhone ele também oferece a câmera. As conversas ocultas não têm nenhum dos dois, pois uma foto sai do Erevos, o que as fecha:
    cole o link da pessoa ali.
 
 A nova conversa aparece na tela inicial com o nome **contato** e os primeiros caracteres da chave da pessoa, até ter um
@@ -665,7 +668,7 @@ próprio desse celular, para que nenhum token seja digitado ou repassado.
   da pessoa lê-lo com a câmera e abrir o link no Erevos, ou toque em **Compartilhar o convite** e envie para ela. Vale
   para um celular por 7 dias, e quem o pegar primeiro fica com ele, então mostre só para ela.
 - **Para aceitar um:** o link abre **Convite para um relay**, com o endereço do relay: toque em **Usar este relay** só
-  se ele veio de alguém que você conhece. No Erevos, **Tirar foto do código QR** e **Escolher foto do código QR** em
+  se ele veio de alguém que você conhece. No Erevos, **Ler o código QR da outra pessoa** em Nova conversa e **Escolher foto do código QR** em
   **Adicionar um contato** também leem um convite, e o link dele pode ser colado no campo dali. O Erevos cria um token
   para este celular, guarda-o com o endereço do relay só neste espaço e cria a sua fila ali. Se o celular usa outro
   relay, ele pergunta antes, e os contatos ficam sabendo da sua nova fila pela sua próxima mensagem. O Erevos aceita um
@@ -3480,6 +3483,10 @@ conversas para um celular novo. Um só backup, selado com a própria senha, leva
 Quando você está em perigo, o Erevos pode se apagar na hora, em **Configurações** → **Privacidade e segurança** →
 **Botão de pânico**: toque em **Apagar tudo agora** e confirme com **Apagar**. No Android, no app web, num computador e
 no Sailfish OS.
+
+Para achá-lo rápido numa emergência, ele também é o primeiro, em vermelho, no menu **⋯** da tela inicial, e manter o
+cadeado do topo da tela inicial pressionado o abre na hora. Um toque no cadeado ainda bloqueia; só mantê-lo pressionado
+abre o botão de pânico, e ali **Apagar tudo agora** ainda pergunta mais uma vez.
 
 - **O que é apagado:** cada espaço com suas conversas ocultas, com seus contatos, mensagens, fotos, arquivos e chaves;
   o bloqueio e suas senhas; {+as contas de Matrix, XMPP e Nostr e }os tokens do relay; as configurações e a senha dos

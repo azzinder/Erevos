@@ -47,4 +47,11 @@ export const connect: Record<string, string> = {
   "Shown on the page, and their phone names you with it. Optional.": "Φαίνεται στη σελίδα, και με αυτό σε ονομάζει το κινητό του. Προαιρετικό.",
   "Your contact link has no keys yet, so there is no link for a website.": "Ο σύνδεσμος επαφής σου δεν έχει ακόμα κλειδιά, άρα δεν υπάρχει σύνδεσμος για ιστοσελίδα.",
   "Copy the link": "Αντιγραφή συνδέσμου",
+  "Scan their QR code": "Σκάναρε το QR του άλλου",
+  "with the camera": "με την κάμερα",
+  "from a photo of it": "από μια φωτογραφία του",
+  "Show your QR code": "Δείξε το δικό σου QR",
+  "for them to scan": "για να το σκανάρει ο άλλος",
+  "One of you scanning the other is enough.": "Αρκεί ένας από τους δύο να σκανάρει τον άλλον.",
+  "or": "ή",
 };

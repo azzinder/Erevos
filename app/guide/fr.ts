@@ -543,7 +543,11 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
 3. Appuie sur **Créer ma file d’attente sur le relais**. Erevos dit **File d’attente créée sur le relais**, et **Comment
    tu te connectes maintenant** dit **Par ton relais** : tout fonctionne, textes, photos, messages vocaux, appels et
    groupes.
-4. Sous **Ton lien de contact**, appuie sur **Afficher mon code QR** : il s’ouvre par-dessus l’écran. Laisse l’autre
+4. En haut de **Nouvelle discussion**, deux gros boutons font ce dont la plupart ont besoin : **Scanner son code QR**
+   photographie le code QR sur l’écran de l’autre téléphone (sur un ordinateur, sur Sailfish OS et dans l’app web, il
+   demande une photo de ce code), et **Montrer ton code QR** montre le tien. Il suffit que l’un scanne l’autre ; le reste
+   de Nouvelle discussion est en dessous.
+   **Montrer ton code QR**, ou **Afficher mon code QR** sous **Ton lien de contact**, l’ouvre par-dessus l’écran. Laisse l’autre
    téléphone le scanner avec son appareil photo, puis ouvrir le lien dans Erevos. L’écran **Ajouter un contact** montre
    ce qu’il contient : appuie sur **Ajouter à la discussion** seulement si tu l’as scanné toi-même. **Ajouter et
    associer à un de mes contacts** l’ajoute aussi, relié au contact que tu choisis, dont la discussion prend le nom.
@@ -553,10 +557,10 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    plan, pas en arrière-plan, et jamais avec le grand code QR.
 5. Si son appareil photo ne montre que le texte, ou si la personne est loin, appuie sur **Partager mon lien de contact**
    et envoie-le-lui. Elle le colle dans le champ sous **Ajouter un contact** et appuie sur **Ajouter**.
-6. Ou dans l’autre sens : sous **Ajouter un contact**, appuie sur **Photographier le code QR** sur son écran, ou sur
-   **Choisir une photo du code QR** pour une capture d’écran ou une photo du code qu’elle t’a envoyée. Erevos le lit et
-   l’ajoute aussitôt. Sur un ordinateur, sur Sailfish OS et dans l’app web, il n’y a que **Choisir une photo du code
-   QR** ; sur un iPhone, il propose aussi l’appareil photo. Les discussions masquées n’ont ni l’un ni l’autre, car une
+6. Ou dans l’autre sens : appuie en haut sur **Scanner son code QR** et photographie le code sur son écran, ou, sous
+   **Ajouter un contact**, sur **Choisir une photo du code QR** pour une capture d’écran ou une photo du code qu’elle
+   t’a envoyée. Erevos le lit et l’ajoute aussitôt. Sur un ordinateur, sur Sailfish OS et dans l’app web, **Scanner son
+   code QR** demande une photo de ce code ; sur un iPhone, il propose aussi l’appareil photo. Les discussions masquées n’ont ni l’un ni l’autre, car une
    photo sort d’Erevos, ce qui les ferme : colle-y son lien.
 
 La nouvelle discussion apparaît sur l’écran d’accueil nommée **contact** suivi des premiers caractères de sa clé,
@@ -706,7 +710,7 @@ ce relais, avec un jeton propre à ce téléphone, si bien qu’aucun jeton n’
   envoie-la-lui. Elle vaut pour un téléphone pendant 7 jours, et qui la prend en premier l’a, alors ne la montre qu’à
   cette personne.
 - **Pour en prendre une :** le lien ouvre **Invitation à un relais**, avec l’adresse du relais : appuie sur **Utiliser
-  ce relais** seulement si elle vient de quelqu’un que tu connais. Dans Erevos, **Photographier le code QR** et
+  ce relais** seulement si elle vient de quelqu’un que tu connais. Dans Erevos, **Scanner son code QR** sur Nouvelle discussion et
   **Choisir une photo du code QR** sous **Ajouter un contact** lisent aussi une invitation, et son lien peut être collé
   dans le champ là. Erevos crée un jeton pour ce téléphone, le garde avec l’adresse du relais dans cet espace seulement
   et y crée ta file d’attente. Si le téléphone utilise un autre relais, il demande d’abord, et tes contacts apprennent
@@ -3708,6 +3712,10 @@ l’ouvrir.
 Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglages** → **Confidentialité et sécurité** →
 **Bouton de panique** : touchez **Tout effacer maintenant** et dites **Effacer**. Sur Android, dans l’app web, sur un
 ordinateur et sur Sailfish OS.
+
+Pour le trouver vite en cas d’urgence, il est aussi en premier, en rouge, dans le menu **⋯** de l’écran d’accueil, et
+maintenir appuyé le verrou en haut de l’écran d’accueil l’ouvre aussitôt. Un simple toucher sur le verrou verrouille
+toujours ; seul le maintien ouvre le bouton de panique, et là **Tout effacer maintenant** demande encore une fois.
 
 - **Ce qui part :** chaque espace avec ses discussions cachées, leurs contacts, messages, photos, fichiers et clés ; le
   verrou et ses mots de passe ; {+les comptes Matrix, XMPP et Nostr et }les jetons du relay ; les réglages et le mot de

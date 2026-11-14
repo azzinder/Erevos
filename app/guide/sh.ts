@@ -504,8 +504,11 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    vlastitoj mreži ili \`wss://relay.example.org\` za relay na internetu. Dodajte **Token** ako ga relay traži.
 3. Dodirnite **Napravi moj red na relayu**. Erevos kaže **Red na relayu je napravljen**, a **Kako ste sada povezani**
    kaže **Preko vašeg relaya**: sve radi, tekstovi, fotografije, glasovne poruke, pozivi i grupe.
-4. Pod **Vaš link za kontakt** dodirnite **Prikaži moj QR kod**: otvara se preko ekrana. Neka ga drugi telefon skenira
-   kamerom, a zatim otvori link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj u
+4. Na vrhu **Novog razgovora** dva velika dugmeta rade ono što većini treba: **Skeniraj njegov QR kod** snima QR kod na
+   ekranu drugog telefona (na računaru, na Sailfish OS-u i u web-aplikaciji traži fotografiju koda), a **Pokaži svoj QR
+   kod** prikazuje vaš. Dovoljno je da jedno skenira drugo; ostatak Novog razgovora je ispod njih.
+   **Pokaži svoj QR kod**, ili **Prikaži moj QR kod** pod **Vaš link za kontakt**, otvara ga preko ekrana. Neka ga drugi
+   telefon skenira kamerom, a zatim otvori link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj u
    razgovore** samo ako ste ga sami skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu,
    povezanu s kontaktom koji izaberete, čije ime razgovor preuzima.
    Kod je kratak, pa ga čita svaka kamera. Ko ga skenira, odgovara svojim linkom za kontakt, a zatim mu ovaj telefon prvi piše. Ako ga skenira dok se ovdje prikazuje, ili do 2 minute poslije, odmah postaje kontakt; kasnije prvo piše zahtjev za poruku. **Veliki QR kod, bez interneta** umjesto toga prikazuje cijeli kod, koji radi u blizini bez interneta. **Podijeli moj link za kontakt** šalje kratak link koji svaka aplikacija dopušta dodirnuti; na Androidu otvara Erevos, koji pita prije nego ga preuzme. Da biste nekoga dodali njegovim QR kodom za kontakt, vašem telefonu prvo treba relay.
@@ -514,9 +517,10 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    velikim QR kodom.
 5. Ako kamera te osobe prikazuje samo tekst, ili je daleko, dodirnite **Podijeli moj link za kontakt** i pošaljite
    joj ga. Ona ga zalijepi u polje pod **Dodaj kontakt** i dodirne **Dodaj**.
-6. Ili obrnuto: pod **Dodaj kontakt** dodirnite **Snimi QR kod** na njenom ekranu, ili **Izaberi fotografiju QR
-   koda** za snimak ekrana ili fotografiju koda koju vam je poslala. Erevos ga čita i odmah je dodaje. Na računaru,
-   na Sailfish OS-u i u web-aplikaciji postoji samo **Izaberi fotografiju QR koda**; na iPhoneu nudi i kameru.
+6. Ili obrnuto: dodirnite **Skeniraj njegov QR kod** na vrhu i snimite QR kod na njenom ekranu, ili, pod **Dodaj
+   kontakt**, **Izaberi fotografiju QR koda** za snimak ekrana ili fotografiju koda koju vam je poslala. Erevos ga čita
+   i odmah je dodaje. Na računaru, na Sailfish OS-u i u web-aplikaciji **Skeniraj njegov QR kod** traži fotografiju
+   koda; na iPhoneu nudi i kameru.
    Skriveni razgovori nemaju ni jedno ni drugo, jer fotografija napušta Erevos, što ih zatvara: tamo zalijepite
    njen link.
 
@@ -655,7 +659,7 @@ s vlastitim tokenom tog telefona, pa se nijedan token ne upisuje niti prosljeđu
   skenira kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj je. Vrijedi za jedan
   telefon 7 dana, a ko je prvi iskoristi, njegova je, pa je pokažite samo toj osobi.
 - **Da je prihvatite:** link otvara **Pozivnica za relay**, s adresom relaya: dodirnite **Koristi ovaj relay** samo ako
-  je stigla od nekoga koga poznajete. U Erevosu, **Snimi QR kod** i **Izaberi fotografiju QR koda** pod **Dodaj
+  je stigla od nekoga koga poznajete. U Erevosu, **Skeniraj njegov QR kod** na Novom razgovoru i **Izaberi fotografiju QR koda** pod **Dodaj
   kontakt** čitaju i pozivnicu, a njen link može se zalijepiti u tamošnje polje. Erevos pravi token za ovaj telefon,
   čuva ga s adresom relaya samo u ovom prostoru i pravi vaš red na relayu. Ako telefon koristi drugi relay, prvo pita, a
   kontakti saznaju vaš novi red iz vaše sljedeće poruke. Erevos prima pozivnicu za wss:// relay, ili za ws:// relay samo
@@ -3369,6 +3373,10 @@ novi telefon. Jedna rezervna kopija, zapečaćena svojom lozinkom, nosi sve, i s
 
 Kad ste u opasnosti, Erevos se može odmah obrisati, u **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**:
 dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web aplikaciji, na računalu i na Sailfish OS-u.
+
+Da ga brzo nađete u nuždi, on je i prvi, crvenom bojom, u meniju **⋯** početnog ekrana, a dugo držanje lokota na vrhu
+početnog ekrana odmah ga otvara. Dodir na lokot i dalje zaključava; samo dugo držanje otvara gumb za paniku, a tamo
+**Obriši sve sada** i dalje pita još jednom.
 
 - **Što se briše:** svaki prostor s njegovim skrivenim razgovorima, s njihovim kontaktima, porukama, fotografijama,
   datotekama i ključevima; zaključavanje i njegove lozinke; {+Matrix, XMPP i Nostr računi i }tokeni relaya; postavke i

@@ -24,6 +24,8 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**The guide tells only of what Erevos has**: in Erevos, the user guide no longer speaks of Matrix, XMPP and the chats with other Nostr apps, which are in Erevos+. See [Erevos or Erevos+, and betas](#updates)."),
+    mark("**Meeting someone in one tap**: **New chat** now starts with two big buttons, **Scan their QR code** and **Show your QR code**; one of you scanning the other is enough, and the rest is under them. See [Chat through a relay](#relay)."),
+    mark("**The panic button, found at once**: it is first, in red, in the **⋯** menu of the home screen, and holding down the lock at the top of the home screen opens it. See [Panic button](#panic)."),
   ],
   underTheHood: [],
 };

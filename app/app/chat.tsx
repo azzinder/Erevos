@@ -51,7 +51,7 @@ import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
+import { ConnectStatus, MeetWays, QrSign, WayCard } from '../components/connect-cards';
 import { RelayKeyNote } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
@@ -6032,11 +6032,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   });
   // Adding someone by what they gave: their contact link or an invite, pasted, or read from a
   // photo of its QR code.
-  const addTheirs = (
+  // `camera` false where the big Scan above already takes the photo (MeetWays).
+  const addTheirsWith = (camera: boolean) => (
     <>
       {/* In hidden chats too: they stay open while a photo is taken or picked (lib/picking.ts). */}
       <Row wrap>
-        {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} compact onPress={() => void addFromQr('camera')} /> : null}
+        {camera && CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} compact onPress={() => void addFromQr('camera')} /> : null}
         <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
       </Row>
       <Row>
@@ -6052,6 +6053,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       </Row>
     </>
   );
+  const addTheirs = addTheirsWith(true);
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
@@ -7448,9 +7450,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </View>
             ) : (
               <>
+                {/* The two ways most meet someone, big at the top (#9): scan theirs or show mine. The rest waits under them. */}
+                <MeetWays
+                  scanTitle={t('Scan their QR code')}
+                  scanLine={CAN_TAKE_PHOTOS ? t('with the camera') : t('from a photo of it')}
+                  onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
+                  onShow={ownLink ? () => setShowQr(true) : undefined}
+                />
+                <View style={styles.orRow}>
+                  <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+                  <Text variant="caption" tone="muted">
+                    {t('or')}
+                  </Text>
+                  <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+                </View>
                 <View style={styles.panel}>
                   <Text variant="label">{t('Add a contact')}</Text>
-                  {addTheirs}
+                  {addTheirsWith(false)}
                 </View>
                 {ownLink ? (
                   <View style={styles.panel}>

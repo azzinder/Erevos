@@ -543,7 +543,11 @@ schreiben, und nur du liest sie.
 3. Tippe auf **Meine Relay-Warteschlange anlegen**. Erevos sagt **Relay-Warteschlange angelegt**, und
    **So bist du jetzt verbunden** sagt **Über dein Relay**: Alles funktioniert, Texte, Fotos, Sprachnachrichten,
    Anrufe und Gruppen.
-4. Tippe unter **Dein Kontaktlink** auf **Meinen QR-Code zeigen**: Er öffnet sich über dem Bildschirm. Lass das andere
+4. Oben auf **Neuer Chat** tun zwei große Tasten, was die meisten brauchen: **Ihren QR-Code scannen** fotografiert den
+   QR-Code auf dem Bildschirm des anderen Telefons (auf einem Computer, unter Sailfish OS und in der Web-App bittet es
+   um ein Foto davon), und **Deinen QR-Code zeigen** zeigt deinen. Es genügt, wenn einer den anderen scannt; der Rest
+   von Neuer Chat steht darunter.
+   **Deinen QR-Code zeigen**, oder **Meinen QR-Code zeigen** unter **Dein Kontaktlink**, öffnet ihn über dem Bildschirm. Lass das andere
    Telefon ihn mit seiner Kamera scannen und dann den Link in Erevos öffnen. Der Bildschirm **Kontakt hinzufügen**
    zeigt, was er enthält: Tippe nur auf **Zum Chat hinzufügen**, wenn du ihn selbst gescannt hast.
    **Hinzufügen und mit einem meiner Kontakte verknüpfen** fügt ihn ebenfalls hinzu, verknüpft mit dem Kontakt, den du
@@ -555,11 +559,11 @@ schreiben, und nur du liest sie.
 5. Wenn die Kamera des anderen nur den Text zeigt oder ihr weit voneinander entfernt seid, tippe auf
    **Meinen Kontaktlink teilen** und schick ihn. Dein Kontakt fügt ihn in das Feld unter **Kontakt hinzufügen** ein
    und tippt auf **Hinzufügen**.
-6. Oder andersherum: Tippe unter **Kontakt hinzufügen** auf **Foto des QR-Codes aufnehmen**, um den Code auf dem
-   Bildschirm des anderen zu fotografieren, oder auf **Foto des QR-Codes auswählen** für einen Screenshot oder ein Foto
+6. Oder andersherum: Tippe oben auf **Ihren QR-Code scannen** und fotografiere den Code auf dem Bildschirm des
+   anderen, oder unter **Kontakt hinzufügen** auf **Foto des QR-Codes auswählen** für einen Screenshot oder ein Foto
    davon, das dir geschickt wurde. Erevos liest ihn und fügt den Kontakt sofort hinzu. Auf einem Computer, unter
-   Sailfish OS und in der Web-App gibt es nur **Foto des QR-Codes auswählen**; auf einem iPhone bietet es auch die
-   Kamera an. Versteckte Chats haben keines von beiden, da ein Foto Erevos verlässt, was sie schließt: Füge dort den
+   Sailfish OS und in der Web-App bittet **Ihren QR-Code scannen** um ein Foto davon; auf einem iPhone bietet es auch
+   die Kamera an. Versteckte Chats haben keines von beiden, da ein Foto Erevos verlässt, was sie schließt: Füge dort den
    Link ein.
 
 Der neue Chat erscheint auf dem Startbildschirm mit dem Namen **Kontakt** und den ersten Zeichen des Schlüssels, bis
@@ -712,7 +716,7 @@ lassen, mit einem eigenen Token dieses Telefons, sodass kein Token eingetippt od
   und schick sie. Sie gilt für ein Telefon 7 Tage lang, und wer sie zuerst nimmt, hat sie, also zeig sie nur der
   richtigen Person.
 - **Eine annehmen:** Der Link öffnet **Einladung zu einem Relay**, mit der Adresse des Relays: Tippe nur auf **Dieses
-  Relay nutzen**, wenn sie von jemandem kam, den du kennst. In Erevos lesen auch **Foto des QR-Codes aufnehmen** und
+  Relay nutzen**, wenn sie von jemandem kam, den du kennst. In Erevos lesen auch **Ihren QR-Code scannen** auf Neuer Chat und
   **Foto des QR-Codes auswählen** unter **Kontakt hinzufügen** eine Einladung, und ihr Link lässt sich in das Feld dort
   einfügen. Erevos macht ein Token für dieses Telefon, bewahrt es mit der Adresse des Relays nur in diesem Bereich auf
   und legt dort deine Warteschlange an. Nutzt das Telefon ein anderes Relay, fragt es zuerst, und Kontakte erfahren
@@ -3729,6 +3733,10 @@ auf ein neues Telefon. Ein Backup, versiegelt mit seinem Passwort, trägt alles,
 Wenn du in Gefahr bist, kann Erevos sich sofort löschen, unter **Einstellungen** → **Datenschutz und Sicherheit** →
 **Panikknopf**: Tippe auf **Jetzt alles löschen** und bestätige mit **Löschen**. Auf Android, in der Web-App, auf einem
 Computer und auf Sailfish OS.
+
+Um ihn im Notfall schnell zu finden, steht er auch ganz oben, in Rot, im Menü **⋯** des Startbildschirms, und wer das
+Schloss oben auf dem Startbildschirm gedrückt hält, öffnet ihn sofort. Ein Tippen auf das Schloss sperrt weiterhin;
+nur Gedrückthalten öffnet den Panikknopf, und dort fragt **Jetzt alles löschen** noch einmal nach.
 
 - **Was gelöscht wird:** jeder Raum mit seinen versteckten Chats, mit ihren Kontakten, Nachrichten, Fotos, Dateien und
   Schlüsseln; die Sperre und ihre Passwörter; {+die Matrix-, XMPP- und Nostr-Konten und }die Relay-Tokens; Einstellungen
