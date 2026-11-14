@@ -1,0 +1,190 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+name: release-sailfish
+
+# Adds the Sailfish OS RPM (aarch64) to a release that went out without it, as its sailfish job
+# failed (7.0.0: the SDK image's sb2d could not create its server socket): on this repository and
+# on the public download repository, with the release's SHA256SUMS and notes made to list it. Built
+# from the release's own commit and version, the way the release workflow's sailfish job builds it
+# (release.yml). Only by hand: Actions, release-sailfish, Run workflow.
+#
+# Its add job waits for a release-macos, release-android or release-linux run under way (the same
+# concurrency group), as they all rewrite the release's SHA256SUMS and notes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release that has no Sailfish OS RPM, e.g. 7.0.0.
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-sailfish
+  cancel-in-progress: false
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+  # The plain Erevos, as release.yml builds it (docs/editions.md).
+  EREVOS_EDITION: lite
+
+jobs:
+  # The release's commit and build number.
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      build: ${{ steps.check.outputs.build }}
+      commit: ${{ steps.check.outputs.commit }}
+    steps:
+      - name: Check the release is there and has no Sailfish OS RPM
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WANTED: ${{ inputs.version }}
+        run: |
+          version=${WANTED#v}
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $version. It looks like 3.0.0, or 4.0.0-rc.1."; exit 1
+          fi
+          gh release view "v$version" --json assets --jq '.assets[].name' > /dev/null || {
+            echo "::error::There is no release v$version"; exit 1; }
+          # An RPM its SHA256SUMS does not list came from a run cut short: it is made again.
+          sums=$(gh release download "v$version" -p SHA256SUMS -O - 2>/dev/null || true)
+          if grep -q '  erevos-sailfish-aarch64\.rpm$' <<< "$sums"; then
+            echo "::error::v$version already has the Sailfish OS RPM"; exit 1
+          fi
+          build=$(gh release download "v$version" -p version.json -O - | jq -er .build)
+          commit=$(gh api "repos/$GH_REPO/commits/v$version" --jq .sha)
+          echo "v$version: build $build, commit ${commit::7}."
+          { echo "version=$version"; echo "build=$build"; echo "commit=$commit"; } >> "$GITHUB_OUTPUT"
+
+  # The same steps as the release workflow's sailfish job, with the release's version, and the RPM
+  # handed on as an artifact kept one day.
+  sailfish:
+    needs: release
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      EREVOS_BUILD: ${{ needs.release.outputs.build }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.release.outputs.commit }}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core, and the icons
+        run: sailfish/build-web.sh
+      # The SDK's sb2d once could not start in the runner ("Failed to create server socket"):
+      # tried up to three times, each in a new container.
+      - name: Build the RPM for aarch64
+        working-directory: sailfish
+        run: |
+          # An RPM version has no "-": a test release's is 4.0.0~rc.1, which RPM puts before 4.0.0.
+          sed -i "s/^Version:.*/Version:    ${EREVOS_VERSION//-/\~}/" rpm/erevos.spec
+          # The SDK image builds as its own user.
+          chmod -R a+rwX .
+          for try in 1 2 3; do
+            docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \
+              coderus/sailfishos-platform-sdk-aarch64:5.0.0.43 \
+              bash -lc 'mb2 -t SailfishOS-5.0.0.43-aarch64 build' && break
+            [ "$try" = 3 ] && exit 1
+            echo "::warning::The SDK build failed; again in 30 s"; sleep 30
+          done
+          ls RPMS/*.aarch64.rpm
+      - name: Name the RPM as the release does
+        run: |
+          mkdir up
+          for f in sailfish/RPMS/*.aarch64.rpm; do
+            case "$f" in *debug*) ;; *) cp "$f" up/erevos-sailfish-aarch64.rpm ;; esac
+          done
+          ls -l up
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: erevos-sailfish
+          path: up/*
+          retention-days: 1
+
+  add:
+    needs: [release, sailfish]
+    runs-on: ubuntu-latest
+    # Not at the same time as a release-macos, release-android or release-linux run, which rewrite the same files.
+    concurrency:
+      group: release-macos
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: azzinder/erevos-releases
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: erevos-sailfish
+          path: files
+
+      - name: Add the RPM to the release, its SHA256SUMS and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release download "v$EREVOS_VERSION" -D files -p SHA256SUMS --clobber ||
+            again gh release download "v$EREVOS_VERSION" --repo "$RELEASES_REPO" -D files -p SHA256SUMS --clobber
+          (cd files && { grep -v '  erevos-sailfish-aarch64\.rpm$' SHA256SUMS || true; } > sums &&
+            sha256sum erevos-sailfish-aarch64.rpm >> sums &&
+            sort -k2,2 sums > SHA256SUMS && rm sums && cat SHA256SUMS)
+          gh release view "v$EREVOS_VERSION" --json body --jq .body > notes-before.md
+          # The Sailfish OS line before the web app's, where the release workflow puts it; and Sailfish
+          # OS out of "Not in this release", or that line out when nothing else is missing.
+          python3 - notes-before.md notes.md <<'PY'
+          import re, sys
+          line = "- **Sailfish OS** 5 (aarch64): install erevos-sailfish-aarch64.rpm."
+          rows = open(sys.argv[1]).read().split('\n')
+          if not any(r.startswith('- **Sailfish OS**') for r in rows):
+              packages = [i for i, r in enumerate(rows) if r.startswith('- **')]
+              web = [i for i, r in enumerate(rows) if r.startswith('- **Web app**')]
+              at = web[0] if web else (packages[-1] + 1 if packages else 2)
+              rows[at:at] = [line]
+          out = []
+          for r in rows:
+              m = re.match(r'Not in this release: (.*?) \((.*)$', r)
+              if m:
+                  rest = [p.strip() for p in m.group(1).split(',') if p.strip() != 'Sailfish OS']
+                  if not rest:
+                      continue
+                  r = f"Not in this release: {', '.join(rest)} ({m.group(2)}"
+              out.append(r)
+          open(sys.argv[2], 'w').write('\n'.join(out))
+          PY
+          diff notes-before.md notes.md || true
+          again gh release upload "v$EREVOS_VERSION" files/erevos-sailfish-aarch64.rpm files/SHA256SUMS --clobber
+          again gh release edit "v$EREVOS_VERSION" --notes-file notes.md
+
+      - name: Add it to the public download repository
+        if: ${{ env.RELEASES_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          again() { for wait in 15 30 60; do "$@" && return; echo "::warning::$* failed; again in $wait s"; sleep "$wait"; done; "$@"; }
+          again gh release upload "v$EREVOS_VERSION" files/erevos-sailfish-aarch64.rpm files/SHA256SUMS --repo "$RELEASES_REPO" --clobber
+          again gh release edit "v$EREVOS_VERSION" --repo "$RELEASES_REPO" --notes-file notes.md
