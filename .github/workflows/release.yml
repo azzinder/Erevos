@@ -74,6 +74,7 @@ jobs:
   # Decides whether to build at all and the build's number, then opens the draft release the jobs
   # hand their files to.
   version:
+    if: github.repository == 'azzinder/Erevos'
     runs-on: ubuntu-latest
     permissions:
       contents: write
