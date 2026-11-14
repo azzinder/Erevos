@@ -11,7 +11,7 @@
 //
 //   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>] [--label <2.0.0>]
 //       [--origin <https://app.example.org>] [--call-origin <https://call.example.org>]
-//       [--element-call <Element Call's dist> | --no-element-call]
+//       [--element-call <Element Call's dist> | --no-element-call] [--edition plus|lite]
 //
 // The key defaults to pwa/release-key.pub. The version, which must grow from one release to the
 // next, defaults to the time in seconds. The label names the GitHub release (v2.0.0, v4.0.0-rc.1)
@@ -20,6 +20,12 @@
 // that Element Call's frame comes from, so it can read nothing of the app's (README.md). Element
 // Call comes from app/node_modules (npm ci in app/); without it (--no-element-call) the web app
 // makes no Matrix calls and needs no second address.
+//
+// The edition (docs/editions.md) defaults to EREVOS_EDITION, as the web build's own does, else
+// Erevos+: the plain Erevos is the web app `erevos-web` at erevos-web.lphl.nekten.eu, Erevos+ the web
+// app `erevosplus-web` at erevosplus-web.lphl.nekten.eu, with Element Call at erevosplus-call. Each
+// is its own app at its own address: its own storage in the browser, its own folder on the server
+// (deploy/web/install.sh), and its worker takes only releases of its own app.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -42,11 +48,16 @@ const option = (name, fallback) => {
   const [, value] = args.splice(at, 2);
   return value;
 };
+const edition = option('--edition', process.env.EREVOS_EDITION || 'plus');
+if (edition !== 'plus' && edition !== 'lite') fail(`The edition is "${edition}": only plus and lite are known.`);
+const plus = edition === 'plus';
+const webApp = plus ? 'erevosplus-web' : 'erevos-web';
+const appName = plus ? 'Erevos+' : 'Erevos';
 const keyFile = option('--key', path.join(here, 'release-key.pub'));
 const version = Number(option('--version', String(Math.floor(Date.now() / 1000))));
 const label = option('--label', null);
-const appOrigin = option('--origin', 'https://erevos-web.lphl.nekten.eu');
-const callOrigin = option('--call-origin', 'https://erevos-call.lphl.nekten.eu');
+const appOrigin = option('--origin', plus ? 'https://erevosplus-web.lphl.nekten.eu' : 'https://erevos-web.lphl.nekten.eu');
+const callOrigin = option('--call-origin', plus ? 'https://erevosplus-call.lphl.nekten.eu' : 'https://erevos-call.lphl.nekten.eu');
 const elementCallDist = option('--element-call', path.join(here, '..', 'app', 'node_modules', '@element-hq', 'element-call-embedded', 'dist'));
 const withoutCalls = args.includes('--no-element-call') && args.splice(args.indexOf('--no-element-call'), 1).length > 0;
 const [from, out] = args;
@@ -87,7 +98,7 @@ const head = [
   '<meta name="apple-mobile-web-app-capable" content="yes" />',
   '<meta name="mobile-web-app-capable" content="yes" />',
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
-  '<meta name="apple-mobile-web-app-title" content="Erevos" />',
+  `<meta name="apple-mobile-web-app-title" content="${appName}" />`,
   '<link rel="manifest" href="/manifest.webmanifest" />',
   '<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />',
   '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />',
@@ -137,7 +148,7 @@ if (!withoutCalls) {
   }
 }
 const worker = fs.readFileSync(path.join(here, 'sw.js'), 'utf8');
-for (const mark of ['__EREVOS_PUBLIC_KEY__', '__EREVOS_APP_ORIGIN__', '__EREVOS_CALL_ORIGIN__']) {
+for (const mark of ['__EREVOS_PUBLIC_KEY__', '__EREVOS_WEB_APP__', '__EREVOS_APP_ORIGIN__', '__EREVOS_CALL_ORIGIN__']) {
   if (!worker.includes(`'${mark}'`)) fail(`pwa/sw.js has lost its mark ${mark}.`);
 }
 // The same worker on both origins: it serves on each only that origin's files.
@@ -145,6 +156,7 @@ write(
   'sw.js',
   worker
     .replace('__EREVOS_PUBLIC_KEY__', publicKey)
+    .replace('__EREVOS_WEB_APP__', webApp)
     .replace('__EREVOS_APP_ORIGIN__', withoutCalls ? '' : appOrigin)
     .replace('__EREVOS_CALL_ORIGIN__', withoutCalls ? '' : callOrigin),
 );
@@ -182,8 +194,8 @@ write(
   'manifest.webmanifest',
   `${JSON.stringify(
     {
-      name: 'Erevos',
-      short_name: 'Erevos',
+      name: appName,
+      short_name: appName,
       id: '/',
       start_url: '/',
       scope: '/',
@@ -224,7 +236,7 @@ try {
   // Not built from a checkout.
 }
 const release = {
-  app: 'erevos-web',
+  app: webApp,
   version,
   ...(label ? { label } : {}),
   created: new Date().toISOString(),
@@ -233,4 +245,4 @@ const release = {
   files,
 };
 write('release.json', `${JSON.stringify(release, null, 1)}\n`);
-console.log(`Erevos web app, release ${version}${label ? ` (${label})` : ''}, ${Object.keys(files).length} files, in ${out}. Sign it: node pwa/release.mjs sign ${out} <private key file>`);
+console.log(`${appName} web app (${webApp}), release ${version}${label ? ` (${label})` : ''}, ${Object.keys(files).length} files, in ${out}. Sign it: node pwa/release.mjs sign ${out} <private key file>`);

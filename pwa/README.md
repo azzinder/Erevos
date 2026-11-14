@@ -224,9 +224,16 @@ It downloads it, checks it against the release's `SHA256SUMS` and its number, si
 the same passphrase, the release's Android app by its build and SHA-256, `android-update.json`,
 which Check for updates on Android needs before it installs it), checks it, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers above) and
 checks what the server then gives out. A server with its own web server (Apache, nginx) takes
-`--files-only` before the number: it then only switches `/var/www/erevos-web/current`, which
-that web server serves with the headers of `deploy/web/install.sh`. Commit
-`pwa/releases/<version>/` afterwards.
+`--files-only` before the number: it then only switches `/var/www/<web app>/current`
+(`/var/www/erevos-web`, or `/var/www/erevosplus-web` for Erevos+'s), which that web server serves
+with the headers of `deploy/web/install.sh`. Commit `pwa/releases/<version>/` afterwards.
+
+Erevos+ has a web app of its own (`erevosplus-web`, `build.mjs --edition plus`, its own two
+addresses: `docs/editions.md`), published the same way from an Erevos+ release with its address:
+
+    deploy/web/publish.sh --files-only 7.1.2 root@<server> erevosplus-web.lphl.nekten.eu
+
+A worker takes only releases of its own web app, so neither address can ever be given the other's.
 
 Signing what GitHub built means trusting GitHub's build of that commit; the key never leaves your
 computer, so no one else can sign. To build it yourself instead, from a clean checkout:

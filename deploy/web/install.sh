@@ -10,7 +10,11 @@
 #   sh install.sh [--files-only] app.example.org /path/to/release
 #
 # With --files-only it only puts the release in place, for a server whose own web server (Apache,
-# nginx) already serves /var/www/erevos-web/current for that address with the headers below.
+# nginx) already serves /var/www/<web app>/current for that address with the headers below.
+#
+# The web app is the release's own (release.json `app`, pwa/build.mjs --edition): erevos-web, the
+# plain Erevos, or erevosplus-web, Erevos+. Each has its own folder, /var/www/erevos-web or
+# /var/www/erevosplus-web, and its own address, so publishing one never touches the other.
 #
 # A release with Element Call (Matrix calls) names a second address in release.json (origins.call,
 # pwa/build.mjs --call-origin), which needs its own DNS name too: Element Call's frame comes from
@@ -18,7 +22,7 @@
 # /release.json and /release.sig, with the second set of headers below; the app's address never
 # serves /element-call/. Any other web server must do the same.
 #
-# Each release goes to its own folder under /var/www/erevos-web, and a link, current, points at
+# Each release goes to its own folder under /var/www/<web app>, and a link, current, points at
 # the one served, so a release is switched whole. The server holds no key: it only gives out the
 # files and their signature, which every installed app checks.
 set -eu
@@ -46,6 +50,14 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 version=$(sed -n 's/^ *"version": *\([0-9]*\),*$/\1/p' "$release/release.json" | head -n 1)
+app=$(sed -n 's/^ *"app": *"\([a-z-]*\)",*$/\1/p' "$release/release.json" | head -n 1)
+case $app in
+erevos-web | erevosplus-web) ;;
+*)
+	echo "$release/release.json is of no web app this knows (${app:-none})." >&2
+	exit 2
+	;;
+esac
 # Element Call's address, when the release has one: its host.
 call=$(sed -n 's/^ *"call": *"https:\/\/\([A-Za-z0-9.-]*\)",*$/\1/p' "$release/release.json" | head -n 1)
 case $version in
@@ -63,8 +75,8 @@ if [ -z "$files_only" ]; then
 	fi
 fi
 
-echo "== Release $version"
-base=/var/www/erevos-web
+echo "== Release $version of $app"
+base=/var/www/$app
 mkdir -p "$base"
 rm -rf "$base/$version.new"
 cp -r "$release" "$base/$version.new"
@@ -98,7 +110,7 @@ if [ -n "$call" ]; then
 fi
 
 echo "== The site"
-site=/etc/caddy/erevos-web.caddy
+site=/etc/caddy/$app.caddy
 cat >"$site" <<CADDY
 # Written by the Erevos web app installer (deploy/web/install.sh).
 $domain {

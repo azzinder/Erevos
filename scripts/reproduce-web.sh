@@ -50,6 +50,17 @@ if [ "$label" != "$version" ] || [ -z "$commit" ] || [ -z "$build" ]; then
 	exit 1
 fi
 echo "   commit $commit, release $number, build $build"
+# The edition it was built as (docs/editions.md): Erevos+'s web app is erevosplus-web; the plain
+# Erevos's is erevos-web, built without Element Call, so with no origins. One with origins and named
+# erevos-web is from before the editions, which had every module, as Erevos+ has.
+app=$(field "$work/published/release.json" app)
+calls=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1])).origins ? 'yes' : '')" "$work/published/release.json")
+if [ "$app" = erevos-web ] && [ -z "$calls" ]; then
+	export EREVOS_EDITION=lite
+else
+	export EREVOS_EDITION=plus
+fi
+echo "   edition $EREVOS_EDITION"
 
 echo "== Building commit $commit"
 git clone -q --no-checkout "$root" "$work/src"
@@ -66,7 +77,7 @@ fi
 	node scripts/build-web-core.mjs
 	EREVOS_VERSION=$version EREVOS_BUILD=$build npx expo export --clear --platform web --output-dir ../web-build
 	cd ..
-	node pwa/build.mjs web-build erevos-web --label "$version" --version "$number"
+	node pwa/build.mjs web-build erevos-web --label "$version" --version "$number" $([ -z "$calls" ] && echo --no-element-call)
 ) >"$work/build.log" 2>&1 || {
 	tail -30 "$work/build.log" >&2
 	echo "The build failed; its log is above." >&2

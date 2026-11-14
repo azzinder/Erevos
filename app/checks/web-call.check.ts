@@ -19,7 +19,8 @@ import { test } from 'node:test';
 import vm from 'node:vm';
 
 const PWA = join(import.meta.dirname, '../../pwa');
-const WORKER = readFileSync(join(PWA, 'sw.js'), 'utf8');
+// The worker of the plain Erevos's web app (pwa/build.mjs --edition lite).
+const WORKER = readFileSync(join(PWA, 'sw.js'), 'utf8').replace('__EREVOS_WEB_APP__', 'erevos-web');
 const DIST = join(import.meta.dirname, '../node_modules/@element-hq/element-call-embedded/dist');
 const APP = 'https://erevos.example';
 const CALL = 'https://call.erevos.example';

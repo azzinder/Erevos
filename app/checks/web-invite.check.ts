@@ -18,7 +18,8 @@ import { TEXT_INVITE_PAGE, textInviteLink, textInviteOf } from '../lib/text-invi
 import { START_RELAY } from '../lib/welcome';
 
 const PAGE = readFileSync(join(import.meta.dirname, '../../pwa/i/invite.js'), 'utf8');
-const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8');
+// The worker of the plain Erevos's web app (pwa/build.mjs --edition lite).
+const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8').replace('__EREVOS_WEB_APP__', 'erevos-web');
 
 type Shown = { data: string; expires?: number; name?: string; newer?: boolean; card?: boolean } | null;
 

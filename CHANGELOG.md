@@ -16,6 +16,8 @@ On main, not released yet:
 
 ### Under the hood
 
+- Erevos+ can have a web app of its own: `pwa/build.mjs --edition plus` makes `erevosplus-web` for erevosplus-web.lphl.nekten.eu, with Element Call at erevosplus-call, kept on the server in `/var/www/erevosplus-web` (`deploy/web/install.sh`), apart from the plain Erevos's. The worker takes only releases of its own web app, so the two never replace each other (`pwa/sw.js`, `docs/editions.md`). `scripts/reproduce-web.sh` builds a web app again in the edition it was made as.
+
 ## 7.0.2 (2026-11-14)
 
 ### For you

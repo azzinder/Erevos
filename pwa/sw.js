@@ -29,6 +29,10 @@
 // differently. README.md says what that leaves.
 
 const KEY = '__EREVOS_PUBLIC_KEY__';
+// Which web app this is (pwa/build.mjs --edition): 'erevos-web', the plain Erevos, or
+// 'erevosplus-web', Erevos+. A worker takes only releases of its own app, so a server can never
+// turn one into the other, even with a release signed with the same key.
+const APP = '__EREVOS_WEB_APP__';
 // The app's origin and Element Call's (pwa/build.mjs --origin, --call-origin): none in a web app
 // built without Element Call (--no-element-call).
 const APP_ORIGIN = '__EREVOS_APP_ORIGIN__';
@@ -164,7 +168,7 @@ function changeState(change) {
 }
 
 function shapeOf(release) {
-  if (!release || release.app !== 'erevos-web' || !Number.isSafeInteger(release.version) || release.version < 1) return false;
+  if (!release || release.app !== APP || !Number.isSafeInteger(release.version) || release.version < 1) return false;
   if (!release.files || typeof release.files !== 'object') return false;
   for (const [path, hash] of Object.entries(release.files)) {
     if (!/^\/[\w.@/-]+$/.test(path) || path.includes('..') || !/^[0-9a-f]{64}$/.test(hash)) return false;
@@ -189,6 +193,7 @@ async function fetchRelease() {
   }
   if (!signed) throw new RefusedError('The server offered a release that is not signed with the Erevos release key.');
   const release = JSON.parse(new TextDecoder().decode(body));
+  if (release && typeof release.app === 'string' && release.app !== APP) throw new RefusedError(`The server offered a release of ${release.app}, not of this web app (${APP}).`);
   if (!shapeOf(release)) throw new RefusedError('The server offered a signed release this worker does not understand.');
   return release;
 }

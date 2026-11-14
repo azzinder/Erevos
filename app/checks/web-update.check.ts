@@ -22,8 +22,8 @@ const KEY = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toSt
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
 /** A release as pwa/build.mjs lists it, and its signature. */
-function release(version: number, files: Record<string, string>) {
-  const body = Buffer.from(JSON.stringify({ app: 'erevos-web', version, files: Object.fromEntries(Object.entries(files).map(([p, text]) => [p, hash(text)])) }));
+function release(version: number, files: Record<string, string>, app = 'erevos-web') {
+  const body = Buffer.from(JSON.stringify({ app, version, files: Object.fromEntries(Object.entries(files).map(([p, text]) => [p, hash(text)])) }));
   return { files, body, signature: sign(null, body, privateKey).toString('base64') };
 }
 
@@ -34,7 +34,7 @@ const NEW = release(10, { '/index.html': 'page 10', '/app.js': 'app 10', '/sw.js
 
 // The worker installed by a browser, its server offering `offered`, which a test may change, or
 // make wait (`held`) before it answers for the release.
-function browser(first: Release) {
+function browser(first: Release, app = 'erevos-web') {
   const server = { offered: first, held: null as Promise<void> | null };
   const caches = new Map<string, Map<string, Response>>();
   const open = async (name: string) => {
@@ -59,7 +59,7 @@ function browser(first: Release) {
     skipWaiting: async () => undefined,
     location: { origin: APP },
   };
-  const worker = WORKER.replace('__EREVOS_PUBLIC_KEY__', KEY).replace('__EREVOS_APP_ORIGIN__', '').replace('__EREVOS_CALL_ORIGIN__', '');
+  const worker = WORKER.replace('__EREVOS_PUBLIC_KEY__', KEY).replace('__EREVOS_WEB_APP__', app).replace('__EREVOS_APP_ORIGIN__', '').replace('__EREVOS_CALL_ORIGIN__', '');
   vm.runInNewContext(worker, { self, caches: { open, keys: async () => [...caches.keys()], delete: async (name: string) => caches.delete(name) }, Response, URL, crypto, TextEncoder, TextDecoder, DOMException, setTimeout, fetch, atob });
   const fire = async (type: string) => {
     let work: Promise<unknown> = Promise.resolve();
@@ -119,4 +119,24 @@ test('a check still asking the server when the new release is taken into use doe
   assert.equal(await b.load('/chunk.js'), '200 chunk 10');
   assert.equal(await b.open('/'), '200 page 10');
   assert.deepEqual(after.refused, []);
+});
+
+test("each web app takes only its own releases: Erevos+'s never the plain Erevos's, nor the other way", async () => {
+  for (const [own, other] of [
+    ['erevosplus-web', 'erevos-web'],
+    ['erevos-web', 'erevosplus-web'],
+  ]) {
+    const b = browser(release(9, { '/index.html': 'page 9', '/sw.js': 'worker' }, own), own);
+    await b.fire('install');
+    await b.fire('activate');
+    assert.equal(await b.open('/'), '200 page 9');
+    // The server offers the other app's release, newer and signed with the same key.
+    b.server.offered = release(10, { '/index.html': 'other 10', '/sw.js': 'worker' }, other);
+    const after = await b.ask('check');
+    assert.equal(after.current?.version, 9);
+    assert.equal(after.pending, null);
+    assert.equal(after.refused.length, 1);
+    assert.match(JSON.stringify(after.refused), new RegExp(`a release of ${other}, not of this web app`));
+    assert.equal(await b.open('/'), '200 page 9');
+  }
 });

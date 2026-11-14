@@ -27,6 +27,20 @@ update and keeps everything.
   `EREVOS_EDITION=lite`; asked anyway, they answer that they are in Erevos+. Nostr for Erevos's own
   messages (relays carrying sealed packets) is in both.
 
+## In a browser
+
+Each edition has a web app of its own (`pwa/build.mjs --edition`, by default `EREVOS_EDITION`):
+
+| Edition | Web app (`release.json` `app`) | Address | Element Call | On the server |
+|---|---|---|---|---|
+| **Erevos+** | `erevosplus-web` | erevosplus-web.lphl.nekten.eu | erevosplus-call.lphl.nekten.eu | `/var/www/erevosplus-web` |
+| **Erevos** | `erevos-web` | erevos-web.lphl.nekten.eu | none (`--no-element-call`) | `/var/www/erevos-web` |
+
+Different addresses are different origins, so the browser keeps their data apart, and a worker
+(`pwa/sw.js`) takes only releases of its own web app, even though one key signs both. In a browser
+Erevos+ has Erevos, Matrix (with calls), XMPP (on servers with a WebSocket), Nostr and the
+Collection; the Phone, the SMS, Telegram, Messenger, Signal and Session need Android.
+
 ## Moving between them
 
 - Erevos+ → Erevos: the chats, accounts and settings of the other networks stay on the phone,
