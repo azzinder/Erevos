@@ -161,6 +161,9 @@ export type MatrixRoom = {
   encrypted: boolean;
   direct: boolean;
   unread: number;
+  /** When it was last read here (markRead): the homeserver's count, until it hears of that, says
+   *  nothing new unless a message from someone else came after it. */
+  readTs?: number;
   messages: MatrixMessage[];
   /** Set while we are only invited: who asked. */
   invitedBy?: string;
@@ -989,7 +992,7 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     seen = true;
   }
   const unread = (data.unread_notifications as Json | undefined)?.notification_count;
-  if (typeof unread === 'number') room.unread = unread;
+  if (typeof unread === 'number') room.unread = unread > 0 && !newSinceRead(state, room) ? 0 : unread;
   if (!room.name) room.name = nameFromMembers(state, room);
   return seen;
 }
@@ -2036,13 +2039,27 @@ export async function leaveRoom(state: MatrixState, roomId: string): Promise<voi
   delete state.outbound[roomId];
 }
 
+/**
+ * Whether a message from someone else came after the room was last read here. Until then a count
+ * of the homeserver's above nothing is one from before it heard of the read (a sync on its way, a
+ * receipt not taken), and the room stays read: it is not told of again.
+ */
+export function newSinceRead(state: MatrixState, room: MatrixRoom): boolean {
+  if (room.readTs === undefined) return true;
+  const read = room.readTs;
+  return room.messages.some((m) => m.sender !== state.userId && m.ts > read);
+}
+
 /** Tells the homeserver we read the room up to its last message. */
 export async function markRead(state: MatrixState, roomId: string): Promise<void> {
   const room = state.rooms[roomId];
-  const last = room?.messages.filter((m) => !m.state).at(-1);
-  if (!room || !last) return;
+  if (!room) return;
+  // Up to its last message the homeserver knows by its own ID: one kept only here (a call's line)
+  // or not sent yet has none it would take.
+  const last = room.messages.filter((m) => !m.state && m.id.startsWith('$')).at(-1);
   room.unread = 0;
-  await call(state, 'POST', `/rooms/${enc(roomId)}/receipt/m.read/${enc(last.id)}`, {});
+  room.readTs = Math.max(room.readTs ?? 0, room.messages.at(-1)?.ts ?? Date.now());
+  if (last) await call(state, 'POST', `/rooms/${enc(roomId)}/receipt/m.read/${enc(last.id)}`, {});
 }
 
 /** The rooms as a list shows them: invites first, then by their newest message. */

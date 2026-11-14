@@ -38,6 +38,7 @@ import {
   matrixThroughTor,
   matrixTyping,
   markRead as matrixMarkRead,
+  newSinceRead,
   readByAll,
   readersOf,
   joinRoom,
@@ -1000,3 +1001,15 @@ test("Matrix goes through Tor as the space's Tor way says", async () => {
   }
 });
 
+test("a room read here stays read until someone else writes after it, whatever the homeserver's count said before it heard", () => {
+  const me = '@me:example.org';
+  const state = { userId: me } as Parameters<typeof newSinceRead>[0];
+  const room = { id: '!r:example.org', messages: [{ id: '$1', sender: '@ann:example.org', ts: 1000, text: 'hi' }] } as unknown as Parameters<typeof newSinceRead>[1];
+  assert.equal(newSinceRead(state, room), true, 'never read here: the count stands');
+  room.readTs = 1000;
+  assert.equal(newSinceRead(state, room), false, 'nothing after the read');
+  room.messages.push({ id: '$2', sender: me, ts: 2000, text: 'mine' } as (typeof room.messages)[number]);
+  assert.equal(newSinceRead(state, room), false, 'only ours after it');
+  room.messages.push({ id: '$3', sender: '@ann:example.org', ts: 3000, text: 'again' } as (typeof room.messages)[number]);
+  assert.equal(newSinceRead(state, room), true, 'theirs after it');
+});
