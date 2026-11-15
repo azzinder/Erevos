@@ -1047,6 +1047,9 @@ Tieni premuto un messaggio per il suo menu: le reazioni in alto, poi quello che 
 - **Rispondi:** il tuo prossimo messaggio gli risponde, e lo mostra citato sopra le tue parole, su entrambi i
   telefoni. Tocca la citazione per andare al messaggio a cui risponde; **✕** la toglie. Un Erevos di prima di questa
   funzione mostra la risposta senza la citazione.
+- **Rispondi nel thread:** gli risponde in un thread, come in un gruppo: il thread si vede da solo, con **Thread** in
+  alto, e quello che invii lì gli risponde. Sotto un messaggio con risposte, **n risposte nel thread** lo apre;
+  Indietro mostra di nuovo tutta la chat. Un Erevos precedente mostra ogni risposta con la sua citazione.
 - **Inoltra:** ne invia una copia a un’altra chat: scegli un contatto, o un gruppo. Le sue parole, il suo sticker o il
   suo luogo partono da capo, un sondaggio come uno nuovo ancora senza risposte, e il suono di un messaggio vocale o i
   byte di una foto o di un file vengono inviati di nuovo, crittografati con una chiave nuova, così niente collega la

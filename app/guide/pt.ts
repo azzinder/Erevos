@@ -1044,6 +1044,9 @@ Toque e segure uma mensagem para abrir o menu dela: as reações no topo, depois
 - **Responder:** a sua próxima mensagem responde a ela, e a mostra citada acima das suas palavras, nos dois celulares.
   Toque na citação para ir à mensagem que ela responde; **✕** a descarta. Um Erevos de antes disso mostra a resposta
   sem a citação.
+- **Responder no tópico:** responde-lhe num tópico, como num grupo: o tópico aparece sozinho, com **Tópico** no topo, e o
+  que enviar ali responde-lhe. Sob uma mensagem com respostas, **n respostas no tópico** abre-o; Voltar mostra de
+  novo toda a conversa. Um Erevos anterior mostra cada resposta com a sua citação.
 - **Encaminhar:** envia uma cópia dela para outra conversa: escolha um contato, ou um grupo. As palavras, a figurinha
   ou o lugar dela vão de novo, uma enquete como uma nova sem respostas ainda, e o som de uma mensagem de voz ou os
   bytes de uma foto ou arquivo são enviados de novo, criptografados com uma chave nova, para que nada ligue a cópia à

@@ -1019,6 +1019,9 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
 - **Odgovori:** vaša sljedeća poruka odgovara na nju i prikazuje je citiranu iznad vaših riječi, na oba telefona.
   Dodirnite citat da odete na poruku na koju odgovara; **✕** ga uklanja. Erevos od prije ovoga prikazuje odgovor bez
   citata.
+- **Odgovori u niti:** odgovara na nju u niti, kao u grupi: nit se prikazuje sama, s **Nit** na vrhu, a ono što tamo
+  pošaljete odgovara na nju. Ispod poruke s odgovorima, **n odgovora u niti** je otvara; Nazad opet prikazuje cijeli
+  razgovor. Stariji Erevos prikazuje svaki odgovor s njegovim citatom.
 - **Proslijedi:** šalje njenu kopiju u drugi razgovor: izaberite kontakt ili grupu. Njene riječi, naljepnica ili
   lokacija idu iznova, anketa kao nova, još bez odgovora, a zvuk glasovne poruke ili bajtovi fotografije ili datoteke
   šalju se ponovo, šifrirani novim ključem, pa ništa ne povezuje kopiju s porukom od koje potiče. Kopija ispod sebe

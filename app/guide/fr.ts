@@ -1112,6 +1112,9 @@ Appuie longuement sur un message pour ouvrir son menu : les réactions en haut, 
 - **Répondre :** ton prochain message y répond, et l’affiche cité au-dessus de tes mots, sur les deux téléphones. Appuie
   sur la citation pour aller au message auquel elle répond ; **✕** la retire. Un Erevos d’avant cela affiche la réponse
   sans la citation.
+- **Répondre dans le fil :** y répond dans un fil, comme dans un groupe : le fil s’affiche seul, avec **Fil** en haut, et
+  ce que tu y envoies y répond. Sous un message qui a des réponses, **n réponses dans le fil** l’ouvre ; Retour
+  affiche de nouveau toute la discussion. Un Erevos plus ancien montre chaque réponse avec sa citation.
 - **Transférer :** en envoie une copie dans une autre discussion : choisis un contact, ou un groupe. Ses mots, son
   sticker ou son lieu repartent de zéro, un sondage comme un nouveau sondage sans réponses encore, et le son d’un
   message vocal ou les octets d’une photo ou d’un fichier sont envoyés de nouveau, chiffrés avec une nouvelle clé, si

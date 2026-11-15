@@ -35,6 +35,7 @@ export const NEXT: Changes = {
     mark("**A word of care under a short password**: setting the password of a space or the PIN of hidden chats, Erevos now says when it is short: someone who breaks into the phone's own security could guess it on computers of their own. A phrase of 4 or 5 words is far safer. It still takes a short one. See [Password lock](#lock)."),
     mark("**Groups that end**: a public group can now be a burner group, for one event. Under **It ends**, choose after a day, 3 days or 7 days, and when its time is up every member's Erevos deletes it, with its messages, photos and files, and its link stops working. See [Public groups](#public-groups)."),
     mark("**A photo to see once**: under **+** in a chat or a group, **Photo to see once** sends a photo that never shows in the chat. They see it once, on its own, kept out of screenshots where the phone allows, and as it closes it is deleted from their phone. It cannot be forwarded or saved. See [Chat through a relay](#relay)."),
+    mark("**Threads in a contact's chat too**: hold a message and choose **Reply in thread**, as in a group. The thread shows alone and what you send there answers it; **n answers in the thread** under a message opens it. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [
     mark("**Video calls take about half the data**: a video call over the internet goes through the call relay, so that neither side sees the other's address; its picture is now held to 1 Mbps, which on a phone looks much the same. A call on the same network is not held back."),

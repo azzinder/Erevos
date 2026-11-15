@@ -32,7 +32,7 @@ import { bubbleStyles } from '../theme/bubbles';
 import { useColors } from '../theme/context';
 import { type SmsMessage } from '../modules/erevos-sms';
 import { press, tap } from '../lib/haptics';
-import { t, locale, useLang } from '../lib/i18n';
+import { t, locale, plural, useLang } from '../lib/i18n';
 import { caption, pad, type Message } from '../lib/chat-screen';
 
 // A round button under the picture in a chat's details, with its name under it.
@@ -169,6 +169,8 @@ export type RowActs = {
   choose: (message: Message) => void;
   /** Opens a new contact filled with a contact card's (components/card-share.tsx). */
   saveCard: (card: string) => void;
+  /** Shows a thread alone, by the tag of its first message. */
+  thread: (tag: string) => void;
 };
 
 /** One RowActs that stays the same, doing what the latest render's does. */
@@ -193,6 +195,7 @@ export function steadyActs(latest: RefObject<RowActs | null>): RowActs {
     importedPlay: (file) => now().importedPlay(file),
     choose: (message) => now().choose(message),
     saveCard: (card) => now().saveCard(card),
+    thread: (tag) => now().thread(tag),
   };
 }
 
@@ -200,7 +203,7 @@ export type LineLook = { styles: ReturnType<typeof makeStyles>; b: ReturnType<ty
 
 // A message of the thread. It draws again only when what it shows changes, not each time the
 // chat does (a voice message playing, a note), which keeps a long thread light to scroll.
-export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, stranger = false, plays, canAnswer, waits, choosing = false, chosen = false, styles, b, colors, acts }: LineLook & {
+export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, stranger = false, plays, canAnswer, waits, choosing = false, chosen = false, answers = 0, styles, b, colors, acts }: LineLook & {
   message: Message;
   /** The message it answers, when here. */
   quoted?: Message;
@@ -225,6 +228,8 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   choosing?: boolean;
   /** It is one of those chosen. */
   chosen?: boolean;
+  /** How many answers its thread has, shown under it outside a thread (lib/chat-parts.ts threadSizes). */
+  answers?: number;
 }) {
   useLang();
   const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
@@ -358,6 +363,11 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
           />
         </View>
       </Pressable>
+      {answers > 0 && !choosing ? (
+        <View style={{ alignSelf: message.mine ? 'flex-end' : 'flex-start', paddingHorizontal: space.sm }}>
+          <TextButton title={plural(answers, '{n} answer in the thread', '{n} answers in the thread')} onPress={() => acts.thread(message.tag)} />
+        </View>
+      ) : null}
     </View>
   );
 });

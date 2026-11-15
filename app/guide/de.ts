@@ -1122,6 +1122,9 @@ Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: die Reaktionen oben, da
 - **Antworten:** Deine nächste Nachricht antwortet darauf und zeigt sie zitiert über deinen Worten, auf beiden
   Telefonen. Tippe auf das Zitat, um zu der Nachricht zu gehen, auf die sie antwortet; **✕** verwirft es. Ein Erevos
   von vor dieser Funktion zeigt die Antwort ohne das Zitat.
+- **Im Thread antworten:** antwortet darauf in einem Thread, wie in einer Gruppe: Der Thread erscheint allein, oben mit
+  **Thread**, und was du dort sendest, antwortet darauf. Unter einer beantworteten Nachricht öffnet **n Antworten im
+  Thread** ihn; Zurück zeigt wieder den ganzen Chat. Ein älteres Erevos zeigt jede Antwort mit ihrem Zitat.
 - **Weiterleiten:** sendet eine Kopie davon in einen anderen Chat: Wähle einen Kontakt oder eine Gruppe. Ihre Worte,
   ihr Sticker oder Ort gehen neu, eine Umfrage als neue ohne Antworten, und der Ton einer Sprachnachricht oder die
   Bytes eines Fotos oder einer Datei werden neu gesendet, mit einem neuen Schlüssel verschlüsselt, sodass nichts die

@@ -1051,6 +1051,9 @@ Mantén pulsado un mensaje para su menú: las reacciones arriba, y luego lo que 
 - **Responder:** tu siguiente mensaje le responde, y lo muestra citado encima de tus palabras, en los dos teléfonos.
   Toca la cita para ir al mensaje al que responde; **✕** la quita. Un Erevos anterior a esto muestra la respuesta sin la
   cita.
+- **Responder en el hilo:** le responde en un hilo, como en un grupo: el hilo se ve solo, con **Hilo** arriba, y lo que
+  envías allí le responde. Bajo un mensaje respondido, **n respuestas en el hilo** lo abre; Atrás vuelve a mostrar
+  todo el chat. Un Erevos anterior muestra cada respuesta con su cita.
 - **Reenviar:** envía una copia a otro chat: elige un contacto, o un grupo. Sus palabras, sticker o lugar van de nuevo,
   una encuesta como una nueva sin respuestas todavía, y el sonido de un mensaje de voz o los bytes de una foto o un
   archivo se envían otra vez, cifrados con una clave nueva, así que nada relaciona la copia con el mensaje del que

@@ -968,6 +968,9 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   the relay nor their phone nearby can take it, nothing changes.
 - **Reply:** your next message answers it, and shows it quoted above your words, on both phones. Tap the quote to go
   to the message it answers; **✕** drops it. An Erevos from before this shows the answer without the quote.
+- **Reply in thread:** answers it in a thread, as in a group: the thread shows alone, with **Thread** at the top, and
+  what you send there answers it. Under a message answered, **n answers in the thread** opens it; Back shows the
+  whole chat again. An Erevos from before shows each answer with its quote.
 - **Forward:** sends a copy of it to another chat: pick a contact, or a group. Its words, sticker or place go anew, a
   poll as a new one with no answers yet, and a voice message's sound or a photo's or file's bytes are sent again,
   encrypted with a new key, so nothing ties the copy to the message it came from. The copy says **Forwarded** under

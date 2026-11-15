@@ -78,7 +78,7 @@ import { canPairWithCode, PairCodeSheet } from '../components/pair-code-sheet';
 import { CardSheet, saveCard } from '../components/card-share';
 import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, threadRoots, threadSizes, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { cardWords } from '../lib/card-share';
 import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
@@ -718,6 +718,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
+  // A thread of the chat shown alone, by the tag of its first message (null: the whole chat), as in a group.
+  const [threadRoot, setThreadRoot] = useState<string | null>(null);
   // The message of ours the bar gives new words, while it does (sendEdit).
   const [editing, setEditing] = useState<Message | null>(null);
   // One of the SMS among the messages held down, and the one being passed on (lib/sms-chat.ts).
@@ -747,16 +749,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const rowActs = useMemo(() => steadyActs(rowDo), []);
   // The chat's messages chosen to copy, forward or delete together (components/select-bar.tsx), by id.
   const selection = useSelection<number>();
-  // Another chat shown ends the choosing, and so does Back.
-  useEffect(() => selection.clear(), [selected]);
+  // Another chat shown ends the choosing and the thread, and so does Back, the choosing first.
   useEffect(() => {
-    if (!selection.on) return;
+    selection.clear();
+    setThreadRoot(null);
+  }, [selected]);
+  useEffect(() => {
+    if (!selection.on && !threadRoot) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      selection.clear();
+      if (selection.on) selection.clear();
+      else setThreadRoot(null);
       return true;
     });
     return () => subscription.remove();
-  }, [selection.on]);
+  }, [selection.on, threadRoot]);
   // How far above the chat's bottom its thread ends, where Undo shows (components/undo-bar.tsx).
   const edges = useRef({ height: 0, end: 0 });
   const [undoAt, setUndoAt] = useState(0);
@@ -2900,6 +2906,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function menuActions(message: Message): MenuAction[] {
     const actions: MenuAction[] = [];
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
+    if (!threadRoot && message.peer.startsWith(CONTACT_PREFIX) && message.tag && !message.sending && !isCallLine(message.text)) actions.push({ title: t('Reply in thread'), onPress: () => openThread(threadRoots_.get(message.tag) ?? message.tag) });
     if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => startForward([message]) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
@@ -3336,9 +3343,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // What the next message in `peer`'s chat answers, if it answers one.
+  // What the next message in `peer`'s chat answers, if it answers one: in a thread shown alone,
+  // the one answered, or else the thread's first message.
   function answering(peer: string): Parts {
-    return replying && replying.peer === peer && replying.tag ? { re: replying.tag } : {};
+    if (replying && replying.peer === peer && replying.tag) return { re: replying.tag };
+    return threadRoot && peer === selected ? { re: threadRoot } : {};
+  }
+
+  // Shows a thread of the chat alone, from its first message.
+  function openThread(root: string) {
+    selection.clear();
+    setReplying(null);
+    setThreadRoot(root);
   }
 
   // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
@@ -5582,6 +5598,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     for (const m of visible) if (m.tag && !named.has(m.tag)) named.set(m.tag, m);
     return named;
   }, [visible]);
+  // Each message's thread, by tag, and how many answers each thread has (lib/chat-parts.ts).
+  const threadRoots_ = useMemo(() => threadRoots(visible.filter((m) => m.tag && !m.sending && !isCallLine(m.text))), [visible]);
+  const threadAnswers = useMemo(() => threadSizes(threadRoots_), [threadRoots_]);
+  // A thread whose first message is gone shows no more.
+  useEffect(() => {
+    if (threadRoot && !threadRoots_.has(threadRoot)) setThreadRoot(null);
+  }, [threadRoot, threadRoots_]);
   // The messages chosen (components/select-bar.tsx), in the thread's order, those still here.
   const chosenMessages = selection.on ? visible.filter((m) => selection.chosen.has(m.id) && !m.sending) : [];
   // What the thread's lines do (MessageLine, SmsLine), with this render's state: the lines keep
@@ -5627,6 +5650,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     importedPlay: (file) => void playImported(file),
     choose: (message) => !message.sending && selection.toggle(message.id),
     saveCard: (card) => saveCard(card, !!hiddenKey),
+    thread: openThread,
   };
   // The SMS with their number, among the messages by time (lib/sms-chat.ts): never in hidden chats.
   const smsWith = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
@@ -5656,9 +5680,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [hiddenKey, smsWith]);
   const cardNumber = !hiddenKey && cardPhone.identity === smsWith ? cardPhone.number : '';
   const dialTo = canDial(linkedPhone) ? linkedPhone : canDial(cardNumber) ? cardNumber : '';
-  const lines = useMemo(() => chatLines(visible, gated ? [] : chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more, gated]);
+  // A thread shown alone has only its own messages: no SMS, no chats imported.
+  const lines = useMemo(
+    () => chatLines(threadRoot ? visible.filter((m) => threadRoots_.get(m.tag) === threadRoot || (!!m.sending && !!m.re && threadRoots_.get(m.re) === threadRoot)) : visible, gated || threadRoot ? [] : chatSms.messages, chatSms.more),
+    [visible, chatSms.messages, chatSms.more, gated, threadRoot, threadRoots_],
+  );
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
-  const imported = useMemo(() => (archive && selectedIdentity && !gated ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick, gated]);
+  const imported = useMemo(() => (archive && selectedIdentity && !gated && !threadRoot ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick, gated, threadRoot]);
   const importedChats = useMemo(() => (archive && selectedIdentity ? archive.linkedChats(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
   // A chat brought in from the details goes on here at once, kept only in this chat.
   const importFlow = useImportFlow(
@@ -7292,7 +7320,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             />
           ) : (
             <View style={styles.header}>
-              <BackButton onPress={goBack} />
+              <BackButton onPress={threadRoot ? () => setThreadRoot(null) : goBack} />
               {selected ? (
                 <Pressable
                   style={({ pressed }) => [styles.who, pressed && styles.pressed]}
@@ -7304,7 +7332,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
                   <View style={styles.grow}>
                     <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
-                      {selectedName}
+                      {threadRoot ? t('Thread · {name}', { name: selectedName }) : selectedName}
                     </Text>
                     {selectedContact ? (
                       <View style={styles.subtitle}>
@@ -7949,6 +7977,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   waits={scheduled(message)}
                   choosing={selection.on}
                   chosen={selection.on && selection.chosen.has(message.id)}
+                  answers={threadRoot ? 0 : (threadAnswers.get(message.tag) ?? 0)}
                   styles={styles}
                   b={b}
                   colors={colors}
