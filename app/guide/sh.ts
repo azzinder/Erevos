@@ -18,6 +18,10 @@ ili preko interneta.
   svakom prostoru.
 - **Izgled:** LPHL izgledi: Classic, Modernist i Nocturne, dvanaest paleta i staklo kao na lphl.nekten.eu.
 
+{-**Erevos+** je ista aplikacija sa više: razgovori sa ljudima na Telegramu, Messengeru, Signalu, Sessionu, Matrixu,
+XMPP-u i Nostru, na Androidu 8.0 ili novijem. Prelaziš na nju, ili nazad, u **Ažuriranja**: vidi
+[Erevos ili Erevos+, i beta verzije](#update-channel).}
+
 > Poruke su **šifrirane s kraja na kraj**, i preko relaya i u blizini, ali još ništa nisu provjerili nezavisni
 > stručnjaci. [Šta je danas zaštićeno](#privacy) kaže tačno šta jeste, a šta nije zaštićeno.
 
@@ -4002,8 +4006,7 @@ Na Androidu, **Ažuriranja** kažu i koje se verzije nude ovom telefonu:
   verzije: sljedeća redovna verzija s brojem builda većim od bete koju imate instalira se preko nje i sve zadržava, bez
   deinstaliranja.
 
-Erevos+ treba Android 8.0 ili noviji: na starijem telefonu ne može se izabrati, i telefon ostaje na Erevosu. Dok
-Erevos+ još nije izašao, provjera to kaže i telefon ostaje na Erevosu.
+Erevos+ treba Android 8.0 ili noviji: na starijem telefonu ne može se izabrati, i telefon ostaje na Erevosu.
 
 Obavještenje o novoj verziji prati isti izbor. Računar za izdanja potpisuje svako izdanje i njegove bete posebno, pa se
 jedno nikad ne instalira kao drugo.

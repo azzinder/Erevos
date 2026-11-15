@@ -19,6 +19,9 @@ por internet.
   cada espacio.
 - **Apariencia:** los acabados de LPHL: Classic, Modernist y Nocturne, doce paletas, y cristal como en lphl.nekten.eu.
 
+{-**Erevos+** es la misma app con más: chats con gente en Telegram, Messenger, Signal, Session, Matrix, XMPP y
+Nostr, en Android 8.0 o posterior. Pasa a ella, o vuelve, en **Actualizaciones**: ver [Erevos o Erevos+, y betas](#update-channel).}
+
 > Los mensajes están **cifrados de extremo a extremo**, tanto a través de un relay como cerca, pero nada ha sido auditado
 > todavía por expertos independientes. [Qué está protegido hoy](#privacy) dice exactamente qué lo está y qué no.
 
@@ -4175,7 +4178,7 @@ En Android, **Actualizaciones** dice también qué versiones se ofrecen a este t
   tienes se instala sobre ella y lo conserva todo, sin desinstalar.
 
 Erevos+ necesita Android 8.0 o posterior: en un teléfono más antiguo no se puede elegir, y el teléfono se queda en
-Erevos. Mientras aún no haya salido Erevos+, la comprobación lo dice y el teléfono se queda en Erevos.
+Erevos.
 
 El aviso de una versión nueva sigue la misma elección. El ordenador de las versiones firma cada edición y sus betas
 por separado, así que una nunca se instala como otra.

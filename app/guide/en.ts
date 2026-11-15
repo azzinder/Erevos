@@ -17,6 +17,9 @@ internet.
   space.
 - **Appearance:** the LPHL looks: Classic, Modernist and Nocturne, twelve palettes, and glass as on lphl.nekten.eu.
 
+{-**Erevos+** is the same app with more: chats with people on Telegram, Messenger, Signal, Session, Matrix, XMPP
+and Nostr, on Android 8.0 or newer. Move to it, or back, in **Updates**: see [Erevos or Erevos+, and betas](#update-channel).}
+
 > Messages are **end-to-end encrypted**, through a relay and nearby alike, but nothing has been audited yet by
 > independent experts. [What is protected today](#privacy) says exactly what is and is not.
 
@@ -3823,8 +3826,7 @@ On Android, **Updates** also says which releases are offered to this phone:
   first, for trying, and may have problems. A beta has it on at first. Turn it off to leave the betas: the next regular
   version with a build number above the beta you have installs over it and keeps everything, with no uninstalling.
 
-Erevos+ needs Android 8.0 or newer: on an older phone it cannot be chosen, and the phone stays on Erevos. While no
-Erevos+ is out yet, a check says so and the phone stays on Erevos.
+Erevos+ needs Android 8.0 or newer: on an older phone it cannot be chosen, and the phone stays on Erevos.
 
 The notice of a new version follows the same choice. Each edition and its betas are signed apart by the release
 computer, so one never installs as another.

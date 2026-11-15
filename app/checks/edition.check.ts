@@ -60,7 +60,8 @@ test('the plain Erevos says once in a space that its Nostr account is kept for E
 test("the plain Erevos's What's new leaves out what is of Matrix, XMPP and chats with other Nostr apps, but says they are in Erevos+", () => {
   const plus = whatsNewFor('99.0.0', 'plus');
   const lite = whatsNewFor('99.0.0', 'lite');
-  assert.equal(lite.length, plus.length);
+  // Erevos+ folds the plain releases after 7.0.0 into its own (lib/whats-new.ts asPlus): each of its releases is one of the plain Erevos's.
+  assert.ok(plus.every((v) => lite.some((w) => w.version === v.version)));
   const all = (list: typeof plus) => list.flatMap((v) => [...v.forYou, ...v.underTheHood]);
   assert.ok(all(lite).length < all(plus).length);
   for (const text of all(lite)) {
