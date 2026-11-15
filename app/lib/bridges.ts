@@ -5,14 +5,46 @@
 // Tor bridges, for where Tor is blocked (lib/tor.ts, crates/erevos-tor). Each space keeps its own
 // choice, sealed with its other settings (SpaceData.bridges): none, the bridges Tor Browser comes
 // with (obfs4, or Snowflake), or lines of one's own, from bridges.torproject.org or Tor's bot.
+// Automatic tries them in turn (autoRoutes), straight first unless the network is watched, and
+// keeps the one that worked on each kind of network.
 // With bridges Tor goes only through them, never straight to its relays; a choice that leaves no
 // bridge to use does not start Tor at all, so nothing goes.
 
-export type BridgeChoice = 'none' | 'obfs4' | 'snowflake' | 'own';
-export type Bridges = { use: BridgeChoice; own: string };
+export type BridgeChoice = 'none' | 'auto' | 'obfs4' | 'snowflake' | 'own';
+/** A way Tor can go: straight, or through one kind of bridges. */
+export type TorRoute = Exclude<BridgeChoice, 'auto'>;
+/** The kind of network the phone is on, as Android says it (modules/erevos-call networkKind). */
+export type NetKind = 'wifi' | 'cellular' | 'ethernet' | 'other';
+/**
+ * `watched`: "My network is watched", so Automatic never tries Tor straight. `learned`: for
+ * Automatic, the way that worked last on each kind of network, and when.
+ */
+export type Bridges = { use: BridgeChoice; own: string; watched: boolean; learned: Partial<Record<NetKind, { route: TorRoute; at: number }>> };
 
-export const NO_BRIDGES: Bridges = { use: 'none', own: '' };
-export const BRIDGE_CHOICES: BridgeChoice[] = ['none', 'obfs4', 'snowflake', 'own'];
+export const NO_BRIDGES: Bridges = { use: 'none', own: '', watched: false, learned: {} };
+export const BRIDGE_CHOICES: BridgeChoice[] = ['none', 'auto', 'obfs4', 'snowflake', 'own'];
+const ROUTES: TorRoute[] = ['none', 'obfs4', 'snowflake', 'own'];
+const NET_KINDS: NetKind[] = ['wifi', 'cellular', 'ethernet', 'other'];
+
+/** How long Automatic trusts the way it learned on a kind of network: then it tries them all again. */
+export const LEARNED_DAYS = 30;
+
+/**
+ * The ways Automatic tries, in turn, on a kind of network (`kind`): the one that worked last there,
+ * if not older than LEARNED_DAYS, then straight (unless the network is watched), the obfs4 bridges,
+ * Snowflake, and one's own lines, if there are any. Each once.
+ */
+export function autoRoutes(bridges: Bridges, kind: NetKind, now = Date.now()): TorRoute[] {
+  const usable = (route: TorRoute) => (route !== 'none' || !bridges.watched) && (route !== 'own' || readBridgeLines(bridges.own).lines.length > 0);
+  const learned = bridges.learned[kind];
+  const first = learned && now - learned.at <= LEARNED_DAYS * 24 * 3600_000 && usable(learned.route) ? [learned.route] : [];
+  return [...first, ...ROUTES.filter((route) => usable(route) && !first.includes(route))];
+}
+
+/** The bridge lines of one way: none straight, the built-in ones, or one's own. */
+export function routeLines(route: TorRoute, own: string): string[] {
+  return bridgeLines({ ...NO_BRIDGES, use: route, own });
+}
 
 // The pluggable transports the app carries (lyrebird), as bridge lines name them.
 export const TRANSPORTS = ['obfs4', 'snowflake', 'webtunnel', 'meek_lite'] as const;
@@ -83,5 +115,12 @@ export function bridgeLines(bridges: Bridges): string[] {
 export function checkedBridges(value: unknown): Bridges {
   const v = (value ?? {}) as Partial<Record<keyof Bridges, unknown>>;
   const use = BRIDGE_CHOICES.find((choice) => choice === v.use) ?? 'none';
-  return { use, own: typeof v.own === 'string' ? v.own : '' };
+  const learned: Bridges['learned'] = {};
+  const kept = v.learned && typeof v.learned === 'object' ? (v.learned as Record<string, { route?: unknown; at?: unknown }>) : {};
+  for (const kind of NET_KINDS) {
+    const one = kept[kind];
+    const route = ROUTES.find((r) => r === one?.route);
+    if (route && typeof one?.at === 'number' && Number.isFinite(one.at)) learned[kind] = { route, at: one.at };
+  }
+  return { use, own: typeof v.own === 'string' ? v.own : '', watched: v.watched === true, learned };
 }

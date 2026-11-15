@@ -6,6 +6,20 @@
 export const more: Record<string, string> = {
   // Tor bridges (the Tor screen).
   Bridges: 'Pontes',
+  'Automatic': 'Automático',
+  'straight': 'direto',
+  'your own bridges': 'suas próprias pontes',
+  'Tor is off for this space: messages go straight to the relay.': 'O Tor está desligado neste espaço: as mensagens vão direto para o relay.',
+  'Tor is connected, {how}.': 'O Tor está conectado, {how}.',
+  'Tor is connected.': 'O Tor está conectado.',
+  'Tor cannot connect from this network. Try Automatic, or bridges of your own.': 'O Tor não consegue se conectar desta rede. Tente Automático, ou pontes próprias.',
+  'Erevos tries the ways in turn until Tor connects: straight, then the obfs4 bridges, then Snowflake, then your own bridges, if you have any. It remembers the one that worked on Wi-Fi and on mobile data for 30 days, and tries it first.': 'O Erevos tenta os caminhos um por vez até o Tor conectar: direto, depois as pontes obfs4, depois o Snowflake, depois suas próprias pontes, se tiver. Lembra por 30 dias o que funcionou no Wi-Fi e nos dados móveis, e tenta ele primeiro.',
+  'My network is watched': 'Minha rede é vigiada',
+  'On, Tor never goes straight: whoever watches the network sees only a bridge, never that Tor is used.': 'Ligado, o Tor nunca vai direto: quem vigia a rede vê só uma ponte, nunca que o Tor é usado.',
+  'Trying: {how}…': 'Tentando: {how}…',
+  'Connected: {how}.': 'Conectado: {how}.',
+  'No way worked from this network. Add bridges of your own, from bridges.torproject.org.': 'Nenhum caminho funcionou desta rede. Adicione pontes próprias, de bridges.torproject.org.',
+  'Check my connection': 'Verificar minha conexão',
   'No bridges': 'Sem pontes',
   'My own': 'Minhas',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':

@@ -108,6 +108,8 @@ type CallAudio = {
   /** Lets Erevos show over the lock screen and wake the screen, while a call shows. */
   showOverLock?(on: boolean): void;
   backgroundState?(): BackgroundState;
+  /** The kind of network the phone is on now, for Tor's Automatic bridges (lib/tor.ts). */
+  networkKind?(): 'wifi' | 'cellular' | 'ethernet' | 'other';
   /** Android's own question to leave Erevos out of battery saving. */
   askBattery?(): void;
   /** Android's setting to let Erevos show a call over the lock screen. */

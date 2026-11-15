@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges } from '../lib/bridges';
+import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges, type TorRoute } from '../lib/bridges';
 import { canTor } from '../lib/core';
 import { mark, plural, t } from '../lib/i18n';
 import type { TorWay } from '../lib/relay';
-import { applyTor, NoBridgesError, torStatus, type TorStatus } from '../lib/tor';
+import { applyTor, autoState, NoBridgesError, onAutoState, retryAuto, torStatus, type AutoState, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
 // What of the space goes through Tor (lib/tor.ts): nothing unless changed, its messages, or
@@ -28,6 +28,7 @@ const WAY_LABELS: Record<TorWay, string> = {
 
 const BRIDGE_LABELS: Record<BridgeChoice, string> = {
   none: mark('No bridges'),
+  auto: mark('Automatic'),
   obfs4: 'obfs4',
   snowflake: 'Snowflake',
   own: mark('My own'),
@@ -41,6 +42,9 @@ export default function TorScreen() {
   // The choice shown: one's own lines are used only once saved.
   const [picked, setPicked] = useState<BridgeChoice>('none');
   const [draft, setDraft] = useState('');
+  const [autoNow, setAutoNow] = useState<AutoState>(autoState);
+  useEffect(() => onAutoState(() => setAutoNow(autoState())), []);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     loadCurrentSpaceData()
@@ -117,6 +121,8 @@ export default function TorScreen() {
   async function useBridges(next: Bridges) {
     setNote('');
     try {
+      // What Automatic learned meanwhile is kept.
+      next = { ...next, learned: { ...(await loadCurrentSpaceData()).bridges.learned, ...next.learned } };
       await updateCurrentSpaceData({ bridges: next });
       setBridges(next);
       if (way && way !== 'off') await applyTor(way, next);
@@ -128,10 +134,38 @@ export default function TorScreen() {
 
   function pick(choice: BridgeChoice) {
     setPicked(choice);
-    if (choice !== 'own') void useBridges({ use: choice, own: bridges.own });
+    if (choice !== 'own') void useBridges({ ...bridges, use: choice });
   }
 
   const own = readBridgeLines(draft);
+
+  // How Tor reaches its network now, in words, never with this phone's address: for Check my connection.
+  const routeName = (route: TorRoute) => (route === 'none' ? t('straight') : route === 'own' ? t('your own bridges') : BRIDGE_LABELS[route]);
+  async function checkConnection() {
+    setNote('');
+    if (!on) {
+      setNote(t('Tor is off for this space: messages go straight to the relay.'));
+      return;
+    }
+    setChecking(true);
+    try {
+      if (bridges.use === 'auto') await retryAuto();
+      const now = await torStatus();
+      setStatus(now);
+      const using = autoState().using;
+      setNote(
+        now?.ready
+          ? using
+            ? t('Tor is connected, {how}.', { how: routeName(using) })
+            : t('Tor is connected.')
+          : t('Tor cannot connect from this network. Try Automatic, or bridges of your own.'),
+      );
+    } catch (error) {
+      setNote(shown(error));
+    } finally {
+      setChecking(false);
+    }
+  }
 
   return (
     <Page>
@@ -184,12 +218,35 @@ export default function TorScreen() {
         <Text variant="caption" tone="muted">
           {picked === 'none'
             ? t('Tor goes straight to its relays. Where Tor is blocked, choose bridges: Tor then reaches its network only through them.')
+            : picked === 'auto'
+              ? t('Erevos tries the ways in turn until Tor connects: straight, then the obfs4 bridges, then Snowflake, then your own bridges, if you have any. It remembers the one that worked on Wi-Fi and on mobile data for 30 days, and tries it first.')
             : picked === 'obfs4'
               ? t('The obfs4 bridges Tor Browser comes with: to whoever watches the network, Tor looks like random bytes. Where a censor blocks these too, choose Snowflake or bridges of your own.')
               : picked === 'snowflake'
                 ? t("Snowflake goes through volunteers' browsers, over WebRTC, the way a video call does. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block.")
                 : t('Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, one per line. obfs4, Snowflake, WebTunnel, meek and plain bridges work.')}
         </Text>
+        {picked === 'auto' ? (
+          <>
+            <Row wrap>
+              <Chip label={t('My network is watched')} selected={bridges.watched} onPress={() => void useBridges({ ...bridges, watched: !bridges.watched })} />
+            </Row>
+            <Text variant="caption" tone="muted">
+              {t('On, Tor never goes straight: whoever watches the network sees only a bridge, never that Tor is used.')}
+            </Text>
+            {on && bridges.use === 'auto' ? (
+              <Text variant="caption" tone="faint">
+                {autoNow.trying
+                  ? t('Trying: {how}…', { how: routeName(autoNow.trying) })
+                  : autoNow.using
+                    ? t('Connected: {how}.', { how: routeName(autoNow.using) })
+                    : autoNow.failed
+                      ? t('No way worked from this network. Add bridges of your own, from bridges.torproject.org.')
+                      : ''}
+              </Text>
+            ) : null}
+          </>
+        ) : null}
         {picked === 'own' ? (
           <>
             <Input
@@ -217,7 +274,7 @@ export default function TorScreen() {
                 kind="secondary"
                 compact
                 disabled={own.lines.length === 0 || own.wrong.length > 0}
-                onPress={() => void useBridges({ use: 'own', own: own.lines.join('\n') })}
+                onPress={() => void useBridges({ ...bridges, use: 'own', own: own.lines.join('\n') })}
               />
             </Row>
             {bridges.use !== 'own' ? (
@@ -233,6 +290,9 @@ export default function TorScreen() {
             : t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.')}
         </Text>
       </Card>
+      <Row wrap>
+        <Button title={checking ? t('Checking…') : t('Check my connection')} kind="secondary" compact disabled={checking} onPress={() => void checkConnection()} />
+      </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
     </Page>
   );

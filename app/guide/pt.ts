@@ -1752,6 +1752,7 @@ pontes** a menos que você escolha, cada espaço tem a sua escolha, e só conta 
 
 | Opção | O que é |
 | --- | --- |
+| **Automático** | O Erevos tenta os caminhos um por vez até o Tor conectar: direto, as pontes obfs4, Snowflake, depois suas próprias linhas, se tiver. Lembra por 30 dias o que funcionou no Wi-Fi e nos dados móveis, e tenta ele primeiro; em outra rede procura de novo. Com **Minha rede é vigiada** ligado, nunca tenta direto, e a rede vê só uma ponte. |
 | **obfs4** | As pontes obfs4 que vêm com o Tor Browser. Para quem vigia a rede, o Tor parece bytes aleatórios. Um censor que as conheça pode bloqueá-las. |
 | **Floco de neve** | Pelos navegadores de voluntários, via WebRTC, como passa uma videochamada. Para encontrar um, o Erevos pergunta ao broker do Snowflake por uma CDN, atrás do nome de outro site, e servidores STUN dizem ao celular o próprio endereço dele: eles veem esse endereço, nunca as suas mensagens. Mais lento, e difícil de bloquear. |
 | **Minhas** | Linhas de pontes de bridges.torproject.org, de bridges@torproject.org por e-mail, ou de @GetBridgesBot no Telegram, coladas uma por linha; depois toque em **Usar estas pontes**. Funcionam pontes obfs4, Snowflake, WebTunnel, meek e simples. |
@@ -1759,6 +1760,8 @@ pontes** a menos que você escolha, cada espaço tem a sua escolha, e só conta 
 - **Só por elas:** com pontes, o Tor nunca vai direto aos relays dele. Quando nenhuma ponte responde, com **Tudo** as
   mensagens esperam, como quando o Tor não consegue chegar ao relay; com **Mensagens** elas vão para o relay sem o Tor
   até uma responder. Linhas que não são pontes não são aceitas, e o Tor fica desligado.
+- **Verificar minha conexão**, embaixo, diz se o Tor conecta, e por qual caminho, nunca o endereço do celular. Com
+  **Automático**, procura de novo desde o começo.
 - **Trocá-las** enquanto o Tor roda fecha as conexões dele e as refaz do novo jeito.
 - **Só no Android:** o app traz o lyrebird, o próprio programa do Tor para obfs4, Snowflake, WebTunnel e meek. Um
   computador e o app web ainda não têm Tor, então também não têm pontes.

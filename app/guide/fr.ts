@@ -1862,6 +1862,7 @@ par Tor.
 
 | Choix | Ce que c’est |
 | --- | --- |
+| **Automatique** | Erevos essaie les moyens tour à tour jusqu’à ce que Tor se connecte : en direct, les ponts obfs4, Snowflake, puis tes propres lignes, si tu en as. Il retient pendant 30 jours celui qui a marché en Wi-Fi et en données mobiles, et l’essaie en premier ; sur un autre réseau, il cherche à nouveau. Avec **Mon réseau est surveillé** activé, il n’essaie jamais en direct, et le réseau ne voit qu’un pont. |
 | **obfs4** | Les ponts obfs4 fournis avec Tor Browser. Pour qui surveille le réseau, Tor ressemble à des octets aléatoires. Un censeur qui les connaît peut les bloquer. |
 | **Snowflake** | Par les navigateurs de bénévoles, via WebRTC, comme un appel vidéo. Pour en trouver un, Erevos interroge le broker de Snowflake à travers un CDN, derrière le nom d’un autre site, et des serveurs STUN indiquent au téléphone sa propre adresse : ils voient cette adresse, jamais tes messages. Plus lent, et difficile à bloquer. |
 | **Les miens** | Des lignes de pont de bridges.torproject.org, de bridges@torproject.org par e-mail, ou de @GetBridgesBot sur Telegram, collées une par ligne ; puis appuie sur **Utiliser ces ponts**. Les ponts obfs4, Snowflake, WebTunnel, meek et les ponts simples fonctionnent. |
@@ -1870,6 +1871,8 @@ par Tor.
   **Tout**, les messages attendent, comme quand Tor ne peut pas joindre le relais ; avec **Messages**, ils vont au
   relais sans Tor jusqu’à ce qu’un pont réponde. Les lignes qui ne sont pas des ponts ne sont pas prises, et Tor reste
   désactivé.
+- **Vérifier ma connexion**, en dessous, dit si Tor se connecte, et par quel moyen, jamais l’adresse du téléphone.
+  Avec **Automatique**, il cherche à nouveau depuis le début.
 - **Les changer** pendant que Tor tourne ferme ses connexions et les refait de la nouvelle façon.
 - **Sur Android seulement :** l’app embarque lyrebird, le programme de Tor lui-même pour obfs4, Snowflake, WebTunnel et
   meek. Un ordinateur et l’app web n’ont pas encore Tor, donc pas de ponts non plus.

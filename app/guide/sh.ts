@@ -1702,6 +1702,7 @@ dok nešto ide preko Tora.
 
 | Izbor | Šta je to |
 | --- | --- |
+| **Automatski** | Erevos redom pokušava načine dok se Tor ne poveže: direktno, obfs4 mostove, Snowflake, zatim vaše redove, ako ih imate. Pamti 30 dana onaj koji je radio na Wi-Fi mreži i na mobilnim podacima, i njega prvo pokušava; na drugoj mreži traži ponovo. Sa uključenim **Moja mreža je pod nadzorom** nikad ne pokušava direktno, pa mreža vidi samo most. |
 | **obfs4** | Obfs4 mostovi s kojima dolazi Tor Browser. Onome ko prati mrežu Tor izgleda kao nasumični bajtovi. Cenzor koji ih zna može ih blokirati. |
 | **Pahulja** (Snowflake) | Preko preglednika volontera, preko WebRTC-a, onako kako ide videopoziv. Da ga pronađe, Erevos pita Snowflakeov posrednik (broker) preko CDN-a, iza imena druge stranice, a STUN serveri kažu telefonu njegovu vlastitu adresu: vide tu adresu, nikad vaše poruke. Sporije, i teško ga je blokirati. |
 | **Vlastiti** | Redovi mostova s bridges.torproject.org, s bridges@torproject.org putem e-maila ili od @GetBridgesBot na Telegramu, zalijepljeni jedan po redu; zatim dodirnite **Koristi ove mostove**. Rade obfs4, Snowflake, WebTunnel, meek i obični mostovi. |
@@ -1709,6 +1710,8 @@ dok nešto ide preko Tora.
 - **Samo preko njih:** s mostovima Tor nikad ne ide direktno do svojih relaya. Kad nijedan most ne odgovara, s **Sve**
   poruke čekaju, kao kad Tor ne može doći do relaya; s **Poruke** idu na relay bez Tora dok neki most ne odgovori.
   Redovi koji nisu mostovi ne prihvataju se, i Tor ostaje isključen.
+- **Provjeri moju vezu**, ispod, kaže da li se Tor povezuje, i kojim načinom, nikad adresu telefona. Sa
+  **Automatski**, traži ponovo od početka.
 - **Njihova promjena** dok Tor radi zatvara njegove veze i ponovo ih pravi na novi način.
 - **Samo na Androidu:** aplikacija sadrži lyrebird, Torov vlastiti program za obfs4, Snowflake, WebTunnel i meek.
   Računar i web-aplikacija još nemaju Tor, pa nemaju ni mostove.

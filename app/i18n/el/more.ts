@@ -6,6 +6,20 @@
 export const more: Record<string, string> = {
   // Tor bridges (the Tor screen).
   Bridges: 'Γέφυρες',
+  'Automatic': 'Αυτόματα',
+  'straight': 'απευθείας',
+  'your own bridges': 'τις δικές σου γέφυρες',
+  'Tor is off for this space: messages go straight to the relay.': 'Το Tor είναι κλειστό σε αυτόν τον χώρο: τα μηνύματα πάνε κατευθείαν στο relay.',
+  'Tor is connected, {how}.': 'Το Tor συνδέθηκε, {how}.',
+  'Tor is connected.': 'Το Tor συνδέθηκε.',
+  'Tor cannot connect from this network. Try Automatic, or bridges of your own.': 'Το Tor δεν μπορεί να συνδεθεί από αυτό το δίκτυο. Δοκίμασε το Αυτόματα, ή δικές σου γέφυρες.',
+  'Erevos tries the ways in turn until Tor connects: straight, then the obfs4 bridges, then Snowflake, then your own bridges, if you have any. It remembers the one that worked on Wi-Fi and on mobile data for 30 days, and tries it first.': 'Το Erevos δοκιμάζει τους τρόπους με τη σειρά ώσπου να συνδεθεί το Tor: απευθείας, μετά τις γέφυρες obfs4, μετά το Snowflake, μετά τις δικές σου γέφυρες, αν έχεις. Θυμάται για 30 μέρες αυτόν που δούλεψε στο Wi-Fi και στα δεδομένα κινητής, και τον δοκιμάζει πρώτο.',
+  'My network is watched': 'Το δίκτυό μου παρακολουθείται',
+  'On, Tor never goes straight: whoever watches the network sees only a bridge, never that Tor is used.': 'Ανοιχτό, το Tor δεν πάει ποτέ απευθείας: όποιος παρακολουθεί το δίκτυο βλέπει μόνο μια γέφυρα, ποτέ ότι χρησιμοποιείται Tor.',
+  'Trying: {how}…': 'Δοκιμή: {how}…',
+  'Connected: {how}.': 'Συνδέθηκε: {how}.',
+  'No way worked from this network. Add bridges of your own, from bridges.torproject.org.': 'Κανένας τρόπος δεν δούλεψε από αυτό το δίκτυο. Πρόσθεσε δικές σου γέφυρες, από το bridges.torproject.org.',
+  'Check my connection': 'Έλεγξε τη σύνδεσή μου',
   'No bridges': 'Χωρίς γέφυρες',
   'My own': 'Δικές μου',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':

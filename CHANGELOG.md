@@ -20,6 +20,7 @@ On main, not released yet:
 - A message request shows only its words until you accept it: its photos and files wait, not taken (`app/chat.tsx` `strangers`), and its links show no preview.
 - A photo sent as a file (JPEG, PNG, GIF, WebP, up to 64 MB) goes without where and when it was taken and the phone (`lib/photo.ts` `cleanImage`, `cleanGif`, `cleanWebp`), and a GIF sent as a photo without its comments and XMP. A HEIC or AVIF file, or a photo larger than that, is sent only once the owner says so in a pop-up (`lib/photo-place.ts`).
 - A word of care over a message request's first messages (`lib/scam-shield.ts`): asks for a code, PIN, password or money, promises easy money, or a name like a contact's, in all 8 languages, looked for on the phone only; nothing is blocked.
+- Tor's **Automatic** bridges (`lib/bridges.ts` `autoRoutes`, `lib/tor.ts` `startAuto`): straight, obfs4, Snowflake, own lines in turn until Tor is ready, the way learned per kind of network (`networkKind` in the call module, new: needs the next build) kept 30 days in the space's settings; **My network is watched** never tries straight; **Check my connection** on the Tor screen.
 
 ### Under the hood
 

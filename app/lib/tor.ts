@@ -10,8 +10,9 @@
 // between the phones, or through the call relay. Where Tor is blocked, it goes through the space's
 // bridges (lib/bridges.ts), and then only through them.
 
-import { bridgeLines, NO_BRIDGES, type Bridges } from './bridges';
+import { autoRoutes, bridgeLines, NO_BRIDGES, routeLines, type Bridges, type NetKind, type TorRoute } from './bridges';
 import { canTor, tor } from './core';
+import { onNetworkChange } from './network-change';
 import { setThroughTor, setTorReady, setTorStarter, type TorWay } from './relay';
 
 export type TorStatus = { text: string; ready: boolean };
@@ -31,7 +32,40 @@ let watching = 0;
 // The open space's bridges, and whether Tor was started: a relay reached only through Tor
 // (lib/spare.ts) starts it the space's way does not (ensureTor).
 let bridgesNow: Bridges = NO_BRIDGES;
+let wayNow: TorWay = 'off';
 let started = false;
+
+// Automatic (lib/bridges.ts autoRoutes): the way it tries now, the one it went with, and whether
+// all failed; each start of it a new run, so one superseded stops trying.
+export type AutoState = { trying: TorRoute | null; using: TorRoute | null; failed: boolean; tried: TorRoute[] };
+let auto: AutoState = { trying: null, using: null, failed: false, tried: [] };
+let autoRun = 0;
+const autoListeners = new Set<() => void>();
+const setAuto = (next: AutoState) => {
+  auto = next;
+  autoListeners.forEach((listener) => listener());
+};
+/** What Automatic does now. */
+export const autoState = (): AutoState => auto;
+/** Calls `listener` each time Automatic moves on, until the function it gives is called. */
+export function onAutoState(listener: () => void): () => void {
+  autoListeners.add(listener);
+  return () => autoListeners.delete(listener);
+}
+
+// How long Automatic waits for Tor to be ready each way, before it tries the next: Snowflake
+// finds a volunteer first, so it gets longer.
+export const AUTO_WAIT: Record<TorRoute, number> = { none: 45_000, obfs4: 60_000, snowflake: 120_000, own: 90_000 };
+const AUTO_LOOK = 2000;
+
+// The kind of network the phone is on (Android, modules/erevos-call networkKind), and where what
+// Automatic learned is kept (SpaceData.bridges): set as the space opens.
+let netKind: () => NetKind = () => 'other';
+let keepBridges: (bridges: Bridges) => Promise<void> = async () => undefined;
+export function setTorMemory(kind: () => NetKind, keep: (bridges: Bridges) => Promise<void>): void {
+  netKind = kind;
+  keepBridges = keep;
+}
 
 // The way 'messages' sends through Tor only while it is ready: asked of the core until it stops.
 function watchReady(way: TorWay): void {
@@ -63,11 +97,65 @@ export async function applyTor(way: TorWay, bridges: Bridges = NO_BRIDGES): Prom
   setThroughTor(way);
   watchReady(way);
   bridgesNow = bridges;
+  wayNow = way;
+  if (bridges.use !== 'auto' || way === 'off') {
+    autoRun++;
+    setAuto({ trying: null, using: null, failed: false, tried: [] });
+  }
   if (way === 'off' || !canTor()) return;
+  // Automatic tries its ways in the background, minutes at worst: what waits on Tor waits on it (ensureTor).
+  if (bridges.use === 'auto') {
+    started = false;
+    starting = startTor(bridges).finally(() => {
+      starting = null;
+    });
+    starting.catch(() => undefined);
+    return;
+  }
   await startTor(bridges);
 }
 
+// Whether Tor became ready within `wait`, asked every AUTO_LOOK; false at once once `run` is not the last.
+async function readyWithin(wait: number, run: number): Promise<boolean> {
+  const until = Date.now() + wait;
+  for (;;) {
+    if (run !== autoRun) return false;
+    const status = await torStatus().catch(() => null);
+    if (status?.ready) return true;
+    if (Date.now() >= until) return false;
+    await new Promise((resolve) => setTimeout(resolve, AUTO_LOOK));
+  }
+}
+
+// Automatic: each way in turn (lib/bridges.ts autoRoutes) until Tor is ready, which it then keeps,
+// and learns for this kind of network. None ready: Tor stops, as with no bridge to use.
+async function startAuto(bridges: Bridges): Promise<void> {
+  const run = ++autoRun;
+  const kind = netKind();
+  const tried: TorRoute[] = [];
+  for (const route of autoRoutes(bridges, kind)) {
+    if (run !== autoRun) return;
+    setAuto({ trying: route, using: null, failed: false, tried: [...tried] });
+    await tor().torStart(routeLines(route, bridges.own).join('\n'));
+    tried.push(route);
+    if (await readyWithin(AUTO_WAIT[route], run)) {
+      started = true;
+      setAuto({ trying: null, using: route, failed: false, tried });
+      const learned = { ...bridges.learned, [kind]: { route, at: Date.now() } };
+      bridgesNow = { ...bridges, learned };
+      await keepBridges(bridgesNow).catch(() => undefined);
+      return;
+    }
+  }
+  if (run !== autoRun) return;
+  started = false;
+  setAuto({ trying: null, using: null, failed: true, tried });
+  await tor().torStop();
+  throw new NoBridgesError();
+}
+
 async function startTor(bridges: Bridges): Promise<void> {
+  if (bridges.use === 'auto') return startAuto(bridges);
   const lines = bridgeLines(bridges);
   if (bridges.use !== 'none' && lines.length === 0) {
     started = false;
@@ -97,6 +185,26 @@ let starting: Promise<void> | null = null;
 
 // A chat that goes only through Tor starts it, as a relay reached only through it does (lib/relay.ts setTorChats).
 setTorStarter(ensureTor);
+
+// On another network, Automatic looks again for the way that works there, from the one it learned.
+onNetworkChange(() => {
+  if (bridgesNow.use !== 'auto' || !canTor() || (wayNow === 'off' && !started)) return;
+  started = false;
+  starting = startTor(bridgesNow).finally(() => {
+    starting = null;
+  });
+  starting.catch(() => undefined);
+});
+
+/** Starts Automatic again from the start, as for "Check my connection". */
+export function retryAuto(): Promise<void> {
+  if (bridgesNow.use !== 'auto' || !canTor()) return Promise.resolve();
+  started = false;
+  starting = startTor(bridgesNow).finally(() => {
+    starting = null;
+  });
+  return starting;
+}
 
 /** Stops sending through Tor, as the space closes. */
 export function leaveTor(): void {

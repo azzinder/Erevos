@@ -59,7 +59,7 @@ import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone'
 import { refreshWidget, setIconNumbers } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
-import { applyTor, leaveTor } from '../lib/tor';
+import { applyTor, leaveTor, setTorMemory } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
 import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { forgetSigns } from '../lib/unread-signs';
@@ -81,7 +81,7 @@ import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
-import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData, updateSpaceData } from '../lock/space-data';
 import { ModuleOff } from '../components/module-off';
 import { Setup, type SetupChoice } from '../components/setup';
 import { space as gap } from '../theme/colors';
@@ -195,6 +195,12 @@ export default function RootLayout() {
       // Tor starts in the background, unless the space's way is Nothing (the default), through
       // the space's bridges if it has any; until it is ready, the way 'messages' sends straight,
       // and the way 'all' waits for it.
+      // Automatic bridges learn, in this space's own settings, the way that works on each kind of network.
+      const spaceKey = key.slice();
+      setTorMemory(
+        () => callAudio?.networkKind?.() ?? 'other',
+        (bridges) => updateSpaceData(space, spaceKey, { bridges }).then(() => undefined),
+      );
       applyTor(data.tor, data.bridges).catch(() => undefined);
       // Its texts go through Nostr unless it says not, the way its Tor way says (lib/nostr.ts).
       setNostr(nostrOf(data.nostr), data.nostr.tor === true);

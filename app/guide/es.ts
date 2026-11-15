@@ -1770,6 +1770,7 @@ Donde Tor está bloqueado, **Puentes** en la misma pantalla deja que Tor llegue 
 
 | Opción | Qué es |
 | --- | --- |
+| **Automático** | Erevos prueba las formas por turnos hasta que Tor se conecta: directo, los puentes obfs4, Snowflake, luego tus propias líneas, si tienes. Recuerda durante 30 días la que funcionó en Wi-Fi y en datos móviles, y la prueba primero; en otra red busca de nuevo. Con **Mi red está vigilada** activado, nunca prueba directo, así la red solo ve un puente. |
 | **obfs4** | Los puentes obfs4 que trae Tor Browser. Para quien vigila la red, Tor parece bytes aleatorios. Un censor que los conozca puede bloquearlos. |
 | **Snowflake** | A través de los navegadores de voluntarios, con WebRTC, como va una videollamada. Para encontrar uno, Erevos pregunta al broker de Snowflake a través de una CDN, tras el nombre de otro sitio, y unos servidores STUN le dicen al teléfono su propia dirección: ven esa dirección, nunca tus mensajes. Más lento, y difícil de bloquear. |
 | **Los míos** | Líneas de puentes de bridges.torproject.org, de bridges@torproject.org por correo, o de @GetBridgesBot en Telegram, pegadas una por línea; luego toca **Usar estos puentes**. Funcionan obfs4, Snowflake, WebTunnel, meek y puentes normales. |
@@ -1777,6 +1778,8 @@ Donde Tor está bloqueado, **Puentes** en la misma pantalla deja que Tor llegue 
 - **Solo a través de ellos:** con puentes, Tor nunca va directamente a sus relays. Cuando ningún puente responde, con
   **Todo** los mensajes esperan, como cuando Tor no puede contactar con el relay; con **Mensajes** van al relay sin Tor
   hasta que alguno responda. Las líneas que no son puentes no se aceptan, y Tor se queda apagado.
+- **Comprobar mi conexión**, debajo, dice si Tor se conecta, y de qué forma, nunca la dirección del teléfono. Con
+  **Automático**, busca de nuevo desde el principio.
 - **Cambiarlos** mientras Tor funciona cierra sus conexiones y las vuelve a hacer de la nueva manera.
 - **Solo en Android:** la app lleva lyrebird, el programa propio de Tor para obfs4, Snowflake, WebTunnel y meek. Un
   ordenador y la app web aún no tienen Tor, así que tampoco puentes.

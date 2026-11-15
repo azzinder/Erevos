@@ -6,6 +6,20 @@
 export const more: Record<string, string> = {
   // Tor bridges (the Tor screen).
   Bridges: 'Mostovi',
+  'Automatic': 'Automatski',
+  'straight': 'direktno',
+  'your own bridges': 'vaši mostovi',
+  'Tor is off for this space: messages go straight to the relay.': 'Tor je isključen za ovaj prostor: poruke idu direktno na relay.',
+  'Tor is connected, {how}.': 'Tor je povezan, {how}.',
+  'Tor is connected.': 'Tor je povezan.',
+  'Tor cannot connect from this network. Try Automatic, or bridges of your own.': 'Tor se ne može povezati s ove mreže. Probajte Automatski, ili svoje mostove.',
+  'Erevos tries the ways in turn until Tor connects: straight, then the obfs4 bridges, then Snowflake, then your own bridges, if you have any. It remembers the one that worked on Wi-Fi and on mobile data for 30 days, and tries it first.': 'Erevos redom pokušava načine dok se Tor ne poveže: direktno, zatim obfs4 mostove, zatim Snowflake, zatim vaše mostove, ako ih imate. Pamti 30 dana onaj koji je radio na Wi-Fi mreži i na mobilnim podacima, i njega prvo pokušava.',
+  'My network is watched': 'Moja mreža je pod nadzorom',
+  'On, Tor never goes straight: whoever watches the network sees only a bridge, never that Tor is used.': 'Uključeno, Tor nikad ne ide direktno: ko nadzire mrežu vidi samo most, nikad da se koristi Tor.',
+  'Trying: {how}…': 'Pokušavam: {how}…',
+  'Connected: {how}.': 'Povezano: {how}.',
+  'No way worked from this network. Add bridges of your own, from bridges.torproject.org.': 'Nijedan način nije radio s ove mreže. Dodajte svoje mostove, sa bridges.torproject.org.',
+  'Check my connection': 'Provjeri moju vezu',
   'No bridges': 'Bez mostova',
   'My own': 'Vlastiti',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':

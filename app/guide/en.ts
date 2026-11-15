@@ -1626,6 +1626,7 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 
 | Choice | What it is |
 | --- | --- |
+| **Automatic** | Erevos tries the ways in turn until Tor connects: straight, the obfs4 bridges, Snowflake, then your own lines, if any. It remembers for 30 days the one that worked on Wi-Fi and on mobile data, and tries it first; on another network it looks again. With **My network is watched** on, it never tries straight, so the network sees only a bridge. |
 | **obfs4** | The obfs4 bridges Tor Browser comes with. To whoever watches the network, Tor looks like random bytes. A censor that knows them may block them. |
 | **Snowflake** | Through volunteers' browsers, over WebRTC, the way a video call goes. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block. |
 | **My own** | Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, pasted one per line; then tap **Use these bridges**. obfs4, Snowflake, WebTunnel, meek and plain bridges work. |
@@ -1633,6 +1634,8 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 - **Only through them:** with bridges, Tor never goes straight to its relays. When no bridge answers, with
   **Everything** messages wait, as they do when Tor cannot reach the relay; with **Messages** they go to the relay
   without Tor until one does. Lines that are not bridges are not taken, and Tor stays off.
+- **Check my connection**, under them, says whether Tor connects, and which way, never this phone's address. With
+  **Automatic**, it looks again from the start.
 - **Changing them** while Tor runs closes its connections and makes them again the new way.
 - **On Android only:** the app carries lyrebird, Tor's own program for obfs4, Snowflake, WebTunnel and meek. A
   computer and the web app have no Tor yet, so no bridges either.

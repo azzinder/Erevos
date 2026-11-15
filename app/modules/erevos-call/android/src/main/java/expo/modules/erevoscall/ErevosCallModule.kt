@@ -20,6 +20,7 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -416,6 +417,20 @@ class ErevosCallModule : Module() {
     // Then how the call and message notices are set (off, silent, hidden on the lock screen, through
     // Do Not Disturb), battery use set to Restricted, "Pause app activity if unused", and battery
     // saver, Do Not Disturb and the ringer as they are now. What this Android cannot tell is left out.
+    // The kind of network the phone is on now, for Tor's Automatic bridges (lib/tor.ts), which
+    // learns the way that works on each: nothing of the network itself, only its kind.
+    Function("networkKind") {
+      val connectivity = context?.applicationContext?.getSystemService(ConnectivityManager::class.java)
+      val caps = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) connectivity?.let { it.getNetworkCapabilities(it.activeNetwork) } else null
+      when {
+        caps == null -> "other"
+        caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+        caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+        caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+        else -> "other"
+      }
+    }
+
     Function("backgroundState") {
       val context = context ?: return@Function mapOf("notices" to false, "fullScreen" to false, "battery" to false)
       val notices = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

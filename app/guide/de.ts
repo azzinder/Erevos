@@ -1886,6 +1886,7 @@ nur, solange etwas über Tor geht.
 
 | Wahl | Was es ist |
 | --- | --- |
+| **Automatisch** | Erevos versucht die Wege der Reihe nach, bis Tor verbunden ist: direkt, die obfs4-Brücken, Snowflake, dann deine eigenen Zeilen, falls vorhanden. Den Weg, der im WLAN und in mobilen Daten funktioniert hat, merkt es sich 30 Tage und versucht ihn zuerst; in einem anderen Netz sucht es neu. Mit **Mein Netz wird überwacht** versucht es nie direkt, das Netz sieht also nur eine Brücke. |
 | **obfs4** | Die obfs4-Brücken, die der Tor Browser mitbringt. Für jeden, der das Netz beobachtet, sieht Tor wie zufällige Bytes aus. Ein Zensor, der sie kennt, kann sie blockieren. |
 | **Snowflake** | Über die Browser von Freiwilligen, über WebRTC, so wie ein Videoanruf geht. Um einen zu finden, fragt Erevos den Broker von Snowflake über ein CDN, hinter dem Namen einer anderen Seite, und STUN-Server sagen dem Telefon seine eigene Adresse: Sie sehen diese Adresse, nie deine Nachrichten. Langsamer und schwer zu blockieren. |
 | **Eigene** | Brückenzeilen von bridges.torproject.org, von bridges@torproject.org per E-Mail oder von @GetBridgesBot auf Telegram, eingefügt, eine pro Zeile; tippe dann auf **Diese Brücken nutzen**. obfs4, Snowflake, WebTunnel, meek und einfache Brücken funktionieren. |
@@ -1893,6 +1894,8 @@ nur, solange etwas über Tor geht.
 - **Nur über sie:** Mit Brücken geht Tor nie direkt zu seinen Relays. Wenn keine Brücke antwortet, warten Nachrichten
   mit **Alles**, wie wenn Tor das Relay nicht erreichen kann; mit **Nachrichten** gehen sie ohne Tor an das Relay, bis
   eine antwortet. Zeilen, die keine Brücken sind, werden nicht angenommen, und Tor bleibt aus.
+- **Meine Verbindung prüfen**, darunter, sagt, ob Tor sich verbindet und auf welchem Weg, nie die Adresse des
+  Telefons. Mit **Automatisch** sucht es von vorn.
 - **Sie zu ändern**, während Tor läuft, schließt seine Verbindungen und baut sie auf die neue Art wieder auf.
 - **Nur auf Android:** Die App bringt lyrebird mit, das eigene Programm von Tor für obfs4, Snowflake, WebTunnel und
   meek. Ein Computer und die Web-App haben noch kein Tor, also auch keine Brücken.

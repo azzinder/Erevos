@@ -14,10 +14,10 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
-import { BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
+import { autoRoutes, BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, LEARNED_DAYS, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
 import { coreReason, setCore, type Core } from '../lib/core';
 import { createQueue, forgetRelayKeys, pinRelay, RelayError, relayCheck, RelaySession, setThroughTor, setTorReady, throughTor, TOR_REST_MS, torFor } from '../lib/relay';
-import { applyTor, leaveTor, NoBridgesError, torStatus } from '../lib/tor';
+import { applyTor, AUTO_WAIT, autoState, ensureTor, leaveTor, NoBridgesError, setTorMemory, torStatus } from '../lib/tor';
 import { EMPTY_SPACE, torWayOf } from '../lock/space-data';
 
 type Seen = { what: string; url?: string; token?: string; bytes?: Uint8Array };
@@ -149,11 +149,17 @@ test("Tor Browser's bridges, and one's own, are taken only as lines the app can 
   assert.deepEqual(readBridgeLines(pasted), { lines: [OBFS4, WEBTUNNEL, PLAIN], wrong: ['not a bridge'] });
 
   assert.deepEqual(bridgeLines(NO_BRIDGES), []);
-  assert.deepEqual(bridgeLines({ use: 'snowflake', own: OBFS4 }), BUILT_IN.snowflake);
-  assert.deepEqual(bridgeLines({ use: 'own', own: `${OBFS4}\n${PLAIN}` }), [OBFS4, PLAIN]);
-  assert.deepEqual(bridgeLines({ use: 'own', own: 'not a bridge' }), []);
-  assert.deepEqual(checkedBridges({ use: 'obfs4', own: 3 }), { use: 'obfs4', own: '' });
-  assert.deepEqual(checkedBridges({ use: 'meek', own: PLAIN }), { use: 'none', own: PLAIN });
+  assert.deepEqual(bridgeLines({ ...NO_BRIDGES, use: 'snowflake', own: OBFS4 }), BUILT_IN.snowflake);
+  assert.deepEqual(bridgeLines({ ...NO_BRIDGES, use: 'own', own: `${OBFS4}\n${PLAIN}` }), [OBFS4, PLAIN]);
+  assert.deepEqual(bridgeLines({ ...NO_BRIDGES, use: 'own', own: 'not a bridge' }), []);
+  assert.deepEqual(checkedBridges({ use: 'obfs4', own: 3 }), { ...NO_BRIDGES, use: 'obfs4', own: '' });
+  assert.deepEqual(checkedBridges({ use: 'meek', own: PLAIN }), { ...NO_BRIDGES, use: 'none', own: PLAIN });
+  assert.deepEqual(checkedBridges({ use: 'auto', watched: true, learned: { wifi: { route: 'snowflake', at: 5 }, moon: { route: 'obfs4', at: 1 }, cellular: { route: 'meek', at: 1 } } }), {
+    ...NO_BRIDGES,
+    use: 'auto',
+    watched: true,
+    learned: { wifi: { route: 'snowflake', at: 5 } },
+  });
   assert.deepEqual(checkedBridges(undefined), NO_BRIDGES);
 });
 
@@ -161,8 +167,8 @@ test('Tor is started through the chosen bridges, and stopped rather than started
   const seen: Seen[] = [];
   setCore(fakeCore(seen, true));
   await applyTor('all', NO_BRIDGES);
-  await applyTor('all', { use: 'obfs4', own: '' });
-  await applyTor('all', { use: 'own', own: `Bridge ${PLAIN}` });
+  await applyTor('all', { ...NO_BRIDGES, use: 'obfs4', own: '' });
+  await applyTor('all', { ...NO_BRIDGES, use: 'own', own: `Bridge ${PLAIN}` });
   assert.deepEqual(
     seen.map((s) => [s.what, s.url]),
     [
@@ -172,15 +178,64 @@ test('Tor is started through the chosen bridges, and stopped rather than started
     ],
   );
   seen.length = 0;
-  await assert.rejects(applyTor('all', { use: 'own', own: 'not a bridge' }), NoBridgesError);
+  await assert.rejects(applyTor('all', { ...NO_BRIDGES, use: 'own', own: 'not a bridge' }), NoBridgesError);
   assert.deepEqual(seen.map((s) => s.what), ['stop']);
   // The space's requests still go to Tor, which is stopped, never around it.
   await createQueue({ url: 'wss://relay.example.org' });
   assert.deepEqual(seen.map((s) => s.what), ['stop', 'request']);
   // Off, Tor is left alone.
   seen.length = 0;
-  await applyTor('off', { use: 'own', own: 'not a bridge' });
+  await applyTor('off', { ...NO_BRIDGES, use: 'own', own: 'not a bridge' });
   assert.deepEqual(seen, []);
+});
+
+test('Automatic tries straight, obfs4, Snowflake and one’s own in turn, the way learned first, and never straight on a watched network', () => {
+  const day = 24 * 3600_000;
+  const now = 100 * day;
+  const auto = { ...NO_BRIDGES, use: 'auto' as const };
+  assert.deepEqual(autoRoutes(auto, 'wifi', now), ['none', 'obfs4', 'snowflake']);
+  assert.deepEqual(autoRoutes({ ...auto, own: PLAIN }, 'wifi', now), ['none', 'obfs4', 'snowflake', 'own']);
+  assert.deepEqual(autoRoutes({ ...auto, watched: true }, 'wifi', now), ['obfs4', 'snowflake']);
+  const learned = { ...auto, learned: { wifi: { route: 'snowflake' as const, at: now - day } } };
+  assert.deepEqual(autoRoutes(learned, 'wifi', now), ['snowflake', 'none', 'obfs4']);
+  assert.deepEqual(autoRoutes(learned, 'cellular', now), ['none', 'obfs4', 'snowflake'], 'learned on another network');
+  assert.deepEqual(autoRoutes(learned, 'wifi', now + (LEARNED_DAYS + 1) * day), ['none', 'obfs4', 'snowflake'], 'too old');
+  const straight = { ...auto, watched: true, learned: { wifi: { route: 'none' as const, at: now } } };
+  assert.deepEqual(autoRoutes(straight, 'wifi', now), ['obfs4', 'snowflake'], 'learned straight, but now watched');
+});
+
+test('Automatic keeps the first way that connects and learns it for the network; none connecting stops Tor', async () => {
+  const seen: Seen[] = [];
+  const core = fakeCore(seen, true);
+  let lines = '';
+  core.torStart = async (bridges: string) => {
+    lines = bridges;
+    seen.push({ what: 'start', url: bridges });
+  };
+  // Only the obfs4 bridges connect here.
+  core.torStatus = async () => JSON.stringify({ text: '', ready: lines === BUILT_IN.obfs4.join('\n') });
+  setCore(core);
+  const kept: unknown[] = [];
+  setTorMemory(() => 'wifi', async (bridges) => void kept.push(bridges.learned));
+  const waits = { ...AUTO_WAIT };
+  for (const route of Object.keys(AUTO_WAIT) as (keyof typeof AUTO_WAIT)[]) AUTO_WAIT[route] = 0;
+  try {
+    await applyTor('all', { ...NO_BRIDGES, use: 'auto' });
+    await ensureTor();
+    assert.deepEqual(seen.map((s) => s.url), ['', BUILT_IN.obfs4.join('\n')]);
+    assert.equal(autoState().using, 'obfs4');
+    assert.equal((kept[0] as { wifi: { route: string } }).wifi.route, 'obfs4');
+    // Watched, and nothing connects: never straight; each tried, then Tor stopped.
+    seen.length = 0;
+    core.torStatus = async () => JSON.stringify({ text: '', ready: false });
+    await applyTor('all', { ...NO_BRIDGES, use: 'auto', watched: true, own: 'not a bridge' });
+    await assert.rejects(ensureTor(), NoBridgesError);
+    assert.deepEqual(seen.map((s) => s.what === 'stop' ? 'stop' : s.url), [BUILT_IN.obfs4.join('\n'), BUILT_IN.snowflake.join('\n'), 'stop']);
+    assert.equal(autoState().failed, true);
+  } finally {
+    Object.assign(AUTO_WAIT, waits);
+    setTorMemory(() => 'other', async () => undefined);
+  }
 });
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -282,7 +337,7 @@ test("bridges none usable: the way 'messages' stops Tor and sends straight", asy
   const seen: Seen[] = [];
   setCore(fakeCore(seen, true));
   mayGoStraight = true;
-  await assert.rejects(applyTor('messages', { use: 'own', own: 'not a bridge' }), NoBridgesError);
+  await assert.rejects(applyTor('messages', { ...NO_BRIDGES, use: 'own', own: 'not a bridge' }), NoBridgesError);
   assert.deepEqual(seen.map((s) => s.what), ['stop']);
   // The fake core says ready, but a real stopped Tor would not: as it says, so goes the request.
   setTorReady(false);

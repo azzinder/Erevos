@@ -1778,6 +1778,7 @@ bridge. È su **Nessun bridge** finché non scegli, ogni spazio ha il suo, e con
 
 | Scelta | Che cos’è |
 | --- | --- |
+| **Automatico** | Erevos prova i modi uno alla volta finché Tor si connette: diretto, i bridge obfs4, Snowflake, poi le tue righe, se ne hai. Ricorda per 30 giorni quello che ha funzionato su Wi-Fi e su dati mobili, e lo prova per primo; su un’altra rete cerca di nuovo. Con **La mia rete è sorvegliata** attivo, non prova mai diretto, e la rete vede solo un bridge. |
 | **obfs4** | I bridge obfs4 inclusi in Tor Browser. A chi osserva la rete, Tor sembra fatto di byte casuali. Un censore che li conosce può bloccarli. |
 | **Fiocco di neve** | Tramite i browser di volontari, via WebRTC, come passa una videochiamata. Per trovarne uno, Erevos chiede al broker di Snowflake tramite una CDN, dietro il nome di un altro sito, e dei server STUN dicono al telefono il suo indirizzo: vedono quell’indirizzo, mai i tuoi messaggi. Più lento, e difficile da bloccare. |
 | **I miei** | Righe di bridge da bridges.torproject.org, da bridges@torproject.org via email, o da @GetBridgesBot su Telegram, incollate una per riga; poi tocca **Usa questi bridge**. Funzionano i bridge obfs4, Snowflake, WebTunnel, meek e semplici. |
@@ -1785,6 +1786,8 @@ bridge. È su **Nessun bridge** finché non scegli, ogni spazio ha il suo, e con
 - **Solo tramite loro:** con i bridge, Tor non va mai direttamente ai suoi relay. Quando nessun bridge risponde, con
   **Tutto** i messaggi aspettano, come quando Tor non riesce a raggiungere il relay; con **Messaggi** vanno al relay
   senza Tor finché uno non risponde. Le righe che non sono bridge non vengono accettate, e Tor resta spento.
+- **Controlla la mia connessione**, sotto, dice se Tor si connette, e in che modo, mai l’indirizzo del telefono. Con
+  **Automatico**, cerca di nuovo dall’inizio.
 - **Cambiarli** mentre Tor è in funzione chiude le sue connessioni e le ricrea nel nuovo modo.
 - **Solo su Android:** l’app include lyrebird, il programma di Tor per obfs4, Snowflake, WebTunnel e meek. Un
   computer e la web app non hanno ancora Tor, quindi nemmeno i bridge.
