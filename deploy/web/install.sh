@@ -93,6 +93,16 @@ for kept in "$base"/channels/android-update-*.json; do
 		cp "$kept" "$base/$version.new/"
 	fi
 done
+# The speech model voice messages are written out with (app/lib/speech.ts), kept in $base/models,
+# is served at /models/ by each new web app too: hard-linked, so its 268 MB are on the disk once.
+mkdir -p "$base/models"
+chmod 755 "$base/models"
+for kept in "$base"/models/*; do
+	if [ -f "$kept" ]; then
+		mkdir -p "$base/$version.new/models"
+		ln -f "$kept" "$base/$version.new/models/" 2>/dev/null || cp "$kept" "$base/$version.new/models/"
+	fi
+done
 chmod -R a+rX,go-w "$base/$version.new"
 rm -rf "$base/$version"
 mv "$base/$version.new" "$base/$version"
