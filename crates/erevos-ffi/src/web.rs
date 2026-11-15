@@ -137,6 +137,26 @@ pub fn signature_verify(key: &[u8], message: &[u8], signature: &[u8]) -> Result<
     js(crate::signature_verify(key, message, signature))
 }
 
+#[wasm_bindgen(js_name = pairStart)]
+pub fn pair_start(code: &[u8], channel: &[u8], session: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::pair_start(code, channel, session))
+}
+
+#[wasm_bindgen(js_name = pairFinish)]
+pub fn pair_finish(secret: &[u8], session: &[u8], started: &[u8], answered: &[u8], own_started: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::pair_finish(secret, session, started, answered, own_started))
+}
+
+#[wasm_bindgen(js_name = pairConfirm)]
+pub fn pair_confirm(key: &[u8], started: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::pair_confirm(key, started))
+}
+
+#[wasm_bindgen(js_name = pairConfirmed)]
+pub fn pair_confirmed(key: &[u8], started: &[u8], tag: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::pair_confirmed(key, started, tag))
+}
+
 #[wasm_bindgen(js_name = sealPublic)]
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_public(secret))

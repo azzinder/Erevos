@@ -507,6 +507,12 @@ email to reach you: whoever has your contact link can write to your queue, and o
    reads it and adds them at once. On a computer, on Sailfish OS and in the web app, **Scan their QR code** asks for a
    photo of it; on an iPhone it offers the camera too.
    Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
+7. Or, with someone beside you or on the phone with you: tap **Pair with a code** on **New chat**. One of you taps
+   **Show a code** and says or shows the 8 digits; the other taps **Type their code** and types them. Each phone then
+   has the other as a contact, as if each had scanned the other's QR code. The code itself never leaves the phones: they
+   prove to each other that they know it, and their contact links go encrypted with a key only the same code makes. They
+   meet on public Nostr relays, which see neither the code nor the links, and whoever guesses gets 3 tries before the
+   code closes. A code lasts 10 minutes.
 
 The new chat appears on the home screen named **contact** and the first characters of their key, until it has a name:
 **Rename** in its details gives it one. Right after you add them here, **Connect to one of my contacts** under the note

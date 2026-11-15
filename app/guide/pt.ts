@@ -538,6 +538,12 @@ a lê.
    tenha enviado. O Erevos o lê e a adiciona na hora. Num computador, no Sailfish OS e no app web, **Ler o código QR da
    outra pessoa** pede uma foto dele; num iPhone ele também oferece a câmera. As conversas ocultas não têm nenhum dos dois, pois uma foto sai do Erevos, o que as fecha:
    cole o link da pessoa ali.
+7. Ou, com alguém ao seu lado ou ao telefone: toque em **Emparelhar com um código** em **Nova conversa**. Um toca em
+   **Mostrar um código** e diz ou mostra os 8 dígitos; o outro toca em **Digitar o código dele** e os digita. Então cada
+   telefone tem o outro como contato, como se cada um tivesse lido o código QR do outro. O código em si nunca sai dos
+   telefones: eles provam um ao outro que o conhecem, e os links de contato vão criptografados com uma chave que só o
+   mesmo código dá. Eles se encontram em relays públicos do Nostr, que não veem nem o código nem os links, e quem tenta
+   adivinhar tem 3 tentativas antes de o código fechar. Um código vale 10 minutos.
 
 A nova conversa aparece na tela inicial com o nome **contato** e os primeiros caracteres da chave da pessoa, até ter um
 nome: **Renomear** nos detalhes dela dá um. Logo depois de adicioná-la aqui, **Vincular a um dos meus contatos**, abaixo

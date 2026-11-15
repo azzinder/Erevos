@@ -30,6 +30,11 @@ export interface Core {
   /** Missing in a build made before two-hop sending. */
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
+  /** Pairing by a short code (crates/erevos-core cpace, lib/pair-code.ts). Missing in a build made before it. */
+  pairStart?(code: Uint8Array, channel: Uint8Array, session: Uint8Array): Promise<Uint8Array>;
+  pairFinish?(secret: Uint8Array, session: Uint8Array, started: Uint8Array, answered: Uint8Array, ownStarted: Uint8Array): Promise<Uint8Array>;
+  pairConfirm?(key: Uint8Array, started: Uint8Array): Promise<Uint8Array>;
+  pairConfirmed?(key: Uint8Array, started: Uint8Array, tag: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
   /** The keys of a channel to a relay (crates/erevos-core relay_channel), phone to relay then relay
    *  to phone, 32 bytes each, once the relay's answer proves it holds `relayKey`'s secret; throws
@@ -315,6 +320,18 @@ export function nostrChatCore(): (request: Uint8Array) => Promise<Uint8Array> {
   const it = need();
   if (!it.nostrChat) throw new Error(t('This build of Erevos has no Nostr chats.'));
   return it.nostrChat.bind(it);
+}
+
+/** Whether this build can pair by a short code (a core from before it cannot). */
+export function canPairCode(): boolean {
+  return typeof core?.pairStart === 'function' && typeof core?.pairFinish === 'function' && typeof core?.pairConfirm === 'function' && typeof core?.pairConfirmed === 'function';
+}
+
+/** The core's pairing by a short code, or NoCoreError in a build made before it. */
+export function pairCore(): Required<Pick<Core, 'pairStart' | 'pairFinish' | 'pairConfirm' | 'pairConfirmed'>> {
+  const it = need();
+  if (!it.pairStart || !it.pairFinish || !it.pairConfirm || !it.pairConfirmed) throw new NoCoreError();
+  return it as Required<Pick<Core, 'pairStart' | 'pairFinish' | 'pairConfirm' | 'pairConfirmed'>>;
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

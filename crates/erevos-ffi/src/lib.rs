@@ -273,6 +273,38 @@ pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<
     erevos_core::relay_seal::seal(&relay_key, &sender_id, message).map_err(fail)
 }
 
+/// Pairing by a short code (erevos_core::cpace): this side's secret scalar (32
+/// bytes) and the share it sends (32 bytes), for the `code`, `channel` and
+/// `session` both sides know.
+pub fn pair_start(code: &[u8], channel: &[u8], session: &[u8]) -> Result<Vec<u8>> {
+    let (secret, share) = erevos_core::cpace::start(code, channel, session);
+    Ok([secret.as_slice(), &share].concat())
+}
+
+/// The pairing's shared key (64 bytes) from this side's `secret`, the
+/// `session`, both shares (the one who started first), and `own_started`
+/// ([1] if this side started, else [0]). Fails for a share that is not a point.
+pub fn pair_finish(secret: &[u8], session: &[u8], started: &[u8], answered: &[u8], own_started: &[u8]) -> Result<Vec<u8>> {
+    let own = own_started.first() == Some(&1);
+    Ok(erevos_core::cpace::finish(secret, session, started, answered, own).map_err(fail)?.to_vec())
+}
+
+/// The tag that proves a side holds the pairing's `key` (`started`: [1] for the
+/// one who started, [0] for the other), 32 bytes.
+pub fn pair_confirm(key: &[u8], started: &[u8]) -> Result<Vec<u8>> {
+    Ok(erevos_core::cpace::confirm(key, started.first() == Some(&1)).to_vec())
+}
+
+/// Empty when `tag` is the proof of the side `started` says for `key`, checked
+/// in constant time; fails when it is not (a wrong code).
+pub fn pair_confirmed(key: &[u8], started: &[u8], tag: &[u8]) -> Result<Vec<u8>> {
+    if erevos_core::cpace::confirmed(key, started.first() == Some(&1), tag) {
+        Ok(Vec::new())
+    } else {
+        Err("the code is not the same on both phones".into())
+    }
+}
+
 /// The public key for a 32-byte secret, for others to seal to with `relay_seal`
 /// (an SMS invite's key, which opens the answer to it).
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>> {

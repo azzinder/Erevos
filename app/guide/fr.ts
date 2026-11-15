@@ -570,6 +570,13 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    t’a envoyée. Erevos le lit et l’ajoute aussitôt. Sur un ordinateur, sur Sailfish OS et dans l’app web, **Scanner son
    code QR** demande une photo de ce code ; sur un iPhone, il propose aussi l’appareil photo. Les discussions masquées n’ont ni l’un ni l’autre, car une
    photo sort d’Erevos, ce qui les ferme : colle-y son lien.
+7. Ou, avec quelqu’un à côté de toi ou au téléphone : appuie sur **Associer avec un code** dans **Nouvelle
+   discussion**. L’un appuie sur **Montrer un code** et dit ou montre les 8 chiffres ; l’autre appuie sur **Taper son
+   code** et les tape. Chaque téléphone a alors l’autre pour contact, comme si chacun avait scanné le code QR de l’autre.
+   Le code lui-même ne quitte jamais les téléphones : ils se prouvent l’un à l’autre qu’ils le connaissent, et leurs
+   liens de contact partent chiffrés avec une clé que seul le même code donne. Ils se retrouvent sur des relais Nostr
+   publics, qui ne voient ni le code ni les liens, et qui devine a 3 essais avant que le code ne se ferme. Un code dure
+   10 minutes.
 
 La nouvelle discussion apparaît sur l’écran d’accueil nommée **contact** suivi des premiers caractères de sa clé,
 jusqu’à ce qu’elle ait un nom : **Renommer** dans ses détails lui en donne un. Juste après que tu l’as ajouté ici,

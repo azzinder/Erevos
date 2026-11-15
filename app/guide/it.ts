@@ -541,6 +541,12 @@ solo tu la leggi.
    Erevos lo legge e lo aggiunge subito. Su un computer, su Sailfish OS e nella web app **Scansiona il suo codice QR**
    chiede una foto; su iPhone offre anche la fotocamera. Le chat nascoste non hanno né l’uno né l’altro, perché una foto esce da Erevos, che le chiude: incolla lì
    il suo link.
+7. Oppure, con qualcuno accanto a te o al telefono: tocca **Abbina con un codice** in **Nuova chat**. Uno tocca
+   **Mostra un codice** e dice o mostra le 8 cifre; l’altro tocca **Digita il suo codice** e le digita. Allora ogni
+   telefono ha l’altro come contatto, come se ciascuno avesse scansionato il codice QR dell’altro. Il codice non lascia
+   mai i telefoni: si dimostrano l’un l’altro di conoscerlo, e i loro link di contatto partono cifrati con una chiave che
+   solo lo stesso codice dà. Si incontrano su relay Nostr pubblici, che non vedono né il codice né i link, e chi tira a
+   indovinare ha 3 tentativi prima che il codice si chiuda. Un codice dura 10 minuti.
 
 La nuova chat appare nella schermata principale con il nome **contatto** e i primi caratteri della sua chiave, finché
 non ha un nome: **Rinomina** nei suoi dettagli gliene dà uno. Subito dopo averlo aggiunto qui, **Collega a uno dei miei

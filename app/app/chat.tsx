@@ -71,6 +71,7 @@ import { SwipeBack } from '../components/swipe-back';
 import { Pinned } from '../components/message-parts';
 import { PLAYS_LAST, StickerPicker } from '../components/stickers';
 import { PlaceSheet } from '../components/place-sheet';
+import { canPairWithCode, PairCodeSheet } from '../components/pair-code-sheet';
 import { CardSheet, saveCard } from '../components/card-share';
 import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PollSheet } from '../components/poll';
@@ -636,6 +637,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [showQr, setShowQr] = useState(false);
   // Your contact link's row on New chat, open (#11).
   const [linkShown, setLinkShown] = useState(false);
+  const [pairing, setPairing] = useState(false);
   // Whether the relay proved its key (components/relay-key-note.tsx): New chat says how this phone
   // connects only while something needs saying (#11).
   const relayKeyCheck = useRelayCheck(relayUrl.trim());
@@ -7176,6 +7178,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           name={e2e?.invitedAs() ?? ''}
           onNote={setNote}
         />
+        <PairCodeSheet visible={pairing && shown && !!ownLink} onClose={() => setPairing(false)} ownLink={ownLink ?? ''} onLink={(link) => void addContact(link)} />
         <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
           {ownLink ? <QrCode text={card && !bigQr ? card : ownLink} size={240} /> : null}
           <Text variant="caption" tone="muted">
@@ -7566,6 +7569,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   ) : null}
                 </>
               ) : null}
+              {!newcomer && ownLink && canPairWithCode() ? <DetailRow title={t('Pair with a code')} onPress={() => setPairing(true)} /> : null}
               {!newcomer && canWelcome ? <DetailRow title={t('Invite someone')} onPress={() => setWelcoming(true)} /> : null}
               {HAS_LINKS && !hiddenKey ? (
                 <>

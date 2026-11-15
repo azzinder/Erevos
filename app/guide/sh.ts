@@ -532,6 +532,11 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    koda; na iPhoneu nudi i kameru.
    Skriveni razgovori nemaju ni jedno ni drugo, jer fotografija napušta Erevos, što ih zatvara: tamo zalijepite
    njen link.
+7. Ili, s nekim pored vas ili na telefonu: dodirnite **Upari se kodom** u **Novi razgovor**. Jedan dodirne **Pokaži
+   kod** i kaže ili pokaže 8 cifara; drugi dodirne **Ukucaj njegov kod** i ukuca ih. Tada svaki telefon ima drugi kao
+   kontakt, kao da je svaki skenirao QR kod drugog. Sam kod nikad ne napušta telefone: dokazuju jedan drugom da ga znaju,
+   a njihovi linkovi za kontakt idu šifrovani ključem koji daje samo isti kod. Sastaju se na javnim Nostr relejima, koji
+   ne vide ni kod ni linkove, a ko pogađa ima 3 pokušaja pre nego što se kod zatvori. Kod važi 10 minuta.
 
 Novi razgovor pojavljuje se na početnom ekranu pod imenom **kontakt** i prvim znakovima ključa te osobe, dok ne dobije
 ime: **Preimenuj** u njegovim detaljima daje mu ga. Odmah nakon što je ovdje dodate, **Poveži s jednim od mojih

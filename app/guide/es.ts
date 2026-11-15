@@ -541,6 +541,12 @@ de teléfono ni tu email para contactarte: quien tenga tu enlace de contacto pue
    y lo añade al instante. En un ordenador, en Sailfish OS y en la app web, **Escanear su código QR** pide una foto de
    él; en un iPhone también ofrece la cámara. Los chats ocultos no tienen ninguna de las dos, ya que una foto sale de Erevos, lo que los cierra: pega ahí
    su enlace.
+7. O, con alguien a tu lado o al teléfono: toca **Emparejar con un código** en **Chat nuevo**. Uno toca **Mostrar un
+   código** y dice o muestra los 8 dígitos; el otro toca **Escribir su código** y los escribe. Entonces cada teléfono
+   tiene al otro como contacto, como si cada uno hubiera escaneado el código QR del otro. El código nunca sale de los
+   teléfonos: se demuestran el uno al otro que lo conocen, y sus enlaces de contacto van cifrados con una clave que solo
+   el mismo código da. Se encuentran en relays públicos de Nostr, que no ven ni el código ni los enlaces, y quien adivina
+   tiene 3 intentos antes de que el código se cierre. Un código dura 10 minutos.
 
 El chat nuevo aparece en la pantalla de inicio con el nombre **contacto** y los primeros caracteres de su clave, hasta
 que tenga un nombre: **Cambiar nombre** en sus detalles le da uno. Justo después de añadirlo aquí, **Vincular a uno de

@@ -21,6 +21,7 @@ On main, not released yet:
 - A photo sent as a file (JPEG, PNG, GIF, WebP, up to 64 MB) goes without where and when it was taken and the phone (`lib/photo.ts` `cleanImage`, `cleanGif`, `cleanWebp`), and a GIF sent as a photo without its comments and XMP. A HEIC or AVIF file, or a photo larger than that, is sent only once the owner says so in a pop-up (`lib/photo-place.ts`).
 - A word of care over a message request's first messages (`lib/scam-shield.ts`): asks for a code, PIN, password or money, promises easy money, or a name like a contact's, in all 8 languages, looked for on the phone only; nothing is blocked.
 - Tor's **Automatic** bridges (`lib/bridges.ts` `autoRoutes`, `lib/tor.ts` `startAuto`): straight, obfs4, Snowflake, own lines in turn until Tor is ready, the way learned per kind of network (`networkKind` in the call module, new: needs the next build) kept 30 days in the space's settings; **My network is watched** never tries straight; **Check my connection** on the Tor screen.
+- **Pair with a code** on New chat (`lib/pair-code.ts`, `components/pair-code-sheet.tsx`): one phone shows 8 digits, the other types them, and each gets the other's contact link. The two agree on a key with the code, CPace on ristretto255 (`crates/erevos-core/src/cpace.rs`, new in the core: needs the next build), meet at a Nostr key made from the first 3 digits on the public relays, prove the same code by tags, and send their links encrypted with that key; 3 wrong codes close it.
 
 ### Under the hood
 

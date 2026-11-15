@@ -9,6 +9,7 @@
 pub mod bind;
 pub mod conversation;
 pub mod coupon;
+pub mod cpace;
 pub mod frame;
 pub mod keep;
 pub mod mesh;

@@ -572,6 +572,12 @@ schreiben, und nur du liest sie.
    Sailfish OS und in der Web-App bittet **Ihren QR-Code scannen** um ein Foto davon; auf einem iPhone bietet es auch
    die Kamera an. Versteckte Chats haben keines von beiden, da ein Foto Erevos verlässt, was sie schließt: Füge dort den
    Link ein.
+7. Oder mit jemandem neben dir oder am Telefon: Tippe in **Neuer Chat** auf **Mit einem Code koppeln**. Einer von
+   euch tippt auf **Einen Code zeigen** und sagt oder zeigt die 8 Ziffern; der andere tippt auf **Ihren Code eintippen**
+   und tippt sie ein. Dann hat jedes Telefon das andere als Kontakt, als hätte jedes den QR-Code des anderen gescannt.
+   Der Code selbst verlässt die Telefone nie: Sie beweisen einander, dass sie ihn kennen, und ihre Kontaktlinks gehen
+   verschlüsselt mit einem Schlüssel, den nur derselbe Code ergibt. Sie treffen sich auf öffentlichen Nostr-Relays, die
+   weder den Code noch die Links sehen, und wer rät, hat 3 Versuche, bevor der Code schließt. Ein Code gilt 10 Minuten.
 
 Der neue Chat erscheint auf dem Startbildschirm mit dem Namen **Kontakt** und den ersten Zeichen des Schlüssels, bis
 er einen Namen hat: **Umbenennen** in seinen Details gibt ihm einen. Direkt nachdem du jemanden hier hinzugefügt hast,
