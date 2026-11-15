@@ -28,6 +28,7 @@ import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
 import {
   core,
+  syncApply,
   createGroup,
   defaultMatrixHttp,
   inviteToRoom,
@@ -1012,4 +1013,38 @@ test("a room read here stays read until someone else writes after it, whatever t
   assert.equal(newSinceRead(state, room), false, 'only ours after it');
   room.messages.push({ id: '$3', sender: '@ann:example.org', ts: 3000, text: 'again' } as (typeof room.messages)[number]);
   assert.equal(newSinceRead(state, room), true, 'theirs after it');
+});
+
+test('in an encrypted room, what others write after the last read counts even when the homeserver says nothing of it', async () => {
+  const me = '@me:example.org';
+  const id = '!e:example.org';
+  const state = {
+    userId: me,
+    since: 's1',
+    rooms: { [id]: { id, name: 'Ann', members: {}, encrypted: true, direct: true, unread: 0, readTs: 1000, messages: [{ id: '$1', sender: '@ann:example.org', ts: 1000, text: 'old' }] } },
+    outbound: {},
+    devices: {},
+    outdated: [],
+    seen: {},
+  } as unknown as MatrixState;
+  const news = (events: Json[], count: number) => ({
+    next_batch: 's2',
+    device_one_time_keys_count: { signed_curve25519: 50 },
+    device_unused_fallback_key_types: ['signed_curve25519'],
+    rooms: { join: { [id]: { timeline: { events }, unread_notifications: { notification_count: count } } } },
+  });
+  const text = (eventId: string, sender: string, ts: number) => ({ type: 'm.room.message', event_id: eventId, sender, origin_server_ts: ts, content: { msgtype: 'm.text', body: 'hi' } });
+  await syncApply(state, news([text('$2', '@ann:example.org', 2000), text('$3', '@ann:example.org', 3000)], 0) as unknown as Parameters<typeof syncApply>[1]);
+  assert.equal(state.rooms[id].unread, 2, 'two came, the homeserver counted none');
+  await syncApply(state, news([text('$4', me, 4000)], 0) as unknown as Parameters<typeof syncApply>[1]);
+  assert.equal(state.rooms[id].unread, 2, 'ours adds nothing');
+  await syncApply(state, news([text('$5', '@ann:example.org', 5000)], 3) as unknown as Parameters<typeof syncApply>[1]);
+  assert.equal(state.rooms[id].unread, 3, 'the homeserver counting them too counts each once');
+  state.rooms[id].unread = 0;
+  state.rooms[id].readTs = 5000;
+  await syncApply(state, news([text('$5', '@ann:example.org', 5000)], 0) as unknown as Parameters<typeof syncApply>[1]);
+  assert.equal(state.rooms[id].unread, 0, 'one already here and read does not count again');
+  state.since = undefined as never;
+  await syncApply(state, news([text('$6', '@ann:example.org', 6000)], 0) as unknown as Parameters<typeof syncApply>[1]);
+  assert.equal(state.rooms[id].unread, 0, 'a first sync tells of nothing it brings');
 });

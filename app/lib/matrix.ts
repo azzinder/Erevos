@@ -959,6 +959,9 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     room.before = timeline.prev_batch;
     delete room.start;
   } else if (firstSight && timeline.limited === false) room.start = true;
+  // The messages here before this sync, to tell which came with it (freshFromOthers).
+  const had = new Set(room.messages.map((m) => m.id));
+  const live = !!state.since;
   for (const event of (timeline.events as Json[] | undefined) ?? []) {
     if (typeof event.state_key === 'string') {
       takeState(room, event);
@@ -992,7 +995,12 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     seen = true;
   }
   const unread = (data.unread_notifications as Json | undefined)?.notification_count;
+  const before = room.unread;
   if (typeof unread === 'number') room.unread = unread > 0 && !newSinceRead(state, room) ? 0 : unread;
+  // In an encrypted room the homeserver cannot read what came, so its count follows only what its
+  // push rules guess of encrypted events, and many accounts have them say nothing (Element's
+  // «Encrypted messages in group chats» off): what came from others after the last read counts here.
+  if (room.encrypted && live) room.unread = Math.max(room.unread, before + freshFromOthers(state, room, had));
   if (!room.name) room.name = nameFromMembers(state, room);
   return seen;
 }
@@ -2037,6 +2045,12 @@ export async function leaveRoom(state: MatrixState, roomId: string): Promise<voi
   await call(state, 'POST', `/rooms/${enc(roomId)}/leave`, {});
   delete state.rooms[roomId];
   delete state.outbound[roomId];
+}
+
+/** How many messages from others came in this sync (not among `had`) after the room was last read here. */
+export function freshFromOthers(state: MatrixState, room: MatrixRoom, had: ReadonlySet<string>): number {
+  const read = room.readTs ?? 0;
+  return room.messages.filter((m) => !had.has(m.id) && m.sender !== state.userId && !m.state && !m.deleted && m.ts > read).length;
 }
 
 /**
