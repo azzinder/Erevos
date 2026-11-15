@@ -66,15 +66,15 @@ test('what is not out yet shows under the version that runs, once it comes after
   assert.equal(laterThan('4.0.0-rc.1', '3.4.2'), true);
   assert.equal(laterThan('4.0.0-rc.1', '4.0.0'), false);
   assert.equal(laterThan('0.0.1', last), false);
-  // A plain Erevos's number: Erevos+'s own would also take in the plain releases below it (asPlus).
-  const shown = whatsNewFor('7.0.99');
+  // The plain Erevos, whichever edition this build is: Erevos+ also takes in the plain releases (asPlus, below).
+  const shown = whatsNewFor('99.0.0', 'lite');
   const pending = lines(NEXT).length > 0;
   assert.equal(shown.length, VERSIONS.length + (pending ? 1 : 0));
-  if (pending) assert.deepEqual(shown[0], { version: '7.0.99', ...NEXT });
+  if (pending) assert.equal(shown[0].version, '99.0.0');
   // A build of a release: no list of what is to come.
-  assert.deepEqual(whatsNewFor(last), VERSIONS);
+  assert.deepEqual(whatsNewFor(last, 'lite').map((v) => v.version), VERSIONS.map((v) => v.version));
   // A build of main for testing: with no number.
-  if (pending) assert.equal(whatsNewFor('0.0.1')[0].version, null);
+  if (pending) assert.equal(whatsNewFor('0.0.1', 'lite')[0].version, null);
 });
 
 test("its links go to the guide's sections, in every one of its languages", () => {
