@@ -829,6 +829,39 @@ function Sms({ tools }: { tools: ReactNode }) {
         exportable
         say={setNote}
       />
+      {/* Who the chat is with: fixed over the thread, it stays while the thread scrolls (#12). */}
+      <View style={styles.head}>
+        {face ? <Image source={{ uri: face }} style={styles.face} onError={() => setFace('')} accessibilityIgnoresInvertColors /> : null}
+        <View style={styles.headText}>
+          <Text variant="title">{title}</Text>
+          {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+          {inContacts === false ? (
+            <View style={styles.addContact}>
+              <Button title={t('Add to contacts')} kind="secondary" compact onPress={() => router.push(newContactHref(numbers[0]))} />
+            </View>
+          ) : null}
+          {folder !== 'list' ? (
+            <Text variant="caption" color={colors.warning}>
+              {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
+            </Text>
+          ) : null}
+          {spamFor ? (
+            <Text variant="caption" tone="muted">
+              {spamWhy(spamFor)}
+            </Text>
+          ) : null}
+        </View>
+        {!group && numbers.length === 1 && canDial(numbers[0]) ? <DialTile number={numbers[0]} onFailed={setNote} /> : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('More')}
+          hitSlop={8}
+          onPress={() => setMenu({ address: to, name: title, at: last?.at ?? Date.now(), folder })}
+          style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+        >
+          <MoreIcon color={colors.text} />
+        </Pressable>
+      </View>
       {!selection.on && pinnedNow.length > 0 ? (
         <View style={styles.pinned}>
           <Pinned
@@ -850,38 +883,6 @@ function Sms({ tools }: { tools: ReactNode }) {
           onScroll={onScroll}
           scrollEventThrottle={100}
         >
-          <View style={styles.head}>
-            {face ? <Image source={{ uri: face }} style={styles.face} onError={() => setFace('')} accessibilityIgnoresInvertColors /> : null}
-            <View style={styles.headText}>
-              <Text variant="title">{title}</Text>
-              {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
-              {inContacts === false ? (
-                <View style={styles.addContact}>
-                  <Button title={t('Add to contacts')} kind="secondary" compact onPress={() => router.push(newContactHref(numbers[0]))} />
-                </View>
-              ) : null}
-              {folder !== 'list' ? (
-                <Text variant="caption" color={colors.warning}>
-                  {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
-                </Text>
-              ) : null}
-              {spamFor ? (
-                <Text variant="caption" tone="muted">
-                  {spamWhy(spamFor)}
-                </Text>
-              ) : null}
-            </View>
-            {!group && numbers.length === 1 && canDial(numbers[0]) ? <DialTile number={numbers[0]} onFailed={setNote} /> : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('More')}
-              hitSlop={8}
-              onPress={() => setMenu({ address: to, name: title, at: last?.at ?? Date.now(), folder })}
-              style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-            >
-              <MoreIcon color={colors.text} />
-            </Pressable>
-          </View>
           <Card>
             <Text variant="caption" color={colors.warning}>
               {t('Plain SMS: not encrypted. The phone company can read these messages.')}
@@ -1269,7 +1270,7 @@ const makeStyles = (colors: Colors) =>
     screen: { flex: 1, backgroundColor: colors.ground },
     frame: { flex: 1 },
     thread: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.lg, gap: space.sm },
-    head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    head: { flexDirection: 'row', alignItems: 'center', gap: space.md, width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: space.lg, paddingTop: space.sm },
     headText: { flex: 1, gap: 2 },
     addContact: { flexDirection: 'row', marginTop: space.xs },
     face: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceAlt },

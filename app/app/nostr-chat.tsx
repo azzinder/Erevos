@@ -467,6 +467,13 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     />
   ) : null;
 
+  // The chat's name: fixed over the thread, it stays while the thread scrolls (#12).
+  const top = (
+    <Text variant="title" numberOfLines={2}>
+      {name}
+    </Text>
+  );
+
   const thread = withArrows(
     <KeyboardAwareScrollView
       ref={scroll}
@@ -477,9 +484,6 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
       bottomOffset={space.xl}
       {...scrollProps}
     >
-      <Text variant="title" numberOfLines={2}>
-        {name}
-      </Text>
       {group ? (
         <Text variant="caption" tone="muted">
           {t('A group with {names}', { names: members.map((member) => personName(state, member)).join(', ') })}
@@ -708,6 +712,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         </Sheet>
       ) : null}
     </KeyboardAwareScrollView>,
+    top,
   );
 
   return (

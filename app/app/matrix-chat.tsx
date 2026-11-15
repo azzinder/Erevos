@@ -30,6 +30,8 @@ import { PollSheet } from '../components/poll';
 import { useSayTyping } from '../components/say-typing';
 import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
+import { IconButton } from '../components/composer';
+import { MoreIcon, PlusIcon } from '../components/icons';
 import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { WhoRead } from '../components/who-read';
 import { ask } from '../lib/alert';
@@ -225,6 +227,8 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [lit, setLit] = useState<string | null>(null);
   // Whether the room's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  const [attaching, setAttaching] = useState(false);
+  const [more, setMore] = useState(false);
   // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
   const history = useHistoryTools();
   // The message a reminder is being set for (components/chat-writing.tsx).
@@ -676,6 +680,36 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
     return to ? { name: nameOf(to), line: lineOf(to), onPress: () => reach(to.id) } : null;
   };
 
+  // The chat's name, its calls and who is online: fixed over the thread, it stays while the thread scrolls (#12).
+  const top = (
+    <View style={{ gap: space.xs }}>
+      <Row>
+        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
+          {thread ? t('Thread · {name}', { name: shownRoomName(room) }) : shownRoomName(room)}
+        </Text>
+        {(canElementCall() || canMatrixVoip(state, roomId)) && !room.invitedBy ? (
+          <>
+            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+              <VideoSign />
+            </ShortcutTile>
+            <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
+              <PhoneSign />
+            </ShortcutTile>
+          </>
+        ) : null}
+        {/* The chat's settings, and Leave, which an invitation has too. */}
+        <IconButton label={t('More')} onPress={() => setMore(true)}>
+          <MoreIcon color={colors.text} />
+        </IconButton>
+      </Row>
+      {presence ? (
+        <Text variant="caption" numberOfLines={2}>
+          {presence}
+        </Text>
+      ) : null}
+    </View>
+  );
+
   // The bar over the thread while messages are chosen; the thread stays as it was under it.
   const screen = withArrows(
     <KeyboardAwareScrollView
@@ -701,26 +735,6 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         scrollProps.onContentSizeChange();
       }}
     >
-      <Row>
-        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
-          {thread ? t('Thread · {name}', { name: shownRoomName(room) }) : shownRoomName(room)}
-        </Text>
-        {(canElementCall() || canMatrixVoip(state, roomId)) && !room.invitedBy ? (
-          <>
-            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
-              <VideoSign />
-            </ShortcutTile>
-            <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
-              <PhoneSign />
-            </ShortcutTile>
-          </>
-        ) : null}
-      </Row>
-      {presence ? (
-        <Text variant="caption" numberOfLines={2}>
-          {presence}
-        </Text>
-      ) : null}
       {room.topic && !thread ? (
         <Text variant="caption" numberOfLines={3}>
           {room.topic}
@@ -816,64 +830,22 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         }}
         later={{ where, hold: holdLater }}
       />
-      {!voice.recording && !changed ? (
-        <Row wrap>
-          {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}
-          <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
-          {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => setStickering(true)} /> : null}
-          <CarryButtons
-            disabled={sending}
-            photos={photos}
-            among={among}
-            foot={room.encrypted ? undefined : t('Not encrypted: the Matrix server can read this chat.')}
-            onCamera={() => void sendPhoto('camera')}
-            onVideo={() => void sendVideo()}
-            onCard={(card) => void sendCard(card)}
-          />
-          {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={vanish.toggle} />}
-        </Row>
-      ) : null}
       <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
         ) : (
           <>
-            <Button title={t('Photo')} kind="secondary" compact disabled={sending || !!changed} onPress={() => void sendPhoto()} />
-            <Button title={t('File')} kind="secondary" compact disabled={sending || !!changed} onPress={() => void sendAnyFile()} />
+            {!changed ? (
+              <IconButton label={t('Attach and more')} onPress={() => setAttaching(true)} disabled={sending}>
+                <PlusIcon color={colors.text} size={22} />
+              </IconButton>
+            ) : null}
             {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
           </>
         )}
         <MicButton voice={voice} disabled={sending || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
-      {!room.direct && !room.invitedBy ? <InviteCard roomId={roomId} say={setNote} /> : null}
-      {!room.invitedBy ? (
-        <Row wrap>
-          <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
-          <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
-          {guard.buttons}
-          {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => setInfo(true)} /> : null}
-          <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} />
-          <ChatTimer
-            seconds={vanishTimer(rulesOf(room))}
-            note={t('New messages, sent or received, go from this phone that long after they were sent. Yours are also deleted for everyone in the chat then, or as soon as Erevos runs again: their apps show them as deleted. What the others sent stays with them. Messages already here stay.')}
-            onChoose={(after) => void matrixAct(async (state) => setTimerIn(state, roomId, after)).catch(fail)}
-          />
-        </Row>
-      ) : null}
-      {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} /> : null}
-      {/* A name of our own for it, on this device only: nobody is told. */}
-      {!room.invitedBy && !thread ? (
-        <OwnName
-          label={room.direct ? t('Name them here') : t('Name it here')}
-          current={room.own ?? ''}
-          placeholder={room.name}
-          max={OWN_ROOM_NAME}
-          hint={t('Only on this device: nobody is told. Empty, its usual name shows again.')}
-          onSave={(name) => matrixSetOwnName(roomId, name)}
-        />
-      ) : null}
-      {other && !room.invitedBy ? <MatrixBlock other={other} name={room.members[other]?.name || other} blocked={isIgnored(state, other)} fail={fail} /> : null}
       {!room.direct && !room.invitedBy ? <MatrixRoomInfo visible={info} onClose={() => setInfo(false)} room={room} me={me} /> : null}
       <MatrixStickers
         visible={stickering}
@@ -885,23 +857,82 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         }}
       />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={shownRoomName(room)} chat={lookChat} />
-      <Button
-        title={t('Leave')}
-        kind="secondary"
-        onPress={() =>
-          ask(t('Leave this Matrix chat?'), t('You no longer get its messages, and it leaves your list. Someone in it can invite you again.'), [
-            { text: t('Cancel'), style: 'cancel' },
-            {
-              text: t('Leave'),
-              style: 'destructive',
-              onPress: () =>
-                void matrixLeave(roomId)
-                  .then(() => router.back())
-                  .catch(fail),
-            },
-          ])
-        }
-      />
+      <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Attach and more')}>
+        <View style={{ gap: space.sm }}>
+          <Row wrap>
+            <Button title={t('Photo')} kind="secondary" compact disabled={sending || !!changed} onPress={() => { setAttaching(false); void sendPhoto(); }} />
+            <Button title={t('File')} kind="secondary" compact disabled={sending || !!changed} onPress={() => { setAttaching(false); void sendAnyFile(); }} />
+            {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => { setAttaching(false); setPolling(true); }} /> : null}
+            <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => { setAttaching(false); setPlacing(true); }} />
+            {stickerPlace ? <Button title={t('Sticker')} kind="secondary" compact disabled={sending} onPress={() => { setAttaching(false); setStickering(true); }} /> : null}
+            <CarryButtons
+              disabled={sending}
+              photos={photos}
+              among={among}
+              foot={room.encrypted ? undefined : t('Not encrypted: the Matrix server can read this chat.')}
+              onCamera={() => { setAttaching(false); void sendPhoto('camera'); }}
+              onVideo={() => { setAttaching(false); void sendVideo(); }}
+              onCard={(card) => { setAttaching(false); void sendCard(card); }}
+            />
+            {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={() => { setAttaching(false); vanish.toggle(); }} />}
+          </Row>
+        </View>
+      </Sheet>
+      <Sheet visible={more} onClose={() => setMore(false)} title={t('More')}>
+        <View style={{ gap: space.md }}>
+          {!room.direct && !room.invitedBy ? <InviteCard roomId={roomId} say={setNote} /> : null}
+          {!room.invitedBy ? (
+            <Row wrap>
+              <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
+              <Button title={t('Chat look')} kind="secondary" compact onPress={() => {
+                  setMore(false);
+                  setStyling(true);
+                }} />
+              {guard.buttons}
+              {!room.direct ? <Button title={t('Members')} kind="secondary" compact onPress={() => {
+                  setMore(false);
+                  setInfo(true);
+                }} /> : null}
+              <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} />
+              <ChatTimer
+                seconds={vanishTimer(rulesOf(room))}
+                note={t('New messages, sent or received, go from this phone that long after they were sent. Yours are also deleted for everyone in the chat then, or as soon as Erevos runs again: their apps show them as deleted. What the others sent stays with them. Messages already here stay.')}
+                onChoose={(after) => void matrixAct(async (state) => setTimerIn(state, roomId, after)).catch(fail)}
+              />
+            </Row>
+          ) : null}
+          {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} /> : null}
+          {/* A name of our own for it, on this device only: nobody is told. */}
+          {!room.invitedBy && !thread ? (
+            <OwnName
+              label={room.direct ? t('Name them here') : t('Name it here')}
+              current={room.own ?? ''}
+              placeholder={room.name}
+              max={OWN_ROOM_NAME}
+              hint={t('Only on this device: nobody is told. Empty, its usual name shows again.')}
+              onSave={(name) => matrixSetOwnName(roomId, name)}
+            />
+          ) : null}
+          {other && !room.invitedBy ? <MatrixBlock other={other} name={room.members[other]?.name || other} blocked={isIgnored(state, other)} fail={fail} /> : null}
+          <Button
+            title={t('Leave')}
+            kind="secondary"
+            onPress={() =>
+              ask(t('Leave this Matrix chat?'), t('You no longer get its messages, and it leaves your list. Someone in it can invite you again.'), [
+                { text: t('Cancel'), style: 'cancel' },
+                {
+                  text: t('Leave'),
+                  style: 'destructive',
+                  onPress: () =>
+                    void matrixLeave(roomId)
+                      .then(() => router.back())
+                      .catch(fail),
+                },
+              ])
+            }
+          />
+        </View>
+      </Sheet>
       <PollSheet visible={polling} onClose={() => setPolling(false)} onSend={(poll) => void sendPoll(poll)} />
       <RemindSheet of={reminding} where={where} onClose={() => setReminding(null)} say={setNote} />
       <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Everyone in this chat can see it.')} />
@@ -939,6 +970,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
     </KeyboardAwareScrollView>,
+    top,
   );
   return (
     <View style={{ flex: 1 }}>

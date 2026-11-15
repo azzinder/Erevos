@@ -684,47 +684,51 @@ function Home() {
 
   const relayText = relay === 'ready' ? t('Relay ready · end-to-end encrypted') : relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
 
+  // The bar at the top, with the name and its buttons, stays where it is while the list scrolls (#12).
+  const topBar = (
+    <View style={styles.topBar}>
+      <View style={styles.brand}>
+        <Logo size={30} />
+        <Text variant="title">Erevos</Text>
+      </View>
+      <View style={styles.tools}>
+        {Platform.OS !== 'web' ? (
+          <>
+            {phoneOn ? (
+              <ShortcutTile label={t('Phone')} tint="green" onPress={() => router.push('/phone')}>
+                <PhoneSign />
+              </ShortcutTile>
+            ) : null}
+            <ShortcutTile label={t('Contacts')} tint="violet" onPress={() => router.push('/contacts')}>
+              <PersonSign />
+            </ShortcutTile>
+          </>
+        ) : null}
+        {collectionOn ? (
+          <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection')}>
+            <CollectionSign tint="blue" />
+          </ShortcutTile>
+        ) : null}
+        <ShortcutTile
+          label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
+          tint="orange"
+          onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
+          // Held down, the panic button at once (#10): found fast in an emergency, never pressed by a tap.
+          onLongPress={() => router.push('/panic')}
+          hint={t('Hold down for the panic button')}
+          dot={lock.passwordLock && signs.spaces ? { color: colors.primary, ring: colors.background, label: t('Unread messages elsewhere') } : null}
+        >
+          <LockSign tint="orange" />
+        </ShortcutTile>
+        <IconButton label={t('Menu')} onPress={() => setMenu(true)}>
+          <MoreIcon color={colors.text} />
+        </IconButton>
+      </View>
+    </View>
+  );
+
   const header = (
     <View style={styles.headerBlock}>
-      <View style={styles.topBar}>
-        <View style={styles.brand}>
-          <Logo size={30} />
-          <Text variant="title">Erevos</Text>
-        </View>
-        <View style={styles.tools}>
-          {Platform.OS !== 'web' ? (
-            <>
-              {phoneOn ? (
-                <ShortcutTile label={t('Phone')} tint="green" onPress={() => router.push('/phone')}>
-                  <PhoneSign />
-                </ShortcutTile>
-              ) : null}
-              <ShortcutTile label={t('Contacts')} tint="violet" onPress={() => router.push('/contacts')}>
-                <PersonSign />
-              </ShortcutTile>
-            </>
-          ) : null}
-          {collectionOn ? (
-            <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection')}>
-              <CollectionSign tint="blue" />
-            </ShortcutTile>
-          ) : null}
-          <ShortcutTile
-            label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
-            tint="orange"
-            onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
-            // Held down, the panic button at once (#10): found fast in an emergency, never pressed by a tap.
-            onLongPress={() => router.push('/panic')}
-            hint={t('Hold down for the panic button')}
-            dot={lock.passwordLock && signs.spaces ? { color: colors.primary, ring: colors.background, label: t('Unread messages elsewhere') } : null}
-          >
-            <LockSign tint="orange" />
-          </ShortcutTile>
-          <IconButton label={t('Menu')} onPress={() => setMenu(true)}>
-            <MoreIcon color={colors.text} />
-          </IconButton>
-        </View>
-      </View>
       {messagesOn ? (
         <View style={styles.search}>
           <View>
@@ -824,6 +828,7 @@ function Home() {
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
       {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Public, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
+      <View style={[styles.list, styles.fixedBar]}>{topBar}</View>
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
         <FlatList<InboxRow | PublicItem | Section>
           // The Public tab's posts are rows of the same list, so the search above them stays as it is.
@@ -1187,6 +1192,9 @@ const makeStyles = (colors: Colors) =>
       gap: space.md,
       paddingTop: space.md,
       paddingBottom: space.sm,
+    },
+    fixedBar: {
+      paddingTop: space.md,
     },
     topBar: {
       flexDirection: 'row',

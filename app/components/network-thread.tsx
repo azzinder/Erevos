@@ -10,6 +10,9 @@ import { space } from '../theme/colors';
 import type { KeyboardAwareScrollView, KeyboardAwareScrollViewRef } from './keyboard';
 import { BELOW_TOP, ThreadArrows } from './thread-arrows';
 
+// The fixed top over the thread: as wide and as far in as the thread under it (Page, components/ui.tsx).
+const TOP = { width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: space.xl - 4, paddingTop: space.sm, paddingBottom: space.xs } as const;
+
 // What the chats with Matrix, XMPP and Nostr share, as the Erevos chat, a group and SMS have it
 // (their threads sit above a field of their own; these screens scroll the head, the thread and the
 // message field together): the thread opens at its last message with the message field under it,
@@ -212,11 +215,15 @@ export function useNetworkThread<T>({
     />
   );
 
-  // The scrolling view with the arrows over it.
-  const withArrows = (content: ReactElement) => (
+  // The scrolling view with the arrows over it, and above it `top`, the chat's name and its buttons,
+  // which stays where it is while the thread scrolls (#12).
+  const withArrows = (content: ReactElement, top?: ReactElement | null) => (
     <View style={{ flex: 1 }}>
-      {content}
-      {arrows}
+      {top ? <View style={TOP}>{top}</View> : null}
+      <View style={{ flex: 1 }}>
+        {content}
+        {arrows}
+      </View>
     </View>
   );
 

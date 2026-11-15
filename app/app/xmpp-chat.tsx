@@ -30,6 +30,8 @@ import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
+import { IconButton } from '../components/composer';
+import { MoreIcon, PlusIcon } from '../components/icons';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
 import { currentCall } from '../lib/call';
@@ -226,6 +228,8 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // Whether the chat's own look shows its choices (components/chat-look.tsx).
   const [styling, setStyling] = useState(false);
+  const [attaching, setAttaching] = useState(false);
+  const [more, setMore] = useState(false);
   // Search in this chat, its media, Go to a day and Export chat (components/chat-history.tsx).
   const history = useHistoryTools();
   // Choosing when what is typed goes, and the message a reminder is being set for (components/chat-writing.tsx).
@@ -682,6 +686,58 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const nicks: Nameable[] = room?.joined ? Object.keys(room.occupants).filter((nick) => nick !== room.nick).map((nick) => ({ identity: nick, name: nick })) : [];
   // Where what is forwarded can go: the account's other chats, a group only once joined.
   const targets = xmppChatList(state).filter((other) => other.jid !== jid && (!other.room || other.room.joined) && !isBlocked(state, other.jid));
+  // The chat's name, its calls and who is online: fixed over the thread, it stays while the thread scrolls (#12).
+  const top = (
+    <View style={{ gap: space.xs }}>
+      <Row>
+        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
+          {name}
+        </Text>
+        {room ? null : (
+          <>
+            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+              <VideoSign />
+            </ShortcutTile>
+            <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
+              <PhoneSign />
+            </ShortcutTile>
+          </>
+        )}
+        {/* In a private group: a video call and a voice call; one going on is joined as it is, by its own tile alone. */}
+        {groupCalls ? (
+          going ? (
+            going.video ? (
+              <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void callGroup(true)}>
+                <VideoSign />
+              </ShortcutTile>
+            ) : (
+              <ShortcutTile label={t('A group call is going on · Join')} tint="green" onPress={() => void callGroup(false)}>
+                <PhoneSign />
+              </ShortcutTile>
+            )
+          ) : (
+            <>
+              <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void callGroup(true)}>
+                <VideoSign />
+              </ShortcutTile>
+              <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void callGroup(false)}>
+                <PhoneSign />
+              </ShortcutTile>
+            </>
+          )
+        ) : null}
+        <IconButton label={t('More')} onPress={() => setMore(true)}>
+          <MoreIcon color={colors.text} />
+        </IconButton>
+      </Row>
+      {presence ? (
+        <Text variant="caption" numberOfLines={2}>
+          {presence}
+        </Text>
+      ) : null}
+    </View>
+  );
+
   return (
     <View style={{ flex: 1 }}>
       {selection.on ? (
@@ -723,49 +779,6 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           bottomOffset={space.xl}
           {...scrollProps}
         >
-          <Row>
-            <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
-              {name}
-            </Text>
-            {room ? null : (
-              <>
-                <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
-                  <VideoSign />
-                </ShortcutTile>
-                <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
-                  <PhoneSign />
-                </ShortcutTile>
-              </>
-            )}
-            {/* In a private group: a video call and a voice call; one going on is joined as it is, by its own tile alone. */}
-            {groupCalls ? (
-              going ? (
-                going.video ? (
-                  <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void callGroup(true)}>
-                    <VideoSign />
-                  </ShortcutTile>
-                ) : (
-                  <ShortcutTile label={t('A group call is going on · Join')} tint="green" onPress={() => void callGroup(false)}>
-                    <PhoneSign />
-                  </ShortcutTile>
-                )
-              ) : (
-                <>
-                  <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void callGroup(true)}>
-                    <VideoSign />
-                  </ShortcutTile>
-                  <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void callGroup(false)}>
-                    <PhoneSign />
-                  </ShortcutTile>
-                </>
-              )
-            ) : null}
-          </Row>
-          {presence ? (
-            <Text variant="caption" numberOfLines={2}>
-              {presence}
-            </Text>
-          ) : null}
           <Text variant="caption" tone="muted">
             {jid}
           </Text>
@@ -897,29 +910,16 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
           </Row>
           <LaterSheet visible={choosingLater} where={where} onClose={() => setChoosingLater(false)} onPick={(at) => void sendLater(at)} />
           <RemindSheet of={reminding} where={where} onClose={() => setReminding(null)} say={setNote} />
-          {!voice.recording && !changed ? (
-            <Row wrap>
-              <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => setPlacing(true)} />
-              <Button title={t('Sticker')} kind="secondary" compact disabled={sending || unsent !== null || !stickerPlace} onPress={() => setStickering(true)} />
-              <CarryButtons
-                disabled={sending || unsent !== null}
-                photos={photos}
-                among={among}
-                foot={channel || plain ? how : undefined}
-                onCamera={() => void sendPhoto('camera')}
-                onVideo={() => void sendVideo()}
-                onCard={(card) => void sendCard(card)}
-              />
-              {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={vanish.toggle} />}
-            </Row>
-          ) : null}
           <Row {...endProps}>
             {voice.recording ? (
               <RecordingLine />
             ) : (
               <>
-                <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
-                <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
+                {!changed ? (
+                  <IconButton label={t('Attach and more')} onPress={() => setAttaching(true)} disabled={sending || unsent !== null}>
+                    <PlusIcon color={colors.text} size={22} />
+                  </IconButton>
+                ) : null}
                 {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
               </>
             )}
@@ -951,119 +951,146 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
               {targets.length ? null : <Text tone="muted">{t('No chats yet')}</Text>}
             </ScrollView>
           </Sheet>
-          {channel ? (
-            <Text variant="caption" tone="muted">
-              {t('A channel tells only of messages that name you.')}
-            </Text>
-          ) : null}
-          <Row wrap>
-            <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
-            <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
-            <StarredHere stars={keep.stars} who={name} onGo={reach} />
-            {guard.buttons}
-            <ChatTimer
-              seconds={vanishTimer(rulesOf(chat))}
-              note={t('New messages, sent or received, go from this phone only, that long after they were sent. The other side keeps them: XMPP has no way to delete them there. Messages already here stay.')}
-              onChoose={(after) => void xmppAct(async (s) => setTimerIn(s, jid, after)).catch(fail)}
-            />
-          </Row>
-          <HistoryButtons tools={history} exportable={where === 'space'} />
           <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
-          {/* A contact's name of our own: their item's in the account's contacts, which its other apps show too. */}
-          {!room && state.roster[jid] ? (
-            <OwnName
-              label={t('Name them here')}
-              current={state.roster[jid].name ?? ''}
-              placeholder={jid}
-              max={XMPP_CONTACT_NAME}
-              hint={t('Kept in your contacts on your XMPP server, so your other XMPP apps show it too. They are not told. Empty, their address shows again.')}
-              onSave={(named) => xmppRenameContact(jid, named)}
-            />
-          ) : null}
-
-          {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
-          {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
-          {!room && devices.length ? (
-            <>
-              <SectionTitle title={t('Their keys')} />
-              <Card>
-                <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
-                <Keys jid={jid} devices={devices} fail={fail} />
-                <CheckInPerson
-                  checked={devices.some((d) => d.checked) && devices.every((d) => d.checked || !d.identity || !d.listed)}
-                  code={ownCode(state)}
-                  about={t('Their XMPP app shows a code of their address and keys, as Conversations does: take a photo of it here, and each of their devices whose key matches is marked checked. Let their app take a photo of this code too. Nothing is sent.')}
-                  check={async (text) => checkedSaid(await xmppAct(async (s) => checkByCode(s, jid, text)))}
-                  onUncheck={() => void xmppAct(async (s) => uncheck(s, jid)).catch(fail)}
+          <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Attach and more')}>
+            <View style={{ gap: space.sm }}>
+              <Row wrap>
+                <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => { setAttaching(false); void sendPhoto(); }} />
+                <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => { setAttaching(false); void sendAnyFile(); }} />
+                <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => { setAttaching(false); setPlacing(true); }} />
+                <Button title={t('Sticker')} kind="secondary" compact disabled={sending || unsent !== null || !stickerPlace} onPress={() => { setAttaching(false); setStickering(true); }} />
+                <CarryButtons
+                  disabled={sending || unsent !== null}
+                  photos={photos}
+                  among={among}
+                  foot={channel || plain ? how : undefined}
+                  onCamera={() => { setAttaching(false); void sendPhoto('camera'); }}
+                  onVideo={() => { setAttaching(false); void sendVideo(); }}
+                  onCard={(card) => { setAttaching(false); void sendCard(card); }}
                 />
-              </Card>
-            </>
-          ) : null}
+                {vanish.on ? null : <Button title={t('Disappear')} kind="secondary" compact onPress={() => { setAttaching(false); vanish.toggle(); }} />}
+              </Row>
+            </View>
+          </Sheet>
+          <Sheet visible={more} onClose={() => setMore(false)} title={t('More')}>
+            <View style={{ gap: space.md }}>
+              {channel ? (
+                <Text variant="caption" tone="muted">
+                  {t('A channel tells only of messages that name you.')}
+                </Text>
+              ) : null}
+              <Row wrap>
+                <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
+                <Button title={t('Chat look')} kind="secondary" compact onPress={() => {
+                    setMore(false);
+                    setStyling(true);
+                  }} />
+                <StarredHere stars={keep.stars} who={name} onGo={reach} />
+                {guard.buttons}
+                <ChatTimer
+                  seconds={vanishTimer(rulesOf(chat))}
+                  note={t('New messages, sent or received, go from this phone only, that long after they were sent. The other side keeps them: XMPP has no way to delete them there. Messages already here stay.')}
+                  onChoose={(after) => void xmppAct(async (s) => setTimerIn(s, jid, after)).catch(fail)}
+                />
+              </Row>
+              <HistoryButtons tools={history} exportable={where === 'space'} />
+              {/* A contact's name of our own: their item's in the account's contacts, which its other apps show too. */}
+              {!room && state.roster[jid] ? (
+                <OwnName
+                  label={t('Name them here')}
+                  current={state.roster[jid].name ?? ''}
+                  placeholder={jid}
+                  max={XMPP_CONTACT_NAME}
+                  hint={t('Kept in your contacts on your XMPP server, so your other XMPP apps show it too. They are not told. Empty, their address shows again.')}
+                  onSave={(named) => xmppRenameContact(jid, named)}
+                />
+              ) : null}
 
-          {room || blocked ? null : (
-            <SwitchLine
-              title={t('Appear offline')}
-              on={unseenBy(state, jid)}
-              note={t('Your XMPP account shows them offline, whatever it shows everyone else, and tells them nothing of what you read or type, nor that their messages arrived. A group you share still shows you.')}
-              onPress={() => void xmppAct((s, connection) => setUnseen(s, connection, jid, !unseenBy(s, jid))).catch(fail)}
-            />
-          )}
-          {room ? null : blocked ? (
-            <>
-              <Text variant="caption" tone="muted">
-                {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
-              </Text>
-              <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
-            </>
-          ) : (
-            <Button
-              title={t('Block')}
-              kind="secondary"
-              onPress={() =>
-                ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
-                  { text: t('Cancel'), style: 'cancel' },
-                  { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
-                ])
-              }
-            />
-          )}
-          {room ? (
-            <Button
-              title={t('Leave the group')}
-              kind="secondary"
-              onPress={() =>
-                ask(t('Leave this group?'), t('Its messages are removed from this phone, and the other XMPP apps of your account leave the group too.'), [
-                  { text: t('Cancel'), style: 'cancel' },
-                  {
-                    text: t('Leave'),
-                    style: 'destructive',
-                    onPress: () =>
-                      void xmppLeaveGroup(jid)
-                        .then(() => router.back())
-                        .catch(fail),
-                  },
-                ])
-              }
-            />
-          ) : (
-            <Button
-              title={t('Remove this chat')}
-              kind="secondary"
-              onPress={() =>
-                ask(t('Remove this chat?'), t('Its messages are removed from this phone. The contact stays in your XMPP account, and the other person keeps theirs.'), [
-                  { text: t('Cancel'), style: 'cancel' },
-                  {
-                    text: t('Remove'),
-                    style: 'destructive',
-                    onPress: () =>
-                      void xmppForgetChat(jid)
-                        .then(() => router.back())
-                        .catch(fail),
-                  },
-                ])
-              }
-            />
-          )}
+              {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
+              {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
+              {!room && devices.length ? (
+                <>
+                  <SectionTitle title={t('Their keys')} />
+                  <Card>
+                    <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
+                    <Keys jid={jid} devices={devices} fail={fail} />
+                    <CheckInPerson
+                      checked={devices.some((d) => d.checked) && devices.every((d) => d.checked || !d.identity || !d.listed)}
+                      code={ownCode(state)}
+                      about={t('Their XMPP app shows a code of their address and keys, as Conversations does: take a photo of it here, and each of their devices whose key matches is marked checked. Let their app take a photo of this code too. Nothing is sent.')}
+                      check={async (text) => checkedSaid(await xmppAct(async (s) => checkByCode(s, jid, text)))}
+                      onUncheck={() => void xmppAct(async (s) => uncheck(s, jid)).catch(fail)}
+                    />
+                  </Card>
+                </>
+              ) : null}
+
+              {room || blocked ? null : (
+                <SwitchLine
+                  title={t('Appear offline')}
+                  on={unseenBy(state, jid)}
+                  note={t('Your XMPP account shows them offline, whatever it shows everyone else, and tells them nothing of what you read or type, nor that their messages arrived. A group you share still shows you.')}
+                  onPress={() => void xmppAct((s, connection) => setUnseen(s, connection, jid, !unseenBy(s, jid))).catch(fail)}
+                />
+              )}
+              {room ? null : blocked ? (
+                <>
+                  <Text variant="caption" tone="muted">
+                    {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
+                  </Text>
+                  <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
+                </>
+              ) : (
+                <Button
+                  title={t('Block')}
+                  kind="secondary"
+                  onPress={() =>
+                    ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
+                      { text: t('Cancel'), style: 'cancel' },
+                      { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
+                    ])
+                  }
+                />
+              )}
+              {room ? (
+                <Button
+                  title={t('Leave the group')}
+                  kind="secondary"
+                  onPress={() =>
+                    ask(t('Leave this group?'), t('Its messages are removed from this phone, and the other XMPP apps of your account leave the group too.'), [
+                      { text: t('Cancel'), style: 'cancel' },
+                      {
+                        text: t('Leave'),
+                        style: 'destructive',
+                        onPress: () =>
+                          void xmppLeaveGroup(jid)
+                            .then(() => router.back())
+                            .catch(fail),
+                      },
+                    ])
+                  }
+                />
+              ) : (
+                <Button
+                  title={t('Remove this chat')}
+                  kind="secondary"
+                  onPress={() =>
+                    ask(t('Remove this chat?'), t('Its messages are removed from this phone. The contact stays in your XMPP account, and the other person keeps theirs.'), [
+                      { text: t('Cancel'), style: 'cancel' },
+                      {
+                        text: t('Remove'),
+                        style: 'destructive',
+                        onPress: () =>
+                          void xmppForgetChat(jid)
+                            .then(() => router.back())
+                            .catch(fail),
+                      },
+                    ])
+                  }
+                />
+              )}
+            </View>
+          </Sheet>
           <MessageMenu
             visible={!!menuMessage && (menuable(menuMessage) || notSent(menuMessage)) && shown}
             onClose={() => setMenuFor(null)}
@@ -1073,6 +1100,7 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             actions={menuMessage ? actionsOf(menuMessage) : []}
           />
         </KeyboardAwareScrollView>,
+        top,
       )}
     </View>
   );
