@@ -70,6 +70,7 @@ import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
 import { editionNote } from '../lib/edition-notice';
+import { editionName, named } from '../lib/edition';
 import { answerAsked, invitesToAsk, onInvitesToAsk } from '../lib/sms-relay';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
@@ -689,7 +690,7 @@ function Home() {
     <View style={styles.topBar}>
       <View style={styles.brand}>
         <Logo size={30} />
-        <Text variant="title">Erevos</Text>
+        <Text variant="title">{editionName()}</Text>
       </View>
       <View style={styles.tools}>
         {Platform.OS !== 'web' ? (
@@ -1141,19 +1142,19 @@ const EREVOS_FACE = require('../assets/icon/favicon.png');
 function ReleaseRow({ release }: { release: Told & { seen: boolean } }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
-  const said = t('Erevos {name} is out. Tap to see what is new and update.', { name: release.name });
+  const said = named(t('Erevos {name} is out. Tap to see what is new and update.', { name: release.name }));
   return (
     <Pressable
       onPress={() => router.push('/updates')}
       accessibilityRole="button"
-      accessibilityLabel={`Erevos, ${said}`}
+      accessibilityLabel={`${editionName()}, ${said}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <Image source={EREVOS_FACE} style={{ width: 52, height: 52, borderRadius: 26 }} accessibilityIgnoresInvertColors />
       <View style={styles.rowBody}>
         <View style={styles.rowLine}>
           <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
-            Erevos
+            {editionName()}
           </Text>
           <PinIcon color={colors.textFaint} size={13} />
         </View>

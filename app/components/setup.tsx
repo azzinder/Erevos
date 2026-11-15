@@ -7,6 +7,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tap } from '../lib/haptics';
+import { named } from '../lib/edition';
 import { LANG_LABELS, lang, t } from '../lib/i18n';
 import { modulesHere, type Module } from '../lib/modules';
 import { linkParts, peekLink } from '../lib/open-link';
@@ -104,7 +105,7 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
             <View style={{ alignItems: 'center', gap: space.md, paddingVertical: space.md }}>
               <Logo size={72} />
               <Text variant="title" style={{ textAlign: 'center' }}>
-                {t('Welcome to Erevos')}
+                {named(t('Welcome to Erevos'))}
               </Text>
             </View>
             <Card>

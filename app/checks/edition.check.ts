@@ -14,6 +14,7 @@ import { randomBytes } from '../lib/crypto';
 import { editionNote } from '../lib/edition-notice';
 import { newNostrDm } from '../lib/nostr-dm';
 import { whatsNewFor } from '../lib/whats-new';
+import { editionName, named } from '../lib/edition';
 import { saveNostrDm } from '../lock/nostr-dm-data';
 import { useWasmCore } from './wasm-core';
 import { blobs, files } from './files-memory';
@@ -69,4 +70,13 @@ test("the plain Erevos's What's new leaves out what is of Matrix, XMPP and chats
   assert.ok(all(lite).some((text) => text.startsWith('**Matrix, XMPP and Nostr chats are in Erevos+**')));
   // A change of Erevos's own that only names another app in passing stays.
   assert.ok(all(lite).some((text) => text.startsWith('**Voice messages in Opus**')));
+});
+
+test("each edition says its own name, in every language's words", () => {
+  assert.equal(editionName('plus'), 'Erevos+');
+  assert.equal(editionName('lite'), 'Erevos');
+  assert.equal(named('Καλώς ήρθες στο Erevos', 'plus'), 'Καλώς ήρθες στο Erevos+');
+  assert.equal(named('Erevos 7.1.3 ist da.', 'plus'), 'Erevos+ 7.1.3 ist da.');
+  assert.equal(named('Erevos+ stays', 'plus'), 'Erevos+ stays');
+  assert.equal(named('Willkommen bei Erevos', 'lite'), 'Willkommen bei Erevos');
 });

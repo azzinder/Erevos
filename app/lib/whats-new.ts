@@ -743,7 +743,33 @@ export function whatsNewFor(running: string, edition: Edition = EDITION): (Chang
   const pending = NEXT.forYou.length + NEXT.underTheHood.length > 0;
   const next = pending && !VERSIONS.some((v) => v.version === running) ? [{ version: laterThan(running, released) ? running : null, ...NEXT }] : [];
   const all = [...next, ...VERSIONS];
-  return edition === 'lite' ? all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(inLite), underTheHood: underTheHood.filter(inLite) })) : all;
+  return edition === 'lite' ? all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(inLite), underTheHood: underTheHood.filter(inLite) })) : asPlus(all);
+}
+
+// Erevos+ tells its releases as its own: a release of the plain Erevos alone (x.0.y after 7.0.0,
+// docs/editions.md) is not listed in it, and what it brought shows under the Erevos+ release that
+// came after it, but what only the plain Erevos is about (ONLY_LITE). With no Erevos+ release after
+// it yet, it stays as it is.
+const PLAIN_RELEASE = /^\d+\.0\.[1-9]\d*$/;
+const ONLY_LITE = /only (?:of )?what Erevos has\b/;
+// The last release before there were two editions: older ones are the history of both.
+const FIRST_TWO = '7.0.0';
+
+export function asPlus<T extends Changes & { version: string | null }>(list: T[]): T[] {
+  const out: T[] = [];
+  let carried: Changes = { forYou: [], underTheHood: [] };
+  // Oldest first, so what a plain release brought goes up to the next Erevos+ one.
+  const plain = (version: string) => PLAIN_RELEASE.test(version) && laterThan(version, FIRST_TWO);
+  const ownAt = (entry: T) => entry.version !== null && !plain(entry.version);
+  for (const entry of [...list].reverse()) {
+    if (!ownAt(entry) && entry.version !== null && list.slice(0, list.indexOf(entry)).some(ownAt)) {
+      carried = { forYou: [...entry.forYou.filter((x) => !ONLY_LITE.test(x)), ...carried.forYou], underTheHood: [...entry.underTheHood.filter((x) => !ONLY_LITE.test(x)), ...carried.underTheHood] };
+      continue;
+    }
+    out.unshift(carried.forYou.length + carried.underTheHood.length ? { ...entry, forYou: [...entry.forYou, ...carried.forYou], underTheHood: [...entry.underTheHood, ...carried.underTheHood] } : entry);
+    carried = { forYou: [], underTheHood: [] };
+  }
+  return out;
 }
 
 // What the plain Erevos (lib/edition.ts) shows: not what is of networks only Erevos+ has, but the

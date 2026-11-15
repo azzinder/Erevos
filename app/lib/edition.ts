@@ -37,3 +37,9 @@ export function inEdition(module: Module, edition: Edition = EDITION): boolean {
 export function editionName(edition: Edition = EDITION): string {
   return edition === 'plus' ? 'Erevos+' : 'Erevos';
 }
+
+/** `text` (already in the app's language) with the app's name as `edition` has it: in Erevos+ each
+ *  «Erevos» is «Erevos+», so the same words serve both editions in every language. */
+export function named(text: string, edition: Edition = EDITION): string {
+  return edition === 'plus' ? text.replace(/\bErevos\b(?!\+)/g, 'Erevos+') : text;
+}

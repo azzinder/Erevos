@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import { GUIDE_SOURCES } from '../guide/index';
 import { parseGuide, parseInline } from '../lib/guide';
 import { laterThan, VERSION_NAME } from '../lib/version-name';
-import { NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
+import { asPlus as asPlusForCheck, NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
 
 import { ROOT } from './words';
 
@@ -66,10 +66,11 @@ test('what is not out yet shows under the version that runs, once it comes after
   assert.equal(laterThan('4.0.0-rc.1', '3.4.2'), true);
   assert.equal(laterThan('4.0.0-rc.1', '4.0.0'), false);
   assert.equal(laterThan('0.0.1', last), false);
-  const shown = whatsNewFor('99.0.0');
+  // A plain Erevos's number: Erevos+'s own would also take in the plain releases below it (asPlus).
+  const shown = whatsNewFor('7.0.99');
   const pending = lines(NEXT).length > 0;
   assert.equal(shown.length, VERSIONS.length + (pending ? 1 : 0));
-  if (pending) assert.deepEqual(shown[0], { version: '99.0.0', ...NEXT });
+  if (pending) assert.deepEqual(shown[0], { version: '7.0.99', ...NEXT });
   // A build of a release: no list of what is to come.
   assert.deepEqual(whatsNewFor(last), VERSIONS);
   // A build of main for testing: with no number.
@@ -85,4 +86,13 @@ test("its links go to the guide's sections, in every one of its languages", () =
       assert.ok(ids.has(link.slice(1)), link);
     }
   }
+});
+
+test("Erevos+ tells the plain Erevos's releases under its own next one, as its own", () => {
+  const v = (version: string | null, forYou: string[]) => ({ version, forYou, underTheHood: [] as string[] });
+  const list = [v('7.1.2', ['plus two']), v('7.0.2', ['both two', '**The guide tells only of what Erevos has**: in Erevos.']), v('7.1.1', ['plus one']), v('7.0.1', ['both one']), v('7.0.0', ['seven'])];
+  assert.deepEqual(asPlusForCheck(list), [v('7.1.2', ['plus two', 'both two']), v('7.1.1', ['plus one', 'both one']), v('7.0.0', ['seven'])]);
+  // With no Erevos+ release after them, the plain ones stay as they are.
+  assert.deepEqual(asPlusForCheck([v('7.0.2', ['a']), v('7.0.1', ['b'])]), [v('7.0.2', ['a']), v('7.0.1', ['b'])]);
+  assert.deepEqual(asPlusForCheck([v(null, ['n']), v('7.0.1', ['b'])]), [v(null, ['n']), v('7.0.1', ['b'])]);
 });

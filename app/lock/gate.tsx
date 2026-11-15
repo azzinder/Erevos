@@ -12,6 +12,7 @@ import { useColors, useTheme } from '../theme/context';
 import { BiometricError, biometricOn, unlockWithBiometric } from './biometric';
 import { PanicPasswordError, unlock, type LockConfig, type Unlocked } from './config';
 import { LockedOutError, lockedOutMessage } from './tries';
+import { editionName, named } from '../lib/edition';
 import { t } from '../lib/i18n';
 import { wipeNow } from '../lib/panic';
 import { biometricSealer } from '../modules/erevos-biometric';
@@ -39,7 +40,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
     setBusy(true);
     setError(null);
     try {
-      const space = await unlockWithBiometric(biometricSealer, { title: t('Unlock Erevos'), cancel: t('Use password') });
+      const space = await unlockWithBiometric(biometricSealer, { title: named(t('Unlock Erevos')), cancel: t('Use password') });
       if (space) {
         setPassword('');
         await onUnlock(space);
@@ -86,7 +87,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
     <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: colors.ground }]}>
       <View style={styles.column}>
         <Logo />
-        <Text variant="title">Erevos</Text>
+        <Text variant="title">{editionName()}</Text>
         <Text tone="muted" style={styles.body}>
           {t('Enter your password')}
         </Text>
