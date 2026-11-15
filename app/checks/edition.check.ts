@@ -15,6 +15,7 @@ import { editionNote } from '../lib/edition-notice';
 import { newNostrDm } from '../lib/nostr-dm';
 import { whatsNewFor } from '../lib/whats-new';
 import { asEdition, editionName, guideNamed, named } from '../lib/edition';
+import { tFor } from '../lib/i18n';
 import { saveNostrDm } from '../lock/nostr-dm-data';
 import { useWasmCore } from './wasm-core';
 import { blobs, files } from './files-memory';
@@ -89,4 +90,19 @@ test("each edition says its own name, in every language's words", () => {
   assert.equal(asEdition('Open Erevos', 'lite'), 'Open Erevos');
   assert.equal(guideNamed('Erevos+ has Matrix, and\nErevos has not.\n\nErevos opens.', 'plus'), 'Erevos+ has Matrix, and\nErevos has not.\n\nErevos+ opens.');
   assert.equal(guideNamed('Erevos opens.\n- Erevos+ has Matrix; Erevos has not.\n**Erevos, by azzinder.**', 'plus'), 'Erevos+ opens.\n- Erevos+ has Matrix; Erevos has not.\n**Erevos, by azzinder.**');
+});
+
+test('the app says Erevos+ in its own words when the checks do not ask for the plain names', () => {
+  const flags = globalThis as { __EREVOS_PLAIN_NAMES__?: boolean };
+  const was = flags.__EREVOS_PLAIN_NAMES__;
+  try {
+    flags.__EREVOS_PLAIN_NAMES__ = false;
+    assert.equal(tFor('plus', 'Open Erevos'), 'Open Erevos+');
+    assert.equal(tFor('lite', 'Open Erevos'), 'Open Erevos');
+    assert.equal(tFor('plus', 'Erevos, by azzinder'), 'Erevos, by azzinder');
+    assert.equal(tFor('plus', 'Erevos {version} is out.', { version: '7.0.3' }), 'Erevos+ 7.0.3 is out.');
+  } finally {
+    flags.__EREVOS_PLAIN_NAMES__ = was;
+  }
+  assert.equal(tFor('plus', 'Open Erevos'), 'Open Erevos');
 });

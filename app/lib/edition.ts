@@ -45,6 +45,12 @@ export function named(text: string, edition: Edition = EDITION): string {
   return edition === 'plus' ? text.replace(/(?<![\w/.-])Erevos(?![\w+/-])(?!\.\w)/g, 'Erevos+') : text;
 }
 
+/** Whether `t` gives the edition's own name (lib/i18n.ts): always in the app; the checks read the
+ *  words as Erevos has them (checks/register.mjs), and edition.check.ts turns this on to check it. */
+export function ownNames(): boolean {
+  return (globalThis as { __EREVOS_PLAIN_NAMES__?: boolean }).__EREVOS_PLAIN_NAMES__ !== true;
+}
+
 /** Whether a text speaks of the two editions apart (it names Erevos+ already: «the next update is the
  *  plain Erevos») or says whose Erevos is (the licence's «Erevos, by azzinder»): then it stays as written. */
 export function namesEditions(text: string): boolean {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { EDITION, guideNamed, type Edition } from '../lib/edition';
+import { EDITION, guideNamed, ownNames, type Edition } from '../lib/edition';
 import { editionSource, parseGuide, type GuideSection } from '../lib/guide';
 import { lang, type Lang } from '../lib/i18n';
 
@@ -137,7 +137,8 @@ export function guideFor(lang: GuideLang, edition: Edition = EDITION): GuideSect
   const key = `${lang} ${edition}`;
   let sections = parsed.get(key);
   if (!sections) {
-    sections = parseGuide(guideNamed(editionSource(GUIDE_SOURCES[lang], edition), edition));
+    const source = editionSource(GUIDE_SOURCES[lang], edition);
+    sections = parseGuide(ownNames() ? guideNamed(source, edition) : source);
     parsed.set(key, sections);
   }
   return edition === 'lite' ? sections.filter((section) => !PLUS_SECTIONS.includes(section.id)) : sections;

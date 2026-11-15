@@ -5,3 +5,7 @@
 import { register } from 'node:module';
 
 register('./node-hooks.mjs', import.meta.url);
+
+// The checks read the app's words as Erevos has them, whichever edition they run as: what Erevos+
+// says in its own name, checks/edition.check.ts checks apart (lib/edition.ts ownNames).
+globalThis.__EREVOS_PLAIN_NAMES__ = true;

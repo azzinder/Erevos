@@ -32,6 +32,7 @@ import { EMPTY_SPACE, loadSpaceData, saveSpaceData } from '../lock/space-data';
 import { Homeserver, HS, PASSWORD } from './matrix-server';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import { store } from './secure-memory';
+import { editionName } from '../lib/edition';
 
 relayNote('the closed spaces notice checks through a relay');
 
@@ -389,8 +390,8 @@ test("a closed space's Matrix account pushes through its relay to a queue its do
       kind: 'http',
       app_id: MATRIX_PUSH_APP,
       pushkey: push.senderHex,
-      app_display_name: 'Erevos',
-      device_display_name: 'Erevos',
+      app_display_name: editionName(),
+      device_display_name: editionName(),
       lang: 'en',
       data: { url: gateway, format: 'event_id_only' },
       append: false,
