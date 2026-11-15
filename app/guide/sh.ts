@@ -1127,6 +1127,12 @@ mikrofon: snima samo dok ga držite. S TalkBackom ga dodirnite jednom da počnet
 glasovnu poruku da je pustite, i ponovo da je zaustavite. Glasovne poruke imaju iste oznake kao i ostale i prate
 postavku nestajanja razgovora.
 
+**Promeni moj glas:** u detaljima razgovora sa kontaktom, **Promeni moj glas** šalje vaše glasovne poruke u tom
+razgovoru **Dublje** ili **Više**, iste dužine. Telefon menja zvuk pre nego što poruka ode, pa vaš glas nikad ne
+napušta telefon; ako promena ne uspe, poruka se ne šalje. Samo vaš telefon zna podešavanje. Glas postaje teško
+prepoznati po sluhu, ali neko sa snimkom i vremenom mogao bi deo toga da poništi. Na Androidu 10 i novijem, i u
+pregledačima koji sami prave Opus (WebCodecs); walkie-talkie zadržava vaš glas.
+
 **Zašto:** na Androidu 10 i novijem, u web aplikaciji i na računaru glasovna poruka je Opus sa 32 kbit/s, oko 240 KB po
 minutu, kako ih šalju Telegram, Element i Conversations: govor jasniji od toga ne može biti. Na Androidu 9 i starijem, i
 u Safariju prije iOS-a 18.4 i macOS-a 15.4, to je AAC sa 64 kbit/s, oko 480 KB po minutu. Više se u glasu ne bi čulo,

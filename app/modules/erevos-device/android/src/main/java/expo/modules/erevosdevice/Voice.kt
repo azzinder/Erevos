@@ -5,9 +5,14 @@
 package expo.modules.erevosdevice
 
 import android.content.Context
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
+import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.log10
 
@@ -77,6 +82,154 @@ object Voice {
     return Uri.fromFile(f).toString()
   }
 
+  /**
+   * The sound of the recording at `uri` (a file Voice made), for its voice to be changed
+   * (lib/voice-change.ts): 4 bytes of samples a second, big-endian, then mono 16-bit
+   * little-endian samples. Null when it cannot be read. The file stays.
+   */
+  fun samples(uri: String): ByteArray? {
+    val path = Uri.parse(uri).path ?: return null
+    val extractor = MediaExtractor()
+    var codec: MediaCodec? = null
+    return try {
+      extractor.setDataSource(path)
+      val track = (0 until extractor.trackCount).firstOrNull { extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true } ?: return null
+      extractor.selectTrack(track)
+      val format = extractor.getTrackFormat(track)
+      val c = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+      codec = c
+      c.configure(format, null, null, 0)
+      c.start()
+      var rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+      var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+      val out = ByteArrayOutputStream()
+      val info = MediaCodec.BufferInfo()
+      var fed = false
+      var done = false
+      while (!done) {
+        if (!fed) {
+          val i = c.dequeueInputBuffer(WAIT_US)
+          if (i >= 0) {
+            val n = extractor.readSampleData(c.getInputBuffer(i)!!, 0)
+            if (n < 0) {
+              c.queueInputBuffer(i, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              fed = true
+            } else {
+              c.queueInputBuffer(i, 0, n, extractor.sampleTime, 0)
+              extractor.advance()
+            }
+          }
+        }
+        val o = c.dequeueOutputBuffer(info, WAIT_US)
+        if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+          rate = c.outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+          channels = c.outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+        } else if (o >= 0) {
+          val buffer = c.getOutputBuffer(o)!!
+          buffer.position(info.offset)
+          buffer.limit(info.offset + info.size)
+          val chunk = ByteArray(info.size)
+          buffer.get(chunk)
+          // Mono: the first channel of each frame.
+          if (channels <= 1) {
+            out.write(chunk)
+          } else {
+            var at = 0
+            while (at + 1 < chunk.size) {
+              out.write(chunk[at].toInt())
+              out.write(chunk[at + 1].toInt())
+              at += 2 * channels
+            }
+          }
+          c.releaseOutputBuffer(o, false)
+          if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) done = true
+        }
+        if (out.size() > MOST_BYTES) return null
+      }
+      byteArrayOf((rate ushr 24).toByte(), (rate ushr 16).toByte(), (rate ushr 8).toByte(), rate.toByte()) + out.toByteArray()
+    } catch (e: Exception) {
+      null
+    } finally {
+      runCatching { codec?.stop() }
+      runCatching { codec?.release() }
+      extractor.release()
+    }
+  }
+
+  /**
+   * `pcm` (mono 16-bit little-endian samples at `rate`) as a voice message in Ogg/Opus, at 32
+   * kbit/s: the file's uri, in the cache folder recordings go to, to read and delete. Null when it
+   * cannot be done here (before Android 10) or failed, and then no file stays.
+   */
+  fun opus(context: Context, pcm: ByteArray, rate: Int): String? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+    val dir = File(context.cacheDir, "Audio").apply { mkdirs() }
+    val out = File(dir, "recording-${System.nanoTime()}.ogg")
+    var codec: MediaCodec? = null
+    var muxer: MediaMuxer? = null
+    return try {
+      val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_OPUS, rate, 1)
+      format.setInteger(MediaFormat.KEY_BIT_RATE, BITS)
+      val c = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS)
+      codec = c
+      c.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+      c.start()
+      val m = MediaMuxer(out.path, MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG)
+      muxer = m
+      var track = -1
+      val info = MediaCodec.BufferInfo()
+      var at = 0
+      var fed = false
+      var done = false
+      while (!done) {
+        if (!fed) {
+          val i = c.dequeueInputBuffer(WAIT_US)
+          if (i >= 0) {
+            val buffer = c.getInputBuffer(i)!!
+            val n = minOf(buffer.remaining() and 1.inv(), pcm.size - at)
+            val time = (at / 2).toLong() * 1_000_000L / rate
+            if (n <= 0) {
+              c.queueInputBuffer(i, 0, 0, time, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              fed = true
+            } else {
+              buffer.put(pcm, at, n)
+              c.queueInputBuffer(i, 0, n, time, 0)
+              at += n
+            }
+          }
+        }
+        val o = c.dequeueOutputBuffer(info, WAIT_US)
+        if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+          track = m.addTrack(c.outputFormat)
+          m.start()
+        } else if (o >= 0) {
+          val buffer = c.getOutputBuffer(o)!!
+          if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0 && info.size > 0 && track >= 0) {
+            buffer.position(info.offset)
+            buffer.limit(info.offset + info.size)
+            m.writeSampleData(track, buffer, info)
+          }
+          c.releaseOutputBuffer(o, false)
+          if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) done = true
+        }
+      }
+      m.stop()
+      if (track < 0 || out.length() == 0L) {
+        out.delete()
+        null
+      } else {
+        Uri.fromFile(out).toString()
+      }
+    } catch (e: Exception) {
+      out.delete()
+      null
+    } finally {
+      runCatching { codec?.stop() }
+      runCatching { codec?.release() }
+      runCatching { muxer?.release() }
+    }
+  }
+
   // Lets a recording go, its file too.
   private fun drop() {
     val r = recorder ?: return
@@ -91,4 +244,7 @@ object Voice {
   private const val BITS = 32_000
   private const val TALK_RATE = 16_000
   private const val TALK_BITS = 24_000
+  private const val WAIT_US = 10_000L
+  // A minute and a quarter of 48 kHz 16-bit mono: more is not a voice message of Erevos's.
+  private const val MOST_BYTES = 48_000 * 2 * 75
 }

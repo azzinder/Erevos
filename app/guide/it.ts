@@ -1162,6 +1162,13 @@ chiede se Erevos può usare il microfono: registra solo mentre lo tieni premuto.
 iniziare e di nuovo per inviare. Tocca un messaggio vocale per riprodurlo, e toccalo di nuovo per fermarlo. I messaggi
 vocali hanno gli stessi segni degli altri, e seguono l’impostazione dei messaggi effimeri della chat.
 
+**Cambia la mia voce:** nei dettagli della chat con un contatto, **Cambia la mia voce** invia i tuoi messaggi vocali
+in quella chat **Più grave** o **Più acuta**, della stessa durata. Il telefono cambia il suono prima che il messaggio
+parta, quindi la tua voce non lo lascia mai; se il cambio non riesce, il messaggio non viene inviato. Solo il tuo
+telefono conosce l’impostazione. Rende la tua voce difficile da riconoscere a orecchio, ma chi ha la registrazione e
+tempo potrebbe annullarne una parte. Su Android 10 e successivi, e nei browser che creano Opus da sé (WebCodecs); il
+walkie-talkie mantiene la tua voce.
+
 **Perché:** su Android 10 e successivi, nell’app web e su un computer, un messaggio vocale è Opus a 32 kbit/s, circa 240
 KB al minuto, come li inviano Telegram, Element e Conversations: il massimo di chiarezza utile per la voce. Su Android 9
 e precedenti, e in Safari prima di iOS 18.4 e macOS 15.4, è AAC a 64 kbit/s, circa 480 KB al minuto. Di più non si

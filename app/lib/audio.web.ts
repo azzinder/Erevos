@@ -7,8 +7,9 @@ import { useRef } from 'react';
 
 import { randomBytes } from './crypto';
 import { t } from './i18n';
-import { readOgg, readWebm, webmToOgg, writeCaf } from './ogg-opus';
+import { readOgg, readWebm, webmToOgg, writeCaf, writeOgg } from './ogg-opus';
 import { AAC_BITS, MAX_VOICE_MS, OPUS_BITS, soundOf, TALK_BITS, TALK_RATE, webVoiceType } from './voice';
+import { changeSamples, coreChangesVoice, floatsToPcm, notChanged, pcmToFloats, type VoiceKind } from './voice-change';
 
 // Voice messages on a computer (the desktop app, lib/shell.ts) and in the web app, as lib/audio.ts
 // does them on the phone: Opus in Ogg at 32 kbit/s (lib/voice.ts). Firefox records Ogg itself;
@@ -76,6 +77,60 @@ function asOgg(audio: Uint8Array): Uint8Array {
   }
 }
 
+// What a browser needs to change a voice: to read a recording's sound, and to make Opus of it again (WebCodecs).
+type Encoder = {
+  configure(config: { codec: string; sampleRate: number; numberOfChannels: number; bitrate: number }): void;
+  encode(data: unknown): void;
+  flush(): Promise<void>;
+  close(): void;
+};
+type EncoderClass = new (init: { output: (chunk: { byteLength: number; copyTo(to: Uint8Array): void }) => void; error: (error: unknown) => void }) => Encoder;
+type AudioDataClass = new (init: { format: 'f32'; sampleRate: number; numberOfFrames: number; numberOfChannels: number; timestamp: number; data: Float32Array }) => { close(): void };
+const web = globalThis as unknown as { AudioEncoder?: EncoderClass; AudioData?: AudioDataClass; OfflineAudioContext?: typeof OfflineAudioContext };
+
+const RATE = 48_000;
+
+/** Whether a voice message's voice can be changed here (lib/voice-change.ts): a browser with WebCodecs' Opus, in a build that changes it. */
+export function canChangeVoice(): boolean {
+  return !!RECORDED && !!web.AudioEncoder && !!web.AudioData && !!web.OfflineAudioContext && coreChangesVoice();
+}
+
+// A recording with its voice changed, in Ogg/Opus. Throws when it cannot be.
+async function changed(audio: Uint8Array, kind: VoiceKind): Promise<Uint8Array> {
+  const { AudioEncoder, AudioData, OfflineAudioContext: Offline } = web;
+  if (!AudioEncoder || !AudioData || !Offline) throw notChanged();
+  try {
+    const sound = await new Offline(1, 1, RATE).decodeAudioData(audio.slice().buffer);
+    const pcm = await changeSamples(floatsToPcm(sound.getChannelData(0)), RATE, kind);
+    const packets: Uint8Array[] = [];
+    let failed: unknown = null;
+    const encoder = new AudioEncoder({
+      output: (chunk) => {
+        const bytes = new Uint8Array(chunk.byteLength);
+        chunk.copyTo(bytes);
+        packets.push(bytes);
+      },
+      error: (error) => (failed = error),
+    });
+    encoder.configure({ codec: 'opus', sampleRate: RATE, numberOfChannels: 1, bitrate: OPUS_BITS });
+    const samples = pcmToFloats(pcm);
+    const data = new AudioData({ format: 'f32', sampleRate: RATE, numberOfFrames: samples.length, numberOfChannels: 1, timestamp: 0, data: samples });
+    encoder.encode(data);
+    await encoder.flush();
+    data.close();
+    encoder.close();
+    if (failed) throw failed;
+    // The head: version 1, one channel, Opus's usual pre-skip (312), 48 kHz, gain 0, mapping 0.
+    const head = Uint8Array.of(...[...'OpusHead'].map((c) => c.charCodeAt(0)), 1, 1, 312 & 0xff, 312 >> 8, 0x80, 0xbb, 0, 0, 0, 0, 0);
+    const [a, b, c, d] = randomBytes(4);
+    const ogg = writeOgg({ head, packets }, (a | (b << 8) | (c << 16) | (d << 24)) >>> 0);
+    if (!ogg) throw notChanged();
+    return ogg;
+  } catch {
+    throw notChanged();
+  }
+}
+
 /** Records one voice message at a time: walkie-talkie style, smaller, with `talk`. */
 export function useVoiceRecorder(talk = false) {
   const recorder = useAudioRecorder(talk ? TALK : OPTIONS);
@@ -104,7 +159,7 @@ export function useVoiceRecorder(talk = false) {
     return true;
   }
 
-  async function stop(): Promise<{ audio: Uint8Array; ms: number; levels: number[] } | null> {
+  async function stop(change?: VoiceKind): Promise<{ audio: Uint8Array; ms: number; levels: number[] } | null> {
     const ms = Math.min(Date.now() - started.current, MAX_VOICE_MS);
     stopSampling();
     await recorder.stop();
@@ -112,6 +167,7 @@ export function useVoiceRecorder(talk = false) {
     if (!uri || ms < MIN_VOICE_MS) return null;
     const audio = new Uint8Array(await (await fetch(uri)).arrayBuffer());
     URL.revokeObjectURL(uri);
+    if (change) return { audio: await changed(audio, change), ms, levels: levels.current };
     return { audio: asOgg(audio), ms, levels: levels.current };
   }
 

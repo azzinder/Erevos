@@ -1156,6 +1156,12 @@ Erevos pode usar o microfone: ele só grava enquanto você o segura. Com o TalkB
 de novo para enviar. Toque numa mensagem de voz para ouvi-la, e toque de novo para parar. As mensagens de voz têm as
 mesmas marcas que o resto, e seguem a configuração de mensagens temporárias da conversa.
 
+**Mudar minha voz:** nos detalhes da conversa com um contato, **Mudar minha voz** envia suas mensagens de voz nessa
+conversa **Mais grave** ou **Mais aguda**, com a mesma duração. Seu telefone muda o som antes de a mensagem sair,
+então sua própria voz nunca sai dele; se a mudança falhar, a mensagem não é enviada. Só o seu telefone conhece o
+ajuste. Deixa sua voz difícil de reconhecer de ouvido, mas alguém com a gravação e tempo poderia desfazer parte. No
+Android 10 e posteriores, e em navegadores que fazem Opus sozinhos (WebCodecs); o walkie-talkie mantém sua voz.
+
 **Por quê:** no Android 10 e posteriores, no app web e num computador, uma mensagem de voz é Opus a 32 kbit/s, cerca de
 240 KB por minuto, como Telegram, Element e Conversations as enviam: tão clara quanto a fala pode ser. No Android 9 e
 anteriores, e no Safari antes do iOS 18.4 e do macOS 15.4, é AAC a 64 kbit/s, cerca de 480 KB por minuto. Mais do que

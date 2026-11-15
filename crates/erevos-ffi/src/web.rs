@@ -157,6 +157,11 @@ pub fn pair_confirmed(key: &[u8], started: &[u8], tag: &[u8]) -> Result<Vec<u8>,
     js(crate::pair_confirmed(key, started, tag))
 }
 
+#[wasm_bindgen(js_name = voiceChange)]
+pub fn voice_change(pcm: &[u8], rate: &[u8], kind: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::voice_change(pcm, rate, kind))
+}
+
 #[wasm_bindgen(js_name = sealPublic)]
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_public(secret))

@@ -109,6 +109,10 @@ type Device = {
   voiceLevel?(): number | null;
   /** Stops the recording: its file's uri, to read and delete, or null when it failed. */
   voiceStop?(): Promise<string | null>;
+  /** The sound of a recording Voice made (its uri): 4 bytes of samples a second, big-endian, then mono 16-bit little-endian samples; null when it cannot be read. Missing in a build before it. */
+  voiceSamples?(uri: string): Promise<Uint8Array | null>;
+  /** Mono 16-bit little-endian samples at `rate` as Ogg/Opus: the file's uri, to read and delete, or null before Android 10 or when it failed. Missing in a build before it. */
+  voiceOpus?(pcm: Uint8Array, rate: number): Promise<string | null>;
   /** A folder picked with Android's folder picker (a tree uri): its files with their names, sizes (-1 where it does not say) and uris, in one look (Folders.kt). Null where it cannot be read. Missing in a build before it. */
   folderFiles?(folder: string): Promise<FolderFile[] | null>;
   /** Writes `bytes` as a new file in that folder: its name as the folder gave it, and its uri. Rejects, with none of it left, when it could not be written whole. */

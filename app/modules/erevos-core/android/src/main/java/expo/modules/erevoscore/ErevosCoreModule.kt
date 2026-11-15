@@ -72,6 +72,7 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("pairConfirm") { key: ByteArray, started: ByteArray -> ErevosCoreNative.pairConfirm(key, started) }
     AsyncFunction("pairConfirmed") { key: ByteArray, started: ByteArray, tag: ByteArray -> ErevosCoreNative.pairConfirmed(key, started, tag) }
+    AsyncFunction("voiceChange") { pcm: ByteArray, rate: ByteArray, kind: ByteArray -> ErevosCoreNative.voiceChange(pcm, rate, kind) }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
     AsyncFunction("relayChannelKeys") { relayKey: ByteArray, secret: ByteArray, answer: ByteArray ->
       ErevosCoreNative.relayChannelKeys(relayKey, secret, answer)
@@ -224,6 +225,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun pairFinish(secret: ByteArray, session: ByteArray, started: ByteArray, answered: ByteArray, ownStarted: ByteArray): ByteArray
   @JvmStatic external fun pairConfirm(key: ByteArray, started: ByteArray): ByteArray
   @JvmStatic external fun pairConfirmed(key: ByteArray, started: ByteArray, tag: ByteArray): ByteArray
+  @JvmStatic external fun voiceChange(pcm: ByteArray, rate: ByteArray, kind: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
   @JvmStatic external fun relayChannelKeys(relayKey: ByteArray, secret: ByteArray, answer: ByteArray): ByteArray
   @JvmStatic external fun hardKey(input: ByteArray, salt: ByteArray, cost: ByteArray): ByteArray

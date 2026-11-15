@@ -313,6 +313,15 @@ class ErevosDeviceModule : Module() {
       Voice.stop()
     }
 
+    // A voice message's voice changed (lib/voice-change.ts): the sound of a recording as samples,
+    // and samples made a recording again.
+    AsyncFunction("voiceSamples") { uri: String -> Voice.samples(uri) }
+
+    AsyncFunction("voiceOpus") { pcm: ByteArray, rate: Int ->
+      val app = context?.applicationContext ?: return@AsyncFunction null
+      Voice.opus(app, pcm, rate)
+    }
+
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it
     // started, "permission" when Erevos may not use the location, "off" when the phone's location
     // is off, "approximate" when Erevos may use only the approximate location and the phone has no

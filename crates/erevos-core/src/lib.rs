@@ -10,6 +10,7 @@ pub mod bind;
 pub mod conversation;
 pub mod coupon;
 pub mod cpace;
+pub mod voice_shift;
 pub mod frame;
 pub mod keep;
 pub mod mesh;

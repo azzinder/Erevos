@@ -1163,6 +1163,12 @@ Erevos puede usar el micrófono: solo graba mientras lo mantienes pulsado. Con T
 otra para enviar. Toca un mensaje de voz para reproducirlo, y tócalo otra vez para pararlo. Los mensajes de voz tienen
 las mismas marcas que el resto, y siguen el ajuste de mensajes temporales del chat.
 
+**Cambiar mi voz:** en los detalles del chat con un contacto, **Cambiar mi voz** envía tus mensajes de voz en ese chat
+**Más grave** o **Más aguda**, igual de largos. Tu teléfono cambia el sonido antes de que salga el mensaje, así que tu
+propia voz nunca sale de él; si el cambio falla, el mensaje no se envía. Solo tu teléfono conoce el ajuste. Hace tu
+voz difícil de reconocer de oído, pero alguien con la grabación y tiempo podría deshacer parte. En Android 10 y
+posteriores, y en navegadores que hacen Opus ellos mismos (WebCodecs); el walkie-talkie mantiene tu voz.
+
 **Por qué:** en Android 10 y posteriores, en la app web y en un ordenador, un mensaje de voz es Opus a 32 kbit/s, unos
 240 KB por minuto, como los envían Telegram, Element y Conversations: tan claro como puede ser el habla. En Android 9 y
 anteriores, y en Safari antes de iOS 18.4 y macOS 15.4, es AAC a 64 kbit/s, unos 480 KB por minuto. Más no se oiría en

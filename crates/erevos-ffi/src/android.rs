@@ -78,6 +78,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_pairStart => crate::pa
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_pairFinish => crate::pair_finish, secret, session, started, answered, own_started);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_pairConfirm => crate::pair_confirm, key, started);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_pairConfirmed => crate::pair_confirmed, key, started, tag);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_voiceChange => crate::voice_change, pcm, rate, kind);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_sealOpen => crate::seal_open, secret, sealed);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_relayChannelKeys => crate::relay_channel_keys, relay_key, secret, answer);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_hardKey => crate::hard_key, input, salt, cost);

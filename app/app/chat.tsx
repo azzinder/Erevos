@@ -21,7 +21,8 @@ import { callLineMessage, callSignal, endCallsOf, onCallChange, startCall as beg
 import { shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
-import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
+import { canChangeVoice, clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
+import { VOICE_KINDS, VOICE_NAMES, type VoiceKind } from '../lib/voice-change';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, takeOffRelay, takesItself, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
@@ -1976,6 +1977,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // again when a phone links nearby: the answer says whether it is theirs (lib/nearby.ts).
   const selectedHidden = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.hide);
   const selectedTor = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.tor === true);
+  const selectedVoice = contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === selected)?.voice;
   const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request);
   const linked = hiddenKey ? 0 : nearby.count();
   useEffect(() => {
@@ -4103,7 +4105,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setTalking(false);
     try {
       const talk = recordingTalk.current;
-      const recorded = await (talk ? talkRecorder : recorder).stop();
+      // The voice changed as the chat says (lib/voice-change.ts); never the walkie-talkie's.
+      const change = !talk && e2e && selectedContact?.startsWith(CONTACT_PREFIX) ? e2e.voiceOf(selectedContact.slice(CONTACT_PREFIX.length)) : undefined;
+      const recorded = await (talk ? talkRecorder.stop() : recorder.stop(change));
       if (cancel) {
         setNote(t('Recording cancelled.'));
         return;
@@ -4855,6 +4859,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       await e2e.setTor(peer.slice(CONTACT_PREFIX.length), on);
       setContacts(e2e.contacts());
       setNote(on ? t('Messages and files with {name} now go only through Tor. They wait while Tor starts.', { name: label(peer, shownContacts) }) : t('Messages with {name} go as the space’s Tor setting says.', { name: label(peer, shownContacts) }));
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // The voice this chat's voice messages go with (lib/voice-change.ts), or the voice as it is.
+  async function changeVoice(peer: string, voice: VoiceKind | null) {
+    if (!e2e) return;
+    try {
+      await e2e.setVoice(peer.slice(CONTACT_PREFIX.length), voice);
+      setContacts(e2e.contacts());
     } catch (error) {
       setNote(errorText(error));
     }
@@ -6682,6 +6697,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                 : selectedTor
                                   ? t('This chat goes only through Tor, on its own circuits, whatever the space’s Tor setting: the relay does not see your address for it. Slower, and it waits while Tor starts. Calls do not go through Tor.')
                                   : t('This chat goes as the space’s Tor setting says. Turn on to send it only through Tor.')}
+                            </Text>
+                          </>
+                        ) : null}
+                        {canChangeVoice() || selectedVoice ? (
+                          <>
+                            <View style={styles.rule} />
+                            <Text variant="label">{t('Change my voice')}</Text>
+                            <Row wrap>
+                              <Chip label={t('Off')} selected={!selectedVoice} onPress={() => void changeVoice(selectedContact, null)} />
+                              {VOICE_KINDS.map((kind) => (
+                                <Chip key={kind} label={t(VOICE_NAMES[kind])} selected={selectedVoice === kind} onPress={() => void changeVoice(selectedContact, kind)} />
+                              ))}
+                            </Row>
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {selectedVoice
+                                ? t('Your voice messages in this chat go with your voice changed: it is hard to know by ear, though someone with the recording and time could undo some of it. The walkie-talkie keeps your voice.')
+                                : t('Your voice messages in this chat go with your own voice. Change it for someone who should not know your voice.')}
                             </Text>
                           </>
                         ) : null}

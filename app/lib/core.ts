@@ -35,6 +35,8 @@ export interface Core {
   pairFinish?(secret: Uint8Array, session: Uint8Array, started: Uint8Array, answered: Uint8Array, ownStarted: Uint8Array): Promise<Uint8Array>;
   pairConfirm?(key: Uint8Array, started: Uint8Array): Promise<Uint8Array>;
   pairConfirmed?(key: Uint8Array, started: Uint8Array, tag: Uint8Array): Promise<Uint8Array>;
+  /** A voice message's voice changed (crates/erevos-core voice_shift, lib/voice-change.ts). Missing in a build made before it. */
+  voiceChange?(pcm: Uint8Array, rate: Uint8Array, kind: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
   /** The keys of a channel to a relay (crates/erevos-core relay_channel), phone to relay then relay
    *  to phone, 32 bytes each, once the relay's answer proves it holds `relayKey`'s secret; throws
@@ -332,6 +334,11 @@ export function pairCore(): Required<Pick<Core, 'pairStart' | 'pairFinish' | 'pa
   const it = need();
   if (!it.pairStart || !it.pairFinish || !it.pairConfirm || !it.pairConfirmed) throw new NoCoreError();
   return it as Required<Pick<Core, 'pairStart' | 'pairFinish' | 'pairConfirm' | 'pairConfirmed'>>;
+}
+
+/** The core's change of a voice, or null in a build made before it. */
+export function voiceCore(): ((pcm: Uint8Array, rate: Uint8Array, kind: Uint8Array) => Promise<Uint8Array>) | null {
+  return typeof core?.voiceChange === 'function' ? core.voiceChange.bind(core) : null;
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

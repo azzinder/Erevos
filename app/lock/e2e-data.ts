@@ -5,6 +5,7 @@
 import { isPieceText } from '../lib/chat-parts';
 import { isRelayAddress } from '../lib/relay';
 import { MAX_PARTS } from '../lib/voice';
+import { checkedVoice, type VoiceKind } from '../lib/voice-change';
 import { checkedLook, type Look } from '../theme/look';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
 import { checkedChatNotify, type ChatNotify } from './chat-notify';
@@ -56,6 +57,9 @@ export type Contact = {
    *  Calls do not: their sound goes as every call's does. The account's linked devices keep it alike
    *  (lib/link-wire.ts Synced), set on the phone or on any of them. Missing: as the space. */
   tor?: true;
+  /** The voice messages this chat sends go with the voice changed so (lib/voice-change.ts). Only
+   *  this phone knows it. Missing: the voice as it is. */
+  voice?: VoiceKind;
   /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
    *  request. Their phone hears nothing back (not even that a message came) until it does. */
   request: boolean;
@@ -708,6 +712,7 @@ function checkedContact(value: unknown): Contact | null {
     ownIdentity: isHex(v.ownIdentity) && v.ownIdentity.length === 64 ? v.ownIdentity : '',
     hide: v.hide === true,
     ...(v.tor === true ? { tor: true as const } : {}),
+    ...(checkedVoice(v.voice) ? { voice: checkedVoice(v.voice) } : {}),
     heldGot: heldTags(v.heldGot),
     heldRead: heldTags(v.heldRead),
     phone: isText(v.phone) && /^\+?\d{3,20}$/.test(v.phone) ? v.phone : '',

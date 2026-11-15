@@ -305,6 +305,15 @@ pub fn pair_confirmed(key: &[u8], started: &[u8], tag: &[u8]) -> Result<Vec<u8>>
     }
 }
 
+/// A voice message's voice changed (erevos_core::voice_shift): `pcm` 16-bit
+/// little-endian mono samples, `rate` 4 bytes big-endian samples a second,
+/// `kind` [1] deeper or [2] higher. The samples back, as many.
+pub fn voice_change(pcm: &[u8], rate: &[u8], kind: &[u8]) -> Result<Vec<u8>> {
+    let rate = <[u8; 4]>::try_from(rate).map_err(|_| "rate: 4 bytes")?;
+    let kind = *kind.first().ok_or("kind: 1 byte")?;
+    erevos_core::voice_shift::change(pcm, u32::from_be_bytes(rate), kind).map_err(fail)
+}
+
 /// The public key for a 32-byte secret, for others to seal to with `relay_seal`
 /// (an SMS invite's key, which opens the answer to it).
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>> {

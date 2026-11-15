@@ -31,6 +31,7 @@ import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_KEEP_MOST, nos
 import { t } from './i18n';
 import { lookNow } from './look-now';
 import { checkVerifyCode, verifyCode, type VerifyResult } from './verify-code';
+import type { VoiceKind } from './voice-change';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
 // so neither its contacts nor the relay can tie the two together. The account's public keys
@@ -591,6 +592,8 @@ export type ContactInfo = {
   hide: boolean;
   /** The chat goes only through Tor (Contact.tor). */
   tor?: boolean;
+  /** Its voice messages go with the voice changed so (Contact.voice). */
+  voice?: VoiceKind;
   /** Locked with a PIN of its own (lock/chat-pin.ts). */
   locked: boolean;
   /** Its own notifications (lock/chat-notify.ts); missing while it has none. */
@@ -1622,7 +1625,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, said, timer, shots, request, look, avatar, hide, tor, pin, notify }) => ({
+    return this.data.contacts.map(({ identity, sender, name, said, timer, shots, request, look, avatar, hide, tor, pin, notify, voice }) => ({
       identity,
       sender,
       // The name this chat gives them, or else the one they go by.
@@ -1636,6 +1639,7 @@ export class E2E {
       avatar,
       hide,
       ...(tor === true ? { tor: true } : {}),
+      ...(voice ? { voice } : {}),
       locked: !!pin,
       ...(notify ? { notify } : {}),
     }));
@@ -1730,6 +1734,21 @@ export class E2E {
       // What Nostr reads changes with it (nostrKeys).
       if (contact.nostr) nostrKeysChanged();
     });
+  }
+
+  /** The voice the chat with a contact sends its voice messages with (Contact.voice), or null for the voice as it is. */
+  setVoice(identity: string, voice: VoiceKind | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      const { voice: _was, ...rest } = contact;
+      await this.save(this.withContact(voice ? { ...rest, voice } : rest));
+    });
+  }
+
+  /** The voice the chat with `identity` changes its voice messages to, if any. */
+  voiceOf(identity: string): VoiceKind | undefined {
+    return this.find(identity)?.voice;
   }
 
   /** Whether the chat with `identity` goes only through Tor (Contact.tor, lib/tor-chats.ts). */

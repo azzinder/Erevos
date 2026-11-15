@@ -1228,6 +1228,13 @@ Android demande si Erevos peut utiliser le micro : il n’enregistre que tant qu
 une fois pour commencer et une autre pour envoyer. Appuie sur un message vocal pour l’écouter, et de nouveau pour
 l’arrêter. Les messages vocaux ont les mêmes marques que le reste, et suivent le réglage éphémère de la discussion.
 
+**Changer ma voix :** dans les détails de la discussion avec un contact, **Changer ma voix** envoie tes messages
+vocaux de cette discussion **Plus grave** ou **Plus aiguë**, de la même durée. Ton téléphone change le son avant que
+le message parte, ta propre voix ne le quitte donc jamais ; si le changement échoue, le message n’est pas envoyé. Seul
+ton téléphone connaît ce réglage. Ta voix devient difficile à reconnaître à l’oreille, mais quelqu’un avec
+l’enregistrement et du temps pourrait en défaire une partie. Sur Android 10 et plus récent, et dans les navigateurs
+qui font eux-mêmes de l’Opus (WebCodecs) ; le talkie-walkie garde ta voix.
+
 **Pourquoi :** sur Android 10 et plus récent, dans l’appli web et sur un ordinateur, un message vocal est en Opus à 32
 kbit/s, environ 240 Ko par minute, comme l’envoient Telegram, Element et Conversations : aussi clair que la parole peut
 l’être. Sur Android 9 et plus ancien, et dans Safari avant iOS 18.4 et macOS 15.4, il est en AAC à 64 kbit/s, environ

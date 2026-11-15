@@ -1071,6 +1071,12 @@ microphone: it records only while you hold it. With TalkBack, tap it once to sta
 message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
 disappearing setting.
 
+**Change my voice:** in a contact's chat details, **Change my voice** sends your voice messages in that chat
+**Deeper** or **Higher**, as long as you spoke. Your phone changes the sound before the message goes, so your own
+voice never leaves it; if the change fails, the message is not sent. Only your phone knows the setting. It makes your
+voice hard to know by ear, but someone with the recording and time could undo some of it. On Android 10 and later, and
+in browsers that make Opus themselves (WebCodecs); the walkie-talkie keeps your voice.
+
 **Why:** on Android 10 and later, in the web app and on a computer, a voice message is Opus at 32 kbit/s, about 240 KB a
 minute, as Telegram, Element and Conversations send them: as clear as speech gets. On Android 9 and older, and in Safari
 before iOS 18.4 and macOS 15.4, it is AAC at 64 kbit/s, about 480 KB a minute. More would not be heard in a voice, but

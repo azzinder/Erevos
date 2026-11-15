@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { device } from '../modules/erevos-device';
 import { randomBytes, toHex } from './crypto';
 import { AAC_BITS, MAX_VOICE_MS, phoneRecordsOpus, soundOf, TALK_BITS, TALK_RATE } from './voice';
+import { changeSamples, coreChangesVoice, notChanged, type VoiceKind } from './voice-change';
 
 // Recording and playing voice messages on the phone. On Android 10 and later the sound is Opus in
 // Ogg, mono, at 48 kHz and 32 kbit/s, recorded by Android itself (modules/erevos-device Voice.kt):
@@ -81,6 +82,27 @@ export function clearLeftovers() {
   }
 }
 
+/** Whether a voice message's voice can be changed here (lib/voice-change.ts): where Android records Ogg/Opus, in a build that changes it. */
+export function canChangeVoice(): boolean {
+  return recordsOpus() && !!device?.voiceSamples && !!device?.voiceOpus && coreChangesVoice();
+}
+
+// The recording at `uri` (Voice.kt's) with its voice changed: the new one's bytes. Throws when it cannot be.
+async function changedAt(uri: string, kind: VoiceKind): Promise<Uint8Array> {
+  const read = await device?.voiceSamples?.(uri).catch(() => null);
+  if (!read || read.length < 6) throw notChanged();
+  const rate = new DataView(read.buffer, read.byteOffset, 4).getUint32(0);
+  const changed = await changeSamples(read.subarray(4), rate, kind);
+  const made = await device?.voiceOpus?.(changed, rate).catch(() => null);
+  if (!made) throw notChanged();
+  const file = new File(made);
+  try {
+    return await file.bytes();
+  } finally {
+    deleteQuietly(file);
+  }
+}
+
 /** Records one voice message at a time: walkie-talkie style, smaller, with `talk`. */
 export function useVoiceRecorder(talk = false) {
   const recorder = useAudioRecorder(talk ? TALK : OPTIONS);
@@ -117,11 +139,16 @@ export function useVoiceRecorder(talk = false) {
     return true;
   }
 
-  /** Stops, and returns the sound and how long it is, or null if it was too short to keep. */
-  async function stop(): Promise<{ audio: Uint8Array; ms: number; levels: number[] } | null> {
+  /**
+   * Stops, and returns the sound and how long it is, or null if it was too short to keep. With
+   * `change`, the voice changed so (lib/voice-change.ts): throws when it cannot be, and nothing of
+   * the voice as it was is returned.
+   */
+  async function stop(change?: VoiceKind): Promise<{ audio: Uint8Array; ms: number; levels: number[] } | null> {
     const ms = Math.min(Date.now() - started.current, MAX_VOICE_MS);
     stopSampling();
     let uri: string | null;
+    const wasOpus = opus.current;
     if (opus.current) {
       opus.current = false;
       uri = (await device?.voiceStop?.()) ?? null;
@@ -133,7 +160,12 @@ export function useVoiceRecorder(talk = false) {
     if (!uri) return null;
     const file = new File(uri);
     try {
-      return ms < MIN_VOICE_MS ? null : { audio: await file.bytes(), ms, levels: levels.current };
+      if (ms < MIN_VOICE_MS) return null;
+      if (change) {
+        if (!wasOpus) throw notChanged();
+        return { audio: await changedAt(uri, change), ms, levels: levels.current };
+      }
+      return { audio: await file.bytes(), ms, levels: levels.current };
     } finally {
       deleteQuietly(file);
     }

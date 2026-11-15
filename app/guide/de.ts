@@ -1242,6 +1242,13 @@ tippst du einmal, um zu beginnen, und noch einmal, um zu senden. Tippe auf eine 
 und noch einmal, um sie anzuhalten. Sprachnachrichten haben dieselben Zeichen wie der Rest und folgen der
 Verschwinden-Einstellung des Chats.
 
+**Meine Stimme ändern:** In den Details des Chats mit einem Kontakt schickt **Meine Stimme ändern** deine
+Sprachnachrichten in diesem Chat **Tiefer** oder **Höher**, so lang, wie du gesprochen hast. Dein Telefon ändert den
+Ton, bevor die Nachricht geht, deine eigene Stimme verlässt es also nie; schlägt die Änderung fehl, wird die Nachricht
+nicht gesendet. Nur dein Telefon kennt die Einstellung. Deine Stimme ist so schwer am Klang zu erkennen, aber wer die
+Aufnahme und Zeit hat, könnte einiges davon rückgängig machen. Auf Android 10 und neuer und in Browsern, die selbst
+Opus erzeugen (WebCodecs); das Walkie-Talkie behält deine Stimme.
+
 **Warum:** Auf Android 10 und neuer, in der Web-App und auf einem Computer ist eine Sprachnachricht Opus mit 32 kbit/s,
 etwa 240 KB pro Minute, wie Telegram, Element und Conversations sie senden: so klar, wie Sprache nur sein kann. Auf
 Android 9 und älter und in Safari vor iOS 18.4 und macOS 15.4 ist sie AAC mit 64 kbit/s, etwa 480 KB pro Minute. Mehr
