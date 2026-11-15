@@ -4,7 +4,7 @@
 
 [workspace]
 resolver = "2"
-members = ["crates/erevos-core", "crates/erevos-ffi", "crates/erevos-group", "crates/erevos-import", "crates/erevos-matrix", "crates/erevos-nostr", "crates/erevos-relay", "crates/erevos-tor", "crates/erevos-xmpp"]
+members = ["crates/erevos-core", "crates/erevos-ffi", "crates/erevos-speech", "crates/erevos-group", "crates/erevos-import", "crates/erevos-matrix", "crates/erevos-nostr", "crates/erevos-relay", "crates/erevos-tor", "crates/erevos-xmpp"]
 
 [workspace.package]
 edition = "2021"

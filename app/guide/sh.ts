@@ -1141,6 +1141,13 @@ napušta telefon; ako promena ne uspe, poruka se ne šalje. Samo vaš telefon zn
 prepoznati po sluhu, ali neko sa snimkom i vremenom mogao bi deo toga da poništi. Na Androidu 10 i novijem, i u
 pregledačima koji sami prave Opus (WebCodecs); walkie-talkie zadržava vaš glas.
 
+**Riječima:** drži glasovnu poruku, u chatu s kontaktom ili u grupi, i izaberi **Riječima**: telefon zapisuje ono što je
+rečeno, da to pročitaš ili kopiraš. Prvi put preuzima govorni model od 268 MB, kad ti kažeš, s Erevosova vlastitog
+poslužitelja, koji vidi tvoju adresu kao kod svakog preuzimanja; nakon toga sve se radi na tvom telefonu, i ni zvuk ni
+njegove riječi ga ne napuštaju. Razumije stotinjak jezika, među njima i grčki, i prepoznaje onaj koji se govori. Može
+pogriješiti, a riječi se ne čuvaju. **Obriši govorni model**, ispod, oslobađa prostor. Samo na Androidu, i treba
+telefon s oko 2 GB slobodne memorije.
+
 **Zašto:** na Androidu 10 i novijem, u web aplikaciji i na računaru glasovna poruka je Opus sa 32 kbit/s, oko 240 KB po
 minutu, kako ih šalju Telegram, Element i Conversations: govor jasniji od toga ne može biti. Na Androidu 9 i starijem, i
 u Safariju prije iOS-a 18.4 i macOS-a 15.4, to je AAC sa 64 kbit/s, oko 480 KB po minutu. Više se u glasu ne bi čulo,

@@ -314,6 +314,38 @@ pub fn voice_change(pcm: &[u8], rate: &[u8], kind: &[u8]) -> Result<Vec<u8>> {
     erevos_core::voice_shift::change(pcm, u32::from_be_bytes(rate), kind).map_err(fail)
 }
 
+/// The words of a voice message (erevos_speech), written out on the phone: `path` the model
+/// file (UTF-8), checked against the SHA-256 the app knows the first time it is opened; `pcm`
+/// 16-bit little-endian mono samples; `rate` 4 bytes big-endian samples a second; `language` a
+/// code such as "el" (UTF-8), or empty for the one heard. The words back, UTF-8. The model stays
+/// open for the next, till `speech_let_go`.
+#[cfg(feature = "speech")]
+pub fn speech_text(path: &[u8], pcm: &[u8], rate: &[u8], language: &[u8]) -> Result<Vec<u8>> {
+    let path = std::str::from_utf8(path).map_err(|_| "path: UTF-8")?;
+    let language = std::str::from_utf8(language).map_err(|_| "language: UTF-8")?;
+    let rate = u32::from_be_bytes(<[u8; 4]>::try_from(rate).map_err(|_| "rate: 4 bytes")?);
+    let mut open = SPEECH.lock().map_err(|_| "the speech model failed before")?;
+    if open.as_ref().map(|(at, _)| at.as_str()) != Some(path) {
+        *open = None;
+        let model = erevos_speech::open(std::path::Path::new(path), erevos_speech::MODEL_SHA256).map_err(|e| e.to_string())?;
+        *open = Some((path.to_string(), model));
+    }
+    let (_, model) = open.as_mut().expect("opened above");
+    Ok(erevos_speech::transcribe(model, pcm, rate, language).map_err(|e| e.to_string())?.into_bytes())
+}
+
+/// Lets go of the speech model and the memory it holds (about 1.5 GB).
+#[cfg(feature = "speech")]
+pub fn speech_let_go(_nothing: &[u8]) -> Result<Vec<u8>> {
+    if let Ok(mut open) = SPEECH.lock() {
+        *open = None;
+    }
+    Ok(Vec::new())
+}
+
+#[cfg(feature = "speech")]
+static SPEECH: std::sync::Mutex<Option<(String, erevos_speech::Model)>> = std::sync::Mutex::new(None);
+
 /// The public key for a 32-byte secret, for others to seal to with `relay_seal`
 /// (an SMS invite's key, which opens the answer to it).
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>> {

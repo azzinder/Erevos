@@ -1,0 +1,25 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// A voice message in words (lib/speech.ts, components/speech-sheet.tsx) in German (i18n/de/index.ts).
+export const speechText: Record<string, string> = {
+  "In words": "In Worten",
+  "Voice message in words": "Sprachnachricht in Worten",
+  "To write out voice messages, Erevos needs a speech model ({size} MB), once. It is downloaded from {host}, which sees your IP address, as for any download. Then everything is done on this phone: the sound and its words never leave it.": "Um Sprachnachrichten aufzuschreiben, braucht Erevos einmal ein Sprachmodell ({size} MB). Es wird von {host} geladen, das deine IP-Adresse sieht, wie bei jedem Download. Danach geschieht alles auf diesem Telefon: Der Ton und seine Worte verlassen es nie.",
+  "It hears about a hundred languages, Greek among them, and finds the one spoken. Best over Wi-Fi.": "Es versteht etwa hundert Sprachen, Griechisch darunter, und erkennt die gesprochene. Am besten über WLAN.",
+  "Download ({size} MB)": "Laden ({size} MB)",
+  "Downloading the speech model: {got} of {size} MB": "Sprachmodell wird geladen: {got} von {size} MB",
+  "Writing it out…": "Wird aufgeschrieben…",
+  "No words were heard.": "Es wurden keine Worte gehört.",
+  "Written out on this phone, so it may have mistakes. It is not kept.": "Auf diesem Telefon aufgeschrieben, daher können Fehler darin sein. Es wird nicht gespeichert.",
+  "Copied": "Kopiert",
+  "Not downloaded. {error}": "Nicht geladen. {error}",
+  "Delete the speech model": "Sprachmodell löschen",
+  "Voice messages cannot be written out until it is downloaded again ({size} MB).": "Sprachnachrichten können erst wieder aufgeschrieben werden, wenn es erneut geladen ist ({size} MB).",
+  "The download stopped each time it was tried, as the connection brought nothing for a while. Try again later, or on another network.": "Der Download blieb bei jedem Versuch stehen, da die Verbindung eine Weile nichts brachte. Versuche es später oder in einem anderen Netz.",
+  "This Erevos cannot write out voice messages.": "Dieses Erevos kann keine Sprachnachrichten aufschreiben.",
+  "The speech model is not on this phone.": "Das Sprachmodell ist nicht auf diesem Telefon.",
+  "Android could not read the sound of this voice message.": "Android konnte den Ton dieser Sprachnachricht nicht lesen.",
+  "The speech model on this phone is not the one expected, so it was deleted. Download it again.": "Das Sprachmodell auf diesem Telefon ist nicht das erwartete und wurde gelöscht. Lade es erneut.",
+};

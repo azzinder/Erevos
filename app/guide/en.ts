@@ -1085,6 +1085,13 @@ voice never leaves it; if the change fails, the message is not sent. Only your p
 voice hard to know by ear, but someone with the recording and time could undo some of it. On Android 10 and later, and
 in browsers that make Opus themselves (WebCodecs); the walkie-talkie keeps your voice.
 
+**In words:** hold a voice message, in a contact's chat or a group, and choose **In words**: your phone writes out
+what was said, to read or copy. The first time it downloads a speech model of 268 MB, once you say so, from Erevos's own
+server, which sees your address as for any download; then all of it is done on your phone, and neither the sound nor
+its words leave it. It hears about a hundred languages, Greek among them, and finds the one spoken. It may make
+mistakes, and the words are not kept. **Delete the speech model**, under it, frees the space. Only on Android, and it
+needs a phone with about 2 GB of memory free.
+
 **Why:** on Android 10 and later, in the web app and on a computer, a voice message is Opus at 32 kbit/s, about 240 KB a
 minute, as Telegram, Element and Conversations send them: as clear as speech gets. On Android 9 and older, and in Safari
 before iOS 18.4 and macOS 15.4, it is AAC at 64 kbit/s, about 480 KB a minute. More would not be heard in a voice, but

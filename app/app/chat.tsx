@@ -78,6 +78,8 @@ import { canPairWithCode, PairCodeSheet } from '../components/pair-code-sheet';
 import { CardSheet, saveCard } from '../components/card-share';
 import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PollSheet } from '../components/poll';
+import { SpeechSheet } from '../components/speech-sheet';
+import { canWriteOut } from '../lib/speech';
 import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, threadRoots, threadSizes, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { cardWords } from '../lib/card-share';
 import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
@@ -717,6 +719,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The message whose menu is open (held down), the one the next is an answer to, and the one just
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
+  // A voice message being written out (components/speech-sheet.tsx): how its sound is read.
+  const [hearing, setHearing] = useState<(() => Promise<Uint8Array | null>) | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
   // A thread of the chat shown alone, by the tag of its first message (null: the whole chat), as in a group.
   const [threadRoot, setThreadRoot] = useState<string | null>(null);
@@ -2911,6 +2915,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
+    if (message.voice && canWriteOut()) {
+      const voice = message.voice;
+      actions.push({ title: t('In words'), onPress: () => setHearing(() => () => loadClip(voice)) });
+    }
     if (canEdit(message)) actions.push({ title: t('Edit'), onPress: () => startEditing(message) });
     if (message.mine && pollOpen(message) && theyHave(message)) actions.push({ title: t('End poll'), onPress: () => void endPoll(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
@@ -8139,6 +8147,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             draft.set((typed) => (typed.trim() ? `${typed}\n${text}` : text));
           }}
         />
+        <SpeechSheet sound={shown ? hearing : null} onClose={() => setHearing(null)} />
         <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
         <CardSheet visible={sharingCard && shown} onClose={() => setSharingCard(false)} onSend={sendCard} among={among} />
         <PlaceSheet

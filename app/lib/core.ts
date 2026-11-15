@@ -37,6 +37,9 @@ export interface Core {
   pairConfirmed?(key: Uint8Array, started: Uint8Array, tag: Uint8Array): Promise<Uint8Array>;
   /** A voice message's voice changed (crates/erevos-core voice_shift, lib/voice-change.ts). Missing in a build made before it. */
   voiceChange?(pcm: Uint8Array, rate: Uint8Array, kind: Uint8Array): Promise<Uint8Array>;
+  /** A voice message written out (crates/erevos-speech, lib/speech.ts): Android only. Missing in a build made before it. */
+  speechText?(path: Uint8Array, pcm: Uint8Array, rate: Uint8Array, language: Uint8Array): Promise<Uint8Array>;
+  speechLetGo?(nothing: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
   /** The keys of a channel to a relay (crates/erevos-core relay_channel), phone to relay then relay
    *  to phone, 32 bytes each, once the relay's answer proves it holds `relayKey`'s secret; throws
@@ -339,6 +342,11 @@ export function pairCore(): Required<Pick<Core, 'pairStart' | 'pairFinish' | 'pa
 /** The core's change of a voice, or null in a build made before it. */
 export function voiceCore(): ((pcm: Uint8Array, rate: Uint8Array, kind: Uint8Array) => Promise<Uint8Array>) | null {
   return typeof core?.voiceChange === 'function' ? core.voiceChange.bind(core) : null;
+}
+
+/** The core's writing out of voice messages, or null where it has none (the web, a build before it). */
+export function speechCore(): Required<Pick<Core, 'speechText' | 'speechLetGo'>> | null {
+  return typeof core?.speechText === 'function' && typeof core.speechLetGo === 'function' ? (core as Required<Pick<Core, 'speechText' | 'speechLetGo'>>) : null;
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

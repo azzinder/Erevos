@@ -1258,6 +1258,14 @@ nicht gesendet. Nur dein Telefon kennt die Einstellung. Deine Stimme ist so schw
 Aufnahme und Zeit hat, könnte einiges davon rückgängig machen. Auf Android 10 und neuer und in Browsern, die selbst
 Opus erzeugen (WebCodecs); das Walkie-Talkie behält deine Stimme.
 
+**In Worten:** Halte eine Sprachnachricht gedrückt, im Chat mit einem Kontakt oder in einer Gruppe, und wähle **In
+Worten**: Dein Telefon schreibt auf, was gesagt wurde, zum Lesen oder Kopieren. Beim ersten Mal lädt es, wenn du es
+sagst, ein Sprachmodell von 268 MB vom eigenen Server von Erevos, der deine Adresse sieht wie bei jedem Download; danach
+geschieht alles auf deinem Telefon, und weder der Ton noch seine Worte verlassen es. Es versteht etwa hundert Sprachen,
+Griechisch darunter, und erkennt die gesprochene. Es kann Fehler machen, und die Worte werden nicht gespeichert.
+**Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf Android, und das Telefon braucht etwa 2 GB freien
+Arbeitsspeicher.
+
 **Warum:** Auf Android 10 und neuer, in der Web-App und auf einem Computer ist eine Sprachnachricht Opus mit 32 kbit/s,
 etwa 240 KB pro Minute, wie Telegram, Element und Conversations sie senden: so klar, wie Sprache nur sein kann. Auf
 Android 9 und älter und in Safari vor iOS 18.4 und macOS 15.4 ist sie AAC mit 64 kbit/s, etwa 480 KB pro Minute. Mehr

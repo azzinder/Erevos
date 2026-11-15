@@ -1177,6 +1177,13 @@ propia voz nunca sale de él; si el cambio falla, el mensaje no se envía. Solo 
 voz difícil de reconocer de oído, pero alguien con la grabación y tiempo podría deshacer parte. En Android 10 y
 posteriores, y en navegadores que hacen Opus ellos mismos (WebCodecs); el walkie-talkie mantiene tu voz.
 
+**En palabras:** mantén pulsado un mensaje de voz, en el chat de un contacto o en un grupo, y elige **En palabras**: tu
+teléfono escribe lo que se dijo, para leerlo o copiarlo. La primera vez descarga un modelo de voz de 268 MB, cuando tú lo
+digas, del propio servidor de Erevos, que ve tu dirección como en cualquier descarga; después todo se hace en tu
+teléfono, y ni el sonido ni sus palabras salen de él. Entiende unos cien idiomas, el griego entre ellos, y reconoce el
+que se habla. Puede equivocarse, y las palabras no se guardan. **Borrar el modelo de voz**, debajo, libera el espacio.
+Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre.
+
 **Por qué:** en Android 10 y posteriores, en la app web y en un ordenador, un mensaje de voz es Opus a 32 kbit/s, unos
 240 KB por minuto, como los envían Telegram, Element y Conversations: tan claro como puede ser el habla. En Android 9 y
 anteriores, y en Safari antes de iOS 18.4 y macOS 15.4, es AAC a 64 kbit/s, unos 480 KB por minuto. Más no se oiría en

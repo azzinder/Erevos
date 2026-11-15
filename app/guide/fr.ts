@@ -1244,6 +1244,13 @@ ton téléphone connaît ce réglage. Ta voix devient difficile à reconnaître 
 l’enregistrement et du temps pourrait en défaire une partie. Sur Android 10 et plus récent, et dans les navigateurs
 qui font eux-mêmes de l’Opus (WebCodecs) ; le talkie-walkie garde ta voix.
 
+**En mots :** maintiens un message vocal, dans le chat d’un contact ou dans un groupe, et choisis **En mots** : ton
+téléphone écrit ce qui a été dit, pour le lire ou le copier. La première fois, il télécharge un modèle vocal de 268 Mo,
+quand tu le dis, depuis le serveur d’Erevos lui-même, qui voit ton adresse comme pour tout téléchargement ; ensuite tout
+se fait sur ton téléphone, et ni le son ni ses mots ne le quittent. Il comprend une centaine de langues, dont le grec, et
+reconnaît celle qui est parlée. Il peut se tromper, et les mots ne sont pas gardés. **Supprimer le modèle vocal**, en
+dessous, libère la place. Seulement sur Android, et il faut un téléphone avec environ 2 Go de mémoire libre.
+
 **Pourquoi :** sur Android 10 et plus récent, dans l’appli web et sur un ordinateur, un message vocal est en Opus à 32
 kbit/s, environ 240 Ko par minute, comme l’envoient Telegram, Element et Conversations : aussi clair que la parole peut
 l’être. Sur Android 9 et plus ancien, et dans Safari avant iOS 18.4 et macOS 15.4, il est en AAC à 64 kbit/s, environ

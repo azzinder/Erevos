@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { BackHandler, Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type ScrollViewInstance, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
-import { bytesSource, takeOffRelay } from '../lib/attachments';
+import { bytesSource, readFile, takeOffRelay } from '../lib/attachments';
 import { cardWords } from '../lib/card-share';
 import { chatText, exportName } from '../lib/chat-export';
 import { choose as chooseOption, editableWords, joinedText, placeWords, pollOpen, pollWords, stillEditable, threadRoots, threadSizes, type Place, type Poll } from '../lib/chat-parts';
@@ -46,6 +46,8 @@ import { MessageMenu, type MenuAction } from './message-menu';
 import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PlaceSheet } from './place-sheet';
 import { PollCard, PollSheet } from './poll';
+import { SpeechSheet } from './speech-sheet';
+import { canWriteOut } from '../lib/speech';
 import { SelectBar, selectAction, useSelection } from './select-bar';
 import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
@@ -112,6 +114,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [forwarding, setForwarding] = useState<GroupMessage[] | null>(null);
   // One of ours whose readers are shown.
   const [readers, setReaders] = useState<GroupMessage | null>(null);
+  // A voice message being written out (components/speech-sheet.tsx): how its sound is read.
+  const [hearing, setHearing] = useState<(() => Promise<Uint8Array | null>) | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
   const [polling, setPolling] = useState(false);
@@ -407,6 +411,10 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     actions.push({ title: m.starred ? t('Unstar') : t('Star'), onPress: () => star(m) });
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
+    if (m.file && m.ms !== undefined && !m.file.from && canWriteOut()) {
+      const file = m.file;
+      actions.push({ title: t('In words'), onPress: () => setHearing(() => () => readFile(file)) });
+    }
     if (canEdit(m)) actions.push({ title: t('Edit'), onPress: () => startEditing(m) });
     if (!out && !m.from && !m.unsent && pollOpen(m)) actions.push({ title: t('End poll'), onPress: () => endPoll(m) });
     if (markOf(m)) actions.push({ title: t('Who read it'), onPress: () => setReaders(m) });
@@ -720,6 +728,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
             </>
           ) : null}
         </Sheet>
+        <SpeechSheet sound={hearing} onClose={() => setHearing(null)} />
         <Sheet visible={!!readers} onClose={() => setReaders(null)} title={t('Who read it')}>
           {readers ? <Readers m={readers} members={meantFor(readers)} name={name} /> : null}
         </Sheet>

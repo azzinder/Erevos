@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+[package]
+name = "erevos-speech"
+description = "Voice messages written out on the phone itself, with a Whisper model taken when asked for"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# Tensors and their matrix products on the phone's processor (no GPU, no network).
+candle-core = { version = "=0.9.1", default-features = false }
+# Its fused softmax and layer norm, several times faster than made of single steps.
+candle-nn = { version = "=0.9.1", default-features = false }
+sha2 = "0.10"
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1"

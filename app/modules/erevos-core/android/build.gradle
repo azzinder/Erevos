@@ -58,7 +58,7 @@ def buildRustCore = tasks.register('buildRustCore', Exec) {
   description = 'Builds the Erevos core (crates/erevos-ffi) for the Android ABIs of this build.'
   workingDir repoRoot
   // Every crate the Android core is built from, so a change in any of them builds it again.
-  def crates = ['erevos-core', 'erevos-ffi', 'erevos-group', 'erevos-import', 'erevos-tor', 'erevos-matrix', 'erevos-xmpp', 'erevos-nostr']
+  def crates = ['erevos-core', 'erevos-ffi', 'erevos-group', 'erevos-import', 'erevos-tor', 'erevos-matrix', 'erevos-xmpp', 'erevos-nostr', 'erevos-speech']
   inputs.files(
     crates.collect { fileTree(new File(repoRoot, "crates/${it}/src")) },
     crates.collect { new File(repoRoot, "crates/${it}/Cargo.toml") },
@@ -74,7 +74,7 @@ def buildRustCore = tasks.register('buildRustCore', Exec) {
   // (EREVOS_EDITION=lite, docs/editions.md) is built without them.
   def lite = System.getenv('EREVOS_EDITION') == 'lite'
   inputs.property('edition', lite ? 'lite' : 'plus')
-  command += ['build', '--release', '-p', 'erevos-ffi', '--features', lite ? 'android,tor' : 'android,tor,networks']
+  command += ['build', '--release', '-p', 'erevos-ffi', '--features', lite ? 'android,tor,speech' : 'android,tor,networks,speech']
   commandLine command
 
   doFirst {

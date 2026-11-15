@@ -73,6 +73,11 @@ class ErevosCoreModule : Module() {
     AsyncFunction("pairConfirm") { key: ByteArray, started: ByteArray -> ErevosCoreNative.pairConfirm(key, started) }
     AsyncFunction("pairConfirmed") { key: ByteArray, started: ByteArray, tag: ByteArray -> ErevosCoreNative.pairConfirmed(key, started, tag) }
     AsyncFunction("voiceChange") { pcm: ByteArray, rate: ByteArray, kind: ByteArray -> ErevosCoreNative.voiceChange(pcm, rate, kind) }
+    // Writing out a voice message takes seconds: on a thread of its own, one at a time.
+    AsyncFunction("speechText") Coroutine { path: ByteArray, pcm: ByteArray, rate: ByteArray, language: ByteArray ->
+      withContext(speechThread) { ErevosCoreNative.speechText(path, pcm, rate, language) }
+    }
+    AsyncFunction("speechLetGo") Coroutine { nothing: ByteArray -> withContext(speechThread) { ErevosCoreNative.speechLetGo(nothing) } }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
     AsyncFunction("relayChannelKeys") { relayKey: ByteArray, secret: ByteArray, answer: ByteArray ->
       ErevosCoreNative.relayChannelKeys(relayKey, secret, answer)
@@ -190,6 +195,9 @@ private val torThreads = Dispatchers.IO.limitedParallelism(TOR_THREADS)
 
 private suspend fun <T> torIo(call: () -> T): T = withContext(torThreads) { tor(call) }
 
+// Voice messages written out (crates/erevos-speech), one after another, off Expo's one thread.
+private val speechThread = Dispatchers.Default.limitedParallelism(1)
+
 // The JNI functions in crates/erevos-ffi/src/android.rs. The library is built into the app by
 // this module's build.gradle.
 internal object ErevosCoreNative {
@@ -226,6 +234,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun pairConfirm(key: ByteArray, started: ByteArray): ByteArray
   @JvmStatic external fun pairConfirmed(key: ByteArray, started: ByteArray, tag: ByteArray): ByteArray
   @JvmStatic external fun voiceChange(pcm: ByteArray, rate: ByteArray, kind: ByteArray): ByteArray
+  @JvmStatic external fun speechText(path: ByteArray, pcm: ByteArray, rate: ByteArray, language: ByteArray): ByteArray
+  @JvmStatic external fun speechLetGo(nothing: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
   @JvmStatic external fun relayChannelKeys(relayKey: ByteArray, secret: ByteArray, answer: ByteArray): ByteArray
   @JvmStatic external fun hardKey(input: ByteArray, salt: ByteArray, cost: ByteArray): ByteArray
