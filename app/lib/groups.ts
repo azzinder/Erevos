@@ -947,8 +947,11 @@ export class Groups {
       if (link) await link.ask(id, { t: 'file', file: offer, tag, ...voice, ...(Object.keys(carried).length > 0 ? { parts: carried } : {}) });
       else await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice, ...carried }), transport, 'message');
       const now = this.find(id)!;
-      const kept = { at: Date.now(), from: '', text: '', tag, file: ref, ...voice, ...carried, put: offer.ids };
+      // Ours to see once is the members' to see: this phone lets go of it once it went (lib/see-once.ts).
+      const once = ref.once === true && ms === undefined;
+      const kept = { at: Date.now(), from: '', text: '', tag, ...(once ? { seenOnce: Date.now() } : { file: ref }), ...voice, ...carried, put: offer.ids };
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, kept]), readAt: Date.now() }));
+      if (once) await deleteChunks(ref.id, ref.count).catch(() => undefined);
       this.changed();
     });
   }
@@ -963,6 +966,22 @@ export class Groups {
       this.changed();
       // On a linked device the phone hears of it: a copy it put on the relay for this device goes then.
       if (was.from) this.through()?.took(was.from);
+      return true;
+    });
+  }
+
+  /** Lets go of a member's photo to see once, now that it was seen: its chunks go, the message stays and says so. */
+  seeOnce(id: string, tag: string, now = Date.now()): Promise<boolean> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || !group.messages.some((m) => m.tag === tag && m.file?.once)) return false;
+      const messages = group.messages.map((m) => {
+        if (m.tag !== tag || !m.file?.once) return m;
+        const { file: _seen, ...rest } = m;
+        return { ...rest, seenOnce: now };
+      });
+      await this.save(this.withGroup({ ...group, messages }));
+      this.changed();
       return true;
     });
   }

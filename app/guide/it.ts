@@ -1097,6 +1097,11 @@ nella riga della schermata principale e in una citazione (lì come ▒▒▒).
 - **Foto nascosta:** sotto **+**, **Foto nascosta** invia una foto che in chat appare sfocata, nelle chat con i contatti
   e nei gruppi, finché non la tocchi, e poi si apre da sola. Anche in **Media, link e file** appare sfocata. Un Erevos
   di prima la mostra come una foto qualsiasi.
+- **Foto da vedere una volta:** sotto **+**, **Foto da vedere una volta** invia una foto che non appare mai in chat,
+  nelle chat con i contatti e nei gruppi. Chi la riceve la tocca e la vede una volta, da sola, senza screenshot dove il
+  telefono lo consente; quando si chiude, Erevos la elimina dal suo telefono, e la chat dice **Foto vista una volta**.
+  Non si può inoltrare, salvare o mettere nella Raccolta, e il tuo telefono la elimina appena è arrivata. Nulla ferma
+  una fotocamera puntata sullo schermo, e un Erevos precedente la mostra come foto nascosta.
 
 **Perché:** un segno scritto nelle parole viaggia in esse, dentro la crittografia, senza niente accanto che lo
 distingua.

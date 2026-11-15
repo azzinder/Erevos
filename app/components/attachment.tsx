@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fileSize, readFile } from '../lib/attachments';
 import { t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
+import { onceLine } from '../lib/see-once';
+import { keepPrivate } from '../lib/screen-privacy';
 import { doubleTapped, fitted, kept, moved, pinched, WHOLE, type Look, type Point, type Size } from '../lib/photo-zoom';
 import { CAN_CHOOSE_FOLDER } from '../lib/save-file';
 import { device } from '../modules/erevos-device';
@@ -32,7 +34,8 @@ export const SHOWN_STICKERS = Platform.OS === 'web' ? 200 : 40;
 
 /** Of a thread's files, oldest first, the photos here to show: the latest photos, and the latest stickers. */
 export function shownOf(files: FileRef[]): FileRef[] {
-  const here = files.filter((file) => file.kind === 'photo' && !file.from);
+  // A photo to see once is read only when opened (lib/see-once.ts).
+  const here = files.filter((file) => file.kind === 'photo' && !file.from && !file.once);
   return [...here.filter((file) => !file.sticker).slice(-SHOWN_PHOTOS), ...here.filter((file) => file.sticker).slice(-SHOWN_STICKERS)];
 }
 
@@ -54,12 +57,20 @@ export function comingText(file: FileRef, state?: string): string | null {
 
 // A photo or file in the thread: the photo itself once it is here and shown, otherwise what it
 // is and how far it has come.
-export function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: string; state?: string; ink: StyleProp<TextStyle> }) {
+export function Attachment({ file, uri, state, ink, mine }: { file: FileRef; uri?: string; state?: string; ink: StyleProp<TextStyle>; mine?: boolean }) {
   const colors = useColors();
   const status = comingText(file, state);
   if (file.kind === 'photo') {
     const width = 240;
     const height = Math.round(Math.min(320, Math.max(120, file.w && file.h ? (width * file.h) / file.w : 180)));
+    // To see once: never drawn in the chat, even blurred (lib/see-once.ts).
+    if (file.once)
+      return (
+        <View style={{ width: 200, borderRadius: radius.md, backgroundColor: withAlpha(colors.text, 0.08), alignItems: 'center', justifyContent: 'center', padding: space.md, gap: 2 }}>
+          <Text style={[ink, { fontWeight: '600', textAlign: 'center' }]}>{onceLine(!!mine, false)}</Text>
+          {status ? <Text style={[ink, { fontSize: 13, opacity: 0.8, textAlign: 'center' }]}>{status}</Text> : null}
+        </View>
+      );
     // Hidden till tapped: blurred, and whole only once opened on its own.
     if (uri && file.hidden)
       return (
@@ -143,12 +154,19 @@ export type ViewedFile = Pick<FileRef, 'id' | 'kind' | 'name' | 'size' | 'w' | '
  * two fingers or a double tap zoom in, one finger moves it while zoomed, and a tap hides or shows
  * what is around it.
  */
-export function FileViewer({ file, uri, onSave, onClose }: { file: ViewedFile | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
+export function FileViewer({ file, uri, onSave, onClose, once = false }: { file: ViewedFile | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void; once?: boolean }) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [bars, setBars] = useState(true);
   const id = file?.id;
   useEffect(() => setBars(true), [id]);
+  // A photo to see once (lib/see-once.ts): kept from screenshots while it shows, where the phone allows.
+  const seeingOnce = once && file !== null;
+  useEffect(() => {
+    if (!seeingOnce) return;
+    keepPrivate('once', true);
+    return () => keepPrivate('once', false);
+  }, [seeingOnce]);
   // A photo shown turns with the phone, its auto-rotate on or off; the rest of Erevos follows the setting.
   const photo = file?.kind === 'photo';
   useEffect(() => {
@@ -158,7 +176,11 @@ export function FileViewer({ file, uri, onSave, onClose }: { file: ViewedFile | 
       device?.turnWithPhone?.(false);
     };
   }, [photo]);
-  const tools = (
+  const tools = once ? (
+    <Row wrap style={styles.viewerTools}>
+      <Button title={t('Close')} kind="secondary" compact onPress={onClose} />
+    </Row>
+  ) : (
     <Row wrap style={styles.viewerTools}>
       <Button title={t('Save')} compact onPress={() => onSave(false)} />
       {CAN_CHOOSE_FOLDER ? <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => onSave(true)} /> : null}
@@ -191,8 +213,7 @@ export function FileViewer({ file, uri, onSave, onClose }: { file: ViewedFile | 
               ]}
             >
               <Text tone="muted" style={styles.centered}>
-                {file.w && file.h ? `${file.w} × ${file.h} · ` : ''}
-                {fileSize(file.size)}
+                {once ? t('To see once: it goes from this phone when you close it.') : `${file.w && file.h ? `${file.w} × ${file.h} · ` : ''}${fileSize(file.size)}`}
               </Text>
               {tools}
             </View>

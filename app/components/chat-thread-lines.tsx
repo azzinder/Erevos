@@ -24,6 +24,7 @@ import { SmsExtras } from './sms-parts';
 import { messageLine } from '../lib/message-line';
 import { mediaText } from '../lib/imports';
 import { sharedLine } from '../lib/chat-share';
+import { onceLine } from '../lib/see-once';
 import { isImportedSticker, isSound, isVoice } from '../lib/chat-media';
 import { type LinkedMessage } from '../lock/archive';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -331,8 +332,10 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
               />
             ) : message.card ? (
               <CardBubble card={message.card} ink={ink} onSave={() => acts.saveCard(message.card!)} />
+            ) : message.seenOnce && !message.file ? (
+              <Text style={[ink, { fontStyle: 'italic' }]}>{onceLine(message.mine, true)}</Text>
             ) : message.file ? (
-              <Attachment file={message.file} uri={photo} state={stranger && message.file.from && !taking ? 'stranger' : taking} ink={ink} />
+              <Attachment file={message.file} uri={photo} state={stranger && message.file.from && !taking ? 'stranger' : taking} ink={ink} mine={message.mine} />
             ) : (
               <Text style={ink}>
                 {message.voice

@@ -157,7 +157,7 @@ export function readOffer(value: unknown, most = MAX_FILE): FileOffer | null {
   // A sticker made from a photo, when it is small enough to be one; otherwise a photo, maybe hidden till tapped.
   // Or, a file, the imported chats a contact shared: to an Erevos from before, a file like any other.
   const history = meta.kind === 'file' ? readSharedMark(v.history) : null;
-  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : v.hidden === true && meta.kind === 'photo' ? { hidden: true as const } : history ? { history } : {};
+  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : v.hidden === true && meta.kind === 'photo' ? { hidden: true as const, ...(v.once === true ? { once: true as const } : {}) } : history ? { history } : {};
   if (v.via === 'nostr') {
     // Pieces in wraps: as many as the photo takes, each 32 KB, the last less.
     if (v.relay !== 'nostr' || meta.size > NOSTR_PHOTO_MOST || v.chunk !== NOSTR_PIECE || v.ids.length !== Math.max(1, Math.ceil(meta.size / room(NOSTR_PIECE))) * ID_HEX) return null;
@@ -176,12 +176,12 @@ export function readOffer(value: unknown, most = MAX_FILE): FileOffer | null {
 }
 
 // What a file to send says of itself, cleaned: a sticker only while it is small enough to be one,
-// hidden only when a photo and not a sticker, shared chats only when a file.
-function shaped({ sticker, hidden, history, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
+// hidden only when a photo and not a sticker, to see once only when hidden, shared chats only when a file.
+function shaped({ sticker, hidden, once, history, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
   const clean: FileMeta = { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size };
   if (sticker && fitsSticker(clean)) return { ...clean, sticker };
   if (history && clean.kind === 'file') return { ...clean, history };
-  return hidden && clean.kind === 'photo' ? { ...clean, hidden } : clean;
+  return hidden && clean.kind === 'photo' ? { ...clean, hidden, ...(once ? { once } : {}) } : clean;
 }
 
 /** Where a file that came is, until it is taken: its chunks are still on the relay. */
@@ -426,8 +426,8 @@ export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array
 // own storage) or from a file server, and keeps it here as a file that went through the relay would be.
 async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null, itself: boolean, torChat: boolean): Promise<FileRef> {
   const key = fromHex(ref.key);
-  const { name, mime, kind, w, h, sticker, hidden } = ref;
-  const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden } : {}) };
+  const { name, mime, kind, w, h, sticker, hidden, once } = ref;
+  const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden, ...(once ? { once } : {}) } : {}) };
   if (from.via === 'nostr') {
     const came = await piecesCame(place, from.ids);
     const have = came.filter(Boolean).length;

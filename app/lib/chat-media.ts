@@ -84,7 +84,8 @@ export function chatMedia(messages: Message[], imported: LinkedMessage[] = []): 
     const key = `${message.peer}|${message.tag}`;
     if (message.voice) items.push({ ...base, key, kind: 'voice', voice: message.voice });
     const kind = message.file ? fileKind(message.file) : null;
-    if (message.file && kind) items.push({ ...base, key: `${key}|file`, kind, file: message.file });
+    // A photo to see once is not among the chat's photos (lib/see-once.ts).
+    if (message.file && kind && !message.file.once) items.push({ ...base, key: `${key}|file`, kind, file: message.file });
     // A sticker's, a place's or a poll's words are not the sender's own.
     if (message.text && !message.sticker && !message.place && !message.poll) items.push(...linkItems(key, base, message.text, message.preview));
   }
@@ -109,7 +110,7 @@ export function groupMedia(messages: GroupMessage[], nameOf: (identity: string) 
     const key = `group|${message.tag}`;
     if (message.file) {
       const kind = message.ms !== undefined ? 'voice' : fileKind(message.file);
-      if (kind) items.push({ ...base, key: `${key}|file`, kind, file: message.file, ...(message.ms !== undefined ? { ms: message.ms } : {}) });
+      if (kind && !message.file.once) items.push({ ...base, key: `${key}|file`, kind, file: message.file, ...(message.ms !== undefined ? { ms: message.ms } : {}) });
     }
     if (message.text && !message.sticker && !message.place && !message.poll) items.push(...linkItems(key, base, message.text, message.preview));
   }

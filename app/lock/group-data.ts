@@ -64,6 +64,8 @@ export type GroupMarks = {
   unsent?: true;
   got?: Record<string, number>;
   read?: Record<string, number>;
+  /** On this phone only: a photo to see once whose file it let go of (lib/see-once.ts), ours as it went, theirs once seen. */
+  seenOnce?: number;
 };
 
 /** A photo or file in a group's message: where it is, or where to take it from. With `ms`, it is
@@ -238,6 +240,7 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
     ...(isTime(v.edited) && v.edited > 0 ? { edited: v.edited } : {}),
     ...(poll && isTime(v.closed) && v.closed > 0 ? { closed: v.closed } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
+    ...(isTime(v.seenOnce) && v.seenOnce > 0 ? { seenOnce: v.seenOnce } : {}),
     ...(mine && isText(v.put) && isIdList(v.put) ? { put: v.put } : {}),
     ...(mine && v.unsent === true ? { unsent: true as const } : {}),
     ...(mine ? seenBy(v.got, v.read) : {}),

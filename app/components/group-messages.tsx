@@ -412,7 +412,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     if (markOf(m)) actions.push({ title: t('Who read it'), onPress: () => setReaders(m) });
     if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
     // A photo or file that is here goes into the Collection of the group's place too: the space's, or the hidden place's the group lives in.
-    if (m.file && !m.file.sticker && !m.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(m.file!) });
+    if (m.file && !m.file.sticker && !m.file.once && !m.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(m.file!) });
     actions.push(selectAction(() => selection.start(m.tag)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;

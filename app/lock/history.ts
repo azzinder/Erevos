@@ -84,7 +84,7 @@ export type Kept = [
  * when its sender ended the poll it is (this phone's clock); `j`, the contact card it is (a vCard,
  * lib/card-share.ts; its text says it).
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend; m?: Pay; u?: number; x?: number; j?: string };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend; m?: Pay; u?: number; x?: number; j?: string; i?: number };
 
 /**
  * A safety message as sealed once (lib/safety.ts): the packets and where they go (the contact's
@@ -183,12 +183,21 @@ export type Parts = {
   /** The payment request it is (lib/pay.ts), and when it was marked paid: by us, theirs, or by them, ours. */
   pay?: Pay;
   paid?: number;
+  /** A photo to see once (lib/see-once.ts) whose file this phone let go of: theirs once seen, ours once it reached them (milliseconds). */
+  seenOnce?: number;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
+/** Ours, a photo to see once, once it reached their phone: this phone lets go of it too, as it is theirs to see, not ours. */
+function letGoOnce<M extends Fields>(m: M, now: number): M {
+  if (!m.mine || !m.file?.once || (m.mark ?? 0) < 1) return m;
+  const { file: _gone, ...rest } = m;
+  return { ...rest, seenOnce: now } as M;
+}
+
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, closed, card, preview, forwarded, nostr, route, edited, safety, resend, pay, paid }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, closed, card, preview, forwarded, nostr, route, edited, safety, resend, pay, paid, seenOnce }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -211,6 +220,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(safety && resend ? { c: resend } : {}),
     ...(pay ? { m: pay } : {}),
     ...(pay && paid ? { u: paid } : {}),
+    ...(seenOnce ? { i: seenOnce } : {}),
   };
 }
 
@@ -237,6 +247,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.z && more.c ? { resend: more.c } : {}),
     ...(more?.m ? { pay: more.m } : {}),
     ...(more?.m && more.u ? { paid: more.u } : {}),
+    ...(typeof more?.i === 'number' && more.i > 0 ? { seenOnce: more.i } : {}),
   };
 }
 
@@ -273,7 +284,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown ; m?: unknown; u?: unknown; x?: unknown; j?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown ; m?: unknown; u?: unknown; x?: unknown; j?: unknown; i?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -305,6 +316,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(count(v.e) ? { e: count(v.e) } : {}),
     ...(mine && isSafetyHours(v.z) ? { z: v.z, ...(isResend(v.c) ? { c: v.c } : {}) } : {}),
     ...(pay ? { m: pay, ...(count(v.u) ? { u: count(v.u) } : {}) } : {}),
+    ...(count(v.i) ? { i: count(v.i) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -692,7 +704,7 @@ export class History {
   add({ peer, ...message }: Message): Promise<void> {
     const early = message.mine ? this.markedEarly(peer, message.tag) : null;
     if (early) this.early.delete(`${peer} ${message.tag}`);
-    const list = [...(this.data.chats[peer] ?? []), pack(early ? withMark(message, early.mark, early.at) : message)];
+    const list = [...(this.data.chats[peer] ?? []), pack(letGoOnce(early ? withMark(message, early.mark, early.at) : message, Date.now()))];
     return this.save({ chats: { ...this.data.chats, [peer]: list } });
   }
 
@@ -847,6 +859,19 @@ export class History {
     return true;
   }
 
+  /** Lets go of the file of a photo to see once, theirs, now that it was seen: its chunks are deleted, the message stays. False if the message is gone. */
+  async seeOnce(peer: string, tag: string, now: number): Promise<boolean> {
+    const list = this.data.chats[peer];
+    if (!list?.some((m) => m[3] === tag)) return false;
+    const changed = list.map((m) => {
+      if (m[3] !== tag) return m;
+      const { file, ...rest } = unpack(m);
+      return file?.once ? pack({ ...rest, seenOnce: now }) : m;
+    });
+    await this.save({ chats: { ...this.data.chats, [peer]: changed } });
+    return true;
+  }
+
   /** Deletes one message of a chat, by its tag. */
   remove(peer: string, tag: string): Promise<void> {
     const list = (this.data.chats[peer] ?? []).filter((m) => m[3] !== tag);
@@ -867,7 +892,7 @@ export class History {
       // Theirs that came before its time (lib/later.ts, showsAt) is not read before it shows.
       if (m.mine !== mine || m.mark! >= mark || (asked && !asked.has(m.tag)) || (!mine && m.at > now)) return kept;
       raised.push(m.tag);
-      return pack(withMark(m, mark, now));
+      return pack(letGoOnce(withMark(m, mark, now), now));
     });
     if (mine && tags) this.markEarly(peer, tags, mark, now);
     if (raised.length > 0) await this.save({ chats: { ...this.data.chats, [peer]: list } });

@@ -1101,6 +1101,11 @@ pantalla, en la línea de la pantalla de inicio y en una cita (allí como ▒▒
 - **Foto oculta:** bajo **+**, **Foto oculta** envía una foto que se ve borrosa en el chat, en los chats con contactos y
   en los grupos, hasta que la tocas, y entonces se abre sola. En **Multimedia, enlaces y archivos** también se ve
   borrosa. Un Erevos de antes la muestra como cualquier foto.
+- **Foto de una sola vista:** bajo **+**, **Foto de una sola vista** envía una foto que nunca se ve en el chat, en los
+  chats con contactos y en los grupos. Quien la recibe la toca y la ve una vez, sola, sin capturas de pantalla donde el
+  teléfono lo permite; al cerrarla, Erevos la borra de su teléfono, y el chat dice **Foto vista una vez**. No se puede
+  reenviar, guardar ni poner en la Colección, y tu propio teléfono la borra en cuanto les llega. Nada impide una cámara
+  apuntando a la pantalla, y un Erevos anterior la muestra como foto oculta.
 
 **Por qué:** una marca escrita en las palabras viaja en ellas, dentro del cifrado, sin nada al lado que la distinga.
 

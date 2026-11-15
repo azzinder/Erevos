@@ -1014,6 +1014,11 @@ quote (there as ▒▒▒).
 - **Hidden photo:** under **+**, **Hidden photo** sends a photo that shows blurred in the chat, in contacts' chats and
   groups, until it is tapped and opens on its own. It is blurred in **Media, links and files** too. An Erevos from
   before shows it as any photo.
+- **Photo to see once:** under **+**, **Photo to see once** sends a photo that never shows in the chat, in contacts'
+  chats and groups. Whoever gets it taps it and sees it once, on its own, kept out of screenshots where the phone
+  allows; as it closes, Erevos deletes it from their phone, and the chat says **Photo seen once**. It cannot be
+  forwarded, saved or put in the Collection, and your own phone lets go of it once it reached them. Nothing stops a
+  camera pointed at the screen, and an Erevos from before shows it as a hidden photo.
 
 **Why:** a mark typed in the words travels in them, inside the encryption, with nothing beside them to tell apart.
 

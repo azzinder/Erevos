@@ -1067,6 +1067,11 @@ u citatu (tamo kao ▒▒▒).
 - **Skrivena fotografija:** pod **+**, **Skrivena fotografija** šalje fotografiju koja se u razgovoru prikazuje
   zamućeno, u razgovorima s kontaktima i u grupama, dok je ne dodirnete, i tada se sama otvara. Zamućena je i u
   dijelu **Mediji, linkovi i fajlovi**. Raniji Erevos je prikazuje kao svaku fotografiju.
+- **Fotografija za jedno gledanje:** pod **+**, **Fotografija za jedno gledanje** šalje fotografiju koja se nikad ne
+  prikazuje u razgovoru, s kontaktima i u grupama. Ko je primi, dodirne je i vidi jednom, samu, bez snimaka ekrana gdje
+  telefon to dopušta; kad se zatvori, Erevos je briše s njegovog telefona, a razgovor kaže **Fotografija viđena
+  jednom**. Ne može se proslijediti, sačuvati ni staviti u Zbirku, a tvoj telefon je briše čim stigne. Ništa ne
+  sprječava kameru uperenu u ekran, a stariji Erevos je prikazuje kao skrivenu fotografiju.
 
 **Zašto:** znak upisan u riječi putuje u njima, unutar šifriranja, bez ičega pored njih po čemu bi se razlikovao.
 

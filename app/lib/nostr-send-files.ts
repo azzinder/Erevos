@@ -54,7 +54,7 @@ export async function offerOnNostr(source: Source, meta: Omit<FileMeta, 'size'>,
 
 async function putOnNostr(source: Source, meta: Omit<FileMeta, 'size'>, to: { k: string; r: string[] }, progress: Progress | undefined, torChat: boolean): Promise<FileOffer> {
   const size = source.size;
-  const shared = { name: meta.name, mime: meta.mime, kind: meta.kind, size, ...(meta.w !== undefined ? { w: meta.w } : {}), ...(meta.h !== undefined ? { h: meta.h } : {}), ...(meta.sticker ? { sticker: true as const } : meta.hidden && meta.kind === 'photo' ? { hidden: true as const } : {}) };
+  const shared = { name: meta.name, mime: meta.mime, kind: meta.kind, size, ...(meta.w !== undefined ? { w: meta.w } : {}), ...(meta.h !== undefined ? { h: meta.h } : {}), ...(meta.sticker ? { sticker: true as const } : meta.hidden && meta.kind === 'photo' ? { hidden: true as const, ...(meta.once ? { once: true as const } : {}) } : {}) };
   const key = randomBytes(32);
   if (goesInPieces(meta, size)) {
     const piece = room(NOSTR_PIECE);

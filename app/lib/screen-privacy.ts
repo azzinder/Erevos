@@ -26,7 +26,7 @@ const reasons = new Map<string, number>();
 
 /** Keeps the screen private while any reason asks for it: `why` asks, or no longer. Said again on
  *  every change, so a screen made anew (Erevos swiped away and opened) gets it too. */
-export function keepPrivate(why: 'lock' | 'hidden' | 'chat' | 'collection' | 'shots', on: boolean): void {
+export function keepPrivate(why: 'lock' | 'hidden' | 'chat' | 'collection' | 'shots' | 'once', on: boolean): void {
   const was = reasons.get(why) ?? 0;
   const now = why === 'lock' ? (on ? 1 : 0) : Math.max(0, was + (on ? 1 : -1));
   if (now) reasons.set(why, now);

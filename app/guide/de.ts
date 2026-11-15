@@ -1175,6 +1175,12 @@ Startbildschirms und in einem Zitat (dort als ▒▒▒).
 - **Verstecktes Foto:** unter **+** sendet **Verstecktes Foto** ein Foto, das im Chat verschwommen erscheint, in den
   Chats mit Kontakten und in Gruppen, bis du es antippst; dann öffnet es sich von selbst. Auch in **Medien, Links und
   Dateien** erscheint es verschwommen. Ein Erevos von vorher zeigt es wie jedes Foto.
+- **Foto zum einmaligen Ansehen:** unter **+** sendet **Foto zum einmaligen Ansehen** ein Foto, das nie im Chat
+  erscheint, in den Chats mit Kontakten und in Gruppen. Wer es bekommt, tippt darauf und sieht es einmal für sich, wo
+  das Telefon es erlaubt ohne Bildschirmfotos; beim Schließen löscht Erevos es von seinem Telefon, und der Chat sagt
+  **Foto einmal angesehen**. Es lässt sich nicht weiterleiten, speichern oder in die Sammlung legen, und dein eigenes
+  Telefon löscht es, sobald es angekommen ist. Nichts hält eine auf den Bildschirm gerichtete Kamera ab, und ein
+  älteres Erevos zeigt es als verstecktes Foto.
 
 **Warum:** Ein in die Worte getipptes Zeichen reist in ihnen, innerhalb der Verschlüsselung, ohne dass daneben etwas
 mitgeschickt wird, das sich unterscheiden ließe.

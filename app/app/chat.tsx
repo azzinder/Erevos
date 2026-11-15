@@ -8,6 +8,7 @@ import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
+import { notYoursToSee } from '../lib/see-once';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
@@ -2821,6 +2822,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     });
   }
 
+  // Theirs to see once, seen: this phone lets go of its photo, and the message says it was seen.
+  function seenOnce(message: Message) {
+    const now = Date.now();
+    setMessages((list) =>
+      list.map((m) => {
+        if (m.peer !== message.peer || m.tag !== message.tag) return m;
+        const { file: _seen, ...rest } = m;
+        return { ...rest, seenOnce: now };
+      }),
+    );
+    history.current?.seeOnce(message.peer, message.tag, now).catch((error) => setNote(errorText(error)));
+  }
+
   // Stars a message, or takes the star off, on this phone only.
   function star(message: Message) {
     const on = !message.starred;
@@ -2894,7 +2908,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.mine && pollOpen(message) && theyHave(message)) actions.push({ title: t('End poll'), onPress: () => void endPoll(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     // A photo or file that is here goes into this chat's own Collection too: the space's, or these hidden chats'.
-    if (message.file && !message.file.sticker && !message.file.history && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
+    if (message.file && !message.file.sticker && !message.file.history && !message.file.once && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
     if (!message.sending) actions.push(selectAction(() => selection.start(message.id)));
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -4480,7 +4494,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     savePhotoQuality(next).catch((error) => setNote(errorText(error)));
   }
 
-  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; sticker?: true; hidden?: true; close?: () => void };
+  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; sticker?: true; hidden?: true; once?: true; close?: () => void };
 
   // Sends a photo or file to the contact picked, or to `to` when it is `forwarded` there: its chunks
   // to our relay, then, end-to-end encrypted, where they are and their key. Kept here as it went.
@@ -4521,7 +4535,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       mime: picked.mime,
       kind,
       ...(picked.w && picked.h ? { w: picked.w, h: picked.h } : {}),
-      ...(picked.sticker ? { sticker: true as const } : picked.hidden ? { hidden: true as const } : {}),
+      ...(picked.sticker ? { sticker: true as const } : picked.hidden ? { hidden: true as const, ...(picked.once ? { once: true as const } : {}) } : {}),
     };
     // Picked to go later (laterFor): kept here, and handed to the relay for then.
     const later = forwarded ? null : takeLaterFor();
@@ -4647,12 +4661,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     then();
   }
 
-  // A photo from the gallery or the camera; `hidden`, blurred till tapped.
-  function sendPhoto(from: 'photos' | 'camera', hidden = false) {
+  // A photo from the gallery or the camera; `hidden`, blurred till tapped; `once`, to see once (lib/see-once.ts).
+  function sendPhoto(from: 'photos' | 'camera', hidden = false, once = false) {
     afterSheet(() =>
       void sendAttachment('photo', async () => {
         const photo = await pickPhoto(from, quality);
-        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden ? { hidden: true as const } : {}) };
+        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden || once ? { hidden: true as const } : {}), ...(once ? { once: true as const } : {}) };
       }),
     );
   }
@@ -4682,6 +4696,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setTaking(({ [`${message.peer}|${message.tag}`]: _again, ...rest }) => rest);
         void takePack(way, message.peer.slice(CONTACT_PREFIX.length), message.tag);
       } else if (message.mine) void stopSharing(message);
+      return;
+    }
+    // Ours to see once is theirs to see (lib/see-once.ts).
+    if (file.once && message.mine) {
+      setNote(notYoursToSee());
       return;
     }
     if (file.from) {
@@ -5813,7 +5832,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const files = new Map<string, FileRef>();
     for (const line of lines.slice(firstLine, lastLine)) {
       const file = line.kind === 'chat' ? line.message.file : undefined;
-      if (file?.kind === 'photo' && !file.from) files.set(file.id, file);
+      if (file?.kind === 'photo' && !file.from && !file.once) files.set(file.id, file);
     }
     if (firstLine === 0) for (const { files: its } of imported.slice(firstImported, importedEnd)) for (const file of its) if (file.kind === 'photo') files.set(file.id, file);
     return files;
@@ -6169,6 +6188,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
   tiles.push(
     { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
+    { key: 'once-photo', title: t('Photo to see once'), icon: 'photo', onPress: () => sendPhoto('photos', true, true) },
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
   );
   // From the Collection: the photos and files kept encrypted in this space, or in these hidden chats.
@@ -8139,7 +8159,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           file={viewing?.file ?? viewingImported}
           uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
           onSave={(choose) => (viewing ? void saveAttachment(viewing, choose) : viewingImported && void saveImported(viewingImported, choose))}
+          once={!!viewing?.file?.once}
           onClose={() => {
+            if (viewing?.file?.once && !viewing.mine) seenOnce(viewing);
             setViewing(null);
             setViewingImported(null);
           }}

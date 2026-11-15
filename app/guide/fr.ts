@@ -1164,6 +1164,12 @@ dans la ligne de l’écran d’accueil et dans une citation (là sous la forme 
   discussions avec les contacts et dans les groupes, jusqu’à ce qu’on la touche, et elle s’ouvre alors toute seule.
   Dans **Médias, liens et fichiers**, elle apparaît floue aussi. Un Erevos d’avant la montre comme n’importe quelle
   photo.
+- **Photo à voir une fois :** sous **+**, **Photo à voir une fois** envoie une photo qui n’apparaît jamais dans la
+  discussion, avec un contact ou dans un groupe. Qui la reçoit la touche et la voit une fois, seule, sans captures
+  d’écran là où le téléphone le permet ; à la fermeture, Erevos la supprime de son téléphone, et la discussion indique
+  **Photo vue une fois**. Elle ne peut être ni transférée, ni enregistrée, ni mise dans la Collection, et votre propre
+  téléphone la supprime dès qu’elle leur est parvenue. Rien n’empêche un appareil photo pointé sur l’écran, et un
+  Erevos plus ancien la montre comme une photo cachée.
 
 **Pourquoi :** une marque tapée dans les mots voyage avec eux, à l’intérieur du chiffrement, sans rien à côté qui la
 distingue.

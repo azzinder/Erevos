@@ -1093,6 +1093,11 @@ inicial e numa citação (ali como ▒▒▒).
 - **Foto escondida:** em **+**, **Foto escondida** envia uma foto que aparece borrada na conversa, nas conversas com
   contatos e nos grupos, até você tocar nela, e aí ela abre sozinha. Em **Mídia, links e arquivos** ela também
   aparece borrada. Um Erevos de antes a mostra como qualquer foto.
+- **Foto de visualização única:** em **+**, **Foto de visualização única** envia uma foto que nunca aparece na conversa,
+  nas conversas com contactos e nos grupos. Quem a recebe toca nela e vê-a uma vez, sozinha, sem capturas de ecrã onde
+  o telefone o permite; ao fechar, o Erevos apaga-a do telefone dessa pessoa, e a conversa diz **Foto vista uma vez**.
+  Não pode ser reencaminhada, guardada nem posta na Coleção, e o seu próprio telefone apaga-a assim que chega. Nada
+  impede uma câmara apontada ao ecrã, e um Erevos anterior mostra-a como foto escondida.
 
 **Por quê:** uma marca digitada nas palavras viaja nelas, dentro da criptografia, sem nada ao lado que a distinga.
 

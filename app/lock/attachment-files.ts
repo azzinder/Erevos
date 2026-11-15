@@ -14,7 +14,8 @@ import { deleteFile, listFiles, readBytes, writeBytes } from '../lib/files';
 // A photo can be a sticker made from a photo (lib/own-stickers.ts): small, and marked so in what it
 // says of itself, which travels with it. An Erevos from before reads a file's fields one by one and
 // leaves the mark out, so to it the sticker is a photo like any other. So is a photo hidden till
-// tapped (`hidden`), which an Erevos from before shows as it is. A file can be the imported chats
+// tapped (`hidden`), which an Erevos from before shows as it is. A photo to see once (`once`) is
+// hidden too, so that an Erevos from before that knows hidden photos at least blurs it. A file can be the imported chats
 // a contact shared (`history`, lib/chat-share.ts): to an Erevos from before, a .json file like any other.
 
 export type FileKind = 'photo' | 'file';
@@ -34,10 +35,11 @@ export function readSharedMark(value: unknown): SharedMark | null {
 
 /**
  * What a file is: its name, type and size, for a photo how wide and high it is, whether it is a
- * sticker, whether it is hidden till tapped (`hidden`: blurred in the chat, whole once opened), and
- * for a file, whether it is imported chats a contact shared (`history`).
+ * sticker, whether it is hidden till tapped (`hidden`: blurred in the chat, whole once opened), whether
+ * it is to see once (`once`, always hidden too: never shown in the chat, and let go of once seen,
+ * lib/see-once.ts), and for a file, whether it is imported chats a contact shared (`history`).
  */
-export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true; hidden?: true; history?: SharedMark };
+export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true; hidden?: true; once?: true; history?: SharedMark };
 
 /** The largest photo that goes as a sticker. */
 export const MAX_STICKER = 100 * 1000;
@@ -143,6 +145,7 @@ export function isFileMeta(value: unknown): value is FileMeta {
     (v.h === undefined || whole(v.h, 100_000)) &&
     (v.sticker === undefined || (v.sticker === true && fitsSticker(v as FileMeta))) &&
     (v.hidden === undefined || (v.hidden === true && v.kind === 'photo' && !v.sticker)) &&
+    (v.once === undefined || (v.once === true && v.hidden === true)) &&
     (v.history === undefined || (v.kind === 'file' && readSharedMark(v.history) !== null))
   );
 }

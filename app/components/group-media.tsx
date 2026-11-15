@@ -16,6 +16,7 @@ import { pickSource, TooLargeError } from '../lib/pick-file';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import type { Relay } from '../lib/relay';
 import { saveFile } from '../lib/save-file';
+import { notYoursToSee, onceLine } from '../lib/see-once';
 import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage } from '../lock/group-data';
@@ -38,7 +39,7 @@ const SAID_SHOWN = 8000;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
-type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; hidden?: true; close?: () => void };
+type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; hidden?: true; once?: true; close?: () => void };
 
 /**
  * The media of group `id`, whose messages are `messages`. `onError` shows what went wrong. Gives
@@ -54,6 +55,8 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   const [quality, setQuality] = useState<PhotoQuality>('original');
   const [attaching, setAttaching] = useState(false);
   const [viewing, setViewing] = useState<FileRef | null>(null);
+  // The tag of a member's photo to see once that shows: let go of as it closes (lib/see-once.ts).
+  const viewingOnce = useRef<string | null>(null);
   const [said, setSaid] = useState('');
   const saidTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // How far each file being taken from the relay is, by its id; 'failed' or 'gone' if it did not come.
@@ -189,7 +192,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     if (!picked) return;
     try {
       const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
-      await send(kind, picked.source, { name: picked.name, mime: picked.mime, kind, ...size, ...(picked.hidden ? { hidden: true as const } : {}) });
+      await send(kind, picked.source, { name: picked.name, mime: picked.mime, kind, ...size, ...(picked.hidden ? { hidden: true as const, ...(picked.once ? { once: true as const } : {}) } : {}) });
     } finally {
       picked.close?.();
     }
@@ -201,12 +204,12 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     then();
   }
 
-  // A photo from the gallery or the camera; `hidden`, blurred till tapped.
-  function sendPhoto(from: 'photos' | 'camera', hidden = false) {
+  // A photo from the gallery or the camera; `hidden`, blurred till tapped; `once`, to see once (lib/see-once.ts).
+  function sendPhoto(from: 'photos' | 'camera', hidden = false, once = false) {
     afterSheet(() =>
       void sendPicked('photo', async () => {
         const photo = await pickPhoto(from, quality);
-        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden ? { hidden: true as const } : {}) };
+        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden || once ? { hidden: true as const } : {}), ...(once ? { once: true as const } : {}) };
       }),
     );
   }
@@ -313,9 +316,25 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   function open(m: GroupMessage) {
     const file = fileOf(m);
     if (!file) return;
+    // Ours to see once is the members' to see.
+    if (file.once && m.from === '') {
+      say(notYoursToSee());
+      return;
+    }
     if (file.from) void take(file, m.ms !== undefined);
     else if (m.ms !== undefined) void play(file);
-    else setViewing(file);
+    else {
+      viewingOnce.current = file.once ? m.tag : null;
+      setViewing(file);
+    }
+  }
+
+  // Closes the photo looked at; a member's to see once is let go of here.
+  function closeViewing() {
+    const tag = viewingOnce.current;
+    viewingOnce.current = null;
+    setViewing(null);
+    if (tag) void groupsAt.groups().then((groups) => groups.seeOnce(id, tag)).catch((error) => onError(errorText(error)));
   }
 
   async function saveViewed(choose: boolean) {
@@ -344,6 +363,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
   tiles.push(
     { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
+    { key: 'once-photo', title: t('Photo to see once'), icon: 'photo', onPress: () => sendPhoto('photos', true, true) },
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
     ...(more?.(afterSheet) ?? []),
   );
@@ -357,14 +377,14 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
 
   const sheets: ReactNode = (
     <>
-      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
+      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={closeViewing} once={!!viewing?.once} />
     </>
   );
 
   /** A message's photo, file or voice message, tappable, or null when it has none. `onLongPress` is the bubble's. */
   function content(m: GroupMessage, ink: StyleProp<TextStyle>, onLongPress?: () => void): ReactNode {
     const file = fileOf(m);
-    if (!file) return null;
+    if (!file) return m.seenOnce ? <Text style={[ink, { fontStyle: 'italic' }]}>{onceLine(m.from === '', true)}</Text> : null;
     const voice = m.ms !== undefined;
     const coming = comingText(file, taking[file.id]);
     return (
@@ -381,7 +401,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
         ) : file.sticker ? (
           <PhotoSticker uri={photos[file.id]} status={coming} />
         ) : (
-          <Attachment file={file} uri={photos[file.id]} state={taking[file.id]} ink={ink} />
+          <Attachment file={file} uri={photos[file.id]} state={taking[file.id]} ink={ink} mine={m.from === ''} />
         )}
       </Pressable>
     );
