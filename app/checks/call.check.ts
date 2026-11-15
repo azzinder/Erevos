@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { ASK_MS, Call, callNow, connectionConfig, currentCall, candidateFits, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, remoteSdp, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { ASK_MS, Call, callNow, connectionConfig, currentCall, candidateFits, capVideo, RELAY_VIDEO_BITRATE, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, remoteSdp, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -689,4 +689,28 @@ test('new descriptions of a call are read only so', () => {
   assert.deepEqual(decodeCall({ id, kind: 'reanswer', sdp: 'v=0\r\nyes' }), { id, kind: 'reanswer', sdp: 'v=0\r\nyes' });
   assert.deepEqual(decodeCall({ id, kind: 'reanswer' }), { id, kind: 'reanswer' });
   assert.equal(decodeCall({ id, kind: 'reanswer', sdp: 'nonsense' }), null);
+});
+
+test('a camera through the call relay is held to 1 Mbps; sound, a direct call and a platform with no parameters are not', async () => {
+  const sender = () => {
+    const made = { kept: null as null | { encodings?: { maxBitrate?: number }[] } };
+    return { made, getParameters: () => ({ encodings: [{}] as { maxBitrate?: number }[] }), setParameters: async (p: { encodings?: { maxBitrate?: number }[] }) => void (made.kept = p) };
+  };
+  const video = { kind: 'video', enabled: true, stop() {} };
+  const audio = { kind: 'audio', enabled: true, stop() {} };
+  const relayed = sender();
+  await capVideo(relayed, video, true);
+  assert.equal(relayed.made.kept?.encodings?.[0]?.maxBitrate, RELAY_VIDEO_BITRATE);
+  const direct = sender();
+  await capVideo(direct, video, false);
+  assert.equal(direct.made.kept, null);
+  const sound = sender();
+  await capVideo(sound, audio, true);
+  assert.equal(sound.made.kept, null);
+  // A lower one already set stays; a sender with nothing to set leaves the call as it is.
+  const lower = { ...sender(), getParameters: () => ({ encodings: [{ maxBitrate: 300_000 }] }) };
+  await capVideo(lower, video, true);
+  assert.equal(lower.made.kept?.encodings?.[0]?.maxBitrate, 300_000);
+  await capVideo({}, video, true);
+  await capVideo({ getParameters: () => { throw new Error('no'); }, setParameters: async () => undefined }, video, true);
 });

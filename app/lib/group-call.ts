@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { cameraCount, callNow, connectionConfig, CONNECT_MS, currentCall, candidateFits, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, remoteSdp, RING_MS, turnCamera, type Connection, type Rtc, type Stream } from './call';
+import { cameraCount, callNow, connectionConfig, CONNECT_MS, currentCall, candidateFits, capVideo, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, remoteSdp, RING_MS, turnCamera, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 import { t } from './i18n';
@@ -298,7 +298,7 @@ export class GroupCall {
     this.early.delete(identity);
     this.peerMap.set(identity, peer);
     const local = this.local!;
-    local.getTracks().forEach((track) => connection.addTrack(track, local));
+    local.getTracks().forEach((track) => void capVideo(connection.addTrack(track, local), track, !!relay));
     // In a video call without our camera: their picture still comes, to an offer of ours too.
     if (offered && this.video && !this.hasCamera) {
       try {

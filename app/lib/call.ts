@@ -214,6 +214,30 @@ export function newCallId(): string {
   return toHex(randomBytes(8));
 }
 
+/** The most a camera sends, in bits a second, on a call through the call relay: every call over the
+ *  internet goes through it, so that neither side sees the other's address, and the relay carries
+ *  each picture. 720p at 1 Mbps looks much the same on a phone and takes about half (his choice,
+ *  2026-11-14). A call direct on the same network is not held back. */
+export const RELAY_VIDEO_BITRATE = 1_000_000;
+
+type Encodings = { encodings?: { maxBitrate?: number }[] };
+
+/** Holds a camera's `sender` (what addTrack gave) to RELAY_VIDEO_BITRATE when the call goes through the
+ *  relay; sound, and a call with no relay, as they are. Where the platform cannot, the picture goes as before. */
+export async function capVideo(sender: unknown, track: Track, throughRelay: boolean): Promise<void> {
+  if (!throughRelay || track.kind !== 'video' || !sender) return;
+  const s = sender as { getParameters?(): Encodings; setParameters?(parameters: Encodings): Promise<void> };
+  try {
+    const parameters = s.getParameters?.();
+    if (!parameters || !s.setParameters) return;
+    const encodings = parameters.encodings?.length ? parameters.encodings : [{}];
+    parameters.encodings = encodings.map((encoding) => ({ ...encoding, maxBitrate: Math.min(encoding.maxBitrate ?? Infinity, RELAY_VIDEO_BITRATE) }));
+    await s.setParameters(parameters);
+  } catch {
+    // Not here: the picture goes at the bitrate WebRTC chooses.
+  }
+}
+
 /** The connection set-up for a call: through the call relay only, or direct on the same network. */
 export function connectionConfig(relay: CallRelay | null): ConnectionConfig {
   return relay
@@ -750,6 +774,7 @@ export class Call {
     const local = this.local ?? camera;
     if (local !== camera) local.addTrack?.(track);
     const sender = connection.addTrack(track, local);
+    void capVideo(sender, track, !!this.options.relay);
     void this.countCameras();
     return { track, sender };
   }
@@ -822,7 +847,7 @@ export class Call {
     if (camera) void this.countCameras();
     const connection = this.options.rtc.connect(connectionConfig(this.options.relay));
     this.connection = connection;
-    local.getTracks().forEach((track) => connection.addTrack(track, local));
+    local.getTracks().forEach((track) => void capVideo(connection.addTrack(track, local), track, !!this.options.relay));
     connection.addEventListener('track', ({ streams, track }) => {
       // Their video, added to a voice call, comes in the stream of its sound: shown anew all the same.
       if (streams[0]) {
