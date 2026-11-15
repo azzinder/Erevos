@@ -7,6 +7,7 @@ import { t } from './i18n';
 import { call, type MatrixState } from './matrix';
 import { netHttp, type Http } from './net-http';
 import { createQueue, deleteQueue, fromHex, sameRelay, toHex, type Relay } from './relay';
+import { editionName } from './edition';
 
 // A closed space says a message came on its Matrix account (docs/matrix.md), when asked to on the
 // Matrix screen: off until then. The space's relay is its Matrix push gateway (crates/erevos-relay
@@ -71,8 +72,8 @@ function pusher(push: MatrixPush, gateway: string | null): Record<string, unknow
         kind: 'http',
         app_id: MATRIX_PUSH_APP,
         pushkey: push.senderHex,
-        app_display_name: 'Erevos',
-        device_display_name: 'Erevos',
+        app_display_name: editionName(),
+        device_display_name: editionName(),
         lang: 'en',
         data: { url: gateway, format: 'event_id_only' },
         append: false,

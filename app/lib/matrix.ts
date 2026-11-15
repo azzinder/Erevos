@@ -71,6 +71,7 @@ import {
 import { creatorsOf, powerOfContent, type MatrixPower } from './matrix-power';
 import { fetchCapped, HTTP_MOST, HttpTooLargeError } from './net-http';
 import { throughTor, torFor } from './relay';
+import { editionName } from './edition';
 
 /** The olm and megolm algorithms, as Matrix names them. */
 export const OLM = 'm.olm.v1.curve25519-aes-sha2';
@@ -453,7 +454,7 @@ export async function signIn(homeserver: string, user: string, password: string)
     type: 'm.login.password',
     identifier,
     password,
-    initial_device_display_name: 'Erevos',
+    initial_device_display_name: editionName(),
   });
   return newDevice(homeserver, login, { type: 'm.login.password', identifier, password });
 }
@@ -490,7 +491,7 @@ export function ssoLink(homeserver: string, back: string, idp?: string): string 
  * as there is no password to give; otherwise a check by emoji or the Security Key does it later.
  */
 export async function signInWithToken(homeserver: string, token: string): Promise<MatrixState> {
-  const login = await call({ homeserver }, 'POST', '/login', { type: 'm.login.token', token, initial_device_display_name: 'Erevos' });
+  const login = await call({ homeserver }, 'POST', '/login', { type: 'm.login.token', token, initial_device_display_name: editionName() });
   return newDevice(homeserver, login, null);
 }
 

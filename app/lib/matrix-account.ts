@@ -15,6 +15,7 @@
 
 import { t } from './i18n';
 import { answeredJson, callAnswer, call, enc, MatrixError, newDevice, request, type Json, type MatrixAnswer, type MatrixState } from './matrix';
+import { editionName } from './edition';
 
 /** A step the homeserver asks for before it does what was asked. */
 export type AuthAsk = {
@@ -120,7 +121,7 @@ export async function nameFree(homeserver: string, name: string): Promise<boolea
 export async function register(homeserver: string, name: string, password: string, auth?: Json): Promise<{ state: MatrixState } | { ask: AuthAsk }> {
   if (!isAccountName(name)) throw new Error(t('A Matrix name has only small letters, digits and . _ = - / +'));
   if (password.length < 8) throw new Error(t('Choose a password of at least 8 characters.'));
-  const asked = (given?: Json) => callAnswer({ homeserver }, 'POST', '/register?kind=user', { username: name, password, initial_device_display_name: 'Erevos', ...(given ? { auth: given } : {}) });
+  const asked = (given?: Json) => callAnswer({ homeserver }, 'POST', '/register?kind=user', { username: name, password, initial_device_display_name: editionName(), ...(given ? { auth: given } : {}) });
   let done: { json: Json } | { ask: AuthAsk };
   try {
     done = await interactive(homeserver, asked, auth);

@@ -88,6 +88,7 @@ import {
 import { previewElement, previewOf } from './xmpp-links';
 import { pickMechanism, startSasl } from './xmpp-sasl';
 import { child, children, el, find, render, textOf, type XmlElement } from './xmpp-xml';
+import { editionName } from './edition';
 
 // An XMPP (Jabber) account in Erevos (docs/xmpp.md): signing in, the contacts (roster), and chats
 // with one person or a group (lib/xmpp-muc.ts), encrypted with OMEMO (lib/xmpp-omemo.ts) as
@@ -1580,7 +1581,7 @@ async function answerIq(state: XmppState, connection: XmppConnection, iq: XmlEle
   if (type === 'set' && query?.name === 'jingle' && query.ns === NS.jingle && callHook) return callHook.iq(state, connection, iq);
   if (type === 'get' && query?.name === 'query' && query.ns === NS.discoInfo) {
     return reply(
-      el('query', { xmlns: NS.discoInfo, node: query.attrs.node }, el('identity', { category: 'client', type: 'phone', name: 'Erevos' }), ...FEATURES.map((f) => el('feature', { var: f }))),
+      el('query', { xmlns: NS.discoInfo, node: query.attrs.node }, el('identity', { category: 'client', type: 'phone', name: editionName() }), ...FEATURES.map((f) => el('feature', { var: f }))),
     );
   }
   return connection.send(
