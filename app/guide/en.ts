@@ -846,7 +846,8 @@ sees no more than a message now and then between two people talking. The time yo
 messages, end-to-end encrypted: the relay never learns it. It does tell your contacts when you sleep or work, and two
 contacts seen at the same minute may be guessed to talk: turn it off if that matters to you. Someone who only has your
 link, writing as a message request, hears nothing back until you accept: not that you read, nor that you are online,
-typing or last seen.
+typing or last seen. Until you accept, only its words show: its photos and files wait, not taken, and its links show no
+preview.
 
 To hide it from one contact, open their chat, tap its name and then **Appear offline**. With it on:
 

@@ -354,6 +354,8 @@ export const chat: Record<string, string> = {
   'Opening the photo…': 'Άνοιγμα της φωτογραφίας…',
   'Save in another folder': 'Αποθήκευση σε άλλο φάκελο',
   'Close': 'Κλείσιμο',
+  'Photos and files from someone you have not accepted wait until you accept the request.': 'Οι φωτογραφίες και τα αρχεία από κάποιον που δεν έχεις αποδεχτεί περιμένουν ώσπου να αποδεχτείς το αίτημα.',
+  'Waits until you accept the request': 'Περιμένει ώσπου να αποδεχτείς το αίτημα',
   'No longer on the relay': 'Δεν υπάρχει πια στο relay',
   'Did not come · tap to try again': 'Δεν ήρθε · πάτα για νέα προσπάθεια',
   'Coming, {progress}': 'Έρχεται, {progress}',

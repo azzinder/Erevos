@@ -908,7 +908,8 @@ por último viaja dentro dessas mesmas mensagens, criptografada de ponta a ponta
 aos seus contatos quando você dorme ou trabalha, e de dois contatos vistos no mesmo minuto dá para supor que conversam
 entre si: desative se isso importa para você. Alguém que só tem o seu link, escrevendo como solicitação de mensagem,
 não recebe nada de volta até você aceitar: nem que você leu, nem que está online ou digitando, nem quando foi visto
-por último.
+por último. Até você aceitar, só as palavras aparecem: fotos e arquivos esperam sem ser baixados, e os links não
+mostram prévia.
 
 Para esconder isso de um contato, abra a conversa dele, toque no nome dela e depois em **Aparecer offline**. Com isso
 ativado:

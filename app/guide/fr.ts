@@ -969,7 +969,8 @@ parlent. L’heure à laquelle tu as été vu pour la dernière fois voyage dans
 bout : le relais ne l’apprend jamais. Elle dit en revanche à tes contacts quand tu dors ou travailles, et on peut
 supposer que deux contacts vus à la même minute se parlent : désactive-la si cela compte pour toi. Quelqu’un qui n’a
 que ton lien, et qui écrit en tant que demande de message, n’apprend rien en retour tant que tu n’acceptes pas : ni
-que tu as lu, ni que tu es en ligne ou que tu écris, ni quand tu as été vu pour la dernière fois.
+que tu as lu, ni que tu es en ligne ou que tu écris, ni quand tu as été vu pour la dernière fois. Tant que tu n’acceptes
+pas, seuls ses mots s’affichent : ses photos et fichiers attendent sans être téléchargés, et ses liens n’ont pas d’aperçu.
 
 Pour le cacher à un contact, ouvre sa discussion, appuie sur son nom puis sur **Apparaître hors ligne**. Quand c’est
 activé :

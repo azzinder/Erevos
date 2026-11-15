@@ -4303,17 +4303,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [pieceTick, setPieceTick] = useState(0);
   useEffect(() => onPiece(() => setPieceTick((n) => n + 1)), []);
 
+  // A message request's photos and files wait until it is accepted: taken then, as any other.
+  const strangers = useMemo(() => new Set(contacts.filter((c) => c.request).map((c) => `${CONTACT_PREFIX}${c.identity}`)), [contacts]);
   useEffect(() => {
     const own = ownRelay();
     if (!loaded) return;
     for (const m of messages) {
       if (!m.file?.from || m.file.history || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (strangers.has(m.peer)) continue;
       // Only a file on a relay needs ours. One from where its sender chose, which would be fetched
       // straight, waits for a tap, as larger ones do, unless Tor takes it now.
       if (!takesItself(own, m.file.from)) continue;
       void take(own, m.peer, m.tag, m.file, true);
     }
-  }, [loaded, relayUrl, relayToken, messages, pieceTick]);
+  }, [loaded, relayUrl, relayToken, messages, pieceTick, strangers]);
 
   // Imported chats shared with a contact (lib/chat-share.ts) go and come in rounds (lib/share-rounds.ts):
   // their words at once, their files as the other phone takes them, each look at the relay driving
@@ -4671,6 +4674,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     if (file.from) {
+      if (strangers.has(message.peer)) {
+        setNote(t('Photos and files from someone you have not accepted wait until you accept the request.'));
+        return;
+      }
       const own = ownRelay();
       if (own || !onRelay(file.from)) void take(own, message.peer, message.tag, file);
       else setNote(t('Type the relay address in Relay first.'));
@@ -7848,6 +7855,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   played={playingId === message.id ? played : null}
                   photo={message.file ? photos[message.file.id] : undefined}
                   taking={taking[`${message.peer}|${message.tag}`] ?? (message.file?.history ? shareShown[`${message.peer}|${message.tag}`] : undefined)}
+                  stranger={strangers.has(message.peer)}
                   plays={lines.length - i <= PLAYS_LAST}
                   canAnswer={theyHave(message)}
                   waits={scheduled(message)}

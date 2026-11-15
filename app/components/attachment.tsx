@@ -41,7 +41,9 @@ export function shownOf(files: FileRef[]): FileRef[] {
 export function comingText(file: FileRef, state?: string): string | null {
   return !file.from
     ? null
-    : state === 'gone'
+    : state === 'stranger'
+      ? t('Waits until you accept the request')
+      : state === 'gone'
       ? t('No longer on the relay')
       : state === 'failed'
         ? t('Did not come · tap to try again')

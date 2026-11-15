@@ -199,7 +199,7 @@ export type LineLook = { styles: ReturnType<typeof makeStyles>; b: ReturnType<ty
 
 // A message of the thread. It draws again only when what it shows changes, not each time the
 // chat does (a voice message playing, a note), which keeps a long thread light to scroll.
-export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, plays, canAnswer, waits, choosing = false, chosen = false, styles, b, colors, acts }: LineLook & {
+export const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, stranger = false, plays, canAnswer, waits, choosing = false, chosen = false, styles, b, colors, acts }: LineLook & {
   message: Message;
   /** The message it answers, when here. */
   quoted?: Message;
@@ -212,6 +212,8 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   played: number | null;
   photo?: string;
   taking?: string;
+  /** From a message request not accepted yet: its photos and files wait, and its links show no preview. */
+  stranger?: boolean;
   /** A sticker among the last of the thread, which moves. */
   plays: boolean;
   /** They have it, so it can be voted on. */
@@ -330,7 +332,7 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
             ) : message.card ? (
               <CardBubble card={message.card} ink={ink} onSave={() => acts.saveCard(message.card!)} />
             ) : message.file ? (
-              <Attachment file={message.file} uri={photo} state={taking} ink={ink} />
+              <Attachment file={message.file} uri={photo} state={stranger && message.file.from && !taking ? 'stranger' : taking} ink={ink} />
             ) : (
               <Text style={ink}>
                 {message.voice
@@ -340,7 +342,7 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
                   : <LinkedText text={shownLine(message.text)} />}
               </Text>
             )}
-            {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
+            {message.preview && !message.voice && !message.file && !stranger ? <PreviewCard preview={message.preview} ink={ink} /> : null}
             <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
               {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', message.edited ? t('Edited') : '', caption(message)].filter(Boolean).join('  ·  ')}
             </Text>

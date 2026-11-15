@@ -916,7 +916,8 @@ viaja dentro de esos mismos mensajes, cifrada de extremo a extremo: el relay nun
 contactos cuándo duermes o trabajas, y de dos contactos vistos en el mismo minuto se puede suponer que hablan entre
 sí: desactívala si eso te importa. Alguien que solo tiene tu enlace, y te escribe como solicitud de mensaje, no recibe
 nada de vuelta hasta que aceptes: ni que has leído, ni que estás en línea o escribiendo, ni cuándo estuviste por
-última vez.
+última vez. Hasta que aceptes, solo se ven sus palabras: sus fotos y archivos esperan sin descargarse, y sus enlaces
+no muestran vista previa.
 
 Para ocultarlo a un contacto, abre su chat, toca su nombre y luego **Aparecer sin conexión**. Con eso activado:
 

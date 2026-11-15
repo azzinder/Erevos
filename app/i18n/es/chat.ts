@@ -353,6 +353,8 @@ export const chat: Record<string, string> = {
   'Opening the photo…': 'Abriendo la foto…',
   'Save in another folder': 'Guardar en otra carpeta',
   'Close': 'Cerrar',
+  'Photos and files from someone you have not accepted wait until you accept the request.': 'Las fotos y archivos de alguien que no has aceptado esperan hasta que aceptes la solicitud.',
+  'Waits until you accept the request': 'Espera hasta que aceptes la solicitud',
   'No longer on the relay': 'Ya no está en el relay',
   'Did not come · tap to try again': 'No llegó · toca para reintentar',
   'Coming, {progress}': 'Recibiendo, {progress}',

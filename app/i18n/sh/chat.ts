@@ -354,6 +354,8 @@ export const chat: Record<string, string> = {
   'Opening the photo…': 'Otvaranje fotografije…',
   'Save in another folder': 'Sačuvaj u drugi folder',
   'Close': 'Zatvori',
+  'Photos and files from someone you have not accepted wait until you accept the request.': 'Fotografije i datoteke od nekoga koga niste prihvatili čekaju dok ne prihvatite zahtjev.',
+  'Waits until you accept the request': 'Čeka dok ne prihvatite zahtjev',
   'No longer on the relay': 'Više nije na relayu',
   'Did not come · tap to try again': 'Nije stiglo · dodirnite za ponovni pokušaj',
   'Coming, {progress}': 'Stiže, {progress}',

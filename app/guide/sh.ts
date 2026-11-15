@@ -891,7 +891,8 @@ relay ne vidi ništa više od poruke s vremena na vrijeme između dvoje ljudi ko
 posljednji put viđeni putuje unutar istih poruka, šifrirano s kraja na kraj: relay ga nikad ne saznaje. Ono ipak kaže
 vašim kontaktima kad spavate ili radite, a za dva kontakta viđena istog minuta može se pretpostaviti da razgovaraju:
 isključite ga ako vam je to važno. Neko ko ima samo vaš link i piše kao zahtjev za razgovor ne dobija nikakav odgovor
-dok ga ne prihvatite: ni da ste pročitali, ni da ste na mreži ili da pišete, ni kad ste posljednji put viđeni.
+dok ga ne prihvatite: ni da ste pročitali, ni da ste na mreži ili da pišete, ni kad ste posljednji put viđeni. Dok ne
+prihvatite, vide se samo riječi: fotografije i datoteke čekaju nepreuzete, a linkovi nemaju pregled.
 
 Da to sakrijete od jednog kontakta, otvorite njegov razgovor, dodirnite njegovo ime, a zatim **Prikazuj me kao da
 nisam na mreži**. Kad je to uključeno:

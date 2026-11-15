@@ -977,7 +977,8 @@ Zeit, zu der du zuletzt online warst, reist in denselben Nachrichten mit, Ende-z
 erfährt sie nie. Sie verrät deinen Kontakten aber, wann du schläfst oder arbeitest, und bei zwei Kontakten, die in
 derselben Minute gesehen wurden, kann man vermuten, dass sie miteinander reden: Schalte sie aus, wenn dir das wichtig
 ist. Jemand, der nur deinen Link hat und als Nachrichtenanfrage schreibt, hört nichts zurück, bis du annimmst: weder
-dass du liest noch dass du online bist, schreibst oder zuletzt online warst.
+dass du liest noch dass du online bist, schreibst oder zuletzt online warst. Bis du annimmst, zeigen sich nur ihre
+Worte: Fotos und Dateien warten, ungeladen, und Links zeigen keine Vorschau.
 
 Um es vor einem Kontakt zu verbergen, öffne seinen Chat, tippe auf seinen Namen und dann auf **Offline erscheinen**.
 Wenn es an ist:

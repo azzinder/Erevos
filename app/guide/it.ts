@@ -913,7 +913,8 @@ il relay non vede più di un messaggio ogni tanto tra due persone che parlano. L
 dentro quegli stessi messaggi, crittografata end-to-end: il relay non la conosce mai. Dice però ai tuoi contatti
 quando dormi o lavori, e di due contatti visti nello stesso minuto si può supporre che parlino tra loro: disattivalo
 se ti importa. Qualcuno che ha solo il tuo link, e scrive come richiesta di messaggio, non riceve nulla finché non
-accetti: né che hai letto, né che sei online o stai scrivendo, né quando hai fatto l’ultimo accesso.
+accetti: né che hai letto, né che sei online o stai scrivendo, né quando hai fatto l’ultimo accesso. Finché non
+accetti, si vedono solo le sue parole: foto e file aspettano senza essere scaricati, e i link non mostrano anteprima.
 
 Per nasconderlo a un contatto, apri la sua chat, tocca il suo nome e poi **Mostrati offline**. Con questo attivo:
 
