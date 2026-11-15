@@ -77,7 +77,12 @@ fi
 
 echo "== Release $version of $app"
 base=/var/www/$app
-mkdir -p "$base"
+# A folder made here must be one the web server can enter whatever umask root has (027 would make
+# it 750, and every address of the web app would answer 403).
+if [ ! -d "$base" ]; then
+	mkdir -p "$base"
+	chmod 755 "$base"
+fi
 rm -rf "$base/$version.new"
 cp -r "$release" "$base/$version.new"
 # The statements of the Android releases of the other channels (deploy/web/publish-android.sh), kept
