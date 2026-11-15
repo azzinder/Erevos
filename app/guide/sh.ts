@@ -495,19 +495,24 @@ vlastitog relaya** ispod.
 **Zašto:** s redovima i bez naloga nijedan server ne čuva popis ko koga poznaje i nikome ne treba vaš broj telefona ni
 e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš red, a čitate ga samo vi.
 
-1. Na početnom ekranu dodirnite **Novi razgovor**. Na vrhu, **Kako ste sada povezani** jednostavnim riječima kaže kako
-   vas kontakti dosežu: preko vašeg relaya, preko Nostra bez relaya ili samo u blizini. Ispod su načini ulaska za
-   telefon koji još nema relay, ili, s relayem, **Dodaj kontakt** i **Vaš link za kontakt**. Vlastite postavke relaya
+1. Na početnom ekranu dodirnite **Novi razgovor**. Dok nešto nedostaje, na vrhu **Kako ste sada povezani** jednostavnim riječima kaže kako
+   vas kontakti dosežu: preko vašeg relaya, preko Nostra bez relaya ili samo u blizini; kad sve radi, ne prikazuje se.
+   Ispod su načini ulaska za telefon koji još nema relay, ili, s relayem, dva velika dugmeta, **Dodaj kontakt**, te redovi
+   za **Vaš link za kontakt** i **Pozovite nekoga**. Vlastite postavke relaya
    su pod **Za napredne korisnike**, na dnu; **Postavke** → **Relay i mreže** → **Relay** otvara Novi razgovor s tim
    postavkama otvorenim.
 2. Pod **Za napredne korisnike** upišite adresu u polje **Adresa relaya**: \`ws://<adresa računara>:7879\` za relay na
    vlastitoj mreži ili \`wss://relay.example.org\` za relay na internetu. Dodajte **Token** ako ga relay traži.
-3. Dodirnite **Napravi moj red na relayu**. Erevos kaže **Red na relayu je napravljen**, a **Kako ste sada povezani**
-   kaže **Preko vašeg relaya**: sve radi, tekstovi, fotografije, glasovne poruke, pozivi i grupe.
+3. Erevos sam pravi vaš red na njemu, nekoliko sekundi kasnije, i kaže **Red na relayu je napravljen**: sve radi, tekstovi, fotografije, glasovne poruke,
+   pozivi i grupe, a **Kako ste sada povezani** nestaje, jer ništa ne nedostaje. Ako ne uspije, bilješka kaže zašto; **Napravi moj red na relayu**, ispod adrese, pokušava ponovo.
 4. Na vrhu **Novog razgovora** dva velika dugmeta rade ono što većini treba: **Skeniraj njegov QR kod** snima QR kod na
    ekranu drugog telefona (na računaru, na Sailfish OS-u i u web-aplikaciji traži fotografiju koda), a **Pokaži svoj QR
    kod** prikazuje vaš. Dovoljno je da jedno skenira drugo; ostatak Novog razgovora je ispod njih.
-   **Pokaži svoj QR kod**, ili **Prikaži moj QR kod** pod **Vaš link za kontakt**, otvara ga preko ekrana. Neka ga drugi
+   Tamo gdje vaš relay dopušta da vaš telefon poziva, **Pokaži svoj QR kod** prikazuje poziv za jednu osobu: ako je Erevos nov na
+   njenom telefonu, sam se pridružuje vašem relayu kad ga skenira, bez ikakvog upisivanja, i odmah ste kontakti; telefon koji već ima
+   relay prima vas samo kao kontakt. Za nekoga drugog dodirnite **Novi QR kod**. Tamo gdje vaš telefon ne može pozivati, prikazuje
+   vaš QR kod za kontakt, kao dolje.
+   **Pokaži svoj QR kod** otvara ga preko ekrana. Neka ga drugi
    telefon skenira kamerom, a zatim otvori link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj u
    razgovore** samo ako ste ga sami skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu,
    povezanu s kontaktom koji izaberete, čije ime razgovor preuzima.
@@ -515,8 +520,8 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    Isto vrijedi za dodir: dok se prikazuje mali kod za kontakt, a NFC je na Androidu uključen, drugi telefon ga uzima
    ako njegovu poleđinu prislonite uz poleđinu svog. Radi samo dok je Erevos u prvom planu, ne u pozadini, i nikad s
    velikim QR kodom.
-5. Ako kamera te osobe prikazuje samo tekst, ili je daleko, dodirnite **Podijeli moj link za kontakt** i pošaljite
-   joj ga. Ona ga zalijepi u polje pod **Dodaj kontakt** i dodirne **Dodaj**.
+5. Ako kamera te osobe prikazuje samo tekst, ili je daleko, otvorite **Vaš link za kontakt**, dodirnite **Podijeli moj link za kontakt**
+   i pošaljite joj ga. Ona ga zalijepi u polje pod **Dodaj kontakt** i dodirne **Dodaj**.
 6. Ili obrnuto: dodirnite **Skeniraj njegov QR kod** na vrhu i snimite QR kod na njenom ekranu, ili, pod **Dodaj
    kontakt**, **Izaberi fotografiju QR koda** za snimak ekrana ili fotografiju koda koju vam je poslala. Erevos ga čita
    i odmah je dodaje. Na računaru, na Sailfish OS-u i u web-aplikaciji **Skeniraj njegov QR kod** traži fotografiju

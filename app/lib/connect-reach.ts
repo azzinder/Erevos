@@ -48,16 +48,22 @@ export function connectReach(c: Connection): { reach: Reach; title: string; line
       : `${t('Everything works: texts, photos, voice messages, calls and groups, end-to-end encrypted.')}${c.nearby ? ` ${t('Contacts near you reach you with no internet too.')}` : ''}`;
     return { reach: 'ready', title: t('Through your relay'), line, detail };
   }
-  if (host) return { reach: 'part', title: t('Relay set, no queue yet'), line: t('Create your queue on it, so that your contacts can write to you there.'), detail };
+  // In plain words (#11): New chat makes the queue by itself (app/chat.tsx), so this shows only
+  // while it does, or when it could not.
+  if (host) return { reach: 'part', title: t('Getting ready'), line: t('Erevos is making the place where your contacts write to you. If this stays, check the address under For advanced users.') };
   if (c.nostr) {
-    return {
-      reach: 'part',
-      title: t('Through Nostr, with no relay'),
-      line: c.hidden
-        ? t('Texts, stickers and reactions go through Nostr. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.')
-        : t('Texts, stickers and reactions go through Nostr. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
-    };
+    return c.hidden
+      ? {
+          reach: 'part',
+          title: t('Through Nostr, with no relay'),
+          line: t('Texts, stickers and reactions go through Nostr. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.'),
+        }
+      : {
+          reach: 'part',
+          title: t('Texts only, for now'),
+          line: t('Your contacts reach you with texts, stickers and reactions. For photos, voice messages, calls and groups, ask someone who uses Erevos for an invite and tap I have an invite.'),
+        };
   }
   if (c.hidden) return { reach: 'none', title: t('No relay yet'), line: t('Hidden chats need a relay: type its address under For advanced users, then create their queue.') };
-  return { reach: 'none', title: t('Only nearby, for now'), line: t('Contacts you add reach you over Wi-Fi or Bluetooth when near. To reach them anywhere, choose a way in below.') };
+  return { reach: 'none', title: t('Only nearby, for now'), line: t('Your contacts reach you only when near, over Wi-Fi or Bluetooth. To be reached from anywhere, ask someone who uses Erevos for an invite and tap I have an invite.') };
 }

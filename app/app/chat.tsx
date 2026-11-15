@@ -52,7 +52,7 @@ import { RelaySignIn } from '../components/relay-signin';
 import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
 import { ConnectStatus, MeetWays, QrSign, WayCard } from '../components/connect-cards';
-import { RelayKeyNote } from '../components/relay-key-note';
+import { RelayKeyNote, useRelayCheck } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
 import { CollectionSign, PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
@@ -279,6 +279,9 @@ import { QuickAction, DetailRow, SearchStep, dayOf, dayText, clock, dayLabel, ty
 // history, and never show in hidden chats. The details open the plain SMS conversation, to write
 // one there, and Attach sends what is typed as an SMS.
 
+
+/** How long a relay address stays the same before its queue is made by itself (#11). */
+const AUTO_QUEUE_MS = 3000;
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -629,13 +632,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const among: Among = hiddenKey ? hiddenLent : 'space';
   const canConnect = useCanConnect(among);
   const [showQr, setShowQr] = useState(false);
+  // Your contact link's row on New chat, open (#11).
+  const [linkShown, setLinkShown] = useState(false);
+  // Whether the relay proved its key (components/relay-key-note.tsx): New chat says how this phone
+  // connects only while something needs saying (#11).
+  const relayKeyCheck = useRelayCheck(relayUrl.trim());
   // Your contact link in short, as a contact card (lib/sms-relay.ts contactCard): the QR code shown
   // and the link shared, small enough for any camera; null while there is none. `bigQr`: the long
   // link's QR code instead, which works with no internet, near.
   const [card, setCard] = useState<string | null>(null);
   const [bigQr, setBigQr] = useState(false);
   // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
-  const [welcoming, setWelcoming] = useState(false);
+  // 'qr': opened from Show your QR code, where it stands for this phone's QR code (#11).
+  const [welcoming, setWelcoming] = useState<boolean | 'qr'>(false);
   // Link for a website (components/website-link.tsx), from the space's contact link.
   const [webLinking, setWebLinking] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
@@ -5270,6 +5279,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     };
   }, [hiddenKey, loaded]);
 
+  // Show your QR code (#11): where this phone can invite, the QR code shown is an invite, so one
+  // scan is all: a phone with no relay yet joins this one's by itself, and one with a relay only
+  // takes the contact (joinInviting). Elsewhere it is the contact link's.
+  function showMine() {
+    if (canWelcome) setWelcoming('qr');
+    else setShowQr(true);
+  }
+
+  // With a relay and no queue on it, the queue is made by itself (#11): the words relay and queue
+  // stay under For advanced users. Once for each address, a few seconds after it stops changing, so
+  // a half-typed one is not tried; when it fails, the note says why and Create my relay queue
+  // under For advanced users tries again.
+  const queueTried = useRef(new Set<string>());
+  useEffect(() => {
+    const url = relayUrl.trim();
+    if (!loaded || !url || ownQueue || linkHere() || queueTried.current.has(url)) return;
+    const timer = setTimeout(() => {
+      queueTried.current.add(url);
+      void createOwnQueue();
+    }, AUTO_QUEUE_MS);
+    return () => clearTimeout(timer);
+  }, [loaded, relayUrl, ownQueue]);
+
   async function createOwnQueue() {
     // What was just typed counts, even before typing paused.
     for (const field of [typedRelay, typedToken, typedVia, typedViaToken]) field.done();
@@ -7104,7 +7136,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           </ScreenBackdrop>
         </Modal>
         <WelcomeInvite
-          visible={welcoming && shown && canWelcome}
+          visible={!!welcoming && shown && canWelcome}
+          asQr={welcoming === 'qr'}
+          onPlain={() => {
+            setWelcoming(false);
+            setShowQr(true);
+          }}
           onClose={() => setWelcoming(false)}
           e2e={e2e}
           relay={relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? { url: relayUrl.trim(), token: relayToken.trim() } : null}
@@ -7375,10 +7412,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 ) : null}
               </View>
             ) : null}
-            {loaded ? (
+            {/* How this phone connects, only when something is still missing or for a phone with no relay
+                yet: with everything working New chat starts with its two big ways (#11). */}
+            {loaded && (newcomer || reached.reach !== 'ready' || relayKeyCheck === 'none' || relayKeyCheck === 'refused') ? (
               <ConnectStatus reach={reached.reach} title={reached.title} line={reached.line} detail={reached.detail}>
                 {relayUrl.trim() ? <RelayKeyNote url={relayUrl.trim()} /> : null}
-                {relayUrl.trim() && !ownQueue && !linkHere() ? <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} /> : null}
               </ConnectStatus>
             ) : null}
             {newcomer ? (
@@ -7455,7 +7493,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   scanTitle={t('Scan their QR code')}
                   scanLine={CAN_TAKE_PHOTOS ? t('with the camera') : t('from a photo of it')}
                   onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
-                  onShow={ownLink ? () => setShowQr(true) : undefined}
+                  onShow={!loaded || ownLink ? showMine : undefined}
                 />
                 <View style={styles.orRow}>
                   <View style={[styles.orLine, { backgroundColor: colors.border }]} />
@@ -7468,53 +7506,47 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <Text variant="label">{t('Add a contact')}</Text>
                   {addTheirsWith(false)}
                 </View>
-                {ownLink ? (
-                  <View style={styles.panel}>
-                    <Text variant="label">{t('Your contact link')}</Text>
-                    <Text variant="caption" tone="muted">
-                      {t('Whoever has it can write to you, so give it to whom you mean to: they add you with it.')}
-                    </Text>
-                    <Row wrap>
-                      <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
-                      <Button
-                        title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
-                        kind="secondary"
-                        compact
-                        onPress={() => void shareMine(ownLink)}
-                      />
-                      {!hiddenKey ? <Button title={t('Link for a website')} kind="secondary" compact onPress={() => setWebLinking(true)} /> : null}
-                      {ownQueue && !linkHere() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
-                    </Row>
-                    {ownQueue && canSharePlace ? (
-                      <View>
-                        <DetailRow
-                          title={t('Share a place on my relay with this link')}
-                          checked={sharePlace}
-                          onPress={() => setSharePlace(!sharePlace)}
-                        />
-                        <Text variant="caption" tone="muted">
-                          {sharePlace
-                            ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
-                            : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
-                        </Text>
-                        {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-                {canWelcome ? (
-                  <WayCard
-                    tint="green"
-                    sign={<PlusIcon color="#ffffff" size={18} />}
-                    title={t('Invite someone')}
-                    line={t('Someone new to Erevos joins your relay and your contacts with one QR code, typing nothing.')}
-                    open={false}
-                    onPress={() => setWelcoming(true)}
-                  />
-                ) : null}
               </>
             )}
             <View style={styles.panel}>
+              {/* The contact link's other ways, and inviting someone new, wait here as rows (#11): Show your QR code is above. */}
+              {!newcomer && ownLink ? (
+                <>
+                  <DetailRow title={t('Your contact link')} open={linkShown} onPress={() => setLinkShown((on) => !on)} />
+                  {linkShown ? (
+                    <View style={styles.section}>
+                      <Text variant="caption" tone="muted">
+                        {t('Whoever has it can write to you, so give it to whom you mean to: they add you with it.')}
+                      </Text>
+                      <Row wrap>
+                        <Button
+                          title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
+                          compact
+                          onPress={() => void shareMine(ownLink)}
+                        />
+                        {!hiddenKey ? <Button title={t('Link for a website')} kind="secondary" compact onPress={() => setWebLinking(true)} /> : null}
+                        {ownQueue && !linkHere() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
+                      </Row>
+                      {ownQueue && canSharePlace ? (
+                        <View>
+                          <DetailRow
+                            title={t('Share a place on my relay with this link')}
+                            checked={sharePlace}
+                            onPress={() => setSharePlace(!sharePlace)}
+                          />
+                          <Text variant="caption" tone="muted">
+                            {sharePlace
+                              ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
+                              : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
+                          </Text>
+                          {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </>
+              ) : null}
+              {!newcomer && canWelcome ? <DetailRow title={t('Invite someone')} onPress={() => setWelcoming(true)} /> : null}
               {HAS_LINKS && !hiddenKey ? (
                 <>
                   <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />

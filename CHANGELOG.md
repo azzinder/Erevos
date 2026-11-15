@@ -14,8 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- New chat looks the same every time it opens: the two big buttons at the top, **How you connect now** only while something is missing, and **Your contact link** and **Invite someone** as rows, with no second Show my QR code.
+- One scan is all: where your relay lets your phone invite, **Show your QR code** shows an invite, so a phone new to Erevos joins your relay by itself as it scans it, and you are contacts at once. A relay's queue is made by itself, with no **Create my relay queue** to tap, and **How you connect now** says what is missing in plain words.
+
 ### Under the hood
 
+- Video calls over the internet send at most 1 Mbps a picture (`RELAY_VIDEO_BITRATE`): every such call goes through the call relay, so the relay carries about half as much; on a phone the picture looks much the same. Calls direct on the same network are not held back.
 - Erevos+ can have a web app of its own: `pwa/build.mjs --edition plus` makes `erevosplus-web` for erevosplus-web.lphl.nekten.eu, with Element Call at erevosplus-call, kept on the server in `/var/www/erevosplus-web` (`deploy/web/install.sh`), apart from the plain Erevos's. The worker takes only releases of its own web app, so the two never replace each other (`pwa/sw.js`, `docs/editions.md`). `scripts/reproduce-web.sh` builds a web app again in the edition it was made as.
 
 ## 7.0.2 (2026-11-14)

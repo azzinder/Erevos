@@ -505,19 +505,23 @@ contatto, vedi **Nessun relay tuo** più sotto.
 numero di telefono o della tua email per raggiungerti: chi ha il tuo link di contatto può scrivere nella tua coda, e
 solo tu la leggi.
 
-1. Nella schermata principale, tocca **Nuova chat**. In alto, **Come ti colleghi ora** dice in parole semplici come ti
-   raggiungono i tuoi contatti: tramite il tuo relay, tramite Nostr senza relay, o solo da vicino. Sotto ci sono i modi
-   per entrare per un telefono ancora senza relay, oppure, con un relay, **Aggiungi un contatto** e **Il tuo link di
-   contatto**. Le impostazioni del relay stesso sono in **Per utenti esperti**, in fondo; **Impostazioni** → **Relay e
+1. Nella schermata principale, tocca **Nuova chat**. Finché manca qualcosa, in alto **Come ti colleghi ora** dice in parole semplici come ti
+   raggiungono i tuoi contatti: tramite il tuo relay, tramite Nostr senza relay, o solo da vicino; quando tutto funziona,
+   non viene mostrato. Sotto ci sono i modi per entrare per un telefono ancora senza relay, oppure, con un relay, i due
+   grandi pulsanti, **Aggiungi un contatto**, e righe per **Il tuo link di contatto** e **Invita qualcuno**. Le impostazioni del relay stesso sono in **Per utenti esperti**, in fondo; **Impostazioni** → **Relay e
    reti** → **Relay** apre Nuova chat con queste impostazioni aperte.
 2. In **Per utenti esperti**, scrivi l’**Indirizzo del relay**: \`ws://<indirizzo del computer>:7879\` per un relay sulla tua
    rete, o \`wss://relay.example.org\` per uno su internet. Aggiungi il **Token** se il relay lo richiede.
-3. Tocca **Crea la mia coda sul relay**. Erevos dice **Coda sul relay creata**, e **Come ti colleghi ora** dice
-   **Tramite il tuo relay**: funziona tutto, testi, foto, messaggi vocali, chiamate e gruppi.
+3. Erevos crea da solo la tua coda sul relay, qualche secondo dopo, e dice **Coda sul relay creata**: funziona tutto, testi, foto, messaggi vocali,
+   chiamate e gruppi, e **Come ti colleghi ora** scompare, perché non manca nulla. Se non ci riesce, la nota dice perché; **Crea la mia coda sul relay**, sotto l’indirizzo, riprova.
 4. In cima a **Nuova chat**, due grandi pulsanti fanno ciò che serve a quasi tutti: **Scansiona il suo codice QR**
    fotografa il codice QR sullo schermo dell’altro telefono (su un computer, su Sailfish OS e nella web app chiede una
    foto), e **Mostra il tuo codice QR** mostra il tuo. Basta che uno scansioni l’altro; il resto di Nuova chat è sotto.
-   **Mostra il tuo codice QR**, o **Mostra il mio codice QR** in **Il tuo link di contatto**, lo apre sopra la
+   Dove il tuo relay lascia invitare il tuo telefono, **Mostra il tuo codice QR** mostra un invito per una persona: se Erevos è nuovo sul
+   suo telefono, entra da solo nel tuo relay quando lo scansiona, senza scrivere nulla, e siete subito contatti; un telefono che ha già un
+   relay ti prende solo come contatto. Per qualcun altro, tocca **Nuovo codice QR**. Dove il tuo telefono non può invitare, mostra il tuo
+   codice QR di contatto, come sotto.
+   **Mostra il tuo codice QR** lo apre sopra la
    schermata. Fallo scansionare all’altro telefono con la fotocamera, poi apri il link in Erevos. La schermata **Aggiungi un contatto** mostra cosa
    contiene: tocca **Aggiungi alla chat** solo se l’hai scansionato tu stesso. **Aggiungi e collega a uno dei miei
    contatti** aggiunge anche lui, collegato al contatto che scegli, di cui la chat prende il nome.
@@ -525,7 +529,8 @@ solo tu la leggi.
    Lo stesso vale per contatto: finché è mostrato il codice di contatto piccolo e l’NFC è attivo su Android, l’altro
    telefono lo prende se appoggi il suo retro al retro del tuo. Funziona solo con Erevos in primo piano, non in
    background, e mai con il codice QR grande.
-5. Se la sua fotocamera mostra solo il testo, o se è lontano, tocca **Condividi il mio link di contatto** e mandaglielo.
+5. Se la sua fotocamera mostra solo il testo, o se è lontano, apri **Il tuo link di contatto**, tocca **Condividi il mio link di contatto**
+   e mandaglielo.
    Lo incolla nel campo sotto **Aggiungi un contatto** e tocca **Aggiungi**.
 6. Oppure al contrario: tocca **Scansiona il suo codice QR** in alto e fotografa il codice QR sul suo schermo, o, in
    **Aggiungi un contatto**, **Scegli una foto del codice QR** per uno screenshot o una sua foto che ti ha mandato.

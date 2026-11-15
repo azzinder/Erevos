@@ -41,8 +41,12 @@ type Made = { link: string; hi: string; line: string; code: string | null; until
 // The invite last made while Erevos runs, by space and contact link: never kept anywhere else.
 let lastMade: { key: string; made: Made; name: string } | null = null;
 
-export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contactLink, onNote }: {
+export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, relay, onOwnLine, contactLink, onNote }: {
   visible: boolean;
+  /** Opened from Show your QR code on New chat (#11): the same invite, said as this phone's QR code. */
+  asQr?: boolean;
+  /** With `asQr`, when no invite can be made: the contact link's QR code instead, saying nothing of relays. */
+  onPlain?: () => void;
   onClose: () => void;
   e2e: E2E | null;
   /** This phone's relay, with its token of its own; null when it has none to invite with. */
@@ -63,6 +67,11 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
   // The short invite goes by touching phones too, while it shows (lib/nfc-share.ts).
   const nfc = useNfcShare(visible && made?.short ? made.link : null);
   const key = `${currentSpace().space}|${contactLink ?? ''}`;
+
+  // As this phone's QR code, an invite that cannot be made is not said: its contact QR code shows instead.
+  useEffect(() => {
+    if (visible && asQr && failed && onPlain) onPlain();
+  }, [visible, asQr, failed]);
 
   // Each time it opens: the invite at once, the one still waiting from a moment ago or a new one.
   useEffect(() => {
@@ -192,14 +201,18 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
   }
 
   return (
-    <Sheet visible={visible} onClose={close} title={name.trim() ? t('Invite for {name}', { name: name.trim() }) : t('Invite someone')}>
+    <Sheet visible={visible} onClose={close} title={name.trim() ? t('Invite for {name}', { name: name.trim() }) : asQr ? t('Your QR code') : t('Invite someone')}>
       {made ? (
         <>
           <QrCode text={made.link} size={260} />
           <Text variant="caption" tone="muted">
-            {t('For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.', {
-              when: laterLabel(made.until),
-            })}
+            {asQr
+              ? t('They scan it with the camera, and you are each other’s contacts at once. If Erevos is new on their phone, it gets ready by itself, with nothing to type. For one person, until {when}: for someone else, tap New QR code.', {
+                  when: laterLabel(made.until),
+                })
+              : t('For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.', {
+                  when: laterLabel(made.until),
+                })}
           </Text>
           {nfc === 'on' ? (
             <Text variant="caption" tone="muted">
@@ -210,7 +223,7 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
               {t('Turn on NFC in Android\'s settings to give it by touching phones too.')}
             </Text>
           ) : null}
-          {made.access ? null : (
+          {made.access || asQr ? null : (
             <Text variant="caption" tone="muted">
               {t('Your relay lets this phone invite no one, so their phone uses it only as your contact link lets it: if it needs a token, they need one of their own.')}
             </Text>
@@ -225,7 +238,7 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
           <Field label={t('Your name, for them')} hint={t('Goes in the invite, so their phone names you. Optional.')}>
             <Input value={as} onChangeText={setAs} onEndEditing={keepAs} onSubmitEditing={keepAs} placeholder={t('Your name')} maxLength={MAX_NAME} autoCorrect={false} />
           </Field>
-          <TextButton title={t('Invite someone else')} onPress={another} />
+          <TextButton title={asQr ? t('New QR code') : t('Invite someone else')} onPress={another} />
         </>
       ) : (
         <>

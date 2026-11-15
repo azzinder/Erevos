@@ -17,7 +17,7 @@ import { Button, Text } from './ui';
 // proved its own key in a channel (lib/relay.ts, Channels), which only the relay that holds the key
 // can do, so no one in between with a certificate for its name passes for it.
 
-function useRelayCheck(url: string): RelayCheck {
+export function useRelayCheck(url: string): RelayCheck {
   const [check, setCheck] = useState(() => relayCheck(url));
   useEffect(() => {
     setCheck(relayCheck(url));

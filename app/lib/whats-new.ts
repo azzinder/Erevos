@@ -22,8 +22,13 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
-  underTheHood: [],
+  forYou: [
+    mark("**New chat looks the same every time**: the two big buttons are always at the top; **How you connect now** shows only while something is missing, and says it in plain words; **Your contact link** and **Invite someone** are rows, with no second QR code button. See [Chat through a relay](#relay)."),
+    mark("**One scan is all**: where your relay lets your phone invite, **Show your QR code** shows an invite for one person, so a phone new to Erevos joins your relay by itself as it scans it, typing nothing, and you are contacts at once; for someone else, tap **New QR code**. And with a relay, its queue is made by itself: there is no **Create my relay queue** to tap. See [Chat through a relay](#relay)."),
+  ],
+  underTheHood: [
+    mark("**Video calls take about half the data**: a video call over the internet goes through the call relay, so that neither side sees the other's address; its picture is now held to 1 Mbps, which on a phone looks much the same. A call on the same network is not held back."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

@@ -32,10 +32,12 @@ test('with a queue on its relay, everything works, and the address shows without
 test('a relay with no queue, Nostr, or nothing: each says what is missing and where to go', async () => {
   await setLang('en');
   const noQueue = connectReach({ ...NONE, relayUrl: 'ws://192.168.1.2:7879' });
-  assert.deepEqual([noQueue.reach, noQueue.title, noQueue.detail], ['part', 'Relay set, no queue yet', '192.168.1.2:7879']);
+  assert.deepEqual([noQueue.reach, noQueue.title, noQueue.detail], ['part', 'Getting ready', undefined]);
   const nostr = connectReach({ ...NONE, nostr: true });
-  assert.deepEqual([nostr.reach, nostr.title, nostr.detail], ['part', 'Through Nostr, with no relay', undefined]);
-  assert.match(nostr.line, /need a relay: choose a way in below/);
+  assert.deepEqual([nostr.reach, nostr.title, nostr.detail], ['part', 'Texts only, for now', undefined]);
+  assert.match(nostr.line, /ask someone who uses Erevos for an invite/);
+  assert.doesNotMatch(nostr.line, /relay|queue/);
+  assert.doesNotMatch(connectReach(NONE).line, /relay|queue/);
   assert.deepEqual([connectReach(NONE).reach, connectReach(NONE).title], ['none', 'Only nearby, for now']);
   // Hidden chats with no relay are told where to type one, not to choose a way in; with Nostr they
   // reach their contacts there meanwhile, as the space's chats do.
@@ -56,7 +58,7 @@ test('a linked device says it goes through the phone, with no address of its own
 test('it is said in the chosen language', async () => {
   await setLang('el');
   try {
-    assert.equal(connectReach({ ...NONE, nostr: true }).title, 'Μέσω Nostr, χωρίς relay');
+    assert.equal(connectReach({ ...NONE, hidden: true, nostr: true }).title, 'Μέσω Nostr, χωρίς relay');
     assert.equal(connectReach({ ...NONE, relayUrl: 'wss://r.example', queue: true, lent: true }).detail, 'r.example · δανεική θέση από επαφή');
   } finally {
     await setLang('en');

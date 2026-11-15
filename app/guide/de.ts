@@ -532,22 +532,25 @@ deines Telefons sieht. Ein Telefon ohne Relay bekommt einen Platz auf dem seines
 Telefonnummer oder E-Mail-Adresse, um dich zu erreichen: Wer deinen Kontaktlink hat, kann in deine Warteschlange
 schreiben, und nur du liest sie.
 
-1. Tippe auf dem Startbildschirm auf **Neuer Chat**. Oben sagt **So bist du jetzt verbunden** in einfachen Worten, wie
-   deine Kontakte dich erreichen: über dein Relay, über Nostr ohne Relay oder nur in der Nähe. Darunter stehen die
-   Wege hinein für ein Telefon, das noch kein Relay hat, oder, mit Relay, **Kontakt hinzufügen** und
-   **Dein Kontaktlink**. Die eigenen Einstellungen des Relays sind unter **Für Fortgeschrittene**, ganz unten;
+1. Tippe auf dem Startbildschirm auf **Neuer Chat**. Solange etwas fehlt, sagt oben **So bist du jetzt verbunden** in einfachen Worten, wie
+   deine Kontakte dich erreichen: über dein Relay, über Nostr ohne Relay oder nur in der Nähe; wenn alles funktioniert,
+   wird es nicht angezeigt. Darunter stehen die Wege hinein für ein Telefon, das noch kein Relay hat, oder, mit Relay,
+   die beiden großen Tasten, **Kontakt hinzufügen** und Zeilen für **Dein Kontaktlink** und **Jemanden einladen**. Die eigenen Einstellungen des Relays sind unter **Für Fortgeschrittene**, ganz unten;
    **Einstellungen** → **Relay und Netze** → **Relay** öffnet „Neuer Chat“ mit ihnen geöffnet.
 2. Gib unter **Für Fortgeschrittene** die **Relay-Adresse** ein: \`ws://<Adresse des Computers>:7879\` für ein Relay in
    deinem eigenen Netz oder \`wss://relay.example.org\` für eines im Internet. Füge das **Token** hinzu, wenn das Relay
    eines braucht.
-3. Tippe auf **Meine Relay-Warteschlange anlegen**. Erevos sagt **Relay-Warteschlange angelegt**, und
-   **So bist du jetzt verbunden** sagt **Über dein Relay**: Alles funktioniert, Texte, Fotos, Sprachnachrichten,
-   Anrufe und Gruppen.
+3. Erevos legt deine Warteschlange darauf von selbst an, ein paar Sekunden später, und sagt **Relay-Warteschlange angelegt**: Alles funktioniert, Texte, Fotos, Sprachnachrichten,
+   Anrufe und Gruppen, und **So bist du jetzt verbunden** verschwindet, weil nichts fehlt. Wenn es nicht klappt, sagt der Hinweis, warum; **Meine Relay-Warteschlange anlegen** unter der Adresse versucht es erneut.
 4. Oben auf **Neuer Chat** tun zwei große Tasten, was die meisten brauchen: **Ihren QR-Code scannen** fotografiert den
    QR-Code auf dem Bildschirm des anderen Telefons (auf einem Computer, unter Sailfish OS und in der Web-App bittet es
    um ein Foto davon), und **Deinen QR-Code zeigen** zeigt deinen. Es genügt, wenn einer den anderen scannt; der Rest
    von Neuer Chat steht darunter.
-   **Deinen QR-Code zeigen**, oder **Meinen QR-Code zeigen** unter **Dein Kontaktlink**, öffnet ihn über dem Bildschirm. Lass das andere
+   Wo dein Relay es deinem Telefon erlaubt einzuladen, zeigt **Deinen QR-Code zeigen** eine Einladung für eine Person: Ist Erevos auf
+   ihrem Telefon neu, tritt es beim Scannen von selbst deinem Relay bei, ohne dass sie etwas eintippt, und ihr seid sofort Kontakte; ein
+   Telefon, das schon ein Relay hat, nimmt dich nur als Kontakt auf. Für jemand anderen tippe auf **Neuer QR-Code**. Wo dein Telefon nicht
+   einladen kann, zeigt es deinen Kontakt-QR-Code, wie unten.
+   **Deinen QR-Code zeigen** öffnet ihn über dem Bildschirm. Lass das andere
    Telefon ihn mit seiner Kamera scannen und dann den Link in Erevos öffnen. Der Bildschirm **Kontakt hinzufügen**
    zeigt, was er enthält: Tippe nur auf **Zum Chat hinzufügen**, wenn du ihn selbst gescannt hast.
    **Hinzufügen und mit einem meiner Kontakte verknüpfen** fügt ihn ebenfalls hinzu, verknüpft mit dem Kontakt, den du
@@ -556,8 +559,8 @@ schreiben, und nur du liest sie.
    Dasselbe geht per Berührung: Solange der kleine Kontaktcode zu sehen ist und NFC auf Android eingeschaltet ist, nimmt
    das andere Telefon ihn, wenn du seine Rückseite an die Rückseite deines hältst. Das geht nur, solange Erevos im
    Vordergrund ist, nicht im Hintergrund, und nie mit dem großen QR-Code.
-5. Wenn die Kamera des anderen nur den Text zeigt oder ihr weit voneinander entfernt seid, tippe auf
-   **Meinen Kontaktlink teilen** und schick ihn. Dein Kontakt fügt ihn in das Feld unter **Kontakt hinzufügen** ein
+5. Wenn die Kamera des anderen nur den Text zeigt oder ihr weit voneinander entfernt seid, öffne
+   **Dein Kontaktlink**, tippe auf **Meinen Kontaktlink teilen** und schick ihn. Dein Kontakt fügt ihn in das Feld unter **Kontakt hinzufügen** ein
    und tippt auf **Hinzufügen**.
 6. Oder andersherum: Tippe oben auf **Ihren QR-Code scannen** und fotografiere den Code auf dem Bildschirm des
    anderen, oder unter **Kontakt hinzufügen** auf **Foto des QR-Codes auswählen** für einen Screenshot oder ein Foto

@@ -502,19 +502,24 @@ contato, veja **Sem relay próprio** abaixo.
 número de telefone ou e-mail para chegar até você: quem tem o seu link de contato pode escrever na sua fila, e só você
 a lê.
 
-1. Na tela inicial, toque em **Nova conversa**. No topo, **Como você se conecta agora** diz em palavras simples como os
-   seus contatos chegam até você: pelo seu relay, pelo Nostr sem relay, ou só por perto. Abaixo ficam as formas de
-   entrar para um celular ainda sem relay, ou, com um relay, **Adicionar um contato** e **Seu link de contato**. As
+1. Na tela inicial, toque em **Nova conversa**. Enquanto algo estiver faltando, no topo **Como você se conecta agora** diz em palavras simples como os
+   seus contatos chegam até você: pelo seu relay, pelo Nostr sem relay, ou só por perto; quando tudo funciona, ele não
+   aparece. Abaixo ficam as formas de entrar para um celular ainda sem relay, ou, com um relay, os dois botões grandes,
+   **Adicionar um contato**, e linhas para **Seu link de contato** e **Convidar alguém**. As
    configurações do próprio relay ficam em **Para usuários avançados**, embaixo; **Configurações** → **Relay e redes**
    → **Relay** abre Nova conversa com elas abertas.
 2. Em **Para usuários avançados**, digite o **Endereço do relay**: \`ws://<endereço do computador>:7879\` para um relay
    na sua própria rede, ou \`wss://relay.example.org\` para um na internet. Adicione o **Token** se o relay pedir um.
-3. Toque em **Criar minha fila no relay**. O Erevos diz **Fila no relay criada**, e **Como você se conecta agora** diz
-   **Pelo seu relay**: tudo funciona, textos, fotos, mensagens de voz, chamadas e grupos.
+3. O Erevos cria a sua fila nele sozinho, alguns segundos depois, e diz **Fila no relay criada**: tudo funciona, textos, fotos, mensagens de voz,
+   chamadas e grupos, e **Como você se conecta agora** some, pois não falta nada. Se não conseguir, o aviso diz o porquê; **Criar minha fila no relay**, sob o endereço, tenta de novo.
 4. No topo de **Nova conversa**, dois botões grandes fazem o que a maioria precisa: **Ler o código QR da outra pessoa**
    tira uma foto do código QR na tela do outro celular (num computador, no Sailfish OS e no app web, pede uma foto
    dele), e **Mostrar seu código QR** mostra o seu. Basta um ler o do outro; o resto de Nova conversa fica embaixo.
-   **Mostrar seu código QR**, ou **Mostrar meu código QR** em **Seu link de contato**, abre o código sobre a tela. Deixe
+   Onde o seu relay deixa o seu celular convidar, **Mostrar seu código QR** mostra um convite para uma pessoa: se o Erevos for novo no
+   celular dela, ele entra sozinho no seu relay quando ela o lê, sem digitar nada, e vocês viram contatos na hora; um celular que já
+   tem um relay só aceita você como contato. Para outra pessoa, toque em **Novo código QR**. Onde o seu celular não pode convidar, ele
+   mostra o seu código QR de contato, como abaixo.
+   **Mostrar seu código QR** abre o código sobre a tela. Deixe
    o outro celular lê-lo com a câmera, e depois abrir o link no Erevos. A tela **Adicionar um contato** mostra o que ele contém: toque em
    **Adicionar à conversa** só se você mesmo o leu. **Adicionar e vincular a um dos meus contatos** também adiciona a
    pessoa, vinculada ao contato que você escolher, cujo nome a conversa recebe.
@@ -522,7 +527,7 @@ a lê.
    O mesmo vale por toque: enquanto o código pequeno de contato aparece e o NFC está ligado no Android, o outro celular
    o pega se você encostar a parte de trás dele na do seu. Só funciona com o Erevos em primeiro plano, não em segundo
    plano, e nunca com o código QR grande.
-5. Se a câmera da outra pessoa mostrar só o texto, ou se ela estiver longe, toque em **Compartilhar meu link de
+5. Se a câmera da outra pessoa mostrar só o texto, ou se ela estiver longe, abra **Seu link de contato**, toque em **Compartilhar meu link de
    contato** e envie para ela. Ela cola o link no campo abaixo de **Adicionar um contato** e toca em **Adicionar**.
 6. Ou ao contrário: toque em **Ler o código QR da outra pessoa** no topo e tire uma foto do código QR na tela dela, ou,
    em **Adicionar um contato**, em **Escolher foto do código QR** para uma captura de tela ou uma foto dele que ela

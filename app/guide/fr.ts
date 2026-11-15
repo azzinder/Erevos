@@ -532,22 +532,26 @@ sans relais obtient une place sur celui de son contact, voir **Pas de relais à 
 personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joindre : quiconque a ton lien de contact peut
 écrire dans ta file, et toi seul la lis.
 
-1. Sur l’écran d’accueil, appuie sur **Nouvelle discussion**. En haut, **Comment tu te connectes maintenant** dit en
-   mots simples comment tes contacts te joignent : par ton relais, par Nostr sans relais, ou seulement à proximité. En
-   dessous se trouvent les façons d’entrer pour un téléphone qui n’a pas encore de relais, ou, avec un relais, **Ajouter
-   un contact** et **Ton lien de contact**. Les réglages propres du relais sont sous **Pour les utilisateurs avancés**,
+1. Sur l’écran d’accueil, appuie sur **Nouvelle discussion**. Tant qu’il manque quelque chose, **Comment tu te connectes maintenant** dit en haut en
+   mots simples comment tes contacts te joignent : par ton relais, par Nostr sans relais, ou seulement à proximité ; quand
+   tout fonctionne, il n’est pas affiché. En dessous se trouvent les façons d’entrer pour un téléphone qui n’a pas encore
+   de relais, ou, avec un relais, les deux gros boutons, **Ajouter un contact**, et des lignes pour **Ton lien de contact**
+   et **Inviter quelqu’un**. Les réglages propres du relais sont sous **Pour les utilisateurs avancés**,
    en bas ; **Réglages** → **Relais et réseaux** → **Relais** ouvre Nouvelle discussion avec ceux-ci ouverts.
 2. Sous **Pour les utilisateurs avancés**, tape l’**Adresse du relais** : \`ws://<adresse de l’ordinateur>:7879\` pour
    un relais sur ton propre réseau, ou \`wss://relay.example.org\` pour un relais sur internet. Ajoute le **Jeton** si
    le relais en demande un.
-3. Appuie sur **Créer ma file d’attente sur le relais**. Erevos dit **File d’attente créée sur le relais**, et **Comment
-   tu te connectes maintenant** dit **Par ton relais** : tout fonctionne, textes, photos, messages vocaux, appels et
-   groupes.
+3. Erevos crée ta file dessus tout seul, quelques secondes plus tard, et dit **File d’attente créée sur le relais** : tout fonctionne, textes, photos, messages vocaux, appels et
+   groupes, et **Comment tu te connectes maintenant** disparaît, car il ne manque rien. S’il n’y arrive pas, la note dit pourquoi ; **Créer ma file d’attente sur le relais**, sous l’adresse, réessaie.
 4. En haut de **Nouvelle discussion**, deux gros boutons font ce dont la plupart ont besoin : **Scanner son code QR**
    photographie le code QR sur l’écran de l’autre téléphone (sur un ordinateur, sur Sailfish OS et dans l’app web, il
    demande une photo de ce code), et **Montrer ton code QR** montre le tien. Il suffit que l’un scanne l’autre ; le reste
    de Nouvelle discussion est en dessous.
-   **Montrer ton code QR**, ou **Afficher mon code QR** sous **Ton lien de contact**, l’ouvre par-dessus l’écran. Laisse l’autre
+   Là où ton relais laisse ton téléphone inviter, **Montrer ton code QR** montre une invitation pour une personne : si Erevos est tout
+   neuf sur son téléphone, il rejoint ton relais tout seul quand elle le scanne, sans rien taper, et vous êtes contacts aussitôt ; un
+   téléphone qui a déjà un relais te prend seulement comme contact. Pour quelqu’un d’autre, appuie sur **Nouveau code QR**. Là où ton
+   téléphone ne peut pas inviter, il montre ton code QR de contact, comme ci-dessous.
+   **Montrer ton code QR** l’ouvre par-dessus l’écran. Laisse l’autre
    téléphone le scanner avec son appareil photo, puis ouvrir le lien dans Erevos. L’écran **Ajouter un contact** montre
    ce qu’il contient : appuie sur **Ajouter à la discussion** seulement si tu l’as scanné toi-même. **Ajouter et
    associer à un de mes contacts** l’ajoute aussi, relié au contact que tu choisis, dont la discussion prend le nom.
@@ -555,7 +559,7 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    Il en va de même par contact : tant que le petit code de contact s’affiche et que le NFC est activé sur Android,
    l’autre téléphone le prend si tu poses son dos contre le dos du tien. Cela ne marche que lorsqu’Erevos est au premier
    plan, pas en arrière-plan, et jamais avec le grand code QR.
-5. Si son appareil photo ne montre que le texte, ou si la personne est loin, appuie sur **Partager mon lien de contact**
+5. Si son appareil photo ne montre que le texte, ou si la personne est loin, ouvre **Ton lien de contact**, appuie sur **Partager mon lien de contact**
    et envoie-le-lui. Elle le colle dans le champ sous **Ajouter un contact** et appuie sur **Ajouter**.
 6. Ou dans l’autre sens : appuie en haut sur **Scanner son code QR** et photographie le code sur son écran, ou, sous
    **Ajouter un contact**, sur **Choisir une photo du code QR** pour une capture d’écran ou une photo du code qu’elle
