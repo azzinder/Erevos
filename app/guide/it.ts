@@ -1592,6 +1592,11 @@ come in qualsiasi gruppo, e nessun relay sa chi ne fa parte.
   persone, quindi il link cambia in uno sul suo relay; tu resti admin. Se perdi il telefono prima di cederlo, nessuno
   potrà più far entrare nessuno, anche se il gruppo continua per chi ne fa parte.
 - **Chiudi il gruppo** rimuove tutti i membri. **Lascia il gruppo** di un membro chiede al tuo telefono di rimuoverlo.
+- **Un gruppo usa e getta,** per un’occasione: prima di crearlo, in **Finisce**, scegli **Dopo un giorno**, **Dopo 3 giorni**
+  o **Dopo 7 giorni**. Quando il suo tempo finisce, il tuo telefono lo chiude, e l’Erevos di ogni membro lo elimina, con
+  i suoi messaggi, foto e file, la prossima volta che è aperto; il suo link smette di funzionare. La schermata del gruppo
+  stesso dice quando finisce. Un membro con un Erevos più vecchio lo tiene, e fino ad allora chiunque può averne tenuto
+  una copia o uno screenshot.
 - **Fino a 100 membri,** perché l’intero gruppo deve stare nell’unico messaggio che fa entrare qualcuno.
 - **Ogni telefono in un gruppo pubblico ha bisogno di questa versione di Erevos.** I gruppi creati dai contatti
   funzionano come prima.

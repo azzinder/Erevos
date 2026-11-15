@@ -1582,6 +1582,11 @@ sabe quién está en él.
   que el enlace cambia a uno de su relay; tú sigues siendo admin. Si tu teléfono se pierde antes de cederlo, nadie podrá
   volver a dejar entrar a nadie, aunque el grupo sigue para quienes están en él.
 - **Cerrar el grupo** saca a todos los miembros. **Salir del grupo** de un miembro le pide a tu teléfono que lo saque.
+- **Un grupo de un solo uso,** para una ocasión: antes de crearlo, en **Termina**, elige **Tras un día**, **Tras 3 días**
+  o **Tras 7 días**. Cuando se acaba su tiempo, tu teléfono lo cierra, y el Erevos de cada miembro lo borra, con sus
+  mensajes, fotos y archivos, la próxima vez que esté abierto; su enlace deja de funcionar. La pantalla del propio grupo
+  dice cuándo termina. Un miembro con un Erevos anterior lo conserva, y hasta entonces cualquiera puede haber guardado
+  una copia o una captura de pantalla.
 - **Hasta 100 miembros,** ya que todo el grupo tiene que caber en el único mensaje que deja entrar a alguien.
 - **Todos los teléfonos de un grupo público necesitan esta versión de Erevos.** Los grupos creados a partir de
   contactos funcionan como antes.

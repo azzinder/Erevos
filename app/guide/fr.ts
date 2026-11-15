@@ -1674,6 +1674,11 @@ et aucun relais n’apprend qui en fait partie.
   les gens, donc le lien change pour un lien sur son relais ; tu restes admin. Si ton téléphone est perdu avant que tu
   le cèdes, personne ne peut plus faire entrer qui que ce soit, même si le groupe continue pour ceux qui en font partie.
 - **Fermer le groupe** retire tous les membres. **Quitter le groupe** d’un membre demande à ton téléphone de le retirer.
+- **Un groupe jetable,** pour une occasion : avant de le créer, sous **Fin**, choisissez **Après un jour**, **Après 3 jours**
+  ou **Après 7 jours**. Quand son temps est écoulé, votre téléphone le ferme, et l’Erevos de chaque membre le supprime,
+  avec ses messages, photos et fichiers, la prochaine fois qu’il est ouvert ; son lien ne fonctionne plus. L’écran du
+  groupe lui-même indique quand il prend fin. Un membre sur un Erevos plus ancien le garde, et d’ici là chacun a pu en
+  garder une copie ou une capture d’écran.
 - **Jusqu’à 100 membres,** car tout le groupe doit tenir dans l’unique message qui fait entrer quelqu’un.
 - **Chaque téléphone d’un groupe public a besoin de cette version d’Erevos.** Les groupes faits à partir de contacts
   fonctionnent comme avant.

@@ -1692,6 +1692,11 @@ und gehen an jedes Mitglied wie in jeder Gruppe, und kein Relay erfährt, wer da
   übergibst, kann niemand mehr jemanden hereinlassen, auch wenn die Gruppe für die Mitglieder weiterläuft.
 - **Gruppe schließen** nimmt jedes Mitglied heraus. **Gruppe verlassen** eines Mitglieds bittet dein Telefon, es
   herauszunehmen.
+- **Eine Wegwerfgruppe,** für einen Anlass: Wähle, bevor du sie erstellst, unter **Endet** **Nach einem Tag**,
+  **Nach 3 Tagen** oder **Nach 7 Tagen**. Ist ihre Zeit um, schließt dein Telefon sie, und das Erevos jedes Mitglieds
+  löscht sie mit ihren Nachrichten, Fotos und Dateien, sobald es das nächste Mal offen ist; ihr Link funktioniert nicht
+  mehr. Der eigene Bildschirm der Gruppe sagt, wann sie endet. Ein Mitglied mit einem älteren Erevos behält sie, und
+  bis dahin kann jeder eine Kopie oder ein Bildschirmfoto behalten haben.
 - **Bis zu 100 Mitglieder,** da die ganze Gruppe in die eine Nachricht passen muss, die jemanden hereinlässt.
 - **Jedes Telefon in einer öffentlichen Gruppe braucht diese Version von Erevos.** Aus Kontakten gemachte Gruppen
   funktionieren wie bisher.

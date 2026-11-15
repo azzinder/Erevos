@@ -101,6 +101,8 @@ export type PublicInfo = {
   /** Who asks to join and waits for an admin's yes. */
   waiting: Asked[];
   bans: Asked[];
+  /** When it ends and is deleted on every phone (ms), or 0 for never. */
+  ends: number;
 };
 
 // A member as the MLS state has it, with the key it signs with and what it says about itself.
@@ -261,15 +263,16 @@ export class PublicGroups extends Groups {
       muted: marked(kept.mutes, kept.me),
       waiting: owner ? kept.waiting.map(({ key, name, at }) => ({ key, name, at })) : admin ? kept.asked : [],
       bans: kept.bans.filter((b) => b.on).map((b) => ({ key: b.key, name: b.name || kept.names[b.key] || '', at: b.at })),
+      ends: kept.ends ?? 0,
     };
   }
 
   /**
    * Makes a public group named `name`, with this phone as its owner, called `myName` there, and a
-   * door on this phone's relay for its link. With `approve`, an admin lets in each who asks.
-   * Returns its id.
+   * door on this phone's relay for its link. With `approve`, an admin lets in each who asks. With
+   * `ends` (ms), a burner group: deleted on every phone then (endDue). Returns its id.
    */
-  createPublic(name: string, myName: string, approve: boolean, transport: GroupTransport): Promise<string> {
+  createPublic(name: string, myName: string, approve: boolean, transport: GroupTransport, ends = 0): Promise<string> {
     return this.run(async () => {
       if (this.onDevice()) throw new Error(t('Public groups stay on the phone: make and join them there.'));
       const clean = cleanGroupName(name);
@@ -279,7 +282,7 @@ export class PublicGroups extends Groups {
       const signer = await core.publicGroup.newSigner(await this.state());
       const key = toHex(signer.key);
       const about = await this.aboutAs(key, myName);
-      const rules: Rules = { ...NO_RULES, approve, door: ruleDoor(door) };
+      const rules: Rules = { ...NO_RULES, approve, door: ruleDoor(door), ...(ends > 0 ? { ends } : {}) };
       const made = await core.publicGroup.create(signer.state, signer.key, encodePublicAbout(about), encodeRules(rules));
       const id = toHex(made.id);
       const group: Group = {
@@ -295,7 +298,7 @@ export class PublicGroups extends Groups {
         keysAt: Date.now(),
       };
       await this.save({ ...this.withGroup(group), state: toBase64(made.state) });
-      await this.keepGroup({ ...fresh(id, key), door, approve, names: { [key]: about.name } });
+      await this.keepGroup({ ...fresh(id, key), door, approve, names: { [key]: about.name }, ...(ends > 0 ? { ends } : {}) });
       await this.refresh(id, transport);
       return id;
     });
@@ -511,6 +514,7 @@ export class PublicGroups extends Groups {
       ...kept,
       link: rules.door ? joinLink({ ...rules.door, group: id, name: group.name }) : '',
       approve: rules.approve,
+      ...(rules.ends ? { ends: rules.ends } : {}),
       mutes: mergeMarks(kept.mutes, rules.mutes),
       bans: mergeMarks(kept.bans, rules.bans.map(named)),
       outs: kept.outs.filter((key) => keys.has(key)),
@@ -951,6 +955,25 @@ export class PublicGroups extends Groups {
       await this.shut(id);
       await this.out(id, mark('You closed the group.'));
     });
+  }
+
+  /**
+   * Burner groups whose time is up (PublicGroup.ends): deleted here, their messages and files with
+   * them; one this phone owns is closed for every member first, with its door. Returns how many.
+   * Looked at with the doors (lib/space-public-groups.ts) and as the groups open.
+   */
+  async endDue(transport: GroupTransport, now = Date.now()): Promise<number> {
+    const due = this.pub.groups.filter((g) => g.ends && g.ends <= now).map((g) => g.id);
+    for (const id of due) {
+      if (this.find(id)?.admin && this.find(id)?.status === 'in') await this.leave(id, transport).catch(() => undefined);
+      await this.forget(id);
+    }
+    return due.length;
+  }
+
+  /** Whether some group here ends at some time. */
+  endsSome(): boolean {
+    return this.pub.groups.some((g) => !!g.ends);
   }
 
   forget(id: string): Promise<void> {

@@ -19,12 +19,18 @@ import { useTheme } from '../theme/context';
 // Public groups (lib/public-groups.ts): make one anyone with its link can ask to join, open a
 // group's link that was pasted here, and the requests to join this phone sent, still waiting for
 // the owner's phone. A link opened from elsewhere, or its QR code scanned, opens app/join.tsx.
+/** How long a burner group lasts: never, a day, three days, a week. */
+const BURNER_LASTS = [0, 24 * 3600_000, 3 * 24 * 3600_000, 7 * 24 * 3600_000];
+const lastsLabel = (ms: number) => (ms === 0 ? t('Never') : ms === 24 * 3600_000 ? t('After a day') : t('After {n} days', { n: ms / (24 * 3600_000) }));
+
 export default function PublicGroupsScreen() {
   const { colors } = useTheme();
   const [groups, setGroups] = useState<PublicGroups | null>(null);
   const [asking, setAsking] = useState<Asking[]>([]);
   const [name, setName] = useState('');
   const [mine, setMine] = useState('');
+  // A burner group: deleted on every phone after this long (ms), or 0 for never.
+  const [lasts, setLasts] = useState(0);
   const [approve, setApprove] = useState(false);
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
@@ -61,7 +67,7 @@ export default function PublicGroupsScreen() {
     setBusy(true);
     setNote('');
     try {
-      const id = await groups.createPublic(name, mine, approve, spaceGroupTransport);
+      const id = await groups.createPublic(name, mine, approve, spaceGroupTransport, lasts > 0 ? Date.now() + lasts : 0);
       router.replace(`/public-group?id=${id}`);
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -100,6 +106,19 @@ export default function PublicGroupsScreen() {
           <Chip label={t('Anyone with the link')} selected={!approve} onPress={() => setApprove(false)} />
           <Chip label={t('An admin lets them in')} selected={approve} onPress={() => setApprove(true)} />
         </Row>
+        <Text variant="label" tone="muted">
+          {t('It ends')}
+        </Text>
+        <Row wrap>
+          {BURNER_LASTS.map((ms) => (
+            <Chip key={ms} label={lastsLabel(ms)} selected={lasts === ms} onPress={() => setLasts(ms)} />
+          ))}
+        </Row>
+        {lasts > 0 ? (
+          <Text variant="caption" tone="muted">
+            {t('A group for one event: when its time is up, every member’s Erevos deletes it, with its messages, photos and files, and its link stops working. Each member is in it under a name and a key made for it alone.')}
+          </Text>
+        ) : null}
         <Text variant="caption" tone="muted">
           {t('You own the group: your phone lets people in, so they join once Erevos is open on it. Anyone with the link reads what is said from when they join, never what came before.')}
         </Text>

@@ -1569,6 +1569,11 @@ relay fica sabendo quem está nele.
   pessoas entrarem, então o link muda para um no relay dele; você continua admin. Se o seu celular se perder antes de
   você transferi-lo, ninguém mais pode deixar ninguém entrar, embora o grupo continue para quem está nele.
 - **Fechar o grupo** remove todos os membros. O **Sair do grupo** de um membro pede ao seu celular que o remova.
+- **Um grupo descartável,** para uma ocasião: antes de o criar, em **Termina**, escolha **Depois de um dia**,
+  **Depois de 3 dias** ou **Depois de 7 dias**. Quando o tempo acaba, o seu telefone fecha-o, e o Erevos de cada membro
+  apaga-o, com as mensagens, fotos e ficheiros, da próxima vez que estiver aberto; o link deixa de funcionar. O ecrã do
+  próprio grupo diz quando termina. Um membro com um Erevos mais antigo guarda-o, e até lá qualquer um pode ter guardado
+  uma cópia ou uma captura de ecrã.
 - **Até 100 membros,** pois o grupo inteiro tem de caber na única mensagem que deixa alguém entrar.
 - **Todo celular num grupo público precisa desta versão do Erevos.** Os grupos feitos com contatos funcionam como
   antes.

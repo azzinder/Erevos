@@ -484,6 +484,42 @@ test('the owner leaving closes the group for everyone', live, async () => {
   await assert.rejects(carol.groups.ask(link, 'Carol'), /no longer works/);
 });
 
+test('a burner group ends on every phone at its time: messages gone, link closed', live, async () => {
+  const net = network();
+  const alice = await net.phone('Alice', one);
+  const bob = await net.phone('Bob', two);
+  const ends = Date.now() + 3600_000;
+  const id = await alice.groups.createPublic('Event', 'Alice', false, alice.transport, ends);
+  assert.equal(alice.groups.publicInfo(id)!.ends, ends);
+  const link = linkOf(alice, id);
+  await bob.groups.ask(link, 'Bob');
+  await net.settle();
+  assert.equal(status(bob, id), 'in');
+  assert.equal(bob.groups.publicInfo(id)!.ends, ends, 'the member knows when it ends, from the rules');
+  await bob.groups.send(id, 'see you there', bob.transport);
+  await net.settle();
+  // Before its time nothing goes.
+  assert.equal(await alice.groups.endDue(alice.transport, ends - 1), 0);
+  assert.equal(await bob.groups.endDue(bob.transport, ends - 1), 0);
+  // Bob's phone is off at the time: Alice's closes it for everyone, and Bob's deletes it when it next looks.
+  assert.equal(await alice.groups.endDue(alice.transport, ends), 1);
+  assert.equal(alice.groups.list().some((g) => g.id === id), false);
+  assert.equal(alice.groups.publicInfo(id), null);
+  await net.settle();
+  assert.equal(await bob.groups.endDue(bob.transport, ends + 60_000), 1);
+  assert.equal(bob.groups.list().some((g) => g.id === id), false);
+  assert.ok(!JSON.stringify(bob.data.groups).includes('see you there'));
+  const carol = await net.phone('Carol', one);
+  await assert.rejects(carol.groups.ask(link, 'Carol'), /no longer works/);
+});
+
+test('a group that lasts carries no end, and an end reads back checked', () => {
+  assert.equal(decodeRules(encodeRules(NO_RULES))!.ends, undefined);
+  assert.equal(decodeRules(encodeRules({ ...NO_RULES, ends: 1_800_000_000_000 }))!.ends, 1_800_000_000_000);
+  assert.equal(decodeRules(utf8Encode(JSON.stringify({ v: 1, admins: [], approve: false, door: null, mutes: [], bans: [], ends: 'soon' })))!.ends, undefined);
+  assert.equal(decodeRules(utf8Encode(JSON.stringify({ v: 1, admins: [], approve: false, door: null, mutes: [], bans: [], ends: -5 })))!.ends, undefined);
+});
+
 test('keys in a public group are made new every week, with the same members, names and roles', live, async () => {
   const net = network();
   const bob = await net.phone('Bob', two);

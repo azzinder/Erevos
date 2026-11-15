@@ -74,7 +74,8 @@ export type Mark = { key: string; on: boolean; at: number; by: string };
 export type Ban = Mark & { sender: string; seal: string };
 
 /** What the owner keeps in the group itself (in its MLS group context): every member has the same in an epoch. */
-export type Rules = { admins: string[]; approve: boolean; door: Door | null; mutes: Mark[]; bans: Ban[] };
+/** `ends`: when the group ends (ms), a burner group: then every member's phone deletes it, and the owner's its door. Missing: it lasts. */
+export type Rules = { admins: string[]; approve: boolean; door: Door | null; mutes: Mark[]; bans: Ban[]; ends?: number };
 
 export const NO_RULES: Rules = { admins: [], approve: false, door: null, mutes: [], bans: [] };
 
@@ -104,7 +105,7 @@ const list = <T>(items: unknown, check: (item: unknown) => T | null): T[] =>
 export function encodeRules(rules: Rules): Uint8Array {
   let { mutes, bans } = rules;
   for (;;) {
-    const bytes = utf8Encode(JSON.stringify({ v: 1, admins: rules.admins, approve: rules.approve, door: rules.door, mutes, bans }));
+    const bytes = utf8Encode(JSON.stringify({ v: 1, admins: rules.admins, approve: rules.approve, door: rules.door, mutes, bans, ...(rules.ends ? { ends: rules.ends } : {}) }));
     if (bytes.length <= MAX_RULES || (mutes.length === 0 && bans.length === 0)) return bytes;
     // Marks that are off say least: they go first, then the oldest.
     const all = [...mutes, ...bans].sort((a, b) => Number(a.on) - Number(b.on) || a.at - b.at);
@@ -126,6 +127,7 @@ export function decodeRules(bytes: Uint8Array): Rules | null {
       door: checkedDoor(v.door),
       mutes: list(v.mutes, checkedMark),
       bans: list(v.bans, checkedBan),
+      ...(isTime(v.ends) && v.ends > 0 ? { ends: v.ends } : {}),
     };
   } catch {
     return null;

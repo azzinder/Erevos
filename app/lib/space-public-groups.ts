@@ -18,6 +18,8 @@ const AWAY_EVERY = 60_000;
 export async function lookAtPublicDoors(): Promise<void> {
   if (!canPublicGroup()) return;
   const groups = await spaceGroups();
+  // Burner groups whose time is up go, whether or not this phone owns one.
+  if (groups.endsSome()) await groups.endDue(spaceGroupTransport);
   if (groups.ownsDoors()) await groups.lookAtDoors(spaceGroupTransport);
 }
 

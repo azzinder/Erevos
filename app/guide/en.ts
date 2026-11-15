@@ -1451,6 +1451,10 @@ and go to each member as in any group, and no relay learns who is in it.
   link changes to one on their relay; you stay an admin. If your phone is lost before you hand it over, no one can let
   anyone in again, though the group goes on for those in it.
 - **Close the group** takes every member out. A member's **Leave the group** asks your phone to take them out.
+- **A burner group,** for one event: before you make it, under **It ends**, choose **After a day**, **After 3 days**
+  or **After 7 days**. When its time is up, your phone closes it, and every member's Erevos deletes it, with its
+  messages, photos and files, the next time it is open; its link stops working. The group's own screen says when it
+  ends. A member on an older Erevos keeps it, and anyone may have kept a copy or a screenshot before then.
 - **Up to 100 members,** as the whole group has to fit in the one message that lets someone in.
 - **Every phone in a public group needs this version of Erevos.** Groups made from contacts work as before.
 

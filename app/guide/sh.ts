@@ -1522,6 +1522,11 @@ na kraj pomoću MLS-a i idu svakom članu kao u svakoj grupi, a nijedan relay ne
   u link na njegovom relayu; vi ostajete admin. Ako se vaš telefon izgubi prije nego što je predate, niko više ne može
   nikoga pustiti, iako grupa ide dalje za one koji su u njoj.
 - **Zatvori grupu** uklanja sve članove. **Napusti grupu** nekog člana traži od vašeg telefona da ga ukloni.
+- **Grupa za jednokratnu upotrebu,** za jednu priliku: prije nego je napraviš, pod **Ističe** izaberi **Nakon jednog
+  dana**, **Nakon 3 dana** ili **Nakon 7 dana**. Kad joj istekne vrijeme, tvoj telefon je zatvara, a Erevos svakog člana
+  je briše, s porukama, fotografijama i datotekama, sljedeći put kad je otvoren; njen link prestaje raditi. Ekran same
+  grupe kaže kad ističe. Član sa starijim Erevosom je zadržava, a do tada je svako mogao sačuvati kopiju ili snimak
+  ekrana.
 - **Najviše 100 članova,** jer cijela grupa mora stati u jednu poruku koja nekoga pušta unutra.
 - **Svaki telefon u javnoj grupi treba ovu verziju Erevosa.** Grupe napravljene od kontakata rade kao i prije.
 

@@ -64,6 +64,8 @@ export type PublicGroup = {
   /** On the owner's phone: keys let in anew, each in place of a seat that says the same of itself
    *  (its phone forgot the group), whose old seat goes once the new one is heard from. */
   again: string[];
+  /** When the group ends (ms), as its rules say: then this phone deletes it (lib/public-groups.ts endDue). Missing: it lasts. */
+  ends?: number;
 };
 
 /** A request to join this phone sent: the group, the door it went to, the key made for it, the
@@ -146,6 +148,7 @@ function checkedGroup(value: unknown): PublicGroup | null {
     epochs: list(v.epochs, checkedEpoch, MAX_EPOCHS),
     names: checkedNames(v.names),
     again: list(v.again, (i) => (isKey(i) ? i : null), MAX_LIST),
+    ...(isTime(v.ends) && v.ends > 0 ? { ends: v.ends } : {}),
   };
 }
 

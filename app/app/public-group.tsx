@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { clock, dayText } from '../components/chat-thread-lines';
 import { askThread } from '../components/group-messages';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
@@ -123,6 +124,11 @@ export default function PublicGroupScreen() {
               ? t('A public group you are an admin of.')
               : t('A public group. Anyone with its link can ask to join.')}
       </Text>
+      {!out && info.ends > 0 ? (
+        <Text tone="muted">
+          {t('A burner group: it ends on {day} at {time}, and then every member’s Erevos deletes it, with its messages, photos and files.', { day: dayText(info.ends), time: clock(info.ends) })}
+        </Text>
+      ) : null}
       {group.desc && !(info.admin && !out) ? (
         <Text>
           <LinkedText text={group.desc} />
