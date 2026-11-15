@@ -62,6 +62,15 @@ for nothing, and finds a way through whatever is there: the internet, Wi-Fi, Blu
 | **Phone, SMS and contacts** | On Android Erevos can be your phone, SMS and contacts app too, with the SMS and contacts icons unlocking only themselves. |
 | **No ads, no trackers** | Free software, built on others' open-source work that is credited in the app. Nobody pays, nothing is collected. |
 
+## Who it is for
+
+For anyone who wants to talk with the people close to them without handing over a phone number: friends and
+families, groups and communities that would rather run their own relay, and people whose internet is down
+or blocked and who need a way to reach each other nearby.
+
+Want your Telegram, Messenger, Signal, Session, Matrix and XMPP chats in the same app? That is
+[Erevos+](#erevos), below.
+
 ## Get it
 
 | Where | How |
@@ -77,8 +86,22 @@ Every Android release is signed with the same key. The SHA-256 of its certificat
 49:F0:D9:BE:60:09:2F:02:CF:27:C5:24:67:52:55:01:93:A6:7B:81:21:29:BF:53:41:79:53:B7:C8:79:8E:69
 ```
 
-Compare it with `apksigner verify --print-certs erevos-android.apk`. The web app of a release can be rebuilt from this
-source and compared file by file: [docs/reproducible-builds.md](docs/reproducible-builds.md).
+Compare it with `apksigner verify --print-certs erevos-android.apk`. Each release lists the SHA-256 of its files in
+`SHA256SUMS`. The web app of a release can be rebuilt from this source and compared file by file:
+[docs/reproducible-builds.md](docs/reproducible-builds.md).
+
+### Only from these places
+
+Get Erevos only from the [releases page](https://github.com/azzinder/erevos-releases/releases), the
+[web app](https://erevos-web.lphl.nekten.eu), the [website](https://lphl.nekten.eu/erevos) or the app's own
+**Updates**. A copy from anywhere else is not ours.
+
+### Erevos+
+
+Erevos+ is Erevos with more networks in it: Telegram, Facebook Messenger, Signal, Session, Matrix, XMPP and chats
+with other Nostr apps, next to Erevos's own chats. It is the same app with the same key and the same data, for
+Android only. To move to it, and back again: **Settings → General → Updates → Next update: Erevos+** (or **Erevos**).
+Its releases are titled **Erevos+ x.y.z** and are never the *Latest* one.
 
 ## Honest limits
 
@@ -91,6 +114,38 @@ source and compared file by file: [docs/reproducible-builds.md](docs/reproducibl
 Read more: [threat model](docs/threat-model.md) (who Erevos protects you from, and what each one still learns) ·
 [security review map](docs/security-review.md) · [protocol](docs/protocol.md) · [state diagrams](docs/state-machines.md) · [reporting a problem](SECURITY.md) · the guide's *Transparency* part
 (what the server keeps, for how long, and what has been asked of it).
+
+## Build it
+
+The Rust crates:
+
+```
+cargo test
+```
+
+The app's checks, from `app/`, with Node 22, Rust with the `wasm32-unknown-unknown` target and wasm-bindgen-cli
+0.2.129:
+
+```
+npm ci
+npm run typecheck
+node checks/build-core.mjs
+cargo build -p erevos-relay
+npm run check
+```
+
+The Android app is built by `.github/workflows/android.yml` and by the release workflow (`npx expo prebuild
+--platform android`, then Gradle). The desktop app and the rest: [docs/overview.md](docs/overview.md#build).
+
+## Languages
+
+Ελληνικά, English, Deutsch, Español, Français, Italiano, Português and Srpskohrvatski, the app and its guide alike.
+
+## Support it
+
+Erevos has no ads and collects nothing. If you want to help with its running costs:
+[Liberapay](https://liberapay.com/Nekten/donate) or [PayPal](https://www.paypal.com/donate/?business=A9DV5LKGBGUF4&no_recurring=0&currency_code=EUR),
+or **Settings → General → Support** in the app.
 
 ## Learn more
 
