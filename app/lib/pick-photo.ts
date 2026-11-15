@@ -6,7 +6,7 @@ import { File, Paths } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
-import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
+import { cleanGif, cleanJpeg, cleanPng, isGif, isJpeg, isPng, photoSize } from './photo';
 import { t } from './i18n';
 import { whilePicking } from './picking';
 
@@ -51,8 +51,14 @@ export async function preparePhoto(asset: Pick<ImagePicker.ImagePickerAsset, 'ur
   } catch {
     // Not read: made anew below.
   }
-  // GIF has nowhere to keep a place or a phone, and may move: it goes as it is.
-  if (asset.mimeType === 'image/gif') return { name: 'photo.gif', mime: 'image/gif', bytes, w: asset.width, h: asset.height };
+  // A GIF may move: it goes as a GIF, without its comments and the blocks other apps write (XMP).
+  if (isGif(bytes)) {
+    try {
+      return { name: 'photo.gif', mime: 'image/gif', bytes: cleanGif(bytes), w: asset.width, h: asset.height };
+    } catch {
+      // Not read: made anew below.
+    }
+  }
   return reencode(asset.uri, 100);
 }
 

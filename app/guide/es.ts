@@ -1179,6 +1179,8 @@ MB. Debajo, **Calidad de la foto** fija cómo van las fotos, y Erevos lo recuerd
 
 - **Original** (por defecto): la foto exactamente como era, a tamaño completo, sin perder calidad. Solo se quita lo que
   dice aparte de su imagen: dónde se hizo, el teléfono, la hora, las miniaturas. Su nombre es solo "photo".
+  Una foto enviada con **Archivo** (JPEG, PNG, GIF o WebP, hasta 64 MB) también va sin eso, con su propio nombre; los
+  archivos HEIC y AVIF van tal cual.
 - **90%** y **75%:** una foto nueva, más pequeña, más rápida de enviar, que no dice nada más que su imagen.
 
 Sus fotos y archivos de hasta 16 MB llegan solos; toca uno más grande para recogerlo. Toca una foto para verla en toda

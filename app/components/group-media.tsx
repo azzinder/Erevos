@@ -213,7 +213,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   function sendPickedFile() {
     afterSheet(() =>
       void sendPicked('file', async () => {
-        const picked = await pickSource(MAX_FILE);
+        const picked = await pickSource(MAX_FILE, true);
         if (!picked) return null;
         const name = cleanFileName(picked.name);
         const mime = cleanMime(picked.mime);

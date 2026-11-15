@@ -1263,6 +1263,8 @@ Erevos merkt es sich:
 - **Original** (die Voreinstellung): das Foto genau so, wie es war, in voller Größe, ohne Qualitätsverlust. Nur, was es
   außer seinem Bild sagt, wird entfernt: wo es aufgenommen wurde, das Telefon, die Zeit, Vorschaubilder. Sein Name ist
   einfach „photo“.
+  Ein Foto, das du mit **Datei** sendest (JPEG, PNG, GIF oder WebP, bis 64 MB), geht ebenfalls ohne das, unter seinem
+  eigenen Namen; HEIC- und AVIF-Dateien gehen, wie sie sind.
 - **90%** und **75%:** ein neues, kleineres Foto, schneller zu senden, das nichts außer seinem Bild sagt.
 
 Fotos und Dateien des Kontakts bis 16 MB kommen von selbst; tippe auf ein größeres, um es zu holen. Tippe auf ein

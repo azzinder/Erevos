@@ -1181,6 +1181,8 @@ Erevos se lo ricorda:
 - **Originale** (l’impostazione predefinita): la foto esattamente com’era, a dimensione piena, senza perdita di
   qualità. Viene tolto solo quello che dice oltre all’immagine: dove è stata scattata, il telefono, l’ora, le
   miniature. Il suo nome è semplicemente «photo».
+  Anche una foto inviata con **File** (JPEG, PNG, GIF o WebP, fino a 64 MB) parte senza tutto questo, con il suo nome;
+  i file HEIC e AVIF partono così come sono.
 - **90%** e **75%:** una foto nuova, più piccola, più veloce da inviare, che non dice nient’altro che la sua immagine.
 
 Le sue foto e i suoi file fino a 16 MB arrivano da soli; tocca uno più grande per prenderlo. Tocca una foto per

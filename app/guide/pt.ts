@@ -1173,6 +1173,8 @@ até 100 MB. Abaixo deles, **Qualidade da foto** define como as fotos vão, e o 
 
 - **Original** (o padrão): a foto exatamente como era, em tamanho real, sem perda de qualidade. Só o que ela diz além
   da imagem é retirado: onde foi tirada, o celular, a hora, as miniaturas. O nome dela é só "photo".
+  Uma foto enviada com **Arquivo** (JPEG, PNG, GIF ou WebP, até 64 MB) também vai sem isso, com o próprio nome; arquivos
+  HEIC e AVIF vão como estão.
 - **90%** e **75%:** uma foto nova, menor, mais rápida de enviar, que não diz nada além da imagem.
 
 As fotos e os arquivos da pessoa de até 16 MB chegam sozinhos; toque num maior para baixá-lo. Toque numa foto para

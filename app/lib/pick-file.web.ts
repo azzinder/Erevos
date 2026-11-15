@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { bytesSource, type Source } from './attachments';
+import { CLEAN_MOST, cleanImage } from './photo';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
 
@@ -18,16 +19,19 @@ export type PickedSource = { name: string; mime: string; source: Source; close()
  * A file to send, as pick-file.ts: in the desktop app read whole, as a computer has the memory; in
  * a browser read a piece at a time, as a chat export with its videos may be larger than a tab may hold.
  */
-export async function pickSource(most: number): Promise<PickedSource | null> {
+export async function pickSource(most: number, clean = false): Promise<PickedSource | null> {
   if (SHELL !== 'electron') {
     const file = await browserPick();
     if (!file) return null;
     if (file.size > most) throw new TooLargeError();
+    // A photo sent as a file goes without what it says besides its picture (lib/photo.ts cleanImage).
+    const cleaned = clean && file.size <= CLEAN_MOST ? cleanImage(new Uint8Array(await file.arrayBuffer())) : null;
+    if (cleaned) return { name: file.name, mime: file.type, source: bytesSource(cleaned), close: () => undefined };
     const read = async (at: number, length: number) => new Uint8Array(await file.slice(at, at + length).arrayBuffer());
     return { name: file.name, mime: file.type, source: { size: file.size, read }, close: () => undefined };
   }
   const picked = await pickFile(most);
-  return picked && { name: picked.name, mime: '', source: bytesSource(picked.bytes), close: () => undefined };
+  return picked && { name: picked.name, mime: '', source: bytesSource((clean && picked.bytes.length <= CLEAN_MOST ? cleanImage(picked.bytes) : null) ?? picked.bytes), close: () => undefined };
 }
 
 /**

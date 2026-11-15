@@ -18,6 +18,7 @@ On main, not released yet:
 - One scan is all: where your relay lets your phone invite, **Show your QR code** shows an invite, so a phone new to Erevos joins your relay by itself as it scans it, and you are contacts at once. A relay's queue is made by itself, with no **Create my relay queue** to tap, and **How you connect now** says what is missing in plain words.
 - The bar at the top stays where it is: on the home screen (the list scrolls under it) and in SMS, Matrix, XMPP and Nostr chats (`useNetworkThread` `withArrows(content, top)`), as in Erevos's own chats. Under the field of a Matrix or XMPP chat only **+** (Attach and more) and the microphone; the chat's settings are under **⋯** at the top.
 - A message request shows only its words until you accept it: its photos and files wait, not taken (`app/chat.tsx` `strangers`), and its links show no preview.
+- A photo sent as a file (JPEG, PNG, GIF, WebP, up to 64 MB) goes without where and when it was taken and the phone (`lib/photo.ts` `cleanImage`, `cleanGif`, `cleanWebp`), and a GIF sent as a photo without its comments and XMP. HEIC and AVIF files go as they are.
 
 ### Under the hood
 

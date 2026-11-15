@@ -1146,6 +1146,8 @@ Erevos to pamti:
 
 - **Original** (zadano): fotografija tačno onakva kakva je bila, u punoj veličini, bez gubitka kvaliteta. Uklanja se
   samo ono što govori osim same slike: gdje je snimljena, telefon, vrijeme, sličice. Njeno ime je samo „photo“.
+  I fotografija poslana kao **Datoteka** (JPEG, PNG, GIF ili WebP, do 64 MB) ide bez toga, pod svojim imenom; HEIC i
+  AVIF datoteke idu kakve jesu.
 - **90%** i **75%:** nova, manja fotografija, brža za slanje, koja ne govori ništa osim same slike.
 
 Fotografije i datoteke te osobe do 16 MB stižu same; dodirnite veću da je preuzmete. Dodirnite fotografiju da je

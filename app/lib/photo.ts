@@ -7,7 +7,8 @@ import { t } from './i18n';
 // phone, the time, thumbnails, notes. A JPEG keeps its picture exactly as it was, byte for byte,
 // with only the segments that draw it (and its colour profile), and its turn (Orientation) in a
 // new, minimal EXIF. Anything after the picture's end is left out too: phones append motion-photo
-// videos and extra images there. A PNG keeps every chunk but the text, EXIF and time ones. Other
+// videos and extra images there. A PNG keeps every chunk but the text, EXIF and time ones; a GIF its
+// frames and loop count; a WebP every chunk but EXIF and XMP. Other
 // kinds are not read here: the app makes a new JPEG of them instead (lib/pick-photo.ts).
 // Self-contained on purpose, so it can run under plain Node for checks.
 
@@ -189,4 +190,131 @@ export function photoSize(bytes: Uint8Array): PhotoSize {
     at += 2 + length;
   }
   return null;
+}
+
+/** The largest photo sent as a file that is cleaned (cleanImage): read whole into memory for it. */
+export const CLEAN_MOST = 64 * 1000 * 1000;
+
+export function isGif(bytes: Uint8Array): boolean {
+  return ascii(bytes, 0, 'GIF87a') || ascii(bytes, 0, 'GIF89a');
+}
+
+export function isWebp(bytes: Uint8Array): boolean {
+  return ascii(bytes, 0, 'RIFF') && ascii(bytes, 8, 'WEBP');
+}
+
+// The application blocks a GIF keeps: how many times it plays (Netscape's, and its older twin).
+const GIF_KEPT_APPS = new Set(['NETSCAPE2.0', 'ANIMEXTS1.0']);
+
+/**
+ * A GIF with only its frames and how they play: without comments and the blocks other apps write
+ * (XMP, with its place and time, and the like), and nothing after its end. Throws NotCleanError if
+ * it cannot be read.
+ */
+export function cleanGif(bytes: Uint8Array): Uint8Array {
+  if (!isGif(bytes) || bytes.length < 13) throw new NotCleanError();
+  const kept: Uint8Array[] = [];
+  // Header and logical screen, with the global colour table if it has one.
+  let at = 13;
+  if (bytes[10] & 0x80) at += 3 * (1 << ((bytes[10] & 0x07) + 1));
+  if (at > bytes.length) throw new NotCleanError();
+  kept.push(bytes.subarray(0, at));
+  // Data sub-blocks, from `from` to the empty one that ends them: where they end.
+  const subBlocks = (from: number): number => {
+    let i = from;
+    for (;;) {
+      if (i >= bytes.length) throw new NotCleanError();
+      const size = bytes[i];
+      i += 1 + size;
+      if (size === 0) return i;
+    }
+  };
+  for (;;) {
+    if (at >= bytes.length) throw new NotCleanError();
+    const kind = bytes[at];
+    if (kind === 0x3b) {
+      kept.push(Uint8Array.of(0x3b));
+      break;
+    }
+    if (kind === 0x2c) {
+      // An image: its descriptor, local colour table, LZW code size and data.
+      if (at + 10 > bytes.length) throw new NotCleanError();
+      let end = at + 10;
+      if (bytes[at + 9] & 0x80) end += 3 * (1 << ((bytes[at + 9] & 0x07) + 1));
+      end = subBlocks(end + 1);
+      kept.push(bytes.subarray(at, end));
+      at = end;
+      continue;
+    }
+    if (kind !== 0x21 || at + 2 > bytes.length) throw new NotCleanError();
+    const label = bytes[at + 1];
+    const end = subBlocks(at + 2);
+    // Graphic control (timing, transparency) and plain text stay; comments go, and application
+    // blocks but the loop count.
+    const app = label === 0xff && bytes[at + 2] === 11 ? String.fromCharCode(...bytes.subarray(at + 3, at + 14)) : '';
+    if (label !== 0xfe && (label !== 0xff || GIF_KEPT_APPS.has(app))) kept.push(bytes.subarray(at, end));
+    at = end;
+  }
+  return joined(kept);
+}
+
+// WebP chunks that say something besides the picture.
+const WEBP_DROPPED = new Set(['EXIF', 'XMP ']);
+
+/**
+ * A WebP without its EXIF and XMP chunks (where and when it was taken, the phone), its colour
+ * profile and frames kept. Throws NotCleanError if it cannot be read.
+ */
+export function cleanWebp(bytes: Uint8Array): Uint8Array {
+  if (!isWebp(bytes)) throw new NotCleanError();
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const end = Math.min(bytes.length, 8 + view.getUint32(4, true));
+  const kept: Uint8Array[] = [];
+  let at = 12;
+  while (at < end) {
+    if (at + 8 > end) throw new NotCleanError();
+    const type = String.fromCharCode(...bytes.subarray(at, at + 4));
+    const size = view.getUint32(at + 4, true);
+    const next = at + 8 + size + (size & 1);
+    if (at + 8 + size > end) throw new NotCleanError();
+    if (type === 'VP8X' && size >= 10) {
+      // Its flags no longer say there is EXIF (bit 3) or XMP (bit 2).
+      const chunk = bytes.slice(at, Math.min(next, end));
+      chunk[8] &= ~0x0c;
+      kept.push(chunk);
+    } else if (!WEBP_DROPPED.has(type)) kept.push(bytes.subarray(at, Math.min(next, end)));
+    at = next;
+  }
+  const body = joined(kept);
+  const out = new Uint8Array(12 + body.length);
+  out.set(bytes.subarray(0, 12));
+  new DataView(out.buffer).setUint32(4, 4 + body.length, true);
+  out.set(body, 12);
+  return out;
+}
+
+/**
+ * A photo of a kind cleaned here (JPEG, PNG, GIF, WebP) without what it says besides its picture,
+ * or null for another kind, or one that cannot be read: HEIC and AVIF are not read here.
+ */
+export function cleanImage(bytes: Uint8Array): Uint8Array | null {
+  try {
+    if (isJpeg(bytes)) return cleanJpeg(bytes);
+    if (isPng(bytes)) return cleanPng(bytes);
+    if (isGif(bytes)) return cleanGif(bytes);
+    if (isWebp(bytes)) return cleanWebp(bytes);
+  } catch {
+    // Not read: left as it is.
+  }
+  return null;
+}
+
+function joined(parts: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let to = 0;
+  for (const part of parts) {
+    out.set(part, to);
+    to += part.length;
+  }
+  return out;
 }

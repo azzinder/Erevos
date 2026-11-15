@@ -38,7 +38,7 @@ import { gcm } from '@noble/ciphers/aes.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
 import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, setSha256, sha256Bytes, type Gcm } from '../lib/crypto';
-import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
+import { cleanGif, cleanImage, cleanJpeg, cleanPng, cleanWebp, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
 import { RelaySession, getChunk, setThroughTor, setTorReady } from '../lib/relay';
@@ -182,6 +182,38 @@ test('a PNG loses its text, EXIF and time chunks', () => {
   ]);
   assert.deepEqual(photoSize(bytes), { w: 256, h: 200 });
   assert.deepEqual([...cleanPng(bytes)], [...signature, ...ihdr, ...idat, ...iend]);
+});
+
+test('a GIF goes without its comments and the blocks other apps write, its frames and loop count kept', () => {
+  const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0));
+  // Header, a screen with a 2-colour global table, the loop count, a comment, XMP, one frame, the end, then more.
+  const head = [...ascii('GIF89a'), 1, 0, 1, 0, 0x80, 0, 0, 0, 0, 0, 255, 255, 255];
+  const loop = [0x21, 0xff, 11, ...ascii('NETSCAPE2.0'), 3, 1, 0, 0, 0];
+  const comment = [0x21, 0xfe, 4, ...ascii('home'), 0];
+  const xmp = [0x21, 0xff, 11, ...ascii('XMP DataXMP'), 5, ...ascii('<gps>'), 0];
+  const control = [0x21, 0xf9, 4, 0, 10, 0, 0, 0];
+  const frame = [0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 0x01, 0];
+  const bytes = Uint8Array.from([...head, ...loop, ...comment, ...xmp, ...control, ...frame, 0x3b, 9, 9]);
+  const clean = cleanGif(bytes);
+  assert.deepEqual([...clean], [...head, ...loop, ...control, ...frame, 0x3b]);
+  assert.deepEqual(cleanGif(clean), clean, 'cleaning twice changes nothing');
+  assert.deepEqual(cleanImage(bytes), clean);
+  assert.throws(() => cleanGif(bytes.subarray(0, 40)));
+});
+
+test('a WebP goes without its EXIF and XMP chunks, and its header no longer says it has them', () => {
+  const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0));
+  const le = (n: number) => [n & 255, (n >> 8) & 255, (n >> 16) & 255, n >>> 24];
+  const chunk = (type: string, body: number[]) => [...ascii(type), ...le(body.length), ...body, ...(body.length & 1 ? [0] : [])];
+  const riff = (body: number[]) => Uint8Array.from([...ascii('RIFF'), ...le(4 + body.length), ...ascii('WEBP'), ...body]);
+  const vp8x = (flags: number) => chunk('VP8X', [flags, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const iccp = chunk('ICCP', [1, 2, 3]);
+  const picture = chunk('VP8 ', [7, 7, 7, 7]);
+  const bytes = riff([...vp8x(0x2c), ...iccp, ...picture, ...chunk('EXIF', ascii('MM\0*gps')), ...chunk('XMP ', ascii('<x/>'))]);
+  const clean = cleanWebp(bytes);
+  assert.deepEqual([...clean], [...riff([...vp8x(0x20), ...iccp, ...picture])]);
+  assert.deepEqual(cleanWebp(clean), clean, 'cleaning twice changes nothing');
+  assert.equal(cleanImage(Uint8Array.from(ascii('%PDF-1.7'))), null, 'not a photo: left as it is');
 });
 
 test('a message that leaves the history takes its file with it', async () => {

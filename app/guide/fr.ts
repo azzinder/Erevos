@@ -1247,6 +1247,8 @@ souvient :
 - **Original** (par défaut) : la photo exactement telle qu’elle était, en pleine taille, sans perte de qualité. Seul ce
   qu’elle dit en plus de son image est retiré : où elle a été prise, le téléphone, l’heure, les miniatures. Son nom est
   simplement « photo ».
+  Une photo envoyée avec **Fichier** (JPEG, PNG, GIF ou WebP, jusqu’à 64 Mo) part aussi sans cela, sous son propre nom ;
+  les fichiers HEIC et AVIF partent tels quels.
 - **90%** et **75% :** une nouvelle photo, plus petite, plus rapide à envoyer, qui ne dit rien d’autre que son image.
 
 Leurs photos et fichiers jusqu’à 16 Mo arrivent tout seuls ; appuie sur un plus gros pour le récupérer. Appuie sur une

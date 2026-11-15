@@ -4650,7 +4650,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function sendPickedFile() {
     afterSheet(() =>
       void sendAttachment('file', async () => {
-        const picked = await pickSource(MAX_FILE);
+        const picked = await pickSource(MAX_FILE, true);
         if (!picked) return null;
         const name = cleanFileName(picked.name);
         const said = cleanMime(picked.mime);

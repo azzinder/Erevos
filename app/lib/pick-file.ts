@@ -7,6 +7,7 @@ import { File, FileMode, Paths } from 'expo-file-system';
 import { type Source } from './attachments';
 import { randomBytes, toHex } from './crypto';
 import { fileName } from './imports';
+import { CLEAN_MOST, cleanImage } from './photo';
 import { whilePicking } from './picking';
 
 // A file the owner picks to open (a backup, a chat export), read whole into memory, or to send,
@@ -53,8 +54,12 @@ export async function pickLink(most: number): Promise<{ name: string; mime: stri
   return { name: fileName(file.uri), mime: file.type, size: file.size, uri: file.uri };
 }
 
-/** A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. */
-export async function pickSource(most: number): Promise<PickedSource | null> {
+/**
+ * A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. With
+ * `clean`, a photo sent as a file (JPEG, PNG, GIF, WebP, up to CLEAN_MOST) goes without what it says
+ * besides its picture, as a photo does (lib/photo.ts cleanImage).
+ */
+export async function pickSource(most: number, clean = false): Promise<PickedSource | null> {
   const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
   if (picked.canceled) return null;
   const file = picked.result;
@@ -70,6 +75,10 @@ export async function pickSource(most: number): Promise<PickedSource | null> {
   try {
     await file.copy(copy);
     if (copy.size > most) throw new TooLargeError();
+    if (clean && copy.size <= CLEAN_MOST) {
+      const cleaned = cleanImage(await copy.bytes());
+      if (cleaned) copy.write(cleaned);
+    }
     handle = copy.open(FileMode.ReadOnly);
   } catch (error) {
     done();
