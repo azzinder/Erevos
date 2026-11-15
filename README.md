@@ -111,6 +111,10 @@ Its releases are titled **Erevos+ x.y.z** and are never the *Latest* one.
   your phone connects from.
 - **SMS are not private.** When Erevos is your SMS app, your carrier sees SMS as with any app.
 
+In plain words: [the servers Erevos talks to](docs/servers.md), what each sees and keeps
+([Ελληνικά](docs/servers.el.md)), and [what a stolen phone or key opens](docs/stolen-key.md)
+([Ελληνικά](docs/stolen-key.el.md)).
+
 Read more: [threat model](docs/threat-model.md) (who Erevos protects you from, and what each one still learns) ·
 [security review map](docs/security-review.md) · [protocol](docs/protocol.md) · [state diagrams](docs/state-machines.md) · [reporting a problem](SECURITY.md) · the guide's *Transparency* part
 (what the server keeps, for how long, and what has been asked of it).
