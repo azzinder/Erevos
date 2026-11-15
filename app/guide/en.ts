@@ -2684,6 +2684,11 @@ choices: **No lock** and **Password**.
 2. From then on Erevos asks for it every time it opens, and again after 30 seconds in the background.
 3. **Change password** changes it, and **Lock now** locks Erevos straight away.
 
+- **A phrase, not a short PIN:** what checks the password is kept in the phone's keystore, so a copy of the phone's
+  storage cannot be used to try passwords. But someone who breaks into the phone's own security, as forensic tools do
+  on some phones, could try guesses on computers of their own, and a PIN of 6 digits, a million of them, falls in
+  days. A phrase of 4 or 5 words does not. Under a short new password, or PIN of hidden chats, Erevos says so; it
+  still takes it.
 - **Locked, still receiving:** when Erevos locks, the password screen comes in front of the open space, which goes on
   behind it: messages and calls still come, with their notices, and a call shows over the password screen. Its
   screens close, hidden chats too, and the call screen no longer shows its contacts' names. Its password opens it

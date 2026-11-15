@@ -23,6 +23,7 @@ import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
 import { canChangeVoice, clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { VOICE_KINDS, VOICE_NAMES, type VoiceKind } from '../lib/voice-change';
+import { isWeakSecret, WEAK_SECRET } from '../lib/password-strength';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, takeOffRelay, takesItself, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
@@ -411,6 +412,7 @@ export default function ChatScreen() {
             visible={asking}
             title={t('Change hidden chats PIN')}
             repeat
+            warnWeak
             submitLabel={t('Save')}
             onClose={() => setAsking(false)}
             onSubmit={async (password) => {
@@ -7040,6 +7042,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                   autoCorrect={false}
                                   onSubmitEditing={() => !startingNew && void moveToHidden(selectedContact, pinDraft, null)}
                                 />
+                                {startingNew && isWeakSecret(pinDraft) ? (
+                                  <Text variant="caption" tone="muted">
+                                    {t(WEAK_SECRET)}
+                                  </Text>
+                                ) : null}
                                 {startingNew ? (
                                   <>
                                     <Text variant="caption" tone="muted">

@@ -2933,6 +2933,11 @@ due scelte: **Nessun blocco** e **Password**.
 2. Da quel momento Erevos la chiede a ogni apertura, e di nuovo dopo 30 secondi in background.
 3. **Cambia password** la cambia, e **Blocca ora** blocca subito Erevos.
 
+- **Una frase, non un PIN corto:** ciò che controlla la password è custodito nell’archivio delle chiavi del telefono,
+  quindi una copia della sua memoria non basta per provare password. Ma chi viola la sicurezza del telefono stesso,
+  come fanno strumenti forensi su alcuni telefoni, potrebbe provare su computer propri, e un PIN di 6 cifre, un
+  milione di combinazioni, cade in pochi giorni. Una frase di 4 o 5 parole no. Sotto una nuova password corta, o un
+  PIN di chat nascoste, Erevos lo dice; la accetta comunque.
 - **Bloccato, ma riceve:** quando Erevos si blocca, la schermata della password si mette davanti allo spazio aperto,
   che continua dietro di essa: messaggi e chiamate arrivano comunque, con le loro notifiche, e una chiamata appare sopra
   la schermata della password. Le sue schermate si chiudono, anche le chat nascoste, e la schermata di chiamata non

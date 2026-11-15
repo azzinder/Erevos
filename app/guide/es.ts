@@ -2925,6 +2925,11 @@ opciones: **Sin bloqueo** y **Contraseña**.
 2. A partir de entonces Erevos la pide cada vez que se abre, y otra vez después de 30 segundos en segundo plano.
 3. **Cambiar contraseña** la cambia, y **Bloquear ahora** bloquea Erevos al instante.
 
+- **Una frase, no un PIN corto:** lo que comprueba la contraseña se guarda en el almacén de claves del teléfono, así
+  que una copia de su almacenamiento no sirve para probar contraseñas. Pero quien rompa la seguridad del propio
+  teléfono, como hacen herramientas forenses en algunos teléfonos, podría probar en ordenadores propios, y un PIN de 6
+  dígitos, un millón de combinaciones, cae en días. Una frase de 4 o 5 palabras no. Bajo una contraseña nueva corta, o
+  un PIN de chats ocultos, Erevos lo dice; aun así la acepta.
 - **Bloqueado, sigue recibiendo:** cuando Erevos se bloquea, la pantalla de la contraseña se pone delante del espacio
   abierto, que sigue detrás: los mensajes y las llamadas siguen llegando, con sus avisos, y una llamada aparece sobre la
   pantalla de la contraseña. Sus pantallas se cierran, también los chats ocultos, y la pantalla de llamada ya no muestra

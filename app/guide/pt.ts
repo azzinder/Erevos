@@ -2900,6 +2900,11 @@ duas opções: **Sem bloqueio** e **Senha**.
 2. A partir daí o Erevos a pede toda vez que abre, e de novo depois de 30 segundos em segundo plano.
 3. **Alterar senha** a muda, e **Bloquear agora** bloqueia o Erevos na hora.
 
+- **Uma frase, não um PIN curto:** o que confere a senha fica guardado no cofre de chaves do telefone, então uma cópia
+  do armazenamento não basta para testar senhas. Mas quem quebrar a segurança do próprio telefone, como fazem
+  ferramentas forenses em alguns telefones, poderia testar em computadores próprios, e um PIN de 6 dígitos, um milhão
+  de combinações, cai em dias. Uma frase de 4 ou 5 palavras não. Abaixo de uma senha nova curta, ou de um PIN de
+  conversas ocultas, o Erevos avisa; ainda assim a aceita.
 - **Bloqueado, ainda recebendo:** quando o Erevos bloqueia, a tela da senha vem para a frente do espaço aberto, que
   continua por trás dela: mensagens e chamadas ainda chegam, com os avisos delas, e uma chamada aparece sobre a tela
   da senha. As telas dele fecham, as conversas ocultas também, e a tela de chamada não mostra mais os nomes dos

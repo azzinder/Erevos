@@ -3109,6 +3109,11 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
 2. Ab dann fragt Erevos bei jedem Öffnen danach, und erneut nach 30 Sekunden im Hintergrund.
 3. **Passwort ändern** ändert es, und **Jetzt sperren** sperrt Erevos sofort.
 
+- **Ein Satz, keine kurze PIN:** Was das Passwort prüft, liegt im Schlüsselspeicher des Telefons, eine Kopie des
+  Speichers reicht also nicht, um Passwörter zu probieren. Wer aber die Sicherheit des Telefons selbst knackt, wie es
+  Forensik-Werkzeuge bei manchen Telefonen tun, könnte auf eigenen Computern raten, und eine PIN aus 6 Ziffern, eine
+  Million Möglichkeiten, fällt in Tagen. Ein Satz aus 4 oder 5 Wörtern nicht. Unter einem kurzen neuen Passwort oder
+  einer PIN versteckter Chats sagt Erevos das; es nimmt es trotzdem.
 - **Gesperrt, und es empfängt weiter:** Wenn Erevos sich sperrt, legt sich der Passwortbildschirm vor den offenen
   Bereich, der dahinter weiterläuft: Nachrichten und Anrufe kommen weiterhin, mit ihren Benachrichtigungen, und ein
   Anruf erscheint über dem Passwortbildschirm. Seine Bildschirme schließen sich, versteckte Chats auch, und der

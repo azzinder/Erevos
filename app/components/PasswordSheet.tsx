@@ -10,6 +10,7 @@ import { useColors } from '../theme/context';
 
 import { Button, Field, Input, Row, Sheet, Text } from './ui';
 import { t } from '../lib/i18n';
+import { isWeakSecret, WEAK_SECRET } from '../lib/password-strength';
 
 /** The fewest characters a password, PIN or second password has. */
 export const MIN_PASSWORD = 4;
@@ -19,12 +20,14 @@ export const MIN_BACKUP_PASSWORD = 12;
 // A sheet that asks for a password: a new one, typed twice (`repeat`), of at least `least`
 // characters, or one to open something. `hint` says what the new one is for, under its field.
 // `onSubmit` returns false when the password opens nothing, and throws for the errors it shows.
-export function PasswordSheet({ visible, title, repeat, least = MIN_PASSWORD, hint, submitLabel, onClose, onSubmit }: {
+export function PasswordSheet({ visible, title, repeat, least = MIN_PASSWORD, hint, warnWeak, submitLabel, onClose, onSubmit }: {
   visible: boolean;
   title: string;
   repeat: boolean;
   least?: number;
   hint?: string;
+  /** A new password that guards a space or hidden chats: a word of care under a short one (lib/password-strength.ts). */
+  warnWeak?: boolean;
   submitLabel: string;
   onClose: () => void;
   onSubmit: (password: string) => Promise<boolean | void>;
@@ -89,6 +92,11 @@ export function PasswordSheet({ visible, title, repeat, least = MIN_PASSWORD, hi
           accessibilityLabel={repeat ? t('New password') : t('Password')}
         />
       </Field>
+      {repeat && warnWeak && isWeakSecret(first) ? (
+        <Text variant="caption" tone="muted">
+          {t(WEAK_SECRET)}
+        </Text>
+      ) : null}
       {repeat ? (
         <Field label={t('Repeat password')}>
           <Input

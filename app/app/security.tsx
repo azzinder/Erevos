@@ -396,6 +396,7 @@ export default function Security() {
                   : t('Set password')
         }
         repeat={editing !== 'biometric'}
+        warnWeak
         submitLabel={editing === 'biometric' ? t('Turn on') : t('Save')}
         onClose={() => setEditing(null)}
         onSubmit={submit}

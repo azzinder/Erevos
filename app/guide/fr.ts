@@ -3076,6 +3076,12 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
 2. À partir de là, Erevos le demande à chaque ouverture, et de nouveau après 30 secondes en arrière-plan.
 3. **Changer le mot de passe** le change, et **Verrouiller maintenant** verrouille Erevos tout de suite.
 
+- **Une phrase, pas un code court :** ce qui vérifie le mot de passe est gardé dans le magasin de clés du téléphone,
+  une copie de son stockage ne suffit donc pas pour essayer des mots de passe. Mais quelqu’un qui casse la sécurité du
+  téléphone lui-même, comme le font des outils d’investigation sur certains téléphones, pourrait essayer sur ses
+  propres ordinateurs, et un code de 6 chiffres, un million de combinaisons, tombe en quelques jours. Une phrase de 4
+  ou 5 mots, non. Sous un nouveau mot de passe court, ou un code de discussions masquées, Erevos le dit ; il l’accepte
+  quand même.
 - **Verrouillé, il reçoit encore :** quand Erevos se verrouille, l’écran du mot de passe passe devant l’espace ouvert,
   qui continue derrière lui : messages et appels arrivent encore, avec leurs notifications, et un appel s’affiche
   par-dessus l’écran du mot de passe. Ses écrans se ferment, les discussions masquées aussi, et l’écran d’appel ne

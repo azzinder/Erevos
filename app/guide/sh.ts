@@ -2807,6 +2807,11 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
 2. Od tada Erevos traži lozinku svaki put kad se otvori, i ponovo nakon 30 sekundi u pozadini.
 3. **Promijeni lozinku** je mijenja, a **Zaključaj sada** odmah zaključava Erevos.
 
+- **Rečenica, ne kratak PIN:** ono što proverava lozinku čuva se u skladištu ključeva telefona, pa kopija memorije
+  nije dovoljna za isprobavanje lozinki. Ali ko probije bezbednost samog telefona, kao što to rade forenzički alati na
+  nekim telefonima, mogao bi da pogađa na svojim računarima, a PIN od 6 cifara, milion kombinacija, pada za nekoliko
+  dana. Rečenica od 4 ili 5 reči ne. Ispod kratke nove lozinke, ili PIN-a skrivenih razgovora, Erevos to kaže; ipak je
+  prihvata.
 - **Zaključan, a i dalje prima:** kad se Erevos zaključa, ekran za lozinku dolazi ispred otvorenog prostora, koji
   nastavlja raditi iza njega: poruke i pozivi i dalje stižu, sa svojim obavijestima, a poziv se prikazuje preko
   ekrana za lozinku. Njegovi ekrani se zatvaraju, i skriveni razgovori, a ekran za pozive više ne prikazuje imena
