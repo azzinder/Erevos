@@ -21,15 +21,17 @@ import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 import { PasswordSheet } from './PasswordSheet';
 import { Button, Card, Row, SectionTitle, Text } from './ui';
+import { EDITION, editionName } from '../lib/edition';
 
 // Appearance → Launcher icons: the colour of each of Erevos's icons in the phone's apps (Erevos,
 // Phone, SMS, Contacts), each drawn in every colour to pick from. Android only, and the phone's
 // choice, not a space's (modules/erevos-icons). Below them, a working calculator can stand in place
 // of Erevos's icon (CalculatorChoice): its code, then =, opens Erevos.
 
-const ICON_LABELS: Record<LauncherIcon, string> = { erevos: 'Erevos', phone: mark('Phone'), sms: 'SMS', contacts: mark('Contacts') };
+const ICON_LABELS: Record<LauncherIcon, string> = { erevos: editionName(), phone: mark('Phone'), sms: 'SMS', contacts: mark('Contacts') };
 const COLOR_LABELS: Record<LauncherColor, string> = {
-  red: mark('Red'),
+  // Erevos+'s first colour is its own purple: it says the app's name.
+  red: EDITION === 'plus' ? 'Erevos+' : mark('Red'),
   orange: mark('Orange'),
   green: mark('Green'),
   blue: mark('Blue'),

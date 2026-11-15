@@ -124,7 +124,7 @@ const trashLooked = new Set<number>();
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' || show === 'public' ? show : 'all');
-const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr', public: () => t('Public') };
+const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => editionName(), matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr', public: () => t('Public') };
 
 // A section's title in the list of chats: Unread, then Recent (components/services.tsx ListSection).
 type Section = { section: 'unread' | 'recent' };

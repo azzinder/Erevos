@@ -11,6 +11,7 @@ import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
 import { SH } from '../i18n/sh/index';
+import { EDITION, named, namesEditions } from './edition';
 import { secureGet, secureSet } from './secure';
 
 /**
@@ -192,7 +193,10 @@ export function locale(): string | undefined {
  * yet shows in English.
  */
 export function t(text: string, vars?: Record<string, string | number>): string {
-  const shown = current === 'en' ? text : (WORDS[current][text] ?? text);
+  const words = current === 'en' ? text : (WORDS[current][text] ?? text);
+  // Erevos+ says its own name wherever the words say Erevos (lib/edition.ts), unless they speak of
+  // the two editions apart, as the English says: the translation follows it.
+  const shown = EDITION === 'plus' && !namesEditions(text) ? named(words) : words;
   return vars ? fill(shown, vars) : shown;
 }
 
@@ -213,7 +217,8 @@ export function plural(n: number, one: string, many: string, vars?: Record<strin
   if (form && n !== 1) {
     // English, until the language has the words: one form, for every count.
     const forms = (words(current)[many] ?? many).split(FORM_SPLIT);
-    return fill(forms[Math.min(form(Math.abs(n)), forms.length - 1)], all);
+    const chosen = forms[Math.min(form(Math.abs(n)), forms.length - 1)];
+    return fill(EDITION === 'plus' && !namesEditions(many) ? named(chosen) : chosen, all);
   }
   const first = ONE[current] ?? ((count: number) => count === 1);
   return t(first(n) ? one : many, all);

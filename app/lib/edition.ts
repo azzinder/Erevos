@@ -39,7 +39,32 @@ export function editionName(edition: Edition = EDITION): string {
 }
 
 /** `text` (already in the app's language) with the app's name as `edition` has it: in Erevos+ each
- *  «Erevos» is «Erevos+», so the same words serve both editions in every language. */
+ *  «Erevos» is «Erevos+», so the same words serve both editions in every language. A word that names
+ *  more than the app is left: ErevosGram, a path or address (azzinder/Erevos, Erevos.apk). */
 export function named(text: string, edition: Edition = EDITION): string {
-  return edition === 'plus' ? text.replace(/\bErevos\b(?!\+)/g, 'Erevos+') : text;
+  return edition === 'plus' ? text.replace(/(?<![\w/.-])Erevos(?![\w+/-])(?!\.\w)/g, 'Erevos+') : text;
+}
+
+/** Whether a text speaks of the two editions apart (it names Erevos+ already: «the next update is the
+ *  plain Erevos») or says whose Erevos is (the licence's «Erevos, by azzinder»): then it stays as written. */
+export function namesEditions(text: string): boolean {
+  return text.includes('Erevos+') || text.includes('azzinder');
+}
+
+/** `text` as Erevos+ says it (named), unless it speaks of the two editions apart (namesEditions). */
+export function asEdition(text: string, edition: Edition = EDITION): string {
+  return edition === 'plus' && !namesEditions(text) ? named(text, edition) : text;
+}
+
+/** A guide's text as `edition` says it: in Erevos+ each paragraph, list item, table row or heading with
+ *  the app's name, unless it speaks of the two editions apart (asEdition), on any of its lines. */
+export function guideNamed(source: string, edition: Edition = EDITION): string {
+  if (edition !== 'plus') return source;
+  const blocks: string[][] = [];
+  for (const line of source.split('\n')) {
+    const starts = line.trim() === '' || /^\s*(- |\| |#|> |\d+\. )/.test(line) || blocks.length === 0 || blocks[blocks.length - 1][0].trim() === '';
+    if (starts) blocks.push([line]);
+    else blocks[blocks.length - 1].push(line);
+  }
+  return blocks.map((block) => asEdition(block.join('\n'), edition)).join('\n');
 }

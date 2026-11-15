@@ -4,6 +4,7 @@
 
 import { t } from '../lib/i18n';
 import type { Module } from '../lib/modules';
+import { editionName } from '../lib/edition';
 
 // What each module is called and what it does (lib/modules.ts), as the first start's setup
 // (components/setup.tsx), Settings → General → Modules (app/modules.tsx) and a screen of one that
@@ -13,7 +14,7 @@ import type { Module } from '../lib/modules';
 export function moduleName(module: Module): string {
   switch (module) {
     case 'erevos':
-      return 'Erevos';
+      return editionName();
     case 'phone':
       return t('Phone');
     case 'sms':

@@ -14,7 +14,7 @@ import { randomBytes } from '../lib/crypto';
 import { editionNote } from '../lib/edition-notice';
 import { newNostrDm } from '../lib/nostr-dm';
 import { whatsNewFor } from '../lib/whats-new';
-import { editionName, named } from '../lib/edition';
+import { asEdition, editionName, guideNamed, named } from '../lib/edition';
 import { saveNostrDm } from '../lock/nostr-dm-data';
 import { useWasmCore } from './wasm-core';
 import { blobs, files } from './files-memory';
@@ -80,4 +80,13 @@ test("each edition says its own name, in every language's words", () => {
   assert.equal(named('Erevos 7.1.3 ist da.', 'plus'), 'Erevos+ 7.1.3 ist da.');
   assert.equal(named('Erevos+ stays', 'plus'), 'Erevos+ stays');
   assert.equal(named('Willkommen bei Erevos', 'lite'), 'Willkommen bei Erevos');
+  // Names that are more than the app stay: ErevosGram, a repository, a file.
+  assert.equal(named('ErevosGram, azzinder/Erevos, Erevos.apk, erevos-web', 'plus'), 'ErevosGram, azzinder/Erevos, Erevos.apk, erevos-web');
+  assert.equal(named('Erevos contacts and Erevos.', 'plus'), 'Erevos+ contacts and Erevos+.');
+  // Words that speak of the two editions apart, or of whose Erevos is, stay as written.
+  assert.equal(asEdition('The next update is the plain Erevos. It installs over Erevos+.', 'plus'), 'The next update is the plain Erevos. It installs over Erevos+.');
+  assert.equal(asEdition('Erevos, by azzinder', 'plus'), 'Erevos, by azzinder');
+  assert.equal(asEdition('Open Erevos', 'lite'), 'Open Erevos');
+  assert.equal(guideNamed('Erevos+ has Matrix, and\nErevos has not.\n\nErevos opens.', 'plus'), 'Erevos+ has Matrix, and\nErevos has not.\n\nErevos+ opens.');
+  assert.equal(guideNamed('Erevos opens.\n- Erevos+ has Matrix; Erevos has not.\n**Erevos, by azzinder.**', 'plus'), 'Erevos+ opens.\n- Erevos+ has Matrix; Erevos has not.\n**Erevos, by azzinder.**');
 });

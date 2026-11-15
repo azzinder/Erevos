@@ -10,6 +10,7 @@ import { onLangChange, plural, t } from './i18n';
 import { onSpaceMoved } from './queue-move';
 import { onRelayKey, provenRelayKey, relayHome } from './relay';
 import { SHELL, shellFetch } from './shell';
+import { editionName } from './edition';
 
 // Erevos on Sailfish OS, while it is not in front or is closed: a helper of its own (sailfish/watch,
 // erevos-watch) waits at the relay on the open space's queues, without taking anything, says how
@@ -53,7 +54,7 @@ export function watchListOf(door: Door, keyOf: (url: string) => Uint8Array | nul
   }
   if (waits.length === 0) return null;
   const words = {
-    title: 'Erevos',
+    title: editionName(),
     messages: Array.from({ length: MOST_WORDS }, (_, i) => plural(i + 1, '{n} new message', '{n} new messages')),
     call: t('Incoming call'),
   };

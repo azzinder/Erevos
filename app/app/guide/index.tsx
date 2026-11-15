@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Divider } from '../../components/guide';
+import { named } from '../../lib/edition';
 import { Card, Input, Page, SectionTitle, Text } from '../../components/ui';
 import { GUIDE_UI, guideFor, guideLang } from '../../guide';
 import { searchGuide, type GuideSection } from '../../lib/guide';
@@ -58,7 +59,7 @@ export default function GuideScreen() {
         </View>
       )}
       <Text variant="caption" tone="muted" style={{ textAlign: 'center', paddingTop: space.md }}>
-        {ui.version(Constants.expoConfig?.version ?? '')}
+        {named(ui.version(Constants.expoConfig?.version ?? ''))}
       </Text>
       {/* Erevos asks GitHub for updates only when asked (a regular check would tell it who has Erevos): Updates checks then. */}
       <Pressable onPress={() => router.push('/updates')} accessibilityRole="link" hitSlop={8} style={{ alignSelf: 'center' }}>
