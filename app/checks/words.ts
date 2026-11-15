@@ -23,7 +23,7 @@ function files(dir: string): string[] {
 
 // A JS string literal: '…', "…" or `…` without ${}.
 const LITERAL = String.raw`('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|\`(?:[^\`\\$]|\\.)*\`)`;
-const SAID = new RegExp(String.raw`\b(?:t|mark)\(\s*` + LITERAL, 'g');
+const SAID = new RegExp(String.raw`\b(?:(?:t|mark)\(\s*|tFor\(\s*[^,]+,\s*)` + LITERAL, 'g');
 const PLURAL = new RegExp(String.raw`\bplural\(\s*[^,]+,\s*` + LITERAL + String.raw`\s*,\s*` + LITERAL, 'g');
 
 function unquote(literal: string): string {

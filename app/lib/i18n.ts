@@ -11,7 +11,7 @@ import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
 import { SH } from '../i18n/sh/index';
-import { EDITION, named, namesEditions } from './edition';
+import { EDITION, named, namesEditions, type Edition } from './edition';
 import { secureGet, secureSet } from './secure';
 
 /**
@@ -193,10 +193,15 @@ export function locale(): string | undefined {
  * yet shows in English.
  */
 export function t(text: string, vars?: Record<string, string | number>): string {
+  return tFor(EDITION, text, vars);
+}
+
+/** `t`, with the name of `edition`'s app: Erevos+ says its own name wherever the words say Erevos
+ *  (lib/edition.ts), unless they speak of the two editions apart, as the English says: the translation
+ *  follows it. A text about a release of the plain Erevos, in Erevos+, asks for 'lite'. */
+export function tFor(edition: Edition, text: string, vars?: Record<string, string | number>): string {
   const words = current === 'en' ? text : (WORDS[current][text] ?? text);
-  // Erevos+ says its own name wherever the words say Erevos (lib/edition.ts), unless they speak of
-  // the two editions apart, as the English says: the translation follows it.
-  const shown = EDITION === 'plus' && !namesEditions(text) ? named(words) : words;
+  const shown = edition === 'plus' && !namesEditions(text) ? named(words, edition) : words;
   return vars ? fill(shown, vars) : shown;
 }
 

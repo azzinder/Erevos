@@ -30,7 +30,7 @@ import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { press } from '../lib/haptics';
 import type { ChatListPlace } from '../lib/chat-list';
-import { lang, mark, plural, t } from '../lib/i18n';
+import { lang, mark, plural, t, tFor } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
@@ -70,7 +70,7 @@ import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
 import { editionNote } from '../lib/edition-notice';
-import { editionName, named } from '../lib/edition';
+import { EDITION, editionName, named, type Edition } from '../lib/edition';
 import { answerAsked, invitesToAsk, onInvitesToAsk } from '../lib/sms-relay';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
@@ -1142,19 +1142,21 @@ const EREVOS_FACE = require('../assets/icon/favicon.png');
 function ReleaseRow({ release }: { release: Told & { seen: boolean } }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
-  const said = named(t('Erevos {name} is out. Tap to see what is new and update.', { name: release.name }));
+  // A release of the plain Erevos (7.0.x), told in Erevos+ whose Updates chose it, says Erevos's name.
+  const of: Edition = /^\d+\.0\.\d/.test(release.name) ? 'lite' : EDITION;
+  const said = tFor(of, 'Erevos {name} is out. Tap to see what is new and update.', { name: release.name });
   return (
     <Pressable
       onPress={() => router.push('/updates')}
       accessibilityRole="button"
-      accessibilityLabel={`${editionName()}, ${said}`}
+      accessibilityLabel={`${editionName(of)}, ${said}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <Image source={EREVOS_FACE} style={{ width: 52, height: 52, borderRadius: 26 }} accessibilityIgnoresInvertColors />
       <View style={styles.rowBody}>
         <View style={styles.rowLine}>
           <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
-            {editionName()}
+            {editionName(of)}
           </Text>
           <PinIcon color={colors.textFaint} size={13} />
         </View>

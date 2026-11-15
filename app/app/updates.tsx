@@ -11,7 +11,8 @@ import { TorSwitch } from '../components/tor-switch';
 import { Button, Card, Chip, Page, Row, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { tap } from '../lib/haptics';
-import { t } from '../lib/i18n';
+import { EDITION, editionName, type Edition } from '../lib/edition';
+import { t, tFor } from '../lib/i18n';
 import { FDROID } from '../lib/distribution';
 import { CAN_GIVE, CAN_TAKE, takeFromNearby } from '../lib/give-app';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
@@ -179,7 +180,7 @@ export default function UpdatesScreen() {
       setNote(t('Erevos is up to date ({version}).', { version: VERSION }));
       return;
     }
-    setNote(t('Erevos {version} is out. Through Tor it does not download here, as its package is larger than Erevos’s Tor takes: turn Through Tor off for a moment to install it, or download it from the releases page in Tor Browser.', { version: told.name }));
+    setNote(tFor(releaseEdition(channel), 'Erevos {version} is out. Through Tor it does not download here, as its package is larger than Erevos’s Tor takes: turn Through Tor off for a moment to install it, or download it from the releases page in Tor Browser.', { version: told.name }));
   }
 
   async function check() {
@@ -233,7 +234,7 @@ export default function UpdatesScreen() {
         signing = isChannelRelease(found) ? await releaseSigning(found) : await signingOf(await fetchStatement(), found);
       } catch (error) {
         setNote(
-          t("Erevos {version} is out, but the web app's server, which holds the release computer's signature of it, could not be reached ({error}), so it does not install. Check the internet connection and try again.", {
+          tFor(releaseEdition(channel), "Erevos {version} is out, but the web app's server, which holds the release computer's signature of it, could not be reached ({error}), so it does not install. Check the internet connection and try again.", {
             version: found.version,
             error: error instanceof Error ? error.message : String(error),
           }),
@@ -243,19 +244,19 @@ export default function UpdatesScreen() {
         setChecking(false);
       }
       if (signing === 'not yet') {
-        setNote(t('Erevos {version} is out, but the release computer has not signed it yet, so it does not install. Try again later.', { version: found.version }));
+        setNote(tFor(releaseEdition(channel), 'Erevos {version} is out, but the release computer has not signed it yet, so it does not install. Try again later.', { version: found.version }));
         return;
       }
       if (signing === 'refused') {
         setNote(
-          t("Erevos {version} is out, but the signature on the web app's server does not match it, or this Erevos could not check it, so it does not install. Try again later.", { version: found.version }),
+          tFor(releaseEdition(channel), "Erevos {version} is out, but the signature on the web app's server does not match it, or this Erevos could not check it, so it does not install. Try again later.", { version: found.version }),
         );
         return;
       }
     }
     const file = packageFile(SHELL, shellSystem());
     ask(
-      t('Erevos {version} is out', { version: found.version }),
+      tFor(releaseEdition(channel), 'Erevos {version} is out', { version: found.version }),
       [
         found.date ? t('Released {date}.', { date: found.date }) : '',
         t('Updating keeps your contacts, chats and settings. A backup first (Settings → Data and devices → Backups → Make a backup) covers any surprise.'),
@@ -292,7 +293,7 @@ export default function UpdatesScreen() {
         <Text variant="caption" tone="muted">
           {t('Installed')}
         </Text>
-        <Text variant="heading">Erevos {VERSION}</Text>
+        <Text variant="heading">{editionName()} {VERSION}</Text>
         <Button title={t("What's new")} kind="secondary" onPress={() => router.push('/whats-new')} />
       </Card>
       {supported ? (
@@ -414,4 +415,10 @@ export default function UpdatesScreen() {
       <Button title={t('How updating works')} kind="secondary" onPress={() => router.push({ pathname: '/guide/[id]', params: { id: 'updates' } })} />
     </Page>
   );
+}
+
+/** The edition whose release a channel brings (lib/update-channel.ts): Erevos+ says the plain Erevos's
+ *  name for a release of it (tFor). */
+function releaseEdition(channel: Channel | null): Edition {
+  return channel?.edition === 'erevos' ? 'lite' : EDITION;
 }
