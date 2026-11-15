@@ -892,7 +892,8 @@ posljednji put viđeni putuje unutar istih poruka, šifrirano s kraja na kraj: r
 vašim kontaktima kad spavate ili radite, a za dva kontakta viđena istog minuta može se pretpostaviti da razgovaraju:
 isključite ga ako vam je to važno. Neko ko ima samo vaš link i piše kao zahtjev za razgovor ne dobija nikakav odgovor
 dok ga ne prihvatite: ni da ste pročitali, ni da ste na mreži ili da pišete, ni kad ste posljednji put viđeni. Dok ne
-prihvatite, vide se samo riječi: fotografije i datoteke čekaju nepreuzete, a linkovi nemaju pregled.
+prihvatite, vide se samo riječi: fotografije i datoteke čekaju nepreuzete, a linkovi nemaju pregled. Ako prve poruke traže kod, PIN, lozinku ili novac, obećavaju lak novac, ili ime liči na ime
+nekog od vaših kontakata, **Oprez** to kaže iznad njih. Erevos to traži samo na vašem telefonu, i ništa ne blokira.
 
 Da to sakrijete od jednog kontakta, otvorite njegov razgovor, dodirnite njegovo ime, a zatim **Prikazuj me kao da
 nisam na mreži**. Kad je to uključeno:
@@ -1146,8 +1147,8 @@ Erevos to pamti:
 
 - **Original** (zadano): fotografija tačno onakva kakva je bila, u punoj veličini, bez gubitka kvaliteta. Uklanja se
   samo ono što govori osim same slike: gdje je snimljena, telefon, vrijeme, sličice. Njeno ime je samo „photo“.
-  I fotografija poslana kao **Datoteka** (JPEG, PNG, GIF ili WebP, do 64 MB) ide bez toga, pod svojim imenom; HEIC i
-  AVIF datoteke idu kakve jesu.
+  I fotografija poslana kao **Datoteka** (JPEG, PNG, GIF ili WebP, do 64 MB) ide bez toga, pod svojim imenom; za HEIC ili
+  AVIF datoteku, ili veću, Erevos prvo pita, jer to iz nje ne može ukloniti.
 - **90%** i **75%:** nova, manja fotografija, brža za slanje, koja ne govori ništa osim same slike.
 
 Fotografije i datoteke te osobe do 16 MB stižu same; dodirnite veću da je preuzmete. Dodirnite fotografiju da je

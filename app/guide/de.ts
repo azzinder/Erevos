@@ -978,7 +978,9 @@ erfährt sie nie. Sie verrät deinen Kontakten aber, wann du schläfst oder arbe
 derselben Minute gesehen wurden, kann man vermuten, dass sie miteinander reden: Schalte sie aus, wenn dir das wichtig
 ist. Jemand, der nur deinen Link hat und als Nachrichtenanfrage schreibt, hört nichts zurück, bis du annimmst: weder
 dass du liest noch dass du online bist, schreibst oder zuletzt online warst. Bis du annimmst, zeigen sich nur ihre
-Worte: Fotos und Dateien warten, ungeladen, und Links zeigen keine Vorschau.
+Worte: Fotos und Dateien warten, ungeladen, und Links zeigen keine Vorschau. Fragen die ersten Nachrichten nach einem Code, einer PIN, einem Passwort oder Geld,
+versprechen sie leichtes Geld, oder ähnelt der Name dem eines deiner Kontakte, sagt **Vorsicht** es darüber. Erevos
+sucht das nur auf deinem Telefon und blockiert nichts.
 
 Um es vor einem Kontakt zu verbergen, öffne seinen Chat, tippe auf seinen Namen und dann auf **Offline erscheinen**.
 Wenn es an ist:
@@ -1264,7 +1266,7 @@ Erevos merkt es sich:
   außer seinem Bild sagt, wird entfernt: wo es aufgenommen wurde, das Telefon, die Zeit, Vorschaubilder. Sein Name ist
   einfach „photo“.
   Ein Foto, das du mit **Datei** sendest (JPEG, PNG, GIF oder WebP, bis 64 MB), geht ebenfalls ohne das, unter seinem
-  eigenen Namen; HEIC- und AVIF-Dateien gehen, wie sie sind.
+  eigenen Namen; bei einer HEIC- oder AVIF-Datei, oder einer größeren, fragt Erevos erst, da es das dort nicht entfernen kann.
 - **90%** und **75%:** ein neues, kleineres Foto, schneller zu senden, das nichts außer seinem Bild sagt.
 
 Fotos und Dateien des Kontakts bis 16 MB kommen von selbst; tippe auf ein größeres, um es zu holen. Tippe auf ein

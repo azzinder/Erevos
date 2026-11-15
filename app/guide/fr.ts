@@ -970,7 +970,9 @@ bout : le relais ne l’apprend jamais. Elle dit en revanche à tes contacts qua
 supposer que deux contacts vus à la même minute se parlent : désactive-la si cela compte pour toi. Quelqu’un qui n’a
 que ton lien, et qui écrit en tant que demande de message, n’apprend rien en retour tant que tu n’acceptes pas : ni
 que tu as lu, ni que tu es en ligne ou que tu écris, ni quand tu as été vu pour la dernière fois. Tant que tu n’acceptes
-pas, seuls ses mots s’affichent : ses photos et fichiers attendent sans être téléchargés, et ses liens n’ont pas d’aperçu.
+pas, seuls ses mots s’affichent : ses photos et fichiers attendent sans être téléchargés, et ses liens n’ont pas d’aperçu. Si ses premiers messages demandent un code, un PIN, un mot de passe ou de l’argent,
+promettent de l’argent facile, ou si son nom ressemble à celui d’un de tes contacts, **Attention** le dit au-dessus.
+Erevos le cherche sur ton téléphone seulement, et ne bloque rien.
 
 Pour le cacher à un contact, ouvre sa discussion, appuie sur son nom puis sur **Apparaître hors ligne**. Quand c’est
 activé :
@@ -1248,7 +1250,7 @@ souvient :
   qu’elle dit en plus de son image est retiré : où elle a été prise, le téléphone, l’heure, les miniatures. Son nom est
   simplement « photo ».
   Une photo envoyée avec **Fichier** (JPEG, PNG, GIF ou WebP, jusqu’à 64 Mo) part aussi sans cela, sous son propre nom ;
-  les fichiers HEIC et AVIF partent tels quels.
+  pour un fichier HEIC ou AVIF, ou plus grand, Erevos demande d’abord, car il ne peut pas les en retirer.
 - **90%** et **75% :** une nouvelle photo, plus petite, plus rapide à envoyer, qui ne dit rien d’autre que son image.
 
 Leurs photos et fichiers jusqu’à 16 Mo arrivent tout seuls ; appuie sur un plus gros pour le récupérer. Appuie sur une

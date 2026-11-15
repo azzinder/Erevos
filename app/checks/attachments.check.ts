@@ -38,7 +38,7 @@ import { gcm } from '@noble/ciphers/aes.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
 import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, setSha256, sha256Bytes, type Gcm } from '../lib/crypto';
-import { cleanGif, cleanImage, cleanJpeg, cleanPng, cleanWebp, photoSize } from '../lib/photo';
+import { cleanGif, cleanImage, cleanJpeg, cleanPng, cleanWebp, isPhotoHead, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
 import { RelaySession, getChunk, setThroughTor, setTorReady } from '../lib/relay';
@@ -214,6 +214,11 @@ test('a WebP goes without its EXIF and XMP chunks, and its header no longer says
   assert.deepEqual([...clean], [...riff([...vp8x(0x20), ...iccp, ...picture])]);
   assert.deepEqual(cleanWebp(clean), clean, 'cleaning twice changes nothing');
   assert.equal(cleanImage(Uint8Array.from(ascii('%PDF-1.7'))), null, 'not a photo: left as it is');
+  const heic = Uint8Array.from([0, 0, 0, 24, ...ascii('ftypheic'), 0, 0, 0, 0, ...ascii('mif1heic')]);
+  assert.equal(cleanImage(heic), null, 'HEIC is not cleaned here');
+  assert.equal(isPhotoHead(heic), true, 'but it is known as a photo, so the owner is asked before it goes');
+  assert.equal(isPhotoHead(Uint8Array.from([0, 0, 0, 24, ...ascii('ftypisom')])), false, 'a video is not');
+  assert.equal(isPhotoHead(bytes), true);
 });
 
 test('a message that leaves the history takes its file with it', async () => {

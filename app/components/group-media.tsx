@@ -11,6 +11,7 @@ import { filesToTake, sendGroupFile, takeGroupFile, voiceMime } from '../lib/gro
 import { t } from '../lib/i18n';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { isSharedPhoto, readShared, type SharedFile } from '../lib/share-in';
+import { sendsWithPlace } from '../lib/photo-place';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import type { Relay } from '../lib/relay';
@@ -215,6 +216,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
       void sendPicked('file', async () => {
         const picked = await pickSource(MAX_FILE, true);
         if (!picked) return null;
+        if (!(await sendsWithPlace(picked))) return null;
         const name = cleanFileName(picked.name);
         const mime = cleanMime(picked.mime);
         return { name, mime: mime === 'application/octet-stream' ? mimeOf(name) : mime, source: picked.source, close: picked.close };

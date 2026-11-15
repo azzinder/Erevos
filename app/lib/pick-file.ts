@@ -7,7 +7,7 @@ import { File, FileMode, Paths } from 'expo-file-system';
 import { type Source } from './attachments';
 import { randomBytes, toHex } from './crypto';
 import { fileName } from './imports';
-import { CLEAN_MOST, cleanImage } from './photo';
+import { CLEAN_MOST, cleanImage, isPhotoHead } from './photo';
 import { whilePicking } from './picking';
 
 // A file the owner picks to open (a backup, a chat export), read whole into memory, or to send,
@@ -39,7 +39,7 @@ export class TooLargeError extends Error {}
  * Close it when done. `uri` is the link Android gave for it, where the phone says one (the
  * Collection asks the gallery to delete a photo picked from it, lib/collection-import.ts).
  */
-export type PickedSource = { name: string; mime: string; source: Source; close(): void; uri?: string };
+export type PickedSource = { name: string; mime: string; source: Source; close(): void; uri?: string; keepsPlace?: true };
 
 /**
  * A file picked, not read nor copied: its name, its type if the phone knows it, its size as the
@@ -57,7 +57,8 @@ export async function pickLink(most: number): Promise<{ name: string; mime: stri
 /**
  * A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. With
  * `clean`, a photo sent as a file (JPEG, PNG, GIF, WebP, up to CLEAN_MOST) goes without what it says
- * besides its picture, as a photo does (lib/photo.ts cleanImage).
+ * besides its picture, as a photo does (lib/photo.ts cleanImage); one that cannot be cleaned (HEIC,
+ * AVIF, or larger) says so (`keepsPlace`), as it may still say where and when it was taken.
  */
 export async function pickSource(most: number, clean = false): Promise<PickedSource | null> {
   const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
@@ -72,14 +73,20 @@ export async function pickSource(most: number, clean = false): Promise<PickedSou
     if (copy.exists) copy.delete();
   };
   let handle: ReturnType<File['open']>;
+  let keepsPlace = false;
   try {
     await file.copy(copy);
     if (copy.size > most) throw new TooLargeError();
     if (clean && copy.size <= CLEAN_MOST) {
       const cleaned = cleanImage(await copy.bytes());
-      if (cleaned) copy.write(cleaned);
+      if (cleaned) {
+        copy.write(cleaned);
+        clean = false;
+      }
     }
     handle = copy.open(FileMode.ReadOnly);
+    keepsPlace = clean && isPhotoHead(handle.readBytesSync(32));
+    handle.offset = 0;
   } catch (error) {
     done();
     throw error;
@@ -92,7 +99,7 @@ export async function pickSource(most: number, clean = false): Promise<PickedSou
     handle.close();
     done();
   };
-  return { name: fileName(file.uri), mime: file.type, source: { size: copy.size, read }, close, uri: file.uri };
+  return { name: fileName(file.uri), mime: file.type, source: { size: copy.size, read }, close, uri: file.uri, ...(keepsPlace ? { keepsPlace: true as const } : {}) };
 }
 
 /** The file's name and bytes, or null if the owner went back. Throws TooLargeError above `most` bytes. */

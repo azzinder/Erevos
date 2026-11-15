@@ -31,6 +31,7 @@ import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '..
 import { readQrPhoto } from '../lib/read-qr';
 import { answerIntro, introduce, introsAsked, introsMade, takeIntro, type IntroSend } from '../lib/intros';
 import { keepPieceFrom } from '../lib/pieces-kept';
+import { sendsWithPlace } from '../lib/photo-place';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { watchHiddenAway } from '../lib/hidden-away';
 import { isPicking } from '../lib/picking';
@@ -209,6 +210,7 @@ import { sendSms, smsPacketsReady, type SmsMessage } from '../modules/erevos-sms
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 import { t, plural, locale } from '../lib/i18n';
+import { SCAM_LOOKED, SCAM_SAYS, scamSigns } from '../lib/scam-shield';
 import { lastSeenText } from '../lib/last-seen';
 import {
   type Message,
@@ -4652,6 +4654,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       void sendAttachment('file', async () => {
         const picked = await pickSource(MAX_FILE, true);
         if (!picked) return null;
+        if (!(await sendsWithPlace(picked))) return null;
         const name = cleanFileName(picked.name);
         const said = cleanMime(picked.mime);
         return { name, mime: said === 'application/octet-stream' ? mimeOf(name) : said, source: picked.source, close: picked.close };
@@ -5914,6 +5917,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [placeArchive, setPlaceArchive] = useState(false);
   const [placeTarget, setPlaceTarget] = useState<InboxRow | null>(null);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
+  // A message request's first messages, looked at on this phone for what often comes with a scam
+  // (lib/scam-shield.ts): only a word of care, nothing is blocked.
+  const requestOf = selectedContact ? contacts.find((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) : undefined;
+  const requestSigns = requestOf
+    ? scamSigns(
+        messages.filter((m) => m.peer === selectedContact && !m.mine).slice(0, SCAM_LOOKED).map((m) => m.text),
+        requestOf.said || requestOf.name,
+        contacts.filter((c) => !c.request && c.identity !== requestOf.identity).map((c) => c.name),
+      )
+    : [];
   // Photos and files picked in the Collection for this chat ("+" → Collection, app/collection.tsx
   // with `to`), sent one after the other as the chat shows again.
   useEffect(() => {
@@ -7662,6 +7675,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             <Text variant="caption" tone="muted">
               {t('Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.')}
             </Text>
+            {requestSigns.length > 0 ? (
+              <View accessibilityRole="alert" style={{ gap: space.xs }}>
+                <Text variant="bodyStrong" style={{ color: colors.danger }}>
+                  {t('Be careful')}
+                </Text>
+                {requestSigns.map((sign) => (
+                  <Text key={sign} variant="caption">
+                    {`•  ${t(SCAM_SAYS[sign])}`}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
             <Row wrap>
               <TextButton title={t('Accept')} onPress={() => void acceptRequest(selectedContact)} />
               <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />

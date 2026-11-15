@@ -847,7 +847,8 @@ messages, end-to-end encrypted: the relay never learns it. It does tell your con
 contacts seen at the same minute may be guessed to talk: turn it off if that matters to you. Someone who only has your
 link, writing as a message request, hears nothing back until you accept: not that you read, nor that you are online,
 typing or last seen. Until you accept, only its words show: its photos and files wait, not taken, and its links show no
-preview.
+preview. If its first messages ask for a code, a PIN, a password or money, promise easy money, or its name looks like
+one of your contacts', **Be careful** says so above them. Erevos looks for this on your phone only, and blocks nothing.
 
 To hide it from one contact, open their chat, tap its name and then **Appear offline**. With it on:
 
@@ -1089,8 +1090,8 @@ Erevos remembers it:
 
 - **Original** (the default): the photo exactly as it was, full size, no quality lost. Only what it says besides its
   picture is taken out: where it was taken, the phone, the time, thumbnails. Its name is just "photo".
-  A photo sent with **File** (JPEG, PNG, GIF or WebP, up to 64 MB) goes without them too, under its own name; HEIC and
-  AVIF files go as they are.
+  A photo sent with **File** (JPEG, PNG, GIF or WebP, up to 64 MB) goes without them too, under its own name; for a HEIC or
+  AVIF file, or a larger one, Erevos asks first, as it cannot take them out of it.
 - **90%** and **75%:** a new, smaller photo, quicker to send, that says nothing but its picture.
 
 Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it on the whole

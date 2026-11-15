@@ -909,7 +909,9 @@ aos seus contatos quando você dorme ou trabalha, e de dois contatos vistos no m
 entre si: desative se isso importa para você. Alguém que só tem o seu link, escrevendo como solicitação de mensagem,
 não recebe nada de volta até você aceitar: nem que você leu, nem que está online ou digitando, nem quando foi visto
 por último. Até você aceitar, só as palavras aparecem: fotos e arquivos esperam sem ser baixados, e os links não
-mostram prévia.
+mostram prévia. Se as primeiras mensagens pedem um código, um PIN, uma senha ou dinheiro, prometem dinheiro fácil, ou
+o nome parece o de um dos seus contatos, **Cuidado** avisa acima delas. O Erevos procura isso só no seu celular, e não
+bloqueia nada.
 
 Para esconder isso de um contato, abra a conversa dele, toque no nome dela e depois em **Aparecer offline**. Com isso
 ativado:
@@ -1173,8 +1175,8 @@ até 100 MB. Abaixo deles, **Qualidade da foto** define como as fotos vão, e o 
 
 - **Original** (o padrão): a foto exatamente como era, em tamanho real, sem perda de qualidade. Só o que ela diz além
   da imagem é retirado: onde foi tirada, o celular, a hora, as miniaturas. O nome dela é só "photo".
-  Uma foto enviada com **Arquivo** (JPEG, PNG, GIF ou WebP, até 64 MB) também vai sem isso, com o próprio nome; arquivos
-  HEIC e AVIF vão como estão.
+  Uma foto enviada com **Arquivo** (JPEG, PNG, GIF ou WebP, até 64 MB) também vai sem isso, com o próprio nome; para um
+  arquivo HEIC ou AVIF, ou maior, o Erevos pergunta antes, pois não consegue tirá-los dele.
 - **90%** e **75%:** uma foto nova, menor, mais rápida de enviar, que não diz nada além da imagem.
 
 As fotos e os arquivos da pessoa de até 16 MB chegam sozinhos; toque num maior para baixá-lo. Toque numa foto para

@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { bytesSource, type Source } from './attachments';
-import { CLEAN_MOST, cleanImage } from './photo';
+import { CLEAN_MOST, cleanImage, isPhotoHead } from './photo';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
 
@@ -13,7 +13,7 @@ import { SHELL, shellFetch } from './shell';
 
 export class TooLargeError extends Error {}
 
-export type PickedSource = { name: string; mime: string; source: Source; close(): void };
+export type PickedSource = { name: string; mime: string; source: Source; close(): void; keepsPlace?: true };
 
 /**
  * A file to send, as pick-file.ts: in the desktop app read whole, as a computer has the memory; in
@@ -28,10 +28,14 @@ export async function pickSource(most: number, clean = false): Promise<PickedSou
     const cleaned = clean && file.size <= CLEAN_MOST ? cleanImage(new Uint8Array(await file.arrayBuffer())) : null;
     if (cleaned) return { name: file.name, mime: file.type, source: bytesSource(cleaned), close: () => undefined };
     const read = async (at: number, length: number) => new Uint8Array(await file.slice(at, at + length).arrayBuffer());
-    return { name: file.name, mime: file.type, source: { size: file.size, read }, close: () => undefined };
+    const keepsPlace = clean && isPhotoHead(await read(0, 32));
+    return { name: file.name, mime: file.type, source: { size: file.size, read }, close: () => undefined, ...(keepsPlace ? { keepsPlace: true as const } : {}) };
   }
   const picked = await pickFile(most);
-  return picked && { name: picked.name, mime: '', source: bytesSource((clean && picked.bytes.length <= CLEAN_MOST ? cleanImage(picked.bytes) : null) ?? picked.bytes), close: () => undefined };
+  if (!picked) return null;
+  const cleaned = clean && picked.bytes.length <= CLEAN_MOST ? cleanImage(picked.bytes) : null;
+  const keepsPlace = clean && !cleaned && isPhotoHead(picked.bytes.subarray(0, 32));
+  return { name: picked.name, mime: '', source: bytesSource(cleaned ?? picked.bytes), close: () => undefined, ...(keepsPlace ? { keepsPlace: true as const } : {}) };
 }
 
 /**

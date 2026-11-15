@@ -195,6 +195,14 @@ export function photoSize(bytes: Uint8Array): PhotoSize {
 /** The largest photo sent as a file that is cleaned (cleanImage): read whole into memory for it. */
 export const CLEAN_MOST = 64 * 1000 * 1000;
 
+// The brands of the ISO media files that hold photos: HEIC (HEIF) and AVIF.
+const HEIF_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1', 'avif', 'avis']);
+
+/** Whether `head`, a file's first bytes, is a photo of any kind: one cleanImage cleans, or a HEIC or AVIF one, which it does not. */
+export function isPhotoHead(head: Uint8Array): boolean {
+  return isJpeg(head) || isPng(head) || isGif(head) || isWebp(head) || (ascii(head, 4, 'ftyp') && HEIF_BRANDS.has(String.fromCharCode(...head.subarray(8, 12))));
+}
+
 export function isGif(bytes: Uint8Array): boolean {
   return ascii(bytes, 0, 'GIF87a') || ascii(bytes, 0, 'GIF89a');
 }

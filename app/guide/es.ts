@@ -917,7 +917,9 @@ contactos cuándo duermes o trabajas, y de dos contactos vistos en el mismo minu
 sí: desactívala si eso te importa. Alguien que solo tiene tu enlace, y te escribe como solicitud de mensaje, no recibe
 nada de vuelta hasta que aceptes: ni que has leído, ni que estás en línea o escribiendo, ni cuándo estuviste por
 última vez. Hasta que aceptes, solo se ven sus palabras: sus fotos y archivos esperan sin descargarse, y sus enlaces
-no muestran vista previa.
+no muestran vista previa. Si sus primeros mensajes piden un código, un PIN, una contraseña o dinero, prometen dinero
+fácil, o su nombre se parece al de uno de tus contactos, **Ten cuidado** lo dice encima. Erevos lo busca solo en tu
+teléfono, y no bloquea nada.
 
 Para ocultarlo a un contacto, abre su chat, toca su nombre y luego **Aparecer sin conexión**. Con eso activado:
 
@@ -1179,8 +1181,8 @@ MB. Debajo, **Calidad de la foto** fija cómo van las fotos, y Erevos lo recuerd
 
 - **Original** (por defecto): la foto exactamente como era, a tamaño completo, sin perder calidad. Solo se quita lo que
   dice aparte de su imagen: dónde se hizo, el teléfono, la hora, las miniaturas. Su nombre es solo "photo".
-  Una foto enviada con **Archivo** (JPEG, PNG, GIF o WebP, hasta 64 MB) también va sin eso, con su propio nombre; los
-  archivos HEIC y AVIF van tal cual.
+  Una foto enviada con **Archivo** (JPEG, PNG, GIF o WebP, hasta 64 MB) también va sin eso, con su propio nombre; con un
+  archivo HEIC o AVIF, o uno mayor, Erevos pregunta antes, porque no puede quitárselo.
 - **90%** y **75%:** una foto nueva, más pequeña, más rápida de enviar, que no dice nada más que su imagen.
 
 Sus fotos y archivos de hasta 16 MB llegan solos; toca uno más grande para recogerlo. Toca una foto para verla en toda
