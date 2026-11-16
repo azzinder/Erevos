@@ -68,6 +68,11 @@ export type DeviceAsk = { id: string; at: number; done: 'sending' | 'sent' | 'fa
  *  delete anything on the other phone, so it deletes this phone's copies only. */
 export type SmsVanish = { address: string; steps: VanishStep[] };
 
+/** A one-time contact card's secret, base64url, and whether an answer to it came already. */
+export type CardOnce = { secret: string; used: boolean };
+/** How many one-time contact cards are kept to open answers with. */
+export const MAX_CARDS_ONCE = 5;
+
 export type SmsData = {
   /** Send an invite with the first SMS to a number with no contact. */
   invites: boolean;
@@ -78,6 +83,10 @@ export type SmsData = {
    *  base64url, '' until one is made. The card names the queue the contact link names, so a new contact
    *  link lets the cards given before go with that queue. */
   card: string;
+  /** The one-time contact cards New chat showed (lib/sms-relay.ts contactCard with once), newest
+   *  first, MAX_CARDS_ONCE at most: only the newest, unused, makes whoever answers it a contact at
+   *  once; an answer to any other is a message request, as one to `card` is. */
+  cardsOnce: CardOnce[];
   /** Show the names the phone's contacts give SMS numbers. Off until the owner turns it on. */
   names: boolean;
   sims: NumberSim[];
@@ -131,6 +140,7 @@ export const EMPTY_SMS: SmsData = {
   sent: [],
   got: [],
   card: '',
+  cardsOnce: [],
   waiting: [],
   names: false,
   sims: [],
@@ -225,6 +235,7 @@ function checked(value: unknown): SmsData {
         : null,
     ),
     card: isText(v.card) && /^[A-Za-z0-9_-]{43}$/.test(v.card) ? v.card : '',
+    cardsOnce: list(v.cardsOnce, (c) => (isText(c.secret) && /^[A-Za-z0-9_-]{43}$/.test(c.secret) ? { secret: c.secret, used: c.used === true } : null), MAX_CARDS_ONCE),
     got: list(v.got, (g) =>
       (g.number === '' || isNumber(g.number)) && isText(g.sender) && /^[0-9a-f]{48}$/.test(g.sender) && isTime(g.at)
         ? { number: g.number as string, sender: g.sender, at: g.at, ...(isName(g.name) ? { name: g.name } : {}) }

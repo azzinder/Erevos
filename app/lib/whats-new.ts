@@ -25,7 +25,7 @@ export const NEXT: Changes = {
   forYou: [
     mark("**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix)."),
     mark("**A message's menu always opens**: holding a message, in a chat or a group, opens its menu every time; before, after you had been in another app, it could stop opening until Erevos was closed and opened again."),
-    mark("**New chat, made anew**: your QR code is on New chat as soon as it opens, with **Scan theirs** and **Share** under it; the field at the top finds a contact by name, or adds someone whose link you paste; and **No Erevos yet?** makes an invite, showing again one no one took yet instead of making another. On a new phone with no relay, New chat starts with **Start with an invite**. See [Chat through a relay](#relay)."),
+    mark("**New chat, made anew**: your QR code is on New chat as soon as it opens, with **Scan theirs** and **Share** under it; the field at the top finds a contact by name, or adds someone whose link you paste; and **No Erevos yet?** makes an invite, showing again one no one took yet instead of making another. On a new phone with no relay, New chat starts with **Start with an invite**. The small QR code is new each time and good once: the first to scan it is a contact at once, and anyone after, or with the link you share, writes a message request first. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };

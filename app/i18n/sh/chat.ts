@@ -404,7 +404,7 @@ export const chat: Record<string, string> = {
   'Someone added you with your contact QR code, and is your contact now.': 'Neko vas je dodao vašim QR kodom za kontakt i sada je vaš kontakt.',
   'Large QR code, for no internet': 'Veliki QR kod, bez interneta',
   'The whole contact link, with your keys: it works near, with no internet, but some cameras cannot read it.': 'Cijeli link za kontakt, s vašim ključevima: radi izbliza, bez interneta, ali ga neke kamere ne mogu pročitati.',
-  'Small, so any camera reads it. Whoever scans it while it shows here is your contact at once; later, they write a message request first.': 'Mali, da ga pročita svaka kamera. Ko ga skenira dok je prikazan ovdje, odmah je vaš kontakt; kasnije prvo piše zahtjev za razgovor.',
+  "Small, so any camera reads it, and good once: the first to scan it is your contact at once; anyone after writes a message request first.": "Mali, da ga čita svaka kamera, i vrijedi jednom: ko ga prvi skenira, odmah vam je kontakt; ko dođe poslije, prvo piše zahtjev za poruku.",
   'Add {name}': 'Dodaj {name}',
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "Ili prislonite poleđinu njegovog telefona uz poleđinu vašeg: njegov telefon otvara pozivnicu.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "Ili prislonite poleđinu njegovog telefona uz poleđinu vašeg: njegov telefon otvara vaš link za kontakt.",

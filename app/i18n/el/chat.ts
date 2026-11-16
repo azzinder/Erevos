@@ -404,7 +404,7 @@ export const chat: Record<string, string> = {
   'Someone added you with your contact QR code, and is your contact now.': 'Κάποιος σε πρόσθεσε με τον κωδικό QR επαφής σου και είναι πλέον επαφή σου.',
   'Large QR code, for no internet': 'Μεγάλος κωδικός QR, για χωρίς internet',
   'The whole contact link, with your keys: it works near, with no internet, but some cameras cannot read it.': 'Ολόκληρος ο σύνδεσμος επαφής, με τα κλειδιά σου: λειτουργεί από κοντά, χωρίς internet, αλλά ορισμένες κάμερες δεν μπορούν να τον διαβάσουν.',
-  'Small, so any camera reads it. Whoever scans it while it shows here is your contact at once; later, they write a message request first.': 'Μικρός, ώστε να τον διαβάζει κάθε κάμερα. Όποιος τον σαρώσει όσο εμφανίζεται εδώ γίνεται αμέσως επαφή σου· αργότερα, γράφει πρώτα ένα αίτημα μηνύματος.',
+  "Small, so any camera reads it, and good once: the first to scan it is your contact at once; anyone after writes a message request first.": "Μικρός, ώστε να τον διαβάζει κάθε κάμερα, και ισχύει μία φορά: όποιος τον σκανάρει πρώτος γίνεται επαφή σου αμέσως· όποιος μετά, γράφει πρώτα αίτημα μηνύματος.",
   'Add {name}': 'Προσθήκη: {name}',
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "Ή ακούμπησε την πλάτη του τηλεφώνου του στην πλάτη του δικού σου: το τηλέφωνό του ανοίγει την πρόσκληση.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "Ή ακούμπησε την πλάτη του τηλεφώνου του στην πλάτη του δικού σου: το τηλέφωνό του ανοίγει τον σύνδεσμο επαφής σου.",

@@ -202,7 +202,7 @@ import type { IpKeep } from '../lib/ip-warning';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
 import { useNfcShare } from '../lib/nfc-share';
-import { answerInvites, answerTextInvite, cardShown, contactCard, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { answerInvites, answerTextInvite, contactCard, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, setTellOpen, spaceChats, type SpaceChats } from '../lib/space-chats';
 import { placeChats, setPlaceLastSeen, setPlaceTellOpen } from '../lib/place-chats';
@@ -3838,7 +3838,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Your contact link, shared: in short, as the contact card, where there is one, a link any app
   // shows as one to tap (lib/sms-relay.ts contactCard); else the whole of it.
   async function shareMine(link: string) {
-    const short = cardsHere ? await contactCard(e2e?.invitedAs() ?? '').catch(() => null) : null;
+    const short = cardsHere ? await contactCard(linkE2E?.invitedAs() ?? '').catch(() => null) : null;
     await shareLink(short ?? link);
   }
 
@@ -6147,8 +6147,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
   // With a relay queue, this phone invites someone new (lib/welcome.ts).
   const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
-  // The contact card, for the space's own chats on the phone: made as My QR code opens, and whoever
-  // scans it while it shows is a contact at once (cardShown).
+  // The contact card, for the space's own chats on the phone: a one-time one, new each time New chat
+  // or My QR code opens; the first to answer it is a contact at once, anyone after writes a request.
   const cardsHere = canWelcome;
   // The small QR code goes by touching phones too, while it shows (lib/nfc-share.ts).
   // New chat with no chat open shows the QR code itself (#12), as My QR code does.
@@ -6157,17 +6157,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   useEffect(() => {
     if (!qrHere || !cardsHere) return;
     let on = true;
-    cardShown(true);
-    void contactCard(e2e?.invitedAs() ?? '')
+    void contactCard(linkE2E?.invitedAs() ?? '', true)
       .then((made) => {
         if (on) setCard(made);
       })
       .catch(() => undefined);
     return () => {
       on = false;
-      cardShown(false);
     };
-  }, [qrHere, cardsHere, ownQueue, relayUrl]);
+  }, [qrHere, cardsHere, ownQueue, relayUrl, linkE2E]);
   // The home screen's Invite: its QR code at once, once the chat knows this phone can invite.
   const invitedNow = useRef(false);
   useEffect(() => {
@@ -7330,7 +7328,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               <Text variant="caption" tone="muted">
                 {bigQr
                   ? t('The whole contact link, with your keys: it works near, with no internet, but some cameras cannot read it.')
-                  : t('Small, so any camera reads it. Whoever scans it while it shows here is your contact at once; later, they write a message request first.')}
+                  : t('Small, so any camera reads it, and good once: the first to scan it is your contact at once; anyone after writes a message request first.')}
               </Text>
             </>
           ) : null}
@@ -7341,7 +7339,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                 kind="secondary"
                 compact
-                onPress={() => void shareLink(card ?? ownLink)}
+                onPress={() => void shareMine(ownLink)}
               />
             ) : null}
           </Row>
@@ -7515,6 +7513,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   );
                 })}
               </ScrollView>
+            ) : findTyped && !draftIsLink && chips.length > 0 ? (
+              <Text variant="caption" tone="muted">
+                {t('No contact has “{query}” in it.', { query: findTyped })}
+              </Text>
             ) : null}
             {hiddenKey ? (
               <View style={styles.panel}>
@@ -7703,7 +7705,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   text={ownLink ? (card && !bigQr ? card : ownLink) : null}
                   onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
                   shareTitle={Platform.OS === 'web' ? t('Copy') : t('Share')}
-                  onShare={() => ownLink && void shareLink(card ?? ownLink)}
+                  onShare={() => ownLink && void shareMine(ownLink)}
                   onPhoto={() => void addFromQr('photos')}
                 >
                   {card && !bigQr && cardNfc === 'on' ? (

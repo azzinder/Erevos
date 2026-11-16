@@ -12,7 +12,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { DEVICE_ASKS_KEPT, fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_VANISH, MAX_WORDS, saveSmsData, SMS_TITLE, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
+import { DEVICE_ASKS_KEPT, fresh, MAX_CARDS_ONCE, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_VANISH, MAX_WORDS, saveSmsData, SMS_TITLE, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -450,7 +450,7 @@ export class SmsLink {
 
   /** Whether any invite sent from here still waits for its answer. */
   get waiting(): boolean {
-    return this.data.sent.length > 0 || !!this.data.card;
+    return this.data.sent.length > 0 || !!this.data.card || this.data.cardsOnce.length > 0;
   }
 
   /** The secret of this chat's contact card, made the first time it is asked for. */
@@ -462,11 +462,30 @@ export class SmsLink {
     return fromBase64Url(this.data.card);
   }
 
+  /** A new one-time contact card's secret, for New chat's QR code: the cards shown before it no
+   *  longer make whoever answers them a contact at once (openAnswer). */
+  async onceSecret(): Promise<Uint8Array> {
+    const made = toBase64Url(randomBytes(32));
+    await this.update((d) => ({ ...d, cardsOnce: [{ secret: made, used: false }, ...d.cardsOnce].slice(0, MAX_CARDS_ONCE) }));
+    return fromBase64Url(made);
+  }
+
+  /** Whether an answer to the one-time card `secret` makes its sender a contact at once, and marks it
+   *  used: only the newest card, the first time. Exported for the checks. */
+  async takeOnce(secret: string): Promise<boolean> {
+    const at = this.data.cardsOnce.findIndex((c) => c.secret === secret);
+    if (at < 0) return false;
+    const once = at === 0 && !this.data.cardsOnce[at].used;
+    await this.update((d) => ({ ...d, cardsOnce: d.cardsOnce.map((c) => (c.secret === secret ? { ...c, used: true } : c)) }));
+    return once;
+  }
+
   /** Opens an answer to an invite sent from here: the number invited, its contact link, and the
    *  name of the phone's contact it went to ('' but for an invite by plain SMS). Null when `bytes`
    *  answers none of them. The invite is then done; an answer to the contact card (`card`) leaves the
-   *  card as it is, as it is for anyone who has it. */
-  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string; name: string; card?: true } | null> {
+   *  card as it is, as it is for anyone who has it; one to the newest one-time card, the first time,
+   *  is `once`. */
+  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string; name: string; card?: true; once?: true } | null> {
     if (!canSealOpen() || bytes[0] !== 1) return null;
     if (this.data.card) {
       let link: string | null = null;
@@ -476,6 +495,16 @@ export class SmsLink {
         // Not an answer to the card.
       }
       if (link) return { number: '', link, name: '', card: true };
+    }
+    for (const shown of this.data.cardsOnce) {
+      let link: string | null = null;
+      try {
+        link = readInviteAnswer((await sealOpen(fromBase64Url(shown.secret), bytes)).message);
+      } catch {
+        continue;
+      }
+      if (!link) continue;
+      return (await this.takeOnce(shown.secret)) ? { number: '', link, name: '', card: true, once: true } : { number: '', link, name: '', card: true };
     }
     for (const sent of this.data.sent) {
       let link: string | null;

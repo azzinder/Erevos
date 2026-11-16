@@ -212,6 +212,24 @@ test('a contact card has no invite to the relay and no end, and is shorter still
   assert.equal(parseTextInvite(textInviteLink(made({ code: '', expires: 0, card: true, relay: 'ws://relay.example.org' }))), null);
 });
 
+test("New chat's one-time card makes only the first to answer the newest a contact at once", async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  const first = toBase64Url(await link.onceSecret());
+  const second = toBase64Url(await link.onceSecret());
+  assert.notEqual(first, second, 'new each time');
+  assert.ok(link.waiting);
+  assert.equal(await link.takeOnce(first), false, 'an older card: a message request');
+  assert.equal(await link.takeOnce(second), true, 'the newest, the first time: at once');
+  assert.equal(await (await SmsLink.open(0, key)).takeOnce(second), false, 'once only, kept');
+  assert.equal(await link.takeOnce(toBase64Url(randomBytes(32))), false);
+  for (let i = 0; i < 7; i++) await link.onceSecret();
+  const third = toBase64Url(await link.onceSecret());
+  assert.equal(await link.takeOnce(first), false);
+  assert.equal(await link.takeOnce(third), true);
+});
+
 test('the contact card opens the answers sealed to it, and stays for the next', async () => {
   files.clear();
   const key = randomBytes(32);

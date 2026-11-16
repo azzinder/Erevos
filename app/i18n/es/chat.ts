@@ -403,7 +403,7 @@ export const chat: Record<string, string> = {
   'Someone added you with your contact QR code, and is your contact now.': 'Alguien te añadió con tu código QR de contacto y ya es tu contacto.',
   'Large QR code, for no internet': 'Código QR grande, sin internet',
   'The whole contact link, with your keys: it works near, with no internet, but some cameras cannot read it.': 'Todo el enlace de contacto, con tus claves: funciona cerca, sin internet, pero algunas cámaras no pueden leerlo.',
-  'Small, so any camera reads it. Whoever scans it while it shows here is your contact at once; later, they write a message request first.': 'Pequeño, para que cualquier cámara lo lea. Quien lo escanee mientras se muestra aquí es tu contacto al instante; después, escribe primero una solicitud de mensaje.',
+  "Small, so any camera reads it, and good once: the first to scan it is your contact at once; anyone after writes a message request first.": "Pequeño, para que cualquier cámara lo lea, y vale una vez: el primero que lo escanea es tu contacto al instante; quien venga después escribe primero una solicitud de mensaje.",
   'Add {name}': 'Añadir a {name}',
   "Or hold the back of their phone to the back of yours: their phone opens the invite.": "O junta la parte de atrás de su teléfono con la del tuyo: su teléfono abre la invitación.",
   "Or hold the back of their phone to the back of yours: their phone opens your contact link.": "O junta la parte de atrás de su teléfono con la del tuyo: su teléfono abre tu enlace de contacto.",
