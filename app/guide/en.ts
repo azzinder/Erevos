@@ -396,8 +396,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   nearby also take your message sealed for your contact's relay. Each keeps it, three days at most, gives it to two
   more phones at most that it meets, and hands it to that relay through its own relay once it can; so does yours.
   They cannot read it, nor tell who it is from or for: they see only the relay's address. It stays when Erevos
-  closes, sealed on the phone. Yours stay in your space, and go only while it is open. Carrying for others is off
-  unless you turn on **Carry messages for others** under **Nearby, with no internet**, on **New chat**, and then only for relays on the
+  closes, sealed on the phone. Yours stay in your space, and go only while it is open. Carrying for others is on
+  unless you turn off **Carry messages for others** under **Nearby, with no internet**, on **New chat**, and only for relays on the
   internet over TLS (wss://): a stranger nearby never has your phone, or your relay, reach one on a local network or
   on the phone itself. Your own messages are carried by the phones nearby that have it on.
 

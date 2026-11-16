@@ -445,8 +445,8 @@ Ende-zu-Ende-verschlüsselt wie die über das Relay.
   übergibt sie über sein eigenes Relay an jenes Relay, sobald es kann; deines ebenso. Sie können sie nicht lesen und
   auch nicht erkennen, von wem oder für wen sie ist: Sie sehen nur die Adresse des Relays. Sie bleibt, wenn Erevos
   sich schließt, versiegelt auf dem Telefon. Deine bleiben in deinem Bereich und gehen nur, solange er offen ist. Das
-  Mitnehmen für andere ist aus, solange du nicht **Nachrichten für andere mitnehmen** unter
-  **In der Nähe, ohne Internet** in **Neuer Chat** einschaltest, und dann nur für Relays im Internet über TLS
+  Mitnehmen für andere ist an, solange du nicht **Nachrichten für andere mitnehmen** unter
+  **In der Nähe, ohne Internet** in **Neuer Chat** ausschaltest, und nur für Relays im Internet über TLS
   (wss://): Ein Fremder in der Nähe bringt dein Telefon oder dein Relay nie dazu, eines in einem lokalen Netz oder auf
   dem Telefon selbst anzusprechen. Deine eigenen Nachrichten werden von den Telefonen in der Nähe mitgenommen, bei
   denen es eingeschaltet ist.

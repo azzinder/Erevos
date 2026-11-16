@@ -415,8 +415,8 @@ ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s 
   preuzimaju i vašu poruku, zapečaćenu za relay vašeg kontakta. Svaki je čuva najviše tri dana, predaje je najviše
   dvama drugim telefonima koje sretne i predaje je tom relayu preko vlastitog relaya čim može; isto radi i vaš. Ne mogu
   je čitati niti saznati od koga je i za koga: vide samo adresu relaya. Ostaje i kad se Erevos zatvori, zapečaćena na
-  telefonu. Vaše ostaju u vašem prostoru i idu samo dok je on otvoren. Prenošenje za druge je isključeno dok ne
-  uključite **Prenosi poruke za druge** pod **U blizini, bez interneta**, u ekranu **Novi razgovor**, i tada samo za
+  telefonu. Vaše ostaju u vašem prostoru i idu samo dok je on otvoren. Prenošenje za druge je uključeno dok ne
+  isključite **Prenosi poruke za druge** pod **U blizini, bez interneta**, u ekranu **Novi razgovor**, i samo za
   relaye na internetu preko TLS-a (wss://): nepoznata osoba u blizini nikad ne može natjerati vaš telefon ili vaš
   relay da se obrate relayu na lokalnoj mreži ili na samom telefonu. Vaše vlastite poruke prenose telefoni u blizini
   koji to imaju uključeno.

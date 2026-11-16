@@ -421,8 +421,8 @@ passam pelo relay.
   máximo, passa-a a no máximo mais dois celulares que encontrar, e a entrega a esse relay pelo próprio relay assim que
   puder; o seu faz o mesmo. Eles não conseguem lê-la, nem saber de quem é nem para quem: só veem o endereço do relay.
   Ela fica quando o Erevos fecha, selada no celular. As suas ficam no seu espaço, e só vão enquanto ele está aberto.
-  Levar mensagens de outros fica desativado a menos que você ative **Levar mensagens de outras pessoas** em **Perto,
-  sem internet**, na tela **Nova conversa**, e então só para relays na internet com TLS (wss://): um desconhecido por
+  Levar mensagens de outros fica ativado a menos que você desative **Levar mensagens de outras pessoas** em **Perto,
+  sem internet**, na tela **Nova conversa**, e só para relays na internet com TLS (wss://): um desconhecido por
   perto nunca faz o seu celular, ou o seu relay, acessar um numa rede local ou no próprio celular. As suas próprias
   mensagens são levadas pelos celulares por perto que têm isso ativado.
 

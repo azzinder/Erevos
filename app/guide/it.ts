@@ -424,8 +424,8 @@ tramite il relay.
   massimo tre giorni, lo dà al massimo ad altri due telefoni che incontra, e lo consegna a quel relay tramite il
   proprio relay appena può; lo stesso fa il tuo. Non possono leggerlo, né capire da chi viene o per chi è: vedono solo
   l’indirizzo del relay. Resta anche quando Erevos si chiude, sigillato sul telefono. I tuoi restano nel tuo spazio, e
-  partono solo mentre è aperto. Il trasporto per altri è disattivato finché non attivi **Trasporta messaggi per altri**
-  sotto **Vicino, senza internet**, in **Nuova chat**, e anche allora solo per relay su internet tramite TLS (wss://):
+  partono solo mentre è aperto. Il trasporto per altri è attivo finché non disattivi **Trasporta messaggi per altri**
+  sotto **Vicino, senza internet**, in **Nuova chat**, e solo per relay su internet tramite TLS (wss://):
   uno sconosciuto vicino non fa mai raggiungere al tuo telefono, o al tuo relay, uno su una rete locale o sul telefono
   stesso. I tuoi messaggi vengono trasportati dai telefoni vicini che lo hanno attivo.
 

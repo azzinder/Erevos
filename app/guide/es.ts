@@ -425,8 +425,8 @@ los que van por el relay.
   mucho, se lo da a dos teléfonos más como mucho de los que encuentre, y lo entrega a ese relay a través de su propio
   relay en cuanto puede; el tuyo hace lo mismo. No pueden leerlo, ni saber de quién es ni para quién: solo ven la
   dirección del relay. Se conserva cuando Erevos se cierra, sellado en el teléfono. Los tuyos se quedan en tu espacio, y
-  solo salen mientras está abierto. Llevar mensajes de otros está desactivado salvo que actives **Llevar mensajes de
-  otros** bajo **Cerca, sin internet**, en **Chat nuevo**, y entonces solo para relays en internet con TLS (wss://): un
+  solo salen mientras está abierto. Llevar mensajes de otros está activado salvo que desactives **Llevar mensajes de
+  otros** bajo **Cerca, sin internet**, en **Chat nuevo**, y solo para relays en internet con TLS (wss://): un
   desconocido cercano nunca hace que tu teléfono, o tu relay, contacte con uno de una red local o del propio teléfono.
   Tus propios mensajes los llevan los teléfonos cercanos que lo tienen activado.
 

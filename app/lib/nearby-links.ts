@@ -103,9 +103,10 @@ export function startNearbyLinks(): () => void {
 /** Whether this phone carries for others, looks on the same Wi-Fi, makes one with Wi-Fi Direct, and looks with Wi-Fi Aware, as last set. */
 export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean; direct: boolean; aware: boolean }> {
   const [carry, lan, direct, aware] = await Promise.all([CARRY_KEY, LAN_KEY, DIRECT_KEY, AWARE_KEY].map((key) => secureGet(key).catch(() => null)));
-  // Carrying for others is off unless turned on: a stranger nearby must not have this phone send
-  // what they give it through its relay.
-  return { carrying: carry === 'on', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
+  // Carrying for others is on unless turned off (the owner's word, 2026-11-16): what phones nearby
+  // give it is sealed for their contact's relay, kept three days at most, and handed on through
+  // this phone's relay, which a stranger nearby can make it do.
+  return { carrying: carry !== 'off', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
 }
 
 /** Carries messages from phones nearby to their relays, or no longer. Throws when the phone could not keep it: it holds until Erevos closes. */

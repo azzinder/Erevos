@@ -150,7 +150,7 @@ cryptography. Do not rely on it to protect anyone yet.
   Wi-Fi Direct, and a Meshtastic LoRa radio. The desktop app and Sailfish OS have the same Wi-Fi
   too. A message that cannot go yet waits, marked in the chat, until there is a way. When the relay
   cannot be reached, other Erevos phones nearby can carry a sealed message to the contact's relay;
-  carrying for others is off unless turned on. Hidden chats use them too while they are open or
+  carrying for others is on unless turned off. Hidden chats use them too while they are open or
   receive while closed, never carried and never over LoRa or by SMS, and the space never learns
   that a hidden contact is near.
 - **Give Erevos to a phone nearby** (Android), with no internet: **Settings** → **General** serves

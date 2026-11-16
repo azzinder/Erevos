@@ -280,7 +280,7 @@ export const chat: Record<string, string> = {
   'Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.': 'Erevos telefoni pronalaze jedni druge samo na zajedničkoj Wi-Fi mreži ili preko Bluetootha i tehnologije Wi-Fi Aware.',
   'Carry messages for others': 'Prenosi poruke za druge',
   'When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact\'s relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay\'s address.': 'Kad relay nije dostupan, Erevos telefoni u blizini predaju jedni drugima ono što nisu mogli poslati, zapečaćeno za relay kontakta. Ovaj telefon čuva ono što primi, najviše tri dana, i predaje to tom relayu preko vašeg. Ne može to čitati niti saznati od koga je i za koga: vidi samo adresu relaya.',
-  'Off unless you turn it on: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.': 'Isključeno dok ga ne uključite: ovaj telefon ne čuva ništa za druge. Ono što ne može poslati, telefoni u blizini prenose za vas ako im je ovo uključeno.',
+  'Off: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.': 'Isključeno: ovaj telefon ne čuva ništa za druge. Ono što ne može poslati, telefoni u blizini prenose za vas ako im je ovo uključeno.',
   'LoRa radio': 'LoRa radio',
   'With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.': 'S Meshtastic radiom tekst ide kilometrima daleko bez interneta, kad ga ništa drugo ne može prenijeti.',
   'Message request': 'Zahtjev za razgovor',

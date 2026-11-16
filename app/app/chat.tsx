@@ -473,7 +473,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [, setNearbyChanged] = useState(0);
   // Whether this phone carries messages from phones nearby to their relays (lib/nearby.ts), and
   // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
-  const [carrying, setCarrying] = useState(false);
+  const [carrying, setCarrying] = useState(true);
   const [lanOn, setLanOn] = useState(true);
   // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews),
   // and whether only through Tor (SpaceData.previewsTor).
@@ -7710,7 +7710,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       <Text variant="caption" tone="muted">
                         {carrying
                           ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
-                          : t('Off unless you turn it on: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.')}
+                          : t('Off: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.')}
                       </Text>
                       {canLora() ? (
                         <>

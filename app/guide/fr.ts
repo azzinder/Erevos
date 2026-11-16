@@ -448,8 +448,8 @@ comme ceux qui passent par le relais.
   jours au plus, le donne à deux autres téléphones au plus qu’il croise, et le remet à ce relais par son propre relais
   dès qu’il le peut ; le tien fait de même. Ils ne peuvent pas le lire, ni savoir de qui il vient ni à qui il va : ils
   ne voient que l’adresse du relais. Il reste quand Erevos se ferme, scellé sur le téléphone. Les tiens restent dans ton
-  espace, et ne partent que tant qu’il est ouvert. Transporter pour d’autres est désactivé tant que tu n’actives pas
-  **Transporter des messages pour d’autres** sous **À proximité, sans internet**, dans **Nouvelle discussion**, et alors
+  espace, et ne partent que tant qu’il est ouvert. Transporter pour d’autres est activé tant que tu ne désactives pas
+  **Transporter des messages pour d’autres** sous **À proximité, sans internet**, dans **Nouvelle discussion**, et
   seulement pour des relais sur internet en TLS (wss://) : un inconnu à proximité ne fait jamais joindre à ton
   téléphone, ni à ton relais, un relais sur un réseau local ou sur le téléphone lui-même. Tes propres messages sont
   transportés par les téléphones à proximité qui l’ont activé.

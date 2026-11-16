@@ -28,7 +28,7 @@ import { fitsSms } from './sms-packets';
 // it links with later (two more at most), and hands it to that relay through its own relay once it
 // can (carryTo in lib/relay.ts). It cannot open it, nor tell who it is from or for: it sees only
 // the relay's address. The phone that sent it keeps it too, and hands it over itself the same way.
-// Carrying for others is off unless the owner turns it on, and then only for relays on the internet
+// Carrying for others is on unless the owner turns it off, and only for relays on the internet
 // over TLS (isCarriable): a stranger nearby never has this phone, or its relay, reach a relay on a
 // local network or on the phone itself.
 //
