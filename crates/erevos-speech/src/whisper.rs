@@ -167,6 +167,8 @@ pub struct Model {
     text_ctx: usize,
     written: usize,
     tokens: Vec<Vec<u8>>,
+    // <|nospeech|>, for how likely it is that a window holds no speech at all (None if not there).
+    no_speech: Option<u32>,
     sot: u32,
     eot: u32,
     transcribe: u32,
@@ -371,6 +373,7 @@ impl Model {
             decoder_norm: r.norm("model.decoder.layer_norm")?,
             text_ctx,
             written: 0,
+            no_speech: None,
             tokens,
             sot: id(&r, "whisper.sot")?,
             eot: id(&r, "whisper.eot")?,
@@ -382,6 +385,12 @@ impl Model {
         if model.tokens.len() != model.embed.dim(0)? {
             return Err(Error::Model("tokens and embeddings differ".into()));
         }
+        let mut model = model;
+        model.no_speech = model
+            .tokens
+            .iter()
+            .position(|t| t == b"<|nospeech|>" || t == b"<|nocaptions|>")
+            .map(|i| i as u32);
         Ok(model)
     }
 
@@ -469,6 +478,10 @@ impl Model {
             if window.len() < crate::RATE as usize / 10 && !text.is_empty() {
                 break;
             }
+            // A window with nothing louder than a breath says nothing: Whisper would make words up.
+            if quiet(window) {
+                continue;
+            }
             let spectrogram = mel::spectrogram(window, &self.filters, self.mels);
             let audio = self.encode(&Tensor::from_vec(
                 spectrogram,
@@ -483,12 +496,23 @@ impl Model {
                     l
                 }
             };
+            // How likely the window holds no speech, from the token after the start, as Whisper's
+            // own decoding asks it.
+            let silent = match self.no_speech {
+                Some(id) => {
+                    let p = softmax_at(&self.next(&[self.sot], &audio)?, id as usize);
+                    self.restart();
+                    p
+                }
+                None => 0.0,
+            };
             let mut feed = vec![self.sot, language, self.transcribe, self.no_times];
+            let mut words: Vec<u32> = Vec::new();
+            let mut sure = 0.0f32;
             for _ in 0..most {
                 let mut logits = self.next(&feed, &audio)?;
                 // No marks of its own (times, languages, tasks) in the words: only words, or the end.
-                for (id, l) in logits.iter_mut().enumerate().skip(self.eot as usize + 1) {
-                    let _ = id;
+                for l in logits.iter_mut().skip(self.eot as usize + 1) {
                     *l = f32::NEG_INFINITY;
                 }
                 let (best, _) =
@@ -499,20 +523,130 @@ impl Model {
                             (0usize, f32::MIN),
                             |(bi, bv), (i, v)| if *v > bv { (i, *v) } else { (bi, bv) },
                         );
+                sure += softmax_at(&logits, best).max(f32::MIN_POSITIVE).ln();
                 let best = best as u32;
                 if best == self.eot {
                     break;
                 }
-                if let Some(t) = self.tokens.get(best as usize) {
-                    text.extend_from_slice(t);
+                words.push(best);
+                // Going round in a loop, as Whisper may on noise: once is kept, and the window ends.
+                if let Some(cut) = looping(&words) {
+                    words.truncate(cut);
+                    break;
                 }
                 feed = vec![best];
             }
+            // Likely no speech, and what came of it unsure: words made up of silence or noise.
+            let unsure = words.is_empty() || sure / (words.len() as f32 + 1.0) < UNSURE;
+            if !(silent > NO_SPEECH && unsure) {
+                for id in &words {
+                    if let Some(t) = self.tokens.get(*id as usize) {
+                        text.extend_from_slice(t);
+                    }
+                }
+            }
             text.push(b' ');
         }
-        Ok(String::from_utf8_lossy(&text)
+        Ok(without_sounds(&String::from_utf8_lossy(&text))
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" "))
+    }
+}
+
+// Above this chance of no speech in a window, with words below UNSURE (their mean log
+// probability), its words are left out: Whisper's own thresholds.
+const NO_SPEECH: f32 = 0.6;
+const UNSURE: f32 = -1.0;
+// The loudest 25 ms of a window below this (about -46 dBFS): no speech in it.
+const QUIET: f32 = 0.005;
+
+// The probability softmax gives `at` among `logits`.
+fn softmax_at(logits: &[f32], at: usize) -> f32 {
+    let top = logits.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    let sum: f32 = logits.iter().map(|l| (l - top).exp()).sum();
+    (logits[at] - top).exp() / sum
+}
+
+/// Whether `window` (at 16 kHz) has no 25 ms louder than QUIET.
+pub(crate) fn quiet(window: &[f32]) -> bool {
+    window.chunks(400).all(|frame| {
+        let power = frame.iter().map(|s| s * s).sum::<f32>() / frame.len() as f32;
+        power.sqrt() < QUIET
+    })
+}
+
+/// `text` without what Whisper writes of sounds that are not words, such as "[Applause]",
+/// "(music)" or "♪": it writes them of noise too, where nobody spoke.
+pub(crate) fn without_sounds(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut closing: Option<char> = None;
+    for c in text.chars() {
+        match (closing, c) {
+            (Some(end), c) if c == end => closing = None,
+            (Some(_), _) => {}
+            (None, '[') => closing = Some(']'),
+            (None, '(') => closing = Some(')'),
+            (None, '♪' | '♫' | '*') => {}
+            (None, c) => out.push(c),
+        }
+    }
+    out
+}
+
+/// Where to cut `words` when they end in the same run of 1 to 16 tokens three times over: after
+/// the first of them. None when they do not.
+pub(crate) fn looping(words: &[u32]) -> Option<usize> {
+    for n in 1..=16 {
+        if words.len() < 3 * n {
+            break;
+        }
+        let end = words.len();
+        let last = &words[end - n..];
+        if &words[end - 2 * n..end - n] == last && &words[end - 3 * n..end - 2 * n] == last {
+            return Some(end - 2 * n);
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod guards {
+    use super::*;
+
+    #[test]
+    fn silence_is_quiet_and_speech_is_not() {
+        assert!(quiet(&vec![0.0; 16_000]));
+        let hiss: Vec<f32> = (0..16_000).map(|i| if i % 2 == 0 { 0.002 } else { -0.002 }).collect();
+        assert!(quiet(&hiss));
+        let mut voice = vec![0.0; 16_000];
+        for (i, s) in voice.iter_mut().enumerate().skip(8000).take(800) {
+            *s = 0.1 * (i as f32 * 0.05).sin();
+        }
+        assert!(!quiet(&voice));
+    }
+
+    #[test]
+    fn a_loop_is_cut_to_once() {
+        assert_eq!(looping(&[1, 2, 3]), None);
+        assert_eq!(looping(&[7, 7, 7]), Some(1));
+        assert_eq!(looping(&[1, 5, 6, 5, 6, 5, 6]), Some(3));
+        assert_eq!(looping(&[5, 6, 5, 6]), None);
+        let mut words = vec![9, 1, 2, 3, 1, 2, 3, 1, 2, 3];
+        words.truncate(looping(&words).unwrap());
+        assert_eq!(words, [9, 1, 2, 3]);
+    }
+
+    #[test]
+    fn sounds_are_left_out() {
+        assert_eq!(without_sounds(" [Χειροκρότημα]"), " ");
+        assert_eq!(without_sounds("Γεια (μουσική) σου ♪"), "Γεια  σου ");
+        assert_eq!(without_sounds("Καλημέρα."), "Καλημέρα.");
+    }
+
+    #[test]
+    fn softmax_of_one() {
+        assert!((softmax_at(&[0.0, 0.0], 0) - 0.5).abs() < 1e-6);
+        assert!(softmax_at(&[10.0, 0.0, f32::NEG_INFINITY], 0) > 0.99);
     }
 }

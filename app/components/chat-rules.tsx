@@ -22,7 +22,7 @@ import { useColors } from '../theme/context';
 // app/nostr-chat.tsx, app/sms.tsx).
 
 /** The chat's timer, as a button that opens its choices, with what it does on this service (`note`). */
-export function ChatTimer({ seconds, note, onChoose }: { seconds: number; note: string; onChoose: (seconds: number) => void }) {
+export function ChatTimer({ seconds, note, onChoose, onChosen }: { seconds: number; note: string; onChoose: (seconds: number) => void; /** Called once chosen: a sheet it shows in closes too. */ onChosen?: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -45,6 +45,7 @@ export function ChatTimer({ seconds, note, onChoose }: { seconds: number; note: 
                 selected={timer === seconds}
                 onPress={() => {
                   setOpen(false);
+                  onChosen?.();
                   if (timer !== seconds) onChoose(timer);
                 }}
               />

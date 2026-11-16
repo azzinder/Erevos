@@ -985,15 +985,16 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                     setMore(false);
                     setStyling(true);
                   }} />
-                <StarredHere stars={keep.stars} who={name} onGo={reach} />
+                <StarredHere stars={keep.stars} who={name} onGo={reach} onGoing={() => setMore(false)} />
                 {guard.buttons}
                 <ChatTimer
                   seconds={vanishTimer(rulesOf(chat))}
                   note={t('New messages, sent or received, go from this phone only, that long after they were sent. The other side keeps them: XMPP has no way to delete them there. Messages already here stay.')}
                   onChoose={(after) => void xmppAct(async (s) => setTimerIn(s, jid, after)).catch(fail)}
+                  onChosen={() => setMore(false)}
                 />
               </Row>
-              <HistoryButtons tools={history} exportable={where === 'space'} />
+              <HistoryButtons tools={history} exportable={where === 'space'} onRun={() => setMore(false)} />
               {/* A contact's name of our own: their item's in the account's contacts, which its other apps show too. */}
               {!room && state.roster[jid] ? (
                 <OwnName
@@ -1038,7 +1039,14 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   <Text variant="caption" tone="muted">
                     {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
                   </Text>
-                  <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
+                  <Button
+                    title={t('Unblock')}
+                    kind="secondary"
+                    onPress={() => {
+                      setMore(false);
+                      void xmppBlock(jid, false).catch(fail);
+                    }}
+                  />
                 </>
               ) : (
                 <Button
@@ -1047,7 +1055,14 @@ function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   onPress={() =>
                     ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
                       { text: t('Cancel'), style: 'cancel' },
-                      { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
+                      {
+                        text: t('Block'),
+                        style: 'destructive',
+                        onPress: () => {
+                          setMore(false);
+                          void xmppBlock(jid, true).catch(fail);
+                        },
+                      },
                     ])
                   }
                 />

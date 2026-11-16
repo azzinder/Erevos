@@ -6249,6 +6249,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   tiles.push(
     { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
     { key: 'once-photo', title: t('Photo to see once'), icon: 'photo', onPress: () => sendPhoto('photos', true, true) },
+    ...(CAN_TAKE_PHOTOS ? [{ key: 'once-camera', title: t('Camera, to see once'), icon: 'camera' as const, onPress: () => sendPhoto('camera', true, true) }] : []),
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
   );
   // From the Collection: the photos and files kept encrypted in this space, or in these hidden chats.

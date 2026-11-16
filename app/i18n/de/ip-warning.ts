@@ -17,4 +17,5 @@ export const ipWarningStrings: Record<string, string> = {
   "Through Tor for this chat": "Über Tor für diesen Chat",
   "A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Ein Radiosender läuft direkt von seinem Server, der dann die Internetadresse (IP-Adresse) dieses Telefons sieht, solange er läuft, wie jede Website.",
   "A TV channel plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.": "Ein TV-Sender läuft direkt von seinem Server, der dann die Internetadresse (IP-Adresse) dieses Telefons sieht, solange er läuft, wie jede Website.",
+  "To pair by a code, the two phones meet on public Nostr relays. Without Tor, those relays see this phone's internet address (IP address), though not the code or your contact links, which go encrypted.": "Zum Koppeln mit einem Code treffen sich die beiden Telefone auf öffentlichen Nostr-Relays. Ohne Tor sehen diese Relays die Internetadresse dieses Telefons (IP-Adresse), nicht aber den Code oder eure Kontaktlinks, die verschlüsselt gehen.",
 };

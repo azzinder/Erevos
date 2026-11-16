@@ -5,6 +5,7 @@
 // A photo to see once (lib/see-once.ts) in Portuguese (i18n/pt/index.ts).
 export const seeOnceText: Record<string, string> = {
   "Photo to see once": "Foto de visualização única",
+  "Camera, to see once": "Câmera, visualização única",
   "Photo seen once": "Foto vista uma vez",
   "Photo to see once · tap to see it": "Foto de visualização única · toque para a ver",
   "A photo to see once is for them to see, not for you.": "Uma foto de visualização única é para os outros verem, não para si.",

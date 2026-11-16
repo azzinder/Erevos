@@ -1110,10 +1110,11 @@ pantalla, en la línea de la pantalla de inicio y en una cita (allí como ▒▒
   en los grupos, hasta que la tocas, y entonces se abre sola. En **Multimedia, enlaces y archivos** también se ve
   borrosa. Un Erevos de antes la muestra como cualquier foto.
 - **Foto de una sola vista:** bajo **+**, **Foto de una sola vista** envía una foto que nunca se ve en el chat, en los
-  chats con contactos y en los grupos. Quien la recibe la toca y la ve una vez, sola, sin capturas de pantalla donde el
-  teléfono lo permite; al cerrarla, Erevos la borra de su teléfono, y el chat dice **Foto vista una vez**. No se puede
-  reenviar, guardar ni poner en la Colección, y tu propio teléfono la borra en cuanto les llega. Nada impide una cámara
-  apuntando a la pantalla, y un Erevos anterior la muestra como foto oculta.
+  chats con contactos y en los grupos. **Cámara, de una sola vista** envía del mismo modo una que tomas en ese
+  momento. Quien la recibe la toca y la ve una vez, sola, sin capturas de pantalla donde el teléfono lo permite; al
+  cerrarla, Erevos la borra de su teléfono, y el chat dice **Foto vista una vez**. No se puede reenviar, guardar ni
+  poner en la Colección, y tu propio teléfono la borra en cuanto les llega. Nada impide una cámara apuntando a la
+  pantalla, y un Erevos anterior la muestra como foto oculta.
 
 **Por qué:** una marca escrita en las palabras viaja en ellas, dentro del cifrado, sin nada al lado que la distinga.
 
@@ -1182,12 +1183,14 @@ propia voz nunca sale de él; si el cambio falla, el mensaje no se envía. Solo 
 voz difícil de reconocer de oído, pero alguien con la grabación y tiempo podría deshacer parte. En Android 10 y
 posteriores, y en navegadores que hacen Opus ellos mismos (WebCodecs); el walkie-talkie mantiene tu voz.
 
-**En palabras:** mantén pulsado un mensaje de voz, en el chat de un contacto o en un grupo, y elige **En palabras**: tu
-teléfono escribe lo que se dijo, para leerlo o copiarlo. La primera vez descarga un modelo de voz de 268 MB, cuando tú lo
-digas, del propio servidor de Erevos, que ve tu dirección como en cualquier descarga; después todo se hace en tu
+**En palabras:** mantén pulsado un mensaje de voz, en el chat de un contacto o en un grupo, y elige **En palabras**:
+tu teléfono escribe lo que se dijo, para leerlo o copiarlo. La primera vez descarga un modelo de voz de 268 MB, cuando
+tú lo digas, del propio servidor de Erevos, que ve tu dirección como en cualquier descarga; después todo se hace en tu
 teléfono, y ni el sonido ni sus palabras salen de él. Entiende unos cien idiomas, el griego entre ellos, y reconoce el
 que se habla. Puede equivocarse, y las palabras no se guardan. **Borrar el modelo de voz**, debajo, libera el espacio.
-Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre.
+Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre, pues mientras escribe ocupa unos 1,5 GB; si
+falla, el siguiente intento vuelve a abrir el modelo. Donde nadie habla, en silencio o con ruido, no escribe nada, en
+vez de palabras que nadie dijo.
 
 **Traducir:** mantén pulsado un mensaje, en el chat de un contacto o en un grupo, y elige **Traducir**: tu teléfono lo
 traduce a tu idioma, para leerlo o copiarlo, entre griego, inglés, alemán, español, francés e italiano. Adivina el
@@ -1611,11 +1614,12 @@ sabe quién está en él.
   que el enlace cambia a uno de su relay; tú sigues siendo admin. Si tu teléfono se pierde antes de cederlo, nadie podrá
   volver a dejar entrar a nadie, aunque el grupo sigue para quienes están en él.
 - **Cerrar el grupo** saca a todos los miembros. **Salir del grupo** de un miembro le pide a tu teléfono que lo saque.
-- **Un grupo de un solo uso,** para una ocasión: antes de crearlo, en **Termina**, elige **Tras un día**, **Tras 3 días**
-  o **Tras 7 días**. Cuando se acaba su tiempo, tu teléfono lo cierra, y el Erevos de cada miembro lo borra, con sus
-  mensajes, fotos y archivos, la próxima vez que esté abierto; su enlace deja de funcionar. La pantalla del propio grupo
-  dice cuándo termina. Un miembro con un Erevos anterior lo conserva, y hasta entonces cualquiera puede haber guardado
-  una copia o una captura de pantalla.
+- **Un grupo de un solo uso,** para una ocasión: antes de crearlo, en **Termina**, elige **Tras un día**, **Tras 3
+  días** o **Tras 7 días**. Cuando se acaba su tiempo, el Erevos de cada miembro lo borra, cada uno según el reloj de
+  su propio teléfono, con sus mensajes, fotos y archivos, la próxima vez que esté abierto, y su enlace deja de
+  funcionar. Cuándo termina se fija al crear el grupo y no cambia nunca. La pantalla del propio grupo dice cuándo
+  termina. Un miembro con un Erevos anterior lo conserva, y hasta entonces cualquiera puede haber guardado una copia o
+  una captura de pantalla.
 - **Hasta 100 miembros,** ya que todo el grupo tiene que caber en el único mensaje que deja entrar a alguien.
 - **Todos los teléfonos de un grupo público necesitan esta versión de Erevos.** Los grupos creados a partir de
   contactos funcionan como antes.
@@ -1917,6 +1921,8 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
 - **Los relays públicos de Nostr y los servidores de archivos de Nostr:** la ven, salvo que la conexión pase por Tor.
   Activa **Nostr por Tor** en **Ajustes** → **Relay y redes** → **Nostr**, o **Por Tor** para un chat. Mira [A través
   de Nostr](#nostr).
+- **Emparejar con un código:** los dos teléfonos se encuentran en esos mismos relays públicos de Nostr, así que sin Nostr
+  a través de Tor ven la dirección, pero no el código ni los enlaces de contacto. Erevos lo avisa antes de la primera vez.
 
 - **Las llamadas:** nunca van por Tor. El relay de llamadas, el tuyo o el de tu contacto, ve la dirección, aunque no
   lo que se dice. Una llamada entre teléfonos cercanos en la misma red se queda en esa red.

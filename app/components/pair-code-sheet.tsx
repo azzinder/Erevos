@@ -4,7 +4,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { ipGate } from './ip-warning';
 import { Button, Input, Row, Sheet, Text } from './ui';
+import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
 import { canPairCode, nostrKeys } from '../lib/core';
 import { t } from '../lib/i18n';
 import { newPairCode, PAIR_LASTS, readPairCode, showCode, showPairCode, typeCode, type PairEnd, type Pairing } from '../lib/pair-code';
@@ -67,19 +69,25 @@ export function PairCodeSheet({ visible, onClose, ownLink, onLink }: { visible: 
     }
   }
 
-  function show() {
+  // The phones meet on public Nostr relays: straight, unless the space's Tor carries Nostr, they see
+  // this phone's internet address, so that is said first (lib/ip-warning.ts, 'pair').
+  const mayMeet = async () => nostrChatsThroughTor() || ipGate({ network: 'Nostr', act: 'pair', of: 'pair code' });
+
+  async function show() {
+    if (!(await mayMeet())) return;
     const made = newPairCode();
     setMode('show');
     setCode(made);
     void run(() => showCode(made, ownLink));
   }
 
-  function type() {
+  async function type() {
     const digits = readPairCode(typed);
     if (!digits) {
       setNote(t('Type the 8 digits the other phone shows.'));
       return;
     }
+    if (!(await mayMeet())) return;
     void run(() => typeCode(digits, ownLink));
   }
 
@@ -91,7 +99,7 @@ export function PairCodeSheet({ visible, onClose, ownLink, onLink }: { visible: 
             {t('For someone you are with or on the phone with: one of you shows a code of 8 digits, the other types it, and you are each other’s contacts. The code itself never leaves the phones.')}
           </Text>
           <Row wrap>
-            <Button title={t('Show a code')} compact onPress={show} />
+            <Button title={t('Show a code')} compact onPress={() => void show()} />
             <Button title={t('Type their code')} kind="secondary" compact onPress={() => setMode('type')} />
           </Row>
         </>
@@ -106,7 +114,7 @@ export function PairCodeSheet({ visible, onClose, ownLink, onLink }: { visible: 
               : t('This code is closed.')}
           </Text>
           <Row wrap>
-            {!busy ? <Button title={t('New code')} compact onPress={show} /> : null}
+            {!busy ? <Button title={t('New code')} compact onPress={() => void show()} /> : null}
             <Button title={t('Cancel')} kind="secondary" compact onPress={onClose} />
           </Row>
         </>
@@ -124,7 +132,7 @@ export function PairCodeSheet({ visible, onClose, ownLink, onLink }: { visible: 
               onSubmitEditing={type}
               style={{ flex: 1 }}
             />
-            <Button title={t('Pair')} compact loading={busy} disabled={busy} onPress={type} />
+            <Button title={t('Pair')} compact loading={busy} disabled={busy} onPress={() => void type()} />
           </Row>
           <Text variant="caption" tone="muted">
             {busy ? t('Waiting for the other phone…') : t('Type the 8 digits the other phone shows.')}

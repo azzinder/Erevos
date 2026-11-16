@@ -1106,10 +1106,11 @@ nella riga della schermata principale e in una citazione (lì come ▒▒▒).
   e nei gruppi, finché non la tocchi, e poi si apre da sola. Anche in **Media, link e file** appare sfocata. Un Erevos
   di prima la mostra come una foto qualsiasi.
 - **Foto da vedere una volta:** sotto **+**, **Foto da vedere una volta** invia una foto che non appare mai in chat,
-  nelle chat con i contatti e nei gruppi. Chi la riceve la tocca e la vede una volta, da sola, senza screenshot dove il
-  telefono lo consente; quando si chiude, Erevos la elimina dal suo telefono, e la chat dice **Foto vista una volta**.
-  Non si può inoltrare, salvare o mettere nella Raccolta, e il tuo telefono la elimina appena è arrivata. Nulla ferma
-  una fotocamera puntata sullo schermo, e un Erevos precedente la mostra come foto nascosta.
+  nelle chat con i contatti e nei gruppi. **Fotocamera, da vedere una volta** ne invia allo stesso modo una che scatti
+  sul momento. Chi la riceve la tocca e la vede una volta, da sola, senza screenshot dove il telefono lo consente;
+  quando si chiude, Erevos la elimina dal suo telefono, e la chat dice **Foto vista una volta**. Non si può inoltrare,
+  salvare o mettere nella Raccolta, e il tuo telefono la elimina appena è arrivata. Nulla ferma una fotocamera puntata
+  sullo schermo, e un Erevos precedente la mostra come foto nascosta.
 
 **Perché:** un segno scritto nelle parole viaggia in esse, dentro la crittografia, senza niente accanto che lo
 distingua.
@@ -1183,11 +1184,13 @@ tempo potrebbe annullarne una parte. Su Android 10 e successivi, e nei browser c
 walkie-talkie mantiene la tua voce.
 
 **In parole:** tieni premuto un messaggio vocale, nella chat di un contatto o in un gruppo, e scegli **In parole**: il
-telefono scrive ciò che è stato detto, da leggere o copiare. La prima volta scarica un modello vocale di 268 MB, quando
-lo dici tu, dal server di Erevos stesso, che vede il tuo indirizzo come per ogni download; poi tutto avviene sul tuo
-telefono, e né il suono né le sue parole lo lasciano. Capisce circa cento lingue, tra cui il greco, e riconosce quella
-parlata. Può sbagliare, e le parole non vengono conservate. **Elimina il modello vocale**, sotto, libera lo spazio.
-Solo su Android, e serve un telefono con circa 2 GB di memoria libera.
+telefono scrive ciò che è stato detto, da leggere o copiare. La prima volta scarica un modello vocale di 268 MB,
+quando lo dici tu, dal server di Erevos stesso, che vede il tuo indirizzo come per ogni download; poi tutto avviene
+sul tuo telefono, e né il suono né le sue parole lo lasciano. Capisce circa cento lingue, tra cui il greco, e
+riconosce quella parlata. Può sbagliare, e le parole non vengono conservate. **Elimina il modello vocale**, sotto,
+libera lo spazio. Solo su Android, e serve un telefono con circa 2 GB di memoria libera, perché mentre scrive ne
+occupa circa 1,5 GB; se non riesce, il tentativo successivo riapre il modello. Dove nessuno parla, nel silenzio o nel
+rumore, non scrive nulla, invece di parole che nessuno ha detto.
 
 **Traduci:** tieni premuto un messaggio, nella chat di un contatto o in un gruppo, e scegli **Traduci**: il telefono lo
 traduce nella tua lingua, da leggere o copiare, tra greco, inglese, tedesco, spagnolo, francese e italiano. Indovina
@@ -1621,11 +1624,12 @@ come in qualsiasi gruppo, e nessun relay sa chi ne fa parte.
   persone, quindi il link cambia in uno sul suo relay; tu resti admin. Se perdi il telefono prima di cederlo, nessuno
   potrà più far entrare nessuno, anche se il gruppo continua per chi ne fa parte.
 - **Chiudi il gruppo** rimuove tutti i membri. **Lascia il gruppo** di un membro chiede al tuo telefono di rimuoverlo.
-- **Un gruppo usa e getta,** per un’occasione: prima di crearlo, in **Finisce**, scegli **Dopo un giorno**, **Dopo 3 giorni**
-  o **Dopo 7 giorni**. Quando il suo tempo finisce, il tuo telefono lo chiude, e l’Erevos di ogni membro lo elimina, con
-  i suoi messaggi, foto e file, la prossima volta che è aperto; il suo link smette di funzionare. La schermata del gruppo
-  stesso dice quando finisce. Un membro con un Erevos più vecchio lo tiene, e fino ad allora chiunque può averne tenuto
-  una copia o uno screenshot.
+- **Un gruppo usa e getta,** per un’occasione: prima di crearlo, in **Finisce**, scegli **Dopo un giorno**, **Dopo 3
+  giorni** o **Dopo 7 giorni**. Quando il suo tempo finisce, l’Erevos di ogni membro lo elimina, ciascuno secondo
+  l’orologio del proprio telefono, con i suoi messaggi, foto e file, la prossima volta che è aperto, e il suo link
+  smette di funzionare. Quando finisce si decide alla creazione del gruppo e non cambia mai. La schermata del gruppo
+  stesso dice quando finisce. Un membro con un Erevos più vecchio lo tiene, e fino ad allora chiunque può averne
+  tenuto una copia o uno screenshot.
 - **Fino a 100 membri,** perché l’intero gruppo deve stare nell’unico messaggio che fa entrare qualcuno.
 - **Ogni telefono in un gruppo pubblico ha bisogno di questa versione di Erevos.** I gruppi creati dai contatti
   funzionano come prima.
@@ -1929,6 +1933,8 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
 - **I relay Nostr pubblici e i server di file Nostr:** lo vedono, a meno che la connessione passi da Tor. Attiva
   **Nostr tramite Tor** in **Impostazioni** → **Relay e reti** → **Nostr**, oppure **Tramite Tor** per una chat. Vedi
   [Tramite Nostr](#nostr).
+- **Abbinarsi con un codice:** i due telefoni si incontrano su quegli stessi relay Nostr pubblici, quindi senza Nostr
+  tramite Tor vedono l’indirizzo, ma non il codice né i link di contatto. Erevos lo dice prima della prima volta.
 
 - **Le chiamate:** non passano mai da Tor. Il relay delle chiamate, il tuo o quello del tuo contatto, vede
   l’indirizzo, ma non quello che si dice. Una chiamata tra telefoni vicini sulla stessa rete resta su quella rete.

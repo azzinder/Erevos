@@ -86,7 +86,7 @@ export async function downloadModel(onProgress: (received: number, total: number
   }
   const whole = modelFile();
   if (whole.exists) whole.delete();
-  part.move(whole);
+  await part.move(whole);
 }
 
 // A file path from a file: uri, as the core opens it.

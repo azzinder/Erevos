@@ -701,11 +701,16 @@ export class History {
   }
 
   /** Ours, kept: raised to the mark their phone gave it before (markedEarly). */
-  add({ peer, ...message }: Message): Promise<void> {
+  async add({ peer, ...message }: Message): Promise<void> {
     const early = message.mine ? this.markedEarly(peer, message.tag) : null;
     if (early) this.early.delete(`${peer} ${message.tag}`);
-    const list = [...(this.data.chats[peer] ?? []), pack(letGoOnce(early ? withMark(message, early.mark, early.at) : message, Date.now()))];
-    return this.save({ chats: { ...this.data.chats, [peer]: list } });
+    const kept = letGoOnce(early ? withMark(message, early.mark, early.at) : message, Date.now());
+    const list = [...(this.data.chats[peer] ?? []), pack(kept)];
+    await this.save({ chats: { ...this.data.chats, [peer]: list } });
+    // A photo to see once that reached them before it was kept here: never kept with its file, so
+    // its chunks, written as it went, are deleted here (save deletes only those of files it held).
+    const file = message.file;
+    if (file?.once && !kept.file && !soundsAndFiles(this.data.chats).files.has(file.id)) await deleteChunks(file.id, file.count).catch(() => undefined);
   }
 
   /**

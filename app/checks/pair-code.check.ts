@@ -10,9 +10,10 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
-import { nostrKeys, setCore, type Core } from '../lib/core';
+import { nostrKeys, pairCore, setCore, type Core } from '../lib/core';
+import { fromHex, randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { setNostrOpen } from '../lib/nostr-dm-net';
-import { boxKey, newPairCode, PAIR_TRIES, pairText, readPair, readPairCode, setPairNet, showCode, showPairCode, typeCode } from '../lib/pair-code';
+import { boxKey, newPairCode, PairBox, PAIR_TRIES, pairText, readPair, readPairCode, setPairGrace, setPairNet, showCode, showPairCode, typeCode, type PairMessage } from '../lib/pair-code';
 import { FakeRelay } from './nostr-relay';
 
 const H32 = 'ab'.repeat(32);
@@ -79,9 +80,11 @@ before(() => {
     return found.link();
   });
   setPairNet(() => nostrKeys(), URLS);
+  setPairGrace(300);
 });
 
 after(() => {
+  setPairGrace(10_000);
   setPairNet(null);
   setNostrOpen(null);
   setCore(null);
@@ -124,6 +127,37 @@ test('a wrong code is told as wrong, opens nothing, and the code shown closes af
   const late = await typeCode(code, B);
   late.stop();
   assert.deepEqual(await late.done, { error: '' });
+});
+
+test('a watcher who knows the first 3 digits cannot end a pairing with a hello and a wrong of its own', { skip: !coreReady }, async () => {
+  setPairGrace(5000);
+  try {
+    const code = newPairCode();
+    const seen: PairMessage[] = [];
+    const watcher = await PairBox.open(code.slice(0, 3), (message) => seen.push(message));
+    const typer = await typeCode(code, B);
+    // A hello of the watcher's, with a share for a code it made up, answered by the phone that typed.
+    const s = toHex(randomBytes(16));
+    const channel = utf8Encode(`erevos pair v1 ${code.slice(0, 3)}`);
+    const both = await pairCore().pairStart(utf8Encode(`${code.slice(0, 3)}00000`), channel, fromHex(s));
+    await watcher.send({ t: 'hello', s, y: toHex(both.slice(32)), at: Date.now() });
+    let answer: PairMessage | undefined;
+    for (let i = 0; i < 100 && !answer; i++) {
+      answer = seen.find((m) => m.t === 'answer' && m.s === s);
+      if (!answer) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    assert.ok(answer && answer.t === 'answer');
+    // Then a 'wrong' of its own: the phone that typed waits on, and the real phone's code still pairs.
+    await watcher.send({ t: 'wrong', s, to: answer.y });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const shower = await showCode(code, A);
+    const [shown, typed] = await Promise.all([shower.done, typer.done]);
+    watcher.close();
+    assert.deepEqual(shown, { link: B });
+    assert.deepEqual(typed, { link: A });
+  } finally {
+    setPairGrace(300);
+  }
 });
 
 test('stopping ends a pairing at once', { skip: !coreReady }, async () => {

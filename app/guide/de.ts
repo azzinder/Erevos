@@ -1185,11 +1185,12 @@ Startbildschirms und in einem Zitat (dort als ▒▒▒).
   Chats mit Kontakten und in Gruppen, bis du es antippst; dann öffnet es sich von selbst. Auch in **Medien, Links und
   Dateien** erscheint es verschwommen. Ein Erevos von vorher zeigt es wie jedes Foto.
 - **Foto zum einmaligen Ansehen:** unter **+** sendet **Foto zum einmaligen Ansehen** ein Foto, das nie im Chat
-  erscheint, in den Chats mit Kontakten und in Gruppen. Wer es bekommt, tippt darauf und sieht es einmal für sich, wo
-  das Telefon es erlaubt ohne Bildschirmfotos; beim Schließen löscht Erevos es von seinem Telefon, und der Chat sagt
-  **Foto einmal angesehen**. Es lässt sich nicht weiterleiten, speichern oder in die Sammlung legen, und dein eigenes
-  Telefon löscht es, sobald es angekommen ist. Nichts hält eine auf den Bildschirm gerichtete Kamera ab, und ein
-  älteres Erevos zeigt es als verstecktes Foto.
+  erscheint, in den Chats mit Kontakten und in Gruppen. **Kamera, zum einmaligen Ansehen** sendet ebenso eines, das du
+  gerade aufnimmst. Wer es bekommt, tippt darauf und sieht es einmal für sich, wo das Telefon es erlaubt ohne
+  Bildschirmfotos; beim Schließen löscht Erevos es von seinem Telefon, und der Chat sagt **Foto einmal angesehen**. Es
+  lässt sich nicht weiterleiten, speichern oder in die Sammlung legen, und dein eigenes Telefon löscht es, sobald es
+  angekommen ist. Nichts hält eine auf den Bildschirm gerichtete Kamera ab, und ein älteres Erevos zeigt es als
+  verstecktes Foto.
 
 **Warum:** Ein in die Worte getipptes Zeichen reist in ihnen, innerhalb der Verschlüsselung, ohne dass daneben etwas
 mitgeschickt wird, das sich unterscheiden ließe.
@@ -1266,11 +1267,12 @@ Opus erzeugen (WebCodecs); das Walkie-Talkie behält deine Stimme.
 
 **In Worten:** Halte eine Sprachnachricht gedrückt, im Chat mit einem Kontakt oder in einer Gruppe, und wähle **In
 Worten**: Dein Telefon schreibt auf, was gesagt wurde, zum Lesen oder Kopieren. Beim ersten Mal lädt es, wenn du es
-sagst, ein Sprachmodell von 268 MB vom eigenen Server von Erevos, der deine Adresse sieht wie bei jedem Download; danach
-geschieht alles auf deinem Telefon, und weder der Ton noch seine Worte verlassen es. Es versteht etwa hundert Sprachen,
-Griechisch darunter, und erkennt die gesprochene. Es kann Fehler machen, und die Worte werden nicht gespeichert.
-**Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf Android, und das Telefon braucht etwa 2 GB freien
-Arbeitsspeicher.
+sagst, ein Sprachmodell von 268 MB vom eigenen Server von Erevos, der deine Adresse sieht wie bei jedem Download;
+danach geschieht alles auf deinem Telefon, und weder der Ton noch seine Worte verlassen es. Es versteht etwa hundert
+Sprachen, Griechisch darunter, und erkennt die gesprochene. Es kann Fehler machen, und die Worte werden nicht
+gespeichert. **Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf Android, und das Telefon braucht etwa 2
+GB freien Arbeitsspeicher, da es beim Schreiben etwa 1,5 GB belegt; schlägt das fehl, öffnet der nächste Versuch das
+Modell neu. Wo niemand spricht, bei Stille oder Rauschen, schreibt es nichts, statt Wörter, die niemand gesagt hat.
 
 **Übersetzen:** Halte eine Nachricht gedrückt, im Chat mit einem Kontakt oder in einer Gruppe, und wähle **Übersetzen**:
 Dein Telefon übersetzt sie in deine Sprache, zum Lesen oder Kopieren, zwischen Griechisch, Englisch, Deutsch, Spanisch,
@@ -1725,11 +1727,12 @@ und gehen an jedes Mitglied wie in jeder Gruppe, und kein Relay erfährt, wer da
   übergibst, kann niemand mehr jemanden hereinlassen, auch wenn die Gruppe für die Mitglieder weiterläuft.
 - **Gruppe schließen** nimmt jedes Mitglied heraus. **Gruppe verlassen** eines Mitglieds bittet dein Telefon, es
   herauszunehmen.
-- **Eine Wegwerfgruppe,** für einen Anlass: Wähle, bevor du sie erstellst, unter **Endet** **Nach einem Tag**,
-  **Nach 3 Tagen** oder **Nach 7 Tagen**. Ist ihre Zeit um, schließt dein Telefon sie, und das Erevos jedes Mitglieds
-  löscht sie mit ihren Nachrichten, Fotos und Dateien, sobald es das nächste Mal offen ist; ihr Link funktioniert nicht
-  mehr. Der eigene Bildschirm der Gruppe sagt, wann sie endet. Ein Mitglied mit einem älteren Erevos behält sie, und
-  bis dahin kann jeder eine Kopie oder ein Bildschirmfoto behalten haben.
+- **Eine Wegwerfgruppe,** für einen Anlass: Wähle, bevor du sie erstellst, unter **Endet** **Nach einem Tag**, **Nach
+  3 Tagen** oder **Nach 7 Tagen**. Ist ihre Zeit um, löscht das Erevos jedes Mitglieds sie, jedes nach der Uhr seines
+  eigenen Telefons, mit ihren Nachrichten, Fotos und Dateien, sobald es das nächste Mal offen ist, und ihr Link
+  funktioniert nicht mehr. Wann sie endet, wird beim Erstellen der Gruppe festgelegt und ändert sich nie. Der eigene
+  Bildschirm der Gruppe sagt, wann sie endet. Ein Mitglied mit einem älteren Erevos behält sie, und bis dahin kann
+  jeder eine Kopie oder ein Bildschirmfoto behalten haben.
 - **Bis zu 100 Mitglieder,** da die ganze Gruppe in die eine Nachricht passen muss, die jemanden hereinlässt.
 - **Jedes Telefon in einer öffentlichen Gruppe braucht diese Version von Erevos.** Aus Kontakten gemachte Gruppen
   funktionieren wie bisher.
@@ -2046,6 +2049,8 @@ Tor.
 - **Die öffentlichen Nostr-Relays und die Nostr-Dateiserver:** Sie sehen sie, außer die Verbindung geht über Tor.
   Schalte **Nostr über Tor** unter **Einstellungen** → **Relay und Netze** → **Nostr** ein, oder **Über Tor** für
   einen Chat. Siehe [Über Nostr](#nostr).
+- **Mit einem Code koppeln:** Die beiden Telefone treffen sich auf denselben öffentlichen Nostr-Relays, ohne Nostr über
+  Tor sehen diese also die Adresse, nicht aber den Code oder die Kontaktlinks. Erevos sagt es vor dem ersten Koppeln.
 
 - **Anrufe:** Sie gehen nie über Tor. Das Anruf-Relay, deines oder das deines Kontakts, sieht die Adresse, aber nicht,
   was gesagt wird. Ein Anruf zwischen Telefonen in der Nähe im selben Netz bleibt in diesem Netz.

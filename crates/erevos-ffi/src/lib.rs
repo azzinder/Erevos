@@ -337,7 +337,14 @@ pub fn speech_text(path: &[u8], pcm: &[u8], rate: &[u8], language: &[u8]) -> Res
     let path = std::str::from_utf8(path).map_err(|_| "path: UTF-8")?;
     let language = std::str::from_utf8(language).map_err(|_| "language: UTF-8")?;
     let rate = u32::from_be_bytes(<[u8; 4]>::try_from(rate).map_err(|_| "rate: 4 bytes")?);
-    let mut open = SPEECH.lock().map_err(|_| "the speech model failed before")?;
+    let mut open = SPEECH.lock().unwrap_or_else(|failed| {
+        // A call that failed midway (a panic, caught where the core is called) left the model as it
+        // was then: it is let go of, and opened anew, so the next try works without a restart.
+        let mut open = failed.into_inner();
+        *open = None;
+        SPEECH.clear_poison();
+        open
+    });
     if open.as_ref().map(|(at, _)| at.as_str()) != Some(path) {
         *open = None;
         let model = erevos_speech::open(std::path::Path::new(path), erevos_speech::MODEL_SHA256).map_err(|e| e.to_string())?;
@@ -370,7 +377,13 @@ pub fn translate_text(path: &[u8], from: &[u8], to: &[u8], text: &[u8]) -> Resul
     let from = std::str::from_utf8(from).map_err(|_| "from: UTF-8")?;
     let to = std::str::from_utf8(to).map_err(|_| "to: UTF-8")?;
     let text = std::str::from_utf8(text).map_err(|_| "text: UTF-8")?;
-    let mut open = TRANSLATORS.lock().map_err(|_| "the translation model failed before")?;
+    let mut open = TRANSLATORS.lock().unwrap_or_else(|failed| {
+        // As for the speech model above: the models are opened anew after a call that failed midway.
+        let mut open = failed.into_inner();
+        open.clear();
+        TRANSLATORS.clear_poison();
+        open
+    });
     let at = match open.iter().position(|(at, _)| at == path) {
         Some(i) => i,
         None => {

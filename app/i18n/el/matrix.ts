@@ -12,7 +12,7 @@ export const matrix: Record<string, string> = {
   "Matrix": "Matrix",
   "Chats with people on Matrix: encrypted, not anonymous": "Συνομιλίες με ανθρώπους στο Matrix: κρυπτογραφημένες, όχι ανώνυμες",
   "This build of Erevos has no Matrix yet. It comes with the next build of the app.": "Αυτή η έκδοση του Erevos δεν έχει ακόμα Matrix. Έρχεται με την επόμενη έκδοση της εφαρμογής.",
-  "Chat with people on Matrix, who use Element or another Matrix app. Messages are end-to-end encrypted, but these chats are not anonymous: the Matrix server sees who talks with whom, and when.": "Συνομίλησε με ανθρώπους στο Matrix, που χρησιμοποιούν το Element ή άλλη εφαρμογή Matrix. Τα μηνύματα είναι κρυπτογραφημένα από άκρο σε άκρο, αλλά αυτές οι συνομιλίες δεν είναι ανώνυμες: ο server του Matrix βλέπει ποιος μιλά με ποιον, και πότε.",
+  "Chat with people on Matrix, who use Element or another Matrix app. Messages are end-to-end encrypted, but these chats are not anonymous: the Matrix server sees who talks with whom, and when.": "Συνομίλησε με ανθρώπους στο Matrix, που χρησιμοποιούν το Element ή άλλη εφαρμογή Matrix. Τα μηνύματα είναι κρυπτογραφημένα από άκρη σε άκρη, αλλά αυτές οι συνομιλίες δεν είναι ανώνυμες: ο server του Matrix βλέπει ποιος μιλά με ποιον, και πότε.",
   "Matrix ID": "Matrix ID",
   "Server": "Server",
   "Only when it is not the one in your Matrix ID.": "Μόνο όταν δεν είναι αυτός του Matrix ID σου.",

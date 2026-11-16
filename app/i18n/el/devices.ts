@@ -184,7 +184,7 @@ export const devices: Record<string, string> = {
   'Making the code…':
     'Φτιάχνεται ο κωδικός…',
   'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
-    'Το τηλέφωνο στέλνει σε αυτόν τον υπολογιστή ό,τι χρειάζεται μέσω Nostr, κρυπτογραφημένα από άκρο σε άκρο. Ο κωδικός ισχύει μισή ώρα.',
+    'Το τηλέφωνο στέλνει σε αυτόν τον υπολογιστή ό,τι χρειάζεται μέσω Nostr, κρυπτογραφημένα από άκρη σε άκρη. Ο κωδικός ισχύει μισή ώρα.',
   'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
     'Ο υπολογιστής δεν απάντησε. Σε αυτόν, πάτα «Σύνδεση με άλλον τρόπο», συνδέσου εκεί στο relay και σάρωσε ξανά τον κωδικό του.',
   'Linked to {name}. The chats go to it now.':

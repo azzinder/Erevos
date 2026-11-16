@@ -1075,10 +1075,11 @@ u citatu (tamo kao ▒▒▒).
   zamućeno, u razgovorima s kontaktima i u grupama, dok je ne dodirnete, i tada se sama otvara. Zamućena je i u
   dijelu **Mediji, linkovi i fajlovi**. Raniji Erevos je prikazuje kao svaku fotografiju.
 - **Fotografija za jedno gledanje:** pod **+**, **Fotografija za jedno gledanje** šalje fotografiju koja se nikad ne
-  prikazuje u razgovoru, s kontaktima i u grupama. Ko je primi, dodirne je i vidi jednom, samu, bez snimaka ekrana gdje
-  telefon to dopušta; kad se zatvori, Erevos je briše s njegovog telefona, a razgovor kaže **Fotografija viđena
-  jednom**. Ne može se proslijediti, sačuvati ni staviti u Zbirku, a tvoj telefon je briše čim stigne. Ništa ne
-  sprječava kameru uperenu u ekran, a stariji Erevos je prikazuje kao skrivenu fotografiju.
+  prikazuje u razgovoru, s kontaktima i u grupama. **Kamera, za jedno gledanje** na isti način šalje jednu koju upravo
+  snimaš. Ko je primi, dodirne je i vidi jednom, samu, bez snimaka ekrana gdje telefon to dopušta; kad se zatvori,
+  Erevos je briše s njegovog telefona, a razgovor kaže **Fotografija viđena jednom**. Ne može se proslijediti,
+  sačuvati ni staviti u Zbirku, a tvoj telefon je briše čim stigne. Ništa ne sprječava kameru uperenu u ekran, a
+  stariji Erevos je prikazuje kao skrivenu fotografiju.
 
 **Zašto:** znak upisan u riječi putuje u njima, unutar šifriranja, bez ičega pored njih po čemu bi se razlikovao.
 
@@ -1145,12 +1146,13 @@ napušta telefon; ako promena ne uspe, poruka se ne šalje. Samo vaš telefon zn
 prepoznati po sluhu, ali neko sa snimkom i vremenom mogao bi deo toga da poništi. Na Androidu 10 i novijem, i u
 pregledačima koji sami prave Opus (WebCodecs); walkie-talkie zadržava vaš glas.
 
-**Riječima:** drži glasovnu poruku, u chatu s kontaktom ili u grupi, i izaberi **Riječima**: telefon zapisuje ono što je
-rečeno, da to pročitaš ili kopiraš. Prvi put preuzima govorni model od 268 MB, kad ti kažeš, s Erevosova vlastitog
+**Riječima:** drži glasovnu poruku, u chatu s kontaktom ili u grupi, i izaberi **Riječima**: telefon zapisuje ono što
+je rečeno, da to pročitaš ili kopiraš. Prvi put preuzima govorni model od 268 MB, kad ti kažeš, s Erevosova vlastitog
 poslužitelja, koji vidi tvoju adresu kao kod svakog preuzimanja; nakon toga sve se radi na tvom telefonu, i ni zvuk ni
 njegove riječi ga ne napuštaju. Razumije stotinjak jezika, među njima i grčki, i prepoznaje onaj koji se govori. Može
 pogriješiti, a riječi se ne čuvaju. **Obriši govorni model**, ispod, oslobađa prostor. Samo na Androidu, i treba
-telefon s oko 2 GB slobodne memorije.
+telefon s oko 2 GB slobodne memorije, jer dok piše zauzima oko 1,5 GB; ako to ne uspije, sljedeći pokušaj ponovo
+otvara model. Gdje niko ne govori, u tišini ili buci, ne piše ništa, umjesto riječi koje niko nije rekao.
 
 **Prevedi:** drži pritisnutu poruku, u razgovoru s kontaktom ili u grupi, i izaberi **Prevedi**: tvoj telefon je
 prevodi na tvoj jezik, ili na engleski, da je pročitaš ili kopiraš, između grčkog, engleskog, njemačkog, španjolskog,
@@ -1551,10 +1553,10 @@ na kraj pomoću MLS-a i idu svakom članu kao u svakoj grupi, a nijedan relay ne
   nikoga pustiti, iako grupa ide dalje za one koji su u njoj.
 - **Zatvori grupu** uklanja sve članove. **Napusti grupu** nekog člana traži od vašeg telefona da ga ukloni.
 - **Grupa za jednokratnu upotrebu,** za jednu priliku: prije nego je napraviš, pod **Ističe** izaberi **Nakon jednog
-  dana**, **Nakon 3 dana** ili **Nakon 7 dana**. Kad joj istekne vrijeme, tvoj telefon je zatvara, a Erevos svakog člana
-  je briše, s porukama, fotografijama i datotekama, sljedeći put kad je otvoren; njen link prestaje raditi. Ekran same
-  grupe kaže kad ističe. Član sa starijim Erevosom je zadržava, a do tada je svako mogao sačuvati kopiju ili snimak
-  ekrana.
+  dana**, **Nakon 3 dana** ili **Nakon 7 dana**. Kad joj istekne vrijeme, Erevos svakog člana je briše, svaki po satu
+  svog telefona, s porukama, fotografijama i datotekama, sljedeći put kad je otvoren, i njen link prestaje raditi. Kad
+  ističe određuje se kad se grupa pravi i nikad se ne mijenja. Ekran same grupe kaže kad ističe. Član sa starijim
+  Erevosom je zadržava, a do tada je svako mogao sačuvati kopiju ili snimak ekrana.
 - **Najviše 100 članova,** jer cijela grupa mora stati u jednu poruku koja nekoga pušta unutra.
 - **Svaki telefon u javnoj grupi treba ovu verziju Erevosa.** Grupe napravljene od kontakata rade kao i prije.
 
@@ -1847,6 +1849,8 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
 - **Javni Nostr relayi i Nostr serveri datoteka:** vide je, osim ako veza ne ide preko Tora. Uključite **Nostr preko
   Tora** pod **Postavke** → **Relay i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Vidi [Preko
   Nostra](#nostr).
+- **Uparivanje kodom:** dva telefona se sreću na tim istim javnim Nostr relayima, pa bez Nostra preko Tora oni vide
+  adresu, ali ne i kod ni kontakt linkove. Erevos to kaže prije prvog uparivanja.
 
 - **Pozivi:** nikad ne idu preko Tora. Relay za pozive, vaš ili vašeg kontakta, vidi adresu, ali ne i ono što se
   govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži.

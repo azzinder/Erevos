@@ -893,15 +893,16 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
                   setMore(false);
                   setInfo(true);
                 }} /> : null}
-              <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} />
+              <StarredHere stars={keep.stars.filter((star) => (thread ? star.thread === thread || star.id === thread : !star.thread))} who={room.name} onGo={reach} onGoing={() => setMore(false)} />
               <ChatTimer
                 seconds={vanishTimer(rulesOf(room))}
                 note={t('New messages, sent or received, go from this phone that long after they were sent. Yours are also deleted for everyone in the chat then, or as soon as Erevos runs again: their apps show them as deleted. What the others sent stays with them. Messages already here stay.')}
                 onChoose={(after) => void matrixAct(async (state) => setTimerIn(state, roomId, after)).catch(fail)}
+                onChosen={() => setMore(false)}
               />
             </Row>
           ) : null}
-          {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} /> : null}
+          {!room.invitedBy ? <HistoryButtons tools={history} exportable={where === 'space'} onRun={() => setMore(false)} /> : null}
           {/* A name of our own for it, on this device only: nobody is told. */}
           {!room.invitedBy && !thread ? (
             <OwnName
@@ -913,7 +914,7 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
               onSave={(name) => matrixSetOwnName(roomId, name)}
             />
           ) : null}
-          {other && !room.invitedBy ? <MatrixBlock other={other} name={room.members[other]?.name || other} blocked={isIgnored(state, other)} fail={fail} /> : null}
+          {other && !room.invitedBy ? <MatrixBlock other={other} name={room.members[other]?.name || other} blocked={isIgnored(state, other)} fail={fail} onDone={() => setMore(false)} /> : null}
           <Button
             title={t('Leave')}
             kind="secondary"
@@ -1011,8 +1012,11 @@ function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 }
 
 // Blocks the one person of a chat on every app of the account (m.ignored_user_list), once asked, or lets them through again.
-function MatrixBlock({ other, name, blocked, fail }: { other: string; name: string; blocked: boolean; fail: (error: unknown) => void }) {
-  const set = (on: boolean) => void matrixAct((state) => setIgnored(state, other, on)).catch(fail);
+function MatrixBlock({ other, name, blocked, fail, onDone }: { other: string; name: string; blocked: boolean; fail: (error: unknown) => void; onDone: () => void }) {
+  const set = (on: boolean) => {
+    onDone();
+    void matrixAct((state) => setIgnored(state, other, on)).catch(fail);
+  };
   return blocked ? (
     <>
       <Text variant="caption" tone="muted">

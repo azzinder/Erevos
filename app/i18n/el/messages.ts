@@ -686,7 +686,7 @@ export const messages: Record<string, string> = {
   'Send where you are?': 'Να σταλεί πού είσαι;',
   'Within about {m} m': 'Με ακρίβεια περίπου {m} μ.',
   '{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.':
-    'Ο/η {name} παίρνει αυτό το σημείο μία φορά, κρυπτογραφημένο από άκρο σε άκρο. Το Erevos δεν ακολουθεί πού πας μετά.',
+    'Ο/η {name} παίρνει αυτό το σημείο μία φορά, κρυπτογραφημένο από άκρη σε άκρη. Το Erevos δεν ακολουθεί πού πας μετά.',
   'Open in maps': 'Άνοιγμα στους χάρτες',
   'Open in maps?': 'Άνοιγμα στους χάρτες;',
   'Your maps app opens at this place. It may load its map from the internet, as it does.':

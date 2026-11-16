@@ -69,3 +69,17 @@ test('ours goes from this phone once it reached them, not before', async () => {
   await history.mark('contact:x', true, 2, 30, ['dddddddddddd']);
   assert.deepEqual(history.messages().find((m) => m.tag === 'dddddddddddd')?.file, plain);
 });
+
+test('ours whose mark came before it was kept leaves no chunks behind', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const file = photo();
+  blobs.set(`${PREFIX}${file.id}-0`, Uint8Array.of(1));
+  // Their phone said it arrived before this phone kept the message (lib/e2e.ts markEarly).
+  await history.mark('contact:x', true, 1, Date.now(), ['eeeeeeeeeeee']);
+  await history.add({ peer: 'contact:x', text: '', mine: true, at: 1, tag: 'eeeeeeeeeeee', file });
+  const [went] = (await History.open('space', 0, key)).messages();
+  assert.equal(went.file, undefined);
+  assert.ok(went.seenOnce);
+  assert.ok(!blobs.has(`${PREFIX}${file.id}-0`), 'its chunks are deleted');
+});

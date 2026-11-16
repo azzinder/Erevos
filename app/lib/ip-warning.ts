@@ -20,9 +20,10 @@ import { IP_SEEN_MOST, loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceD
  * (`send`), a call (`call`), a file fetched from a server someone else chose (`file`), a web page
  * opened (`link`) or fetched for its preview (`preview`), a group or room joined through a server
  * (`join`), a place taken on a contact's relay from their invite (`relay`), or a radio station (`station`) or TV channel (`channel`) of the Collection played
- * straight, without its Play through Tor.
+ * straight, without its Play through Tor, or two phones paired by a code meeting on public Nostr
+ * relays (`pair`).
  */
-export type IpAct = 'send' | 'call' | 'file' | 'link' | 'preview' | 'join' | 'relay' | 'station' | 'channel';
+export type IpAct = 'send' | 'call' | 'file' | 'link' | 'preview' | 'join' | 'relay' | 'station' | 'channel' | 'pair';
 
 /**
  * Where a warning that was said is kept: in the open space's data when none is given; in a hidden
@@ -81,6 +82,8 @@ export function ipWarningText(warning: IpWarning): { title: string; message: str
       return { title, message: t("A contact invited this phone to a place on their relay. Taken without Tor, that relay sees this phone's internet address (IP address), though not what you send. Not taken, the invite is let go.") };
     case 'station':
       return { title, message: t("A station plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.") };
+    case 'pair':
+      return { title, message: t("To pair by a code, the two phones meet on public Nostr relays. Without Tor, those relays see this phone's internet address (IP address), though not the code or your contact links, which go encrypted.") };
     case 'channel':
       return { title, message: t("A TV channel plays straight from its server, which then sees this phone's internet address (IP address) for as long as it plays, as any site does.") };
   }

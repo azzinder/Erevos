@@ -28,6 +28,12 @@ import { NostrRelay, type NostrEvent } from './nostr-dm-net';
 // found by the tags; each side takes PAIR_TRIES of them and then stops, so whoever guesses gets
 // that many tries at 1 in 100,000, never a guess at home.
 //
+// Whoever watches the box (the 3 digits are no secret to one who watches all thousand) can write
+// there too. A 'wrong' or a 'done' whose tag does not hold can be theirs, so it ends nothing at
+// once on the phone that typed: it waits a while more (pairGrace) for the shower's 'done', and only then
+// says the code is wrong. Their own hellos and answers do use up tries, as they must: each one is
+// a guess at the code, so a watcher can only stop a pairing, which a new code then starts again.
+//
 // Shares, tags and links in hex. Self-contained but for the core, so it runs under plain Node for checks.
 
 type Keys = Required<Pick<Core, 'nostrSecret' | 'nostrPublic' | 'nostrWrap' | 'nostrUnwrap'>>;
@@ -59,6 +65,12 @@ export const PAIR_LASTS = 10 * 60_000;
 export const PAIR_WAIT = 90_000;
 /** How many wrong codes a side takes before it stops (crates/erevos-core cpace TRIES). */
 export const PAIR_TRIES = 3;
+/** How long the phone that typed a code still waits for a 'done' after a 'wrong' (see above). */
+let pairGrace = 10_000;
+/** For the checks: another wait than pairGrace's. */
+export function setPairGrace(ms: number): void {
+  pairGrace = ms;
+}
 /** The longest contact link that goes. */
 const LINK_MOST = 16 * 1024;
 
@@ -157,8 +169,8 @@ function be8(n: number): Uint8Array {
 const SINCE = 3600 + 600;
 const RETRY = 5000;
 
-/** The Nostr key both phones read and write at, for the first digits of a code. */
-class PairBox {
+/** The Nostr key both phones read and write at, for the first digits of a code. Exported for the checks, as a watcher. */
+export class PairBox {
   private readonly secretKey: Uint8Array;
   private readonly key: string;
   private readonly take: (message: PairMessage) => void;
@@ -355,7 +367,7 @@ export async function typeCode(code: string, ownLink: string): Promise<Pairing> 
   const started = Date.now();
   // The hellos answered, by session: this side's secret and share, and the shared key.
   const runs = new Map<string, { y: string; key: Uint8Array }>();
-  let wrong = 0;
+  let heardWrong = false;
   let tried = 0;
   let box: PairBox | null = null;
   const take = async (message: PairMessage) => {
@@ -382,12 +394,14 @@ export async function typeCode(code: string, ownLink: string): Promise<Pairing> 
     if (message.t !== 'done' && message.t !== 'wrong') return;
     const run = runs.get(message.s);
     if (!run || message.to !== run.y) return;
-    runs.delete(message.s);
     const link = message.t === 'done' && (await proofHolds(run.key, true, message.k)) ? openLink(run.key, true, message.b) : null;
     if (link) return end({ link });
-    wrong += 1;
-    if (wrong >= PAIR_TRIES) end(tooMany());
-    else if (runs.size === 0) end({ error: t('The code is not the one the other phone shows.') });
+    // Maybe a watcher's: the run stays, for a 'done' that holds, and the code is said to be wrong
+    // only once none came in pairGrace.
+    if (heardWrong || ended()) return;
+    heardWrong = true;
+    const graceTimer = setTimeout(() => end({ error: t('The code is not the one the other phone shows.') }), pairGrace);
+    void done.then(() => clearTimeout(graceTimer));
   };
   box = await PairBox.open(code, (message) => void take(message));
   box.whenDown((why) => end({ error: why }));

@@ -150,7 +150,7 @@ export async function ownStickerPart(sticker: OwnSticker): Promise<{ bytes: Uint
  * The chat's starred messages, behind a button that says how many (none, no button): the latest
  * first, each going to its message once tapped. `who` names the chat, for those not ours.
  */
-export function StarredHere({ stars, who, onGo }: { stars: Star[]; who: string; onGo: (id: string) => void }) {
+export function StarredHere({ stars, who, onGo, onGoing }: { stars: Star[]; who: string; onGo: (id: string) => void; /** Called as it goes: a sheet it shows in closes too. */ onGoing?: () => void }) {
   const [open, setOpen] = useState(false);
   if (stars.length === 0) return null;
   const now = Date.now();
@@ -171,6 +171,7 @@ export function StarredHere({ stars, who, onGo }: { stars: Star[]; who: string; 
                 starred
                 onPress={() => {
                   setOpen(false);
+                  onGoing?.();
                   // Once the sheet is down, so the thread scrolls under it.
                   setTimeout(() => onGo(star.id), 300);
                 }}

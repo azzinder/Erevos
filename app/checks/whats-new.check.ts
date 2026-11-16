@@ -77,6 +77,12 @@ test('what is not out yet shows under the version that runs, once it comes after
   if (pending) assert.equal(whatsNewFor('0.0.1', 'lite')[0].version, null);
 });
 
+test('plain Erevos keeps the lines that are its own too: the fixed bar, groups that end', () => {
+  const all = whatsNewFor(VERSIONS[0].version, 'lite').flatMap((v) => [...v.forYou, ...v.underTheHood]);
+  for (const start of ['**The bar at the top stays**', '**Groups that end**']) assert.ok(all.some((line) => line.startsWith(start)), start);
+  assert.ok(!all.some((line) => line.startsWith('**A simpler field in Matrix and XMPP chats**')));
+});
+
 test("its links go to the guide's sections, in every one of its languages", () => {
   const links = [...lines(NEXT), ...VERSIONS.flatMap(lines)].flatMap((item) => parseInline(item).flatMap((span) => (span.link ? [span.link] : [])));
   for (const source of Object.values(GUIDE_SOURCES)) {

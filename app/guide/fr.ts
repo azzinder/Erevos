@@ -1174,11 +1174,12 @@ dans la ligne de l’écran d’accueil et dans une citation (là sous la forme 
   Dans **Médias, liens et fichiers**, elle apparaît floue aussi. Un Erevos d’avant la montre comme n’importe quelle
   photo.
 - **Photo à voir une fois :** sous **+**, **Photo à voir une fois** envoie une photo qui n’apparaît jamais dans la
-  discussion, avec un contact ou dans un groupe. Qui la reçoit la touche et la voit une fois, seule, sans captures
-  d’écran là où le téléphone le permet ; à la fermeture, Erevos la supprime de son téléphone, et la discussion indique
-  **Photo vue une fois**. Elle ne peut être ni transférée, ni enregistrée, ni mise dans la Collection, et votre propre
-  téléphone la supprime dès qu’elle leur est parvenue. Rien n’empêche un appareil photo pointé sur l’écran, et un
-  Erevos plus ancien la montre comme une photo cachée.
+  discussion, avec un contact ou dans un groupe. **Appareil photo, à voir une fois** en envoie de la même façon une
+  que tu prends sur le moment. Qui la reçoit la touche et la voit une fois, seule, sans captures d’écran là où le
+  téléphone le permet ; à la fermeture, Erevos la supprime de son téléphone, et la discussion indique **Photo vue une
+  fois**. Elle ne peut être ni transférée, ni enregistrée, ni mise dans la Collection, et votre propre téléphone la
+  supprime dès qu’elle leur est parvenue. Rien n’empêche un appareil photo pointé sur l’écran, et un Erevos plus
+  ancien la montre comme une photo cachée.
 
 **Pourquoi :** une marque tapée dans les mots voyage avec eux, à l’intérieur du chiffrement, sans rien à côté qui la
 distingue.
@@ -1251,11 +1252,13 @@ l’enregistrement et du temps pourrait en défaire une partie. Sur Android 10 e
 qui font eux-mêmes de l’Opus (WebCodecs) ; le talkie-walkie garde ta voix.
 
 **En mots :** maintiens un message vocal, dans le chat d’un contact ou dans un groupe, et choisis **En mots** : ton
-téléphone écrit ce qui a été dit, pour le lire ou le copier. La première fois, il télécharge un modèle vocal de 268 Mo,
-quand tu le dis, depuis le serveur d’Erevos lui-même, qui voit ton adresse comme pour tout téléchargement ; ensuite tout
-se fait sur ton téléphone, et ni le son ni ses mots ne le quittent. Il comprend une centaine de langues, dont le grec, et
-reconnaît celle qui est parlée. Il peut se tromper, et les mots ne sont pas gardés. **Supprimer le modèle vocal**, en
-dessous, libère la place. Seulement sur Android, et il faut un téléphone avec environ 2 Go de mémoire libre.
+téléphone écrit ce qui a été dit, pour le lire ou le copier. La première fois, il télécharge un modèle vocal de 268
+Mo, quand tu le dis, depuis le serveur d’Erevos lui-même, qui voit ton adresse comme pour tout téléchargement ;
+ensuite tout se fait sur ton téléphone, et ni le son ni ses mots ne le quittent. Il comprend une centaine de langues,
+dont le grec, et reconnaît celle qui est parlée. Il peut se tromper, et les mots ne sont pas gardés. **Supprimer le
+modèle vocal**, en dessous, libère la place. Seulement sur Android, et il faut un téléphone avec environ 2 Go de
+mémoire libre, car il en prend environ 1,5 Go pendant qu’il écrit ; si cela échoue, l’essai suivant rouvre le modèle.
+Là où personne ne parle, dans le silence ou le bruit, il n’écrit rien, plutôt que des mots que personne n’a dits.
 
 **Traduire :** reste appuyé sur un message, dans le chat d’un contact ou dans un groupe, et choisis **Traduire** : ton
 téléphone le traduit dans ta langue, pour le lire ou le copier, entre le grec, l’anglais, l’allemand, l’espagnol, le
@@ -1706,11 +1709,12 @@ et aucun relais n’apprend qui en fait partie.
   les gens, donc le lien change pour un lien sur son relais ; tu restes admin. Si ton téléphone est perdu avant que tu
   le cèdes, personne ne peut plus faire entrer qui que ce soit, même si le groupe continue pour ceux qui en font partie.
 - **Fermer le groupe** retire tous les membres. **Quitter le groupe** d’un membre demande à ton téléphone de le retirer.
-- **Un groupe jetable,** pour une occasion : avant de le créer, sous **Fin**, choisissez **Après un jour**, **Après 3 jours**
-  ou **Après 7 jours**. Quand son temps est écoulé, votre téléphone le ferme, et l’Erevos de chaque membre le supprime,
-  avec ses messages, photos et fichiers, la prochaine fois qu’il est ouvert ; son lien ne fonctionne plus. L’écran du
-  groupe lui-même indique quand il prend fin. Un membre sur un Erevos plus ancien le garde, et d’ici là chacun a pu en
-  garder une copie ou une capture d’écran.
+- **Un groupe jetable,** pour une occasion : avant de le créer, sous **Fin**, choisissez **Après un jour**, **Après 3
+  jours** ou **Après 7 jours**. Quand son temps est écoulé, l’Erevos de chaque membre le supprime, chacun selon
+  l’horloge de son propre téléphone, avec ses messages, photos et fichiers, la prochaine fois qu’il est ouvert, et son
+  lien ne fonctionne plus. Sa fin est fixée à la création du groupe et ne change jamais. L’écran du groupe lui-même
+  indique quand il prend fin. Un membre sur un Erevos plus ancien le garde, et d’ici là chacun a pu en garder une
+  copie ou une capture d’écran.
 - **Jusqu’à 100 membres,** car tout le groupe doit tenir dans l’unique message qui fait entrer quelqu’un.
 - **Chaque téléphone d’un groupe public a besoin de cette version d’Erevos.** Les groupes faits à partir de contacts
   fonctionnent comme avant.
@@ -2021,6 +2025,8 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
 - **Les relais Nostr publics et les serveurs de fichiers Nostr :** ils la voient, sauf si la connexion passe par Tor.
   Active **Nostr par Tor** sous **Réglages** → **Relais et réseaux** → **Nostr**, ou **Par Tor** pour une discussion.
   Voir [Par Nostr](#nostr).
+- **S’associer par un code :** les deux téléphones se retrouvent sur ces mêmes relais Nostr publics, donc sans Nostr via
+  Tor ils voient l’adresse, mais pas le code ni les liens de contact. Erevos le dit avant la première fois.
 
 - **Les appels :** ils ne passent jamais par Tor. Le relais d’appel, le tien ou celui de ton contact, voit l’adresse,
   mais pas ce qui se dit. Un appel entre téléphones proches sur le même réseau reste sur ce réseau.

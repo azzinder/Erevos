@@ -93,7 +93,7 @@ async function downloadOne(m: Model, onProgress: (received: number) => void, sig
   }
   const whole = modelFile(m);
   if (whole.exists) whole.delete();
-  part.move(whole);
+  await part.move(whole);
 }
 
 /**

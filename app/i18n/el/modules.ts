@@ -29,7 +29,7 @@ export const modulesText: Record<string, string> = {
     'Αυτό το μέρος του Erevos είναι ανενεργό σε αυτό το τηλέφωνο, γι’ αυτό η οθόνη δεν ανοίγει. Τίποτα δικό του δεν σβήνεται: όλα είναι πάλι εκεί μόλις το ενεργοποιήσεις στις Ρυθμίσεις → Γενικά → Ενότητες.',
   'Open Modules': 'Άνοιγμα «Ενότητες»',
   "Erevos's own chats, groups and calls, end-to-end encrypted, through the relay, Nostr, phones nearby or LoRa. No account and no phone number. Hidden chats are part of it.":
-    'Οι δικές του συνομιλίες, ομάδες και κλήσεις του Erevos, κρυπτογραφημένες από άκρο σε άκρο, μέσω του relay, του Nostr, κοντινών τηλεφώνων ή LoRa. Χωρίς λογαριασμό και χωρίς αριθμό τηλεφώνου. Οι κρυφές συνομιλίες ανήκουν εδώ.',
+    'Οι δικές του συνομιλίες, ομάδες και κλήσεις του Erevos, κρυπτογραφημένες από άκρη σε άκρη, μέσω του relay, του Nostr, κοντινών τηλεφώνων ή LoRa. Χωρίς λογαριασμό και χωρίς αριθμό τηλεφώνου. Οι κρυφές συνομιλίες ανήκουν εδώ.',
   'Erevos as the phone app: the keypad, the calls and the favourites, and every call on its own screen.':
     'Το Erevos ως εφαρμογή τηλεφώνου: το πληκτρολόγιο, οι κλήσεις και τα αγαπημένα, και κάθε κλήση στη δική του οθόνη.',
   'Erevos as the SMS app: the SMS in the same list as the chats.': 'Το Erevos ως εφαρμογή SMS: τα SMS στην ίδια λίστα με τις συνομιλίες.',

@@ -80,7 +80,7 @@ export async function pickSource(most: number, clean = false): Promise<PickedSou
     if (clean && copy.size <= CLEAN_MOST) {
       const cleaned = cleanImage(await copy.bytes());
       if (cleaned) {
-        copy.write(cleaned);
+        await copy.write(cleaned);
         clean = false;
       }
     }

@@ -514,7 +514,9 @@ export class PublicGroups extends Groups {
       ...kept,
       link: rules.door ? joinLink({ ...rules.door, group: id, name: group.name }) : '',
       approve: rules.approve,
-      ...(rules.ends ? { ends: rules.ends } : {}),
+      // When it ends is taken once, from the rules this phone first reads, on joining: an end added
+      // to a group later, by an owner's changed app, never deletes it from the members' phones.
+      ...(rules.ends && kept.epochs.length === 0 ? { ends: rules.ends } : {}),
       mutes: mergeMarks(kept.mutes, rules.mutes),
       bans: mergeMarks(kept.bans, rules.bans.map(named)),
       outs: kept.outs.filter((key) => keys.has(key)),
@@ -959,15 +961,14 @@ export class PublicGroups extends Groups {
 
   /**
    * Burner groups whose time is up (PublicGroup.ends): deleted here, their messages and files with
-   * them; one this phone owns is closed for every member first, with its door. Returns how many.
-   * Looked at with the doors (lib/space-public-groups.ts) and as the groups open.
+   * them, and the door of one this phone owns. Returns how many. Looked at with the doors
+   * (lib/space-public-groups.ts) and as the groups open. Each phone goes by its own clock and
+   * deletes only its own copy: the owner's phone closes nothing for the others, so one whose clock
+   * runs ahead ends the group early for itself alone, never for every member.
    */
-  async endDue(transport: GroupTransport, now = Date.now()): Promise<number> {
+  async endDue(_transport: GroupTransport, now = Date.now()): Promise<number> {
     const due = this.pub.groups.filter((g) => g.ends && g.ends <= now).map((g) => g.id);
-    for (const id of due) {
-      if (this.find(id)?.admin && this.find(id)?.status === 'in') await this.leave(id, transport).catch(() => undefined);
-      await this.forget(id);
-    }
+    for (const id of due) await this.forget(id);
     return due.length;
   }
 

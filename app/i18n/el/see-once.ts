@@ -5,6 +5,7 @@
 // A photo to see once (lib/see-once.ts) in Greek (i18n/el/index.ts).
 export const seeOnceText: Record<string, string> = {
   "Photo to see once": "Φωτογραφία μίας προβολής",
+  "Camera, to see once": "Κάμερα, μίας προβολής",
   "Photo seen once": "Φωτογραφία που προβλήθηκε μία φορά",
   "Photo to see once · tap to see it": "Φωτογραφία μίας προβολής · πάτα για να τη δεις",
   "A photo to see once is for them to see, not for you.": "Μια φωτογραφία μίας προβολής είναι για να τη δουν εκείνοι, όχι εσύ.",

@@ -48,11 +48,20 @@ export function historyRows(tools: HistoryTools, exportable: boolean): { label: 
 }
 
 /** The four, as buttons, among a chat's own under its thread. */
-export function HistoryButtons({ tools, exportable }: { tools: HistoryTools; exportable: boolean }) {
+export function HistoryButtons({ tools, exportable, onRun }: { tools: HistoryTools; exportable: boolean; /** Called first: a sheet they show in closes, so the tool is not under it. */ onRun?: () => void }) {
   return (
     <Row wrap>
       {historyRows(tools, exportable).map((row) => (
-        <Button key={row.label} title={row.label} kind="secondary" compact onPress={row.run} />
+        <Button
+          key={row.label}
+          title={row.label}
+          kind="secondary"
+          compact
+          onPress={() => {
+            onRun?.();
+            row.run();
+          }}
+        />
       ))}
     </Row>
   );

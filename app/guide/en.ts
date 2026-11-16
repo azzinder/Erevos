@@ -1023,10 +1023,11 @@ quote (there as ▒▒▒).
   groups, until it is tapped and opens on its own. It is blurred in **Media, links and files** too. An Erevos from
   before shows it as any photo.
 - **Photo to see once:** under **+**, **Photo to see once** sends a photo that never shows in the chat, in contacts'
-  chats and groups. Whoever gets it taps it and sees it once, on its own, kept out of screenshots where the phone
-  allows; as it closes, Erevos deletes it from their phone, and the chat says **Photo seen once**. It cannot be
-  forwarded, saved or put in the Collection, and your own phone lets go of it once it reached them. Nothing stops a
-  camera pointed at the screen, and an Erevos from before shows it as a hidden photo.
+  chats and groups. **Camera, to see once** sends one you take there and then, the same way. Whoever gets it taps it
+  and sees it once, on its own, kept out of screenshots where the phone allows; as it closes, Erevos deletes it from
+  their phone, and the chat says **Photo seen once**. It cannot be forwarded, saved or put in the Collection, and your
+  own phone lets go of it once it reached them. Nothing stops a camera pointed at the screen, and an Erevos from
+  before shows it as a hidden photo.
 
 **Why:** a mark typed in the words travels in them, inside the encryption, with nothing beside them to tell apart.
 
@@ -1091,11 +1092,12 @@ voice hard to know by ear, but someone with the recording and time could undo so
 in browsers that make Opus themselves (WebCodecs); the walkie-talkie keeps your voice.
 
 **In words:** hold a voice message, in a contact's chat or a group, and choose **In words**: your phone writes out
-what was said, to read or copy. The first time it downloads a speech model of 268 MB, once you say so, from Erevos's own
-server, which sees your address as for any download; then all of it is done on your phone, and neither the sound nor
-its words leave it. It hears about a hundred languages, Greek among them, and finds the one spoken. It may make
+what was said, to read or copy. The first time it downloads a speech model of 268 MB, once you say so, from Erevos's
+own server, which sees your address as for any download; then all of it is done on your phone, and neither the sound
+nor its words leave it. It hears about a hundred languages, Greek among them, and finds the one spoken. It may make
 mistakes, and the words are not kept. **Delete the speech model**, under it, frees the space. Only on Android, and it
-needs a phone with about 2 GB of memory free.
+needs a phone with about 2 GB of memory free, as it takes about 1.5 GB while it writes; should that fail, the next try
+opens the model again. Where nobody speaks, in silence or noise, it writes nothing, rather than words nobody said.
 
 **Translate:** hold a message, in a contact's chat or a group, and choose **Translate**: your phone translates it into
 your language, to read or copy, between Greek, English, German, Spanish, French and Italian. It guesses the message's
@@ -1481,9 +1483,10 @@ and go to each member as in any group, and no relay learns who is in it.
   anyone in again, though the group goes on for those in it.
 - **Close the group** takes every member out. A member's **Leave the group** asks your phone to take them out.
 - **A burner group,** for one event: before you make it, under **It ends**, choose **After a day**, **After 3 days**
-  or **After 7 days**. When its time is up, your phone closes it, and every member's Erevos deletes it, with its
-  messages, photos and files, the next time it is open; its link stops working. The group's own screen says when it
-  ends. A member on an older Erevos keeps it, and anyone may have kept a copy or a screenshot before then.
+  or **After 7 days**. When its time is up, every member's Erevos deletes it, each by its own phone's clock, with its
+  messages, photos and files, the next time it is open, and its link stops working. When it ends is set as the group
+  is made, and never changes. The group's own screen says when it ends. A member on an older Erevos keeps it, and
+  anyone may have kept a copy or a screenshot before then.
 - **Up to 100 members,** as the whole group has to fit in the one message that lets someone in.
 - **Every phone in a public group needs this version of Erevos.** Groups made from contacts work as before.
 
@@ -1769,6 +1772,8 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
 - **The public Nostr relays and the Nostr file servers:** they see it unless the connection goes through Tor. Turn on
   **Nostr through Tor** under **Settings** → **Relay and networks** → **Nostr**, or **Through Tor** for one chat. See
   [Through Nostr](#nostr).
+- **Pair with a code:** the two phones meet on those same public Nostr relays, so without Nostr through Tor they see
+  the address, though not the code or the contact links. Erevos says so before the first pairing.
 
 - **Calls:** they never go through Tor. The call relay, yours or your contact's, sees the address, though not what is
   said. A call between phones nearby on the same network stays on that network.

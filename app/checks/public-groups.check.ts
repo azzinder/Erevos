@@ -501,11 +501,14 @@ test('a burner group ends on every phone at its time: messages gone, link closed
   // Before its time nothing goes.
   assert.equal(await alice.groups.endDue(alice.transport, ends - 1), 0);
   assert.equal(await bob.groups.endDue(bob.transport, ends - 1), 0);
-  // Bob's phone is off at the time: Alice's closes it for everyone, and Bob's deletes it when it next looks.
+  // Each phone by its own clock: Alice's, say running ahead, ends it there and closes its link, and
+  // closes nothing for Bob, whose phone deletes it once its own clock gets there.
   assert.equal(await alice.groups.endDue(alice.transport, ends), 1);
   assert.equal(alice.groups.list().some((g) => g.id === id), false);
   assert.equal(alice.groups.publicInfo(id), null);
   await net.settle();
+  assert.equal(status(bob, id), 'in');
+  assert.equal(await bob.groups.endDue(bob.transport, ends - 1), 0);
   assert.equal(await bob.groups.endDue(bob.transport, ends + 60_000), 1);
   assert.equal(bob.groups.list().some((g) => g.id === id), false);
   assert.ok(!JSON.stringify(bob.data.groups).includes('see you there'));
