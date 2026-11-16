@@ -58,6 +58,8 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("conversationPeer") { conversation: ByteArray -> ErevosCoreNative.conversationPeer(conversation) }
     AsyncFunction("conversationRestored") { conversation: ByteArray -> ErevosCoreNative.conversationRestored(conversation) }
+    AsyncFunction("conversationEnablePq") { conversation: ByteArray -> ErevosCoreNative.conversationEnablePq(conversation) }
+    AsyncFunction("conversationPq") { conversation: ByteArray -> ErevosCoreNative.conversationPq(conversation) }
     AsyncFunction("packetKind") { packet: ByteArray -> ErevosCoreNative.packetKind(packet) }
     AsyncFunction("firstMessageId") { packet: ByteArray -> ErevosCoreNative.firstMessageId(packet) }
     AsyncFunction("safetyNumber") { ours: ByteArray, theirs: ByteArray -> ErevosCoreNative.safetyNumber(ours, theirs) }
@@ -228,6 +230,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun conversationOpen(conversation: ByteArray, packet: ByteArray): ByteArray
   @JvmStatic external fun conversationPeer(conversation: ByteArray): ByteArray
   @JvmStatic external fun conversationRestored(conversation: ByteArray): ByteArray
+  @JvmStatic external fun conversationEnablePq(conversation: ByteArray): ByteArray
+  @JvmStatic external fun conversationPq(conversation: ByteArray): ByteArray
   @JvmStatic external fun packetKind(packet: ByteArray): Int
   @JvmStatic external fun firstMessageId(packet: ByteArray): ByteArray
   @JvmStatic external fun safetyNumber(ours: ByteArray, theirs: ByteArray): String

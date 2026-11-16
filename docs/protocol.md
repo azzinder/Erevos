@@ -151,7 +151,12 @@ Plaintext is padded first with ISO/IEC 7816-4 (`0x80`, then zeros) to the smalle
 ```text
 first:      VERSION(1)=1 ‖ 0x01 ‖ len be32 ‖ handshake(len) ‖ header(40) ‖ ciphertext
 following:  VERSION(1)=1 ‖ 0x02 ‖ header(40) ‖ ciphertext
+following, post-quantum: VERSION(1)=1 ‖ 0x03 ‖ header(40) ‖ spqr field(110) ‖ ciphertext
 ```
+
+Once both sides' Erevos can, following packets also go through the post-quantum ratchet, which
+mixes a fresh ML-KEM-768 secret into the message keys an epoch at a time: see
+[spqr.md](spqr.md).
 
 A first packet always carries a ratchet message, so the responder authenticates the handshake by
 opening it. In the app the first message has no text.
@@ -165,8 +170,9 @@ packets in any of them.
 **Restored backups.** A conversation put back from a backup moves its sending chain on by 900 keys
 (`RESTORE_SKIP`) before it seals again. Otherwise it would reuse message keys, and with them
 key-and-nonce pairs, that it already used after the backup was made. 900 stays below `MAX_SKIP`,
-so the other side still opens it. The app also starts a new conversation with each contact from
-their newest prekeys (`E2E.startAnew`).
+so the other side still opens it. Its post-quantum ratchet starts over in a later generation
+([spqr.md](spqr.md)). The app also starts a new conversation with each contact from their newest
+prekeys (`E2E.startAnew`).
 
 ## 5. Double ratchet
 

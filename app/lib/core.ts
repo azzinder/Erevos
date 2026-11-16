@@ -23,6 +23,9 @@ export interface Core {
   conversationPeer(conversation: Uint8Array): Promise<Uint8Array>;
   /** Missing in a build made before conversations were made safe after a restore. */
   conversationRestored?(conversation: Uint8Array): Promise<Uint8Array>;
+  /** The post-quantum ratchet (crates/erevos-core spqr). Missing in a build made before it. */
+  conversationEnablePq?(conversation: Uint8Array): Promise<Uint8Array>;
+  conversationPq?(conversation: Uint8Array): Promise<Uint8Array>;
   packetKind(packet: Uint8Array): Promise<number>;
   firstMessageId(packet: Uint8Array): Promise<Uint8Array>;
   safetyNumber(ours: Uint8Array, theirs: Uint8Array): Promise<string>;
@@ -576,6 +579,26 @@ export function restored(conversation: Uint8Array): Promise<Uint8Array> {
   const it = need();
   if (!it.conversationRestored) throw new NoCoreError();
   return it.conversationRestored(conversation);
+}
+
+/** Whether this build's core seals and opens messages with the post-quantum ratchet as well
+ *  (docs/spqr.md): its messages say so, and a contact's conversation turns it on on hearing it. */
+export function canPq(): boolean {
+  return typeof core?.conversationEnablePq === 'function';
+}
+
+/** The conversation with the post-quantum ratchet on, once the other side says it reads its messages. */
+export function enablePq(conversation: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.conversationEnablePq) throw new NoCoreError();
+  return it.conversationEnablePq(conversation);
+}
+
+/** Whether a conversation's post-quantum ratchet is on. */
+export async function pqOn(conversation: Uint8Array): Promise<boolean> {
+  const it = need();
+  if (!it.conversationPq) return false;
+  return (await it.conversationPq(conversation))[0] === 1;
 }
 
 /** Throws when the packet is not for this conversation, or was changed. */

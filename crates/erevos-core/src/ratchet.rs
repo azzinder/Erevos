@@ -152,8 +152,15 @@ impl Session {
     /// Encrypts `plaintext`, binding `ad` (both identities, from the
     /// handshake) and the header into the tag.
     pub fn encrypt(&mut self, plaintext: &[u8], ad: &[u8]) -> Result<(Header, Vec<u8>), Error> {
+        self.encrypt_mixed(plaintext, ad, &|mk| *mk)
+    }
+
+    /// Encrypts as `encrypt` does, with the message key `mix` makes of the
+    /// double ratchet's (the post-quantum ratchet's, crate::spqr).
+    pub fn encrypt_mixed(&mut self, plaintext: &[u8], ad: &[u8], mix: &dyn Fn(&[u8; 32]) -> [u8; 32]) -> Result<(Header, Vec<u8>), Error> {
         let cks = self.cks.as_ref().ok_or(Error::NotReady)?;
         let (next, mk) = kdf_ck(cks);
+        let mk = MessageKey(mix(&mk.0));
         self.cks = Some(next);
         let header = Header {
             dh: PublicKey::from(&self.dhs).to_bytes(),
@@ -166,17 +173,24 @@ impl Session {
     }
 
     pub fn decrypt(&mut self, header: &Header, ciphertext: &[u8], ad: &[u8]) -> Result<Vec<u8>, Error> {
+        self.decrypt_mixed(header, ciphertext, ad, &|mk| *mk)
+    }
+
+    /// Decrypts as `decrypt` does, with the message key `mix` makes of the
+    /// double ratchet's, as the sender's `encrypt_mixed` did.
+    pub fn decrypt_mixed(&mut self, header: &Header, ciphertext: &[u8], ad: &[u8], mix: &dyn Fn(&[u8; 32]) -> [u8; 32]) -> Result<Vec<u8>, Error> {
         let mut next = self.clone();
-        let pt = next.decrypt_inner(header, ciphertext, ad)?;
+        let pt = next.decrypt_inner(header, ciphertext, ad, mix)?;
         *self = next;
         Ok(pt)
     }
 
-    fn decrypt_inner(&mut self, header: &Header, ciphertext: &[u8], ad: &[u8]) -> Result<Vec<u8>, Error> {
+    fn decrypt_inner(&mut self, header: &Header, ciphertext: &[u8], ad: &[u8], mix: &dyn Fn(&[u8; 32]) -> [u8; 32]) -> Result<Vec<u8>, Error> {
         let ad = assoc(ad, header);
+        let open = |mk: &MessageKey| open(&MessageKey(mix(&mk.0)), ciphertext, &ad);
         if let Some(mk) = self.skipped.remove(&(header.dh, header.n)) {
             self.skipped_order.retain(|k| *k != (header.dh, header.n));
-            return open(&mk, ciphertext, &ad);
+            return open(&mk);
         }
         if self.dhr.map(|k| k.to_bytes()) != Some(header.dh) {
             self.skip_until(header.pn)?;
@@ -186,7 +200,7 @@ impl Session {
         let (next, mk) = kdf_ck(self.ckr.as_ref().ok_or(Error::NotReady)?);
         self.ckr = Some(next);
         self.nr = self.nr.checked_add(1).ok_or(Error::ChainExhausted)?;
-        open(&mk, ciphertext, &ad)
+        open(&mk)
     }
 
     fn skip_until(&mut self, until: u32) -> Result<(), Error> {

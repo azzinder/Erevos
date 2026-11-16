@@ -102,6 +102,16 @@ pub fn conversation_restored(conversation: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::conversation_restored(conversation))
 }
 
+#[wasm_bindgen(js_name = conversationEnablePq)]
+pub fn conversation_enable_pq(conversation: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::conversation_enable_pq(conversation))
+}
+
+#[wasm_bindgen(js_name = conversationPq)]
+pub fn conversation_pq(conversation: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::conversation_pq(conversation))
+}
+
 #[wasm_bindgen(js_name = packetKind)]
 pub fn packet_kind(packet: &[u8]) -> u8 {
     crate::packet_kind(packet)

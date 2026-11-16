@@ -42,6 +42,7 @@ Left for later: Nostr (`crates/erevos-nostr`), Tor (`crates/erevos-tor`), import
 | Prekey bundle signature | Ed25519 (`verify_strict`), over `erevos prekey bundle v1` and every key in the bundle | `pqxdh.rs` `transcript` |
 | Other signed statements (device lists) | Ed25519 over `erevos signed v1\0`, a context, `\0`, the message | `pqxdh.rs` `signed_statement` |
 | Messages | Double ratchet: HKDF-SHA256 root chain, HMAC-SHA256 chain keys, ChaCha20-Poly1305 with key and nonce from HKDF of the message key. AD = both identity keys (initiator first) and the 40-byte header. `MAX_SKIP` 1000, 2000 skipped keys kept. | `ratchet.rs`, `conversation.rs` |
+| Post-quantum ratchet | ML-KEM-768 epochs, keys and ciphertexts sent in 96-byte pieces in a 110-byte authenticated field of every packet; each message key mixed with its epoch's key by HKDF-SHA256. On once both sides' Erevos say they read it. Starts over in a later generation after a restore. Spec: [spqr.md](spqr.md). | `spqr.rs`, `conversation.rs` |
 | Padding | ISO/IEC 7816-4 to 256, 1024, 4096 or 16384 bytes | `padding.rs` |
 | Safety number | SHA-512 over `erevos safety number v1` and both X25519 identity keys, sorted; 60 digits | `conversation.rs` `safety_number` |
 | Packets sealed again for the relay | AES-256-GCM, a key per contact derived from the account and the contact's identity, 16-byte HMAC mark of the nonce to find the sender | `app/lib/sealed-packet.ts` |

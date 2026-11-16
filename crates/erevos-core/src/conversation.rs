@@ -17,7 +17,15 @@
 //! ```text
 //! first:     version, 1, handshake length (u32), handshake, header, ciphertext
 //! following: version, 2, header, ciphertext
+//! post-quantum following: version, 3, header, spqr field, ciphertext
 //! ```
+//!
+//! Once both sides can, every following message also goes through the
+//! post-quantum ratchet (crate::spqr, docs/spqr.md): its message key is mixed
+//! with an ML-KEM epoch key, and its spqr field ([`spqr::FIELD`] bytes) is
+//! bound in with the associated data. A side turns it on when the app learns
+//! the other side's Erevos reads such messages ([`Conversation::enable_pq`]),
+//! and the other side, on the first such message that opens.
 //!
 //! Not audited.
 
@@ -28,11 +36,18 @@ use zeroize::Zeroizing;
 use crate::padding;
 use crate::pqxdh::{self, Identity, InitialMessage, PrekeyBundle, Prekeys};
 use crate::ratchet::{Header, Session};
+use crate::spqr::{self, Outgoing, Spqr};
 use crate::wire::{Reader, VERSION};
 use crate::Error;
 
 const FIRST: u8 = 1;
 const FOLLOWING: u8 = 2;
+const FOLLOWING_PQ: u8 = 3;
+
+// Marks the post-quantum ratchet's state in a kept conversation, where one
+// kept before it has the session's first byte, crate::wire::VERSION.
+const PQ_KEPT: u8 = 0xa5;
+const _: () = assert!(PQ_KEPT != VERSION);
 
 /// What a packet is, read from its first two bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -62,6 +77,8 @@ pub struct Conversation {
     ad: [u8; 64],
     /// The other person's identity key.
     peer: [u8; 32],
+    /// The post-quantum ratchet, once on.
+    pq: Option<Spqr>,
 }
 
 impl Account {
@@ -138,7 +155,7 @@ impl Account {
 pub fn kind(packet: &[u8]) -> Result<Kind, Error> {
     match packet {
         [VERSION, FIRST, ..] => Ok(Kind::First),
-        [VERSION, FOLLOWING, ..] => Ok(Kind::Following),
+        [VERSION, FOLLOWING | FOLLOWING_PQ, ..] => Ok(Kind::Following),
         _ => Err(Error::Malformed),
     }
 }
@@ -151,6 +168,7 @@ pub fn start(me: &Account, bundle: &PrekeyBundle, plaintext: &[u8]) -> Result<(C
         session,
         ad: pair(&me.identity_key(), bundle.identity_dh.as_bytes()),
         peer: bundle.identity_dh.to_bytes(),
+        pq: None,
     };
     let handshake = handshake.to_bytes();
     let (header, ciphertext) = conversation.encrypt(plaintext)?;
@@ -185,6 +203,7 @@ fn accept_using(identity: &Identity, identity_key: [u8; 32], prekeys: &mut Preke
         session,
         ad: pair(handshake.identity_dh.as_bytes(), &identity_key),
         peer: handshake.identity_dh.to_bytes(),
+        pq: None,
     };
     let plaintext = conversation.decrypt(&header, ciphertext)?;
     Ok((conversation, plaintext))
@@ -219,19 +238,56 @@ fn pair(initiator: &[u8; 32], responder: &[u8; 32]) -> [u8; 64] {
 impl Conversation {
     /// Seals a message for the other person.
     pub fn seal(&mut self, plaintext: &[u8]) -> Result<Vec<u8>, Error> {
-        let (header, ciphertext) = self.encrypt(plaintext)?;
-        let mut packet = Vec::with_capacity(2 + Header::LEN + ciphertext.len());
-        packet.extend_from_slice(&[VERSION, FOLLOWING]);
+        let Some(pq) = &self.pq else {
+            let (header, ciphertext) = self.encrypt(plaintext)?;
+            let mut packet = Vec::with_capacity(2 + Header::LEN + ciphertext.len());
+            packet.extend_from_slice(&[VERSION, FOLLOWING]);
+            packet.extend_from_slice(&header.to_bytes());
+            packet.extend_from_slice(&ciphertext);
+            return Ok(packet);
+        };
+        let mut pq = pq.clone();
+        let out = pq.outgoing();
+        let field = out.to_bytes();
+        let key = pq.key_for(out.epoch).ok_or(Error::NotReady)?;
+        let padded = Zeroizing::new(padding::pad(plaintext)?);
+        let (header, ciphertext) = self.session.encrypt_mixed(&padded, &self.pq_ad(&field), &|mk| spqr::mix(mk, out.epoch, &key))?;
+        self.pq = Some(pq);
+        let mut packet = Vec::with_capacity(2 + Header::LEN + spqr::FIELD + ciphertext.len());
+        packet.extend_from_slice(&[VERSION, FOLLOWING_PQ]);
         packet.extend_from_slice(&header.to_bytes());
+        packet.extend_from_slice(&field);
         packet.extend_from_slice(&ciphertext);
         Ok(packet)
     }
 
+    /// Turns the post-quantum ratchet on, once the app knows the other
+    /// side's Erevos reads its messages: an Erevos before it could not open
+    /// them. On already, it stays as it is.
+    pub fn enable_pq(&mut self) {
+        if self.pq.is_none() {
+            self.pq = Some(Spqr::new(self.initiator()));
+        }
+    }
+
+    /// Whether the post-quantum ratchet is on, and if so, its generation and
+    /// the epoch this side seals in.
+    pub fn pq(&self) -> Option<(u32, u32)> {
+        self.pq.as_ref().map(|pq| (pq.generation(), pq.epoch()))
+    }
+
     /// Makes a conversation put back from a backup safe to send in again:
     /// its sending chain moves past `RESTORE_SKIP` keys, more than any one
-    /// chain is likely to have sealed with since the backup was made.
+    /// chain is likely to have sealed with since the backup was made, and its
+    /// post-quantum ratchet, which has lost the epochs since, starts over in a
+    /// later generation that the other side follows it into.
     pub fn restored(&mut self) -> Result<(), Error> {
-        self.session.skip_sending(RESTORE_SKIP)
+        self.session.skip_sending(RESTORE_SKIP)?;
+        let initiator = self.initiator();
+        if let Some(pq) = &mut self.pq {
+            pq.restart(initiator);
+        }
+        Ok(())
     }
 
     /// Opens a message from the other person. A packet that is not theirs
@@ -241,9 +297,37 @@ impl Conversation {
             return Err(Error::Malformed);
         }
         let mut r = Reader::new(packet)?;
-        r.u8()?;
+        let pq = r.u8()? == FOLLOWING_PQ;
         let header = Header::from_bytes(r.take(Header::LEN)?)?;
-        self.decrypt(&header, r.rest())
+        if !pq {
+            return self.decrypt(&header, r.rest());
+        }
+        let field = r.take(spqr::FIELD)?;
+        let came = Outgoing::from_bytes(field)?;
+        let initiator = self.initiator();
+        // A side not on yet turns it on: the other side's Erevos reads such messages.
+        let now = self.pq.clone().unwrap_or_else(|| Spqr::starting(initiator, came.generation));
+        let (key, mut next) = now.opening(&came, initiator).ok_or(Error::Crypto)?;
+        let mut session = self.session.clone();
+        let padded = Zeroizing::new(session.decrypt_mixed(&header, r.rest(), &self.pq_ad(field), &|mk| spqr::mix(mk, came.epoch, &key))?);
+        let plaintext = padding::unpad(&padded)?.to_vec();
+        next.received(&came)?;
+        self.session = session;
+        self.pq = Some(next);
+        Ok(plaintext)
+    }
+
+    // Whether this side started the conversation: the associated data names
+    // the initiator first.
+    fn initiator(&self) -> bool {
+        self.peer[..] == self.ad[32..]
+    }
+
+    fn pq_ad(&self, field: &[u8]) -> Vec<u8> {
+        let mut ad = Vec::with_capacity(self.ad.len() + field.len());
+        ad.extend_from_slice(&self.ad);
+        ad.extend_from_slice(field);
+        ad
     }
 
     /// The other person's identity key.
@@ -257,6 +341,12 @@ impl Conversation {
         out.push(VERSION);
         out.extend_from_slice(&self.ad);
         out.extend_from_slice(&self.peer);
+        if let Some(pq) = &self.pq {
+            let pq = pq.to_secret_bytes();
+            out.push(PQ_KEPT);
+            out.extend_from_slice(&(pq.len() as u32).to_be_bytes());
+            out.extend_from_slice(&pq);
+        }
         out.extend_from_slice(&session);
         out
     }
@@ -269,8 +359,15 @@ impl Conversation {
         if peer[..] != ad[..32] && peer[..] != ad[32..] {
             return Err(Error::Malformed);
         }
+        let pq = if r.peek() == Some(PQ_KEPT) {
+            r.u8()?;
+            let len = r.u32()? as usize;
+            Some(Spqr::from_secret_bytes(r.take(len)?)?)
+        } else {
+            None
+        };
         let session = Session::from_secret_bytes(r.rest())?;
-        Ok(Conversation { session, ad, peer })
+        Ok(Conversation { session, ad, peer, pq })
     }
 
     fn encrypt(&mut self, plaintext: &[u8]) -> Result<(Header, Vec<u8>), Error> {
@@ -516,6 +613,132 @@ mod tests {
         stolen.identity_dh = bundle.identity_dh;
         let signature = alice.sign(b"devices", b"x").unwrap();
         assert!(stolen.verify_signed(b"devices", b"x", &signature).is_err());
+    }
+
+    fn pair_of_conversations() -> (Conversation, Conversation) {
+        let alice = Account::generate();
+        let mut bob = Account::generate();
+        let (a, first) = start(&alice, &bob.bundle(), b"hi").unwrap();
+        let (b, _) = accept(&mut bob, &first).unwrap();
+        (a, b)
+    }
+
+    fn talk(a: &mut Conversation, b: &mut Conversation, rounds: usize) {
+        for i in 0..rounds {
+            let text = format!("from a {i}");
+            assert_eq!(b.open(&a.seal(text.as_bytes()).unwrap()).unwrap(), text.as_bytes());
+            let text = format!("from b {i}");
+            assert_eq!(a.open(&b.seal(text.as_bytes()).unwrap()).unwrap(), text.as_bytes());
+        }
+    }
+
+    #[test]
+    fn the_post_quantum_ratchet_turns_on_and_moves_on() {
+        let (mut a, mut b) = pair_of_conversations();
+        talk(&mut a, &mut b, 2);
+        assert_eq!((a.pq(), b.pq()), (None, None));
+        // Bob's app learns Alice's Erevos reads them: his next message turns hers on.
+        b.enable_pq();
+        let packet = b.seal(b"now with ml-kem").unwrap();
+        assert_eq!(packet[1], FOLLOWING_PQ);
+        assert_eq!(kind(&packet).unwrap(), Kind::Following);
+        assert_eq!(a.open(&packet).unwrap(), b"now with ml-kem");
+        assert_eq!(a.pq(), Some((0, 0)));
+        // Each side kept and loaded again in between, as the apps do.
+        for _ in 0..30 {
+            talk(&mut a, &mut b, 2);
+            (a, b) = (reload(&a), reload(&b));
+        }
+        let (ea, eb) = (a.pq().unwrap().1, b.pq().unwrap().1);
+        assert!(ea >= 2 && ea.abs_diff(eb) <= 1, "{ea} {eb}");
+        // A message sealed before the switch, come late, still opens.
+        let (mut a, mut b) = pair_of_conversations();
+        let late = a.seal(b"sent before").unwrap();
+        a.enable_pq();
+        b.open(&a.seal(b"after").unwrap()).unwrap();
+        assert_eq!(b.open(&late).unwrap(), b"sent before");
+    }
+
+    #[test]
+    fn every_post_quantum_message_has_one_of_a_few_lengths_too() {
+        let (mut a, mut b) = pair_of_conversations();
+        a.enable_pq();
+        let mut lengths = std::collections::BTreeSet::new();
+        for _ in 0..40 {
+            let p = a.seal(b"ok").unwrap();
+            lengths.insert(p.len());
+            b.open(&p).unwrap();
+            let p = b.seal(b"ok").unwrap();
+            lengths.insert(p.len());
+            a.open(&p).unwrap();
+        }
+        assert!(a.pq().unwrap().1 >= 1);
+        assert_eq!(lengths.len(), 1, "{lengths:?}");
+    }
+
+    #[test]
+    fn a_changed_post_quantum_field_fails_and_changes_nothing() {
+        let (mut a, mut b) = pair_of_conversations();
+        a.enable_pq();
+        talk(&mut a, &mut b, 3);
+        let packet = a.seal(b"x").unwrap();
+        let before = b.to_secret_bytes();
+        for at in [2 + Header::LEN, 2 + Header::LEN + 7, 2 + Header::LEN + 20, 2 + Header::LEN + spqr::FIELD - 1] {
+            let mut changed = packet.clone();
+            changed[at] ^= 1;
+            assert!(b.open(&changed).is_err());
+            assert_eq!(b.to_secret_bytes(), before);
+        }
+        // As a message without it, it does not open either.
+        let mut plain = vec![VERSION, FOLLOWING];
+        plain.extend_from_slice(&packet[2..2 + Header::LEN]);
+        plain.extend_from_slice(&packet[2 + Header::LEN + spqr::FIELD..]);
+        assert!(b.open(&plain).is_err());
+        assert!(b.open(&packet[..2 + Header::LEN + 10]).is_err());
+        assert_eq!(b.open(&packet).unwrap(), b"x");
+    }
+
+    #[test]
+    fn a_conversation_put_back_from_a_backup_starts_the_post_quantum_ratchet_over() {
+        let (mut a, mut b) = pair_of_conversations();
+        a.enable_pq();
+        talk(&mut a, &mut b, 60);
+        assert!(b.pq().unwrap().1 >= 2);
+        // After the backup, Alice goes on writing; Bob reads it all.
+        let backup = reload(&a);
+        for _ in 0..5 {
+            b.open(&a.seal(b"after the backup").unwrap()).unwrap();
+        }
+        // Put back, it starts over in a later generation, and Bob follows it there.
+        let mut restored = reload(&backup);
+        restored.restored().unwrap();
+        let (generation, epoch) = restored.pq().unwrap();
+        assert!(generation > 0 && epoch == 0);
+        assert_eq!(b.open(&restored.seal(b"back again").unwrap()).unwrap(), b"back again");
+        assert_eq!(b.pq().unwrap(), (generation, 0));
+        talk(&mut restored, &mut b, 60);
+        assert!(restored.pq().unwrap().1 >= 2);
+        // A side that never turned it on starts in whatever generation the other is in.
+        let (mut a, mut b) = pair_of_conversations();
+        a.enable_pq();
+        a.restored().unwrap();
+        b.open(&a.seal(b"x").unwrap()).unwrap();
+        assert_eq!(b.pq().unwrap().0, a.pq().unwrap().0);
+    }
+
+    #[test]
+    fn a_conversation_kept_before_the_post_quantum_ratchet_still_loads() {
+        let (a, _) = pair_of_conversations();
+        let kept = a.to_secret_bytes();
+        // Version, both keys, the other's key, then the session's own version byte.
+        assert_eq!(kept[1 + 64 + 32], VERSION);
+        assert_eq!(reload(&a).pq(), None);
+        let mut on = reload(&a);
+        on.enable_pq();
+        let kept = on.to_secret_bytes();
+        assert_eq!(kept[1 + 64 + 32], PQ_KEPT);
+        assert_eq!(reload(&on).pq(), Some((0, 0)));
+        assert!(Conversation::from_secret_bytes(&kept[..1 + 64 + 32 + 3]).is_err());
     }
 
     #[test]

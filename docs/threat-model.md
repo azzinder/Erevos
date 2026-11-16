@@ -95,7 +95,10 @@ Notes:
   with them; secrets older than the last three are thrown away. So, against that adversary, a chat
   is open only in the conversation started with the link (until the first renewal, usually the
   first answer) and in those started with prekeys still kept, or kept in a backup made then. Contacts on an older Erevos
-  never move. Groups are not post-quantum at all.
+  never move. Between two Erevos that have it, the post-quantum ratchet (spqr.md) also mixes a
+  fresh ML-KEM-768 secret into the conversation every few dozen messages, so against someone who
+  only recorded it, what comes after each epoch began needs ML-KEM broken too. Groups are not
+  post-quantum at all.
 - **What came, after it is gone.** On a linked device, and from a contact whose account lists
   devices, each chat keeps for 30 days the random tag of each message that came and the day it came,
   after the message disappeared or was deleted, so a second copy of it, through the phone or from

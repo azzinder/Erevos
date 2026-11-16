@@ -12,8 +12,8 @@ import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
 import { contactLink, parseContact } from '../lib/contact-code';
-import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
-import { randomBytes, setHardCost, toHex, utf8Encode } from '../lib/crypto';
+import { accountBundle, accountIdentity, accountSign, bundleVerify, canPq, canSign, newAccount, pqOn, setCore, type Core } from '../lib/core';
+import { fromBase64, randomBytes, setHardCost, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { BlockedContactError, E2E, NoKeyError, ONLINE, OPEN_EVERY, OPEN_RECENT, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
 import { onShownEnded, placeSeenKey, placeShown, shownAt, spaceSeenKey, spaceShown } from '../lib/last-seen';
@@ -116,6 +116,32 @@ t('two chats add each other through a link and talk both ways', async () => {
   // Both see the same safety number.
   assert.equal(await alice.e2e.safetyNumber(added.identity), await bob.e2e.safetyNumber(hello.identity));
   assert.match(await alice.e2e.safetyNumber(added.identity), /^(\d{5} ){11}\d{5}$/);
+});
+
+t('two chats whose Erevos read post-quantum messages seal theirs with the post-quantum ratchet', async () => {
+  assert.equal(canPq(), true);
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const added = await alice.e2e.addContact(parseContact(contactLink({ senderHex: bob.from, relayUrl: 'ws://relay:7879', key: bob.code.key }))!, alice.from);
+  const [pending] = alice.e2e.pending();
+  const hello = message(await bob.e2e.receive(pending.first));
+  await alice.e2e.firstSent(added.identity);
+  // Alice's first message said her Erevos reads them: Bob's answer is one, and turns hers on.
+  const pq = async (who: typeof alice) => {
+    const contact = (await loadE2EData('space', who === alice ? 0 : 1, who.key)).contacts[0];
+    return pqOn(fromBase64(contact.conversations[0]));
+  };
+  assert.equal(await pq(alice), false);
+  assert.equal(await pq(bob), true);
+  const answer = await bob.e2e.seal(hello.identity, 'γεια', bob.from);
+  assert.equal(message(await alice.e2e.receive(answer.packet)).text, 'γεια');
+  assert.equal(await pq(alice), true);
+  for (let i = 0; i < 25; i++) {
+    const toBob = await alice.e2e.seal(added.identity, `a${i}`, alice.from);
+    assert.equal(message(await bob.e2e.receive(toBob.packet)).text, `a${i}`);
+    const toAlice = await bob.e2e.seal(hello.identity, `b${i}`, bob.from);
+    assert.equal(message(await alice.e2e.receive(toAlice.packet)).text, `b${i}`);
+  }
 });
 
 t('someone who says back an invite given here is a contact at once, named as invited, and the invite is used then', async () => {
@@ -444,9 +470,10 @@ t('once each has said its key, packets come sealed for the relay, and a few that
   await saveE2EData('space', 1, bob.key, { ...kept, contacts: kept.contacts.map((c) => ({ ...c, sealTo: '' })) });
   const restored = await E2E.open('space', 1, bob.key);
   const unsealed = (await restored.seal(hello.identity, 'back', bob.from)).packet;
-  assert.deepEqual([...unsealed.slice(0, 2)], [1, 2]);
+  // A conversation's own packet, post-quantum as both their Erevos read it (docs/spqr.md).
+  assert.deepEqual([...unsealed.slice(0, 2)], [1, 3]);
   // Packets sent only to tire Alice's phone use up the few tries an hour, and then even Bob's waits.
-  const junk = () => Uint8Array.of(1, 2, ...randomBytes(300));
+  const junk = () => Uint8Array.of(1, 3, ...randomBytes(300));
   for (let i = 0; i < 5; i++) assert.deepEqual(await alice.e2e.receive(junk()), { kind: 'refused', reason: 'unknown' });
   assert.deepEqual(await alice.e2e.receive(unsealed), { kind: 'refused', reason: 'unknown' });
   // Later (here, a new start) it is read, and Alice says her key again, so Bob seals once more.

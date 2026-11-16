@@ -19,6 +19,7 @@ pub mod pqxdh;
 pub mod ratchet;
 pub mod relay_channel;
 pub mod relay_seal;
+pub mod spqr;
 pub mod wire;
 
 #[derive(Debug, thiserror::Error)]

@@ -185,6 +185,19 @@ pub fn conversation_restored(conversation: &[u8]) -> Result<Vec<u8>> {
     Ok(conversation.to_secret_bytes().to_vec())
 }
 
+/// The conversation with the post-quantum ratchet on (erevos_core::spqr), once
+/// the other side's Erevos says it reads its messages. On already, as it was.
+pub fn conversation_enable_pq(conversation: &[u8]) -> Result<Vec<u8>> {
+    let mut conversation = Conversation::from_secret_bytes(conversation).map_err(fail)?;
+    conversation.enable_pq();
+    Ok(conversation.to_secret_bytes().to_vec())
+}
+
+/// Whether the conversation's post-quantum ratchet is on: one byte, 1 or 0.
+pub fn conversation_pq(conversation: &[u8]) -> Result<Vec<u8>> {
+    Ok(vec![u8::from(Conversation::from_secret_bytes(conversation).map_err(fail)?.pq().is_some())])
+}
+
 /// Opens a following packet: the conversation as it is now, then the
 /// plaintext. A packet from someone else fails.
 pub fn conversation_open(conversation: &[u8], packet: &[u8]) -> Result<Vec<u8>> {

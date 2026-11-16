@@ -34,6 +34,7 @@ On main, not released yet:
 
 ### Under the hood
 
+- A post-quantum ratchet beside the double ratchet (`crates/erevos-core/src/spqr.rs`, docs/spqr.md): once both phones' Erevos say they read it (`Message.pq`), every message of a contact's chat is also mixed with a fresh ML-KEM-768 secret, a new one every few dozen messages each way, its keys sent in pieces in a field of the same length in every message. A conversation put back from a backup starts it over and the other phone follows. On by itself, no switch; not in groups. New in the core: needs the next build.
 - Erevos+ says its own name everywhere: every text and notice, the guide, the home screen's filter, the launcher's icon names and the web app's notices say **Erevos+** (`lib/edition.ts` `asEdition`, `guideNamed`, in `t()` and `plural()`), except where the words speak of the plain Erevos beside Erevos+, and the licence's "Erevos, by azzinder". The plain Erevos is unchanged.
 - Erevos+ says its own name and tells its releases as its own (`lib/edition.ts` `named`, `lib/whats-new.ts` `asPlus`): the plain Erevos's releases after 7.0.0 show in Erevos+ under its next release, and Erevos+'s own icons and marks are its own files of the same names. The plain Erevos shows nothing new.
 - Video calls over the internet send at most 1 Mbps a picture (`RELAY_VIDEO_BITRATE`): every such call goes through the call relay, so the relay carries about half as much; on a phone the picture looks much the same. Calls direct on the same network are not held back.

@@ -58,6 +58,11 @@ impl<'a> Reader<'a> {
     }
 
     /// Everything left, for a field that runs to the end.
+    /// The next byte, left unread.
+    pub(crate) fn peek(&self) -> Option<u8> {
+        self.buf.first().copied()
+    }
+
     pub(crate) fn rest(self) -> &'a [u8] {
         self.buf
     }

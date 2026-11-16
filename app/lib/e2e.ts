@@ -262,6 +262,9 @@ type Message = {
   /** The name the sender goes by (E2EData.myName), or '' to say it has none any more. Absent says
    *  nothing of it: an Erevos before, which ignores it, or one that told it already. */
   nm?: string;
+  /** Says the sender's Erevos reads messages sealed with the post-quantum ratchet as well (lib/core.ts
+   *  canPq, docs/spqr.md): the conversation it came in turns it on. Absent: an Erevos before it. */
+  pq?: boolean;
 };
 
 /** A chat's screenshot setting as a message says it (Message.sh). */
@@ -283,6 +286,14 @@ export const OPEN_RECENT = 30 * 24 * 60 * 60_000;
 const OPEN_SHOWN = 60_000;
 /** A contact told this lately that the app was open is not told again that it closed (E2E.closeDue). */
 export const CLOSE_QUIET = 60_000;
+
+// A conversation whose other side said its Erevos reads post-quantum messages (Message.pq), with the
+// post-quantum ratchet on (lib/core.ts canPq, docs/spqr.md). One passed on with no conversation of
+// its own (a linked device's, through the phone), or a core that cannot, stays as it was.
+async function pqTurnedOn(opened: core.Opened, message: Message): Promise<core.Opened> {
+  if (!message.pq || !core.canPq() || opened.conversation.length === 0) return opened;
+  return { ...opened, conversation: await core.enablePq(opened.conversation).catch(() => opened.conversation) };
+}
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
@@ -345,6 +356,7 @@ function decodeVoice(value: unknown): VoicePart | null {
 }
 
 function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh, nm }: Message): Uint8Array {
+  // Every message says this Erevos reads post-quantum ones, whatever it carries: one is enough.
   return utf8Encode(
     JSON.stringify({
       from,
@@ -386,6 +398,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(tag && st ? { st } : {}),
       ...(sh ? { sh } : {}),
       ...(nm !== undefined ? { nm } : {}),
+      ...(core.canPq() ? { pq: 1 } : {}),
       ...more,
     }),
   );
@@ -530,6 +543,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(checkedShots(value.sh) ? { sh: checkedShots(value.sh)! } : {}),
       // Said: a name, cleaned as names are kept, or '' for none; anything else says none.
       ...('nm' in value ? { nm: typeof value.nm === 'string' ? cleanName(value.nm) : '' } : {}),
+      ...(value.pq === 1 ? { pq: true } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -3545,6 +3559,7 @@ export class E2E {
     // Someone blocked here: dropped, kept nowhere, a request too.
     if (this.isBlocked(identity)) return { kind: 'refused', reason: 'blocked' };
     const message = decodeMessage(opened.plaintext);
+    opened = await pqTurnedOn(opened, message);
     if (device) {
       const account = this.data.own?.identity;
       if (!account || message.to !== account) return { kind: 'refused', reason: 'unknown' };
@@ -3971,6 +3986,8 @@ export class E2E {
   // late copy of an older message, carried nearby or held, never sends this chat back to it.
   private async heardIn({ contact, way }: Slot, at: number, opened: core.Opened, given: boolean, sealed: boolean | undefined, heard = false): Promise<Received> {
     const message = decodeMessage(opened.plaintext);
+    // Their Erevos reads post-quantum messages: from now on this conversation seals them.
+    opened = await pqTurnedOn(opened, message);
     const timing = timerOf(message, contact);
     const times = { timer: timing.timer, timerAt: timing.timerAt };
     const direct = !!way && way === contact.direct;
