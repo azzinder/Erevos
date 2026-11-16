@@ -401,12 +401,15 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   internet over TLS (wss://): a stranger nearby never has your phone, or your relay, reach one on a local network or
   on the phone itself. Your own messages are carried by the phones nearby that have it on.
 - **Brought by other phones:** the other way round, when your phone has no internet, an Erevos phone beside it that
-  has internet, and carries for others, takes what waits for you on your relay and hands it over nearby. A contact's
-  phone does it with no question; for a stranger's, Erevos asks once, while it is in front, **A phone near you has
-  internet. Should it bring your messages?** That phone learns your relay and which queue there is yours, and when you
-  read it; never what your messages say, which only your phone opens. It could keep them from coming, as anyone in the
-  way could, so say yes only for a phone you know whose it is. Never for a relay reached only through Tor. Hidden chats
-  too, but only through a phone of one of their own contacts, or one you said yes to for them. Your phone does the same for the phones beside it while **Carry messages for others** is on.
+  has internet, and carries for others, takes what waits for you on your relay and hands it over nearby. Erevos asks
+  once about each such phone, a contact's too, as a stranger can pass on a contact's messages to seem to be them, and
+  only while it is in front: **A phone near you has internet. Should it bring your messages?** That phone learns which
+  queue on your relay is yours, and when you read it; never what your messages say, which only your phone opens.
+  Knowing the queue, it could take your messages before they reach you, so once your phone has internet again it moves
+  to a new queue by itself and tells your contacts quietly. The answer holds for hidden chats too, so you are not
+  asked twice about one phone. Never for a relay reached only through Tor. Your phone does the same for the phones
+  beside it while **Carry messages for others** is on, only from the relay it uses itself, and never while it goes
+  through Tor: no stranger can make it reach a server of his choosing.
 
 **Why:** a packet does not say who it is for, so no one nearby can tell from it whose it is. Until your contact's
 phone answers on a link, your phone cannot tell which of the phones nearby is theirs either: so the short packets go to

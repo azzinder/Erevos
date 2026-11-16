@@ -524,10 +524,12 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   } catch (error) {
     failed = error;
   }
-  // No internet here: a phone beside this one, one of its contacts' or one the owner said yes to, may bring what waits (lib/bridge.ts).
+  // No internet here: a phone beside this one the owner said yes to may bring what waits (lib/bridge.ts).
   if (failed && canTryLater(failed) && !stop()) {
-    const brought = await readNearby(own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop, state.near ?? undefined).catch(() => 0);
+    const { brought, asked } = await readNearby(own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop).catch(() => ({ brought: 0, asked: true }));
     if (brought > 0) found.taken += brought;
+    // The phone asked learned the queue: it moves once the relay can be reached here.
+    if (asked) await mover.bridged().catch(() => undefined);
   }
   state.failures = failed ? state.failures + 1 : 0;
   // What came to its backup queue, whether or not its relay answered.

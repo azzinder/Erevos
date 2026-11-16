@@ -424,14 +424,17 @@ passam pelo relay.
   sem internet**, na tela **Nova conversa**, e só para relays na internet com TLS (wss://): um desconhecido por
   perto nunca faz o seu celular, ou o seu relay, acessar um numa rede local ou no próprio celular. As suas próprias
   mensagens são levadas pelos celulares por perto que têm isso ativado.
-- **Trazidas por outros celulares:** ao contrário, quando o seu celular não tem internet, um celular com Erevos ao lado
-  que tem internet, e leva para os outros, pega o que espera por você no seu relay e entrega por perto. O celular de um
-  contato faz isso sem perguntar; para o de um desconhecido, o Erevos pergunta uma vez, enquanto está na frente, **Um
-  celular perto de você tem internet. Ele deve trazer suas mensagens?** Esse celular fica sabendo do seu relay, de
-  qual fila ali é sua e de quando você a lê; nunca do que dizem suas mensagens, que só o seu celular abre. Ele poderia
-  impedir que cheguem, como qualquer um no meio, então diga sim só para um celular que você sabe de quem é. Nunca para
-  um relay alcançado só pelo Tor. As conversas ocultas também, mas só pelo celular de um dos contatos delas, ou um para o qual você disse sim por elas. O seu celular faz o mesmo pelos celulares ao lado
-  enquanto **Levar mensagens de outras pessoas** está ligado.
+- **Trazidas por outros celulares:** ao contrário, quando o seu celular não tem internet, um celular com Erevos ao
+  lado que tem internet, e leva para os outros, pega o que espera por você no seu relay e entrega por perto. O Erevos
+  pergunta uma vez sobre cada celular assim, também o de um contato, porque um desconhecido pode passar mensagens de
+  um contato para parecer ele, e só enquanto está na frente: **Um celular perto de você tem internet. Ele deve trazer
+  suas mensagens?** Esse celular fica sabendo de qual fila do seu relay é sua e de quando você a lê; nunca do que
+  dizem suas mensagens, que só o seu celular abre. Sabendo a fila, ele poderia pegar suas mensagens antes que cheguem
+  a você, então assim que o seu celular tiver internet de novo ele passa sozinho para uma fila nova e avisa seus
+  contatos sem alarde. A resposta vale também para as conversas ocultas, para você não ser perguntado duas vezes sobre
+  o mesmo celular. Nunca para um relay alcançado só pelo Tor. O seu celular faz o mesmo pelos celulares ao lado
+  enquanto **Levar mensagens de outras pessoas** está ligado, só do relay que ele mesmo usa e nunca enquanto vai pelo
+  Tor: nenhum desconhecido consegue fazer ele se conectar a um servidor escolhido por ele.
 
 **Por quê:** um pacote não diz para quem é, então ninguém por perto consegue saber por ele de quem ele é. Até o celular
 do seu contato responder numa conexão, o seu celular também não consegue saber qual dos celulares por perto é o dele:

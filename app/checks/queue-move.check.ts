@@ -910,3 +910,22 @@ test('a batch of requests on the queue the link names is taken whole, though onl
   assert.notEqual((await space.queues.load()).link!.queue.senderHex, link.senderHex);
   assert.equal(space.e2e.contacts().filter((c) => c.request).length, 12);
 });
+
+test('a queue a phone nearby read for this one moves once the relay answers here, and the note says so', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const space = await spaceOn(relay, url);
+  await space.look();
+  const before = await space.own();
+  await space.mover.bridged();
+  assert.ok((await space.queues.load()).bridged);
+  const news = await space.look();
+  const after = await space.own();
+  assert.notEqual(after.senderHex, before.senderHex);
+  assert.equal((await space.queues.load()).bridged, undefined);
+  assert.ok(news.notes.some((note) => note.includes('phone nearby')));
+  // Once moved, the next look moves nothing.
+  await space.look();
+  assert.equal((await space.own()).senderHex, after.senderHex);
+});

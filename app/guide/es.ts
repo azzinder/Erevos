@@ -429,13 +429,16 @@ los que van por el relay.
   desconocido cercano nunca hace que tu teléfono, o tu relay, contacte con uno de una red local o del propio teléfono.
   Tus propios mensajes los llevan los teléfonos cercanos que lo tienen activado.
 - **Traídos por otros teléfonos:** al revés, cuando tu teléfono no tiene internet, un teléfono con Erevos a su lado
-  que tiene internet, y lleva para otros, toma lo que te espera en tu relay y te lo da de cerca. El teléfono de un
-  contacto lo hace sin preguntar; para el de un desconocido, Erevos pregunta una vez, mientras está delante, **Un
-  teléfono cerca de ti tiene internet. ¿Quieres que traiga tus mensajes?** Ese teléfono sabe tu relay, qué cola de
-  ahí es la tuya y cuándo la lees; nunca lo que dicen tus mensajes, que solo abre tu teléfono. Podría impedir que
-  lleguen, como cualquiera en medio, así que di que sí solo a un teléfono del que sepas de quién es. Nunca para un
-  relay al que se llega solo por Tor. Los chats ocultos también, pero solo por el teléfono de uno de sus propios contactos, o uno al que dijiste que sí para ellos. Tu teléfono hace lo mismo para los teléfonos a su
-  lado mientras **Llevar mensajes de otros** está activado.
+  que tiene internet, y lleva para otros, toma lo que te espera en tu relay y te lo da de cerca. Erevos pregunta una
+  vez por cada teléfono así, también por el de un contacto, porque un desconocido puede pasar mensajes de un contacto
+  para parecer él, y solo mientras está delante: **Un teléfono cerca de ti tiene internet. ¿Quieres que traiga tus
+  mensajes?** Ese teléfono sabe qué cola de tu relay es la tuya y cuándo la lees; nunca lo que dicen tus mensajes, que
+  solo abre tu teléfono. Conociendo la cola, podría llevarse tus mensajes antes de que te lleguen, así que en cuanto
+  tu teléfono vuelve a tener internet pasa solo a una cola nueva y se lo dice en silencio a tus contactos. La
+  respuesta vale también para los chats ocultos, para que no te pregunte dos veces por un teléfono. Nunca para un
+  relay al que se llega solo por Tor. Tu teléfono hace lo mismo para los teléfonos a su lado mientras **Llevar
+  mensajes de otros** está activado, solo del relay que usa él mismo y nunca mientras va por Tor: ningún desconocido
+  puede hacer que se conecte a un servidor de su elección.
 
 **Por qué:** un paquete no dice para quién es, así que nadie cercano puede saber por él de quién es. Hasta que el
 teléfono de tu contacto responde en un enlace, tu teléfono tampoco puede saber cuál de los teléfonos cercanos es el suyo:

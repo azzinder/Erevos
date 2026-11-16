@@ -37,9 +37,9 @@ export type OldQueue = KeptQueue & { kind: QueueKind; until: number; by?: number
 /** The queues that move for junk on them. */
 export type MovingKind = Exclude<QueueKind, 'spare'>;
 
-/** Why the own queue moves (lib/queue-move.ts): a contact deleted or blocked, junk on it, the relay lost it, a new contact link, or the phone a backup came from was lost (`phone`). */
-export type MoveReason = 'due' | 'junk' | 'lost' | 'link' | 'phone';
-const REASONS: MoveReason[] = ['due', 'junk', 'lost', 'link', 'phone'];
+/** Why the own queue moves (lib/queue-move.ts): a contact deleted or blocked, junk on it, the relay lost it, a new contact link, the phone a backup came from was lost (`phone`), or a phone nearby read it (`bridge`, lib/bridge.ts). */
+export type MoveReason = 'due' | 'junk' | 'lost' | 'link' | 'phone' | 'bridge';
+const REASONS: MoveReason[] = ['due', 'junk', 'lost', 'link', 'phone', 'bridge'];
 
 /** What moves, one step after another, once the phone a backup came from was lost (lib/queue-move.ts lostNow): the contacts' own queues, the own one, the contact link's, the groups' and the public groups'. */
 export type LostStep = 'mines' | 'own' | 'link' | 'group' | 'public';
@@ -80,6 +80,9 @@ export type QueuesData = {
   rings: number[];
   /** Its ring queue is due to move, as the relay could not be reached when it was to: tried with each look. */
   ringDue: boolean;
+  /** When a phone nearby last read the own queue for this phone (lib/bridge.ts), 0 for not since it
+   *  last moved: it learned the queue, so the own queue moves with the next look that reaches the relay. */
+  bridged?: number;
   /** The backup put back (lock/restored.ts) when this was last looked at: one put back since makes
    *  the own queue say a later `moved`, so contacts who learned a later queue meanwhile take it. */
   restore: string;
@@ -156,6 +159,7 @@ export function checkedQueues(value: unknown): QueuesData {
     linkUntil: isTime(v.linkUntil) ? v.linkUntil : 0,
     rings: Array.isArray(v.rings) ? v.rings.filter(isTime).slice(-MAX_RINGS) : [],
     ringDue: v.ringDue === true,
+    ...(isTime(v.bridged) && v.bridged > 0 ? { bridged: v.bridged } : {}),
     restore: typeof v.restore === 'string' && v.restore.length <= 64 ? v.restore : '',
     lost: typeof v.lost === 'string' && v.lost.length <= 64 ? v.lost : '',
     losing: typeof v.losing === 'string' && v.losing.length <= 64 ? v.losing : '',

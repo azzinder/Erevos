@@ -428,13 +428,16 @@ tramite il relay.
   uno sconosciuto vicino non fa mai raggiungere al tuo telefono, o al tuo relay, uno su una rete locale o sul telefono
   stesso. I tuoi messaggi vengono trasportati dai telefoni vicini che lo hanno attivo.
 - **Portati da altri telefoni:** al contrario, quando il tuo telefono non ha internet, un telefono con Erevos accanto
-  che ha internet, e trasporta per gli altri, prende ciò che ti aspetta sul tuo relay e te lo dà da vicino. Il
-  telefono di un contatto lo fa senza domande; per quello di uno sconosciuto, Erevos chiede una volta, mentre è in
-  primo piano, **Un telefono vicino a te ha internet. Deve portarti i tuoi messaggi?** Quel telefono sa il tuo relay,
-  quale coda lì è la tua e quando la leggi; mai cosa dicono i tuoi messaggi, che apre solo il tuo telefono. Potrebbe
-  impedire che arrivino, come chiunque in mezzo, quindi di’ sì solo per un telefono di cui sai di chi è. Mai per un
-  relay raggiunto solo tramite Tor. Anche le chat nascoste, ma solo tramite il telefono di uno dei loro contatti, o uno a cui hai detto sì per loro. Il tuo telefono fa lo stesso per i telefoni accanto
-  finché **Trasporta messaggi per altri** è attivo.
+  che ha internet, e trasporta per gli altri, prende ciò che ti aspetta sul tuo relay e te lo dà da vicino. Erevos
+  chiede una volta per ogni telefono così, anche per quello di un contatto, perché uno sconosciuto può passare i
+  messaggi di un contatto per sembrare lui, e solo mentre è in primo piano: **Un telefono vicino a te ha internet.
+  Deve portarti i tuoi messaggi?** Quel telefono sa quale coda del tuo relay è la tua e quando la leggi; mai cosa
+  dicono i tuoi messaggi, che apre solo il tuo telefono. Conoscendo la coda, potrebbe prendere i tuoi messaggi prima
+  che ti arrivino, quindi appena il tuo telefono ha di nuovo internet passa da solo a una nuova coda e lo dice in
+  silenzio ai tuoi contatti. La risposta vale anche per le chat nascoste, così non ti chiede due volte per lo stesso
+  telefono. Mai per un relay raggiunto solo tramite Tor. Il tuo telefono fa lo stesso per i telefoni accanto finché
+  **Trasporta messaggi per altri** è attivo, solo dal relay che usa lui stesso e mai finché passa da Tor: nessuno
+  sconosciuto può fargli raggiungere un server di sua scelta.
 
 **Perché:** un pacchetto non dice per chi è, quindi nessuno vicino può capire da esso di chi sia. Finché il telefono
 del tuo contatto non risponde su un collegamento, nemmeno il tuo telefono può capire quale dei telefoni vicini sia il

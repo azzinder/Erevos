@@ -1613,14 +1613,24 @@ export function isReadForOthers(bytes: Uint8Array): boolean {
   return bytes[0] === ACK && bytes.length === 33;
 }
 
+/** The most bytes a reply passed on for a phone nearby may hold: one message as the relay keeps it. */
+export const MAX_READ_FOR_OTHERS = MAX_MESSAGE + 1024;
+
 /**
- * For a phone nearby with no internet: passes its request (isReadForOthers) to the relay at `url`
- * on its `/read` path, with no token, and gives the reply as it is. Throws when it is not such a
- * request, or the relay cannot be reached.
+ * For a phone nearby with no internet: passes its request (isReadForOthers) to `own`, this phone's
+ * own relay, on its `/read` path with no token, and gives the reply as it is. Never to another
+ * relay, which would learn this phone's address from a stranger's word (the relay this phone uses
+ * already knows it), and never while the space goes through Tor, which a request straight to the
+ * relay would go around. Throws when it is not such a request, the relay is not `own`, Tor is on,
+ * the reply is larger than one message (MAX_READ_FOR_OTHERS), or the relay cannot be reached.
  */
-export async function readForOthers(url: string, key: Uint8Array | undefined, bytes: Uint8Array): Promise<Uint8Array> {
+export async function readForOthers(own: string, url: string, key: Uint8Array | undefined, bytes: Uint8Array): Promise<Uint8Array> {
   if (!isReadForOthers(bytes)) throw new RelayError('read: not a request this phone passes on');
-  return request(readerOf({ url, ...(key ? { key } : {}) }), bytes);
+  if (!own || !sameRelay(own, url)) throw new RelayError('read: not this phone\'s relay');
+  if (!torOff()) throw new RelayError('read: the space goes through Tor');
+  const reply = await request(readerOf({ url, ...(key ? { key } : {}) }), bytes);
+  if (reply.length > MAX_READ_FOR_OTHERS) throw new RelayError('read: too large to pass on');
+  return reply;
 }
 
 /** What a queue was, as one waitForAny or newsOfAny found it. */

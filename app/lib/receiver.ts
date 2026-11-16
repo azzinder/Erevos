@@ -706,11 +706,13 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   // No internet here: a phone beside this one that has it may bring what waits (lib/bridge.ts).
   if (failed && canTryLater(failed) && !stop()) {
-    const brought = await readNearby(place.own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop).catch(() => 0);
+    const { brought, asked } = await readNearby(place.own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop).catch(() => ({ brought: 0, asked: true }));
     if (brought > 0) found.taken += brought;
+    // The phone asked learned the queue: it moves once the relay can be reached here.
+    if (asked) await mover.bridged().catch(() => undefined);
   }
   // Phones beside this one are told whether it reads for them: it does while it reaches its relay.
-  nearby.setOnline(!failed);
+  nearby.setOnline(!failed, place.own.url);
   state.failures = failed ? state.failures + 1 : 0;
   // What came to the backup queue, whether or not our relay answered.
   await lookAtSpare(chats.e2e, (bytes) => take(bytes).then(() => undefined), stop).catch(() => undefined);

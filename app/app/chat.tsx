@@ -7810,7 +7810,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       </Text>
                       {carrying ? (
                         <Text variant="caption" tone="muted">
-                          {t('It also brings what waits on the relay for a phone beside it that has no internet, when that phone asks: it learns that relay and the queue, never what the messages say.')}
+                          {t('It also brings what waits for a phone beside it that has no internet, when that phone asks, only from the relay this phone uses itself and never while it goes through Tor: it learns the queue, never what the messages say.')}
                         </Text>
                       ) : null}
                       {canLora() ? (

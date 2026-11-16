@@ -419,13 +419,16 @@ ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s 
   relaye na internetu preko TLS-a (wss://): nepoznata osoba u blizini nikad ne može natjerati vaš telefon ili vaš
   relay da se obrate relayu na lokalnoj mreži ili na samom telefonu. Vaše vlastite poruke prenose telefoni u blizini
   koji to imaju uključeno.
-- **Donose ih drugi telefoni:** obrnuto, kad vaš telefon nema internet, Erevos telefon pored njega koji ima internet
-  i prenosi za druge uzima ono što vas čeka na vašem relayu i predaje vam to u blizini. Telefon kontakta to radi bez
-  pitanja; za telefon neznanca Erevos pita jednom, dok je u prvom planu, **Telefon blizu vas ima internet. Da donese
-  vaše poruke?** Taj telefon saznaje vaš relay, koji je red tamo vaš i kad ga čitate; nikad šta vaše poruke kažu, a
-  njih otvara samo vaš telefon. Mogao bi ih spriječiti da stignu, kao bilo ko na putu, pa recite da samo za telefon
-  za koji znate čiji je. Nikad za relay do kojeg se stiže samo preko Tora. Skriveni razgovori takođe, ali samo preko telefona nekog od njihovih kontakata, ili onog kojem ste za njih rekli da. Vaš telefon radi
-  isto za telefone pored sebe dok je **Prenosi poruke za druge** uključeno.
+- **Donose ih drugi telefoni:** obrnuto, kad vaš telefon nema internet, Erevos telefon pored njega koji ima internet i
+  prenosi za druge uzima ono što vas čeka na vašem relayu i predaje vam to u blizini. Erevos pita jednom za svaki
+  takav telefon, i za telefon kontakta, jer neznanac može da prenese poruke kontakta da bi izgledao kao on, i samo dok
+  je u prvom planu: **Telefon blizu vas ima internet. Da donese vaše poruke?** Taj telefon saznaje koji je red na
+  vašem relayu vaš i kad ga čitate; nikad šta vaše poruke kažu, a njih otvara samo vaš telefon. Znajući red, mogao bi
+  da uzme vaše poruke pre nego što stignu do vas, pa čim vaš telefon ponovo ima internet sam prelazi na novi red i
+  tiho to kaže vašim kontaktima. Odgovor važi i za skrivene razgovore, da vas ne pita dvaput za isti telefon. Nikad za
+  relay do kojeg se stiže samo preko Tora. Vaš telefon radi isto za telefone pored sebe dok je **Prenosi poruke za
+  druge** uključeno, samo sa relaya koji sam koristi i nikad dok ide preko Tora: nijedan neznanac ne može da ga natera
+  da se poveže sa serverom po svom izboru.
 
 **Zašto:** paket ne kaže za koga je, pa niko u blizini iz njega ne može saznati čiji je. Dok telefon vašeg kontakta ne
 odgovori na nekoj vezi, ni vaš telefon ne može znati koji je od telefona u blizini njegov: zato kratki paketi idu

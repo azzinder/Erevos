@@ -299,6 +299,11 @@ export class QueueMove {
     return this.run(() => this.lookNow(look));
   }
 
+  /** A phone nearby read the own queue for this phone (lib/bridge.ts): it moves with the next look that reaches the relay. */
+  bridged(now = Date.now()): Promise<void> {
+    return this.at.queues.update((d) => ({ ...d, bridged: now })).then(() => undefined);
+  }
+
   /** The relay no longer has the own queue: a new one, which kept contacts are told. Null when it cannot be made now. */
   lost(own: Relay): Promise<Queue | null> {
     return this.run(async () => {
@@ -421,6 +426,17 @@ export class QueueMove {
       }
     }
     q = await this.at.queues.load();
+    // A phone nearby read the own queue while the relay could not be reached here: it knows the
+    // queue, so it moves now that the relay answers, and kept contacts are told the new one.
+    if (q.bridged) {
+      const was = q.bridged;
+      const ids = await createQueue(look.own).catch(() => null);
+      if (ids) {
+        own = queue = await this.settle(queueOf(ids), here, 'bridge', now, look.own);
+        q = await this.at.queues.update((d) => (d.bridged === was ? { ...d, bridged: undefined } : d));
+        notes.push(t('A phone nearby brought your messages, so Erevos gave you a new relay queue and told your contacts. That phone does not know the new one.'));
+      }
+    }
     // A ring queue due to move since the relay could not be reached: before the tells, which say it.
     if (q.ringDue) {
       await this.ringNow();

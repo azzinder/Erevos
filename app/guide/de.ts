@@ -449,14 +449,17 @@ Ende-zu-Ende-verschlüsselt wie die über das Relay.
   (wss://): Ein Fremder in der Nähe bringt dein Telefon oder dein Relay nie dazu, eines in einem lokalen Netz oder auf
   dem Telefon selbst anzusprechen. Deine eigenen Nachrichten werden von den Telefonen in der Nähe mitgenommen, bei
   denen es eingeschaltet ist.
-- **Von anderen Telefonen geholt:** Andersherum: Hat dein Telefon kein Internet, holt ein Erevos-Telefon daneben,
-  das Internet hat und für andere mitnimmt, was auf deinem Relay für dich wartet, und gibt es dir in der Nähe. Das
-  Telefon eines Kontakts tut es ohne Frage; bei dem eines Fremden fragt Erevos einmal, solange es vorne ist, **Ein
-  Telefon in deiner Nähe hat Internet. Soll es deine Nachrichten holen?** Dieses Telefon erfährt dein Relay, welche
-  Warteschlange dort deine ist und wann du sie liest; nie, was deine Nachrichten sagen, die nur dein Telefon öffnet. Es
-  könnte sie aufhalten, wie jeder dazwischen, also sag nur Ja für ein Telefon, von dem du weißt, wem es gehört. Nie
-  für ein Relay, das nur über Tor erreicht wird. Versteckte Chats auch, aber nur über das Telefon eines ihrer eigenen Kontakte oder eines, zu dem du für sie Ja gesagt hast. Dein Telefon tut dasselbe für die
-  Telefone daneben, solange **Nachrichten für andere mitnehmen** an ist.
+- **Von anderen Telefonen geholt:** Andersherum: Hat dein Telefon kein Internet, holt ein Erevos-Telefon daneben, das
+  Internet hat und für andere mitnimmt, was auf deinem Relay für dich wartet, und gibt es dir in der Nähe. Erevos
+  fragt einmal für jedes solche Telefon, auch das eines Kontakts, da ein Fremder die Nachrichten eines Kontakts
+  weitergeben kann, um wie dieser zu wirken, und nur, solange es vorne ist: **Ein Telefon in deiner Nähe hat Internet.
+  Soll es deine Nachrichten holen?** Dieses Telefon erfährt, welche Warteschlange auf deinem Relay deine ist und wann
+  du sie liest; nie, was deine Nachrichten sagen, die nur dein Telefon öffnet. Mit der Warteschlange könnte es deine
+  Nachrichten nehmen, bevor sie dich erreichen, darum wechselt dein Telefon von selbst zu einer neuen, sobald es
+  wieder Internet hat, und sagt es deinen Kontakten still. Die Antwort gilt auch für versteckte Chats, damit du zu
+  einem Telefon nicht zweimal gefragt wirst. Nie für ein Relay, das nur über Tor erreicht wird. Dein Telefon tut
+  dasselbe für die Telefone daneben, solange **Nachrichten für andere mitnehmen** an ist, nur vom Relay, das es selbst
+  nutzt, und nie, solange es über Tor geht: Kein Fremder kann es dazu bringen, einen Server seiner Wahl zu erreichen.
 
 **Warum:** Ein Paket sagt nicht, für wen es ist, also kann niemand in der Nähe daraus erkennen, wem es gehört. Bis das
 Telefon deines Kontakts über eine Verbindung antwortet, kann auch dein Telefon nicht wissen, welches der Telefone in

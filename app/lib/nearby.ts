@@ -35,12 +35,14 @@ import { fitsSms } from './sms-packets';
 // The bridge, the other way: a phone with no internet has a phone beside it that has internet, and
 // carries for others, read its queue on its relay (readForOthers in lib/relay.ts). It passes the
 // relay requests themselves, a take or an acknowledgement of one queue on the relay's `/read`
-// path, with no token, and gets back the relay's replies as they are. The phone in the middle
-// learns the relay's address and the queue's id, and when it is read; never what the messages
-// hold. It could keep them from coming, as any phone in the way could, but not read nor change
-// them. A contact's phone does it with no question; a stranger's only once the owner said yes to
-// that phone (lib/bridge.ts). Hidden chats only through their own contacts' phones, or one the
-// owner said yes to for them; never slow links.
+// path, with no token, and gets back the relay's replies as they are. Only to the relay the phone
+// in the middle uses itself, which knows its address already, and never while its space goes
+// through Tor: a stranger nearby never has it reach a relay of his choosing. The phone in the
+// middle learns the queue's id, and when it is read; never what the messages hold. Knowing the id,
+// it could take them from the relay before they come, from anywhere, so the queue moves once the
+// phone that asked reaches its relay again (lib/queue-move.ts `bridged`). The owner is asked once
+// for each phone, a contact's too, as a stranger can pass on a contact's packets (lib/bridge.ts);
+// the answer holds for hidden chats as well, while the phones stay linked. Never slow links.
 
 // Slow links: a LoRa radio (lib/lora.ts) reaches phones kilometres away, but a few hundred bytes
 // take seconds on the air, and the law allows a radio only so much air time. So a slow link is the
@@ -149,7 +151,11 @@ const TAKE_PER_LINK = 30;
 // long one asked of a phone nearby is waited for.
 const BRIDGE_ASKS = 120;
 const BRIDGE_WINDOW = 10 * 60_000;
+// The bytes of replies passed on for one link in BRIDGE_WINDOW, at most: this phone's data.
+const BRIDGE_BYTES = 2 * 1024 * 1024;
 const BRIDGE_WAIT = 20_000;
+// A relay address as two that name the same relay say it (sameRelay in lib/relay.ts).
+const plainRelay = (url: string) => url.trim().replace(/\/+$/, '').toLowerCase();
 // A carried packet its relay did not take is tried again after this long, milliseconds.
 const RETRY_AFTER = 60_000;
 // A relay address, as the relay takes it in a forward: ws:// or wss://, plain ASCII, 512 at most.
@@ -271,11 +277,6 @@ export class NearHeard {
     return this.linkOf(identity) !== null;
   }
 
-  /** Whether one of these contacts was heard on this link. */
-  hasLink(link: string): boolean {
-    return [...this.heard.values()].includes(link);
-  }
-
   /** A contact's packet came on this link: what goes to them goes there from now on. */
   heardOn(identity: string, link: string): void {
     if (isSlow(link) || this.heard.get(identity) === link) return;
@@ -318,8 +319,12 @@ export class Nearby {
   private readonly bridges = new Set<string>();
   private readonly askedOf = new Map<string, number[]>();
   private readonly asking = new Map<string, { link: string; done: (reply: Uint8Array | null) => void }>();
+  private readonly goneListeners = new Set<(link: string) => void>();
   /** Passes a request of a phone nearby to its relay (readForOthers in lib/relay.ts), set while a space is open. */
-  readForOthers: ((url: string, key: Uint8Array | undefined, bytes: Uint8Array) => Promise<Uint8Array>) | null = null;
+  readForOthers: ((own: string, url: string, key: Uint8Array | undefined, bytes: Uint8Array) => Promise<Uint8Array>) | null = null;
+  // The relay this phone reached at its last look, the only one it reads on for others.
+  private ownRelay = '';
+  private readonly bytesOf = new Map<string, { at: number; bytes: number }[]>();
   /** Which relays this phone carries packets of other phones to (isCarriable; checks with relays
    *  on this computer let any). */
   carriable: (url: string) => boolean = isCarriable;
@@ -349,6 +354,7 @@ export class Nearby {
       this.takenFrom.clear();
       this.bridges.clear();
       this.askedOf.clear();
+      this.bytesOf.clear();
       for (const [, ask] of this.asking) ask.done(null);
       this.asking.clear();
       for (const item of this.items) {
@@ -433,6 +439,7 @@ export class Nearby {
   private lost(link: string) {
     this.links.delete(link);
     this.bridges.delete(link);
+    for (const gone of this.goneListeners) gone(link);
     for (const [id, ask] of this.asking) if (ask.link === link) {
       this.asking.delete(id);
       ask.done(null);
@@ -826,7 +833,7 @@ export class Nearby {
 
   // Whether this phone reads queues for the phones beside it: it carries for others, and reaches its relay.
   private serves(): boolean {
-    return this.carrying && this.online && !!this.readForOthers;
+    return this.carrying && this.online && !!this.ownRelay && !!this.readForOthers;
   }
 
   private offerAll() {
@@ -834,21 +841,23 @@ export class Nearby {
     for (const link of [...this.links]) if (!isSlow(link)) this.sendOn(link, [[`${OFFER_PREFIX}:${toHex(randomBytes(4))}:0:1:${toBase64(Uint8Array.of(on))}`]]);
   }
 
-  /** Whether this phone reached its relay at its last look: phones beside it are told whether it reads for them. */
-  setOnline(on: boolean): void {
+  /** Whether this phone reached its relay, `url`, at its last look: phones beside it are told whether it reads for them, on that relay alone. */
+  setOnline(on: boolean, url = ''): void {
     const served = this.serves();
     this.online = on;
+    this.ownRelay = on ? url : '';
     if (served !== this.serves()) this.offerAll();
+  }
+
+  /** Calls `listener` with each link that went down; gives what stops it. */
+  onLinkGone(listener: (link: string) => void): () => void {
+    this.goneListeners.add(listener);
+    return () => this.goneListeners.delete(listener);
   }
 
   /** The links whose phones said they read queues for others, up now. */
   bridgeLinks(): string[] {
     return [...this.bridges].filter((link) => this.links.has(link));
-  }
-
-  /** Whether a contact of the open space was heard on this link. */
-  isContactLink(link: string): boolean {
-    return [...this.heard.values()].includes(link);
   }
 
   /**
@@ -885,34 +894,42 @@ export class Nearby {
     });
   }
 
-  // A phone nearby asks this one to pass a request to its relay: only while this phone serves, to a
-  // relay on the internet (isCarriable), so many a while from one link, and only what readForOthers takes.
+  // A phone nearby asks this one to pass a request to its relay: only while this phone serves, to
+  // the relay this phone uses itself (readForOthers in lib/relay.ts says why), so many a while from
+  // one link, so many bytes of replies, and only what readForOthers takes. A no goes back at once.
   private async askedIn(link: string, bytes: Uint8Array, now: number) {
     const read = this.readForOthers;
-    if (!read || !this.serves() || isSlow(link) || bytes.length < 7) return;
+    if (!read || isSlow(link) || bytes.length < 7) return;
+    const id = bytes.subarray(0, 4);
+    const answer = (reply: Uint8Array | null) => {
+      const out = new Uint8Array(4 + 1 + (reply?.length ?? 0));
+      out.set(id, 0);
+      out[4] = reply ? 1 : 0;
+      if (reply) out.set(reply, 5);
+      const frames = framesOf(out, ANSWER_PREFIX);
+      if (frames && this.links.has(link)) this.sendOn(link, [frames]);
+    };
     const k = bytes[4];
     if (bytes.length < 7 + k) return;
     const length = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint16(5 + k);
     if (bytes.length <= 7 + k + length) return;
     const url = String.fromCharCode(...bytes.subarray(7 + k, 7 + k + length));
-    if (!RELAY_URL.test(url) || !this.carriable(url)) return;
+    const own = this.ownRelay;
+    if (!this.serves() || !RELAY_URL.test(url) || !this.carriable(url) || plainRelay(url) !== plainRelay(own)) return answer(null);
     const recent = (this.askedOf.get(link) ?? []).filter((at) => now - at < BRIDGE_WINDOW);
-    if (recent.length >= BRIDGE_ASKS) return;
+    const spent = (this.bytesOf.get(link) ?? []).filter((one) => now - one.at < BRIDGE_WINDOW);
+    if (recent.length >= BRIDGE_ASKS || spent.reduce((sum, one) => sum + one.bytes, 0) >= BRIDGE_BYTES) return answer(null);
     recent.push(now);
     this.askedOf.set(link, recent);
-    const id = bytes.subarray(0, 4);
     let reply: Uint8Array | null = null;
     try {
-      reply = await read(url, k > 0 ? bytes.slice(5, 5 + k) : undefined, bytes.slice(7 + k + length));
+      reply = await read(own, url, k > 0 ? bytes.slice(5, 5 + k) : undefined, bytes.slice(7 + k + length));
     } catch {
       reply = null;
     }
-    const answer = new Uint8Array(4 + 1 + (reply?.length ?? 0));
-    answer.set(id, 0);
-    answer[4] = reply ? 1 : 0;
-    if (reply) answer.set(reply, 5);
-    const frames = framesOf(answer, ANSWER_PREFIX);
-    if (frames && this.links.has(link)) this.sendOn(link, [frames]);
+    spent.push({ at: now, bytes: reply?.length ?? 0 });
+    this.bytesOf.set(link, spent);
+    answer(reply);
   }
 
   // The answer of a phone nearby to what this one asked it, on the link it was asked on.

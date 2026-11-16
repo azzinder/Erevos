@@ -505,7 +505,7 @@ test('a phone with internet that carries for others says so to the phones beside
   const a = phone('A');
   const b = freshPhone('B');
   const asked: { url: string; bytes: Uint8Array }[] = [];
-  b.nearby.readForOthers = async (url, _key, bytes) => {
+  b.nearby.readForOthers = async (_own, url, _key, bytes) => {
     asked.push({ url, bytes });
     return Uint8Array.of(0, 0);
   };
@@ -514,21 +514,20 @@ test('a phone with internet that carries for others says so to the phones beside
   assert.deepEqual(a.nearby.bridgeLinks(), []);
   b.nearby.setCarrying(true);
   assert.deepEqual(a.nearby.bridgeLinks(), []);
-  b.nearby.setOnline(true);
+  b.nearby.setOnline(true, 'wss://relay.example.org/');
   assert.deepEqual(a.nearby.bridgeLinks(), ['ble-link-B']);
   const reply = await a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', randomBytes(32), Uint8Array.of(3, ...randomBytes(26)));
   assert.deepEqual([...reply], [0, 0]);
   assert.equal(asked.length, 1);
   assert.equal(asked[0].url, 'wss://relay.example.org');
+  // Another relay than the one it uses itself: a stranger's server never learns its address. No at once.
+  await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://strangers.example.net', undefined, Uint8Array.of(3, ...randomBytes(26)), 2000), NoWayError);
+  assert.equal(asked.length, 1);
   // Its relay out of reach: it says it no longer reads for others.
   b.nearby.setOnline(false);
   assert.deepEqual(a.nearby.bridgeLinks(), []);
   await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', undefined, Uint8Array.of(3, ...randomBytes(26)), 50), NoWayError);
   assert.equal(asked.length, 1);
-  // A stranger's phone is no contact's link until a contact was heard on it.
-  assert.equal(a.nearby.isContactLink('ble-link-B'), false);
-  a.nearby.heardOn('someone', 'ble-link-B');
-  assert.equal(a.nearby.isContactLink('ble-link-B'), true);
 });
 
 test('a phone passes on only reads of one queue, to relays on the internet over TLS, so many a while', async () => {
@@ -537,11 +536,11 @@ test('a phone passes on only reads of one queue, to relays on the internet over 
   const b = phone('B');
   b.nearby.carriable = isCarriable;
   let asked = 0;
-  b.nearby.readForOthers = async (url, key, bytes) => {
+  b.nearby.readForOthers = async (own, url, key, bytes) => {
     asked++;
-    return readForOthers(url, key, bytes);
+    return readForOthers(own, url, key, bytes);
   };
-  b.nearby.setOnline(true);
+  b.nearby.setOnline(true, 'wss://relay.example.org');
   link('A', 'B');
   // A relay on a local network: never asked, and no answer comes.
   await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://192.168.1.10:7879', undefined, Uint8Array.of(3, ...randomBytes(26)), 50), NoWayError);
@@ -559,7 +558,7 @@ test('with no internet, a phone beside it takes what waits in the queue on the r
   const c = phone('C');
   // Carol's phone reaches the relay and passes requests on; Bob's reaches nothing.
   c.nearby.readForOthers = readForOthers;
-  c.nearby.setOnline(true);
+  c.nearby.setOnline(true, bobsRelay);
   link('B', 'C');
   const alice = await E2E.open('space', 0, randomBytes(32));
   const bob = await E2E.open('space', 1, randomBytes(32));
@@ -583,30 +582,41 @@ test('with no internet, a phone beside it takes what waits in the queue on the r
   assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 0 });
 });
 
-test("a contact's phone brings messages unasked; a stranger's once the owner said yes; hidden chats only their own contacts'", async () => {
-  const { mayBridge, forgetBridges } = await import('../lib/bridge');
-  const { nearby: phoneNearby, NearHeard } = await import('../lib/nearby');
+test("a phone beside this one brings messages only once the owner said yes to it, a contact's too; the question holds up nothing", async () => {
+  const { mayBridge, bridgeAsked, forgetBridges } = await import('../lib/bridge');
+  const { nearby: phoneNearby } = await import('../lib/nearby');
   forgetBridges();
   let asked = 0;
   const yes = async () => {
     asked++;
     return true;
   };
+  // A contact was heard on it, yet it is asked about: a stranger can pass on a contact's packets.
   phoneNearby.heardOn('a-contact', 'link-friend');
-  assert.equal(await mayBridge('link-friend', true, yes), true);
-  assert.equal(asked, 0);
-  // A stranger's: asked once, and only while Erevos is in front.
-  assert.equal(await mayBridge('link-stranger', false, yes), false);
-  assert.equal(asked, 0);
-  assert.equal(await mayBridge('link-stranger', true, yes), true);
-  assert.equal(await mayBridge('link-stranger', true, yes), true);
+  assert.equal(mayBridge('link-friend', false, yes), false);
+  assert.equal(asked, 0, 'only while Erevos is in front');
+  // Asked once; no for now, so the look goes on; the next one uses the answer.
+  assert.equal(mayBridge('link-friend', true, yes), false);
+  assert.equal(mayBridge('link-stranger', true, yes), false, 'one question at a time');
+  await bridgeAsked();
   assert.equal(asked, 1);
-  assert.equal(await mayBridge('link-other', true, async () => false), false);
-  assert.equal(await mayBridge('link-other', true, yes), false, 'no stays no');
-  // Hidden chats: the space's contact is a stranger to them, asked apart; their own contact's phone is not.
-  const near = new NearHeard({ isUp: () => true });
-  assert.equal(await mayBridge('link-friend', true, async () => false, near), false);
-  near.heardOn('hidden-contact', 'link-hidden');
-  assert.equal(await mayBridge('link-hidden', true, async () => false, near), true);
+  assert.equal(mayBridge('link-friend', true, yes), true);
+  assert.equal(asked, 1);
+  assert.equal(mayBridge('link-other', true, async () => false), false);
+  await bridgeAsked();
+  assert.equal(mayBridge('link-other', true, yes), false, 'no stays no');
   forgetBridges();
+});
+
+test('the relay passes reads on for a phone nearby only on the relay this phone uses, never through Tor, never too large', async () => {
+  const { readForOthers: read, setThroughTor } = await import('../lib/relay');
+  const take = Uint8Array.of(3, ...randomBytes(26));
+  await assert.rejects(read('wss://mine.example.org', 'wss://strangers.example.net', undefined, take), /not this phone/);
+  await assert.rejects(read('', 'wss://mine.example.org', undefined, take), /not this phone/);
+  setThroughTor('messages');
+  try {
+    await assert.rejects(read('wss://mine.example.org', 'wss://mine.example.org/', undefined, take), /Tor/);
+  } finally {
+    setThroughTor('off');
+  }
 });

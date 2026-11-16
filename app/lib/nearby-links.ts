@@ -52,7 +52,7 @@ export function startNearbyLinks(): () => void {
     () =>
       choose(
         t('A phone near you has internet. Should it bring your messages?'),
-        t('It is not one of your contacts. It would learn your relay and which queue there is yours, never what your messages say, which only this phone opens. Say yes only for a phone you know whose it is.'),
+        t('It would learn which queue on your relay is yours, never what your messages say, which only this phone opens. Knowing the queue, it could take your messages before they reach you, so Erevos gives you a new queue once you have internet again. Say yes only for a phone you know whose it is, even one that seems to be a contact’s.'),
         t('No'),
         t('Yes'),
       ),

@@ -47,4 +47,6 @@ export const moves: Record<string, string> = {
   // The queue the contact link names, lost by the relay.
   'The relay had lost the queue your contact link names, so you have a new link. The links and QR codes you gave before no longer work.':
     'Το relay είχε χάσει την ουρά που δείχνει ο σύνδεσμος επαφής σου, οπότε έχεις νέο σύνδεσμο. Οι σύνδεσμοι και οι κωδικοί QR που έδωσες πριν δεν λειτουργούν πια.',
+  'A phone nearby brought your messages, so Erevos gave you a new relay queue and told your contacts. That phone does not know the new one.':
+    'Ένα κινητό κοντά σου έφερε τα μηνύματά σου, γι’ αυτό το Erevos σού έδωσε νέα ουρά στο relay και το είπε στις επαφές σου. Εκείνο το κινητό δεν ξέρει τη νέα.',
 };
