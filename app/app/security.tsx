@@ -332,10 +332,10 @@ export default function Security() {
           </Card>
           {lastSeen ? (
             <Card>
-              <Text variant="label">{t('Say when I open Erevos')}</Text>
+              <Text variant="label">{t('Say when I open and close Erevos')}</Text>
               <Text variant="caption" tone="muted" style={hint}>
                 {tellOpen
-                  ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.')
+                  ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. As it closes, those told while it was open are told when it closed. The relay sees that something goes to them then, so it can tell when you open and close Erevos.')
                   : t('Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.')}
               </Text>
               <Row wrap>

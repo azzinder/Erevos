@@ -281,6 +281,8 @@ export const OPEN_EVERY = 15 * 60_000;
 export const OPEN_RECENT = 30 * 24 * 60 * 60_000;
 // What counts as showing now: the time the space or place last showed is at most this old.
 const OPEN_SHOWN = 60_000;
+/** A contact told this lately that the app was open is not told again that it closed (E2E.closeDue). */
+export const CLOSE_QUIET = 60_000;
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
@@ -1675,6 +1677,36 @@ export class E2E {
       .map((c) => c.identity);
     for (const identity of due) this.openTold.set(identity, now);
     return due;
+  }
+
+  /**
+   * The contacts to tell, unasked, that this chat's space or hidden place closed at `at` (Say when I
+   * open Erevos), having shown since `since` (lib/last-seen.ts onShownEnded): those told while it
+   * showed that it was open, unless they heard it in the last CLOSE_QUIET, so their "last seen" is
+   * when it closed. None when it is another's that closed, or "last seen" or telling is off; never
+   * a chat that appears offline, nor a request. Each is taken as told at `at`.
+   */
+  closeDue(since: number, at: number): string[] {
+    const way = this.seenWay;
+    if (!way?.on || way.tells === false || way.at() !== at) return [];
+    const due = this.data.contacts
+      .filter((c) => {
+        const told = this.seenTold.get(c.identity) ?? 0;
+        return !c.hide && !c.request && told >= since && told < at - CLOSE_QUIET;
+      })
+      .map((c) => c.identity);
+    for (const identity of due) this.seenTold.set(identity, at);
+    return due;
+  }
+
+  /**
+   * Whether this chat's space or hidden place shows on the screen now (lib/last-seen.ts), so its
+   * contacts may be told it is open: not the space while its hidden chats are open, nor hidden
+   * chats once closed. True when not known (no "last seen" way set).
+   */
+  showsNow(now = Date.now()): boolean {
+    const way = this.seenWay;
+    return !way || way.at() >= now - 1000;
   }
 
   /** When a contact's Erevos was last open, as they said (ms), or 0: not said, not shown here, or a chat that appears offline. */

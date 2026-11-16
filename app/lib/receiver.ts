@@ -55,6 +55,7 @@ import { cameUnread, onContactsCame } from './contact-queues';
 import { onNetworkChange } from './network-change';
 import { setClockOffset } from './call';
 import { t } from './i18n';
+import { onShownEnded } from './last-seen';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
 // itself while it is open, and holds this meanwhile (holdReceiver). Otherwise this looks at the
@@ -475,6 +476,18 @@ export function startReceiver(every?: number): () => void {
     timer = setTimeout(tick, 0);
   };
   hurry = now;
+  // The space stopped showing: those told meanwhile that it was open hear when it closed
+  // (E2E.closeDue). The chat screen, open on the space, tells them itself first; what it left is
+  // told here, at once where the relay is known, else with the next look.
+  const stopClosed = onShownEnded((_key, since, at) => {
+    setTimeout(() => {
+      if (stopped || !chats) return;
+      const due = chats.e2e.closeDue(since, at);
+      if (due.length === 0) return;
+      for (const identity of due) state.answers.add(`${CONTACT_PREFIX}${identity}`);
+      if (lastPlace) void sendReceipts(chats, lastPlace, state).catch(() => undefined);
+    }, 0);
+  });
   // The alarm of the battery mode Sleep woke the phone: a wait from before it slept ends, and a look goes at once.
   const part = joinSleepLooks(() => {
     endWaits();
@@ -482,6 +495,7 @@ export function startReceiver(every?: number): () => void {
   });
   return () => {
     stopped = true;
+    stopClosed();
     part.leave();
     stopNostr();
     stopWent();
@@ -910,7 +924,7 @@ export async function sendReceipts(chats: SpaceChats, place: Place | null, { rec
     if (!chats.e2e.contacts().some((contact) => contact.identity === identity)) continue;
     const held = chats.e2e.heldRead(identity);
     try {
-      await tell(chats, place, identity, { got, on: shows ? ONLINE : 0 }, near);
+      await tell(chats, place, identity, { got, on: shows && chats.e2e.showsNow() ? ONLINE : 0 }, near);
     } catch {
       // Sealed, it is no longer kept: kept again, for the next look.
       if (held.length > 0) await chats.e2e.hold(identity, 'read', held).catch(() => undefined);

@@ -881,11 +881,12 @@ porukom. Postavlja se za cijeli prostor i njegove povezane uređaje, svaki prost
 razgovora ima vlastiti prekidač, u detaljima razgovora tamo, i vlastito vrijeme: dok su otvoreni, samo oni se računaju
 kao otvoreni, a ne prostor.
 
-S uključenim **Javi kad otvorim Erevos** (ispod **Posljednji put viđen**, uključeno dok ga ne isključiš), otvaranje Erevosa to
+S uključenim **Javi kad otvorim i zatvorim Erevos** (ispod **Posljednji put viđen**, uključeno dok ga ne isključiš), otvaranje Erevosa to
 odmah javlja i tvojim kontaktima, bez čekanja poruke: samo onima s kojima si razgovarao u zadnjih 30 dana i koji i sami
 pokazuju svoje vrijeme, svakom nakon nasumičnog čekanja do jedne minute, najviše svakih 15 minuta, nikad razgovoru koji
-se prikazuje kao offline ni zahtjevu za poruku. Relay tada vidi da im nešto ide kad otvoriš Erevos, pa može znati kada
-to činiš: isključi ga, i tvoje vrijeme ide samo s onim što im ionako ide.
+se prikazuje kao offline ni zahtjevu za poruku. Kad se Erevos zatvori, ili njegovi skriveni razgovori, oni kojima je javljeno dok je bio
+otvoren odmah saznaju kada se zatvorio, pa njihov **Posljednji put viđen** pokazuje to vrijeme. Relay tada vidi da im
+nešto ide kad otvoriš i zatvoriš Erevos, pa može znati kada to činiš: isključi ga, i tvoje vrijeme ide samo s onim što im ionako ide.
 
 Dok pišete kontaktu koji je prikazan na mreži, njegov razgovor prikazuje **piše…** ispod vašeg imena nekoliko sekundi,
 a vaš ispod njegovog kad on piše. To se javlja najviše svakih nekoliko sekundi, samo dok je prikazan na mreži, nikad

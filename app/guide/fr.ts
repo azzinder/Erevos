@@ -959,11 +959,13 @@ suivant. C’est réglé pour tout l’espace et ses appareils associés, chaque
 discussions masquées a son propre interrupteur, dans les détails d’une discussion de là-bas, et sa propre heure : tant
 qu’elles sont ouvertes, elles seules comptent comme ouvertes, pas l’espace.
 
-Avec **Dire quand j’ouvre Erevos** activé (sous **Vu pour la dernière fois**, activé sauf si tu l’éteins), ouvrir Erevos le dit
+Avec **Dire quand j’ouvre et ferme Erevos** activé (sous **Vu pour la dernière fois**, activé sauf si tu l’éteins), ouvrir Erevos le dit
 aussitôt à tes contacts, sans attendre un message : seulement ceux avec qui tu as parlé ces 30 derniers jours et qui
 montrent aussi leur propre heure, chacun après une attente aléatoire d’au plus une minute, au plus toutes les 15
-minutes, jamais une discussion qui apparaît hors ligne ni une demande de message. Le relais voit alors quelque chose
-partir vers eux quand tu ouvres Erevos, il peut donc savoir quand tu le fais : éteins-le, et ton heure ne part qu’avec
+minutes, jamais une discussion qui apparaît hors ligne ni une demande de message. Quand Erevos se ferme, ou ses
+discussions cachées, ceux qui ont été prévenus pendant qu’il était ouvert apprennent aussitôt quand il s’est fermé, donc
+leur **Vu pour la dernière fois** est cette heure-là. Le relais voit alors quelque chose partir vers eux quand tu ouvres et
+fermes Erevos, il peut donc savoir quand tu le fais : éteins-le, et ton heure ne part qu’avec
 ce qui leur part de toute façon.
 
 Pendant que tu écris à un contact qui apparaît en ligne, sa discussion montre **écrit…** sous ton nom pendant quelques

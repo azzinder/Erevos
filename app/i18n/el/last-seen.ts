@@ -35,10 +35,10 @@ export const lastSeen: Record<string, string> = {
     "Οι άλλοι βλέπουν πότε είσαι συνδεδεμένος, και πότε ήσουν τελευταία φορά. Περνά από τον server του {server} χωρίς κρυπτογράφηση, οπότε το μαθαίνει και ο server.",
   "The others do not see when you are online. You still see it of those whose server says it.":
     "Οι άλλοι δεν βλέπουν πότε είσαι συνδεδεμένος. Εσύ το βλέπεις ακόμα για όσους το λέει ο server τους.",
-  "Say when I open Erevos":
-    "Να λέει πότε ανοίγω το Erevos",
-  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.":
-    "Μόλις ανοίγει το Erevos, οι επαφές με τις οποίες μίλησες τις τελευταίες 30 μέρες, και που δείχνουν κι αυτές τη δική τους ώρα, το μαθαίνουν αμέσως, η καθεμία μετά από τυχαία αναμονή έως ένα λεπτό, το πολύ κάθε 15 λεπτά. Το relay βλέπει ότι κάτι πηγαίνει σε αυτές εκείνη τη στιγμή, οπότε μπορεί να καταλάβει πότε ανοίγεις το Erevos.",
+  "Say when I open and close Erevos":
+    "Να λέει πότε ανοίγω και κλείνω το Erevos",
+  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. As it closes, those told while it was open are told when it closed. The relay sees that something goes to them then, so it can tell when you open and close Erevos.":
+    "Μόλις ανοίγει το Erevos, οι επαφές με τις οποίες μίλησες τις τελευταίες 30 μέρες, και που δείχνουν κι αυτές τη δική τους ώρα, το μαθαίνουν αμέσως, η καθεμία μετά από τυχαία αναμονή έως ένα λεπτό, το πολύ κάθε 15 λεπτά. Μόλις κλείνει, όσες το έμαθαν όσο ήταν ανοιχτό μαθαίνουν πότε έκλεισε. Το relay βλέπει ότι κάτι πηγαίνει σε αυτές εκείνη τη στιγμή, οπότε μπορεί να καταλάβει πότε ανοίγεις και κλείνεις το Erevos.",
   "Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.":
     "Η ώρα σου πηγαίνει μόνο μαζί με ό,τι πηγαίνει έτσι κι αλλιώς στις επαφές σου: ένα μήνυμα, μια ένδειξη ότι τα δικά τους ήρθαν ή διαβάστηκαν, ή μια απάντηση όσο έχουν ανοιχτή τη συνομιλία σας. Το relay δεν μαθαίνει τίποτα νέο.",
 };

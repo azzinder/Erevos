@@ -16,6 +16,7 @@ import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, new
 import { randomBytes, setHardCost, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { BlockedContactError, E2E, NoKeyError, ONLINE, OPEN_EVERY, OPEN_RECENT, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
+import { onShownEnded, placeSeenKey, placeShown, shownAt, spaceSeenKey, spaceShown } from '../lib/last-seen';
 import { giveLinkedName } from '../lib/linked-name';
 import { tookOf } from '../lib/queue-move';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
@@ -1040,6 +1041,67 @@ t('last seen goes inside messages, both ways, and is forgotten once turned off',
   assert.equal(alice.e2e.seenNews(bobId), false);
   await alice.e2e.setHidden(bobId, false);
   assert.equal(alice.e2e.lastSeen(bobId), bobAt);
+});
+
+t('closing tells those told while it showed when it closed, once, and says it is open only while it shows', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  const since = Date.now() - 3 * 60 * 60_000;
+  let at = since;
+  alice.e2e.setLastSeen({ on: true, at: () => at });
+  assert.equal(alice.e2e.showsNow(since), true);
+  // Told while it showed: Bob learns a time of Alice's.
+  bob.e2e.setLastSeen({ on: true, at: () => since });
+  message(await bob.e2e.receive((await alice.e2e.seal(bobId, 'hi', alice.from)).packet));
+  assert.ok(bob.e2e.lastSeen(aliceId) > 0 && bob.e2e.lastSeen(aliceId) <= since);
+  // Closed five minutes later: Bob is due, once; the message says the closing time.
+  const closed = since + 5 * 60_000;
+  at = closed;
+  assert.equal(alice.e2e.showsNow(closed + 10_000), false);
+  assert.deepEqual(alice.e2e.closeDue(since, closed + 1), []);
+  assert.deepEqual(alice.e2e.closeDue(since, closed), [bobId]);
+  assert.deepEqual(alice.e2e.closeDue(since, closed), []);
+  message(await bob.e2e.receive((await alice.e2e.seal(bobId, '', alice.from, { got: [] })).packet));
+  assert.equal(bob.e2e.lastSeen(aliceId), closed);
+  // Told within the last minute before closing, or not told since it began to show: nothing.
+  const again = closed + 30 * 60_000;
+  at = again - 30_000;
+  await alice.e2e.seal(bobId, 'late', alice.from);
+  at = again;
+  assert.deepEqual(alice.e2e.closeDue(again - 60_000, again), []);
+  assert.deepEqual(alice.e2e.closeDue(again + 1, again), []);
+  // Telling turned off, or "last seen" off: nothing.
+  const third = again + 30 * 60_000;
+  at = third - 10 * 60_000;
+  await alice.e2e.seal(bobId, 'more', alice.from);
+  at = third;
+  alice.e2e.setLastSeen({ on: true, at: () => at, tells: false });
+  assert.deepEqual(alice.e2e.closeDue(third - 20 * 60_000, third), []);
+  alice.e2e.setLastSeen({ on: false, at: () => at });
+  assert.deepEqual(alice.e2e.closeDue(third - 20 * 60_000, third), []);
+});
+
+t('a space or hidden place that stops showing says when it began and when it stopped', async () => {
+  const ended: [string, number, number][] = [];
+  const stop = onShownEnded((key, since, at) => ended.push([key, since, at]));
+  try {
+    spaceShown(7, 1_000);
+    placeShown({ space: 7, pocket: 2 }, 2_000);
+    placeShown(null, 3_000);
+    spaceShown(null, 4_000);
+    assert.deepEqual(ended, [
+      [spaceSeenKey(7), 1_000, 2_000],
+      [placeSeenKey(7, 2), 2_000, 3_000],
+      [spaceSeenKey(7), 3_000, 4_000],
+    ]);
+    assert.equal(shownAt(placeSeenKey(7, 2), 5_000), 3_000);
+  } finally {
+    stop();
+  }
 });
 
 t('opening tells, unasked, only recent contacts who show their time, at most every 15 minutes, and not when turned off', async () => {

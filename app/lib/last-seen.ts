@@ -10,7 +10,9 @@ import { t } from './i18n';
 // relay, so the relay learns nothing new. Each has its own time, as contacts must not tell one
 // space's owner from another's, nor a hidden place's from its space's, by when both were open:
 // while a hidden place's chats are open, only the place counts as open, not its space. Only in
-// memory: after a start in the background, nothing is said until it shows again.
+// memory: after a start in the background, nothing is said until it shows again. As it stops
+// showing, the contacts told while it showed hear the time it closed (onShownEnded), so their
+// "last seen" is when it closed, not when they last heard from it.
 //
 // It goes both ways: one turned off tells its contacts so (`ls` 0), and they forget its time; and it
 // is shown none of theirs.
@@ -25,11 +27,29 @@ export const spaceSeenKey = (space: number) => `${space}`;
 /** Where the time of the hidden place in `pocket` of `space` is kept. */
 export const placeSeenKey = (space: number, pocket: number) => `${space}.${pocket}`;
 
+// When the one showing began to show this time (ms).
+let showingSince = 0;
+const closedListeners = new Set<(key: string, since: number, at: number) => void>();
+
 function follow(now: number): void {
   const next = space === null ? null : pocket === null ? spaceSeenKey(space) : placeSeenKey(space, pocket);
-  if (showing !== null && showing !== next) lastShown.set(showing, now);
+  const closed = showing !== null && showing !== next ? { key: showing, since: showingSince } : null;
+  if (closed) lastShown.set(closed.key, now);
+  if (showing !== next) showingSince = now;
   showing = next;
   if (next !== null) lastShown.set(next, now);
+  if (closed) closedListeners.forEach((listener) => listener(closed.key, closed.since, now));
+}
+
+/**
+ * Calls `listener` each time a space or hidden place stops showing (the app went away, the password
+ * screen came, or the hidden chats closed): its key, when it began to show and when it stopped, so
+ * the contacts told meanwhile that it was open are told when it closed (E2E.closeDue). At once,
+ * while a hidden place's chats are still open in memory. Until the function it gives is called.
+ */
+export function onShownEnded(listener: (key: string, since: number, at: number) => void): () => void {
+  closedListeners.add(listener);
+  return () => closedListeners.delete(listener);
 }
 
 /** Says which space shows on the screen now, or none (`null`): the app is away, or the password screen is in front. */

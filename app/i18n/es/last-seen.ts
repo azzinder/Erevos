@@ -36,10 +36,10 @@ export const lastSeen: Record<string, string> = {
     "Los demás ven cuándo estás en línea y cuándo lo estuviste por última vez. Pasa por el servidor de {server} sin cifrar, así que el servidor también lo sabe.",
   "The others do not see when you are online. You still see it of those whose server says it.":
     "Los demás no ven cuándo estás en línea. Tú sigues viéndolo de aquellos cuyo servidor lo dice.",
-  "Say when I open Erevos":
-    "Avisar cuando abro Erevos",
-  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.":
-    "En cuanto Erevos se abre, los contactos con los que hablaste en los últimos 30 días, que también muestran su propia hora, lo saben al momento, cada uno tras una espera aleatoria de hasta un minuto, como mucho cada 15 minutos. El relay ve que entonces algo va hacia ellos, así que puede saber cuándo abres Erevos.",
+  "Say when I open and close Erevos":
+    "Avisar cuando abro y cierro Erevos",
+  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. As it closes, those told while it was open are told when it closed. The relay sees that something goes to them then, so it can tell when you open and close Erevos.":
+    "En cuanto Erevos se abre, los contactos con los que hablaste en los últimos 30 días, que también muestran su propia hora, lo saben al momento, cada uno tras una espera aleatoria de hasta un minuto, como mucho cada 15 minutos. Al cerrarse, a quienes se avisó mientras estaba abierto se les dice cuándo se cerró. El relay ve que entonces algo va hacia ellos, así que puede saber cuándo abres y cierras Erevos.",
   "Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.":
     "Tu hora va solo con lo que va a tus contactos de todos modos: un mensaje, una marca de que los suyos llegaron o se leyeron, o una respuesta mientras tienen vuestro chat abierto. El relay no sabe nada nuevo.",
 };

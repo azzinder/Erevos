@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
+import { spaceShown } from '../lib/last-seen';
 import { nearby, Nearby } from '../lib/nearby';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, placeChanged, setAppShown, startReceiver, takeNearby } from '../lib/receiver';
@@ -57,6 +58,7 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
 
   // Bob's space is open, on the home screen.
   setCurrentSpace(0, randomBytes(32));
+  spaceShown(0);
   const bobQueue = await queue();
   await updateCurrentSpaceData({ url, ownQueue: bobQueue });
   const bob = await spaceChats();
@@ -157,6 +159,7 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
   } finally {
     setAppShown(true);
     stop();
+    spaceShown(null);
     // A look under way ends first: what it tells could go to the phones nearby of the next check.
     (await holdReceiver())();
     stopListening();

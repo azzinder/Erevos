@@ -897,11 +897,13 @@ ninguém; quem o via o perde com a sua próxima mensagem. É definido para todo 
 cada espaço separadamente. Cada lugar de conversas ocultas tem o seu próprio interruptor, nos detalhes de uma conversa
 de lá, e a sua própria hora: enquanto estão abertas, só elas contam como abertas, não o espaço.
 
-Com **Avisar quando eu abrir o Erevos** ligado (em **Visto por último**, ligado a não ser que você desligue), abrir o Erevos
+Com **Avisar quando eu abrir e fechar o Erevos** ligado (em **Visto por último**, ligado a não ser que você desligue), abrir o Erevos
 também avisa seus contatos na hora, sem esperar uma mensagem: só aqueles com quem você conversou nos últimos 30 dias e
 que também mostram o próprio horário, cada um depois de uma espera aleatória de até um minuto, no máximo a cada 15
-minutos, nunca uma conversa que aparece offline nem uma solicitação de mensagem. O relay então vê algo ir para eles
-quando você abre o Erevos, então pode saber quando você faz isso: desligue, e seu horário vai só com o que já vai para
+minutos, nunca uma conversa que aparece offline nem uma solicitação de mensagem. Quando o Erevos fecha, ou as
+conversas ocultas dele, quem foi avisado enquanto estava aberto fica sabendo na hora quando fechou, então o **Visto por
+último** dele é esse horário. O relay então vê algo ir para eles quando você abre e fecha o Erevos, então pode saber
+quando você faz isso: desligue, e seu horário vai só com o que já vai para
 eles de qualquer forma.
 
 Enquanto você digita para um contato que aparece online, a conversa dele mostra **digitando…** abaixo do seu nome por

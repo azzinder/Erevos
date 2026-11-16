@@ -905,11 +905,12 @@ ajusta para todo el espacio y sus dispositivos vinculados, cada espacio por sepa
 tiene su propio interruptor, en los detalles de un chat de allí, y su propia hora: mientras están abiertos, solo ellos
 cuentan como abiertos, no el espacio.
 
-Con **Avisar cuando abro Erevos** activado (bajo **Última vez**, activado salvo que lo apagues), al abrir Erevos tus
+Con **Avisar cuando abro y cierro Erevos** activado (bajo **Última vez**, activado salvo que lo apagues), al abrir Erevos tus
 contactos también lo saben al momento, sin esperar a un mensaje: solo aquellos con los que hablaste en los últimos 30
 días y que también muestran su propia hora, cada uno tras una espera aleatoria de hasta un minuto, como mucho cada 15
-minutos, nunca un chat que aparece desconectado ni una solicitud de mensaje. El relay ve entonces que algo va hacia
-ellos cuando abres Erevos, así que puede saber cuándo lo haces: apágalo y tu hora irá solo con lo que les llega de todos
+minutos, nunca un chat que aparece desconectado ni una solicitud de mensaje. Al cerrarse Erevos, o sus chats
+ocultos, a quienes se avisó mientras estaba abierto se les dice al momento cuándo se cerró, así que su **Última vez** es
+esa hora. El relay ve entonces que algo va hacia ellos cuando abres y cierras Erevos, así que puede saber cuándo lo haces: apágalo y tu hora irá solo con lo que les llega de todos
 modos.
 
 Mientras escribes a un contacto que aparece en línea, su chat muestra **escribiendo…** bajo tu nombre durante unos

@@ -966,11 +966,13 @@ seine verknüpften Geräte eingestellt, jeder Bereich für sich. Jeder Ort mit v
 Schalter, in den Details eines Chats dort, und seine eigene Zeit: Solange sie offen sind, zählen nur sie als offen,
 nicht der Bereich.
 
-Mit **Sagen, wenn ich Erevos öffne** an (unter **Zuletzt online**, an, solange du es nicht ausschaltest) erfahren deine
+Mit **Sagen, wenn ich Erevos öffne und schließe** an (unter **Zuletzt online**, an, solange du es nicht ausschaltest) erfahren deine
 Kontakte beim Öffnen von Erevos sofort davon, ohne auf eine Nachricht zu warten: nur die, mit denen du in den letzten 30
 Tagen geschrieben hast und die ihre eigene Zeit auch zeigen, jeder nach einer zufälligen Wartezeit von bis zu einer
-Minute, höchstens alle 15 Minuten, nie ein Chat, der offline erscheint, oder eine Nachrichtenanfrage. Das Relay sieht
-dann etwas an sie gehen, wenn du Erevos öffnest, und kann so erkennen, wann du es tust: schalte es aus, und deine Zeit
+Minute, höchstens alle 15 Minuten, nie ein Chat, der offline erscheint, oder eine Nachrichtenanfrage. Schließt Erevos, oder
+schließen seine verborgenen Chats, erfahren die, denen es gesagt wurde, solange es offen war, sofort, wann es schloss, so
+dass ihr **Zuletzt online** diese Zeit zeigt. Das Relay sieht dann etwas an sie gehen, wenn du Erevos öffnest und
+schließt, und kann so erkennen, wann du es tust: schalte es aus, und deine Zeit
 geht nur mit dem, was ohnehin an sie geht.
 
 Während du einem Kontakt schreibst, der online erscheint, zeigt sein Chat **schreibt…** unter deinem Namen für ein

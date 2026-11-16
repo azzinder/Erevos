@@ -904,11 +904,12 @@ perde con il tuo messaggio successivo. Si imposta per tutto lo spazio e i suoi d
 conto suo. Ogni luogo di chat nascoste ha un interruttore proprio, nei dettagli di una chat di lì, e un’ora propria:
 finché sono aperte, solo loro contano come aperte, non lo spazio.
 
-Con **Dire quando apro Erevos** attivo (sotto **Ultimo accesso**, attivo a meno che tu non lo spenga), aprire Erevos lo
+Con **Dire quando apro e chiudo Erevos** attivo (sotto **Ultimo accesso**, attivo a meno che tu non lo spenga), aprire Erevos lo
 dice subito anche ai tuoi contatti, senza aspettare un messaggio: solo quelli con cui hai parlato negli ultimi 30 giorni
 che mostrano anche la propria ora, ciascuno dopo un’attesa casuale fino a un minuto, al massimo ogni 15 minuti, mai una
-chat che appare offline né una richiesta di messaggio. Il relay vede allora qualcosa andare verso di loro quando apri
-Erevos, quindi può capire quando lo fai: spegnilo, e la tua ora va solo con ciò che va comunque a loro.
+chat che appare offline né una richiesta di messaggio. Quando Erevos si chiude, o le sue chat nascoste, chi è stato avvisato mentre era
+aperto sa subito quando si è chiuso, così il suo **Ultimo accesso** è quell’ora. Il relay vede allora qualcosa andare
+verso di loro quando apri e chiudi Erevos, quindi può capire quando lo fai: spegnilo, e la tua ora va solo con ciò che va comunque a loro.
 
 Mentre scrivi a un contatto che appare online, la sua chat mostra **sta scrivendo…** sotto il tuo nome per qualche
 secondo, e la tua sotto il suo quando scrive. Viene detto al massimo ogni pochi secondi, solo mentre appare online, mai

@@ -217,7 +217,7 @@ import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 import { t, plural, locale } from '../lib/i18n';
 import { SCAM_LOOKED, SCAM_SAYS, scamSigns } from '../lib/scam-shield';
-import { lastSeenText } from '../lib/last-seen';
+import { lastSeenText, onShownEnded } from '../lib/last-seen';
 import {
   type Message,
   type Receipts,
@@ -955,7 +955,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const identity = peer.slice(CONTACT_PREFIX.length);
       const held = e2e?.heldRead(identity) ?? [];
       try {
-        await sendToContact(target, identity, '', { got, read, on: appShown() ? ONLINE : 0 }, true);
+        await sendToContact(target, identity, '', { got, read, on: appShown() && !!e2e?.showsNow() ? ONLINE : 0 }, true);
       } catch {
         // Sealed, it is no longer kept: kept again, for the next look.
         if (held.length > 0) await e2e?.hold(identity, 'read', held).catch(() => undefined);
@@ -2307,6 +2307,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // nostrOnlyWay), while Tor is ready: what waited, the marks that messages came and were read, new
   // prekeys, and what is due there again. What comes there is read as with a relay (takeNostr). In
   // hidden chats too, which have no relay then either.
+  // As the space or these hidden chats stop showing, those told meanwhile that they were open hear
+  // when they closed, at once, while the chats are still open (E2E.closeDue, lib/last-seen.ts).
+  const tellClosed = useRef<(since: number, at: number) => void>(() => undefined);
+  tellClosed.current = (since, at) => {
+    const due = e2e?.closeDue(since, at) ?? [];
+    if (due.length === 0) return;
+    for (const identity of due) answers.current.add(`${CONTACT_PREFIX}${identity}`);
+    void sendReceipts(relayTarget()).catch(() => undefined);
+  };
+  useEffect(() => onShownEnded((_key, since, at) => tellClosed.current(since, at)), []);
   const nostrLook = useRef(() => Promise.resolve());
   nostrLook.current = async () => {
     if (!e2e || !nostrReady()) return;
@@ -6800,10 +6810,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         {lastSeenOn ? (
                           <>
                             <View style={styles.rule} />
-                            <DetailRow title={t('Say when I open Erevos')} checked={tellOpenOn} onPress={() => changeTellOpen(!tellOpenOn)} />
+                            <DetailRow title={t('Say when I open and close Erevos')} checked={tellOpenOn} onPress={() => changeTellOpen(!tellOpenOn)} />
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
                               {tellOpenOn
-                                ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.')
+                                ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. As it closes, those told while it was open are told when it closed. The relay sees that something goes to them then, so it can tell when you open and close Erevos.')
                                 : t('Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.')}
                             </Text>
                           </>
