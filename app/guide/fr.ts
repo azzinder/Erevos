@@ -452,6 +452,14 @@ comme ceux qui passent par le relais.
   seulement pour des relais sur internet en TLS (wss://) : un inconnu à proximité ne fait jamais joindre à ton
   téléphone, ni à ton relais, un relais sur un réseau local ou sur le téléphone lui-même. Tes propres messages sont
   transportés par les téléphones à proximité qui l’ont activé.
+- **Apportés par d’autres téléphones :** dans l’autre sens, quand ton téléphone n’a pas internet, un téléphone
+  Erevos à côté qui a internet, et transporte pour les autres, prend ce qui t’attend sur ton relais et te le donne à
+  proximité. Le téléphone d’un contact le fait sans question ; pour celui d’un inconnu, Erevos demande une fois, tant
+  qu’il est au premier plan, **Un téléphone près de toi a internet. Doit-il apporter tes messages ?** Ce téléphone
+  apprend ton relais, quelle file d’attente y est la tienne et quand tu la lis ; jamais ce que disent tes messages,
+  que seul ton téléphone ouvre. Il pourrait les empêcher d’arriver, comme quiconque au milieu, donc dis oui seulement
+  pour un téléphone dont tu sais à qui il est. Jamais pour un relais joint seulement par Tor. Les discussions
+  masquées aussi, mais seulement par le téléphone d’un de leurs propres contacts, ou un auquel tu as dit oui pour elles. Ton téléphone fait de même pour les téléphones à côté tant que **Transporter des messages pour d’autres** est activé.
 
 **Pourquoi :** un paquet ne dit pas à qui il est destiné, si bien que personne à proximité ne peut savoir d’après lui à
 qui il est. Tant que le téléphone de ton contact n’a pas répondu sur une liaison, ton téléphone ne peut pas non plus

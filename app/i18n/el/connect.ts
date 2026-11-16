@@ -58,4 +58,7 @@ export const connect: Record<string, string> = {
   "Getting it ready…": "Ετοιμάζεται…",
   "They scan it with the camera, and you are each other’s contacts at once.": "Ο άλλος το σκανάρει με την κάμερα και γίνεστε επαφές αμέσως.",
   "Scan theirs": "Σκάναρε το δικό του",
+  "A phone near you has internet. Should it bring your messages?": "Ένα κινητό κοντά σου έχει internet. Να φέρει τα μηνύματά σου;",
+  "It is not one of your contacts. It would learn your relay and which queue there is yours, never what your messages say, which only this phone opens. Say yes only for a phone you know whose it is.": "Δεν είναι από τις επαφές σου. Θα μάθει το relay σου και ποια ουρά εκεί είναι δική σου, ποτέ τι λένε τα μηνύματά σου, που τα ανοίγει μόνο αυτό το κινητό. Πες ναι μόνο για κινητό που ξέρεις τίνος είναι.",
+  "It also brings what waits on the relay for a phone beside it that has no internet, when that phone asks: it learns that relay and the queue, never what the messages say.": "Φέρνει επίσης ό,τι περιμένει στο relay για ένα κινητό δίπλα του που δεν έχει internet, όταν εκείνο το ζητήσει: μαθαίνει το relay και την ουρά, ποτέ τι λένε τα μηνύματα.",
 };

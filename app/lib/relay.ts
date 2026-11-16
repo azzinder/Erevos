@@ -1570,6 +1570,59 @@ export async function receiveOnRead(relay: Relay, recipientId: Uint8Array, way: 
   return taken;
 }
 
+// Through a phone nearby (lib/nearby.ts, the bridge): a phone with no internet has one beside it
+// that has internet read its queue on the relay's `/read` path, with no token, as receiveOnRead.
+// It passes the very request, RECEIVE or ACK of one queue, and the relay's reply comes back as it
+// is: the phone nearby learns the relay's address and the queue's id, never what the messages
+// hold, which only this phone opens. The messages a take hands over are kept on the relay until
+// the next take or ACK says so, as here.
+
+/** Sends `bytes` to the relay through a phone nearby, and gives the relay's reply. Throws when it did not come. */
+export type ReadThrough = (url: string, key: Uint8Array | undefined, bytes: Uint8Array) => Promise<Uint8Array>;
+
+/** Whether a queue on this relay may be read through a phone nearby: never one reached only through Tor, nor through another relay. */
+export function mayReadThrough(relay: Relay): boolean {
+  return !relay.torOnly && !relay.tor && !relay.torChat && !relay.via;
+}
+
+/** Takes the oldest message from the queue through a phone nearby (`through`), as receiveMessage does. Null when it is empty. */
+export async function receiveThrough(relay: Relay, recipientId: Uint8Array, through: ReadThrough): Promise<Uint8Array | null> {
+  const key = heldKey(relay, recipientId);
+  const reply = await through(relay.url, relay.key, receiveBytes(recipientId, false, held.get(key)));
+  if (reply.length < 2) throw new RelayError(`receive: unexpected reply of ${reply.length} bytes`, reply[0]);
+  return receivedOf(reply, key);
+}
+
+/** Tells the relay through a phone nearby that the message the queue handed over last is kept, as ackTaken. */
+export async function ackThrough(relay: Relay, recipientId: Uint8Array, through: ReadThrough): Promise<void> {
+  const key = heldKey(relay, recipientId);
+  const number = held.get(key);
+  if (!number) return;
+  const bytes = new Uint8Array(1 + 24 + 8);
+  bytes[0] = ACK;
+  bytes.set(recipientId, 1);
+  bytes.set(number, 25);
+  const reply = await through(relay.url, relay.key, bytes);
+  if (reply[0] !== NOT_FOUND) check(reply, 'receive');
+  if (held.get(key) === number) held.delete(key);
+}
+
+/** Whether `bytes` is a request a phone nearby may have this one pass to a relay: RECEIVE or ACK of one queue, nothing else. */
+export function isReadForOthers(bytes: Uint8Array): boolean {
+  if (bytes[0] === RECEIVE) return bytes.length === 27 || bytes.length === 35;
+  return bytes[0] === ACK && bytes.length === 33;
+}
+
+/**
+ * For a phone nearby with no internet: passes its request (isReadForOthers) to the relay at `url`
+ * on its `/read` path, with no token, and gives the reply as it is. Throws when it is not such a
+ * request, or the relay cannot be reached.
+ */
+export async function readForOthers(url: string, key: Uint8Array | undefined, bytes: Uint8Array): Promise<Uint8Array> {
+  if (!isReadForOthers(bytes)) throw new RelayError('read: not a request this phone passes on');
+  return request(readerOf({ url, ...(key ? { key } : {}) }), bytes);
+}
+
 /** What a queue was, as one waitForAny or newsOfAny found it. */
 export type AnyFound = 'none' | 'waiting' | 'gone';
 

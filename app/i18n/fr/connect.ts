@@ -58,4 +58,7 @@ export const connect: Record<string, string> = {
   "Getting it ready…": "Préparation…",
   "They scan it with the camera, and you are each other’s contacts at once.": "On le scanne avec l’appareil photo, et vous êtes aussitôt contacts l’un de l’autre.",
   "Scan theirs": "Scanner le sien",
+  "A phone near you has internet. Should it bring your messages?": "Un téléphone près de toi a internet. Doit-il apporter tes messages ?",
+  "It is not one of your contacts. It would learn your relay and which queue there is yours, never what your messages say, which only this phone opens. Say yes only for a phone you know whose it is.": "Ce n’est pas un de tes contacts. Il apprendrait ton relais et quelle file d’attente y est la tienne, jamais ce que disent tes messages, que seul ce téléphone ouvre. Dis oui seulement pour un téléphone dont tu sais à qui il est.",
+  "It also brings what waits on the relay for a phone beside it that has no internet, when that phone asks: it learns that relay and the queue, never what the messages say.": "Il apporte aussi ce qui attend sur le relais pour un téléphone à côté sans internet, quand celui-ci le demande : il apprend le relais et la file d’attente, jamais ce que disent les messages.",
 };

@@ -7,7 +7,11 @@ import { AppState } from 'react-native';
 import { currentSpace } from '../lock/keys';
 import { loadBatteryMode, onBatteryMode } from './battery-mode';
 import { othersCarried, ownCarried } from './carried-store';
+import { choose } from './alert';
+import { forgetBridges, setBridgeAsk } from './bridge';
+import { t } from './i18n';
 import { nearby } from './nearby';
+import { readForOthers } from './relay';
 import { HAS_LINKS, onLinkEvent, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
@@ -41,6 +45,18 @@ export function startNearbyLinks(): () => void {
   const { space, key } = currentSpace();
   const stopOwn = nearby.keepOwnIn(ownCarried(space, key));
   const stopNearby = nearby.start(sendLink);
+  // The bridge: this phone reads queues for the phones beside it while it carries for others and reaches its relay.
+  nearby.readForOthers = readForOthers;
+  setBridgeAsk(
+    () => AppState.currentState === 'active',
+    () =>
+      choose(
+        t('A phone near you has internet. Should it bring your messages?'),
+        t('It is not one of your contacts. It would learn your relay and which queue there is yours, never what your messages say, which only this phone opens. Say yes only for a phone you know whose it is.'),
+        t('No'),
+        t('Yes'),
+      ),
+  );
   const subscriptions = [
     onLinkEvent('onPeer', ({ id, kind }) => {
       if (kind !== 'ble') nearby.linkUp(id); // 'ble' is presence only, not a data link
@@ -95,6 +111,9 @@ export function startNearbyLinks(): () => void {
     stopBattery();
     setLinksQuiet(false);
     stopNearby();
+    nearby.readForOthers = null;
+    nearby.setOnline(false);
+    forgetBridges();
     stopLinks();
     stopOwn();
   };

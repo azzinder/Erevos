@@ -428,6 +428,14 @@ los que van por el relay.
   otros** bajo **Cerca, sin internet**, en **Chat nuevo**, y solo para relays en internet con TLS (wss://): un
   desconocido cercano nunca hace que tu teléfono, o tu relay, contacte con uno de una red local o del propio teléfono.
   Tus propios mensajes los llevan los teléfonos cercanos que lo tienen activado.
+- **Traídos por otros teléfonos:** al revés, cuando tu teléfono no tiene internet, un teléfono con Erevos a su lado
+  que tiene internet, y lleva para otros, toma lo que te espera en tu relay y te lo da de cerca. El teléfono de un
+  contacto lo hace sin preguntar; para el de un desconocido, Erevos pregunta una vez, mientras está delante, **Un
+  teléfono cerca de ti tiene internet. ¿Quieres que traiga tus mensajes?** Ese teléfono sabe tu relay, qué cola de
+  ahí es la tuya y cuándo la lees; nunca lo que dicen tus mensajes, que solo abre tu teléfono. Podría impedir que
+  lleguen, como cualquiera en medio, así que di que sí solo a un teléfono del que sepas de quién es. Nunca para un
+  relay al que se llega solo por Tor. Los chats ocultos también, pero solo por el teléfono de uno de sus propios contactos, o uno al que dijiste que sí para ellos. Tu teléfono hace lo mismo para los teléfonos a su
+  lado mientras **Llevar mensajes de otros** está activado.
 
 **Por qué:** un paquete no dice para quién es, así que nadie cercano puede saber por él de quién es. Hasta que el
 teléfono de tu contacto responde en un enlace, tu teléfono tampoco puede saber cuál de los teléfonos cercanos es el suyo:

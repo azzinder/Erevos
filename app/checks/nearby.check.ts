@@ -22,7 +22,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes, toBase64 } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { framesOf, isCarriable, Nearby, NoWayError, type Carried } from '../lib/nearby';
-import { carryTo, createQueue, receiveMessage, relayKey, toHex, type Mark } from '../lib/relay';
+import { ackThrough, carryTo, createQueue, readForOthers, receiveMessage, receiveThrough, relayKey, sendMessage, toHex, type Mark } from '../lib/relay';
 import { carriedFor } from '../lib/space-chats';
 import { files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -498,4 +498,115 @@ test('with no relay to reach, a phone nearby carries the message to the contact\
   assert.equal(await carryTo({ url: carolsRelay }, carolsRelay, randomBytes(120)), false);
   // A contact whose link has no key for their relay cannot be carried for.
   assert.deepEqual(await carriedFor({ ...sealed, relayKey: '' }, all, { url: '', key: '' }), []);
+});
+
+test('a phone with internet that carries for others says so to the phones beside it, and passes their relay requests on', async () => {
+  const { phone, freshPhone, link } = room();
+  const a = phone('A');
+  const b = freshPhone('B');
+  const asked: { url: string; bytes: Uint8Array }[] = [];
+  b.nearby.readForOthers = async (url, _key, bytes) => {
+    asked.push({ url, bytes });
+    return Uint8Array.of(0, 0);
+  };
+  link('A', 'B');
+  // B carries for nobody yet, nor reaches its relay: it says nothing.
+  assert.deepEqual(a.nearby.bridgeLinks(), []);
+  b.nearby.setCarrying(true);
+  assert.deepEqual(a.nearby.bridgeLinks(), []);
+  b.nearby.setOnline(true);
+  assert.deepEqual(a.nearby.bridgeLinks(), ['ble-link-B']);
+  const reply = await a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', randomBytes(32), Uint8Array.of(3, ...randomBytes(26)));
+  assert.deepEqual([...reply], [0, 0]);
+  assert.equal(asked.length, 1);
+  assert.equal(asked[0].url, 'wss://relay.example.org');
+  // Its relay out of reach: it says it no longer reads for others.
+  b.nearby.setOnline(false);
+  assert.deepEqual(a.nearby.bridgeLinks(), []);
+  await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', undefined, Uint8Array.of(3, ...randomBytes(26)), 50), NoWayError);
+  assert.equal(asked.length, 1);
+  // A stranger's phone is no contact's link until a contact was heard on it.
+  assert.equal(a.nearby.isContactLink('ble-link-B'), false);
+  a.nearby.heardOn('someone', 'ble-link-B');
+  assert.equal(a.nearby.isContactLink('ble-link-B'), true);
+});
+
+test('a phone passes on only reads of one queue, to relays on the internet over TLS, so many a while', async () => {
+  const { phone, link } = room();
+  const a = phone('A');
+  const b = phone('B');
+  b.nearby.carriable = isCarriable;
+  let asked = 0;
+  b.nearby.readForOthers = async (url, key, bytes) => {
+    asked++;
+    return readForOthers(url, key, bytes);
+  };
+  b.nearby.setOnline(true);
+  link('A', 'B');
+  // A relay on a local network: never asked, and no answer comes.
+  await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://192.168.1.10:7879', undefined, Uint8Array.of(3, ...randomBytes(26)), 50), NoWayError);
+  assert.equal(asked, 0);
+  // Anything but a take or an acknowledgement of one queue: refused, so the answer says it did not go.
+  await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', undefined, Uint8Array.of(2, ...randomBytes(40)), 2000), NoWayError);
+  assert.equal(asked, 1);
+});
+
+test('with no internet, a phone beside it takes what waits in the queue on the relay and hands it over', { skip: !ready || !relayReady }, async () => {
+  files.clear();
+  const bobsRelay = await startRelay(true);
+  const { phone, link } = room();
+  const b = phone('B');
+  const c = phone('C');
+  // Carol's phone reaches the relay and passes requests on; Bob's reaches nothing.
+  c.nearby.readForOthers = readForOthers;
+  c.nearby.setOnline(true);
+  link('B', 'C');
+  const alice = await E2E.open('space', 0, randomBytes(32));
+  const bob = await E2E.open('space', 1, randomBytes(32));
+  const queue = await createQueue({ url: bobsRelay });
+  const key = await relayKey({ url: bobsRelay });
+  const code = parseContact(contactLink({ senderHex: toHex(queue.senderId), relayUrl: bobsRelay, key: toBase64Url(bob.bundle), relayKey: toBase64Url(key!) }))!;
+  const { identity: bobId } = await alice.addContact(code, '');
+  const sealed = await alice.seal(bobId, 'brought by Carol', '');
+  for (const packet of [sealed.first!, sealed.packet]) await sendMessage({ url: bobsRelay }, queue.senderId, packet);
+
+  const relay = { url: bobsRelay, ...(key ? { key } : {}) };
+  const through = (url: string, k: Uint8Array | undefined, bytes: Uint8Array) => b.nearby.readThrough('ble-link-C', url, k, bytes);
+  const first = await receiveThrough(relay, queue.recipientId, through);
+  const second = await receiveThrough(relay, queue.recipientId, through);
+  assert.equal(message(await bob.receive(first!)).request, true);
+  assert.equal(message(await bob.receive(second!)).text, 'brought by Carol');
+  assert.equal(await receiveThrough(relay, queue.recipientId, through), null);
+  await ackThrough(relay, queue.recipientId, through);
+  // Nothing is left on the relay, and Carol's phone kept nothing of it.
+  assert.equal(await receiveMessage({ url: bobsRelay }, queue.recipientId), null);
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 0 });
+});
+
+test("a contact's phone brings messages unasked; a stranger's once the owner said yes; hidden chats only their own contacts'", async () => {
+  const { mayBridge, forgetBridges } = await import('../lib/bridge');
+  const { nearby: phoneNearby, NearHeard } = await import('../lib/nearby');
+  forgetBridges();
+  let asked = 0;
+  const yes = async () => {
+    asked++;
+    return true;
+  };
+  phoneNearby.heardOn('a-contact', 'link-friend');
+  assert.equal(await mayBridge('link-friend', true, yes), true);
+  assert.equal(asked, 0);
+  // A stranger's: asked once, and only while Erevos is in front.
+  assert.equal(await mayBridge('link-stranger', false, yes), false);
+  assert.equal(asked, 0);
+  assert.equal(await mayBridge('link-stranger', true, yes), true);
+  assert.equal(await mayBridge('link-stranger', true, yes), true);
+  assert.equal(asked, 1);
+  assert.equal(await mayBridge('link-other', true, async () => false), false);
+  assert.equal(await mayBridge('link-other', true, yes), false, 'no stays no');
+  // Hidden chats: the space's contact is a stranger to them, asked apart; their own contact's phone is not.
+  const near = new NearHeard({ isUp: () => true });
+  assert.equal(await mayBridge('link-friend', true, async () => false, near), false);
+  near.heardOn('hidden-contact', 'link-hidden');
+  assert.equal(await mayBridge('link-hidden', true, async () => false, near), true);
+  forgetBridges();
 });

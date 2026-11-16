@@ -226,8 +226,16 @@ test("New chat's one-time card makes only the first to answer the newest a conta
   assert.equal(await link.takeOnce(toBase64Url(randomBytes(32))), false);
   for (let i = 0; i < 7; i++) await link.onceSecret();
   const third = toBase64Url(await link.onceSecret());
+  // The same opening of New chat shows the same card, while it is unused.
+  assert.equal(toBase64Url(await link.onceSecret(third)), third);
   assert.equal(await link.takeOnce(first), false);
   assert.equal(await link.takeOnce(third), true);
+  assert.notEqual(toBase64Url(await link.onceSecret(third)), third, 'used: a new one');
+  // Older cards are kept a month, so an answer to one still opens, as a message request.
+  const kept = (l: SmsLink) => (l as unknown as { data: { cardsOnce: { secret: string; at: number }[] } }).data.cardsOnce;
+  assert.ok(kept(await SmsLink.open(0, key)).some((c) => c.secret === first), 'kept past five');
+  await link.onceSecret('', Date.now() + 31 * 24 * 3600 * 1000);
+  assert.equal(kept(await SmsLink.open(0, key)).some((c) => c.secret === first), false, 'not past a month');
 });
 
 test('the contact card opens the answers sealed to it, and stays for the next', async () => {

@@ -68,10 +68,12 @@ export type DeviceAsk = { id: string; at: number; done: 'sending' | 'sent' | 'fa
  *  delete anything on the other phone, so it deletes this phone's copies only. */
 export type SmsVanish = { address: string; steps: VanishStep[] };
 
-/** A one-time contact card's secret, base64url, and whether an answer to it came already. */
-export type CardOnce = { secret: string; used: boolean };
-/** How many one-time contact cards are kept to open answers with. */
-export const MAX_CARDS_ONCE = 5;
+/** A one-time contact card's secret, base64url, whether an answer to it came already, and when it was made. */
+export type CardOnce = { secret: string; used: boolean; at: number };
+/** How many one-time contact cards are kept to open answers with, and how long: an answer to an
+ *  older one still comes, as a message request, as long as this. */
+export const MAX_CARDS_ONCE = 50;
+export const CARDS_ONCE_DAYS = 30;
 
 export type SmsData = {
   /** Send an invite with the first SMS to a number with no contact. */
@@ -235,7 +237,7 @@ function checked(value: unknown): SmsData {
         : null,
     ),
     card: isText(v.card) && /^[A-Za-z0-9_-]{43}$/.test(v.card) ? v.card : '',
-    cardsOnce: list(v.cardsOnce, (c) => (isText(c.secret) && /^[A-Za-z0-9_-]{43}$/.test(c.secret) ? { secret: c.secret, used: c.used === true } : null), MAX_CARDS_ONCE),
+    cardsOnce: list(v.cardsOnce, (c) => (isText(c.secret) && /^[A-Za-z0-9_-]{43}$/.test(c.secret) ? { secret: c.secret, used: c.used === true, at: isTime(c.at) ? c.at : 0 } : null), MAX_CARDS_ONCE),
     got: list(v.got, (g) =>
       (g.number === '' || isNumber(g.number)) && isText(g.sender) && /^[0-9a-f]{48}$/.test(g.sender) && isTime(g.at)
         ? { number: g.number as string, sender: g.sender, at: g.at, ...(isName(g.name) ? { name: g.name } : {}) }

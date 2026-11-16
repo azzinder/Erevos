@@ -23,6 +23,7 @@ import { driveShares, packCame, roundsCame } from './share-rounds';
 import {
   ackTaken,
   canReadManyAt,
+  canTryLater,
   canWaitAt,
   carryTo,
   fromHex,
@@ -39,6 +40,7 @@ import {
   waitForMessage,
   type Relay,
 } from './relay';
+import { readNearby } from './bridge';
 import { answerInvites, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { cameAt } from './later';
@@ -702,6 +704,13 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   } catch (error) {
     failed = error;
   }
+  // No internet here: a phone beside this one that has it may bring what waits (lib/bridge.ts).
+  if (failed && canTryLater(failed) && !stop()) {
+    const brought = await readNearby(place.own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop).catch(() => 0);
+    if (brought > 0) found.taken += brought;
+  }
+  // Phones beside this one are told whether it reads for them: it does while it reaches its relay.
+  nearby.setOnline(!failed);
   state.failures = failed ? state.failures + 1 : 0;
   // What came to the backup queue, whether or not our relay answered.
   await lookAtSpare(chats.e2e, (bytes) => take(bytes).then(() => undefined), stop).catch(() => undefined);

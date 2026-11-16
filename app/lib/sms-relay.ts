@@ -201,18 +201,23 @@ export async function makeTextInvite(number: string, name: string): Promise<stri
  * camera reads and a link that fits an SMS. It holds where to answer (the queue the contact link
  * names), a key to seal the answer to, the relay and the name this phone gives itself, never the
  * keys: whoever takes it answers with their own contact link, this phone adds them (a message
- * request, unless `once`: New chat's one-time card, which makes the first to answer it a contact
+ * request, unless `once`: New chat's one-time card, the same for one opening (its `secret`), which makes the first to answer it a contact
  * at once, and no one after, SmsLink.onceSecret) and writes first, so they get its keys from the
  * conversation. Null with no relay queue yet, or a core that cannot seal: then the long link is the one.
  */
-export async function contactCard(name: string, once = false): Promise<string | null> {
+export async function contactCard(name: string, once: false | { secret: string } = false): Promise<string | null> {
   if (!canRelaySeal()) return null;
   const data = await loadCurrentSpaceData();
   if (!data.url || !data.ownQueue) return null;
   const relay: Relay = { url: data.url, token: data.token || undefined };
   const bytes = await relayKey(relay).catch(() => null);
   const link = await spaceSmsLink();
-  const secret = once ? await link.onceSecret() : await link.cardSecret();
+  let secret: Uint8Array;
+  if (once) {
+    // The same card for the whole of one opening of New chat (`once.secret`, '' at first).
+    secret = await link.onceSecret(once.secret);
+    once.secret = toBase64Url(secret);
+  } else secret = await link.cardSecret();
   return textInviteLink({
     sender: await spaceLinkSender(data.ownQueue),
     key: await sealPublic(secret),

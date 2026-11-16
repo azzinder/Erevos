@@ -427,6 +427,14 @@ tramite il relay.
   sotto **Vicino, senza internet**, in **Nuova chat**, e solo per relay su internet tramite TLS (wss://):
   uno sconosciuto vicino non fa mai raggiungere al tuo telefono, o al tuo relay, uno su una rete locale o sul telefono
   stesso. I tuoi messaggi vengono trasportati dai telefoni vicini che lo hanno attivo.
+- **Portati da altri telefoni:** al contrario, quando il tuo telefono non ha internet, un telefono con Erevos accanto
+  che ha internet, e trasporta per gli altri, prende ciò che ti aspetta sul tuo relay e te lo dà da vicino. Il
+  telefono di un contatto lo fa senza domande; per quello di uno sconosciuto, Erevos chiede una volta, mentre è in
+  primo piano, **Un telefono vicino a te ha internet. Deve portarti i tuoi messaggi?** Quel telefono sa il tuo relay,
+  quale coda lì è la tua e quando la leggi; mai cosa dicono i tuoi messaggi, che apre solo il tuo telefono. Potrebbe
+  impedire che arrivino, come chiunque in mezzo, quindi di’ sì solo per un telefono di cui sai di chi è. Mai per un
+  relay raggiunto solo tramite Tor. Anche le chat nascoste, ma solo tramite il telefono di uno dei loro contatti, o uno a cui hai detto sì per loro. Il tuo telefono fa lo stesso per i telefoni accanto
+  finché **Trasporta messaggi per altri** è attivo.
 
 **Perché:** un pacchetto non dice per chi è, quindi nessuno vicino può capire da esso di chi sia. Finché il telefono
 del tuo contatto non risponde su un collegamento, nemmeno il tuo telefono può capire quale dei telefoni vicini sia il

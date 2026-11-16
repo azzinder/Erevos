@@ -58,4 +58,7 @@ export const connect: Record<string, string> = {
   "Getting it ready…": "Priprema se…",
   "They scan it with the camera, and you are each other’s contacts at once.": "Druga osoba ga skenira kamerom i odmah ste jedno drugome kontakti.",
   "Scan theirs": "Skeniraj njegov",
+  "A phone near you has internet. Should it bring your messages?": "Telefon blizu vas ima internet. Da donese vaše poruke?",
+  "It is not one of your contacts. It would learn your relay and which queue there is yours, never what your messages say, which only this phone opens. Say yes only for a phone you know whose it is.": "Nije među vašim kontaktima. Saznao bi vaš relay i koji je red tamo vaš, nikad šta vaše poruke kažu, a njih otvara samo ovaj telefon. Recite da samo za telefon za koji znate čiji je.",
+  "It also brings what waits on the relay for a phone beside it that has no internet, when that phone asks: it learns that relay and the queue, never what the messages say.": "Donosi i ono što na relayu čeka telefon pored njega koji nema internet, kad ga taj telefon zamoli: saznaje relay i red, nikad šta poruke kažu.",
 };

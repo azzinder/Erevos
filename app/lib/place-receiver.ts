@@ -42,9 +42,10 @@ import {
 } from './receiver';
 import { joinSleepLooks, lightSleep, lookBegan, lookEnded, type LookPart } from './sleep-look';
 import { onNetworkChange } from './network-change';
-import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
+import { canTryLater, fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
 import { relayFor, type SpaceChats } from './space-chats';
 import { hiddenSpare, lookAtSpare, spareBackup, type SpareStore } from './spare';
+import { readNearby } from './bridge';
 import { sendWaiting } from './waiting';
 import { driveShares } from './share-rounds';
 
@@ -522,6 +523,11 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
     }
   } catch (error) {
     failed = error;
+  }
+  // No internet here: a phone beside this one, one of its contacts' or one the owner said yes to, may bring what waits (lib/bridge.ts).
+  if (failed && canTryLater(failed) && !stop()) {
+    const brought = await readNearby(own, recipient, (bytes) => take(bytes, 'own'), BATCH, stop, state.near ?? undefined).catch(() => 0);
+    if (brought > 0) found.taken += brought;
   }
   state.failures = failed ? state.failures + 1 : 0;
   // What came to its backup queue, whether or not its relay answered.

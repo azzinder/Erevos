@@ -6154,10 +6154,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // New chat with no chat open shows the QR code itself (#12), as My QR code does.
   const qrHere = (showQr || (!selected && !newcomer && !shownGroup)) && shown;
   const cardNfc = useNfcShare(qrHere && card && !bigQr ? card : null);
+  // The one-time card of this opening of New chat: made once, the same while it stays open.
+  const cardOnce = useRef({ secret: '' });
+  useEffect(() => {
+    if (!qrHere) cardOnce.current = { secret: '' };
+  }, [qrHere]);
   useEffect(() => {
     if (!qrHere || !cardsHere) return;
     let on = true;
-    void contactCard(linkE2E?.invitedAs() ?? '', true)
+    void contactCard(linkE2E?.invitedAs() ?? '', cardOnce.current)
       .then((made) => {
         if (on) setCard(made);
       })
@@ -7803,6 +7808,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
                           : t('Off: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.')}
                       </Text>
+                      {carrying ? (
+                        <Text variant="caption" tone="muted">
+                          {t('It also brings what waits on the relay for a phone beside it that has no internet, when that phone asks: it learns that relay and the queue, never what the messages say.')}
+                        </Text>
+                      ) : null}
                       {canLora() ? (
                         <>
                           <DetailRow title={t('LoRa radio')} value={t(LORA_SHOWN[lora.state().status])} onPress={() => router.push('/lora')} />
