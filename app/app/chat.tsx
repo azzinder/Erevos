@@ -693,6 +693,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [moving, setMoving] = useState(false);
   const router = useRouter();
   const [e2e, setE2E] = useState<E2E | null>(null);
+  // The space's chats as soon as they are open, before a look at the relay under way ends (held):
+  // only for this phone's contact link and QR codes, which need no look to end, so New chat shows
+  // them at once. Everything else waits for e2e.
+  const [earlyE2E, setEarlyE2E] = useState<E2E | null>(null);
+  const linkE2E = e2e ?? earlyE2E;
   // Chats imported into this space, or into these hidden chats: theirs, kept only in their chats.
   const [archive, setArchive] = useState<Archive | null>(null);
   // Counts the changes to what was imported made here (lock/archive.ts changes in place).
@@ -1686,6 +1691,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             const firsts = kept.filter((m) => !m.until || m.until > Date.now()).map(toShown);
             early = { kept, ids: new Set(firsts.map((m) => m.id)) };
             openingChats.current = open;
+            if (!hiddenKey) setEarlyE2E(open.e2e);
             // The contacts first, so a chat locked with its PIN is never marked read before it asks.
             setContacts(open.e2e.contacts());
             setMessages((list) => [...firsts, ...list]);
@@ -5942,16 +5948,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // settings may have changed meanwhile.
   const [linkNostr, setLinkNostr] = useState<NostrCode | null>(null);
   useEffect(() => {
-    if (!e2e || !focused) return;
+    if (!linkE2E || !focused) return;
     let active = true;
-    e2e
+    linkE2E
       .linkNostr()
       .then((code) => active && setLinkNostr((was) => (was?.k === code?.k && was?.r.join(' ') === code?.r.join(' ') ? was : code)))
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [e2e, focused]);
+  }, [linkE2E, focused]);
   // Read again each time these hidden chats show, as Settings may have changed meanwhile.
   useEffect(() => {
     if (!hiddenKey || !canRingInBackground || !focused) return;
@@ -6124,7 +6130,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [newestMine]);
   // Without a relay queue the link has only the keys, and where it reads on Nostr: who adds it
   // reaches this phone nearby, or there.
-  const ownLink = !e2e
+  const ownLink = !linkE2E
     ? null
     : linkHere()
       ? linkHere()
@@ -6135,15 +6141,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           // goes in no link, as the own one does not.
           senderHex: (linkQueue ?? ownQueue).senderHex,
           relayUrl: relayUrl.trim(),
-          key: toBase64Url(e2e.bundle),
+          key: toBase64Url(linkE2E.bundle),
           relayKey: ownRelayKey || undefined,
-          spare: linkSpare(linkQueue?.senderHex ?? '', ownQueue.senderHex, spareCode(e2e.spare())),
+          spare: linkSpare(linkQueue?.senderHex ?? '', ownQueue.senderHex, spareCode(linkE2E.spare())),
           lend: ownTicket || undefined,
           nostr: linkNostr || undefined,
         })
       : hiddenKey && !linkNostr
         ? null
-        : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle), nostr: linkNostr ?? undefined });
+        : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(linkE2E.bundle), nostr: linkNostr ?? undefined });
   // A phone with no relay yet, in the space's chats: it starts with an invite, or by signing in,
   // and sees nothing of relays unless it sets one up itself.
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
@@ -7291,7 +7297,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setShowQr(true);
           }}
           onClose={() => setWelcoming(false)}
-          e2e={e2e}
+          e2e={linkE2E}
           relay={relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? { url: relayUrl.trim(), token: relayToken.trim() } : null}
           onOwnLine={(relay) => ownLine(relay.url, relay.token ?? '')}
           contactLink={ownLink}
@@ -7570,6 +7576,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : null}
             {newcomer ? (
               <View style={styles.section}>
+                {/* The same two big ways at the top as with a relay (#11): their QR code may be an invite, and this phone's is its contact link. */}
+                <MeetWays
+                  scanTitle={t('Scan their QR code')}
+                  scanLine={CAN_TAKE_PHOTOS ? t('with the camera') : t('from a photo of it')}
+                  onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
+                  onShow={ownLink ? showMine : undefined}
+                />
                 <WayCard
                   tint="blue"
                   sign={<QrSign />}

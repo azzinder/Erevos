@@ -16,6 +16,8 @@ On main, not released yet:
 
 - An encrypted Matrix room read or answered on another of our devices is read here too (`lib/matrix.ts` `takeReceipts`, `takeRoom`, `sinceRead`): our own receipt (m.read or m.read.private) and a message of ours from another device raise `readTs`, and the room counts only what others wrote after it.
 - A message's menu opens every time it is held (`components/message-menu.tsx`, `app/chat.tsx`, `components/group-messages.tsx`, `components/chat-media.tsx`): each opening is a menu of its own (a new key), and an open menu closes when the app goes to the background, so a menu Android took away unseen no longer keeps the next one from showing until Erevos is restarted.
+- New chat on a phone with no relay yet starts with the two big buttons too, **Scan their QR code** and **Show your QR code** (`app/chat.tsx`, `MeetWays` in the newcomer's part), as 7.2.0-beta.1 says it always does; the invite card and the other ways in stay under them.
+- New chat shows this phone's contact link, its QR code and Invite someone at once (`app/chat.tsx` `earlyE2E`, `linkE2E`): they use the space's chats as soon as they are open, not once the receiver's look at the relay under way ends (holdReceiver), which took 10 to 15 seconds and left Show your QR code waiting.
 
 ### Under the hood
 
