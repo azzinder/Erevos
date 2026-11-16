@@ -1185,6 +1185,15 @@ teléfono, y ni el sonido ni sus palabras salen de él. Entiende unos cien idiom
 que se habla. Puede equivocarse, y las palabras no se guardan. **Borrar el modelo de voz**, debajo, libera el espacio.
 Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre.
 
+**Traducir:** mantén pulsado un mensaje, en el chat de un contacto o en un grupo, y elige **Traducir**: tu teléfono lo
+traduce a tu idioma, para leerlo o copiarlo, entre griego, inglés, alemán, español, francés e italiano. Adivina el
+idioma del mensaje; toca otro bajo **De** o **A** para cambiar cualquiera de los dos. La primera vez para un idioma
+descarga sus modelos de traducción, de 60 a 95 MB cada uno, cuando tú lo digas, del propio servidor de Erevos, que ve tu
+dirección como en cualquier descarga; dos idiomas que no son el inglés pasan por el inglés, con un modelo para cada
+uno. Después todo se hace en tu teléfono, y ni el mensaje ni su traducción salen de él. Los modelos son OPUS-MT, de la
+Universidad de Helsinki (CC-BY 4.0). Puede equivocarse, y la traducción no se guarda. **Borrar los modelos de
+traducción**, debajo, libera el espacio. Solo en Android.
+
 **Por qué:** en Android 10 y posteriores, en la app web y en un ordenador, un mensaje de voz es Opus a 32 kbit/s, unos
 240 KB por minuto, como los envían Telegram, Element y Conversations: tan claro como puede ser el habla. En Android 9 y
 anteriores, y en Safari antes de iOS 18.4 y macOS 15.4, es AAC a 64 kbit/s, unos 480 KB por minuto. Más no se oiría en

@@ -1094,6 +1094,15 @@ its words leave it. It hears about a hundred languages, Greek among them, and fi
 mistakes, and the words are not kept. **Delete the speech model**, under it, frees the space. Only on Android, and it
 needs a phone with about 2 GB of memory free.
 
+**Translate:** hold a message, in a contact's chat or a group, and choose **Translate**: your phone translates it into
+your language, to read or copy, between Greek, English, German, Spanish, French and Italian. It guesses the message's
+language; tap another under **From** or **Into** to change either. The first time for a language it downloads its
+translation models, of 60 to 95 MB each, once you say so, from Erevos's own server, which sees your address as for any
+download; two languages neither of which is English go through English, with a model for each. Then all of it is done
+on your phone, and neither the message nor its translation leave it. The models are OPUS-MT, by the University of
+Helsinki (CC-BY 4.0). It may make mistakes, and the translation is not kept. **Delete the translation models**, under
+it, frees the space. Only on Android.
+
 **Why:** on Android 10 and later, in the web app and on a computer, a voice message is Opus at 32 kbit/s, about 240 KB a
 minute, as Telegram, Element and Conversations send them: as clear as speech gets. On Android 9 and older, and in Safari
 before iOS 18.4 and macOS 15.4, it is AAC at 64 kbit/s, about 480 KB a minute. More would not be heard in a voice, but

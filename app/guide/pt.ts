@@ -1179,6 +1179,15 @@ telefone, e nem o som nem as palavras dele saem do aparelho. Entende cerca de ce
 reconhece o que está sendo falado. Pode errar, e as palavras não são guardadas. **Apagar o modelo de voz**, logo abaixo,
 libera o espaço. Só no Android, e precisa de um telefone com cerca de 2 GB de memória livre.
 
+**Traduzir:** segure uma mensagem, no chat de um contato ou em um grupo, e escolha **Traduzir**: o seu celular traduz
+para o seu idioma, ou para o inglês, para você ler ou copiar, entre grego, inglês, alemão, espanhol, francês e
+italiano. Ele adivinha o idioma da mensagem; toque em outro em **De** ou **Para** para mudar qualquer um dos dois. Na
+primeira vez para um idioma ele baixa os modelos de tradução dele, de 60 a 95 MB cada, quando você mandar, do próprio
+servidor do Erevos, que vê o seu endereço como em qualquer download; dois idiomas que não são o inglês passam pelo
+inglês, com um modelo para cada. Depois tudo acontece no seu celular, e nem a mensagem nem a tradução saem dele. Os
+modelos são OPUS-MT, da Universidade de Helsinque (CC-BY 4.0). Pode errar, e a tradução não é guardada. **Apagar os
+modelos de tradução**, embaixo, libera o espaço. Só no Android.
+
 **Por quê:** no Android 10 e posteriores, no app web e num computador, uma mensagem de voz é Opus a 32 kbit/s, cerca de
 240 KB por minuto, como Telegram, Element e Conversations as enviam: tão clara quanto a fala pode ser. No Android 9 e
 anteriores, e no Safari antes do iOS 18.4 e do macOS 15.4, é AAC a 64 kbit/s, cerca de 480 KB por minuto. Mais do que

@@ -1185,6 +1185,15 @@ telefono, e né il suono né le sue parole lo lasciano. Capisce circa cento ling
 parlata. Può sbagliare, e le parole non vengono conservate. **Elimina il modello vocale**, sotto, libera lo spazio.
 Solo su Android, e serve un telefono con circa 2 GB di memoria libera.
 
+**Traduci:** tieni premuto un messaggio, nella chat di un contatto o in un gruppo, e scegli **Traduci**: il telefono lo
+traduce nella tua lingua, da leggere o copiare, tra greco, inglese, tedesco, spagnolo, francese e italiano. Indovina
+la lingua del messaggio; tocca un’altra sotto **Da** o **In** per cambiare l’una o l’altra. La prima volta per una
+lingua scarica i suoi modelli di traduzione, da 60 a 95 MB ciascuno, quando lo dici, dal server di Erevos, che vede il
+tuo indirizzo come per ogni download; due lingue nessuna delle quali è l’inglese passano per l’inglese, con un modello
+per ciascuna. Poi tutto avviene sul telefono, e né il messaggio né la sua traduzione lo lasciano. I modelli sono
+OPUS-MT, dell’Università di Helsinki (CC-BY 4.0). Può sbagliare, e la traduzione non viene conservata. **Elimina i
+modelli di traduzione**, sotto, libera lo spazio. Solo su Android.
+
 **Perché:** su Android 10 e successivi, nell’app web e su un computer, un messaggio vocale è Opus a 32 kbit/s, circa 240
 KB al minuto, come li inviano Telegram, Element e Conversations: il massimo di chiarezza utile per la voce. Su Android 9
 e precedenti, e in Safari prima di iOS 18.4 e macOS 15.4, è AAC a 64 kbit/s, circa 480 KB al minuto. Di più non si

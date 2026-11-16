@@ -1268,6 +1268,16 @@ Griechisch darunter, und erkennt die gesprochene. Es kann Fehler machen, und die
 **Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf Android, und das Telefon braucht etwa 2 GB freien
 Arbeitsspeicher.
 
+**Übersetzen:** Halte eine Nachricht gedrückt, im Chat mit einem Kontakt oder in einer Gruppe, und wähle **Übersetzen**:
+Dein Telefon übersetzt sie in deine Sprache, zum Lesen oder Kopieren, zwischen Griechisch, Englisch, Deutsch, Spanisch,
+Französisch und Italienisch. Es errät die Sprache der Nachricht; tippe unter **Von** oder **Nach** eine andere an, um
+eine davon zu ändern. Beim ersten Mal für eine Sprache lädt es, wenn du es sagst, ihre Übersetzungsmodelle von je 60
+bis 95 MB vom eigenen Server von Erevos, der deine Adresse sieht wie bei jedem Download; zwei Sprachen, von denen keine
+Englisch ist, gehen über Englisch, mit einem Modell für jede. Danach geschieht alles auf deinem Telefon, und weder die
+Nachricht noch ihre Übersetzung verlassen es. Die Modelle sind OPUS-MT der Universität Helsinki (CC-BY 4.0). Es kann
+Fehler machen, und die Übersetzung wird nicht gespeichert. **Übersetzungsmodelle löschen**, darunter, gibt den Platz
+frei. Nur auf Android.
+
 **Warum:** Auf Android 10 und neuer, in der Web-App und auf einem Computer ist eine Sprachnachricht Opus mit 32 kbit/s,
 etwa 240 KB pro Minute, wie Telegram, Element und Conversations sie senden: so klar, wie Sprache nur sein kann. Auf
 Android 9 und älter und in Safari vor iOS 18.4 und macOS 15.4 ist sie AAC mit 64 kbit/s, etwa 480 KB pro Minute. Mehr

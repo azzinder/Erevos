@@ -79,7 +79,10 @@ import { CardSheet, saveCard } from '../components/card-share';
 import { SelectBar, selectAction, useSelection } from '../components/select-bar';
 import { PollSheet } from '../components/poll';
 import { SpeechSheet } from '../components/speech-sheet';
+import { TranslateSheet } from '../components/translate-sheet';
 import { canWriteOut } from '../lib/speech';
+import { canTranslate } from '../lib/translate';
+import { languageOf } from '../lib/translate-ways';
 import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, joinedText, placeWords, pollWords, pollOpen, previewAfterEdit, stillEditable, threadRoots, threadSizes, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { cardWords } from '../lib/card-share';
 import { firstLink, fitPreview, previewWay } from '../lib/link-preview';
@@ -721,6 +724,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   // A voice message being written out (components/speech-sheet.tsx): how its sound is read.
   const [hearing, setHearing] = useState<(() => Promise<Uint8Array | null>) | null>(null);
+  // The text of the message being translated (components/translate-sheet.tsx), or null.
+  const [translating, setTranslating] = useState<string | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
   // A thread of the chat shown alone, by the tag of its first message (null: the whole chat), as in a group.
   const [threadRoot, setThreadRoot] = useState<string | null>(null);
@@ -2925,6 +2930,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
+    if (canTranslate() && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text) && languageOf(shownLine(message.text))) {
+      const said = shownLine(message.text);
+      actions.push({ title: t('Translate'), onPress: () => setTranslating(said) });
+    }
     if (message.voice && canWriteOut()) {
       const voice = message.voice;
       actions.push({ title: t('In words'), onPress: () => setHearing(() => () => loadClip(voice)) });
@@ -8158,6 +8167,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }}
         />
         <SpeechSheet sound={shown ? hearing : null} onClose={() => setHearing(null)} />
+        <TranslateSheet text={shown ? translating : null} onClose={() => setTranslating(null)} />
         <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
         <CardSheet visible={sharingCard && shown} onClose={() => setSharingCard(false)} onSend={sendCard} among={among} />
         <PlaceSheet

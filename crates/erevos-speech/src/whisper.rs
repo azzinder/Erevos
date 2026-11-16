@@ -17,14 +17,14 @@ use candle_core::{DType, Device, Tensor, D};
 use crate::mel;
 use crate::{Error, Result};
 
-struct Linear {
+pub(crate) struct Linear {
     // (in, out), contiguous: x · w.
     w: Tensor,
     b: Option<Tensor>,
 }
 
 impl Linear {
-    fn forward(&self, x: &Tensor) -> Result<Tensor> {
+    pub(crate) fn forward(&self, x: &Tensor) -> Result<Tensor> {
         let y = x.broadcast_matmul(&self.w)?;
         Ok(match &self.b {
             Some(b) => y.broadcast_add(b)?,
@@ -33,29 +33,29 @@ impl Linear {
     }
 }
 
-struct Norm {
+pub(crate) struct Norm {
     w: Tensor,
     b: Tensor,
 }
 
 impl Norm {
-    fn forward(&self, x: &Tensor) -> Result<Tensor> {
+    pub(crate) fn forward(&self, x: &Tensor) -> Result<Tensor> {
         Ok(candle_nn::ops::layer_norm(x, &self.w, &self.b, 1e-5)?)
     }
 }
 
-fn softmax(x: &Tensor) -> Result<Tensor> {
+pub(crate) fn softmax(x: &Tensor) -> Result<Tensor> {
     Ok(candle_nn::ops::softmax_last_dim(x)?)
 }
 
-struct Attention {
+pub(crate) struct Attention {
     q: Linear,
     k: Linear,
     v: Linear,
     o: Linear,
     heads: usize,
     // The keys (b, h, d, s), scaled, and values (b, h, s, d): the audio's, or what was written so far.
-    kept: Option<(Tensor, Tensor)>,
+    pub(crate) kept: Option<(Tensor, Tensor)>,
 }
 
 impl Attention {
@@ -67,7 +67,12 @@ impl Attention {
 
     // `audio`: attends to it (its keys and values made once). Otherwise to `x` itself: with
     // `writing`, to what was written before too, and to nothing after.
-    fn forward(&mut self, x: &Tensor, audio: Option<&Tensor>, writing: bool) -> Result<Tensor> {
+    pub(crate) fn forward(
+        &mut self,
+        x: &Tensor,
+        audio: Option<&Tensor>,
+        writing: bool,
+    ) -> Result<Tensor> {
         let (_, t, n) = x.dims3()?;
         let scale = ((n / self.heads) as f64).powf(-0.25);
         let q = (self.split(&self.q.forward(x)?)? * scale)?;
@@ -171,21 +176,31 @@ pub struct Model {
 }
 
 // What a GGUF file holds, read as asked.
-struct Reader {
-    content: gguf_file::Content,
+pub(crate) struct Reader {
+    pub(crate) content: gguf_file::Content,
     file: std::fs::File,
     device: Device,
 }
 
 impl Reader {
-    fn tensor(&mut self, name: &str) -> Result<Tensor> {
+    pub(crate) fn open(path: &Path, device: &Device) -> Result<Self> {
+        let mut file = std::fs::File::open(path).map_err(|e| Error::Model(e.to_string()))?;
+        let content =
+            gguf_file::Content::read(&mut file).map_err(|e| Error::Model(e.to_string()))?;
+        Ok(Self {
+            content,
+            file,
+            device: device.clone(),
+        })
+    }
+    pub(crate) fn tensor(&mut self, name: &str) -> Result<Tensor> {
         let q = self
             .content
             .tensor(&mut self.file, name, &self.device)
             .map_err(|e| Error::Model(format!("{name}: {e}")))?;
         Ok(q.dequantize(&self.device)?.to_dtype(DType::F32)?)
     }
-    fn linear(&mut self, at: &str, bias: bool) -> Result<Linear> {
+    pub(crate) fn linear(&mut self, at: &str, bias: bool) -> Result<Linear> {
         let w = self.tensor(&format!("{at}.weight"))?.t()?.contiguous()?;
         let b = if bias {
             Some(self.tensor(&format!("{at}.bias"))?)
@@ -194,16 +209,22 @@ impl Reader {
         };
         Ok(Linear { w, b })
     }
-    fn norm(&mut self, at: &str) -> Result<Norm> {
+    pub(crate) fn norm(&mut self, at: &str) -> Result<Norm> {
         Ok(Norm {
             w: self.tensor(&format!("{at}.weight"))?,
             b: self.tensor(&format!("{at}.bias"))?,
         })
     }
-    fn attention(&mut self, at: &str, heads: usize) -> Result<Attention> {
+    // Whisper's keys have no bias; Marian's do.
+    pub(crate) fn attention(
+        &mut self,
+        at: &str,
+        heads: usize,
+        key_bias: bool,
+    ) -> Result<Attention> {
         Ok(Attention {
             q: self.linear(&format!("{at}.q_proj"), true)?,
-            k: self.linear(&format!("{at}.k_proj"), false)?,
+            k: self.linear(&format!("{at}.k_proj"), key_bias)?,
             v: self.linear(&format!("{at}.v_proj"), true)?,
             o: self.linear(&format!("{at}.out_proj"), true)?,
             heads,
@@ -212,11 +233,11 @@ impl Reader {
     }
     fn block(&mut self, at: &str, heads: usize, cross: bool) -> Result<Block> {
         Ok(Block {
-            attn: self.attention(&format!("{at}.self_attn"), heads)?,
+            attn: self.attention(&format!("{at}.self_attn"), heads, false)?,
             attn_norm: self.norm(&format!("{at}.self_attn_layer_norm"))?,
             cross: if cross {
                 Some((
-                    self.attention(&format!("{at}.encoder_attn"), heads)?,
+                    self.attention(&format!("{at}.encoder_attn"), heads, false)?,
                     self.norm(&format!("{at}.encoder_attn_layer_norm"))?,
                 ))
             } else {
@@ -227,7 +248,7 @@ impl Reader {
             norm: self.norm(&format!("{at}.final_layer_norm"))?,
         })
     }
-    fn number(&self, key: &str) -> Result<usize> {
+    pub(crate) fn number(&self, key: &str) -> Result<usize> {
         let v = self
             .content
             .metadata
@@ -236,7 +257,7 @@ impl Reader {
         Ok(v.to_u32()
             .map_err(|e| Error::Model(format!("{key}: {e}")))? as usize)
     }
-    fn strings(&self, key: &str) -> Result<Vec<String>> {
+    pub(crate) fn strings(&self, key: &str) -> Result<Vec<String>> {
         let v = self
             .content
             .metadata
@@ -297,14 +318,7 @@ impl Model {
     }
 
     pub(crate) fn open(path: &Path, device: &Device) -> Result<Self> {
-        let mut file = std::fs::File::open(path).map_err(|e| Error::Model(e.to_string()))?;
-        let content =
-            gguf_file::Content::read(&mut file).map_err(|e| Error::Model(e.to_string()))?;
-        let mut r = Reader {
-            content,
-            file,
-            device: device.clone(),
-        };
+        let mut r = Reader::open(path, device)?;
         let (n, mels) = (r.number("whisper.d_model")?, r.number("whisper.mels")?);
         let (enc_heads, dec_heads) = (
             r.number("whisper.encoder_heads")?,

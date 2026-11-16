@@ -1149,6 +1149,15 @@ njegove riječi ga ne napuštaju. Razumije stotinjak jezika, među njima i grčk
 pogriješiti, a riječi se ne čuvaju. **Obriši govorni model**, ispod, oslobađa prostor. Samo na Androidu, i treba
 telefon s oko 2 GB slobodne memorije.
 
+**Prevedi:** drži pritisnutu poruku, u razgovoru s kontaktom ili u grupi, i izaberi **Prevedi**: tvoj telefon je
+prevodi na tvoj jezik, ili na engleski, da je pročitaš ili kopiraš, između grčkog, engleskog, njemačkog, španjolskog,
+francuskog i talijanskog. Pogađa jezik poruke; dodirni drugi pod **S** ili **Na** da promijeniš bilo koji. Prvi put za
+neki jezik preuzima njegove modele za prevođenje, od 60 do 95 MB svaki, kad ti kažeš, s Erevosova vlastitog servera,
+koji vidi tvoju adresu kao kod svakog preuzimanja; dva jezika od kojih nijedan nije engleski idu preko engleskog, s
+modelom za svaki. Zatim se sve radi na tvom telefonu, i ni poruka ni njen prijevod ga ne napuštaju. Modeli su OPUS-MT
+Sveučilišta u Helsinkiju (CC-BY 4.0). Može pogriješiti, a prijevod se ne čuva. **Obriši modele za prevođenje**, ispod,
+oslobađa prostor. Samo na Androidu.
+
 **Zašto:** na Androidu 10 i novijem, u web aplikaciji i na računaru glasovna poruka je Opus sa 32 kbit/s, oko 240 KB po
 minutu, kako ih šalju Telegram, Element i Conversations: govor jasniji od toga ne može biti. Na Androidu 9 i starijem, i
 u Safariju prije iOS-a 18.4 i macOS-a 15.4, to je AAC sa 64 kbit/s, oko 480 KB po minutu. Više se u glasu ne bi čulo,

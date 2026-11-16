@@ -8,11 +8,17 @@
 //! changed on the way or on the server is refused. It holds the weights (8-bit), the model's
 //! sizes and its tokens (examples/make_model.rs makes it from OpenAI's release).
 //!
+//! Text is translated on the phone the same way (marian.rs): a model for each language into
+//! another (Helsinki-NLP's OPUS-MT, CC-BY 4.0), taken when asked for and checked against the
+//! SHA-256 in `TRANSLATIONS`.
+//!
 //! The sound is read in windows of 30 seconds: each made into a log-mel spectrogram (mel.rs),
 //! heard by the encoder, then written out token by token by the decoder (whisper.rs), greedily,
 //! without times. The language is the one asked for, or else the one the model hears.
 
+mod marian;
 mod mel;
+mod spm;
 mod whisper;
 
 use std::path::Path;
@@ -20,10 +26,66 @@ use std::path::Path;
 use candle_core::Device;
 use sha2::{Digest, Sha256};
 
+pub use marian::Translator;
 pub use whisper::Model;
 
 /// The SHA-256 of the one model file the app takes (Whisper small, 8-bit), hex.
 pub const MODEL_SHA256: &str = "dc6f15a0762ac70cbe128c34628bddab1b6c05eb8b7bf2b1fb41022f0ba6a83b";
+
+/// The translation models the app takes (src/marian.rs, examples/make_translation.rs): the
+/// language each reads, the one it writes, and its file's SHA-256 (hex).
+pub const TRANSLATIONS: &[(&str, &str, &str)] = &[
+    (
+        "de",
+        "en",
+        "6dce0f2040d9d38bfe90c7dc495c057ef4818d650cdcd0022f488d2ae1162a04",
+    ),
+    (
+        "el",
+        "en",
+        "eba046519f5897da7ed6a362b55a9a9ed7511a8a131579afdfc7e59595353f4b",
+    ),
+    (
+        "en",
+        "de",
+        "02ebbaa10860482fdf472f7a2c71dfc11f2c06a5683e8780ff08e5007ee3c45f",
+    ),
+    (
+        "en",
+        "el",
+        "d7e5627fefa3b092447c4a0722dc6e4335ab694681e5086d0365683c69eec892",
+    ),
+    (
+        "en",
+        "es",
+        "e29bcdf472736dd8ad9464a97dac813475d48f00ac24bc462ea1519f7f2cb89a",
+    ),
+    (
+        "en",
+        "fr",
+        "3278981ad0bf2a4993cdbcd33f5566c6224b4a0ce5fec6bfdcdd632740b713e7",
+    ),
+    (
+        "en",
+        "it",
+        "c01c38e498bf51a7501816547e7a2dd157fdcd88ddb38d59a01cfbeb17d0ac36",
+    ),
+    (
+        "es",
+        "en",
+        "28a0db0a043d65f494384fb324c751d9e4127a0c0e4fa0c001dd3641036252ea",
+    ),
+    (
+        "fr",
+        "en",
+        "9582d7b0da9e4e0d1edd432945e55c55ac380ea4dc7736efe7084204fc23f7a9",
+    ),
+    (
+        "it",
+        "en",
+        "fec0bd7f352c9b5d0fb88cd1c3dba7a2b4cbc0757a9e6e1922b31fb0c505b7e7",
+    ),
+];
 
 /// The samples a second the model hears.
 pub const RATE: u32 = 16_000;
@@ -72,6 +134,23 @@ pub fn open(path: &Path, want: &str) -> Result<Model> {
         return Err(Error::WrongModel);
     }
     Model::open(path, &Device::Cpu)
+}
+
+/// Opens the translation model at `path` from `from` into `to`, after checking it is the one
+/// TRANSLATIONS names for them.
+pub fn open_translation(path: &Path, from: &str, to: &str) -> Result<Translator> {
+    let (_, _, want) = TRANSLATIONS
+        .iter()
+        .find(|(f, t, _)| *f == from && *t == to)
+        .ok_or_else(|| Error::Language(format!("{from} to {to}")))?;
+    if !file_is(path, want)? {
+        return Err(Error::WrongModel);
+    }
+    let model = Translator::open(path, &Device::Cpu)?;
+    if model.languages() != (from, to) {
+        return Err(Error::WrongModel);
+    }
+    Ok(model)
 }
 
 /// `pcm` (16-bit little-endian, mono, at `rate`) as samples between -1 and 1 at RATE.

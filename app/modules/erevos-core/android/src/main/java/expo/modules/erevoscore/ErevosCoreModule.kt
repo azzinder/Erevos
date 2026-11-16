@@ -78,6 +78,11 @@ class ErevosCoreModule : Module() {
       withContext(speechThread) { ErevosCoreNative.speechText(path, pcm, rate, language) }
     }
     AsyncFunction("speechLetGo") Coroutine { nothing: ByteArray -> withContext(speechThread) { ErevosCoreNative.speechLetGo(nothing) } }
+    // Translation runs on the same thread as speech: one model at a time works the processor.
+    AsyncFunction("translateText") Coroutine { path: ByteArray, from: ByteArray, to: ByteArray, text: ByteArray ->
+      withContext(speechThread) { ErevosCoreNative.translateText(path, from, to, text) }
+    }
+    AsyncFunction("translateLetGo") Coroutine { nothing: ByteArray -> withContext(speechThread) { ErevosCoreNative.translateLetGo(nothing) } }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
     AsyncFunction("relayChannelKeys") { relayKey: ByteArray, secret: ByteArray, answer: ByteArray ->
       ErevosCoreNative.relayChannelKeys(relayKey, secret, answer)
@@ -236,6 +241,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun voiceChange(pcm: ByteArray, rate: ByteArray, kind: ByteArray): ByteArray
   @JvmStatic external fun speechText(path: ByteArray, pcm: ByteArray, rate: ByteArray, language: ByteArray): ByteArray
   @JvmStatic external fun speechLetGo(nothing: ByteArray): ByteArray
+  @JvmStatic external fun translateText(path: ByteArray, from: ByteArray, to: ByteArray, text: ByteArray): ByteArray
+  @JvmStatic external fun translateLetGo(nothing: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
   @JvmStatic external fun relayChannelKeys(relayKey: ByteArray, secret: ByteArray, answer: ByteArray): ByteArray
   @JvmStatic external fun hardKey(input: ByteArray, salt: ByteArray, cost: ByteArray): ByteArray

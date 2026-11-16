@@ -40,6 +40,9 @@ export interface Core {
   /** A voice message written out (crates/erevos-speech, lib/speech.ts): Android only. Missing in a build made before it. */
   speechText?(path: Uint8Array, pcm: Uint8Array, rate: Uint8Array, language: Uint8Array): Promise<Uint8Array>;
   speechLetGo?(nothing: Uint8Array): Promise<Uint8Array>;
+  /** A message translated (crates/erevos-speech marian.rs, lib/translate.ts): Android only. Missing in a build made before it. */
+  translateText?(path: Uint8Array, from: Uint8Array, to: Uint8Array, text: Uint8Array): Promise<Uint8Array>;
+  translateLetGo?(nothing: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
   /** The keys of a channel to a relay (crates/erevos-core relay_channel), phone to relay then relay
    *  to phone, 32 bytes each, once the relay's answer proves it holds `relayKey`'s secret; throws
@@ -347,6 +350,11 @@ export function voiceCore(): ((pcm: Uint8Array, rate: Uint8Array, kind: Uint8Arr
 /** The core's writing out of voice messages, or null where it has none (the web, a build before it). */
 export function speechCore(): Required<Pick<Core, 'speechText' | 'speechLetGo'>> | null {
   return typeof core?.speechText === 'function' && typeof core.speechLetGo === 'function' ? (core as Required<Pick<Core, 'speechText' | 'speechLetGo'>>) : null;
+}
+
+/** The core's translation (lib/translate.ts), or null in a build without it. */
+export function translateCore(): Required<Pick<Core, 'translateText' | 'translateLetGo'>> | null {
+  return typeof core?.translateText === 'function' && typeof core.translateLetGo === 'function' ? (core as Required<Pick<Core, 'translateText' | 'translateLetGo'>>) : null;
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

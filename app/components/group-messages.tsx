@@ -47,7 +47,10 @@ import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-part
 import { PlaceSheet } from './place-sheet';
 import { PollCard, PollSheet } from './poll';
 import { SpeechSheet } from './speech-sheet';
+import { TranslateSheet } from './translate-sheet';
 import { canWriteOut } from '../lib/speech';
+import { canTranslate } from '../lib/translate';
+import { languageOf } from '../lib/translate-ways';
 import { SelectBar, selectAction, useSelection } from './select-bar';
 import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
@@ -116,6 +119,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [readers, setReaders] = useState<GroupMessage | null>(null);
   // A voice message being written out (components/speech-sheet.tsx): how its sound is read.
   const [hearing, setHearing] = useState<(() => Promise<Uint8Array | null>) | null>(null);
+  const [translating, setTranslating] = useState<string | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
   const [polling, setPolling] = useState(false);
@@ -411,6 +415,10 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     actions.push({ title: m.starred ? t('Unstar') : t('Star'), onPress: () => star(m) });
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
+    if (canTranslate() && m.text && !m.sticker && !m.place && !m.poll && languageOf(m.text)) {
+      const said = m.text;
+      actions.push({ title: t('Translate'), onPress: () => setTranslating(said) });
+    }
     if (m.file && m.ms !== undefined && !m.file.from && canWriteOut()) {
       const file = m.file;
       actions.push({ title: t('In words'), onPress: () => setHearing(() => () => readFile(file)) });
@@ -729,6 +737,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
           ) : null}
         </Sheet>
         <SpeechSheet sound={hearing} onClose={() => setHearing(null)} />
+        <TranslateSheet text={translating} onClose={() => setTranslating(null)} />
         <Sheet visible={!!readers} onClose={() => setReaders(null)} title={t('Who read it')}>
           {readers ? <Readers m={readers} members={meantFor(readers)} name={name} /> : null}
         </Sheet>

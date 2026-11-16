@@ -346,6 +346,48 @@ pub fn speech_let_go(_nothing: &[u8]) -> Result<Vec<u8>> {
 #[cfg(feature = "speech")]
 static SPEECH: std::sync::Mutex<Option<(String, erevos_speech::Model)>> = std::sync::Mutex::new(None);
 
+/// `text` (UTF-8) translated on the phone (erevos_speech::Translator) from `from` into `to`
+/// (codes such as "el", "en"), with the model file at `path` (UTF-8), checked against the SHA-256
+/// erevos_speech::TRANSLATIONS has for them the first time it is opened. The translation back,
+/// UTF-8. The two models used last stay open, as a way through English takes two, till
+/// `translate_let_go`.
+#[cfg(feature = "speech")]
+pub fn translate_text(path: &[u8], from: &[u8], to: &[u8], text: &[u8]) -> Result<Vec<u8>> {
+    let path = std::str::from_utf8(path).map_err(|_| "path: UTF-8")?;
+    let from = std::str::from_utf8(from).map_err(|_| "from: UTF-8")?;
+    let to = std::str::from_utf8(to).map_err(|_| "to: UTF-8")?;
+    let text = std::str::from_utf8(text).map_err(|_| "text: UTF-8")?;
+    let mut open = TRANSLATORS.lock().map_err(|_| "the translation model failed before")?;
+    let at = match open.iter().position(|(at, _)| at == path) {
+        Some(i) => i,
+        None => {
+            let model = erevos_speech::open_translation(std::path::Path::new(path), from, to).map_err(|e| e.to_string())?;
+            if open.len() >= 2 {
+                open.remove(0);
+            }
+            open.push((path.to_string(), model));
+            open.len() - 1
+        }
+    };
+    let (_, model) = &mut open[at];
+    if model.languages() != (from, to) {
+        return Err("the translation model open is for other languages".into());
+    }
+    Ok(model.translate(text).map_err(|e| e.to_string())?.into_bytes())
+}
+
+/// Lets go of the translation models and the memory they hold (about 300 MB each).
+#[cfg(feature = "speech")]
+pub fn translate_let_go(_nothing: &[u8]) -> Result<Vec<u8>> {
+    if let Ok(mut open) = TRANSLATORS.lock() {
+        open.clear();
+    }
+    Ok(Vec::new())
+}
+
+#[cfg(feature = "speech")]
+static TRANSLATORS: std::sync::Mutex<Vec<(String, erevos_speech::Translator)>> = std::sync::Mutex::new(Vec::new());
+
 /// The public key for a 32-byte secret, for others to seal to with `relay_seal`
 /// (an SMS invite's key, which opens the answer to it).
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>> {
