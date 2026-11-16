@@ -6,11 +6,17 @@ and security inside. After 0.1.16 comes 2.0.0.
 Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
 0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
 and 0.1.15 never came out.
-4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1. **Not audited.**
+4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). **Not audited.**
 
 ## Unreleased
 
 On main, not released yet:
+
+### For you
+
+### Under the hood
+
+## 7.2.0-beta.1 (2026-11-16)
 
 ### For you
 
