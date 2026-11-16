@@ -4,6 +4,7 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix).": "**Une discussion Matrix lue ailleurs est lue ici aussi** : une discussion Matrix chiffrée que tu as lue, ou à laquelle tu as répondu, dans Element ou sur un autre de tes appareils ne garde plus ici son nombre de nouveaux messages. Voir [Matrix](#matrix).",
   "What's new": 'Nouveautés',
   'What each version changed': 'Ce que chaque version a changé',
   'What each version of Erevos changed, the newest first.': 'Ce que chaque version d’Erevos a changé, la plus récente en premier.',

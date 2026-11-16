@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- An encrypted Matrix room read or answered on another of our devices is read here too (`lib/matrix.ts` `takeReceipts`, `takeRoom`, `sinceRead`): our own receipt (m.read or m.read.private) and a message of ours from another device raise `readTs`, and the room counts only what others wrote after it.
+
 ### Under the hood
 
 ## 7.2.0-beta.1 (2026-11-16)

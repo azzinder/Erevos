@@ -162,8 +162,9 @@ export type MatrixRoom = {
   encrypted: boolean;
   direct: boolean;
   unread: number;
-  /** When it was last read here (markRead): the homeserver's count, until it hears of that, says
-   *  nothing new unless a message from someone else came after it. */
+  /** When it was last read, here (markRead) or on another of our devices (our receipt, or a message
+   *  of ours from there): the homeserver's count, until it hears of that, says nothing new unless a
+   *  message from someone else came after it. */
   readTs?: number;
   messages: MatrixMessage[];
   /** Set while we are only invited: who asked. */
@@ -791,6 +792,17 @@ function takeReceipts(state: MatrixState, room: MatrixRoom, content: unknown): b
   if (!content || typeof content !== 'object') return false;
   let changed = false;
   for (const [event, kinds] of Object.entries(content as Json)) {
+    // Ours, from another of our devices (Element, another phone): the room is read up to there.
+    for (const kind of ['m.read', 'm.read.private']) {
+      const said = ((kinds as Json | undefined)?.[kind] as Json | undefined)?.[state.userId] as Json | undefined;
+      const thread = said?.thread_id;
+      if (!said || (thread !== undefined && thread !== 'main')) continue;
+      const at = room.messages.find((m) => m.id === event)?.ts ?? (typeof said.ts === 'number' && Number.isFinite(said.ts) ? said.ts : undefined);
+      if (at !== undefined && at > (room.readTs ?? 0)) {
+        room.readTs = at;
+        changed = true;
+      }
+    }
     const read = (kinds as Json | undefined)?.['m.read'];
     if (!read || typeof read !== 'object' || !event.startsWith('$')) continue;
     for (const [user, said] of Object.entries(read as Json)) {
@@ -977,6 +989,11 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     if (await takeEvent(state, id, event, false)) seen = true;
   }
   keepLatest(room);
+  // How far the room was read before this sync: ours from another device (a message of ours that
+  // came with it, not sent from here, or our own receipt below) reads it up to there.
+  const readBefore = room.readTs;
+  const ownLatest = room.messages.filter((m) => !had.has(m.id) && m.sender === state.userId && !m.state).at(-1);
+  if (live && ownLatest && ownLatest.ts > (room.readTs ?? 0)) room.readTs = ownLatest.ts;
   // Who writes in it now, as the homeserver says (m.typing): kept here only. And how far each read.
   for (const event of ((data.ephemeral as Json | undefined)?.events as Json[] | undefined) ?? []) {
     if (event.type === 'm.receipt') {
@@ -1001,7 +1018,7 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
   // In an encrypted room the homeserver cannot read what came, so its count follows only what its
   // push rules guess of encrypted events, and many accounts have them say nothing (Element's
   // «Encrypted messages in group chats» off): what came from others after the last read counts here.
-  if (room.encrypted && live) room.unread = Math.max(room.unread, before + freshFromOthers(state, room, had));
+  if (room.encrypted && live) room.unread = Math.max(room.unread, readBefore === room.readTs ? before + freshFromOthers(state, room, had) : sinceRead(state, room));
   if (!room.name) room.name = nameFromMembers(state, room);
   return seen;
 }
@@ -2052,6 +2069,12 @@ export async function leaveRoom(state: MatrixState, roomId: string): Promise<voi
 export function freshFromOthers(state: MatrixState, room: MatrixRoom, had: ReadonlySet<string>): number {
   const read = room.readTs ?? 0;
   return room.messages.filter((m) => !had.has(m.id) && m.sender !== state.userId && !m.state && !m.deleted && m.ts > read).length;
+}
+
+/** How many messages from others the room has after it was last read, here or on another of our devices. */
+export function sinceRead(state: MatrixState, room: MatrixRoom): number {
+  const read = room.readTs ?? 0;
+  return room.messages.filter((m) => m.sender !== state.userId && !m.state && !m.deleted && m.ts > read).length;
 }
 
 /**

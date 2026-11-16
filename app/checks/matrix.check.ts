@@ -1037,7 +1037,7 @@ test('in an encrypted room, what others write after the last read counts even wh
   await syncApply(state, news([text('$2', '@ann:example.org', 2000), text('$3', '@ann:example.org', 3000)], 0) as unknown as Parameters<typeof syncApply>[1]);
   assert.equal(state.rooms[id].unread, 2, 'two came, the homeserver counted none');
   await syncApply(state, news([text('$4', me, 4000)], 0) as unknown as Parameters<typeof syncApply>[1]);
-  assert.equal(state.rooms[id].unread, 2, 'ours adds nothing');
+  assert.equal(state.rooms[id].unread, 0, 'ours from another device reads the room up to it');
   await syncApply(state, news([text('$5', '@ann:example.org', 5000)], 3) as unknown as Parameters<typeof syncApply>[1]);
   assert.equal(state.rooms[id].unread, 3, 'the homeserver counting them too counts each once');
   state.rooms[id].unread = 0;
@@ -1047,4 +1047,43 @@ test('in an encrypted room, what others write after the last read counts even wh
   state.since = undefined as never;
   await syncApply(state, news([text('$6', '@ann:example.org', 6000)], 0) as unknown as Parameters<typeof syncApply>[1]);
   assert.equal(state.rooms[id].unread, 0, 'a first sync tells of nothing it brings');
+});
+
+test('an encrypted room read on another of our devices, or answered from it, is read here too', async () => {
+  const me = '@me:example.org';
+  const ann = '@ann:example.org';
+  const id = '!e:example.org';
+  const state = {
+    userId: me,
+    since: 's1',
+    rooms: { [id]: { id, name: 'Ann', members: { [ann]: { membership: 'join' } }, encrypted: true, direct: true, unread: 0, readTs: 1000, messages: [{ id: '$1', sender: ann, ts: 1000, text: 'old' }] } },
+    outbound: {},
+    devices: {},
+    outdated: [],
+    seen: {},
+  } as unknown as MatrixState;
+  const news = (events: Json[], count: number, ephemeral: Json[] = []) => ({
+    next_batch: 's2',
+    device_one_time_keys_count: { signed_curve25519: 50 },
+    device_unused_fallback_key_types: ['signed_curve25519'],
+    rooms: { join: { [id]: { timeline: { events }, ephemeral: { events: ephemeral }, unread_notifications: { notification_count: count } } } },
+  });
+  type Sync = Parameters<typeof syncApply>[1];
+  const text = (eventId: string, sender: string, ts: number) => ({ type: 'm.room.message', event_id: eventId, sender, origin_server_ts: ts, content: { msgtype: 'm.text', body: 'hi' } });
+  const receipt = (eventId: string, kind: string, user: string, ts: number) => ({ type: 'm.receipt', content: { [eventId]: { [kind]: { [user]: { ts } } } } });
+  await syncApply(state, news([text('$2', ann, 2000), text('$3', ann, 3000)], 0) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 2, 'two came');
+  await syncApply(state, news([], 0, [receipt('$3', 'm.read', me, 3500)]) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 0, 'read in Element: our receipt clears it');
+  await syncApply(state, news([text('$4', ann, 4000)], 0) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 1, 'one more after that read counts');
+  await syncApply(state, news([], 0, [receipt('$4', 'm.read.private', me, 4500)]) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 0, 'a private receipt of ours clears it too');
+  await syncApply(state, news([text('$5', ann, 5000), text('$6', ann, 6000)], 0) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 2);
+  await syncApply(state, news([text('$7', me, 7000)], 0) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 0, 'an answer of ours from another device reads it');
+  await syncApply(state, news([], 0, [receipt('$7', 'm.read', ann, 7500)]) as unknown as Sync);
+  assert.equal(state.rooms[id].unread, 0, "someone else's receipt changes nothing of ours");
+  assert.equal(state.rooms[id].readBy?.[ann]?.event, '$7');
 });

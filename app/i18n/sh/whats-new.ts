@@ -4,6 +4,7 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix).": "**Matrix razgovor pročitan drugdje pročitan je i ovdje**: šifrovani Matrix razgovor koji si pročitao ili na koji si odgovorio u Elementu ili na drugom svom uređaju više ovdje ne zadržava broj novih poruka. Pogledaj [Matrix](#matrix).",
   "What's new": 'Šta je novo',
   'What each version changed': 'Šta je promijenila svaka verzija',
   'What each version of Erevos changed, the newest first.': 'Šta je promijenila svaka verzija Erevosa, najnovija prva.',
