@@ -661,6 +661,10 @@ lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans
   **Commencer sans relais**, comme dans Sans aucun relais, sous Par Nostr ; et les réglages du relais, comme aux
   étapes 1 à 6 ci-dessus. Une invitation est la façon la plus simple d’entrer, et sur le relais un téléphone invité
   n’a qu’un nom de lettres et de chiffres au hasard.
+- **Un autre relais :** sous **Se connecter avec LPHL**, **Se connecter à un autre relais…** prend l’adresse d’un autre
+  relais, telle que son responsable te l’a donnée, par exemple relay.example.org : la carte s’y connecte alors, au nom
+  des comptes que ce relais accepte, ou dit qu’il ne propose pas de connexion, et son responsable peut alors te donner
+  une invitation. **Revenir à** ramène celui de LPHL.
 - **Ce que ton relais doit permettre :** l’accès à lui est une invitation à ton relais (voir Invitations au relais
   ci-dessous), donc il ne vient que d’un téléphone qui a son propre jeton sur un relais qui accepte les invitations. Il
   compte parmi tes invitations, sous un nom de lettres et de chiffres au hasard, et reste même quand le tien disparaît.

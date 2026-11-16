@@ -613,6 +613,9 @@ ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgov
   a zatim dodajete svoje kontakte putem njihovih pozivnica ili linkova; **Počnite bez relaya**, kao u Bez ikakvog
   relaya, pod Preko Nostra; i postavke relaya, kao u koracima od 1 do 6 iznad. Pozivnica je najjednostavniji način
   ulaska, a na relayu pozvani telefon ima samo ime od nasumičnih slova i cifara.
+- **Drugi relay:** ispod **Prijava preko LPHL**, **Prijava na drugi relay…** prima adresu drugog relaya, kako vam ju
+  je dao onaj ko ga vodi, na primjer relay.example.org: kartica se tada prijavljuje tamo, s imenom naloga koje taj relay
+  prima, ili kaže da nema prijavu, i tada vam onaj ko ga vodi može dati pozivnicu. **Nazad na** vraća LPHL-ov.
 - **Šta vaš relay mora dozvoliti:** vlastiti pristup je pozivnica na vaš relay (pogledajte Pozivnice na relay ispod), pa
   dolazi samo s telefona koji ima vlastiti token na relayu koji prima pozivnice. Računa se među vaše pozivnice, pod
   imenom od nasumičnih slova i cifara, i ostaje čak i kad vaš nestane. Telefon s jednim zajedničkim tokenom relaya prvo

@@ -663,6 +663,10 @@ eigenem Zugang, ohne etwas einzutippen, und ihr seid sofort gegenseitig Kontakte
   „Ganz ohne Relay“ unter „Über Nostr“; und die Relay-Einstellungen, wie in 1 bis 6 oben. Eine Einladung ist der
   einfachste Weg hinein, und auf dem Relay hat ein eingeladenes Telefon nur einen Namen aus zufälligen Buchstaben und
   Ziffern.
+- **Ein anderes Relay:** Unter **Mit LPHL anmelden** nimmt **Bei einem anderen Relay anmelden…** die Adresse eines
+  anderen Relays, so wie der Betreiber sie dir gegeben hat, etwa relay.example.org: Die Karte meldet dich dann dort an,
+  benannt nach den Konten, die dieses Relay annimmt, oder sagt, dass es keine Anmeldung anbietet; dann kann dir der
+  Betreiber eine Einladung geben. **Zurück zu** holt LPHL zurück.
 - **Was dein Relay erlauben muss:** Der eigene Zugang ist eine Einladung zu deinem Relay (siehe „Einladungen zum Relay“
   weiter unten), also kommt er nur von einem Telefon mit eigenem Token auf einem Relay, das Einladungen annimmt. Er
   zählt zu deinen Einladungen, unter einem Namen aus zufälligen Buchstaben und Ziffern, und bleibt, auch wenn deiner

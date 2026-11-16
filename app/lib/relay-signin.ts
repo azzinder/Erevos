@@ -38,6 +38,23 @@ const pending = new Map<number, SignIn>();
 
 const plain = (url: string) => url.trim().replace(/\/+$/, '').toLowerCase();
 
+/**
+ * The relay address someone typed to sign in at (New chat, Another relay…): `wss://` and the host,
+ * with or without the scheme, an https:// address taken as its wss://, and ws:// or http:// only
+ * for this computer (for the checks). Null for anything else.
+ */
+export function signInRelay(typed: string): string | null {
+  let text = typed.trim();
+  if (!text || /\s/.test(text)) return null;
+  if (!/^[a-z]+:/i.test(text)) text = `wss://${text}`;
+  text = text.replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://');
+  text = text.replace(/^(wss?:\/\/.+?)\/+$/i, '$1');
+  const host = hostOf(text);
+  if (!host || !/^wss?:\/\/[^\s/?#]+(\/[^\s?#]*)?$/i.test(text)) return null;
+  if (/^ws:/i.test(text) && !isLoopback(host)) return null;
+  return text;
+}
+
 /** A new sign-in to the relay at `url` for `space`, in place of one it had under way. */
 export function startSignIn(space: number, url: string, now = Date.now()): SignIn {
   const secret = randomBytes(32);

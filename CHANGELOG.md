@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- **Sign in at another relay…** under the sign-in card of New chat (`app/chat.tsx` `signInAt`, `lib/relay-signin.ts` `signInRelay`): another relay's address, with or without `wss://`, and the card signs in there, named after that relay's own provider (`EREVOS_RELAY_OIDC_NAME`); one that offers no sign-in, or cannot be reached, says so (`components/relay-signin.tsx`). LPHL's stays the first.
 - New chat looks the same every time it opens: the two big buttons at the top, **How you connect now** only while something is missing, and **Your contact link** and **Invite someone** as rows, with no second Show my QR code.
 - One scan is all: where your relay lets your phone invite, **Show your QR code** shows an invite, so a phone new to Erevos joins your relay by itself as it scans it, and you are contacts at once. A relay's queue is made by itself, with no **Create my relay queue** to tap, and **How you connect now** says what is missing in plain words.
 - The bar at the top stays where it is: on the home screen (the list scrolls under it) and in SMS, Matrix, XMPP and Nostr chats (`useNetworkThread` `withArrows(content, top)`), as in Erevos's own chats. Under the field of a Matrix or XMPP chat only **+** (Attach and more) and the microphone; the chat's settings are under **⋯** at the top.

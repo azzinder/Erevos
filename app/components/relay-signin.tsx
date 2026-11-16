@@ -13,6 +13,7 @@ import { claimSignIn, signInOffer } from '../lib/relay';
 import { endSignIn, oldToken, onSignInCode, pendingSignIn, signInLink, startSignIn, type SignIn } from '../lib/relay-signin';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { hostOf } from '../lib/relay-host';
 
 // Signing in to the relay with a provider such as LPHL (lib/relay-signin.ts,
 // crates/erevos-relay/src/signin.rs): on New chat, one of the ways in for a phone with no relay yet,
@@ -40,6 +41,8 @@ export function RelaySignIn({
 }) {
   const space = currentSpace().space;
   const [offer, setOffer] = useState<{ name: string; start: string } | null>(null);
+  // Whether the relay answered what it offers, or failed to: a card then says it has no sign-in.
+  const [asked, setAsked] = useState(false);
   const [waiting, setWaiting] = useState<SignIn | null>(() => pendingSignIn(space, url));
   const [code, setCode] = useState('');
   // Counts the returns from the browser: the field for the code is drawn again each time, and
@@ -52,12 +55,15 @@ export function RelaySignIn({
   useEffect(() => {
     let on = true;
     setOffer(null);
+    setAsked(false);
     setWaiting(pendingSignIn(space, url));
     setCode('');
     if (!url) return;
     const timer = setTimeout(() => {
       void signInOffer(url).then((got) => {
-        if (on) setOffer(got);
+        if (!on) return;
+        setOffer(got);
+        setAsked(true);
       });
     }, 800);
     return () => {
@@ -142,7 +148,13 @@ export function RelaySignIn({
     }
   }
 
-  if (!offer) return null;
+  if (!offer) {
+    return card && asked ? (
+      <Text variant="caption" tone="muted">
+        {t('{relay} offers no sign-in, or cannot be reached now. Whoever runs it can give you an invite instead.', { relay: hostOf(url) || url })}
+      </Text>
+    ) : null;
+  }
 
   const finishing = waiting ? (
     <>

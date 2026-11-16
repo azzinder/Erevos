@@ -622,6 +622,10 @@ nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
   relay abaixo), e depois você adiciona os seus contatos pelos convites ou links deles; **Começar sem relay**, como em
   Sem nenhum relay, em Pelo Nostr; e as configurações do relay, como de 1 a 6 acima. Um convite é a forma mais simples
   de entrar, e no relay um celular convidado tem só um nome de letras e números ao acaso.
+- **Outro relay:** embaixo de **Entrar com LPHL**, **Entrar em outro relay…** recebe o endereço de outro relay, como
+  quem cuida dele te passou, por exemplo relay.example.org: o cartão então faz o login lá, com o nome das contas que
+  esse relay aceita, ou diz que não oferece login, e aí quem cuida dele pode te dar um convite. **Voltar para** traz de
+  volta o do LPHL.
 - **O que o seu relay precisa permitir:** o acesso próprio é um convite para o seu relay (veja Convites para o relay
   abaixo), então só vem de um celular com token próprio num relay que aceita convites. Ele conta entre os seus convites,
   com um nome de letras e números ao acaso, e continua mesmo quando o seu termina. Um celular com o token único do relay

@@ -20,7 +20,7 @@ import { after, before, test } from 'node:test';
 
 import { ready, relayNote, startRelay } from './real-relay';
 import { claimSignIn, createQueue, RelaySession, signInOffer } from '../lib/relay';
-import { NO_OWN_TOKEN, endSignIn, isSignInPage, offerSignInCode, oldToken, onSignInCode, ownToken, pendingSignIn, signInLink, startSignIn } from '../lib/relay-signin';
+import { NO_OWN_TOKEN, endSignIn, isSignInPage, offerSignInCode, oldToken, onSignInCode, ownToken, pendingSignIn, signInLink, signInRelay, startSignIn } from '../lib/relay-signin';
 
 relayNote('the relay sign-in checks');
 
@@ -62,6 +62,16 @@ test("a relay may send the browser only to a page of its own, over https", () =>
   }
   assert.equal(isSignInPage('ws://192.168.1.10:7879', 'http://192.168.1.10:7879/signin/start'), false, 'http only on this computer');
   assert.equal(isSignInPage('ws://127.0.0.1:7879', 'http://localhost:9/signin/start'), false, 'the same host, written the same');
+});
+
+test('another relay to sign in at is taken as typed, with or without its scheme, and only as a relay', () => {
+  assert.equal(signInRelay('relay.example.org'), 'wss://relay.example.org');
+  assert.equal(signInRelay('  wss://relay.example.org/ '), 'wss://relay.example.org');
+  assert.equal(signInRelay('https://relay.example.org:8443/erevos'), 'wss://relay.example.org:8443/erevos');
+  assert.equal(signInRelay('ws://127.0.0.1:7879'), 'ws://127.0.0.1:7879', 'not encrypted only on this computer, for the checks');
+  for (const typed of ['', '   ', 'ws://relay.example.org', 'http://relay.example.org', 'ftp://relay.example.org', 'relay example.org', 'wss://', 'wss://relay.example.org?x=1', 'wss://a@relay.example.org']) {
+    assert.equal(signInRelay(typed), null, typed);
+  }
 });
 
 test('only the token this phone got from the same relay is named as its token before', () => {

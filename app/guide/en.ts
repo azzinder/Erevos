@@ -585,6 +585,9 @@ nothing, and you are each other's contacts at once, with no message request.
   and then you add your contacts by their invites or links; **Start without a relay**, as in With no relay at all,
   under Through Nostr; and the relay settings, as in 1 to 6 above. An invite is the simplest way in, and on the relay
   an invited phone has only a name of random letters and digits.
+- **Another relay:** under **Sign in with LPHL**, **Sign in at another relay…** takes the address of another relay,
+  as its operator gave it, such as relay.example.org: the card then signs in there, named after the accounts that relay
+  takes, or says it offers no sign-in, and then its operator can give you an invite. **Back to** brings LPHL's back.
 - **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below), so
   it comes only from a phone with a token of its own on a relay that takes invites. It counts among your invites, under
   a name of random letters and digits, and stays even once yours goes. A phone with the relay's one token for all trades

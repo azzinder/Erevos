@@ -105,7 +105,8 @@ import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/relay-offer';
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { connectReach } from '../lib/connect-reach';
-import { oldToken, ownToken } from '../lib/relay-signin';
+import { oldToken, ownToken, signInRelay } from '../lib/relay-signin';
+import { hostOf } from '../lib/relay-host';
 import { circuitOf } from '../lib/tor-chats';
 import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canTor, canXmpp, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked, placeLinksNow } from '../lib/devices';
@@ -589,6 +590,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [nearbyShown, setNearbyShown] = useState(false);
   const [blockedShown, setBlockedShown] = useState(false);
   const [relayShown, setRelayShown] = useState(relaySettings);
+  // Where a phone with no relay yet signs in: LPHL's relay, or another typed in its place (Another
+  // relay…), whose own provider then names the card (components/relay-signin.tsx).
+  const [signInAt, setSignInAt] = useState(START_RELAY);
+  const [otherRelay, setOtherRelay] = useState<string | null>(null);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
   const [details, setDetails] = useState(false);
   // The chat's media, links and files, each kind apart (components/chat-media.tsx), and the
@@ -7589,7 +7594,40 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     {t('Other ways in: signing in to a relay, starting without one, a relay address and token')}
                   </Text>
                 ) : null}
-                {relayShown ? <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} card /> : null}
+                {relayShown ? <RelaySignIn url={signInAt} token="" onToken={(token, name) => void tookToken(signInAt, token, name, true)} onNote={setNote} card /> : null}
+                {relayShown && otherRelay === null ? (
+                  <Row wrap>
+                    <TextButton title={t('Sign in at another relay…')} onPress={() => setOtherRelay('')} />
+                    {signInAt !== START_RELAY ? <TextButton title={t('Back to {relay}', { relay: hostOf(START_RELAY) })} onPress={() => setSignInAt(START_RELAY)} /> : null}
+                  </Row>
+                ) : null}
+                {relayShown && otherRelay !== null ? (
+                  <Row>
+                    <Input
+                      value={otherRelay}
+                      onChangeText={setOtherRelay}
+                      placeholder="relay.example.org"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                      style={styles.grow}
+                    />
+                    <Button
+                      title={t('Use')}
+                      compact
+                      onPress={() => {
+                        const url = signInRelay(otherRelay);
+                        if (!url) {
+                          setNote(t('That is not a relay address. Type it as its operator gave it, such as relay.example.org.'));
+                          return;
+                        }
+                        setSignInAt(url);
+                        setOtherRelay(null);
+                      }}
+                    />
+                    <TextButton title={t('Cancel')} onPress={() => setOtherRelay(null)} />
+                  </Row>
+                ) : null}
                 {relayShown && ownLink ? (
                   <WayCard
                     tint="green"

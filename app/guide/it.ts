@@ -626,6 +626,10 @@ tutto suo, senza scrivere nulla, e siete subito l’uno contatto dell’altro, s
   poi aggiungi i tuoi contatti con i loro inviti o link; **Inizia senza relay**, come in Senza nessun relay, in
   Tramite Nostr; e le impostazioni del relay, come in 1–6 sopra. Un invito è il modo più semplice per entrare, e sul
   relay un telefono invitato ha solo un nome di lettere e cifre a caso.
+- **Un altro relay:** sotto **Accedi con LPHL**, **Accedi a un altro relay…** prende l’indirizzo di un altro relay,
+  come te l’ha dato chi lo gestisce, ad esempio relay.example.org: la scheda accede allora lì, col nome degli account
+  che quel relay accetta, o dice che non offre l’accesso, e allora chi lo gestisce può darti un invito. **Torna a**
+  riporta quello di LPHL.
 - **Cosa deve permettere il tuo relay:** l’accesso tutto suo è un invito al tuo relay (vedi Inviti al relay più sotto),
   quindi arriva solo da un telefono con un token tutto suo su un relay che accetta inviti. Conta tra i tuoi inviti, con
   un nome di lettere e cifre a caso, e resta anche quando il tuo se ne va. Un telefono con l’unico token condiviso del

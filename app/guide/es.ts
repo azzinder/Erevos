@@ -627,6 +627,10 @@ nada, y sois contactos el uno del otro al instante, sin solicitud de mensaje.
   relay**, como en Sin ningún relay, en A través de Nostr; y los ajustes del relay, como en los pasos 1 a 6 de arriba.
   Una invitación es la forma más sencilla de entrar, y en el relay un teléfono invitado solo tiene un nombre de letras
   y cifras al azar.
+- **Otro relay:** debajo de **Iniciar sesión con LPHL**, **Iniciar sesión en otro relay…** toma la dirección de otro
+  relay, tal como te la dio quien lo gestiona, por ejemplo relay.example.org: la tarjeta inicia sesión allí, con el
+  nombre de las cuentas que acepta ese relay, o dice que no ofrece inicio de sesión, y entonces quien lo gestiona puede
+  darte una invitación. **Volver a** trae de nuevo el de LPHL.
 - **Lo que tu relay debe permitir:** el acceso propio es una invitación a tu relay (ver Invitaciones al relay más
   abajo), así que solo sale de un teléfono con token propio en un relay que acepte invitaciones. Cuenta entre tus
   invitaciones, con un nombre de letras y cifras al azar, y se queda aunque el tuyo se vaya. Un teléfono con el token
