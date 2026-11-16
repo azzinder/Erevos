@@ -579,18 +579,32 @@ pub(crate) fn quiet(window: &[f32]) -> bool {
 /// `text` without what Whisper writes of sounds that are not words, such as "[Applause]",
 /// "(music)" or "♪": it writes them of noise too, where nobody spoke.
 pub(crate) fn without_sounds(text: &str) -> String {
+    // The most a sound's name takes between its brackets, such as "Χειροκρότημα".
+    const SOUND_TAG: usize = 40;
     let mut out = String::with_capacity(text.len());
-    let mut closing: Option<char> = None;
-    for c in text.chars() {
-        match (closing, c) {
-            (Some(end), c) if c == end => closing = None,
-            (Some(_), _) => {}
-            (None, '[') => closing = Some(']'),
-            (None, '(') => closing = Some(')'),
-            (None, '♪' | '♫' | '*') => {}
-            (None, c) => out.push(c),
+    let mut rest = text;
+    while let Some(at) = rest.find(['[', '(']) {
+        let end = if rest[at..].starts_with('[') {
+            ']'
+        } else {
+            ')'
+        };
+        out.push_str(&rest[..at]);
+        // Only a pair closed soon after (SOUND_TAG characters) is a sound: an open one stays, with
+        // what follows it.
+        let close = rest[at + 1..]
+            .find(end)
+            .filter(|close| rest[at + 1..at + 1 + close].chars().count() <= SOUND_TAG);
+        match close {
+            Some(close) => rest = &rest[at + 1 + close + 1..],
+            None => {
+                out.push_str(&rest[at..]);
+                rest = "";
+            }
         }
     }
+    out.push_str(rest);
+    out.retain(|c| !matches!(c, '♪' | '♫' | '*'));
     out
 }
 
@@ -617,7 +631,9 @@ mod guards {
     #[test]
     fn silence_is_quiet_and_speech_is_not() {
         assert!(quiet(&vec![0.0; 16_000]));
-        let hiss: Vec<f32> = (0..16_000).map(|i| if i % 2 == 0 { 0.002 } else { -0.002 }).collect();
+        let hiss: Vec<f32> = (0..16_000)
+            .map(|i| if i % 2 == 0 { 0.002 } else { -0.002 })
+            .collect();
         assert!(quiet(&hiss));
         let mut voice = vec![0.0; 16_000];
         for (i, s) in voice.iter_mut().enumerate().skip(8000).take(800) {
@@ -642,6 +658,10 @@ mod guards {
         assert_eq!(without_sounds(" [Χειροκρότημα]"), " ");
         assert_eq!(without_sounds("Γεια (μουσική) σου ♪"), "Γεια  σου ");
         assert_eq!(without_sounds("Καλημέρα."), "Καλημέρα.");
+        assert_eq!(without_sounds("Είπε (κάτι και"), "Είπε (κάτι και");
+        assert_eq!(without_sounds("α [β] γ [δ"), "α  γ [δ");
+        let long = format!("α ({}) β", "λ".repeat(41));
+        assert_eq!(without_sounds(&long), long);
     }
 
     #[test]
