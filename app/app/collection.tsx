@@ -28,6 +28,7 @@ import { fileLook, folderTiles, folderTilesFor, gridEntries, inFolder, isPhoto, 
 import { locale, t } from '../lib/i18n';
 import { saveFile } from '../lib/save-file';
 import { dropShared, handShared, type SharedFile } from '../lib/share-in';
+import { isPicking } from '../lib/picking';
 import { keepPrivate } from '../lib/screen-privacy';
 import { SHELL } from '../lib/shell';
 import {
@@ -148,14 +149,19 @@ export default function CollectionScreen() {
   useEffect(() => {
     if (hidden === '1') return;
     let left = 0;
+    let picked = false;
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
         left ||= Date.now();
+        picked ||= isPicking();
         return;
       }
       const away = left ? Date.now() - left : 0;
+      // Away to take a photo or pick a file for the Collection (lib/picking.ts): not left, however long.
+      const wasPicking = picked || isPicking();
       left = 0;
-      if (away > RELOCK_MS) loadLockConfig().then((config) => isPasswordLocked(config) && setOpen(false), () => undefined);
+      picked = false;
+      if (away > RELOCK_MS && !wasPicking) loadLockConfig().then((config) => isPasswordLocked(config) && setOpen(false), () => undefined);
     });
     return () => subscription.remove();
   }, [hidden]);

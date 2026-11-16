@@ -928,7 +928,10 @@ export class Nearby {
     // relay, never waited for: a no now, and the phone asks again with its next look.
     const foreign = plainRelay(url) !== plainRelay(own);
     if (foreign) {
-      const said = this.servesOn.get(link)?.get(plainRelay(url));
+      const on = this.servesOn.get(link);
+      // A no holds for the whole link: a phone naming a new relay each time is not asked about again.
+      if (on && [...on.values()].includes(false)) return answer(null);
+      const said = on?.get(plainRelay(url));
       if (said === undefined) this.askToServe(link, url);
       if (said !== true) return answer(null);
     }

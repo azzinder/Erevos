@@ -434,11 +434,12 @@ los que van por el relay.
   para parecer él, y solo mientras está delante: **Un teléfono cerca de ti tiene internet. ¿Quieres que traiga tus
   mensajes?** Ese teléfono sabe qué cola de tu relay es la tuya y cuándo la lees; nunca lo que dicen tus mensajes, que
   solo abre tu teléfono. Conociendo la cola, podría llevarse tus mensajes antes de que te lleguen, así que en cuanto
-  tu teléfono vuelve a tener internet pasa solo a una cola nueva y se lo dice en silencio a tus contactos. La
-  respuesta vale también para los chats ocultos, para que no te pregunte dos veces por un teléfono. Nunca para un
-  relay al que se llega solo por Tor. Tu teléfono hace lo mismo para los teléfonos a su lado mientras **Llevar
-  mensajes de otros** está activado, nunca mientras va por Tor, y de un relay distinto del suyo solo cuando dices que
-  sí, avisado de que ese relay ve entonces la dirección de internet de tu teléfono.
+  tu teléfono vuelve a tener internet pasa solo a una cola nueva y se lo dice en silencio a tus contactos. Por los
+  chats ocultos pregunta aparte, y solo mientras están en la pantalla, porque ese teléfono sabría que hay una segunda
+  cola, y por tanto que puede haber chats ocultos. Nunca para un relay al que se llega solo por Tor. Tu teléfono hace
+  lo mismo para los teléfonos a su lado mientras **Llevar mensajes de otros** está activado, nunca mientras va por
+  Tor, y de un relay distinto del suyo solo cuando dices que sí, avisado de que ese relay ve entonces la dirección de
+  internet de tu teléfono.
 
 **Por qué:** un paquete no dice para quién es, así que nadie cercano puede saber por él de quién es. Hasta que el
 teléfono de tu contacto responde en un enlace, tu teléfono tampoco puede saber cuál de los teléfonos cercanos es el suyo:

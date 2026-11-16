@@ -425,10 +425,11 @@ ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s 
   je u prvom planu: **Telefon blizu vas ima internet. Da donese vaše poruke?** Taj telefon saznaje koji je red na
   vašem relayu vaš i kad ga čitate; nikad šta vaše poruke kažu, a njih otvara samo vaš telefon. Znajući red, mogao bi
   da uzme vaše poruke pre nego što stignu do vas, pa čim vaš telefon ponovo ima internet sam prelazi na novi red i
-  tiho to kaže vašim kontaktima. Odgovor važi i za skrivene razgovore, da vas ne pita dvaput za isti telefon. Nikad za
-  relay do kojeg se stiže samo preko Tora. Vaš telefon radi isto za telefone pored sebe dok je **Prenosi poruke za
-  druge** uključeno, nikad dok ide preko Tora, a sa relaya koji nije njegov samo kad kažete da, upozoreni da taj relay
-  tada vidi internet adresu vašeg telefona.
+  tiho to kaže vašim kontaktima. Za skrivene razgovore pita posebno, i samo dok su na ekranu, jer bi taj telefon
+  saznao da postoji drugi red, pa time da mogu postojati skriveni razgovori. Nikad za relay do kojeg se stiže samo
+  preko Tora. Vaš telefon radi isto za telefone pored sebe dok je **Prenosi poruke za druge** uključeno, nikad dok ide
+  preko Tora, a sa relaya koji nije njegov samo kad kažete da, upozoreni da taj relay tada vidi internet adresu vašeg
+  telefona.
 
 **Zašto:** paket ne kaže za koga je, pa niko u blizini iz njega ne može saznati čiji je. Dok telefon vašeg kontakta ne
 odgovori na nekoj vezi, ni vaš telefon ne može znati koji je od telefona u blizini njegov: zato kratki paketi idu

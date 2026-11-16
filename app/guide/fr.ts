@@ -459,11 +459,12 @@ comme ceux qui passent par le relais.
   téléphone près de toi a internet. Doit-il apporter tes messages ?** Ce téléphone apprend quelle file d’attente de
   ton relais est la tienne et quand tu la lis ; jamais ce que disent tes messages, que seul ton téléphone ouvre.
   Connaissant la file, il pourrait prendre tes messages avant qu’ils t’arrivent, alors dès que ton téléphone a de
-  nouveau internet il passe de lui-même à une nouvelle file et le dit discrètement à tes contacts. La réponse vaut
-  aussi pour les discussions masquées, pour qu’on ne te demande pas deux fois pour un même téléphone. Jamais pour un
-  relais joint seulement par Tor. Ton téléphone fait de même pour les téléphones à côté tant que **Transporter des
-  messages pour d’autres** est activé, jamais tant qu’il passe par Tor, et depuis un autre relais que le sien
-  seulement une fois que tu dis oui, averti que ce relais voit alors l’adresse internet de ton téléphone.
+  nouveau internet il passe de lui-même à une nouvelle file et le dit discrètement à tes contacts. Pour les
+  discussions masquées, il demande à part, et seulement quand elles sont à l’écran, car ce téléphone apprendrait qu’il
+  y a une deuxième file, et donc qu’il peut y avoir des discussions masquées. Jamais pour un relais joint seulement
+  par Tor. Ton téléphone fait de même pour les téléphones à côté tant que **Transporter des messages pour d’autres**
+  est activé, jamais tant qu’il passe par Tor, et depuis un autre relais que le sien seulement une fois que tu dis
+  oui, averti que ce relais voit alors l’adresse internet de ton téléphone.
 
 **Pourquoi :** un paquet ne dit pas à qui il est destiné, si bien que personne à proximité ne peut savoir d’après lui à
 qui il est. Tant que le téléphone de ton contact n’a pas répondu sur une liaison, ton téléphone ne peut pas non plus

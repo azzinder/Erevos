@@ -431,10 +431,11 @@ passam pelo relay.
   suas mensagens?** Esse celular fica sabendo de qual fila do seu relay é sua e de quando você a lê; nunca do que
   dizem suas mensagens, que só o seu celular abre. Sabendo a fila, ele poderia pegar suas mensagens antes que cheguem
   a você, então assim que o seu celular tiver internet de novo ele passa sozinho para uma fila nova e avisa seus
-  contatos sem alarde. A resposta vale também para as conversas ocultas, para você não ser perguntado duas vezes sobre
-  o mesmo celular. Nunca para um relay alcançado só pelo Tor. O seu celular faz o mesmo pelos celulares ao lado
-  enquanto **Levar mensagens de outras pessoas** está ligado, nunca enquanto vai pelo Tor, e de um relay diferente do
-  seu só depois do seu sim, avisado de que esse relay então vê o endereço de internet do seu celular.
+  contatos sem alarde. Para as conversas ocultas pergunta à parte, e só enquanto estão na tela, porque aquele celular
+  saberia que há uma segunda fila, e portanto que pode haver conversas ocultas. Nunca para um relay alcançado só pelo
+  Tor. O seu celular faz o mesmo pelos celulares ao lado enquanto **Levar mensagens de outras pessoas** está ligado,
+  nunca enquanto vai pelo Tor, e de um relay diferente do seu só depois do seu sim, avisado de que esse relay então vê
+  o endereço de internet do seu celular.
 
 **Por quê:** um pacote não diz para quem é, então ninguém por perto consegue saber por ele de quem ele é. Até o celular
 do seu contato responder numa conexão, o seu celular também não consegue saber qual dos celulares por perto é o dele:

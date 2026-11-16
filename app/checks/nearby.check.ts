@@ -620,6 +620,22 @@ test("a phone beside this one brings messages only once the owner said yes to it
   assert.equal(mayBridge('link-other', true, async () => false), false);
   await bridgeAsked();
   assert.equal(mayBridge('link-other', true, yes), false, 'no stays no');
+  // Hidden chats are asked about apart, and only while they show: no answer then is no answer kept.
+  const scopes: string[] = [];
+  let shows = false;
+  const hiddenAsk = async (hidden: string) => {
+    scopes.push(hidden);
+    return shows ? true : null;
+  };
+  assert.equal(mayBridge('link-friend', true, hiddenAsk, '0:1'), false, 'the space’s yes is not the hidden chats’');
+  await bridgeAsked();
+  assert.equal(mayBridge('link-friend', true, hiddenAsk, '0:1'), false);
+  await bridgeAsked();
+  shows = true;
+  assert.equal(mayBridge('link-friend', true, hiddenAsk, '0:1'), false);
+  await bridgeAsked();
+  assert.equal(mayBridge('link-friend', true, hiddenAsk, '0:1'), true);
+  assert.deepEqual(scopes, ['0:1', '0:1', '0:1']);
   forgetBridges();
 });
 

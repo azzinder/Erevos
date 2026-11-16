@@ -434,10 +434,11 @@ tramite il relay.
   Deve portarti i tuoi messaggi?** Quel telefono sa quale coda del tuo relay è la tua e quando la leggi; mai cosa
   dicono i tuoi messaggi, che apre solo il tuo telefono. Conoscendo la coda, potrebbe prendere i tuoi messaggi prima
   che ti arrivino, quindi appena il tuo telefono ha di nuovo internet passa da solo a una nuova coda e lo dice in
-  silenzio ai tuoi contatti. La risposta vale anche per le chat nascoste, così non ti chiede due volte per lo stesso
-  telefono. Mai per un relay raggiunto solo tramite Tor. Il tuo telefono fa lo stesso per i telefoni accanto finché
-  **Trasporta messaggi per altri** è attivo, mai finché passa da Tor, e da un relay diverso dal suo solo dopo il tuo
-  sì, avvisato che quel relay vede allora l’indirizzo internet del tuo telefono.
+  silenzio ai tuoi contatti. Per le chat nascoste chiede a parte, e solo mentre sono sullo schermo, perché quel
+  telefono saprebbe che c’è una seconda coda, e quindi che possono esserci chat nascoste. Mai per un relay raggiunto
+  solo tramite Tor. Il tuo telefono fa lo stesso per i telefoni accanto finché **Trasporta messaggi per altri** è
+  attivo, mai finché passa da Tor, e da un relay diverso dal suo solo dopo il tuo sì, avvisato che quel relay vede
+  allora l’indirizzo internet del tuo telefono.
 
 **Perché:** un pacchetto non dice per chi è, quindi nessuno vicino può capire da esso di chi sia. Finché il telefono
 del tuo contatto non risponde su un collegamento, nemmeno il tuo telefono può capire quale dei telefoni vicini sia il

@@ -8,42 +8,50 @@
 // that phone, a contact's too (the owner's word, 2026-11-16: a stranger can pass on a contact's
 // packets and so seem to be the contact). Asked once for each phone, only while Erevos is in front,
 // and never waited for: the look goes on, and the next one uses the answer. The answer lasts while
-// that phone stays linked, and holds for hidden chats too, so the owner is not asked twice about one
-// phone. That phone learns the queue, so it moves once the relay answers again (lib/queue-move.ts
+// that phone stays linked. Hidden chats are asked about apart (the owner's word, 2026-11-16), as a
+// phone that reads a second queue for one phone learns there are hidden chats, which the question
+// says; and only while those hidden chats are on the screen, so it never shows them to anyone
+// else. That phone learns the queue, so it moves once the relay answers again (lib/queue-move.ts
 // `bridged`). Never for a relay reached only through Tor or another relay (mayReadThrough).
 
 import { nearby } from './nearby';
 import { ackThrough, mayReadThrough, receiveThrough, type ReadThrough, type Relay } from './relay';
 
-// The owner's answer for each phone nearby asked about, by link, while it is linked.
+// The owner's answer for each phone nearby asked about, by what it reads for (the space, or one
+// hidden place) and link, while it is linked.
 const answered = new Map<string, boolean>();
 // The question on screen now, if any.
 let asking: Promise<void> | null = null;
 // Whether Erevos is in front, and how the owner is asked: set with the links (lib/nearby-links.ts).
 let inFront: () => boolean = () => false;
-let askOwner: () => Promise<boolean> = async () => false;
+// Says yes or no; null when it could not ask now (hidden chats not on the screen), so it asks later.
+let askOwner: (hidden: string) => Promise<boolean | null> = async () => false;
 let unwatch: (() => void) | null = null;
 
 /** How to tell whether Erevos is in front, and to ask the owner about a phone nearby. */
-export function setBridgeAsk(front: () => boolean, ask: () => Promise<boolean>): void {
+export function setBridgeAsk(front: () => boolean, ask: (hidden: string) => Promise<boolean | null>): void {
   inFront = front;
   askOwner = ask;
-  unwatch ??= nearby.onLinkGone((link) => answered.delete(link));
+  unwatch ??= nearby.onLinkGone((link) => {
+    for (const key of [...answered.keys()]) if (key.endsWith(` ${link}`)) answered.delete(key);
+  });
 }
 
 /**
- * Whether the phone on `link` may read this phone's queue: the owner said yes to it. With no
- * answer yet, asks once, while Erevos is in front, and says no for now: the question does not hold
- * up the look (bridgeAsked waits for it).
+ * Whether the phone on `link` may read this phone's queue, or, with `hidden` (`space:pocket`), the
+ * queue of those hidden chats: the owner said yes to it for them. With no answer yet, asks once,
+ * while Erevos is in front, and says no for now: the question does not hold up the look
+ * (bridgeAsked waits for it).
  */
-export function mayBridge(link: string, front = inFront(), ask = askOwner): boolean {
-  const said = answered.get(link);
+export function mayBridge(link: string, front = inFront(), ask = askOwner, hidden = ''): boolean {
+  const key = `${hidden || 'space'} ${link}`;
+  const said = answered.get(key);
   if (said !== undefined) return said;
   if (!front || asking) return false;
-  asking = ask()
+  asking = ask(hidden)
     .catch(() => false)
     .then((yes) => {
-      if (nearby.bridgeLinks().includes(link) || !unwatch) answered.set(link, yes);
+      if (yes !== null && (nearby.bridgeLinks().includes(link) || !unwatch)) answered.set(key, yes);
     })
     .finally(() => {
       asking = null;
@@ -65,13 +73,13 @@ export function forgetBridges(): void {
  * Takes what waits in the queue `recipient` on `relay` through a phone nearby the owner said yes to
  * (mayBridge), `most` at most, each with `take`. Says how many came, and whether a phone was asked,
  * which then knows the queue. Nothing when there is no such phone, or the relay may not be read so
- * (mayReadThrough).
+ * (mayReadThrough). For hidden chats, `hidden`: `space:pocket`.
  */
-export async function readNearby(relay: Relay, recipient: Uint8Array, take: (bytes: Uint8Array) => Promise<unknown>, most: number, stop: () => boolean = () => false): Promise<{ brought: number; asked: boolean }> {
+export async function readNearby(relay: Relay, recipient: Uint8Array, take: (bytes: Uint8Array) => Promise<unknown>, most: number, stop: () => boolean = () => false, hidden = ''): Promise<{ brought: number; asked: boolean }> {
   let asked = false;
   if (!mayReadThrough(relay)) return { brought: 0, asked };
   for (const link of nearby.bridgeLinks()) {
-    if (stop() || !mayBridge(link)) continue;
+    if (stop() || !mayBridge(link, undefined, undefined, hidden)) continue;
     asked = true;
     const through: ReadThrough = (url, key, bytes) => nearby.readThrough(link, url, key, bytes);
     let taken = 0;

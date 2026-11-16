@@ -26,12 +26,28 @@ export function CollectionGate({ onOpen, onBack }: { onOpen: () => void; onBack:
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();
   const solid = /^#[0-9a-f]{6}$/i.test(colors.ground) ? colors.ground : scheme === 'dark' ? '#000000' : '#FFFFFF';
-  const [asking, setAsking] = useState(true);
+  const [asking, setAsking] = useState(false);
   const [biometric, setBiometric] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Where a fingerprint or face unlocks Erevos, it is asked first, and the password is the other
+  // way; otherwise the field for the password shows at once.
   useEffect(() => {
-    biometricOn(biometricSealer).then(setBiometric, () => setBiometric(false));
+    let live = true;
+    biometricOn(biometricSealer).then(
+      (on) => {
+        if (!live) return;
+        setBiometric(on);
+        if (on) void fingerprint();
+        else setAsking(true);
+      },
+      () => live && setAsking(true),
+    );
+    return () => {
+      live = false;
+    };
+    // Once, as it shows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function withPassword(password: string): Promise<boolean> {

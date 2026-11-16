@@ -406,10 +406,11 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   only while it is in front: **A phone near you has internet. Should it bring your messages?** That phone learns which
   queue on your relay is yours, and when you read it; never what your messages say, which only your phone opens.
   Knowing the queue, it could take your messages before they reach you, so once your phone has internet again it moves
-  to a new queue by itself and tells your contacts quietly. The answer holds for hidden chats too, so you are not
-  asked twice about one phone. Never for a relay reached only through Tor. Your phone does the same for the phones
-  beside it while **Carry messages for others** is on, never while it goes through Tor, and from a relay other than
-  its own only once you say yes, warned that this relay then sees your phone's internet address.
+  to a new queue by itself and tells your contacts quietly. Hidden chats are asked about apart, and only while they
+  are on the screen, since that phone would learn there is a second queue, and so that there may be hidden chats.
+  Never for a relay reached only through Tor. Your phone does the same for the phones beside it while **Carry messages
+  for others** is on, never while it goes through Tor, and from a relay other than its own only once you say yes,
+  warned that this relay then sees your phone's internet address.
 
 **Why:** a packet does not say who it is for, so no one nearby can tell from it whose it is. Until your contact's
 phone answers on a link, your phone cannot tell which of the phones nearby is theirs either: so the short packets go to

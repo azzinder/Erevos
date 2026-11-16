@@ -456,11 +456,12 @@ Ende-zu-Ende-verschlüsselt wie die über das Relay.
   Soll es deine Nachrichten holen?** Dieses Telefon erfährt, welche Warteschlange auf deinem Relay deine ist und wann
   du sie liest; nie, was deine Nachrichten sagen, die nur dein Telefon öffnet. Mit der Warteschlange könnte es deine
   Nachrichten nehmen, bevor sie dich erreichen, darum wechselt dein Telefon von selbst zu einer neuen, sobald es
-  wieder Internet hat, und sagt es deinen Kontakten still. Die Antwort gilt auch für versteckte Chats, damit du zu
-  einem Telefon nicht zweimal gefragt wirst. Nie für ein Relay, das nur über Tor erreicht wird. Dein Telefon tut
-  dasselbe für die Telefone daneben, solange **Nachrichten für andere mitnehmen** an ist, nie, solange es über Tor
-  geht, und von einem anderen Relay als seinem eigenen nur, wenn du Ja sagst, gewarnt, dass dieses Relay dann die
-  Internetadresse deines Telefons sieht.
+  wieder Internet hat, und sagt es deinen Kontakten still. Für versteckte Chats wird getrennt gefragt, und nur,
+  solange sie auf dem Bildschirm sind, da jenes Telefon von einer zweiten Warteschlange erführe und damit, dass es
+  versteckte Chats geben kann. Nie für ein Relay, das nur über Tor erreicht wird. Dein Telefon tut dasselbe für die
+  Telefone daneben, solange **Nachrichten für andere mitnehmen** an ist, nie, solange es über Tor geht, und von einem
+  anderen Relay als seinem eigenen nur, wenn du Ja sagst, gewarnt, dass dieses Relay dann die Internetadresse deines
+  Telefons sieht.
 
 **Warum:** Ein Paket sagt nicht, für wen es ist, also kann niemand in der Nähe daraus erkennen, wem es gehört. Bis das
 Telefon deines Kontakts über eine Verbindung antwortet, kann auch dein Telefon nicht wissen, welches der Telefone in
