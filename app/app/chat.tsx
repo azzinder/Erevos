@@ -55,7 +55,7 @@ import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { ConnectStatus, MeetWays, QrSign, WayCard } from '../components/connect-cards';
+import { ConnectStatus, InviteRow, MyQrCard, WayCard } from '../components/connect-cards';
 import { RelayKeyNote, useRelayCheck } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
@@ -5383,14 +5383,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     };
   }, [hiddenKey, loaded]);
 
-  // Show your QR code (#11): where this phone can invite, the QR code shown is an invite, so one
-  // scan is all: a phone with no relay yet joins this one's by itself, and one with a relay only
-  // takes the contact (joinInviting). Elsewhere it is the contact link's.
-  function showMine() {
-    if (canWelcome) setWelcoming('qr');
-    else setShowQr(true);
-  }
-
   // With a relay and no queue on it, the queue is made by itself (#11): the words relay and queue
   // stay under For advanced users. Once for each address, a few seconds after it stops changing, so
   // a half-typed one is not tried; when it fails, the note says why and Create my relay queue
@@ -6159,9 +6151,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // scans it while it shows is a contact at once (cardShown).
   const cardsHere = canWelcome;
   // The small QR code goes by touching phones too, while it shows (lib/nfc-share.ts).
-  const cardNfc = useNfcShare(showQr && shown && card && !bigQr ? card : null);
+  // New chat with no chat open shows the QR code itself (#12), as My QR code does.
+  const qrHere = (showQr || (!selected && !newcomer && !shownGroup)) && shown;
+  const cardNfc = useNfcShare(qrHere && card && !bigQr ? card : null);
   useEffect(() => {
-    if (!showQr || !shown || !cardsHere) return;
+    if (!qrHere || !cardsHere) return;
     let on = true;
     cardShown(true);
     void contactCard(e2e?.invitedAs() ?? '')
@@ -6173,7 +6167,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       on = false;
       cardShown(false);
     };
-  }, [showQr, shown, cardsHere, ownQueue, relayUrl]);
+  }, [qrHere, cardsHere, ownQueue, relayUrl]);
   // The home screen's Invite: its QR code at once, once the chat knows this phone can invite.
   const invitedNow = useRef(false);
   useEffect(() => {
@@ -6216,6 +6210,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     </>
   );
   const addTheirs = addTheirsWith(true);
+  // What is typed at the top of New chat (#12): a contact link or an invite to add, or a name to find
+  // among the faces under it.
+  const findTyped = contactDraft.trim();
+  const draftIsLink = findTyped.includes('://') || findTyped.length > 40;
+  const faceChips = findTyped && !draftIsLink ? chips.filter((peer) => (contactName(peer, shownContacts) ?? '').toLowerCase().includes(findTyped.toLowerCase())) : chips;
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
@@ -7433,6 +7432,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         </View>
         {!selected ? (
           <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
+            {/* At the top (#12): a name finds a contact below, a pasted link adds them. Hidden chats list no faces, so there it is for a link only. */}
+            {!newcomer ? (
+              <Row>
+                <Input
+                  value={contactDraft}
+                  onChangeText={setContactDraft}
+                  placeholder={hiddenKey ? t('Paste their contact link or invite') : t('Name, or paste a link')}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.grow}
+                />
+                {draftIsLink || (hiddenKey && findTyped) ? <Button title={t('Add')} compact onPress={() => addContact()} /> : null}
+              </Row>
+            ) : null}
             {hiddenKey ? (
               // As home lists the space's chats (app/index.tsx), Chat with myself first.
               <View>
@@ -7475,9 +7488,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   </Row>
                 ) : null}
               </View>
-            ) : chips.length > 0 ? (
+            ) : faceChips.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
-                {chips.map((peer) => {
+                {faceChips.map((peer) => {
                   const named = contactName(peer, shownContacts);
                   return (
                     <Pressable
@@ -7576,25 +7589,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : null}
             {newcomer ? (
               <View style={styles.section}>
-                {/* The same two big ways at the top as with a relay (#11): their QR code may be an invite, and this phone's is its contact link. */}
-                <MeetWays
-                  scanTitle={t('Scan their QR code')}
-                  scanLine={CAN_TAKE_PHOTOS ? t('with the camera') : t('from a photo of it')}
-                  onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
-                  onShow={ownLink ? showMine : undefined}
-                />
-                <WayCard
-                  tint="blue"
-                  sign={<QrSign />}
-                  title={t('I have an invite')}
-                  line={t('From someone who uses Erevos: scan its QR code or paste its link. You join typing nothing, and you are contacts at once.')}
-                  open={way === 'invite'}
-                  onPress={() => setWay((was) => (was === 'invite' ? null : 'invite'))}
-                >
-                  <Row wrap>
-                    {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the invite')} compact onPress={() => void addFromQr('camera')} /> : null}
-                    <Button title={t('Choose a photo of the invite')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
-                  </Row>
+                {/* New chat on a phone with no relay yet (#12): an invite is the way in, scanned at once, its link pasted, or a photo of it. */}
+                <View style={styles.panel}>
+                  <Text variant="heading">{t('Start with an invite')}</Text>
+                  <Text tone="muted">{t('Ask someone who has Erevos to show you their QR code. Once you scan it, you are in and you are contacts, typing nothing.')}</Text>
+                  <Button title={t('Scan their QR code')} onPress={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')} />
                   <Row>
                     <Input
                       value={contactDraft}
@@ -7606,7 +7605,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     />
                     <Button title={t('Join')} compact onPress={() => addContact()} />
                   </Row>
-                </WayCard>
+                  {CAN_TAKE_PHOTOS ? <TextButton title={t('From a photo of their QR code')} onPress={() => void addFromQr('photos')} /> : null}
+                </View>
+                {/* This phone's own QR code too: someone with Erevos may scan it; with no relay, messages go through Nostr or nearby. */}
+                {ownLink ? (
+                  <MyQrCard
+                    text={ownLink}
+                    shareTitle={Platform.OS === 'web' ? t('Copy') : t('Share')}
+                    onShare={() => void shareMine(ownLink)}
+                    onPhoto={() => void addFromQr('photos')}
+                  >
+                    <Text variant="caption" tone="muted" style={styles.centered}>
+                      {t('With no relay, messages go through Nostr, or nearby.')}
+                    </Text>
+                  </MyQrCard>
+                ) : null}
                 {/* An invite is the way in shown; the others, signing in, starting without a relay and a relay's address and token, are for whoever looks for them. */}
                 <DetailRow title={t('For advanced users')} open={relayShown} onPress={() => setRelayShown((on) => !on)} />
                 {!relayShown ? (
@@ -7683,24 +7696,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </View>
             ) : (
               <>
-                {/* The two ways most meet someone, big at the top (#9): scan theirs or show mine. The rest waits under them. */}
-                <MeetWays
-                  scanTitle={t('Scan their QR code')}
-                  scanLine={CAN_TAKE_PHOTOS ? t('with the camera') : t('from a photo of it')}
+                {/* This phone's QR code on New chat itself, at once (#12): whoever scans it adds this phone,
+                    and scanning theirs is the button under it. With a relay that lets it, the small
+                    contact card; for someone with no Erevos yet, an invite, from the row under it. */}
+                <MyQrCard
+                  text={ownLink ? (card && !bigQr ? card : ownLink) : null}
                   onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
-                  onShow={!loaded || ownLink ? showMine : undefined}
-                />
-                <View style={styles.orRow}>
-                  <View style={[styles.orLine, { backgroundColor: colors.border }]} />
-                  <Text variant="caption" tone="muted">
-                    {t('or')}
-                  </Text>
-                  <View style={[styles.orLine, { backgroundColor: colors.border }]} />
-                </View>
-                <View style={styles.panel}>
-                  <Text variant="label">{t('Add a contact')}</Text>
-                  {addTheirsWith(false)}
-                </View>
+                  shareTitle={Platform.OS === 'web' ? t('Copy') : t('Share')}
+                  onShare={() => ownLink && void shareLink(card ?? ownLink)}
+                  onPhoto={() => void addFromQr('photos')}
+                >
+                  {card && !bigQr && cardNfc === 'on' ? (
+                    <Text variant="caption" tone="muted" style={styles.centered}>
+                      {t('Or hold the back of their phone to the back of yours: their phone opens your contact link.')}
+                    </Text>
+                  ) : null}
+                  {card ? <TextButton title={bigQr ? t('Small QR code') : t('Large QR code, for no internet')} onPress={() => setBigQr(!bigQr)} /> : null}
+                </MyQrCard>
+                {canWelcome ? <InviteRow title={t('No Erevos yet?')} line={t('Make them an invite')} onPress={() => setWelcoming(true)} /> : null}
               </>
             )}
             <View style={styles.panel}>
@@ -7742,7 +7755,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 </>
               ) : null}
               {!newcomer && ownLink && canPairWithCode() ? <DetailRow title={t('Pair with a code')} onPress={() => setPairing(true)} /> : null}
-              {!newcomer && canWelcome ? <DetailRow title={t('Invite someone')} onPress={() => setWelcoming(true)} /> : null}
               {HAS_LINKS && !hiddenKey ? (
                 <>
                   <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />

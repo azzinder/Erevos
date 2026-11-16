@@ -13,7 +13,7 @@ import { laterLabel } from '../lib/later';
 import { makeInvite, type Relay } from '../lib/relay';
 import { oldToken } from '../lib/relay-signin';
 import { useNfcShare } from '../lib/nfc-share';
-import { makeShortInvite, nameShortInvite, shortInviteWaits, type ShortInvite } from '../lib/sms-relay';
+import { makeShortInvite, nameShortInvite, shortInviteWaits, waitingShortInvite, type ShortInvite } from '../lib/sms-relay';
 import { textInviteLink } from '../lib/text-invite';
 import { welcomeLink } from '../lib/welcome';
 import { MAX_NAME } from '../lock/e2e-data';
@@ -95,7 +95,7 @@ export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, re
       }
       setName('');
       setMade(null);
-      void make(as);
+      void make(as, true);
     })();
     return () => {
       on = false;
@@ -107,7 +107,9 @@ export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, re
     return contactLink ? welcomeLink(contactLink, { code: invite.code, hi: invite.hi, name: as.trim() }) : invite.link;
   }
 
-  async function make(as: string) {
+  // `again`: the one made here that no one took yet, if there is one, rather than a new one, as the
+  // relay keeps only 5 waiting and 10 made a day (#12). Invite someone else makes a new one.
+  async function make(as: string, again = false) {
     if (!e2e || !contactLink || making.current) return;
     making.current = true;
     setBusy(true);
@@ -115,7 +117,8 @@ export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, re
     try {
       // The short invite first, as an invite by plain SMS is (lib/sms-relay.ts): a QR code any camera
       // reads, and a link that fits an SMS. The long one only where the relay lets this phone make none.
-      const short = await makeShortInvite('').catch(() => null);
+      const kept = again ? await waitingShortInvite().catch(() => null) : null;
+      const short = kept ?? (await makeShortInvite('').catch(() => null));
       if (short) {
         const invite: Made = { link: '', hi: '', line: short.line, code: short.invite.code, until: short.invite.expires, access: true, at: Date.now(), short };
         invite.link = linkFor(invite, as);

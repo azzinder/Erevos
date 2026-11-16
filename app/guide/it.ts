@@ -382,10 +382,9 @@ tramite il relay.
 
 1. Apri **Telefoni vicini** dal menu su entrambi i telefoni. La prima volta, Android chiede di trovare i dispositivi
    vicini (su Android 12 e precedenti, anche per la posizione); consentilo, o i telefoni non possono trovarsi.
-2. Se non siete ancora contatti, aggiungetevi a vicenda: su un telefono tocca **Nuova chat**, poi **Mostra il mio
-   codice QR** (sotto **Inizia senza relay** finché non ha un relay), e scansionalo con l’altro, come in [Chat tramite
-   un relay](#relay). Senza un relay il codice contiene solo le tue chiavi, e vi raggiungete solo da vicino, finché non
-   ne avete uno.
+2. Se non siete ancora contatti, aggiungetevi a vicenda: su un telefono tocca **Nuova chat**, dove si vede **Il tuo
+   codice QR**, e scansionalo con l’altro, come in [Chat tramite un relay](#relay). Senza un relay il codice contiene
+   solo le tue chiavi, e vi raggiungete solo da vicino, finché non ne avete uno.
 3. Scegli il contatto, scrivi nella barra dei messaggi in basso e tocca la freccia di invio. Appena il suo telefono
    risponde, in cima alla chat c’è scritto **Vicino**.
 
@@ -511,36 +510,32 @@ solo tu la leggi.
 
 1. Nella schermata principale, tocca **Nuova chat**. Finché manca qualcosa, in alto **Come ti colleghi ora** dice in parole semplici come ti
    raggiungono i tuoi contatti: tramite il tuo relay, tramite Nostr senza relay, o solo da vicino; quando tutto funziona,
-   non viene mostrato. Sotto ci sono i modi per entrare per un telefono ancora senza relay, oppure, con un relay, i due
-   grandi pulsanti, **Aggiungi un contatto**, e righe per **Il tuo link di contatto** e **Invita qualcuno**. Le impostazioni del relay stesso sono in **Per utenti esperti**, in fondo; **Impostazioni** → **Relay e
-   reti** → **Relay** apre Nuova chat con queste impostazioni aperte.
+   non viene mostrato. Con un relay, un campo in cima trova un contatto per nome o aggiunge un link incollato lì, e
+   sotto vengono **Il tuo codice QR**, **Non ha ancora Erevos?** e righe per **Il tuo link di contatto** e altro; un
+   telefono ancora senza relay inizia con **Inizia con un invito**. Le impostazioni del relay stesso sono in **Per
+   utenti esperti**, in fondo; **Impostazioni** → **Relay e reti** → **Relay** apre Nuova chat con queste impostazioni aperte.
 2. In **Per utenti esperti**, scrivi l’**Indirizzo del relay**: \`ws://<indirizzo del computer>:7879\` per un relay sulla tua
    rete, o \`wss://relay.example.org\` per uno su internet. Aggiungi il **Token** se il relay lo richiede.
 3. Erevos crea da solo la tua coda sul relay, qualche secondo dopo, e dice **Coda sul relay creata**: funziona tutto, testi, foto, messaggi vocali,
    chiamate e gruppi, e **Come ti colleghi ora** scompare, perché non manca nulla. Se non ci riesce, la nota dice perché; **Crea la mia coda sul relay**, sotto l’indirizzo, riprova.
-4. In cima a **Nuova chat**, due grandi pulsanti fanno ciò che serve a quasi tutti: **Scansiona il suo codice QR**
-   fotografa il codice QR sullo schermo dell’altro telefono (su un computer, su Sailfish OS e nella web app chiede una
-   foto), e **Mostra il tuo codice QR** mostra il tuo. Basta che uno scansioni l’altro; il resto di Nuova chat è sotto.
-   Dove il tuo relay lascia invitare il tuo telefono, **Mostra il tuo codice QR** mostra un invito per una persona: se Erevos è nuovo sul
-   suo telefono, entra da solo nel tuo relay quando lo scansiona, senza scrivere nulla, e siete subito contatti; un telefono che ha già un
-   relay ti prende solo come contatto. Per qualcun altro, tocca **Nuovo codice QR**. Dove il tuo telefono non può invitare, mostra il tuo
-   codice QR di contatto, come sotto.
-   **Mostra il tuo codice QR** lo apre sopra la
-   schermata. Fallo scansionare all’altro telefono con la fotocamera, poi apri il link in Erevos. La schermata **Aggiungi un contatto** mostra cosa
-   contiene: tocca **Aggiungi alla chat** solo se l’hai scansionato tu stesso. **Aggiungi e collega a uno dei miei
-   contatti** aggiunge anche lui, collegato al contatto che scegli, di cui la chat prende il nome.
-   Il codice è corto, così qualsiasi fotocamera lo legge. Chi lo scansiona risponde con il proprio link di contatto, e poi questo telefono gli scrive per primo. Se lo scansiona mentre è mostrato qui, o fino a 2 minuti dopo, diventa subito un contatto; più tardi, scrive prima una richiesta di messaggio. **Codice QR grande, senza internet** mostra invece il codice intero, che funziona vicino senza internet. **Condividi il mio link di contatto** invia un link corto che qualsiasi app lascia toccare; su Android apre Erevos, che chiede prima di accettarlo. Per aggiungere qualcuno con il suo codice QR di contatto, il tuo telefono ha prima bisogno di un relay.
+4. **Il tuo codice QR** è su Nuova chat stessa, appena si apre. Fallo scansionare all’altro telefono con la fotocamera,
+   poi apri il link in Erevos. La schermata **Aggiungi un contatto** mostra cosa contiene: tocca **Aggiungi alla chat**
+   solo se l’hai scansionato tu stesso. **Aggiungi e collega a uno dei miei contatti** aggiunge anche lui, collegato al
+   contatto che scegli, di cui la chat prende il nome.
+   Il codice è corto, così qualsiasi fotocamera lo legge. Chi lo scansiona risponde con il proprio link di contatto, e poi questo telefono gli scrive per primo. Se lo scansiona mentre Nuova chat è aperta, o fino a 2 minuti dopo, diventa subito un contatto; più tardi, scrive prima una richiesta di messaggio. **Codice QR grande, senza internet** mostra invece il codice intero, che funziona vicino senza internet, e **Codice QR piccolo** torna indietro. **Condividi**, sotto, invia un link corto che qualsiasi app lascia toccare; su Android apre Erevos, che chiede prima di accettarlo. Per aggiungere qualcuno con il suo codice QR di contatto, il tuo telefono ha prima bisogno di un relay.
+   Per qualcuno che non ha ancora Erevos, tocca invece **Non ha ancora Erevos?**, sotto: il suo telefono entra nel tuo
+   relay quando prende l’invito, come in Invitare qualcuno di nuovo, più sotto.
    Lo stesso vale per contatto: finché è mostrato il codice di contatto piccolo e l’NFC è attivo su Android, l’altro
    telefono lo prende se appoggi il suo retro al retro del tuo. Funziona solo con Erevos in primo piano, non in
    background, e mai con il codice QR grande.
-5. Se la sua fotocamera mostra solo il testo, o se è lontano, apri **Il tuo link di contatto**, tocca **Condividi il mio link di contatto**
-   e mandaglielo.
-   Lo incolla nel campo sotto **Aggiungi un contatto** e tocca **Aggiungi**.
-6. Oppure al contrario: tocca **Scansiona il suo codice QR** in alto e fotografa il codice QR sul suo schermo, o, in
-   **Aggiungi un contatto**, **Scegli una foto del codice QR** per uno screenshot o una sua foto che ti ha mandato.
-   Erevos lo legge e lo aggiunge subito. Su un computer, su Sailfish OS e nella web app **Scansiona il suo codice QR**
-   chiede una foto; su iPhone offre anche la fotocamera. Le chat nascoste non hanno né l’uno né l’altro, perché una foto esce da Erevos, che le chiude: incolla lì
-   il suo link.
+5. Se la sua fotocamera mostra solo il testo, o se è lontano, tocca **Condividi** sotto il tuo codice QR, oppure apri
+   **Il tuo link di contatto** e tocca **Condividi il mio link di contatto**, e mandaglielo.
+   Lo incolla nel campo in cima a **Nuova chat** e tocca **Aggiungi**.
+6. Oppure al contrario: tocca **Scansiona il suo**, sotto il tuo codice QR, e fotografa il codice QR sul suo schermo,
+   oppure tocca **Da una foto del suo codice QR** per uno screenshot o una sua foto che ti ha mandato. Erevos lo legge
+   e lo aggiunge subito. Su un computer, su Sailfish OS e nella web app **Scansiona il suo** chiede una foto; su iPhone
+   offre anche la fotocamera.
+   Anche le chat nascoste li hanno entrambi; lì il campo in cima accetta solo un link.
 7. Oppure, con qualcuno accanto a te o al telefono: tocca **Abbina con un codice** in **Nuova chat**. Uno tocca
    **Mostra un codice** e dice o mostra le 8 cifre; l’altro tocca **Digita il suo codice** e le digita. Allora ogni
    telefono ha l’altro come contatto, come se ciascuno avesse scansionato il codice QR dell’altro. Il codice non lascia
@@ -604,23 +599,24 @@ non può riempire il suo file dei token.
 Un codice QR o un link fa entrare qualcuno di nuovo: il suo telefono entra in Erevos sul tuo relay, con un accesso
 tutto suo, senza scrivere nulla, e siete subito l’uno contatto dell’altro, senza richiesta di messaggio.
 
-- **Per invitare:** nella schermata iniziale, tocca **Invita** accanto alla riga del relay oppure, nelle chat senza
-  nessun contatto scelto, tocca **Invita qualcuno**. Il codice QR compare subito: quando Erevos è sul suo telefono, lo
+- **Per invitare:** nella schermata iniziale, tocca **Invita** accanto alla riga del relay oppure, su **Nuova chat**,
+  tocca **Non ha ancora Erevos?**. Il codice QR compare subito: quando Erevos è sul suo telefono, lo
   scansiona con la fotocamera e apre il link in Erevos, oppure tocca **Condividi l’invito** e mandagli il link. Sotto
   puoi scrivere per chi è (il suo nome nelle tue chat) e **Il tuo nome, per quella persona**, oppure lasciare vuoti
-  entrambi. Riaperto poco dopo, mostra lo stesso invito finché nessuno l’ha preso; **Invita un’altra persona** ne crea
-  uno nuovo. È per una persona, per 7 giorni, o meno se l’invito al relay finisce prima. Chi lo prende per primo lo
+  entrambi. Riaperto finché nessuno l’ha preso e gli resta almeno un giorno, mostra lo stesso invito, quindi non
+  consuma nessuno dei 5 in attesa né dei 10 al giorno; **Invita un’altra persona** ne crea uno nuovo. È per una
+  persona, per 7 giorni, o meno se l’invito al relay finisce prima. Chi lo prende per primo lo
   ha, quindi dallo solo a quella persona.
   Su un telefono Android con l’NFC attivo puoi anche darlo per contatto: appoggia il retro del suo telefono al retro del
   tuo mentre il codice è mostrato, e il suo telefono apre il link da solo, in Erevos se è installato, altrimenti sulla
   pagina web di Erevos, che offre Erevos. Se l’NFC è spento, la schermata ti dice di attivarlo nelle impostazioni di
   Android.
-- **Per entrare:** su un telefono ancora senza relay, **Nuova chat** mostra un modo per entrare, **Ho un invito**:
-  toccalo. Scansiona l’invito con la fotocamera e apri il link in Erevos, oppure tocca **Scatta una foto dell’invito**
-  o **Scegli una foto dell’invito**, o incolla il link e tocca **Partecipa**. Il link apre **… ti invita su Erevos**:
-  tocca **Partecipa** solo se è arrivato da quella persona. Erevos prende un accesso tutto suo al suo relay e una coda
-  lì, la aggiunge e dice **Benvenuto su Erevos**. Il suo primo messaggio lo dice al suo telefono, che aggiunge subito
-  questo come contatto, con il nome che ha scritto.
+- **Per entrare:** su un telefono ancora senza relay, **Nuova chat** inizia con **Inizia con un invito**. Tocca
+  **Scansiona il suo codice QR** e fotografa l’invito sul suo schermo, oppure tocca **Da una foto del suo codice QR**, o
+  incolla il link nel campo lì e tocca **Partecipa**; funziona anche scansionarlo con la fotocamera e aprire il link in
+  Erevos. Il link apre **… ti invita su Erevos**: tocca **Partecipa** solo se è arrivato da quella persona. Erevos
+  prende un accesso tutto suo al suo relay e una coda lì, la aggiunge e dice **Benvenuto su Erevos**. Il suo primo
+  messaggio lo dice al suo telefono, che aggiunge subito questo come contatto, con il nome che ha scritto.
 - **Gli altri modi per entrare:** sotto, **Per utenti esperti** apre gli altri, per chi li cerca: **Accedi con LPHL**
   fa accedere questo telefono al relay di LPHL con un account LPHL, nel browser (vedi Accedere al relay più sotto), e
   poi aggiungi i tuoi contatti con i loro inviti o link; **Inizia senza relay**, come in Senza nessun relay, in
@@ -690,8 +686,8 @@ con un token tutto di quel telefono, così nessun token viene scritto o passato 
   aprire il link in Erevos, oppure tocca **Condividi l’invito** e mandaglielo. Vale per un telefono per 7 giorni, e chi
   lo prende per primo lo ha, quindi mostralo solo a quella persona.
 - **Per prenderne uno:** il link apre **Invito a un relay**, con l’indirizzo del relay: tocca **Usa questo relay** solo
-  se è arrivato da qualcuno che conosci. In Erevos, anche **Scansiona il suo codice QR** in Nuova chat e **Scegli una foto del codice QR**
-  in **Aggiungi un contatto** leggono un invito, e il suo link si può incollare nel campo lì. Erevos crea un token per
+  se è arrivato da qualcuno che conosci. In Erevos, anche **Scansiona il suo** e **Da una foto del suo codice QR** in
+  Nuova chat leggono un invito, e il suo link si può incollare nel campo in cima. Erevos crea un token per
   questo telefono, lo conserva con l’indirizzo del relay solo in questo spazio e crea lì la tua coda. Se il telefono usa
   un altro relay, prima chiede, e i contatti conoscono la tua nuova coda dal tuo prossimo messaggio. Erevos accetta un
   invito a un relay wss://, o a uno ws:// solo su una rete di casa (come \`ws://192.168.1.10:7879\`). Le chat nascoste

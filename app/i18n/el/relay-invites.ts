@@ -70,8 +70,6 @@ export const relayInvites: Record<string, string> = {
   'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Καλώς ήρθες στο Erevos. Τώρα έχεις στις επαφές σου: {name}. Ό,τι γράφετε μεταξύ σας είναι κρυπτογραφημένο από άκρη σε άκρη.',
   'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Καλώς ήρθες στο Erevos. Όποιος σε προσκάλεσε είναι πλέον επαφή σου: ό,τι γράφετε μεταξύ σας είναι κρυπτογραφημένο από άκρη σε άκρη.',
   'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Μπήκες, ως {name}. Τώρα πρόσθεσε τις επαφές σου: με την πρόσκλησή τους, ή με τον σύνδεσμο επαφής ή τον κωδικό QR που σου δίνουν.',
-  'Take a photo of the invite': 'Τράβηξε φωτογραφία της πρόσκλησης',
-  'Choose a photo of the invite': 'Διάλεξε φωτογραφία της πρόσκλησης',
   'Or paste the invite link': 'Ή επικόλλησε τον σύνδεσμο της πρόσκλησης',
   'Invite someone': 'Πρόσκληση σε κάποιον',
   'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Για ένα άτομο, έως {when}. Με το Erevos στο τηλέφωνό του, τη σκανάρει με την κάμερα, ή ανοίγει τον σύνδεσμο που του στέλνεις: το τηλέφωνό του μπαίνει, και γίνεστε αμέσως επαφές. Όποιος την πάρει πρώτος την κρατά, οπότε δώσε την μόνο σε αυτό το άτομο.',

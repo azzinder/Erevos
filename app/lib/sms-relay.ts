@@ -12,7 +12,7 @@
 import { contactLink, parseContact } from './contact-code';
 import { canRelaySeal, canSealOpen, relaySeal, sealPublic } from './core';
 import { fromBase64, randomBytes } from './crypto';
-import { BlockedContactError, randomLineName, toBase64Url, type E2E, type Where } from './e2e';
+import { BlockedContactError, fromBase64Url, randomLineName, toBase64Url, type E2E, type Where } from './e2e';
 import { t } from './i18n';
 import { fromHex, listInvites, makeInvite, relayKey, sendMessage, takeBackInvite, type Relay } from './relay';
 import { inviteAnswer, plainNumber, sameNumber, type SmsInvite } from './sms-invite';
@@ -252,6 +252,43 @@ export type ShortInvite = { invite: TextInvite; secret: string; line: string };
  */
 export function makeShortInvite(name: string): Promise<ShortInvite> {
   return shortInvite('', name, QR_INVITE_DAYS);
+}
+
+/**
+ * The newest invite made here as a QR code or a link that no one took yet and that lasts a day more
+ * at least, as makeShortInvite made it: shown again rather than another made, as the relay keeps
+ * only 5 waiting for each phone and 10 made a day. Null when there is none, or a phone took it.
+ */
+export async function waitingShortInvite(now = Date.now()): Promise<ShortInvite | null> {
+  if (!canRelaySeal()) return null;
+  const data = await loadCurrentSpaceData();
+  if (!data.url || !data.ownQueue) return null;
+  const link = await spaceSmsLink();
+  const sent = link.waitingShortInvite(now - (QR_INVITE_DAYS - 1) * DAY);
+  if (!sent?.code) return null;
+  const relay: Relay = { url: data.url, token: data.token || undefined };
+  // Taken by a phone already, though not answered yet: another is made.
+  if (relay.token) {
+    const listed = await listInvites(relay).catch(() => null);
+    const it = listed?.find((l) => l.id === inviteId(sent.code!));
+    if (!it || it.used > 0) return null;
+  }
+  const bytes = await relayKey(relay).catch(() => null);
+  const chats = await spaceChats().catch(() => null);
+  const secret = fromBase64Url(sent.secret);
+  return {
+    invite: {
+      sender: await spaceLinkSender(data.ownQueue),
+      key: await sealPublic(secret),
+      code: sent.code,
+      relay: data.url,
+      relayKey: bytes ? toBase64Url(bytes) : '',
+      name: chats?.e2e.invitedAs() ?? '',
+      expires: sent.at + QR_INVITE_DAYS * DAY,
+    },
+    secret: sent.secret,
+    line: '',
+  };
 }
 
 /** Names whom a short invite made here is for: the name its contact takes once it answers. */

@@ -587,15 +587,9 @@ export const makeStyles = (colors: Colors) =>
       borderWidth: 1,
       borderColor: withAlpha(colors.border, 0.5),
     },
-    // The "or" between New chat's big ways and the rest (app/chat.tsx).
-    orRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: space.sm,
-    },
-    orLine: {
-      flex: 1,
-      height: StyleSheet.hairlineWidth,
+    // A line in the middle, under New chat's QR code (app/chat.tsx).
+    centered: {
+      textAlign: 'center',
     },
     faces: {
       gap: space.md,

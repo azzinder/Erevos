@@ -70,8 +70,6 @@ export const relayInvites: Record<string, string> = {
   'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Dobro došli u Erevos. {name} je sada vaš kontakt: ono što jedno drugom pišete šifrirano je s kraja na kraj.',
   'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Dobro došli u Erevos. Onaj ko vas je pozvao sada je vaš kontakt: ono što jedno drugom pišete šifrirano je s kraja na kraj.',
   'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Unutra ste, kao {name}. Sada dodajte svoje kontakte: njihovom pozivnicom, ili kontakt-linkom ili QR kodom koji vam daju.',
-  'Take a photo of the invite': 'Fotografišite pozivnicu',
-  'Choose a photo of the invite': 'Izaberite fotografiju pozivnice',
   'Or paste the invite link': 'Ili zalijepite link pozivnice',
   'Invite someone': 'Pozovite nekoga',
   'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Za jednu osobu, do {when}. S Erevosom na telefonu, skenira je kamerom, ili otvori link koji joj pošaljete: njen telefon se pridružuje, i odmah ste kontakti. Ko je prvi uzme, ima je, zato je dajte samo toj osobi.',

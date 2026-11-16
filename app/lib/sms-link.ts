@@ -421,6 +421,13 @@ export class SmsLink {
     }));
   }
 
+  /** The newest invite made here as a QR code or a link (no number, makeShortInvite) that still
+   *  waits, with its invite to the relay, made after `since`; null when there is none. */
+  waitingShortInvite(since: number): SentInvite | null {
+    const waiting = this.data.sent.filter((s) => !s.number && s.code && s.at > since);
+    return waiting.length > 0 ? waiting.reduce((a, b) => (b.at > a.at ? b : a)) : null;
+  }
+
   /** Whether the invite sent here whose secret is `secret` still waits for its answer. */
   textInviteWaits(secret: string): boolean {
     return this.data.sent.some((s) => s.secret === secret);

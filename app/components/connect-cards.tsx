@@ -10,9 +10,10 @@ import { t } from '../lib/i18n';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-import { ChevronIcon } from './icons';
+import { ChevronIcon, PersonIcon } from './icons';
+import { QrCode } from './QrCode';
 import { Tile, type TileTint } from './shortcut-tile';
-import { Text } from './ui';
+import { Button, Row, Text, TextButton } from './ui';
 
 // The parts of New chat (app/chat.tsx, with no chat open) that say how this phone connects: a card
 // with how its contacts reach it now, in plain words, and the ways in for a phone with no relay yet,
@@ -88,86 +89,57 @@ export function WayCard({ tint, sign, title, line, open, onPress, children }: {
 const WHITE = '#ffffff';
 
 /**
- * The two big ways to meet someone at the top of New chat: take a photo of their QR code, or show
- * yours for them to take. One of the two is enough, so the rest of New chat waits under them.
- * `onShow` is left out when this phone has no contact link to show.
+ * New chat's own QR code (#12), shown on the screen itself, at once: whoever scans it adds this
+ * phone. Under it, scanning theirs, sharing the link, and a photo of their QR code. `text` null
+ * while it is not ready yet. `children` go under the buttons (NFC, the large code).
  */
-export function MeetWays({ scanTitle, scanLine, onScan, onShow }: {
-  scanTitle: string;
-  scanLine: string;
-  onScan: () => void;
-  onShow?: () => void;
+export function MyQrCard({ text, onScan, onShare, shareTitle, onPhoto, children }: {
+  text: string | null;
+  onScan?: () => void;
+  onShare: () => void;
+  shareTitle: string;
+  onPhoto: () => void;
+  children?: ReactNode;
 }) {
   const colors = useColors();
   return (
-    <View style={styles.meet}>
-      <View style={styles.meetRow}>
-        <Pressable
-          onPress={onScan}
-          accessibilityRole="button"
-          accessibilityLabel={scanTitle}
-          style={({ pressed }) => [styles.meetTile, { borderRadius: radius.lg, backgroundColor: colors.primary, borderColor: colors.primary }, pressed && styles.pressed]}
-        >
-          <ScanSign color={colors.onPrimary} />
-          <Text variant="label" style={[styles.center, { color: colors.onPrimary }]}>
-            {scanTitle}
-          </Text>
-          <Text variant="caption" style={[styles.center, { color: colors.onPrimary }]}>
-            {scanLine}
-          </Text>
-        </Pressable>
-        {onShow ? (
-          <Pressable
-            onPress={onShow}
-            accessibilityRole="button"
-            accessibilityLabel={t('Show your QR code')}
-            style={({ pressed }) => [styles.meetTile, { borderRadius: radius.lg, backgroundColor: colors.surface, borderColor: colors.primary }, pressed && styles.pressed]}
-          >
-            <QrSign size={40} color={colors.primary} />
-            <Text variant="label" style={styles.center}>
-              {t('Show your QR code')}
-            </Text>
-            <Text variant="caption" tone="muted" style={styles.center}>
-              {t('for them to scan')}
-            </Text>
-          </Pressable>
-        ) : null}
+    <View style={[styles.qrCard, { borderRadius: radius.lg, backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text variant="heading">{t('Your QR code')}</Text>
+      <View style={styles.qrBox}>
+        {text ? <QrCode text={text} size={200} /> : <Text tone="muted">{t('Getting it ready…')}</Text>}
       </View>
-      {onShow ? (
-        <Text variant="caption" tone="muted" style={styles.center}>
-          {t('One of you scanning the other is enough.')}
-        </Text>
-      ) : null}
+      <Text variant="caption" tone="muted" style={styles.center}>
+        {t('They scan it with the camera, and you are each other’s contacts at once.')}
+      </Text>
+      <Row wrap style={styles.qrButtons}>
+        {onScan ? <Button title={t('Scan theirs')} onPress={onScan} /> : null}
+        <Button title={shareTitle} kind="secondary" onPress={onShare} />
+      </Row>
+      <TextButton title={t('From a photo of their QR code')} onPress={onPhoto} />
+      {children}
     </View>
   );
 }
 
-/** A camera's frame with a line across it, for scanning a QR code. */
-function ScanSign({ color, size = 40 }: { color: string; size?: number }) {
-  const w = Math.max(2, Math.round(size / 14));
-  const arm = size * 0.3;
-  const corner = (top: boolean, left: boolean) => (
-    <View
-      key={`${top}-${left}`}
-      style={{
-        position: 'absolute',
-        width: arm,
-        height: arm,
-        [top ? 'top' : 'bottom']: 0,
-        [left ? 'left' : 'right']: 0,
-        borderColor: color,
-        borderTopWidth: top ? w : 0,
-        borderBottomWidth: top ? 0 : w,
-        borderLeftWidth: left ? w : 0,
-        borderRightWidth: left ? 0 : w,
-      }}
-    />
-  );
+/** A row that opens what it says, with a person and a plus: on New chat, an invite for someone with no Erevos yet. */
+export function InviteRow({ title, line, onPress }: { title: string; line: string; onPress: () => void }) {
+  const colors = useColors();
   return (
-    <View style={{ width: size, height: size }}>
-      {[corner(true, true), corner(true, false), corner(false, true), corner(false, false)]}
-      <View style={{ position: 'absolute', left: size * 0.12, right: size * 0.12, top: (size - w) / 2, height: w, backgroundColor: color }} />
-    </View>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title} ${line}`}
+      style={({ pressed }) => [styles.inviteRow, { borderRadius: radius.lg, backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}
+    >
+      <PersonIcon color={colors.primary} size={22} />
+      <View style={styles.grow}>
+        <Text variant="bodyStrong">{title}</Text>
+        <Text variant="caption" tone="muted">
+          {line}
+        </Text>
+      </View>
+      <ChevronIcon color={colors.textMuted} />
+    </Pressable>
   );
 }
 
@@ -233,24 +205,29 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-  meet: {
-    gap: space.sm,
-  },
-  meetRow: {
-    flexDirection: 'row',
-    gap: space.md,
-  },
-  meetTile: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    paddingVertical: space.lg,
-    paddingHorizontal: space.sm,
-    borderWidth: 2,
-    minHeight: 150,
-  },
   center: {
     textAlign: 'center',
+  },
+  qrCard: {
+    alignItems: 'center',
+    gap: space.sm,
+    padding: space.md,
+    borderWidth: 1,
+  },
+  qrBox: {
+    minHeight: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrButtons: {
+    justifyContent: 'center',
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderWidth: 1,
+    minHeight: 64,
   },
 });

@@ -74,7 +74,7 @@ export const publicFeed: Record<string, string> = {
   "Like":
     "Gosto",
   "Share":
-    "Partilhar",
+    "Compartilhar",
   "in {room} · {server}":
     "em {room} · {server}",
   "in {room}":

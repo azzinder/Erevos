@@ -359,8 +359,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
-2. If you are not contacts yet, add each other: on one phone tap **New chat**, then **Show my QR code** (under **Start
-   without a relay** while it has no relay), and scan it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
+2. If you are not contacts yet, add each other: on one phone tap **New chat**, where **Your QR code** shows, and scan
+   it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
    and you reach each other nearby only, until you have one.
 3. Pick the contact, type in the message bar at the bottom and tap the send arrow. Once their phone answers, the top of the chat says
    **Nearby**.
@@ -477,36 +477,33 @@ email to reach you: whoever has your contact link can write to your queue, and o
 
 1. On the home screen, tap **New chat**. While something is missing, **How you connect now** at the top says in plain
    words how your contacts reach you: through your relay, through Nostr with no relay, or only nearby; when everything
-   works it is not shown. Below are the ways in for a phone with no relay yet, or, with a relay, the two big buttons,
-   **Add a contact**, and rows for **Your contact link** and **Invite someone**. The relay's own settings are under
-   **For advanced users**, at the bottom; **Settings** → **Relay and networks** → **Relay** opens New chat with them open.
+   works it is not shown. With a relay, a field at the top finds a contact by name or adds a link pasted into it, and
+   under it come **Your QR code**, **No Erevos yet?** and rows for **Your contact link** and more; a phone with no relay
+   yet starts with **Start with an invite**. The relay's own settings are under **For advanced users**, at the bottom;
+   **Settings** → **Relay and networks** → **Relay** opens New chat with them open.
 2. Under **For advanced users**, type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Erevos makes your queue on it by itself, a few seconds later, and says **Relay queue created**: everything works, texts,
    photos, voice messages, calls and groups, and **How you connect now** goes, as nothing is missing. If it cannot, the note
    says why; **Create my relay queue**, under the address, tries again.
-4. At the top of **New chat**, two big buttons do what most need: **Scan their QR code** takes a photo of the QR code
-   on the other phone's screen (on a computer, on Sailfish OS and in the web app, it asks for a photo of it), and
-   **Show your QR code** shows yours. One of you scanning the other is enough; the rest of New chat is under them.
-   Where your relay lets your phone invite, **Show your QR code** shows an invite for one person: if Erevos is new on
-   their phone, it joins your relay by itself as they scan it, with nothing to type, and you are contacts at once; a
-   phone that has a relay only takes you as a contact. For someone else, tap **New QR code**. Where your phone cannot
-   invite, it shows your contact QR code, as below.
-   **Show your QR code** opens it over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
-   **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself. **Add and connect
-   to one of my contacts** adds them too, linked to the contact you choose, whose name the chat takes.
-   The code is short, so any camera reads it. Whoever scans it answers with their own contact link, and then this phone writes to them first. If they scan it while it shows here, or up to 2 minutes after, they are a contact at once; later, they write a message request first. **Large QR code, for no internet** shows the whole code instead, which works nearby with no internet. **Share my contact link** sends a short link that any app lets you tap; on Android it opens Erevos, which asks before it takes it. To add someone with their contact QR code, your phone needs a relay first.
+4. **Your QR code** is on New chat itself, as soon as it opens. Let the other phone scan it with its camera, then open
+   the link in Erevos. The **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it
+   yourself. **Add and connect to one of my contacts** adds them too, linked to the contact you choose, whose name the
+   chat takes.
+   The code is short, so any camera reads it. Whoever scans it answers with their own contact link, and then this phone writes to them first. If they scan it while New chat is open, or up to 2 minutes after, they are a contact at once; later, they write a message request first. **Large QR code, for no internet** shows the whole code instead, which works nearby with no internet, and **Small QR code** goes back. **Share**, under it, sends a short link that any app lets you tap; on Android it opens Erevos, which asks before it takes it. To add someone with their contact QR code, your phone needs a relay first.
+   For someone with no Erevos yet, tap **No Erevos yet?** under it instead: their phone joins your relay as they take
+   the invite, as in Inviting someone new, below.
    Touch works too: while the small contact QR code shows and NFC is on, on Android, the other phone takes it when you
    hold the back of their phone to the back of yours. It works only while Erevos is open in front, not in the
    background, and never with the large QR code.
-5. If their camera only shows the text, or they are far away, open **Your contact link**, tap **Share my contact link**
-   and send it to them.
-   They paste it into the field under **Add a contact** and tap **Add**.
-6. Or the other way round: tap **Scan their QR code** at the top and take a photo of the QR code on their screen, or,
-   under **Add a contact**, **Choose a photo of the QR code** for a screenshot or a photo of it they sent you. Erevos
-   reads it and adds them at once. On a computer, on Sailfish OS and in the web app, **Scan their QR code** asks for a
-   photo of it; on an iPhone it offers the camera too.
-   Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
+5. If their camera only shows the text, or they are far away, tap **Share** under your QR code, or open **Your contact
+   link** and tap **Share my contact link**, and send it to them.
+   They paste it into the field at the top of **New chat** and tap **Add**.
+6. Or the other way round: tap **Scan theirs**, under your QR code, and take a photo of the QR code on their screen,
+   or tap **From a photo of their QR code** for a screenshot or a photo of it they sent you. Erevos reads it and adds
+   them at once. On a computer, on Sailfish OS and in the web app, **Scan theirs** asks for a photo of it; on an iPhone
+   it offers the camera too.
+   Hidden chats have both too; there the field at the top takes a link only.
 7. Or, with someone beside you or on the phone with you: tap **Pair with a code** on **New chat**. One of you taps
    **Show a code** and says or shows the 8 digits; the other taps **Type their code** and types them. Each phone then
    has the other as a contact, as if each had scanned the other's QR code. The code itself never leaves the phones: they
@@ -566,20 +563,22 @@ of tokens.
 One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
 nothing, and you are each other's contacts at once, with no message request.
 
-- **To invite:** on the home screen, tap **Invite** beside the relay's line, or, in the chats with no contact picked,
-  tap **Invite someone**. The QR code shows at once: once Erevos is on their phone, they scan it with the camera and
+- **To invite:** on the home screen, tap **Invite** beside the relay's line, or, on **New chat**, tap **No Erevos
+  yet?**. The QR code shows at once: once Erevos is on their phone, they scan it with the camera and
   open the link in Erevos, or tap **Share the invite** and send them the link. Below it you may type who it is for
-  (their name in your chats) and **Your name, for them**, or leave both empty. Opened again soon after, it shows the
-  same invite while no one took it; **Invite someone else** makes a new one. It is for one person, for 7 days, or less
-  when the relay's invite ends sooner. Whoever takes it first has it, so give it to them only.
+  (their name in your chats) and **Your name, for them**, or leave both empty. Opened again while no one took it and it
+  has a day left, it shows the same invite, so it spends none of the 5 waiting and 10 a day; **Invite someone else**
+  makes a new one. It is for one person, for 7 days, or less when the relay's invite ends sooner. Whoever takes it
+  first has it, so give it to them only.
   On an Android phone with NFC on, you can also hand it over by touch: hold the back of their phone to the back of yours
   while the code shows, and their phone opens the link by itself, in Erevos if it is installed, otherwise on Erevos's
   web page, which offers Erevos. If NFC is off, the sheet says to turn it on in Android's settings.
-- **To join:** on a phone with no relay yet, **New chat** shows one way in, **I have an invite**: tap it. Scan the
-  invite with the camera and open the link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the
-  invite**, or paste the link and tap **Join**. The link opens **… invites you to Erevos**: tap **Join** only if it
-  came from them. Erevos takes access of its own to their relay and a queue there, adds them and says **Welcome to
-  Erevos**. Its first message tells their phone, which adds this one as a contact at once, named as they typed.
+- **To join:** on a phone with no relay yet, **New chat** starts with **Start with an invite**. Tap **Scan their QR
+  code** and take a photo of the invite on their screen, or tap **From a photo of their QR code**, or paste the link
+  into the field there and tap **Join**; scanning it with the camera and opening the link in Erevos works too. The
+  link opens **… invites you to Erevos**: tap **Join** only if it came from them. Erevos takes access of its own to
+  their relay and a queue there, adds them and says **Welcome to Erevos**. Its first message tells their phone, which
+  adds this one as a contact at once, named as they typed.
 - **The other ways in:** under it, **For advanced users** opens the rest, for whoever looks for them: **Sign in with
   LPHL** signs this phone in to LPHL's relay with an LPHL account, in the browser (see Signing in to the relay below),
   and then you add your contacts by their invites or links; **Start without a relay**, as in With no relay at all,
@@ -645,8 +644,8 @@ that phone's own, so no token is typed or passed on.
   Erevos, or tap **Share the invite** and send it to them. It is good for one phone for 7 days, and whoever takes it
   first has it, so show it to them only.
 - **To take one:** the link opens **Invite to a relay**, with the relay's address: tap **Use this relay** only if it
-  came from someone you know. In Erevos, **Scan their QR code** on New chat and **Choose a photo of the QR code** under
-  **Add a contact** read an invite too, and its link can be pasted into the field there. Erevos makes a token for this
+  came from someone you know. In Erevos, **Scan theirs** and **From a photo of their QR code** on New chat read an
+  invite too, and its link can be pasted into the field at the top. Erevos makes a token for this
   phone, keeps it with the relay's address in this space only, and makes your queue there. If the phone uses another
   relay, it asks first, and contacts learn your new queue from your next message. Erevos takes an invite to a wss://
   relay, or to a ws:// one on a home network only (such as \`ws://192.168.1.10:7879\`). Hidden chats take no invites.

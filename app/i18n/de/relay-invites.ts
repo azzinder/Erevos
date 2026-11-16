@@ -70,8 +70,6 @@ export const relayInvites: Record<string, string> = {
   'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Willkommen bei Erevos. {name} ist jetzt dein Kontakt: Was ihr euch schreibt, ist Ende-zu-Ende-verschlüsselt.',
   'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Willkommen bei Erevos. Wer dich eingeladen hat, ist jetzt dein Kontakt: Was ihr euch schreibt, ist Ende-zu-Ende-verschlüsselt.',
   'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Du bist drin, als {name}. Füge jetzt deine Kontakte hinzu: über ihre Einladung oder über den Kontaktlink oder QR-Code, den sie dir geben.',
-  'Take a photo of the invite': 'Foto der Einladung aufnehmen',
-  'Choose a photo of the invite': 'Foto der Einladung auswählen',
   'Or paste the invite link': 'Oder füge den Einladungslink ein',
   'Invite someone': 'Jemanden einladen',
   'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Für eine Person, bis {when}. Mit Erevos auf ihrem Telefon scannt sie sie mit der Kamera oder öffnet den Link, den du ihr schickst: Ihr Telefon tritt bei, und ihr seid sofort Kontakte. Wer sie zuerst annimmt, hat sie, also gib sie nur dieser Person.',
