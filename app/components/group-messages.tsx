@@ -109,7 +109,13 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const colors = useColors();
   const where = useGroupsWhere();
   const { at: groupsAt } = where;
-  const [menuFor, setMenuFor] = useState<GroupMessage | null>(null);
+  const [menuFor, setMenuForNow] = useState<GroupMessage | null>(null);
+  // Each opening of a message's menu, so each is a menu of its own (components/message-menu.tsx).
+  const [menuTurn, setMenuTurn] = useState(0);
+  const setMenuFor = (m: GroupMessage | null) => {
+    if (m) setMenuTurn((n) => n + 1);
+    setMenuForNow(m);
+  };
   const [replying, setReplying] = useState<GroupMessage | null>(null);
   // The message of ours the bar gives new words, while it does.
   const [editing, setEditing] = useState<GroupMessage | null>(null);
@@ -706,6 +712,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     sheets: (
       <>
         <MessageMenu
+          key={`menu-${menuTurn}`}
           visible={menuFor !== null}
           onClose={() => setMenuFor(null)}
           line={menuFor ? lineOf(menuFor) : ''}

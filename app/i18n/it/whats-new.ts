@@ -5,6 +5,7 @@
 // The Italian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/it/index.ts).
 export const whatsNew: Record<string, string> = {
   "**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix).": "**Una chat Matrix letta altrove è letta anche qui**: una chat Matrix cifrata che hai letto, o a cui hai risposto, in Element o su un altro tuo dispositivo non tiene più qui il suo numero di messaggi nuovi. Vedi [Matrix](#matrix).",
+  "**A message's menu always opens**: holding a message, in a chat or a group, opens its menu every time; before, after you had been in another app, it could stop opening until Erevos was closed and opened again.": "**Il menu di un messaggio si apre sempre**: tenendo premuto un messaggio, in una chat o in un gruppo, il suo menu si apre ogni volta; prima, dopo essere passati in un'altra app, poteva smettere di aprirsi finché Erevos non veniva chiuso e riaperto.",
   "What's new": 'Novità',
   'What each version changed': 'Cosa è cambiato in ogni versione',
   'What each version of Erevos changed, the newest first.': 'Cosa è cambiato in ogni versione di Erevos, dalla più recente.',

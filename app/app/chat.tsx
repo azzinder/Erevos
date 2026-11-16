@@ -727,6 +727,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The message whose menu is open (held down), the one the next is an answer to, and the one just
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
+  // Each opening of a message's menu, so each is a menu of its own (components/message-menu.tsx).
+  const [menuTurn, setMenuTurn] = useState(0);
   // A voice message being written out (components/speech-sheet.tsx): how its sound is read.
   const [hearing, setHearing] = useState<(() => Promise<Uint8Array | null>) | null>(null);
   // The text of the message being translated (components/translate-sheet.tsx), or null.
@@ -5645,7 +5647,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     play: (message) => void play(message),
     open: openFile,
     // Only to read while the chat opens (shown at once, before its history is in hand).
-    menu: (message) => history.current && setMenuFor(message),
+    menu: (message) => {
+      if (!history.current) return;
+      setMenuTurn((n) => n + 1);
+      setMenuFor(message);
+    },
     goTo,
     vote: (message, option) => history.current && void vote(message, option),
     paid: (message) => history.current && void markPaid(message),
@@ -8175,6 +8181,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           </View>
         ) : null}
         <MessageMenu
+          key={`menu-${menuTurn}`}
           visible={menuFor !== null && shown}
           onClose={() => setMenuFor(null)}
           line={menuFor ? messageLine(menuFor) : ''}

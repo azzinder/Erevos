@@ -126,7 +126,13 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
   const [tab, setTab] = useState<MediaKind>('photo');
   const [calendar, setCalendar] = useState(false);
   const [lit, setLit] = useState<string | null>(null);
-  const [menuFor, setMenuFor] = useState<MediaItem | null>(null);
+  const [menuFor, setMenuForNow] = useState<MediaItem | null>(null);
+  // Each opening of the menu, so each is a menu of its own (components/message-menu.tsx).
+  const [menuTurn, setMenuTurn] = useState(0);
+  const setMenuFor = (item: MediaItem | null) => {
+    if (item) setMenuTurn((n) => n + 1);
+    setMenuForNow(item);
+  };
   const [viewing, setViewing] = useState<FileRef | null>(null);
   const [seen, setSeen] = useState<FileRef[]>([]);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -436,7 +442,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
         }}
         onClose={() => setCalendar(false)}
       />
-      <MessageMenu visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? lineTitle(menuFor) || t('Photo') : ''} actions={menuFor ? menuActions(menuFor) : []} />
+      <MessageMenu key={`menu-${menuTurn}`} visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? lineTitle(menuFor) || t('Photo') : ''} actions={menuFor ? menuActions(menuFor) : []} />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => viewing && void save(viewing, choose)} onClose={() => setViewing(null)} />
     </Modal>
   );

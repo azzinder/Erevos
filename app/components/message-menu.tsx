@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { AppState, Platform, Pressable, View } from 'react-native';
 
 import { MORE_REACTIONS, REACTIONS } from '../lib/chat-parts';
 import { t } from '../lib/i18n';
@@ -15,7 +15,10 @@ import { Sheet, Text } from './ui';
 // A message's menu, opened by pressing and holding it, in a contact's chat (app/chat.tsx) and in a
 // group (components/group-chat.tsx): the message in a line, the reactions at a tap with more behind the last,
 // then what can be done with it. The menu closes before what was picked runs, so a question it asks
-// shows (on the web, over the sheet, it would not).
+// shows (on the web, over the sheet, it would not). It closes too when the app goes to the
+// background: Android can take an open menu's window away then, and one left open in the app's
+// state, unseen, kept the next hold from showing another. Each opening is a menu of its own (the
+// screens give it a new key), for the same reason.
 
 export type MenuAction = { title: string; onPress: () => void; danger?: boolean };
 
@@ -37,6 +40,13 @@ export function MessageMenu({ visible, onClose, line, way, reaction, onReact, ac
   useEffect(() => {
     if (visible) setMore(false);
   }, [visible]);
+  useEffect(() => {
+    if (!visible) return;
+    const away = AppState.addEventListener('change', (state) => {
+      if (state === 'background') onClose();
+    });
+    return () => away.remove();
+  }, [visible, onClose]);
   const after = (run: () => void) => {
     onClose();
     setTimeout(run, Platform.OS === 'web' ? 0 : 300);
