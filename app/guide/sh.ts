@@ -427,8 +427,8 @@ ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s 
   da uzme vaše poruke pre nego što stignu do vas, pa čim vaš telefon ponovo ima internet sam prelazi na novi red i
   tiho to kaže vašim kontaktima. Odgovor važi i za skrivene razgovore, da vas ne pita dvaput za isti telefon. Nikad za
   relay do kojeg se stiže samo preko Tora. Vaš telefon radi isto za telefone pored sebe dok je **Prenosi poruke za
-  druge** uključeno, samo sa relaya koji sam koristi i nikad dok ide preko Tora: nijedan neznanac ne može da ga natera
-  da se poveže sa serverom po svom izboru.
+  druge** uključeno, nikad dok ide preko Tora, a sa relaya koji nije njegov samo kad kažete da, upozoreni da taj relay
+  tada vidi internet adresu vašeg telefona.
 
 **Zašto:** paket ne kaže za koga je, pa niko u blizini iz njega ne može saznati čiji je. Dok telefon vašeg kontakta ne
 odgovori na nekoj vezi, ni vaš telefon ne može znati koji je od telefona u blizini njegov: zato kratki paketi idu
@@ -3154,6 +3154,7 @@ Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom p
 
 - **Unutra:** kartice na vrhu: **Fotografije** u mreži po mjesecima, **Video snimci**, **Muzika** i ostali **Fajlovi** u popisima, svaka s folderima iznad koji imaju nešto njeno (**Fajlovi** i prazne). **+** snima fotografiju kamerom, koja ide direktno ovamo i nikad u galeriju, donosi datoteku iz datoteka telefona, do 4 GB, šifriranu dok se čita, bez kopije prije, ili pravi novi folder. Dugo pritisnite da odaberete više, da ih premjestite, pošaljete ili izbrišete; dugo pritisnite folder da ga preimenujete ili izbrišete, čime njegove datoteke ostaju.
 - **Šifrirana:** svaka datoteka je šifrirana vlastitim ključem, u dijelovima sa slučajnim nazivima među dijelovima razgovora, pa ništa na telefonu ne razlikuje datoteku Zbirke od fotografije iz razgovora. Samo vlastiti katalog Zbirke, zapečaćen kao razgovori, kaže šta je šta. Zbirka ostaje izvan snimaka ekrana i zatvara se kad se prostor zaključa.
+- **Traži ponovo:** gde prostor ima lozinku, Zbirka je traži svaki put kad se otvara, i ponovo kad je Erevos bio napušten duže od 30 sekundi, pre nego što išta pokaže; otisak prsta ili lice takođe rade gde otključavaju Erevos. Pogrešne lozinke se broje kao na ekranu zaključavanja. Zbirka skrivenog mesta ne traži ništa više, jer se skriveni razgovori zatvaraju čim napustite Erevos.
 - **Iz razgovora ili druge aplikacije:** dugo pritisnite fotografiju ili datoteku u razgovoru, pa **Spremi u Zbirku**: kopira se u Zbirku mjesta tog razgovora. Iz Dijeljenja druge aplikacije, **Pošalji u** ima **Zbirku** prvu i pita u koji folder; ulazi kakva je stigla, već šifrirana, pa nikad ne leži nešifrirana na telefonu. Može imati do 4 GB; ona veća od 100 MB može ići samo u Zbirku, jer razgovor prima najviše 100 MB.
 - **Iz Zbirke van:** fotografija se otvara preko cijelog ekrana, za listanje i zumiranje, s **Pošalji u razgovor**, **Spremi na telefon**, **Informacije** i **Izbriši**. Spremanje na telefon ili otvaranje datoteke drugom aplikacijom izvodi je nešifriranu, a Erevos to kaže unaprijed. Slanje u razgovor ostavlja kopiju u Zbirci. Iz Zbirke skrivenog mjesta datoteke idu samo u razgovore i grupe tog skrivenog mjesta, nikad u one prostora, a Zbirka prostora nikad u skriveno mjesto. Prevucite, ili koristite strelice, za sljedeću ili prethodnu fotografiju; **Projekcija slajdova** gore ih prikazuje jednu za drugom, svake 4 sekunde, do dodira.
 - **Iz razgovora:** **+** ispod polja poruke, pa **Zbirka**, otvara Zbirku mjesta tog razgovora: dodirnite fotografije ili datoteke za slanje, pa **Pošalji**, i idu u taj razgovor.

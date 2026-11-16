@@ -12,6 +12,7 @@ import { forgetBridges, setBridgeAsk } from './bridge';
 import { t } from './i18n';
 import { nearby } from './nearby';
 import { readForOthers } from './relay';
+import { ipWarningText } from './ip-warning';
 import { HAS_LINKS, onLinkEvent, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
@@ -47,6 +48,13 @@ export function startNearbyLinks(): () => void {
   const stopNearby = nearby.start(sendLink);
   // The bridge: this phone reads queues for the phones beside it while it carries for others and reaches its relay.
   nearby.readForOthers = readForOthers;
+  // Another relay than its own: only once the owner said yes, warned that it sees this phone's address.
+  nearby.askServe = async (_link, url) => {
+    if (AppState.currentState !== 'active') return false;
+    const host = url.replace(/^wss?:\/\//i, '').replace(/\/.*$/, '');
+    const { title, message } = ipWarningText({ network: host, act: 'bridge', of: url });
+    return choose(title, `${message}\n\n${t('Bring them?')}`, t('No'), t('Yes'));
+  };
   setBridgeAsk(
     () => AppState.currentState === 'active',
     () =>
@@ -112,6 +120,7 @@ export function startNearbyLinks(): () => void {
     setLinksQuiet(false);
     stopNearby();
     nearby.readForOthers = null;
+    nearby.askServe = null;
     nearby.setOnline(false);
     forgetBridges();
     stopLinks();

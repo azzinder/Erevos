@@ -115,4 +115,9 @@ export const collectionText: Record<string, string> = {
   "Slideshow": "Προβολή διαφανειών",
   "Radio and TV lists": "Λίστες Ραδιοφώνου και Τηλεόρασης",
   "What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos.": "Τι ζητά το Erevos για το Ραδιόφωνο και την Τηλεόραση: την αναζήτηση στο Radio Browser, μια λίστα αναπαραγωγής ή λίστα τηλεόρασης που φέρνεται από τον σύνδεσμό της, και τα λογότυπα των καναλιών.",
+  "Open the Collection": "Άνοιγμα της Συλλογής",
+  "Type the password that opens this space.": "Γράψε τον κωδικό που ανοίγει αυτόν τον χώρο.",
+  "The Collection asks for the password that opens this space each time it opens.": "Η Συλλογή ζητά τον κωδικό που ανοίγει αυτόν τον χώρο κάθε φορά που ανοίγει.",
+  "Type the password": "Γράψε τον κωδικό",
+  "The password that opens this space": "Ο κωδικός που ανοίγει αυτόν τον χώρο",
 };

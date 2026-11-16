@@ -4,9 +4,10 @@
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, FlatList, Image, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { AppState, BackHandler, FlatList, Image, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CollectionGate } from '../components/collection-gate';
 import { NowPlayingScreen } from '../components/collection-now-playing';
 import { NowPlaying } from '../components/collection-player';
 import { AddToPlaylistSheet, PlaylistScreen } from '../components/collection-playlist';
@@ -44,6 +45,8 @@ import {
   type CollectionFolder,
   type CollectionItem,
 } from '../lock/collection-data';
+import { RELOCK_MS } from '../lock/chat-pin';
+import { isPasswordLocked, loadLockConfig } from '../lock/config';
 import { space, radius, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
 
@@ -124,7 +127,54 @@ function Thumb({ item, size }: { item: CollectionItem; size: number }) {
   );
 }
 
+// Where the space has a password, the Collection asks for it again each time it opens, and once
+// Erevos was away more than RELOCK_MS (the owner's word, 2026-11-16): until then nothing of it is
+// read (components/collection-gate.tsx). Not in hidden chats, which close as soon as Erevos is
+// left and are opened with their own PIN.
 export default function CollectionScreen() {
+  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  const [open, setOpen] = useState<boolean | null>(hidden === '1' ? true : null);
+  useEffect(() => {
+    if (hidden === '1') return;
+    let live = true;
+    loadLockConfig().then(
+      (config) => live && setOpen((was) => was ?? !isPasswordLocked(config)),
+      () => live && setOpen((was) => was ?? false),
+    );
+    return () => {
+      live = false;
+    };
+  }, [hidden]);
+  useEffect(() => {
+    if (hidden === '1') return;
+    let left = 0;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        left ||= Date.now();
+        return;
+      }
+      const away = left ? Date.now() - left : 0;
+      left = 0;
+      if (away > RELOCK_MS) loadLockConfig().then((config) => isPasswordLocked(config) && setOpen(false), () => undefined);
+    });
+    return () => subscription.remove();
+  }, [hidden]);
+  if (open === null) return null;
+  if (!open) {
+    return (
+      <CollectionGate
+        onOpen={() => setOpen(true)}
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        }}
+      />
+    );
+  }
+  return <OpenCollection />;
+}
+
+function OpenCollection() {
   const colors = useColors();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();

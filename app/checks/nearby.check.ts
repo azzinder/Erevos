@@ -505,8 +505,10 @@ test('a phone with internet that carries for others says so to the phones beside
   const a = phone('A');
   const b = freshPhone('B');
   const asked: { url: string; bytes: Uint8Array }[] = [];
-  b.nearby.readForOthers = async (_own, url, _key, bytes) => {
+  const warnedAt: boolean[] = [];
+  b.nearby.readForOthers = async (_own, url, _key, bytes, warned) => {
     asked.push({ url, bytes });
+    warnedAt.push(warned);
     return Uint8Array.of(0, 0);
   };
   link('A', 'B');
@@ -520,14 +522,27 @@ test('a phone with internet that carries for others says so to the phones beside
   assert.deepEqual([...reply], [0, 0]);
   assert.equal(asked.length, 1);
   assert.equal(asked[0].url, 'wss://relay.example.org');
-  // Another relay than the one it uses itself: a stranger's server never learns its address. No at once.
+  // Another relay than the one it uses itself: a stranger's server never learns its address
+  // unasked. No at once, and the owner is asked, warned; once yes, the next ask goes, said to be warned.
   await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://strangers.example.net', undefined, Uint8Array.of(3, ...randomBytes(26)), 2000), NoWayError);
   assert.equal(asked.length, 1);
+  const owner: string[] = [];
+  b.nearby.askServe = async (_link, url) => {
+    owner.push(url);
+    return true;
+  };
+  await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://strangers.example.net', undefined, Uint8Array.of(3, ...randomBytes(26)), 2000), NoWayError);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(owner, ['wss://strangers.example.net']);
+  assert.deepEqual([...(await a.nearby.readThrough('ble-link-B', 'wss://strangers.example.net/', undefined, Uint8Array.of(3, ...randomBytes(26))))], [0, 0]);
+  assert.equal(asked.length, 2);
+  assert.equal(warnedAt.at(-1), true);
+  assert.equal(owner.length, 1, 'asked once for that phone and relay');
   // Its relay out of reach: it says it no longer reads for others.
   b.nearby.setOnline(false);
   assert.deepEqual(a.nearby.bridgeLinks(), []);
   await assert.rejects(a.nearby.readThrough('ble-link-B', 'wss://relay.example.org', undefined, Uint8Array.of(3, ...randomBytes(26)), 50), NoWayError);
-  assert.equal(asked.length, 1);
+  assert.equal(asked.length, 2);
 });
 
 test('a phone passes on only reads of one queue, to relays on the internet over TLS, so many a while', async () => {
@@ -613,6 +628,7 @@ test('the relay passes reads on for a phone nearby only on the relay this phone 
   const take = Uint8Array.of(3, ...randomBytes(26));
   await assert.rejects(read('wss://mine.example.org', 'wss://strangers.example.net', undefined, take), /not this phone/);
   await assert.rejects(read('', 'wss://mine.example.org', undefined, take), /not this phone/);
+  await assert.rejects(read('', 'wss://mine.example.org', undefined, take, true), /not this phone/);
   setThroughTor('messages');
   try {
     await assert.rejects(read('wss://mine.example.org', 'wss://mine.example.org/', undefined, take), /Tor/);

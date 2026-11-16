@@ -408,8 +408,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   Knowing the queue, it could take your messages before they reach you, so once your phone has internet again it moves
   to a new queue by itself and tells your contacts quietly. The answer holds for hidden chats too, so you are not
   asked twice about one phone. Never for a relay reached only through Tor. Your phone does the same for the phones
-  beside it while **Carry messages for others** is on, only from the relay it uses itself, and never while it goes
-  through Tor: no stranger can make it reach a server of his choosing.
+  beside it while **Carry messages for others** is on, never while it goes through Tor, and from a relay other than
+  its own only once you say yes, warned that this relay then sees your phone's internet address.
 
 **Why:** a packet does not say who it is for, so no one nearby can tell from it whose it is. Until your contact's
 phone answers on a link, your phone cannot tell which of the phones nearby is theirs either: so the short packets go to
@@ -3023,6 +3023,7 @@ The Collection is an encrypted place for your photos, files and folders, in ever
 
 - **Inside:** tabs across the top: **Photos** as a grid by month, **Videos**, **Music** and the other **Files** as lists, each with the folders that hold any of its files above it (**Files** the empty ones too). **+** takes a photo with the camera, which goes straight here and never to the gallery, brings in a file from the phone's files, up to 4 GB, encrypted as it is read with no copy first, or makes a new folder. Press and hold to choose several, to move, send or delete them; press and hold a folder to rename or delete it, which keeps its files.
 - **Encrypted:** each file is encrypted with a key of its own, in pieces named at random lying among the chats' pieces, so nothing on the phone tells a file of the Collection from a photo of a chat. Only the Collection's own catalogue, sealed as the chats are, says which is which. The Collection stays out of screenshots, and closes when the space locks.
+- **Asks again:** where the space has a password, the Collection asks for it each time it opens, and again once Erevos was away more than 30 seconds, before anything of it shows; a fingerprint or face works too where it unlocks Erevos. Wrong passwords count as on the lock screen. A hidden place's Collection asks nothing more, as hidden chats close as soon as Erevos is left.
 - **From a chat or another app:** press and hold a photo or file in a chat, then **Save to the Collection**: it is copied into the Collection of that chat's place. From another app's Share, **Send to** has the **Collection** first, and asks which folder; it goes in as it came, already encrypted, so it never lies unencrypted on the phone. It can be up to 4 GB; one larger than 100 MB can go only to the Collection, as a chat takes 100 MB at most.
 - **Out of the Collection:** a photo opens on the whole screen, to swipe and zoom, with **Send to a chat**, **Save to phone**, **Information** and **Delete**. Saving to the phone, or opening a file with another app, takes it out unencrypted, and Erevos says so first. Sending to a chat leaves the Collection's copy where it is. From a hidden place's Collection, files go only to the chats and groups of that hidden place, never to the space's, and the space's Collection never to a hidden place's. Swipe, or use the arrows, for the next photo or the one before; **Slideshow** at the top shows them one after the other, every 4 seconds, till a tap.
 - **From a chat:** **+** under the message field, then **Collection**, opens the Collection of that chat's place: tap the photos or files to send, then **Send**, and they go in that chat.

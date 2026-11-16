@@ -115,4 +115,9 @@ export const collectionText: Record<string, string> = {
   "Slideshow": "Apresentação",
   "Radio and TV lists": "Listas de rádio e TV",
   "What Erevos asks for Radio and TV: the search in Radio Browser, a playlist or TV list fetched by its link, and the channels’ logos.": "O que o Erevos pede para Rádio e TV: a busca no Radio Browser, uma playlist ou lista de TV buscada pelo link, e os logotipos dos canais.",
+  "Open the Collection": "Abrir a Coleção",
+  "Type the password that opens this space.": "Digite a senha que abre este espaço.",
+  "The Collection asks for the password that opens this space each time it opens.": "A Coleção pede a senha que abre este espaço toda vez que abre.",
+  "Type the password": "Digitar a senha",
+  "The password that opens this space": "A senha que abre este espaço",
 };

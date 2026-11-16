@@ -122,3 +122,23 @@ export async function turnOffBiometric(sealer: BiometricSealer): Promise<void> {
   await secureDelete(ENTRY);
   sealer.forget();
 }
+
+// Whether a fingerprint or face gives `key`, the key of the space open now: to ask again before
+// something of that space opens (the Collection). Never turns anything off, so a space whose
+// sealed key is the random one (any but the first) only ever says no, and the password is asked.
+// Throws BiometricError when the prompt was closed or Android said no.
+export async function confirmWithBiometric(sealer: BiometricSealer, prompt: BiometricPrompt, key: Uint8Array): Promise<boolean> {
+  const sealed = parse(await secureGet(ENTRY));
+  if (!sealed) return false;
+  let opened: Uint8Array;
+  try {
+    opened = fromBase64(await sealer.open(sealed, prompt));
+  } catch (e) {
+    if (e instanceof BiometricError && e.reason === 'invalidated') return false;
+    throw e;
+  }
+  if (opened.length !== key.length) return false;
+  let differ = 0;
+  for (let i = 0; i < key.length; i++) differ |= opened[i] ^ key[i];
+  return differ === 0;
+}

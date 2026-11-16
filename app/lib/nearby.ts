@@ -321,9 +321,15 @@ export class Nearby {
   private readonly asking = new Map<string, { link: string; done: (reply: Uint8Array | null) => void }>();
   private readonly goneListeners = new Set<(link: string) => void>();
   /** Passes a request of a phone nearby to its relay (readForOthers in lib/relay.ts), set while a space is open. */
-  readForOthers: ((own: string, url: string, key: Uint8Array | undefined, bytes: Uint8Array) => Promise<Uint8Array>) | null = null;
-  // The relay this phone reached at its last look, the only one it reads on for others.
+  readForOthers: ((own: string, url: string, key: Uint8Array | undefined, bytes: Uint8Array, warned: boolean) => Promise<Uint8Array>) | null = null;
+  // The relay this phone reached at its last look, the one it reads on for others unasked.
   private ownRelay = '';
+  // For another relay: the owner's answer for each link and relay, while linked, and whether a question shows.
+  private readonly servesOn = new Map<string, Map<string, boolean>>();
+  private serveAsking = false;
+  /** Asks the owner, warned that the relay sees this phone's internet address, whether to read on
+   *  another relay than its own for the phone on `link`. Set while a space is open. */
+  askServe: ((link: string, url: string) => Promise<boolean>) | null = null;
   private readonly bytesOf = new Map<string, { at: number; bytes: number }[]>();
   /** Which relays this phone carries packets of other phones to (isCarriable; checks with relays
    *  on this computer let any). */
@@ -355,6 +361,7 @@ export class Nearby {
       this.bridges.clear();
       this.askedOf.clear();
       this.bytesOf.clear();
+      this.servesOn.clear();
       for (const [, ask] of this.asking) ask.done(null);
       this.asking.clear();
       for (const item of this.items) {
@@ -439,6 +446,7 @@ export class Nearby {
   private lost(link: string) {
     this.links.delete(link);
     this.bridges.delete(link);
+    this.servesOn.delete(link);
     for (const gone of this.goneListeners) gone(link);
     for (const [id, ask] of this.asking) if (ask.link === link) {
       this.asking.delete(id);
@@ -915,7 +923,15 @@ export class Nearby {
     if (bytes.length <= 7 + k + length) return;
     const url = String.fromCharCode(...bytes.subarray(7 + k, 7 + k + length));
     const own = this.ownRelay;
-    if (!this.serves() || !RELAY_URL.test(url) || !this.carriable(url) || plainRelay(url) !== plainRelay(own)) return answer(null);
+    if (!this.serves() || !RELAY_URL.test(url) || !this.carriable(url)) return answer(null);
+    // Another relay than its own: only once the owner said yes, warned; asked once for the link and
+    // relay, never waited for: a no now, and the phone asks again with its next look.
+    const foreign = plainRelay(url) !== plainRelay(own);
+    if (foreign) {
+      const said = this.servesOn.get(link)?.get(plainRelay(url));
+      if (said === undefined) this.askToServe(link, url);
+      if (said !== true) return answer(null);
+    }
     const recent = (this.askedOf.get(link) ?? []).filter((at) => now - at < BRIDGE_WINDOW);
     const spent = (this.bytesOf.get(link) ?? []).filter((one) => now - one.at < BRIDGE_WINDOW);
     if (recent.length >= BRIDGE_ASKS || spent.reduce((sum, one) => sum + one.bytes, 0) >= BRIDGE_BYTES) return answer(null);
@@ -923,13 +939,31 @@ export class Nearby {
     this.askedOf.set(link, recent);
     let reply: Uint8Array | null = null;
     try {
-      reply = await read(own, url, k > 0 ? bytes.slice(5, 5 + k) : undefined, bytes.slice(7 + k + length));
+      reply = await read(own, url, k > 0 ? bytes.slice(5, 5 + k) : undefined, bytes.slice(7 + k + length), foreign);
     } catch {
       reply = null;
     }
     spent.push({ at: now, bytes: reply?.length ?? 0 });
     this.bytesOf.set(link, spent);
     answer(reply);
+  }
+
+  // Asks the owner whether to read on `url` for the phone on `link`, keeping the answer while linked.
+  private askToServe(link: string, url: string) {
+    const ask = this.askServe;
+    if (!ask || this.serveAsking) return;
+    this.serveAsking = true;
+    ask(link, url)
+      .catch(() => false)
+      .then((yes) => {
+        if (!this.links.has(link)) return;
+        const on = this.servesOn.get(link) ?? new Map<string, boolean>();
+        on.set(plainRelay(url), yes);
+        this.servesOn.set(link, on);
+      })
+      .finally(() => {
+        this.serveAsking = false;
+      });
   }
 
   // The answer of a phone nearby to what this one asked it, on the link it was asked on.
