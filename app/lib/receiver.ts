@@ -38,6 +38,7 @@ import {
   toHex,
   waitForAny,
   waitForMessage,
+  warmCallRelay,
   type Relay,
 } from './relay';
 import { readNearby } from './bridge';
@@ -602,6 +603,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     state.place = await placeNow();
     state.seen = released;
     if (state.place) void keepPush(state.place.own, state.place.queue);
+    // A call then starts without asking for the call relay first (lib/relay.ts callRelay).
+    if (state.place) warmCallRelay(state.place.own);
   }
   let place = state.place;
   if (!place) return nostrLook(state);

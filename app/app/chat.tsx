@@ -189,6 +189,7 @@ import {
   throughTor,
   ticketExpires,
   toHex,
+  warmCallRelay,
   type CallRelay,
   type HeldAt,
   type Mark as RelayMark,
@@ -2099,6 +2100,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // Taking messages goes straight to our relay; sending goes through the second relay if set.
     const own: Relay = { url, token: relayToken.trim() || undefined };
     let sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
+    // A call from here starts without asking for the call relay first (lib/relay.ts callRelay).
+    warmCallRelay(own);
     const recipient = fromHex(ownQueue.recipientHex);
     const ownSender = ownQueue.senderHex;
     let active = true;

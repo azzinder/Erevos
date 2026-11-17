@@ -2319,10 +2319,49 @@ export async function deleteChunk(session: RelaySession, id: Uint8Array, via?: s
 /** A call relay (TURN server) and credentials for it, as WebRTC takes them. */
 export type CallRelay = { urls: string[]; username: string; credential: string };
 
-/** Credentials for the call relay beside the relay, or null if it has none. They last hours, so
- *  they are fetched for each call. */
-export async function callRelay(relay: Relay): Promise<CallRelay | null> {
+// The call relay as last asked, for each relay and token: its credentials last hours (the relay's
+// LIFETIME, crates/erevos-relay/src/turn.rs, their username being when they end), so a call does
+// not wait for the relay to be asked first, which over a slow network took seconds on each phone,
+// the one called before it even rang. Kept while CALL_RELAY_LEFT is left of them; one with no end
+// to read, or a relay with none, for CALL_RELAY_KEEP.
+const CALL_RELAY_LEFT = 60 * 60_000;
+const CALL_RELAY_KEEP = 10 * 60_000;
+const callRelays = new Map<string, { relay: CallRelay | null; until: number }>();
+const callRelaysAsked = new Map<string, Promise<CallRelay | null>>();
+
+/** Until when a call relay as asked may be used for a call, milliseconds: an hour before its credentials end. */
+export function callRelayUntil(relay: CallRelay | null, now = Date.now()): number {
+  const ends = relay ? Number(/^\d{9,12}(?=$|:)/.exec(relay.username)?.[0] ?? NaN) * 1000 : NaN;
+  return Number.isFinite(ends) ? Math.min(ends - CALL_RELAY_LEFT, now + 24 * 60 * 60_000) : now + CALL_RELAY_KEEP;
+}
+
+/** Credentials for the call relay beside the relay, or null if it has none: as asked before while
+ *  they still last, else asked now (askCallRelay). */
+export function callRelay(relay: Relay, now = Date.now()): Promise<CallRelay | null> {
   // A lent place gets none.
+  if (isLentToken(relay.token)) return Promise.resolve(null);
+  const key = `${relay.url}\n${relay.token ?? ''}`;
+  const kept = callRelays.get(key);
+  if (kept && kept.until > now) return Promise.resolve(kept.relay);
+  const asking = callRelaysAsked.get(key);
+  if (asking) return asking;
+  const asked = askCallRelay(relay)
+    .then((got) => {
+      callRelays.set(key, { relay: got, until: callRelayUntil(got) });
+      return got;
+    })
+    .finally(() => callRelaysAsked.delete(key));
+  callRelaysAsked.set(key, asked);
+  return asked;
+}
+
+/** Asks the relay for its call relay now, ahead of a call (callRelay): nothing when it was asked already. */
+export function warmCallRelay(relay: Relay): void {
+  void callRelay(relay).catch(() => undefined);
+}
+
+/** Asks the relay for credentials for the call relay beside it, or null if it has none. */
+export async function askCallRelay(relay: Relay): Promise<CallRelay | null> {
   if (isLentToken(relay.token)) return null;
   const reply = await request(relay, Uint8Array.of(CALL_RELAY));
   if (reply[0] === NOT_FOUND) return null;

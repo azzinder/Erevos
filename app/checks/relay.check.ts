@@ -22,6 +22,7 @@ import {
   askRelayKey,
   BadRelayAddressError,
   callRelay,
+  callRelayUntil,
   canTellNewsAt,
   canTryLater,
   canWaitAt,
@@ -269,6 +270,18 @@ test('a relay hands out credentials for its call relay, and one without says so'
   assert.ok(Number(turn.username) > Date.now() / 1000 + 3600);
   assert.equal(turn.credential.length, 28);
   assert.equal(await callRelay({ url: near }), null);
+});
+
+test('the call relay as asked is kept while its credentials last, so a call does not wait to ask', { skip: !ready }, async () => {
+  const first = await callRelay({ url: far });
+  assert.ok(first);
+  // Asked again, it is the same, not asked anew: the credentials are the ones kept.
+  assert.equal(await callRelay({ url: far }), first);
+  // Until an hour before they end; one with no end to read, or none, for minutes.
+  const now = 1_000_000_000_000;
+  assert.equal(callRelayUntil({ urls: [], username: String(now / 1000 + 12 * 3600), credential: '' }, now), now + 11 * 3600_000);
+  assert.equal(callRelayUntil({ urls: [], username: 'someone', credential: '' }, now), now + 10 * 60_000);
+  assert.equal(callRelayUntil(null, now), now + 10 * 60_000);
 });
 
 test('a relay says its clock, and one from before it says nothing, not asked again for a while', { skip: !ready }, async () => {
