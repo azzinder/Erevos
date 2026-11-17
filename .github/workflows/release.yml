@@ -304,6 +304,9 @@ jobs:
 
       - name: Build the release APK
         working-directory: app/android
+        # It takes about 25 minutes. On 7.2.0-beta.2 the F-Droid build hung in packageRelease for
+        # 1 h 45 min with no error; stop it sooner so the release still comes out without it.
+        timeout-minutes: 50
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
