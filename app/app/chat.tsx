@@ -7436,7 +7436,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         {!selected ? (
           <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
             {/* At the top (#12): a name finds a contact below, a pasted link adds them. Hidden chats list no faces, so there it is for a link only. */}
-            {!newcomer ? (
+            {/* Not before the place is read: a phone with no relay would show this screen for a moment, then the newcomer's. */}
+            {loaded && !newcomer ? (
               <Row>
                 <Input
                   value={contactDraft}
@@ -7701,7 +7702,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 ) : null}
                 {relayShown ? relayFields() : null}
               </View>
-            ) : (
+            ) : !loaded ? null : (
               <>
                 {/* This phone's QR code on New chat itself, at once (#12): whoever scans it adds this phone,
                     and scanning theirs is the button under it. With a relay that lets it, the small
@@ -7761,7 +7762,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   ) : null}
                 </>
               ) : null}
-              {!newcomer && ownLink && canPairWithCode() ? <DetailRow title={t('Pair with a code')} onPress={() => setPairing(true)} /> : null}
+              {/* A phone with no relay yet pairs too: the phones meet on public Nostr relays and trade contact links. */}
+              {ownLink && canPairWithCode() ? <DetailRow title={t('Pair with a code')} onPress={() => setPairing(true)} /> : null}
               {HAS_LINKS && !hiddenKey ? (
                 <>
                   <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />

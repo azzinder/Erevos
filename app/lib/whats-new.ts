@@ -22,7 +22,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Pair with a code with no relay yet**: on a phone with no relay yet, **New chat** now has **Pair with a code** too, under your QR code, and opens straight on **Start with an invite** without first showing the screen of a phone with a relay. See [Chat through a relay](#relay)."),
+  ],
   underTheHood: [],
 };
 

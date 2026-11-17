@@ -16,6 +16,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Pair with a code with no relay yet**: on a phone with no relay yet, **New chat** now has **Pair with a code** too, under your QR code, and opens straight on **Start with an invite** without first showing the screen of a phone with a relay. See [Chat through a relay](#relay).":
+    "**Upari se kodom i bez relaya**: na telefonu još bez relaya, **Novi razgovor** sada ima i **Upari se kodom**, ispod tvog QR koda, i otvara se odmah na **Počni s pozivnicom**, a da prvo ne pokaže ekran telefona s relayem. Vidi [Chat through a relay](#relay).",
   "**The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found, or they were found but no relay sent their posts, or their posts came but could not be shown, and how each relay answered. Before, it said only that no public posts were found. See [Chats with other Nostr apps](#nostr-chats).":
     "**Kartica Javno kaže zašto ne prikazuje nijednu Nostr objavu**: da li lista ljudi koje pratite nije pronađena, da li su pronađeni ali nijedan relay nije poslao njihove objave, ili su objave stigle ali nisu mogle da se prikažu, i kako je odgovorio svaki relay. Ranije je govorila samo da nisu pronađene javne objave. Vidi [Razgovori s drugim Nostr aplikacijama](#nostr-chats).",
   "**A new computer links to the end**: a computer with no relay before linking now takes the phone's answer at once, so linking with the small code finishes by itself, and with the full code **They match** shows. Before, the phone waited for **They match** while the computer showed nothing more until Erevos started again. See [Linked devices](#devices).":
