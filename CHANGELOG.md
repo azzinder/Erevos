@@ -16,6 +16,8 @@ On main, not released yet:
 
 ### Under the hood
 
+- `cargo audit` passes again (`.cargo/audit.toml`): the five zip 1.3.1 advisories (RUSTSEC-2025-0168, RUSTSEC-2026-0367, -0368, -0369, -0429) are let through for now, since zip comes only from candle-core 0.9.1 for .npz and PyTorch files, which never call `extract()`, and speech and translation load only GGUF models checked by SHA-256. Taken out with the move to candle 0.11.
+
 ## 7.2.0-beta.2 (2026-11-17)
 
 ### For you
