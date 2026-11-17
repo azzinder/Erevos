@@ -1434,6 +1434,10 @@ appel manqué.
   l’autre personne dit oui ; si elle dit non, l’appel reste vocal.
 - **Changer de caméra :** **Retourner** passe à la caméra suivante. Sur un ordinateur, il ne s’affiche que s’il y a plus
   d’une caméra.
+- **Comment l'appel est relié :** maintenez un instant l'écran de l'appel pour voir quelle part du son de l'autre a été
+  perdue ou a dû être comblée, ce qui s'entend comme des coupures, combien de fois, le temps d'aller-retour, le chemin de
+  l'appel et le temps qu'il a fallu pour sonner et se connecter. Un toucher le ferme. C'est mesuré sur votre téléphone
+  seulement, et aide à trouver pourquoi un appel sonne mal.
 
 **Un appel vers un téléphone qui tarde à le recevoir :** quand son téléphone reçoit ton appel en retard, par exemple
 parce qu'il lit par Tor, **Appel…** reste affiché jusqu'à une minute et quart, et dès qu'il sonne là-bas, il sonne 45

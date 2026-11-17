@@ -1354,6 +1354,10 @@ trasera, y **Colgar**. Cada llamada deja una línea en el chat, como cuánto dur
   otra persona dice que sí; si dice que no, la llamada sigue siendo de voz.
 - **Cambiar de cámara:** **Girar** pasa a la siguiente cámara. En un ordenador solo aparece cuando hay más de una
   cámara.
+- **Cómo se conecta la llamada:** mantén pulsada un momento la pantalla de la llamada para ver cuánto sonido del otro
+  se perdió o hubo que rellenar, lo que se oye como cortes, cuántas veces pasó, el tiempo de ida y vuelta, el camino de la
+  llamada y cuánto tardó en sonar y en conectarse. Un toque lo cierra. Se mide solo en tu teléfono y ayuda a saber por
+  qué una llamada suena mal.
 
 **Una llamada a un teléfono que tarda en recibirla:** cuando su teléfono recibe tu llamada tarde, por ejemplo porque
 lee por Tor, **Llamando…** se ve hasta un minuto y cuarto, y en cuanto suena allí, suena durante 45 segundos desde

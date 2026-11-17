@@ -1312,6 +1312,10 @@ mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati s
   kaže da; ako kaže ne, poziv ostaje glasovni.
 - **Promijeniti kameru:** **Promijeni kameru** prelazi na sljedeću kameru. Na računaru se prikazuje samo kad postoji
   više od jedne kamere.
+- **Kako se poziv povezuje:** zadrži ekran poziva pritisnutim na trenutak da vidiš koliko je zvuka druge strane
+  izgubljeno ili moralo biti popunjeno, što se čuje kao prekidi, koliko puta se to desilo, vrijeme tamo i natrag, put
+  poziva i koliko je trebalo da zazvoni i da se poveže. Dodir ga zatvara. Mjeri se samo na tvom telefonu i pomaže da se
+  nađe zašto poziv loše zvuči.
 
 **Poziv na telefon koji ga sporo prima:** kad njihov telefon primi vaš poziv sa zakašnjenjem, na primjer zato što čita
 preko Tora, **Pozivanje…** se vidi do minut i četvrt, a čim tamo zazvoni, zvoni 45 sekundi od tog trenutka, da poziv

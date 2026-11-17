@@ -1449,6 +1449,10 @@ und **Auflegen**. Jeder Anruf hinterlässt eine Zeile im Chat, etwa wie lange er
   sobald die andere Person Ja sagt; sagt sie Nein, bleibt der Anruf ein Sprachanruf.
 - **Kamera wechseln:** **Wechseln** geht zur nächsten Kamera. Auf einem Computer erscheint es nur, wenn es mehr als eine
   Kamera gibt.
+- **Wie der Anruf verbunden ist:** Halte den Anrufbildschirm kurz gedrückt, um zu sehen, wie viel vom Ton der anderen
+  Seite verloren ging oder ergänzt werden musste, was als Lücken zu hören ist, wie oft das geschah, die Zeit hin und
+  zurück, den Weg des Anrufs und wie lange es bis zum Klingeln und zur Verbindung dauerte. Ein Tippen schließt es. Es wird
+  nur auf deinem Telefon gemessen und hilft herauszufinden, warum ein Anruf schlecht klingt.
 
 **Ein Anruf bei einem Telefon, das ihn langsam annimmt:** Nimmt ihr Telefon deinen Anruf spät entgegen, zum Beispiel
 weil es über Tor liest, steht **Ruft an…** bis zu eineinviertel Minuten da, und sobald es dort klingelt, klingelt es

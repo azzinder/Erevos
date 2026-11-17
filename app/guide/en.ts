@@ -1257,6 +1257,9 @@ a missed call.
 - **Add video to a voice call:** in an Erevos voice call, **Add video** turns your camera on once the other person says
   yes; if they say no, the call stays voice.
 - **Switch camera:** **Flip** moves to the next camera. On a computer it shows only when there is more than one camera.
+- **How the call connects:** hold the call screen down for a moment to see how much of their sound was lost or had to
+  be filled in, heard as gaps, how often that happened, the time there and back, the way the call goes, and how long it
+  took to ring and to connect. A tap closes it. It is measured on your phone only, and helps find why a call sounds bad.
 
 **A call to a phone that is slow to take it:** when their phone takes your call late, for example because it reads
 through Tor, **Calling…** shows for up to a minute and a quarter, and once it rings there it rings for 45 seconds from

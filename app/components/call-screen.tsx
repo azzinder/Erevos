@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Call } from '../lib/call';
+import { GAP_FILLED, readQuality, secondsBetween, type Quality, type SoundTotals } from '../lib/call-quality';
 import { callPermissions } from '../lib/call-permissions';
 import { callClock } from '../lib/calls';
 import { headsetIn, soundInHeadset, soundName, soundShort, useCallSound } from '../lib/call-sound';
@@ -83,6 +84,31 @@ export function CallScreen({ call, identity, name, encryption, notice, speaker, 
   const insets = useSafeAreaInsets();
   const [now, setNow] = useState(Date.now());
   const { state } = call;
+  // How the call connects (lib/call-quality.ts), shown while the screen was held down; and of the
+  // readings so far, how many had a gap in their sound.
+  const [details, setDetails] = useState(false);
+  const [quality, setQuality] = useState<Quality | null>(null);
+  const [gaps, setGaps] = useState(0);
+  const totals = useRef<SoundTotals | null>(null);
+
+  // Read every QUALITY_EVERY while connected, so the gaps are counted from the start.
+  useEffect(() => {
+    if (state !== 'connected') return;
+    let active = true;
+    const read = async () => {
+      const report = await call.stats();
+      if (!active || !report) return;
+      const got = readQuality(report, totals.current);
+      totals.current = got.totals ?? totals.current;
+      if (got.filled !== null && got.filled > GAP_FILLED) setGaps((n) => n + 1);
+      setQuality(got);
+    };
+    const timer = setInterval(() => void read().catch(() => undefined), QUALITY_EVERY);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [state]);
 
   // The time shown while connected.
   useEffect(() => {
@@ -129,6 +155,8 @@ export function CallScreen({ call, identity, name, encryption, notice, speaker, 
       {ours ? (
         <CallVideo key={`ours-${camera?.id ?? 1}`} stream={call.local!} mirror={mirror} style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]} />
       ) : null}
+      {/* Held down, the screen shows how the call connects; it says nothing of it otherwise. */}
+      <Pressable style={StyleSheet.absoluteFill} onLongPress={() => setDetails(true)} delayLongPress={800} accessible={false} />
       <View style={[styles.top, { paddingTop: insets.top + (theirs ? 16 : 72) }]} pointerEvents="none">
         {theirs ? null : <KeyFace identity={identity} name={name} size={112} />}
         <Text variant="title" color="#FFFFFF" style={styles.shadow} numberOfLines={1}>
@@ -148,6 +176,7 @@ export function CallScreen({ call, identity, name, encryption, notice, speaker, 
           </Text>
         ) : null}
       </View>
+      {details ? <CallDetails call={call} quality={quality} gaps={gaps} top={insets.top + 16} onClose={() => setDetails(false)} /> : null}
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
         {call.askingVideo ? (
           <View style={styles.asking}>
@@ -185,6 +214,46 @@ export function CallScreen({ call, identity, name, encryption, notice, speaker, 
         )}
       </View>
     </View>
+  );
+}
+
+/** How often how the call connects is read while it is connected, milliseconds. */
+export const QUALITY_EVERY = 2000;
+
+const shown = (n: number | null) => (n === null ? '–' : String(n));
+
+/** How the call connects, as last read (lib/call-quality.ts): a tap closes it. */
+function CallDetails({ call, quality, gaps, top, onClose }: { call: Call; quality: Quality | null; gaps: number; top: number; onClose: () => void }) {
+  const rang = call.outgoing ? secondsBetween(call.madeAt, call.ringingAt) : null;
+  const connected = secondsBetween(call.answeredAt, call.connectedAt);
+  const lines = [
+    ...(rang !== null ? [t('Rang after {n} s', { n: String(rang) })] : []),
+    ...(connected !== null ? [t('Connected {n} s after the answer', { n: String(connected) })] : []),
+    ...(quality
+      ? [
+          t('Sound lost: {n}%', { n: shown(quality.lost) }),
+          t('Sound filled in: {n}%', { n: shown(quality.filled) }),
+          t('Moments with gaps: {n}', { n: String(gaps) }),
+          t('Jitter: {n} ms', { n: shown(quality.jitter) }),
+          t('There and back: {n} ms', { n: shown(quality.rtt) }),
+          t('Way: {way}', { way: quality.way || '–' }),
+        ]
+      : [t('Not measured yet')]),
+  ];
+  return (
+    <Pressable style={[styles.details, { top }]} onPress={onClose} accessibilityRole="button" accessibilityHint={t('Tap to close')}>
+      <Text variant="body" color="#FFFFFF">
+        {t('How the call connects')}
+      </Text>
+      {lines.map((line) => (
+        <Text key={line} variant="caption" color="rgba(255,255,255,0.85)">
+          {line}
+        </Text>
+      ))}
+      <Text variant="caption" color="rgba(255,255,255,0.6)">
+        {t('Tap to close')}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -254,5 +323,6 @@ const styles = StyleSheet.create({
   buttons: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, paddingHorizontal: 16 },
   asking: { width: '100%', alignItems: 'center', gap: 10, marginBottom: 6 },
   row: { flexDirection: 'row', gap: 14 },
+  details: { position: 'absolute', left: 16, maxWidth: 320, padding: 14, gap: 4, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 3 },
   round: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
 });

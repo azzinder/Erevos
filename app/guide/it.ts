@@ -1362,6 +1362,10 @@ una chiamata persa.
   fotocamera quando l’altra persona dice sì; se dice no, la chiamata resta vocale.
 - **Cambiare fotocamera:** **Gira** passa alla fotocamera successiva. Su un computer compare solo se c’è più di una
   fotocamera.
+- **Come si collega la chiamata:** tieni premuto per un momento lo schermo della chiamata per vedere quanto audio
+  dell'altro si è perso o è stato ricostruito, che si sente come vuoti, quante volte è successo, il tempo di andata e
+  ritorno, il percorso della chiamata e quanto ci ha messo a squillare e a collegarsi. Un tocco lo chiude. Si misura solo
+  sul tuo telefono e aiuta a capire perché una chiamata si sente male.
 
 **Una chiamata a un telefono che la riceve in ritardo:** quando il suo telefono riceve la tua chiamata tardi, per
 esempio perché legge tramite Tor, **Chiamata in corso…** resta visibile fino a un minuto e un quarto, e appena squilla

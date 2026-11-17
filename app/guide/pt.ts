@@ -1349,6 +1349,10 @@ durou, ou uma chamada perdida.
 - **Adicionar vídeo a uma chamada de voz:** numa chamada de voz do Erevos, **Adicionar vídeo** liga a sua câmera quando
   a outra pessoa diz sim; se ela diz não, a chamada continua de voz.
 - **Trocar de câmera:** **Virar** passa para a câmera seguinte. Num computador só aparece quando há mais de uma câmera.
+- **Como a chamada se conecta:** segure a tela da chamada por um momento para ver quanto do som do outro se perdeu ou
+  precisou ser preenchido, o que se ouve como falhas, quantas vezes isso aconteceu, o tempo de ida e volta, o caminho da
+  chamada e quanto demorou para tocar e para conectar. Um toque fecha. É medido só no seu celular e ajuda a descobrir por
+  que uma chamada soa mal.
 
 **Uma chamada para um telefone que demora a recebê-la:** quando o telefone deles recebe a sua chamada tarde, por
 exemplo porque lê pelo Tor, **Chamando…** aparece por até um minuto e um quarto, e assim que toca lá, toca por 45

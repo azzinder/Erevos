@@ -126,6 +126,8 @@ export interface Connection {
   addIceCandidate?(candidate: { candidate: string; sdpMid: string }): Promise<void>;
   getSenders?(): Sender[];
   getTransceivers?(): Transceiver[];
+  /** What WebRTC measures of the connection (lib/call-quality.ts). */
+  getStats?(): Promise<{ forEach(each: (value: unknown) => void): void }>;
   /** Media with no track of ours on it: their picture, in a video call we are in without our camera. */
   addTransceiver?(kind: 'audio' | 'video', init: { direction: string }): unknown;
   close(): void;
@@ -411,6 +413,10 @@ export class Call {
   cameras = 0;
   /** When it connected, milliseconds, or 0. */
   connectedAt = 0;
+  /** When it was made or came; when their phone rang, ours; and when it was answered here, or their answer came: milliseconds, or 0 (lib/call-quality.ts). */
+  readonly madeAt = Date.now();
+  ringingAt = 0;
+  answeredAt = 0;
   private connection: Connection | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private readonly options: CallOptions;
@@ -468,6 +474,11 @@ export class Call {
     return call;
   }
 
+  /** What WebRTC measures of the connection now, or null with none (lib/call-quality.ts). */
+  async stats(): Promise<{ forEach(each: (value: unknown) => void): void } | null> {
+    return (await this.connection?.getStats?.().catch(() => null)) ?? null;
+  }
+
   /** Whether the call goes through a call relay, which sees this phone's internet address: not one straight between two phones on the same network. */
   get throughRelay(): boolean {
     return this.options.relay !== null;
@@ -490,6 +501,7 @@ export class Call {
    */
   async answer(video = this.video): Promise<void> {
     if (this.outgoing || this.state !== 'incoming') return;
+    this.answeredAt = Date.now();
     this.set('connecting');
     this.wait(CONNECT_MS, 'failed', true);
     this.videoWanted = video && !this.video;
@@ -538,10 +550,12 @@ export class Call {
   receive(signal: CallSignal): void {
     if (signal.id !== this.id || this.state === 'ended') return;
     if (signal.kind === 'ringing' && this.state === 'calling') {
+      this.ringingAt = Date.now();
       this.set('ringing');
       this.wait(RING_MS, 'missed', true);
     } else if (signal.kind === 'answer' && this.outgoing && (this.state === 'calling' || this.state === 'ringing')) {
       if (signal.reoffer) this.theyChange = true;
+      this.answeredAt = Date.now();
       this.set('connecting');
       this.wait(CONNECT_MS, 'failed', true);
       this.connection
