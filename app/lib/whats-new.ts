@@ -22,17 +22,22 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix)."),
-    mark("**A message's menu always opens**: holding a message, in a chat or a group, opens its menu every time; before, after you had been in another app, it could stop opening until Erevos was closed and opened again."),
-    mark("**New chat, made anew**: your QR code is on New chat as soon as it opens, with **Scan theirs** and **Share** under it; the field at the top finds a contact by name, or adds someone whose link you paste; and **No Erevos yet?** makes an invite, showing again one no one took yet instead of making another. On a new phone with no relay, New chat starts with **Start with an invite**. The small QR code is new each time and good once: the first to scan it is a contact at once, and anyone after, or with the link you share, writes a message request first. See [Chat through a relay](#relay)."),
-    mark("**A phone beside you brings your messages**: with no internet, an Erevos phone beside yours that has it, and carries for others, takes what waits for you on your relay and hands it over nearby, once you say yes to that phone. It learns your queue there, never what your messages say, and your phone moves to a new queue once it has internet again. Yours does the same for others while **Carry messages for others** is on, as it now is from the start. Never through Tor, and from another relay only once you say yes, warned it sees your address. See [Chat with a nearby phone](#nearby)."),
-    mark("**The Collection asks for your password**: where the space has a password, the Collection asks for it each time it opens, and again after Erevos was away more than 30 seconds; a fingerprint or face works too. See [Collection](#collection)."),
-  ],
+  forYou: [],
   underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.2.0-beta.2',
+    forYou: [
+      mark("**A Matrix chat read elsewhere is read here too**: an encrypted Matrix chat you read, or answered, in Element or on another device of yours no longer keeps its count of new messages here. See [Matrix](#matrix)."),
+      mark("**A message's menu always opens**: holding a message, in a chat or a group, opens its menu every time; before, after you had been in another app, it could stop opening until Erevos was closed and opened again."),
+      mark("**New chat, made anew**: your QR code is on New chat as soon as it opens, with **Scan theirs** and **Share** under it; the field at the top finds a contact by name, or adds someone whose link you paste; and **No Erevos yet?** makes an invite, showing again one no one took yet instead of making another. On a new phone with no relay, New chat starts with **Start with an invite**. The small QR code is new each time and good once: the first to scan it is a contact at once, and anyone after, or with the link you share, writes a message request first. See [Chat through a relay](#relay)."),
+      mark("**A phone beside you brings your messages**: with no internet, an Erevos phone beside yours that has it, and carries for others, takes what waits for you on your relay and hands it over nearby, once you say yes to that phone. It learns your queue there, never what your messages say, and your phone moves to a new queue once it has internet again. Yours does the same for others while **Carry messages for others** is on, as it now is from the start. Never through Tor, and from another relay only once you say yes, warned it sees your address. See [Chat with a nearby phone](#nearby)."),
+      mark("**The Collection asks for your password**: where the space has a password, the Collection asks for it each time it opens, and again after Erevos was away more than 30 seconds; a fingerprint or face works too. See [Collection](#collection)."),
+    ],
+    underTheHood: [],
+  },
   {
     version: '7.2.0-beta.1',
     forYou: [
