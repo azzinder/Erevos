@@ -153,4 +153,6 @@ export const phone: Record<string, string> = {
   "Copy the number": "Copia il numero",
   "Open the contact": "Apri il contatto",
   "No contact has this number.": "Nessun contatto ha questo numero.",
+  'One more': "Un altro",
+  '{n} more': "Altri {n}",
 };

@@ -2555,6 +2555,9 @@ that title, and tapping it opens the Phone's **Settings**.
   show instead of the tabs, each number on a line of its own. Tap one to call it, or hold it down to put it on the
   keypad. It looks in the phone's contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos
   contacts with a number; never in hidden chats.
+- **Contacts as you dial:** as you type on the **Keypad**, a contact it finds shows over the keys: one whose number holds
+  the digits typed, or whose name starts with them on the keys' letters, as 2 for ABC (and ΑΒΓ). Tap it to call, or hold it
+  down to put its number on the keypad; beside it, **2 more** (say) lists the others found.
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
   Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
   number of a contact kept only in Erevos; that of a contact of open hidden chats, only while they are open. It shows over the

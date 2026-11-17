@@ -305,6 +305,46 @@ export function toDial(cards: (Fields & { key: string; name: string })[], query:
   return rows;
 }
 
+// The keys of a phone's keypad for each letter, Latin and Greek, as a dialer finds a name by them (T9).
+const KEY_LETTERS: [string, string][] = [
+  ['2', 'abcαβγ'],
+  ['3', 'defδεζ'],
+  ['4', 'ghiηθι'],
+  ['5', 'jklκλμ'],
+  ['6', 'mnoνξο'],
+  ['7', 'pqrsπρσ'],
+  ['8', 'tuvτυφ'],
+  ['9', 'wxyzχψω'],
+];
+const KEY_OF = new Map<string, string>(KEY_LETTERS.flatMap(([key, letters]) => [...letters].map((l): [string, string] => [l, key])));
+
+/** A word as typed on a keypad: each letter its key, a digit itself, anything else nothing. */
+export function keysOf(word: string): string {
+  return [...plain(word)].map((c) => (/\d/.test(c) ? c : (KEY_OF.get(c) ?? ''))).join('');
+}
+
+/**
+ * The numbers of the contacts (`cards`) that what is typed on the keypad (`typed`) finds, as a
+ * dialer shows them over its keys: one whose number holds those digits, then one with a word of its
+ * name that starts with them on the keypad's letters (T9), Latin or Greek. `most` at most.
+ */
+export function toDialKeys(cards: (Fields & { key: string; name: string })[], typed: string, most = 3): DialRow[] {
+  const keys = digits(typed);
+  if (!keys) return [];
+  const byNumber: DialRow[] = [];
+  const byName: DialRow[] = [];
+  for (const card of cards) {
+    const phones = card.phones.filter((p, i) => digits(p.value) && !card.phones.slice(0, i).some((q) => sameNumber(q.value, p.value)));
+    if (phones.length === 0) continue;
+    const row = (phone: Fields['phones'][number], n: number): DialRow => ({ key: `${card.key}:${n}`, name: card.name, kind: kindLabel(phone), number: phone.value });
+    const holding = phones.findIndex((p) => digits(p.value).includes(keys));
+    if (holding >= 0) byNumber.push(row(phones[holding], holding + 1));
+    else if (byName.length < most && card.name.split(/\s+/).some((word) => keysOf(word).startsWith(keys))) byName.push(row(phones[0], 1));
+    if (byNumber.length >= most) break;
+  }
+  return [...byNumber, ...byName].slice(0, most);
+}
+
 /** A name as compared: its words in any order, without case or accents. */
 function nameKey(name: string): string {
   return plain(name).split(/\s+/).filter((w) => /\p{L}/u.test(w)).sort().join(' ');

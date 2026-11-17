@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { ASK_MS, Call, callNow, connectionConfig, currentCall, candidateFits, capVideo, RELAY_VIDEO_BITRATE, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, remoteSdp, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { ASK_MS, Call, describedSdp, theirStream, GATHER_MS, RELAYED_GRACE_MS, callNow, connectionConfig, currentCall, candidateFits, capVideo, RELAY_VIDEO_BITRATE, isLocalAddress, localOnlySdp, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, remoteSdp, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { FakeConnection, fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -713,4 +713,50 @@ test('a camera through the call relay is held to 1 Mbps; sound, a direct call an
   assert.equal(lower.made.kept?.encodings?.[0]?.maxBitrate, 300_000);
   await capVideo({}, video, true);
   await capVideo({ getParameters: () => { throw new Error('no'); }, setParameters: async () => undefined }, video, true);
+});
+
+test('through a call relay, the description goes soon after its first address relayed over UDP', async () => {
+  const listeners = new Map<string, ((event?: unknown) => void)[]>();
+  const connection = {
+    iceGatheringState: 'gathering',
+    connectionState: 'new',
+    localDescription: { sdp: 'v=0\r\na=candidate:1 1 udp 1 203.0.113.9 50001 typ relay\r\n' },
+    addEventListener(type: string, listener: (event?: unknown) => void) {
+      listeners.set(type, [...(listeners.get(type) ?? []), listener]);
+    },
+  } as unknown as Parameters<typeof describedSdp>[0];
+  const began = Date.now();
+  const sdp = describedSdp(connection);
+  // One over TCP alone does not end the wait; one over UDP does, a moment later.
+  listeners.get('icecandidate')!.forEach((l) => l({ candidate: { candidate: 'candidate:2 1 tcp 1 203.0.113.9 3478 typ relay' } }));
+  listeners.get('icecandidate')!.forEach((l) => l({ candidate: { candidate: 'candidate:1 1 udp 1 203.0.113.9 50001 typ relay' } }));
+  assert.match(await sdp, /typ relay/);
+  assert.ok(Date.now() - began < GATHER_MS / 2 && Date.now() - began >= RELAYED_GRACE_MS - 50);
+  // Direct on the same network, it waits for every address as before: none of this is listened to.
+  const direct = new Map<string, unknown[]>();
+  void describedSdp({ ...connection, addEventListener: (type: string, l: unknown) => direct.set(type, [l]) } as typeof connection, true).catch(() => undefined);
+  assert.equal(direct.has('icecandidate'), false);
+});
+
+test('their picture is not put aside by their sound coming in a stream of its own', () => {
+  const sound = new FakeTrack('audio');
+  const picture = new FakeTrack('video');
+  const heard = new FakeStream([sound]);
+  const seen = new FakeStream([picture]);
+  // The picture after the sound: its stream is shown, with their sound in it.
+  const first = theirStream(theirStream(null, heard, sound), seen, picture);
+  assert.equal(first, seen);
+  assert.deepEqual(first.getVideoTracks(), [picture]);
+  assert.equal(first.getAudioTracks().length, 1);
+  // The sound after the picture: the picture's stream stays, and takes the sound.
+  const picture2 = new FakeTrack('video');
+  const sound2 = new FakeTrack('audio');
+  const seen2 = new FakeStream([picture2]);
+  const after = theirStream(theirStream(null, seen2, picture2), new FakeStream([sound2]), sound2);
+  assert.equal(after, seen2);
+  assert.equal(after.getAudioTracks().length, 1);
+  // A track said with a stream that does not hold it yet joins it.
+  const late = new FakeTrack('video');
+  const both = new FakeStream([new FakeTrack('audio')]);
+  assert.equal(theirStream(null, both, late).getVideoTracks().length, 1);
 });

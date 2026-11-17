@@ -2752,6 +2752,9 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   aparecem no lugar das abas, cada número numa linha própria. Toque num para ligar, ou segure-o para pô-lo no
   teclado. Procura nos contatos do celular e, com o Erevos desbloqueado, nos guardados só no Erevos e nos seus
   contatos do Erevos com número; nunca nas conversas ocultas.
+- **Contatos ao discar:** enquanto você digita no **Teclado**, um contato que ele encontra aparece acima das teclas: um
+  cujo número contém os dígitos digitados, ou cujo nome começa com eles nas letras das teclas, como 2 para ABC (e ΑΒΓ).
+  Toque nele para ligar, ou segure para pôr o número dele no teclado; **mais**, ao lado, lista os outros encontrados.
 - **A tela de chamada:** quem liga, ou para quem você liga, com o nome e a foto que os contatos do seu celular dão a
   essa pessoa; enquanto o Erevos está desbloqueado, um número vinculado a um dos seus contatos do Erevos mostra o nome
   que você deu a ele, e o número de um contato guardado só no Erevos também; o de um contato de conversas ocultas

@@ -14,7 +14,7 @@ import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { cardHref, dialCards, isContactNumber, type Card as ContactCard } from '../lib/contact-book';
-import { addToContactHref, newContactHref, toDial, type Findable } from '../lib/contacts';
+import { addToContactHref, newContactHref, toDial, toDialKeys, type DialRow, type Findable } from '../lib/contacts';
 import { press, tap } from '../lib/haptics';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
@@ -199,6 +199,14 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     if (searching) readDialable();
     else setSearchNote('');
   }, [searching, readDialable]);
+  // The contacts what is typed on the keypad finds, by number or by name on the keys' letters (T9),
+  // shown over the keys as a dialer does: the first, and the others in a list.
+  const keyHits = useMemo(() => (dialable && number ? toDialKeys(dialable, number, KEY_HITS) : []), [dialable, number]);
+  const [allHits, setAllHits] = useState(false);
+  // Read as the keypad shows, and anew each time it does, so a contact added meanwhile is found.
+  useEffect(() => {
+    if (tab === 'keypad' && !searching) readDialable();
+  }, [tab, readDialable]);
 
   useEffect(() => {
     if (typeof params.number !== 'string') return;
@@ -313,7 +321,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   // (down to 70%); below that the keys scroll under the number, kept at their end so Call shows,
   // and never run over the card and tabs.
   const simRow = accounts.length >= 2 || (status?.slots ?? 0) >= 2;
-  const sized = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0);
+  const sized = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0, HIT_LINE);
   // Heights as laid out, without the fractions of a pixel that rounding to the screen's pixels
   // moves back and forth: those would size the keys again, and lay them out again, for ever.
   const measured = (set: (change: (old: number) => number) => void) => (event: LayoutChangeEvent) => {
@@ -518,6 +526,18 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                   </Text>
                 </Pressable>
               </View>
+              {/* Always this high, so the keys do not move as a contact is found or no longer. */}
+              <View style={styles.hitLine}>
+                {keyHits[0] ? (
+                  <HitRow
+                    row={keyHits[0]}
+                    onCall={(to) => void call(to)}
+                    onKeypad={(to) => setNumber(dialNumber(to))}
+                    more={keyHits.length - 1}
+                    onMore={() => setAllHits(true)}
+                  />
+                ) : null}
+              </View>
               <ScrollView
                 ref={keypad}
                 style={styles.keysScroll}
@@ -623,6 +643,22 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
         )}
       </Sheet>
 
+      <Sheet visible={allHits && keyHits.length > 0} onClose={() => setAllHits(false)} title={number}>
+        {keyHits.map((row) => (
+          <HitRow
+            key={row.key}
+            row={row}
+            onCall={(to) => {
+              setAllHits(false);
+              void call(to);
+            }}
+            onKeypad={(to) => {
+              setAllHits(false);
+              setNumber(dialNumber(to));
+            }}
+          />
+        ))}
+      </Sheet>
       <Sheet visible={more} onClose={() => setMore(false)} title={number}>
         {locked || !textable(number) ? null : (
           <>
@@ -1277,12 +1313,15 @@ const KEY_HEIGHT = 64;
 const CALL_SIZE = 76;
 const CHIP_HEIGHT = 38;
 const NOTE_LINE = 20;
+// The line over the keys for a contact what is typed finds, and how many it finds at most.
+const HIT_LINE = 44;
+const KEY_HITS = 20;
 // The erase button beside the number is never smaller.
 const ERASE = 44;
 
-function keypadSizes(room: number, sims: number, note: number) {
-  const parts = 6 + (sims > 0 ? 1 : 0) + (note > 0 ? 1 : 0);
-  const fixed = space.sm + (parts - 1) * space.sm + space.sm + sims + note;
+function keypadSizes(room: number, sims: number, note: number, hits = 0) {
+  const parts = 6 + (sims > 0 ? 1 : 0) + (note > 0 ? 1 : 0) + (hits > 0 ? 1 : 0);
+  const fixed = space.sm + (parts - 1) * space.sm + space.sm + sims + note + hits;
   const fit = (top: number) => Math.min(1, Math.max(0.7, top));
   let scale = room > 0 ? fit((room - fixed) / (NUMBER_LINE + 4 * KEY_HEIGHT + CALL_SIZE)) : 1;
   // A number line at its least leaves the keys and Call the rest.
@@ -1298,6 +1337,40 @@ function keypadSizes(room: number, sims: number, note: number) {
     plus: { fontSize: Math.round(13 * scale), bottom: Math.max(2, Math.round(4 * scale)) },
     callButton: { width: call, height: call, borderRadius: call / 2 },
   };
+}
+
+// A contact what is typed on the keypad found: called at a tap, put on the keypad held down; `more`,
+// how many others it found, opens them.
+function HitRow({ row, onCall, onKeypad, more = 0, onMore }: { row: DialRow; onCall: (to: string) => void; onKeypad: (to: string) => void; more?: number; onMore?: () => void }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <View style={styles.hitRow}>
+      <Pressable
+        onPress={() => {
+          tap();
+          onCall(row.number);
+        }}
+        onLongPress={() => {
+          press();
+          onKeypad(row.number);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('Call {name}', { name: `${row.name}, ${row.kind}, ${row.number}` })}
+        style={({ pressed }) => [styles.hitMain, pressed && styles.pressed]}
+      >
+        <Face name={row.name} photo="" size={32} />
+        <View style={styles.rowBody}>
+          <Text variant="bodyStrong" numberOfLines={1}>
+            {row.name}
+          </Text>
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {`${row.kind} · ${row.number}`}
+          </Text>
+        </View>
+      </Pressable>
+      {more > 0 && onMore ? <TextButton title={plural(more, 'One more', '{n} more')} onPress={onMore} /> : null}
+    </View>
+  );
 }
 
 // A contact's photo, or the first letter of the name, or the phone's sign for a bare number.
@@ -1443,6 +1516,23 @@ const makeStyles = (colors: Colors) =>
     },
     keysColumn: {
       gap: space.sm,
+    },
+    hitLine: {
+      height: HIT_LINE,
+      justifyContent: 'center',
+    },
+    hitRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    hitMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      borderRadius: radius.md,
+      paddingHorizontal: space.xs,
     },
     numberLine: {
       flexDirection: 'row',

@@ -152,4 +152,6 @@ export const phone: Record<string, string> = {
   "Copy the number": "Αντιγραφή του αριθμού",
   "Open the contact": "Άνοιγμα της επαφής",
   "No contact has this number.": "Καμία επαφή δεν έχει αυτόν τον αριθμό.",
+  'One more': "Ακόμα μία",
+  '{n} more': "Ακόμα {n}",
 };

@@ -8,6 +8,8 @@ import { currentSpace } from '../lock/keys';
 import { loadBatteryMode, onBatteryMode } from './battery-mode';
 import { othersCarried, ownCarried } from './carried-store';
 import { choose } from './alert';
+import { currentCall } from './call';
+import { onCallChange } from './calls';
 import { forgetBridges, setBridgeAsk } from './bridge';
 import { openHiddenPlace } from './hidden-contacts';
 import { t } from './i18n';
@@ -88,7 +90,16 @@ export function startNearbyLinks(): () => void {
   ];
   // A contact heard nearby, or a LoRa radio linked: what waits for them may go now (lib/waiting.ts).
   const stopWatching = nearby.onChange(nearbyChanged);
-  setLinksQuiet(AppState.currentState !== 'active');
+  // Quieter in the background, and during a call through the call relay too: looking for phones
+  // nearby with Wi-Fi Aware, Wi-Fi Direct and Bluetooth takes the phone's Wi-Fi off its network for
+  // moments, which a call's sound heard as gaps. A call direct on the same network keeps them as
+  // they are, as it may need them.
+  const calm = () => {
+    const call = currentCall();
+    setLinksQuiet(AppState.currentState !== 'active' || (call !== null && call.state === 'connected' && call.throughRelay));
+  };
+  calm();
+  const stopCalls = onCallChange(calm);
   // With the battery mode Also nearby (or more), the radios are off while Erevos is in the
   // background (lib/battery-mode.ts), and start again as it shows.
   let paused = false;
@@ -104,7 +115,7 @@ export function startNearbyLinks(): () => void {
     if (active && !paused) startLinks({ lan, direct, aware });
   };
   const quiet = AppState.addEventListener('change', (state) => {
-    setLinksQuiet(state !== 'active');
+    calm();
     void follow();
   });
   const stopBattery = onBatteryMode(() => void follow());
@@ -128,6 +139,7 @@ export function startNearbyLinks(): () => void {
     subscriptions.forEach((subscription) => subscription.remove());
     stopWatching();
     quiet.remove();
+    stopCalls();
     stopBattery();
     setLinksQuiet(false);
     stopNearby();

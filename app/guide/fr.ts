@@ -2921,6 +2921,10 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   l’appeler, ou appuie longuement pour le mettre sur le clavier. La recherche regarde dans les contacts du téléphone et,
   avec Erevos déverrouillé, dans ceux gardés seulement dans Erevos et tes contacts Erevos qui ont un numéro ; jamais
   dans les discussions masquées.
+- **Des contacts en composant :** pendant que tu tapes sur le **Clavier**, un contact qu’il trouve s’affiche au-dessus
+  des touches : un dont le numéro contient les chiffres tapés, ou dont le nom commence par eux sur les lettres des
+  touches, comme 2 pour ABC (et ΑΒΓ). Touche-le pour appeler, ou maintiens-le pour mettre son numéro sur le clavier ;
+  **de plus**, à côté, liste les autres trouvés.
 - **L’écran d’appel :** qui appelle, ou qui tu appelles, avec le nom et la photo que les contacts de ton téléphone lui
   donnent ; tant qu’Erevos est déverrouillé, un numéro associé à l’un de tes contacts Erevos montre le nom que tu lui as
   donné, de même que le numéro d’un contact gardé seulement dans Erevos ; celui d’un contact des discussions masquées

@@ -2774,6 +2774,10 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
   contactos con número aparecen en lugar de las pestañas, cada número en una línea propia. Toca uno para llamarlo, o
   mantenlo pulsado para ponerlo en el teclado. Busca en los contactos del teléfono y, con Erevos desbloqueado, en los
   guardados solo en Erevos y en tus contactos de Erevos con número; nunca en los chats ocultos.
+- **Contactos al marcar:** mientras tecleas en el **Teclado**, un contacto que encuentra aparece sobre las teclas: uno
+  cuyo número contiene los dígitos tecleados, o cuyo nombre empieza con ellos en las letras de las teclas, como 2 para
+  ABC (y ΑΒΓ). Tócalo para llamar, o mantenlo pulsado para poner su número en el teclado; **más**, a su lado, muestra
+  los demás encontrados.
 - **La pantalla de llamada:** quién llama, o a quién llamas, con el nombre y la foto que le dan los contactos de tu
   teléfono; mientras Erevos está desbloqueado, un número vinculado a uno de tus contactos de Erevos muestra el nombre
   que le diste, y lo mismo el número de un contacto guardado solo en Erevos; el de un contacto de chats ocultos

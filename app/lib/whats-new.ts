@@ -23,6 +23,8 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Calls start sooner and sound steadier**: a call through the call relay no longer waits up to 5 seconds on each phone for every way to the relay, only for the first that works; while it goes on, Erevos looks for phones nearby less often, which took the phone's Wi-Fi away for moments and made gaps in the sound; and in a video call, their picture is no longer put aside when their sound came apart from it. See [Chat through a relay](#relay)."),
+    mark("**Contacts as you dial**: on the Phone's **Keypad**, a contact whose number holds the digits you type, or whose name starts with them on the keys' letters (2 for ABC and ΑΒΓ), shows over the keys: tap it to call. See [Phone](#phone)."),
     mark("**Chats open at once**: a chat no longer waits, showing your contact as encrypted, for Erevos to finish what it was doing with the relay in the background; it is ready to use as it opens, and holding a message opens its menu from the start. See [Chat through a relay](#relay)."),
     mark("**Pair with a code with no relay yet**: on a phone with no relay yet, **New chat** now has **Pair with a code** too, under your QR code, and opens straight on **Start with an invite** without first showing the screen of a phone with a relay. See [Chat through a relay](#relay)."),
   ],

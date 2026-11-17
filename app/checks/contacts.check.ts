@@ -40,6 +40,8 @@ import {
   searchWords,
   splitName,
   toDial,
+  toDialKeys,
+  keysOf,
   turns,
   typeOf,
   whenText,
@@ -448,4 +450,27 @@ test('when a line of history was', () => {
   assert.equal(whenText(new Date(2026, 9, 19, 9, 5).getTime(), now), '09:05');
   assert.equal(whenText(new Date(2026, 2, 4, 9, 5).getTime(), now), '4/3');
   assert.equal(whenText(new Date(2025, 11, 31, 9, 5).getTime(), now), '31/12/2025');
+});
+
+test("the Phone's keypad finds contacts by the digits of a number, then by a name on the keys' letters", () => {
+  const cards = [
+    { ...EMPTY_FIELDS, key: 'a', name: 'Anna Keller', phones: [{ value: '+49 151 2345 6789', kind: 'mobile' as const, label: '' }] },
+    { ...EMPTY_FIELDS, key: 'b', name: 'Μαρία Παπαδοπούλου', phones: [{ value: '+30 691 234 5678', kind: 'mobile' as const, label: '' }, { value: '+30 691 234 5678', kind: 'home' as const, label: '' }] },
+    { ...EMPTY_FIELDS, key: 'c', name: 'Νίκος', phones: [] },
+    { ...EMPTY_FIELDS, key: 'd', name: 'Ben Ott', phones: [{ value: '210 555 0101', kind: 'work' as const, label: '' }] },
+  ];
+  assert.equal(keysOf('Anna'), '2662');
+  assert.equal(keysOf('Μαρία'), '52742');
+  assert.equal(keysOf('Ünal 7'), '86257');
+  assert.deepEqual(toDialKeys(cards, ''), []);
+  // 2345 is in Anna's and Maria's numbers; nothing by name comes before them.
+  assert.deepEqual(toDialKeys(cards, '2345').map((row) => row.key), ['a:1', 'b:1']);
+  // 527 is Μαρ on the keys; 236 is Ben, and Anna's number holds no 527.
+  assert.deepEqual(toDialKeys(cards, '527').map((row) => row.name), ['Μαρία Παπαδοπούλου']);
+  assert.deepEqual(toDialKeys(cards, '236').map((row) => row.key), ['d:1']);
+  // Οtt by its family name too; a number found comes first all the same.
+  assert.deepEqual(toDialKeys(cards, '688').map((row) => row.key), ['d:1']);
+  assert.deepEqual(toDialKeys(cards, '2', 2).length, 2);
+  // Νίκος has no number to call.
+  assert.deepEqual(toDialKeys(cards, '6456'), []);
 });

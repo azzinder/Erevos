@@ -33,6 +33,11 @@ export const CONNECT_MS = 30_000;
 export const RECONNECT_MS = 10_000;
 /** How long to wait for the addresses to try before sending what there is, milliseconds. */
 export const GATHER_MS = 5_000;
+/** Through a call relay, how long after its first relayed address over UDP the others still may come:
+ *  only relayed addresses are tried, so that one is enough to start, and waiting for every one (the
+ *  relay over TCP, say, where a network holds it back) kept a call from starting for up to GATHER_MS
+ *  on each side. */
+export const RELAYED_GRACE_MS = 300;
 /** An offer older than this when it comes is a missed call, not one that rings, milliseconds. */
 export const OFFER_FRESH_MS = 60_000;
 /**
@@ -116,6 +121,7 @@ export interface Connection {
   setRemoteDescription(description: Description): Promise<void>;
   addEventListener(type: 'icegatheringstatechange' | 'connectionstatechange', listener: () => void): void;
   addEventListener(type: 'track', listener: (event: { streams: readonly Stream[]; track?: Track }) => void): void;
+  addEventListener(type: 'icecandidate', listener: (event: { candidate?: { candidate: string } | null }) => void): void;
   /** One more address of theirs to try, as XMPP's calls send them one at a time (lib/xmpp-calls.ts). */
   addIceCandidate?(candidate: { candidate: string; sdpMid: string }): Promise<void>;
   getSenders?(): Sender[];
@@ -238,6 +244,22 @@ export async function capVideo(sender: unknown, track: Track, throughRelay: bool
   }
 }
 
+const holds = (stream: Stream, track: Track) => stream.getTracks().some((t) => t === track || (t.id !== undefined && t.id === track.id));
+
+/** The stream their picture and sound show from, as a track of theirs comes in `came`: never one
+ *  with their sound only in place of one with their picture, whichever came first, as a phone may say
+ *  them in streams of their own; the track said with it joins it if it is not in it yet. */
+export function theirStream(shown: Stream | null, came: Stream, track?: Track): Stream {
+  if (track && !holds(came, track)) came.addTrack?.(track);
+  if (!shown || shown === came || came.getVideoTracks().length > 0 || shown.getVideoTracks().length === 0) {
+    // Their sound, when it came in a stream of its own before: in this one too.
+    if (shown && shown !== came) for (const t of shown.getTracks()) if (t.kind === 'audio' && !holds(came, t)) came.addTrack?.(t);
+    return came;
+  }
+  for (const t of came.getTracks()) if (!holds(shown, t)) shown.addTrack?.(t);
+  return shown;
+}
+
 /** The connection set-up for a call: through the call relay only, or direct on the same network. */
 export function connectionConfig(relay: CallRelay | null): ConnectionConfig {
   return relay
@@ -304,9 +326,20 @@ export function describedSdp(connection: Connection, direct = false): Promise<st
       if (!sdp || sdp.length > MAX_SDP) reject(new Error('No session description to send.'));
       else resolve(sdp);
     };
-    const timer = setTimeout(done, GATHER_MS);
+    let timer = setTimeout(done, GATHER_MS);
     if (connection.iceGatheringState === 'complete') done();
-    else connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
+    else {
+      connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
+      // Through a call relay: soon after the first address it relays over UDP, not after every one.
+      let soon = false;
+      if (!direct)
+        connection.addEventListener('icecandidate', ({ candidate }) => {
+          if (soon || !candidate || !/ udp .* typ relay/i.test(candidate.candidate)) return;
+          soon = true;
+          clearTimeout(timer);
+          timer = setTimeout(done, RELAYED_GRACE_MS);
+        });
+    }
   });
 }
 
@@ -851,7 +884,7 @@ export class Call {
     connection.addEventListener('track', ({ streams, track }) => {
       // Their video, added to a voice call, comes in the stream of its sound: shown anew all the same.
       if (streams[0]) {
-        this.remote = streams[0];
+        this.remote = theirStream(this.remote, streams[0], track);
         this.changed();
       } else if (track && this.remote && !this.remote.getTracks().includes(track)) {
         // One said with no stream of its own (from an answer that kept video both ways): with their sound's.
