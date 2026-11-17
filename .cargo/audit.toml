@@ -36,4 +36,8 @@ ignore = [
     "RUSTSEC-2026-0368",
     "RUSTSEC-2026-0369",
     "RUSTSEC-2026-0429",
+    # Two more on 2026-11-17, same reason: ZipStreamReader (candle uses only ZipArchive) and AES
+    # entries (no encrypted zip is ever opened; candle reads no zip at all for GGUF).
+    "RUSTSEC-2026-0545",
+    "RUSTSEC-2026-0548",
 ]
