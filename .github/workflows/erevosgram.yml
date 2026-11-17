@@ -143,6 +143,9 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           EREVOS_TG_API_ID: ${{ secrets.EREVOS_TG_API_ID }}
           EREVOS_TG_API_HASH: ${{ secrets.EREVOS_TG_API_HASH }}
+        # A whole Erevos+ build takes about an hour. A Gradle build that hangs (as the F-Droid APK
+        # of Erevos 7.2.0-beta.2 did, in packageRelease) stops here instead of at the job's 180 minutes.
+        timeout-minutes: 90
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: Check the APK
