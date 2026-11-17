@@ -255,15 +255,16 @@ t('playlists are kept sealed with the place, in their order, and a deleted one l
   assert.notEqual(again.name, 'Night');
   await addToPlaylist(p, night.id, [a.id, c.id]);
   await setPlaylistItems(p, night.id, moved([b.id, a.id, c.id], 2, -1));
-  await renamePlaylist(p, night.id, 'Late');
+  await renamePlaylist(p, night.id, 'Late night');
   let col = await loadCollection(p);
   const late = col.playlists!.find((l) => l.id === night.id)!;
-  assert.equal(late.name, 'Late');
+  assert.equal(late.name, 'Late night');
   assert.deepEqual(late.items, [b.id, c.id, a.id]);
   // Only its music plays, in its order.
   assert.deepEqual(playlistItems(col, late).map((i) => i.id), [b.id, a.id]);
-  // Not readable in what is kept, nor seen with another key.
-  for (const text of files.values()) assert.ok(!text.includes('Late'));
+  // Not readable in what is kept, nor seen with another key. The name has a space, which encrypted
+  // base64 never holds, so a few letters turning up in it by chance cannot fail this.
+  for (const text of files.values()) assert.ok(!text.includes('Late night'));
   assert.equal((await loadCollection(place())).playlists, undefined);
   // A file deleted goes from its playlists; a playlist deleted leaves a mark, its files stay.
   await deleteItems(p, [b.id]);
