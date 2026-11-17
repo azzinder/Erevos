@@ -78,6 +78,9 @@ class ErevosRadioModule : Module() {
           main.post { sendEvent("onText", mapOf("peer" to id, "text" to text)) }
         },
         onLog = log,
+        // Said to the phones found, and those linked on the same Wi-Fi left so (LanLink).
+        lanNonce = { lan?.ownNonce() },
+        lanLinked = { theirs -> lan?.linkedTo(theirs) == true },
       ).also {
         it.start()
         it.setQuiet(quiet)

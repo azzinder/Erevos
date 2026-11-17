@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**A phone beside you no longer slows Erevos**: with another Erevos phone near you on the same Wi-Fi, Erevos no longer links to it over Wi-Fi Aware too, which took your phone's Wi-Fi away for moments and slowed your messages and the relay, as if the other phone were far away; and a link to a phone nearby that stopped carrying anything is let go at once, not used on. See [Chat with a nearby phone](#nearby)."),
     mark("**Calls start sooner and sound steadier**: a call through the call relay no longer waits up to 5 seconds on each phone for every way to the relay, only for the first that works; while it goes on, Erevos looks for phones nearby less often, which took the phone's Wi-Fi away for moments and made gaps in the sound; and in a video call, their picture is no longer put aside when their sound came apart from it. See [Chat through a relay](#relay)."),
     mark("**Contacts as you dial**: on the Phone's **Keypad**, a contact whose number holds the digits you type, or whose name starts with them on the keys' letters (2 for ABC and ΑΒΓ), shows over the keys: tap it to call. See [Phone](#phone)."),
     mark("**Chats open at once**: a chat no longer waits, showing your contact as encrypted, for Erevos to finish what it was doing with the relay in the background; it is ready to use as it opens, and holding a message opens its menu from the start. See [Chat through a relay](#relay)."),

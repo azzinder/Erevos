@@ -54,6 +54,13 @@ import java.util.concurrent.atomic.AtomicInteger
  * rests QUIET_REST_MS, out of Wi-Fi Aware altogether, as being in it wakes the Wi-Fi every half
  * second. A phone that shows finds it the next time it looks, and two in the background find
  * each other in a while.
+ *
+ * Each says in its publish the nonce of its same Wi-Fi link (LanLink, `lanNonce`), as LanLink's
+ * broadcasts and WifiDirectLink do. A phone found that is linked on the same Wi-Fi already
+ * (`lanLinked`) is not knocked on: a Wi-Fi Aware network beside the Wi-Fi's takes the Wi-Fi off
+ * its network for moments, slowing all else, the relay too, while the phone is near. Should that
+ * link go, it is knocked on then (RECHECK_MS). A send that fails closes its link, so it is known
+ * gone at the next send, not used on while it no longer carries anything.
  */
 @SuppressLint("NewApi", "MissingPermission")
 class WifiAwareLink(
@@ -61,8 +68,11 @@ class WifiAwareLink(
   private val onLink: (linkId: String) -> Unit,
   private val onFrame: (linkId: String, payload: ByteArray) -> Unit,
   private val onLog: (text: String) -> Unit,
+  private val lanNonce: () -> String? = { null },
+  private val lanLinked: (String) -> Boolean = { false },
 ) {
-  class Link(val id: String, val socket: Socket, val out: DataOutputStream)
+  // `nonce`: the same Wi-Fi nonce the phone said, on the side that knocked, when it said one.
+  class Link(val id: String, val socket: Socket, val out: DataOutputStream, val nonce: String? = null)
 
   private val main = Handler(Looper.getMainLooper())
   private val io = Executors.newCachedThreadPool()
@@ -76,6 +86,10 @@ class WifiAwareLink(
   // Discovery callbacks run on the main looper, so these maps need no lock.
   private val lastKnockSent = HashMap<PeerHandle, Long>()
   private val lastKnockSeen = HashMap<PeerHandle, Long>()
+  // Phones found but linked on the same Wi-Fi, by the nonce they said: knocked on once they are not.
+  private val sameWifi = HashMap<PeerHandle, String>()
+  // The same Wi-Fi nonce each phone found said, for the link made to it.
+  private val nonces = HashMap<PeerHandle, String>()
   @Volatile private var session: WifiAwareSession? = null
   @Volatile private var publish: PublishDiscoverySession? = null
   @Volatile private var subscribe: SubscribeDiscoverySession? = null
@@ -93,6 +107,7 @@ class WifiAwareLink(
     }
     running = true
     main.post { attach() }
+    main.postDelayed(recheck, RECHECK_MS)
   }
 
   /** Looks now and then, with no link up, as while Erevos is in the background; or all the time, as before. Links stay up. */
@@ -138,9 +153,12 @@ class WifiAwareLink(
         // Who knocked or was knocked on is known by handles of the sessions before.
         lastKnockSent.clear()
         lastKnockSeen.clear()
+        sameWifi.clear()
+        nonces.clear()
         onLog("Wi-Fi Aware attached")
+        val said = lanNonce()?.toByteArray(Charsets.ISO_8859_1) ?: ByteArray(0)
         attached.publish(
-          PublishConfig.Builder().setServiceName(SERVICE_NAME).build(),
+          PublishConfig.Builder().setServiceName(SERVICE_NAME).setServiceSpecificInfo(said).build(),
           publishCallback,
           main,
         )
@@ -178,6 +196,9 @@ class WifiAwareLink(
         synchronized(link) { Framing.write(link.out, payload) }
       } catch (e: IOException) {
         onLog("Send to $linkId failed: ${e.message}")
+        // Gone: its reader ends and lets it go, so the next send says so.
+        links.remove(linkId, link)
+        runCatching { link.socket.close() }
       }
     }
     return true
@@ -186,6 +207,7 @@ class WifiAwareLink(
   fun stop() {
     running = false
     main.removeCallbacks(cycle)
+    main.removeCallbacks(recheck)
     networkCallbacks.forEach { runCatching { connectivity.unregisterNetworkCallback(it) } }
     networkCallbacks.clear()
     publish?.close()
@@ -222,8 +244,14 @@ class WifiAwareLink(
       serviceSpecificInfo: ByteArray,
       matchFilter: List<ByteArray>,
     ) {
-      if (throttled(lastKnockSent, peer)) return
-      subscribe?.sendMessage(peer, nextMessageId(), byteArrayOf(KNOCK))
+      val theirs = String(serviceSpecificInfo, Charsets.ISO_8859_1)
+      if (NONCE.matches(theirs)) nonces[peer] = theirs else nonces.remove(peer)
+      if (NONCE.matches(theirs) && lanLinked(theirs)) {
+        sameWifi[peer] = theirs
+        return
+      }
+      sameWifi.remove(peer)
+      knock(peer)
     }
 
     override fun onMessageReceived(peer: PeerHandle, message: ByteArray) {
@@ -231,6 +259,34 @@ class WifiAwareLink(
         val port = ((message[1].toInt() and 0xFF) shl 8) or (message[2].toInt() and 0xFF)
         connectTo(peer, port)
       }
+    }
+  }
+
+  private fun knock(peer: PeerHandle) {
+    if (throttled(lastKnockSent, peer)) return
+    runCatching { subscribe?.sendMessage(peer, nextMessageId(), byteArrayOf(KNOCK)) }
+  }
+
+  // A phone left alone as linked on the same Wi-Fi, no longer linked so: knocked on now. And a link
+  // made before the same Wi-Fi linked the two too is let go.
+  private val recheck = object : Runnable {
+    override fun run() {
+      if (!running) return
+      for (link in links.values) {
+        val theirs = link.nonce ?: continue
+        if (lanLinked(theirs)) {
+          onLog("Link ${link.id}: linked on the same Wi-Fi, let go")
+          runCatching { link.socket.close() }
+          // Knocked on again, should the same Wi-Fi link go.
+          for ((peer, nonce) in nonces) if (nonce == theirs) sameWifi[peer] = nonce
+        }
+      }
+      val gone = sameWifi.entries.filter { !lanLinked(it.value) }.map { it.key }
+      for (peer in gone) {
+        sameWifi.remove(peer)
+        if (subscribe != null) knock(peer)
+      }
+      main.postDelayed(this, RECHECK_MS)
     }
   }
 
@@ -283,6 +339,7 @@ class WifiAwareLink(
   /** Subscriber side: request the network to the publisher, then connect to the port it gave. */
   private fun connectTo(peer: PeerHandle, port: Int) {
     val subscriber = subscribe ?: return
+    val theirs = nonces[peer]
     val connected = AtomicBoolean(false)
     val callback = object : ConnectivityManager.NetworkCallback() {
       override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
@@ -292,7 +349,7 @@ class WifiAwareLink(
         val asked = this
         io.execute {
           try {
-            startLink(network.socketFactory.createSocket(address, port), asked)
+            startLink(network.socketFactory.createSocket(address, port), asked, theirs)
           } catch (e: IOException) {
             letGo(asked)
             onLog("Connect to $address port $port failed: ${e.message}")
@@ -317,10 +374,10 @@ class WifiAwareLink(
     if (networkCallbacks.remove(callback)) runCatching { connectivity.unregisterNetworkCallback(callback) }
   }
 
-  private fun startLink(socket: Socket, callback: ConnectivityManager.NetworkCallback) {
+  private fun startLink(socket: Socket, callback: ConnectivityManager.NetworkCallback, nonce: String? = null) {
     socket.tcpNoDelay = true
     val id = "aware-${linkCounter.incrementAndGet()}"
-    links[id] = Link(id, socket, DataOutputStream(socket.getOutputStream().buffered()))
+    links[id] = Link(id, socket, DataOutputStream(socket.getOutputStream().buffered()), nonce)
     main.post { onLink(id) }
     io.execute {
       try {
@@ -367,6 +424,8 @@ class WifiAwareLink(
     private const val CHECK_MS = 10_000L
     private const val QUIET_LOOK_MS = 60_000L
     private const val QUIET_REST_MS = 4 * 60_000L
+    private const val RECHECK_MS = 10_000L
+    private val NONCE = Regex("[0-9a-f]{16}")
 
     fun isAvailable(context: Context): Boolean {
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
