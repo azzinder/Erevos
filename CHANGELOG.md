@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- A chat opens at once (`app/chat.tsx` `relayFree`): it no longer waits for the look at the relay that the receiver beside the other screens had under way (`holdReceiver`, `holdPlace`), which sent what waited, receipts, Nostr copies and more, and could take tens of seconds on a slow relay or Tor, while the contact showed as encrypted and holding a message did nothing. The receiver still stops at its next step; only the chat's own looks at the relay and at Nostr wait for that, so no message is taken by both. A message held before the chats are in hand opens its menu once they are, saying meanwhile that Erevos is still reading (`menuWaiting`). The Myself chat's menu is a menu of its own each time too (`components/myself-chat.tsx`), as contacts' chats have been since 7.2.0-beta.2.
+
 - New chat on a phone with no relay yet has **Pair with a code** too, under its QR code (`app/chat.tsx`): the phones meet on public Nostr relays and trade contact links, which needs no relay of one's own; it was left out of the newcomer's screen. New chat also no longer shows the screen of a phone with a relay for a moment before the newcomer's (`loaded`).
 
 ### Under the hood

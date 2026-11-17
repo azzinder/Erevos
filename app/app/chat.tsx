@@ -856,6 +856,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
+  // Whether the look at the relay the receiver beside the other screens had under way ended (held):
+  // until then this chat shows, and is used, but takes nothing from the relay itself, so no message
+  // is taken by both.
+  const [relayFree, setRelayFree] = useState(false);
+  // A message held while the chat opens only to read: its menu opens once the chats are in hand.
+  const menuWaiting = useRef<Pick<Message, 'peer' | 'tag' | 'at' | 'mine'> | null>(null);
+  useEffect(() => {
+    const waiting = menuWaiting.current;
+    if (!waiting || !e2e || !history.current) return;
+    menuWaiting.current = null;
+    const message = messages.find((m) => m.peer === waiting.peer && m.tag === waiting.tag && m.at === waiting.at && m.mine === waiting.mine);
+    if (!message) return;
+    setNote((was) => (was === t('Erevos is still reading what came. The menu opens in a moment.') ? '' : was));
+    setMenuTurn((n) => n + 1);
+    setMenuFor(message);
+  }, [e2e, messages]);
   // The chats whose messages show at once while the chat opens, only to read (held): what is read
   // then is marked read in their history at once, the one the home screen counts from.
   const openingChats = useRef<SpaceChats | null>(null);
@@ -1697,9 +1713,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setMessages((list) => [...firsts, ...list]);
           }
         }
-        await held;
-        await placeHeld;
-        if (!active) return;
+        // Not waited for: the look under way stops at its next step, and only this chat's own looks
+        // at the relay wait for it (relayFree), not the chat.
+        void Promise.all([held, placeHeld]).then(() => active && setRelayFree(true));
         const shared = hiddenKey ? await placeChats(space, pocket, hiddenKey) : await spaceChats();
         const kept = shared.history;
         if (!active) return;
@@ -2079,7 +2095,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // once our relay's key is known, so what its looks seal, the marks too, says it (here).
   useEffect(() => {
     const url = relayUrl.trim();
-    if (!url || !ownQueue || !e2e) return;
+    if (!url || !ownQueue || !e2e || !relayFree) return;
     // Taking messages goes straight to our relay; sending goes through the second relay if set.
     const own: Relay = { url, token: relayToken.trim() || undefined };
     let sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
@@ -2288,7 +2304,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       stopCopies();
       if (timer) clearTimeout(timer);
     };
-  }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e, ownRelayKey]);
+  }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e, ownRelayKey, relayFree]);
 
   // To each contact with no queue of their own, added here or accepted, once: an invite to this
   // phone's relay, sent by itself in a message with nothing to show, whatever way the two first met
@@ -2344,7 +2360,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await sendReceipts(null);
   };
   useEffect(() => {
-    if (!e2e || (relayUrl.trim() && ownQueue)) return;
+    if (!e2e || !relayFree || (relayUrl.trim() && ownQueue)) return;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     function next() {
@@ -2362,7 +2378,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [relayUrl, ownQueue, e2e]);
+  }, [relayUrl, ownQueue, e2e, relayFree]);
 
   // Calls that came while these hidden chats were closed, and still ring (lib/place-receiver.ts):
   // they ring here, now that the PIN opened them.
@@ -5646,7 +5662,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     open: openFile,
     // Only to read while the chat opens (shown at once, before its history is in hand).
     menu: (message) => {
-      if (!history.current) return;
+      if (!history.current || !e2e) {
+        // Not ignored: said, and opened as soon as the look at the relay under way ends.
+        menuWaiting.current = { peer: message.peer, tag: message.tag, at: message.at, mine: message.mine };
+        setNote(t('Erevos is still reading what came. The menu opens in a moment.'));
+        return;
+      }
       setMenuTurn((n) => n + 1);
       setMenuFor(message);
     },

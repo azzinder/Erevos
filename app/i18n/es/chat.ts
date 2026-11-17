@@ -413,4 +413,5 @@ export const chat: Record<string, string> = {
   'Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.': 'Los contactos y los grupos privados lo ven, cifrado, en lugar de un código. Cada espacio y sus chats ocultos tienen el suyo: el mismo nombre en dos de ellos le dice a quien vea ambos que son tuyos.',
   "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Empieza vacío y nunca toma el nombre del espacio. El mismo nombre que el de tu espacio le dice a quien vea ambos que eres tú.',
   'Calls themselves: {name}': 'Se hace llamar: {name}',
+  "Erevos is still reading what came. The menu opens in a moment.": "Erevos aún está leyendo lo que llegó. El menú se abre en un momento.",
 };

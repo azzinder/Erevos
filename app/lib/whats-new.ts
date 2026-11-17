@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Chats open at once**: a chat no longer waits, showing your contact as encrypted, for Erevos to finish what it was doing with the relay in the background; it is ready to use as it opens, and holding a message opens its menu from the start. See [Chat through a relay](#relay)."),
     mark("**Pair with a code with no relay yet**: on a phone with no relay yet, **New chat** now has **Pair with a code** too, under your QR code, and opens straight on **Start with an invite** without first showing the screen of a phone with a relay. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],

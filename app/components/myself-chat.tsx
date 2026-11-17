@@ -110,6 +110,8 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
   // A kept note whose reminder is being chosen, in a sheet.
   const [remindFor, setRemindFor] = useState<Note | null>(null);
   const [menuFor, setMenuFor] = useState<Note | null>(null);
+  // Each opening of a note's menu, so each is a menu of its own (components/message-menu.tsx).
+  const [menuTurn, setMenuTurn] = useState(0);
   // The folders, and the one shown (null: all the notes); a note written goes into the one shown.
   const [folders, setFolders] = useState<string[]>([]);
   const [folder, setFolder] = useState<string | null>(null);
@@ -601,7 +603,10 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
                   </Text>
                 ) : null}
                 <Pressable
-                  onLongPress={() => setMenuFor(note)}
+                  onLongPress={() => {
+                    setMenuTurn((n) => n + 1);
+                    setMenuFor(note);
+                  }}
                   onPress={() => (note.voice ? void play(note) : note.file && !note.file.from ? setViewing(note.file) : undefined)}
                   accessibilityHint={t('Hold for more')}
                   style={[styles.bubble, b.mine, photo && styles.photoBubble, isDue(note, now) && styles.lit]}
@@ -665,7 +670,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
           if (!open) setChoosing(false);
         }}
       />
-      <MessageMenu visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? noteLine(menuFor) : ''} actions={menuFor ? actionsOf(menuFor) : []} />
+      <MessageMenu key={`menu-${menuTurn}`} visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? noteLine(menuFor) : ''} actions={menuFor ? actionsOf(menuFor) : []} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={t('Chat with myself')} chat={lookChat} />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
       <RemindSheet note={remindFor} onPick={(note, at) => void setReminder(note, at)} onClose={() => setRemindFor(null)} />

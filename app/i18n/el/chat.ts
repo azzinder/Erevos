@@ -414,4 +414,5 @@ export const chat: Record<string, string> = {
   'Contacts and private groups see it, encrypted, instead of a code. Each space and its hidden chats have their own: the same name in two of them tells whoever sees both that they are yours.': 'Οι επαφές και οι ιδιωτικές ομάδες το βλέπουν, κρυπτογραφημένο, αντί για έναν κωδικό. Κάθε χώρος και οι κρυφές συνομιλίες του έχουν το δικό τους: το ίδιο όνομα σε δύο από αυτά δείχνει σε όποιον βλέπει και τα δύο ότι είναι δικά σου.',
   "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Ξεκινά κενό και δεν παίρνει ποτέ το όνομα του χώρου. Το ίδιο όνομα με του χώρου σου δείχνει σε όποιον βλέπει και τα δύο ότι είσαι εσύ.',
   'Calls themselves: {name}': 'Όνομα που διάλεξε: {name}',
+  "Erevos is still reading what came. The menu opens in a moment.": "Το Erevos διαβάζει ακόμα ό,τι ήρθε. Το μενού ανοίγει σε λίγο.",
 };

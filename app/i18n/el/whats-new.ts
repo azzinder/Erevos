@@ -16,6 +16,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Chats open at once**: a chat no longer waits, showing your contact as encrypted, for Erevos to finish what it was doing with the relay in the background; it is ready to use as it opens, and holding a message opens its menu from the start. See [Chat through a relay](#relay).":
+    "**Οι συνομιλίες ανοίγουν αμέσως**: μια συνομιλία δεν περιμένει πια, δείχνοντας την επαφή σου ως κρυπτογραφημένη, να τελειώσει το Erevos ό,τι έκανε με το relay στο παρασκήνιο· είναι έτοιμη μόλις ανοίξει, και το παρατεταμένο πάτημα σε ένα μήνυμα ανοίγει το μενού του από την αρχή. Δες [Συνομιλία μέσω relay](#relay).",
   "**Pair with a code with no relay yet**: on a phone with no relay yet, **New chat** now has **Pair with a code** too, under your QR code, and opens straight on **Start with an invite** without first showing the screen of a phone with a relay. See [Chat through a relay](#relay).":
     "**Ζεύξη με κωδικό χωρίς relay ακόμα**: σε κινητό χωρίς relay ακόμα, η **Νέα συνομιλία** έχει πλέον κι αυτή **Ζεύξη με κωδικό**, κάτω από τον κωδικό QR σου, και ανοίγει κατευθείαν στο **Ξεκίνα με μια πρόσκληση** χωρίς να δείχνει πρώτα την οθόνη ενός κινητού με relay. Δες [Συνομιλία μέσω relay](#relay).",
   "**The Public tab says why it shows no Nostr post**: whether the list of people you follow was not found, or they were found but no relay sent their posts, or their posts came but could not be shown, and how each relay answered. Before, it said only that no public posts were found. See [Chats with other Nostr apps](#nostr-chats).":
