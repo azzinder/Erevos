@@ -63,7 +63,7 @@ Every package the lockfiles hold, by part of Erevos, with its version, its licen
 
 ### The app's JavaScript packages
 
-Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 612 packages.
+Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 609 packages.
 
 | Package | Version | Licence |
 | --- | --- | --- |
@@ -71,10 +71,10 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@babel/code-frame](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/compat-data](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/core](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/generator](https://github.com/babel/babel) | 7.29.12 | MIT |
+| [@babel/generator](https://github.com/babel/babel) | 7.29.14 | MIT |
 | [@babel/helper-annotate-as-pure](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helper-compilation-targets](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/helper-create-class-features-plugin](https://github.com/babel/babel) | 7.29.12 | MIT |
+| [@babel/helper-create-class-features-plugin](https://github.com/babel/babel) | 7.29.13 | MIT |
 | [@babel/helper-create-regexp-features-plugin](https://github.com/babel/babel) | 7.29.10 | MIT |
 | [@babel/helper-define-polyfill-provider](https://github.com/babel/babel-polyfills) | 0.6.8 | MIT |
 | [@babel/helper-globals](https://github.com/babel/babel) | 7.29.7 | MIT |
@@ -85,13 +85,13 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@babel/helper-plugin-utils](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helper-remap-async-to-generator](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helper-replace-supers](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/helper-skip-transparent-expression-wrappers](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/helper-string-parser](https://github.com/babel/babel) | 7.29.11 | MIT |
+| [@babel/helper-skip-transparent-expression-wrappers](https://github.com/babel/babel) | 7.29.13 | MIT |
+| [@babel/helper-string-parser](https://github.com/babel/babel) | 7.29.14 | MIT |
 | [@babel/helper-validator-identifier](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helper-validator-option](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helper-wrap-function](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/helpers](https://github.com/babel/babel) | 7.29.10 | MIT |
-| [@babel/parser](https://github.com/babel/babel) | 7.29.12 | MIT |
+| [@babel/parser](https://github.com/babel/babel) | 7.29.14 | MIT |
 | [@babel/plugin-proposal-decorators](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/plugin-proposal-export-default-from](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/plugin-syntax-decorators](https://github.com/babel/babel) | 7.29.7 | MIT |
@@ -107,7 +107,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@babel/plugin-transform-async-to-generator](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/plugin-transform-block-scoping](https://github.com/babel/babel) | 7.29.12 | MIT |
 | [@babel/plugin-transform-class-properties](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/plugin-transform-class-static-block](https://github.com/babel/babel) | 7.29.7 | MIT |
+| [@babel/plugin-transform-class-static-block](https://github.com/babel/babel) | 7.29.14 | MIT |
 | [@babel/plugin-transform-classes](https://github.com/babel/babel) | 7.29.11 | MIT |
 | [@babel/plugin-transform-destructuring](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/plugin-transform-export-namespace-from](https://github.com/babel/babel) | 7.29.7 | MIT |
@@ -138,13 +138,13 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@babel/preset-typescript](https://github.com/babel/babel) | 7.29.7 | MIT |
 | [@babel/runtime](https://github.com/babel/babel) | 7.29.10 | MIT |
 | [@babel/template](https://github.com/babel/babel) | 7.29.7 | MIT |
-| [@babel/traverse](https://github.com/babel/babel) | 7.29.12 | MIT |
-| [@babel/types](https://github.com/babel/babel) | 7.29.11 | MIT |
+| [@babel/traverse](https://github.com/babel/babel) | 7.29.14 | MIT |
+| [@babel/types](https://github.com/babel/babel) | 7.29.14 | MIT |
 | [@craftzdog/react-native-buffer](https://github.com/craftzdog/react-native-buffer) | 6.1.2 | MIT |
-| [@element-hq/element-call-embedded](https://github.com/element-hq/element-call) | 0.28.0 | AGPL-3.0-only OR LicenseRef-Element-Commercial |
+| [@element-hq/element-call-embedded](https://github.com/element-hq/element-call) | 0.28.2 | AGPL-3.0-only OR LicenseRef-Element-Commercial |
 | [@expo-google-fonts/inter](https://github.com/expo/google-fonts) | 0.4.2 | MIT AND OFL-1.1 |
 | [@expo-google-fonts/inter-tight](https://github.com/expo/google-fonts) | 0.4.2 | MIT AND OFL-1.1 |
-| [@expo/cli](https://github.com/expo/expo) | 58.1.20 | MIT |
+| [@expo/cli](https://github.com/expo/expo) | 58.1.21 | MIT |
 | [@expo/code-signing-certificates](https://github.com/expo/code-signing-certificates) | 0.0.7 | MIT |
 | [@expo/config](https://github.com/expo/expo) | 58.0.12 | MIT |
 | [@expo/config-plugins](https://github.com/expo/expo) | 58.0.13 | MIT |
@@ -157,24 +157,24 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@expo/image-utils](https://github.com/expo/expo) | 0.12.7 | MIT |
 | [@expo/inline-modules](https://github.com/expo/expo) | 0.2.10 | MIT |
 | [@expo/json-file](https://github.com/expo/expo) | 11.2.1 | MIT |
-| [@expo/local-build-cache-provider](https://github.com/expo/expo) | 58.0.9 | MIT |
+| [@expo/local-build-cache-provider](https://github.com/expo/expo) | 58.0.12 | MIT |
 | [@expo/log-box](https://github.com/expo/expo) | 58.0.15 | MIT |
 | [@expo/log-box-utils](https://github.com/expo/expo) | 58.0.2 | MIT |
 | [@expo/metro](https://github.com/expo/expo-metro) | 58.0.0 | MIT |
-| [@expo/metro-config](https://github.com/expo/expo) | 58.0.22 | MIT |
+| [@expo/metro-config](https://github.com/expo/expo) | 58.0.23 | MIT |
 | [@expo/metro-file-map](https://github.com/expo/expo) | 58.0.6 | MIT |
 | [@expo/metro-runtime](https://github.com/expo/expo) | 58.0.17 | MIT |
-| @expo/modules-macros-linux-arm64 | 0.27.1 | MIT |
-| [@expo/modules-macros-linux-x64](https://github.com/expo/expo-modules-macros) | 0.27.1 | MIT |
-| @expo/modules-macros-win32-arm64 | 0.27.1 | MIT |
-| @expo/modules-macros-win32-x64 | 0.27.1 | MIT |
+| @expo/modules-macros-linux-arm64 | 0.33.0 | MIT |
+| [@expo/modules-macros-linux-x64](https://github.com/expo/expo-modules-macros) | 0.33.0 | MIT |
+| @expo/modules-macros-win32-arm64 | 0.33.0 | MIT |
+| @expo/modules-macros-win32-x64 | 0.33.0 | MIT |
 | [@expo/osascript](https://github.com/expo/expo) | 2.8.1 | MIT |
 | [@expo/package-manager](https://github.com/expo/expo) | 1.14.2 | MIT |
 | [@expo/platforms](https://github.com/expo/expo) | 58.0.1 | MIT |
 | [@expo/plist](https://github.com/expo/expo) | 0.10.2 | MIT |
 | [@expo/prebuild-config](https://github.com/expo/expo) | 58.0.20 | MIT |
 | [@expo/require-utils](https://github.com/expo/expo) | 58.0.6 | MIT |
-| [@expo/router-server](https://github.com/expo/expo) | 58.0.22 | MIT |
+| [@expo/router-server](https://github.com/expo/expo) | 58.0.23 | MIT |
 | [@expo/schema-utils](https://github.com/expo/expo) | 58.0.3 | MIT |
 | @expo/sdk-runtime-versions | 1.0.1 | MIT |
 | [@expo/spawn-async](https://github.com/expo/spawn-async) | 1.8.0 | MIT |
@@ -192,14 +192,14 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@jridgewell/trace-mapping](https://github.com/jridgewell/sourcemaps) | 0.3.31 | MIT |
 | [@noble/ciphers](https://github.com/paulmillr/noble-ciphers) | 2.4.0 | MIT |
 | [@noble/hashes](https://github.com/paulmillr/noble-hashes) | 2.4.0 | MIT |
-| @noxcturnal/noxcturnal-darwin-arm64 | 0.1.11 | MIT |
-| @noxcturnal/noxcturnal-darwin-x64 | 0.1.11 | MIT |
-| @noxcturnal/noxcturnal-linux-arm64-gnu | 0.1.11 | MIT |
-| @noxcturnal/noxcturnal-linux-arm64-musl | 0.1.11 | MIT |
-| [@noxcturnal/noxcturnal-linux-x64-gnu](https://github.com/expo/noxcturnal) | 0.1.11 | MIT |
-| [@noxcturnal/noxcturnal-linux-x64-musl](https://github.com/expo/noxcturnal) | 0.1.11 | MIT |
-| @noxcturnal/noxcturnal-win32-arm64-msvc | 0.1.11 | MIT |
-| @noxcturnal/noxcturnal-win32-x64-msvc | 0.1.11 | MIT |
+| @noxcturnal/noxcturnal-darwin-arm64 | 0.1.14 | MIT |
+| @noxcturnal/noxcturnal-darwin-x64 | 0.1.14 | MIT |
+| @noxcturnal/noxcturnal-linux-arm64-gnu | 0.1.14 | MIT |
+| @noxcturnal/noxcturnal-linux-arm64-musl | 0.1.14 | MIT |
+| [@noxcturnal/noxcturnal-linux-x64-gnu](https://github.com/expo/noxcturnal) | 0.1.14 | MIT |
+| [@noxcturnal/noxcturnal-linux-x64-musl](https://github.com/expo/noxcturnal) | 0.1.14 | MIT |
+| @noxcturnal/noxcturnal-win32-arm64-msvc | 0.1.14 | MIT |
+| @noxcturnal/noxcturnal-win32-x64-msvc | 0.1.14 | MIT |
 | [@oxc-project/types](https://github.com/oxc-project/oxc) | 0.154.0 | MIT |
 | [@radix-ui/primitive](https://github.com/radix-ui/primitives) | 1.2.0 | MIT |
 | [@radix-ui/react-collection](https://github.com/radix-ui/primitives) | 1.2.0 | MIT |
@@ -239,7 +239,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@types/istanbul-reports](https://github.com/DefinitelyTyped/DefinitelyTyped) | 3.0.4 | MIT |
 | [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) | 26.6.6 | MIT |
 | [@types/react](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.2.18 | MIT |
-| [@types/react-test-renderer](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.3.0 | MIT |
+| [@types/react-test-renderer](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.3.1 | MIT |
 | [@types/yargs](https://github.com/DefinitelyTyped/DefinitelyTyped) | 17.0.35 | MIT |
 | [@types/yargs-parser](https://github.com/DefinitelyTyped/DefinitelyTyped) | 21.0.3 | MIT |
 | [@ungap/structured-clone](https://github.com/ungap/structured-clone) | 1.4.0 | ISC |
@@ -269,7 +269,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [babel-plugin-react-native-web](https://github.com/necolas/react-native-web) | 0.21.4 | MIT |
 | [babel-plugin-syntax-hermes-parser](https://github.com/facebook/hermes) | 0.36.1 | MIT |
 | [babel-plugin-transform-flow-enums](https://github.com/facebook/flow) | 0.0.2 | MIT |
-| [babel-preset-expo](https://github.com/expo/expo) | 58.0.22 | MIT |
+| [babel-preset-expo](https://github.com/expo/expo) | 58.0.26 | MIT |
 | [balanced-match](https://github.com/juliangruber/balanced-match) | 4.0.4 | MIT |
 | [base64-js](https://github.com/beatgammit/base64-js) | 1.5.1 | MIT |
 | [baseline-browser-mapping](https://github.com/web-platform-dx/baseline-browser-mapping) | 2.11.34 | Apache-2.0 |
@@ -277,6 +277,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [boolbase](https://github.com/fb55/boolbase) | 1.0.0 | ISC |
 | [bplist-creator](https://github.com/nearinfinity/node-bplist-creator) | 0.1.0 | MIT |
 | [bplist-parser](https://github.com/nearinfinity/node-bplist-parser) | 0.3.1 | MIT |
+| [bplist-parser](https://github.com/nearinfinity/node-bplist-parser) | 0.3.2 | MIT |
 | [brace-expansion](https://github.com/juliangruber/brace-expansion) | 5.0.12 | MIT |
 | [braces](https://github.com/micromatch/braces) | 3.0.3 | MIT |
 | [browserslist](https://github.com/browserslist/browserslist) | 4.29.5 | MIT |
@@ -297,12 +298,10 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [client-only](https://reactjs.org) | 0.0.1 | MIT |
 | [cliui](https://github.com/yargs/cliui) | 8.0.1 | ISC |
 | [clone](https://github.com/pvorb/node-clone) | 1.0.4 | MIT |
-| [color](https://github.com/Qix-/color) | 4.2.3 | MIT |
 | [color-convert](https://github.com/Qix-/color-convert) | 1.9.3 | MIT |
 | [color-convert](https://github.com/Qix-/color-convert) | 2.0.1 | MIT |
 | [color-name](https://github.com/dfcreative/color-name) | 1.1.3 | MIT |
 | [color-name](https://github.com/colorjs/color-name) | 1.1.4 | MIT |
-| [color-string](https://github.com/Qix-/color-string) | 1.9.1 | MIT |
 | [commander](https://github.com/tj/commander.js) | 2.20.3 | MIT |
 | [commander](https://github.com/tj/commander.js) | 7.2.0 | MIT |
 | [commander](https://github.com/tj/commander.js) | 12.1.0 | MIT |
@@ -351,30 +350,29 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [etag](https://github.com/jshttp/etag) | 1.8.1 | MIT |
 | [event-target-shim](https://github.com/mysticatea/event-target-shim) | 5.0.1 | MIT |
 | [events](https://github.com/Gozala/events) | 3.3.0 | MIT |
-| [expo](https://github.com/expo/expo) | 58.0.21 | MIT |
-| [expo-asset](https://github.com/expo/expo) | 58.0.19 | MIT |
-| [expo-audio](https://github.com/expo/expo) | 58.0.10 | MIT |
+| [expo](https://github.com/expo/expo) | 58.0.26 | MIT |
+| [expo-asset](https://github.com/expo/expo) | 58.0.21 | MIT |
+| [expo-audio](https://github.com/expo/expo) | 58.0.12 | MIT |
 | [expo-constants](https://github.com/expo/expo) | 58.0.16 | MIT |
-| [expo-crypto](https://github.com/expo/expo) | 58.0.7 | MIT |
-| [expo-file-system](https://github.com/expo/expo) | 58.0.13 | MIT |
+| [expo-crypto](https://github.com/expo/expo) | 58.0.8 | MIT |
+| [expo-file-system](https://github.com/expo/expo) | 58.0.14 | MIT |
 | [expo-font](https://github.com/expo/expo) | 58.0.12 | MIT |
 | [expo-glass-effect](https://github.com/expo/expo) | 58.0.5 | MIT |
 | [expo-image-loader](https://github.com/expo/expo) | 58.0.3 | MIT |
 | [expo-image-manipulator](https://github.com/expo/expo) | 58.0.16 | MIT |
 | [expo-image-picker](https://github.com/expo/expo) | 58.0.10 | MIT |
 | [expo-intent-launcher](https://github.com/expo/expo) | 58.0.3 | MIT |
-| [expo-keep-awake](https://github.com/expo/expo) | 58.0.3 | MIT |
-| [expo-linking](https://github.com/expo/expo) | 58.0.15 | MIT |
-| [expo-modules-autolinking](https://github.com/expo/expo) | 58.0.16 | MIT |
+| [expo-keep-awake](https://github.com/expo/expo) | 58.0.4 | MIT |
+| [expo-linking](https://github.com/expo/expo) | 58.0.17 | MIT |
 | [expo-modules-autolinking](https://github.com/expo/expo) | 58.1.0 | MIT |
-| [expo-modules-cli](https://github.com/expo/expo) | 0.4.0 | MIT |
-| [expo-modules-core](https://github.com/expo/expo) | 58.0.28 | MIT |
-| [expo-modules-jsi](https://github.com/expo/expo) | 58.0.21 | MIT |
-| [expo-modules-macros](https://github.com/expo/expo-modules-macros) | 0.27.1 | MIT |
-| [expo-router](https://github.com/expo/expo) | 58.0.28 | MIT |
-| [expo-secure-store](https://github.com/expo/expo) | 58.0.2 | MIT |
+| [expo-modules-cli](https://github.com/expo/expo) | 0.5.0 | MIT |
+| [expo-modules-core](https://github.com/expo/expo) | 58.1.0 | MIT |
+| [expo-modules-jsi](https://github.com/expo/expo) | 58.0.23 | MIT |
+| [expo-modules-macros](https://github.com/expo/expo-modules-macros) | 0.33.0 | MIT |
+| [expo-router](https://github.com/expo/expo) | 58.0.32 | MIT |
+| [expo-secure-store](https://github.com/expo/expo) | 58.0.3 | MIT |
 | [expo-server](https://github.com/expo/expo) | 58.1.0 | MIT |
-| [expo-status-bar](https://github.com/expo/expo) | 58.0.4 | MIT |
+| [expo-status-bar](https://github.com/expo/expo) | 58.0.5 | MIT |
 | [exponential-backoff](https://github.com/coveooss/exponential-backoff) | 3.1.3 | Apache-2.0 |
 | [fb-dotslash](https://github.com/facebook/dotslash) | 0.5.8 | (MIT OR Apache-2.0) |
 | [fb-watchman](https://github.com/facebook/watchman) | 2.0.4 | MIT |
@@ -411,7 +409,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [hermes-compiler](https://github.com/facebook/hermes) | 260318099.0.5 | MIT |
 | [hermes-estree](https://github.com/facebook/hermes) | 0.36.1 | MIT |
 | [hermes-parser](https://github.com/facebook/hermes) | 0.36.1 | MIT |
-| [hls.js](https://github.com/video-dev/hls.js) | 1.7.3 | Apache-2.0 |
+| [hls.js](https://github.com/video-dev/hls.js) | 1.7.4 | Apache-2.0 |
 | [hosted-git-info](https://github.com/npm/hosted-git-info) | 7.0.2 | ISC |
 | [http-errors](https://github.com/jshttp/http-errors) | 2.0.1 | MIT |
 | [https-proxy-agent](https://github.com/TooTallNate/proxy-agents) | 7.0.6 | MIT |
@@ -422,7 +420,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [inline-style-prefixer](https://github.com/robinweser/inline-style-prefixer) | 7.0.1 | MIT |
 | [invariant](https://github.com/zertosh/invariant) | 2.2.4 | MIT |
 | [is-arguments](https://github.com/inspect-js/is-arguments) | 1.2.0 | MIT |
-| [is-arrayish](https://github.com/qix-/node-is-arrayish) | 0.3.4 | MIT |
 | [is-callable](https://github.com/inspect-js/is-callable) | 1.2.7 | MIT |
 | [is-core-module](https://github.com/inspect-js/is-core-module) | 2.17.0 | MIT |
 | [is-docker](https://github.com/sindresorhus/is-docker) | 2.2.1 | MIT |
@@ -515,11 +512,12 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [negotiator](https://github.com/jshttp/negotiator) | 0.6.3 | MIT |
 | [negotiator](https://github.com/jshttp/negotiator) | 0.6.4 | MIT |
 | [negotiator](https://github.com/jshttp/negotiator) | 1.1.0 | MIT |
+| [nitro-core](https://github.com/margelo/nitro) | 0.37.2 | MIT |
 | [node-fetch](https://github.com/bitinn/node-fetch) | 2.7.0 | MIT |
 | [node-forge](https://github.com/digitalbazaar/forge) | 1.4.3 | (BSD-3-Clause OR GPL-2.0) |
 | [node-int64](https://github.com/broofa/node-int64) | 0.4.0 | MIT |
 | [node-releases](https://github.com/chicoxyzzy/node-releases) | 2.0.61 | MIT |
-| [noxcturnal](https://github.com/expo/noxcturnal) | 0.1.11 | MIT |
+| [noxcturnal](https://github.com/expo/noxcturnal) | 0.1.14 | MIT |
 | [npm-package-arg](https://github.com/npm/npm-package-arg) | 11.0.3 | ISC |
 | [nth-check](https://github.com/fb55/nth-check) | 2.1.1 | BSD-2-Clause |
 | [nullthrows](https://github.com/zertosh/nullthrows) | 1.1.1 | MIT |
@@ -542,7 +540,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [plist](https://github.com/TooTallNate/node-plist) | 3.1.1 | MIT |
 | [pngjs](https://github.com/lukeapage/pngjs2) | 3.4.0 | MIT |
 | [possible-typed-array-names](https://github.com/ljharb/possible-typed-array-names) | 1.1.0 | MIT |
-| [postcss](https://github.com/postcss/postcss) | 8.5.32 | MIT |
+| [postcss](https://github.com/postcss/postcss) | 8.5.33 | MIT |
 | [postcss-value-parser](https://github.com/TrySound/postcss-value-parser) | 4.2.0 | MIT |
 | [pretty-format](https://github.com/jestjs/jest) | 29.7.0 | MIT |
 | [proc-log](https://github.com/npm/proc-log) | 4.2.0 | ISC |
@@ -553,28 +551,28 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [prompts](https://github.com/terkelg/prompts) | 2.4.2 | MIT |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | 2.0.4 | MIT |
 | [range-parser](https://github.com/jshttp/range-parser) | 1.2.1 | MIT |
-| [react](https://github.com/react/react) | 19.3.0 | MIT |
+| [react](https://github.com/react/react) | 19.3.1 | MIT |
 | [react-devtools-core](https://github.com/facebook/react) | 6.1.5 | MIT |
-| [react-dom](https://github.com/react/react) | 19.3.0 | MIT |
-| [react-fast-compare](https://github.com/FormidableLabs/react-fast-compare) | 3.2.2 | MIT |
+| [react-dom](https://github.com/react/react) | 19.3.1 | MIT |
+| [react-fast-compare](https://github.com/FormidableLabs/react-fast-compare) | 3.2.3 | MIT |
 | [react-freeze](https://github.com/software-mansion/react-freeze) | 1.0.4 | MIT |
 | [react-is](https://github.com/facebook/react) | 18.3.1 | MIT |
 | [react-is](https://github.com/react/react) | 19.3.1 | MIT |
 | [react-native](https://github.com/react/react-native) | 0.88.1 | MIT |
-| [react-native-drawer-layout](https://github.com/react-navigation/react-navigation) | 4.2.12 | MIT |
-| [react-native-gesture-handler](https://github.com/software-mansion/react-native-gesture-handler) | 3.4.0 | MIT |
+| [react-native-drawer-layout](https://github.com/react-navigation/react-navigation) | 4.2.13 | MIT |
+| [react-native-gesture-handler](https://github.com/software-mansion/react-native-gesture-handler) | 3.5.0 | MIT |
 | [react-native-is-edge-to-edge](https://github.com/zoontek/react-native-edge-to-edge) | 1.3.1 | MIT |
 | [react-native-keyboard-controller](https://github.com/kirillzyusko/react-native-keyboard-controller) | 1.22.9 | MIT |
-| [react-native-nitro-modules](https://github.com/mrousavy/nitro) | 0.37.1 | MIT |
+| [react-native-nitro-modules](https://github.com/margelo/nitro) | 0.37.2 | MIT |
 | [react-native-quick-base64](https://github.com/craftzdog/react-native-quick-base64) | 3.0.1 | MIT |
-| [react-native-quick-crypto](https://github.com/margelo/react-native-quick-crypto) | 1.1.9 | MIT |
-| [react-native-reanimated](https://github.com/software-mansion/react-native-reanimated) | 4.7.1 | MIT |
-| [react-native-safe-area-context](https://github.com/appandflow/react-native-safe-area-context) | 5.10.1 | MIT |
+| [react-native-quick-crypto](https://github.com/margelo/react-native-quick-crypto) | 1.1.10 | MIT |
+| [react-native-reanimated](https://github.com/software-mansion/react-native-reanimated) | 4.7.2 | MIT |
+| [react-native-safe-area-context](https://github.com/appandflow/react-native-safe-area-context) | 5.11.1 | MIT |
 | [react-native-screens](https://github.com/software-mansion/react-native-screens) | 4.30.1 | MIT |
-| [react-native-svg](https://github.com/software-mansion/react-native-svg) | 15.16.0 | MIT |
+| [react-native-svg](https://github.com/software-mansion/react-native-svg) | 15.16.1 | MIT |
 | [react-native-web](https://github.com/necolas/react-native-web) | 0.21.4 | MIT |
-| [react-native-webrtc](https://github.com/react-native-webrtc/react-native-webrtc) | 124.0.8 | MIT |
-| [react-native-worklets](https://github.com/software-mansion/react-native-reanimated) | 0.13.0 | MIT |
+| [react-native-webrtc](https://github.com/react-native-webrtc/react-native-webrtc) | 155.0.1 | MIT |
+| [react-native-worklets](https://github.com/software-mansion/react-native-reanimated) | 0.13.1 | MIT |
 | [react-refresh](https://github.com/facebook/react) | 0.14.2 | MIT |
 | [readable-stream](https://github.com/nodejs/readable-stream) | 4.7.0 | MIT |
 | [regenerate](https://github.com/mathiasbynens/regenerate) | 1.5.0 | MIT |
@@ -609,7 +607,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [shell-quote](https://github.com/ljharb/shell-quote) | 1.12.0 | MIT |
 | [signal-exit](https://github.com/tapjs/signal-exit) | 3.0.7 | ISC |
 | [simple-plist](https://github.com/wollardj/simple-plist) | 1.3.1 | MIT |
-| [simple-swizzle](https://github.com/qix-/node-simple-swizzle) | 0.2.4 | MIT |
 | [sisteransi](https://github.com/terkelg/sisteransi) | 1.0.5 | MIT |
 | [slugify](https://github.com/simov/slugify) | 1.6.9 | MIT |
 | [source-map](https://github.com/mozilla/source-map) | 0.5.7 | BSD-3-Clause |
@@ -702,7 +699,7 @@ Electron, which the computer app runs on, and the packages it needs (`desktop/pa
 
 ### Rust crates
 
-The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 708 crates.
+The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 681 crates.
 
 | Crate | Version | Licence |
 | --- | --- | --- |
@@ -710,7 +707,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [aead](https://github.com/RustCrypto/traits) | 0.5.2 | MIT OR Apache-2.0 |
 | [aead](https://github.com/RustCrypto/traits) | 0.6.1 | MIT OR Apache-2.0 |
 | [aes](https://github.com/RustCrypto/block-ciphers) | 0.8.4 | MIT OR Apache-2.0 |
-| [aes](https://github.com/RustCrypto/block-ciphers) | 0.9.3 | MIT OR Apache-2.0 |
+| [aes](https://github.com/RustCrypto/block-ciphers) | 0.9.4 | MIT OR Apache-2.0 |
 | [aes-gcm](https://github.com/RustCrypto/AEADs) | 0.10.3 | Apache-2.0 OR MIT |
 | [ahash](https://github.com/tkaitchuck/ahash) | 0.8.12 | MIT OR Apache-2.0 |
 | [aho-corasick](https://github.com/BurntSushi/aho-corasick) | 1.1.5 | Unlicense OR MIT |
@@ -723,13 +720,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [anyhow](https://github.com/dtolnay/anyhow) | 1.0.104 | MIT OR Apache-2.0 |
 | [argon2](https://github.com/RustCrypto/password-hashes/tree/master/argon2) | 0.5.3 | MIT OR Apache-2.0 |
 | [arrayvec](https://github.com/bluss/arrayvec) | 0.7.8 | MIT OR Apache-2.0 |
-| [arti-client](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
+| [arti-client](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
 | [ascii](https://github.com/tomprogrammer/rust-ascii) | 1.1.0 | Apache-2.0 OR MIT |
 | [asn1-rs](https://github.com/rusticata/asn1-rs) | 0.7.2 | MIT OR Apache-2.0 |
 | [asn1-rs-derive](https://github.com/rusticata/asn1-rs) | 0.6.0 | MIT OR Apache-2.0 |
 | [asn1-rs-impl](https://github.com/rusticata/asn1-rs) | 0.2.0 | MIT OR Apache-2.0 |
-| [assert_matches](https://github.com/murarth/assert_matches) | 1.5.0 | MIT OR Apache-2.0 |
-| [async-compression](https://github.com/Nullus157/async-compression) | 0.4.51 | MIT OR Apache-2.0 |
+| [async-compression](https://github.com/Nullus157/async-compression) | 0.4.52 | MIT OR Apache-2.0 |
 | [async-trait](https://github.com/dtolnay/async-trait) | 0.1.92 | MIT OR Apache-2.0 |
 | [async_executors](https://github.com/najamelan/async_executors) | 0.7.0 | Unlicense |
 | [asynchronous-codec](https://github.com/mxinden/asynchronous-codec) | 0.7.0 | MIT |
@@ -746,7 +742,6 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [bindgen](https://github.com/rust-lang/rust-bindgen) | 0.72.1 | BSD-3-Clause |
 | [bit-set](https://github.com/contain-rs/bit-set) | 0.8.0 | Apache-2.0 OR MIT |
 | [bit-vec](https://github.com/contain-rs/bit-vec) | 0.8.0 | Apache-2.0 OR MIT |
-| [bitflags](https://github.com/bitflags/bitflags) | 1.3.2 | MIT OR Apache-2.0 |
 | [bitflags](https://github.com/bitflags/bitflags) | 2.13.2 | MIT OR Apache-2.0 |
 | [bitvec](https://github.com/bitvecto-rs/bitvec) | 1.1.1 | MIT |
 | [blake2](https://github.com/RustCrypto/hashes) | 0.10.6 | MIT OR Apache-2.0 |
@@ -757,18 +752,18 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [block-padding](https://github.com/RustCrypto/utils) | 0.4.2 | MIT OR Apache-2.0 |
 | [bs58](https://github.com/Nullus157/bs58-rs) | 0.5.1 | MIT OR Apache-2.0 |
 | [bstr](https://github.com/BurntSushi/bstr) | 1.13.1 | MIT OR Apache-2.0 |
-| [bumpalo](https://github.com/fitzgen/bumpalo) | 3.20.3 | MIT OR Apache-2.0 |
+| [bumpalo](https://github.com/fitzgen/bumpalo) | 3.20.4 | MIT OR Apache-2.0 |
 | [by_address](https://github.com/mbrubeck/by_address) | 1.2.1 | MIT OR Apache-2.0 |
 | [bytemuck](https://github.com/Lokathor/bytemuck) | 1.25.2 | Zlib OR Apache-2.0 OR MIT |
 | [bytemuck_derive](https://github.com/Lokathor/bytemuck) | 1.12.1 | Zlib OR Apache-2.0 OR MIT |
 | [byteorder](https://github.com/BurntSushi/byteorder) | 1.5.0 | Unlicense OR MIT |
-| [bytes](https://github.com/tokio-rs/bytes) | 1.12.1 | MIT |
+| [bytes](https://github.com/tokio-rs/bytes) | 1.12.2 | MIT |
 | [candle-core](https://github.com/huggingface/candle) | 0.11.1 | MIT OR Apache-2.0 |
 | [candle-nn](https://github.com/huggingface/candle) | 0.11.1 | MIT OR Apache-2.0 |
-| [caret](https://gitlab.torproject.org/tpo/core/arti) | 0.11.0 | MIT OR Apache-2.0 |
+| [caret](https://gitlab.torproject.org/tpo/core/arti) | 0.11.1 | MIT OR Apache-2.0 |
 | [castaway](https://github.com/sagebind/castaway) | 0.2.4 | MIT |
 | [cbc](https://github.com/RustCrypto/block-modes) | 0.2.1 | MIT OR Apache-2.0 |
-| [cc](https://github.com/rust-lang/cc-rs) | 1.8.0 | MIT OR Apache-2.0 |
+| [cc](https://github.com/rust-lang/cc-rs) | 1.11.2 | MIT OR Apache-2.0 |
 | [cesu8](https://github.com/emk/cesu8-rs) | 1.1.0 | Apache-2.0 OR MIT |
 | [cexpr](https://github.com/jethrogb/rust-cexpr) | 0.6.0 | Apache-2.0 OR MIT |
 | [cfg-if](https://github.com/rust-lang/cfg-if) | 1.0.5 | MIT OR Apache-2.0 |
@@ -785,10 +780,10 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [coarsetime](https://github.com/jedisct1/rust-coarsetime) | 0.1.38 | BSD-2-Clause |
 | [combine](https://github.com/Marwes/combine) | 4.6.9 | MIT |
 | [compact_str](https://github.com/ParkMyCar/compact_str) | 0.9.1 | MIT |
-| [compression-codecs](https://github.com/Nullus157/async-compression) | 0.4.46 | MIT OR Apache-2.0 |
+| [compression-codecs](https://github.com/Nullus157/async-compression) | 0.4.47 | MIT OR Apache-2.0 |
 | [compression-core](https://github.com/Nullus157/async-compression) | 0.4.34 | MIT OR Apache-2.0 |
 | [const-oid](https://github.com/RustCrypto/formats/tree/master/const-oid) | 0.9.6 | Apache-2.0 OR MIT |
-| [const-oid](https://github.com/RustCrypto/formats) | 0.10.2 | Apache-2.0 OR MIT |
+| [const-oid](https://github.com/RustCrypto/formats) | 0.10.3 | Apache-2.0 OR MIT |
 | [constant_time_eq](https://codeberg.org/cesarb/constant_time_eq) | 0.6.1 | CC0-1.0 OR MIT-0 OR Apache-2.0 |
 | [convert_case](https://github.com/rutrum/convert-case) | 0.10.0 | MIT |
 | [cookie-factory](https://github.com/rust-bakery/cookie-factory) | 0.3.3 | MIT |
@@ -798,21 +793,21 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [cpufeatures](https://github.com/RustCrypto/utils) | 0.2.17 | MIT OR Apache-2.0 |
 | [cpufeatures](https://github.com/RustCrypto/utils) | 0.3.1 | MIT OR Apache-2.0 |
 | [crabgrind](https://github.com/2dav/crabgrind) | 0.2.6 | MIT |
-| [crc32fast](https://github.com/srijs/rust-crc32fast) | 1.5.2 | MIT OR Apache-2.0 |
+| [crc32fast](https://github.com/srijs/rust-crc32fast) | 1.5.5 | MIT OR Apache-2.0 |
 | [crossbeam-deque](https://github.com/crossbeam-rs/crossbeam) | 0.8.8 | MIT OR Apache-2.0 |
 | [crossbeam-epoch](https://github.com/crossbeam-rs/crossbeam) | 0.9.21 | MIT OR Apache-2.0 |
 | [crossbeam-queue](https://github.com/crossbeam-rs/crossbeam) | 0.3.14 | MIT OR Apache-2.0 |
 | [crossbeam-utils](https://github.com/crossbeam-rs/crossbeam) | 0.8.23 | MIT OR Apache-2.0 |
 | [crunchy](https://github.com/eira-fransham/crunchy) | 0.2.4 | MIT |
 | [crypto-bigint](https://github.com/RustCrypto/crypto-bigint) | 0.5.5 | Apache-2.0 OR MIT |
-| [crypto-bigint](https://github.com/RustCrypto/crypto-bigint) | 0.7.5 | Apache-2.0 OR MIT |
+| [crypto-bigint](https://github.com/RustCrypto/crypto-bigint) | 0.7.11 | Apache-2.0 OR MIT |
 | [crypto-common](https://github.com/RustCrypto/traits) | 0.1.7 | MIT OR Apache-2.0 |
 | [crypto-common](https://github.com/RustCrypto/traits) | 0.2.2 | MIT OR Apache-2.0 |
 | [crypto-primes](https://github.com/entropyxyz/crypto-primes) | 0.7.0 | Apache-2.0 OR MIT |
 | [ct-codecs](https://github.com/jedisct1/rust-ct-codecs) | 1.1.8 | MIT |
 | [ctr](https://github.com/RustCrypto/block-modes) | 0.9.2 | MIT OR Apache-2.0 |
 | [ctr](https://github.com/RustCrypto/block-modes) | 0.10.1 | MIT OR Apache-2.0 |
-| [ctutils](https://github.com/RustCrypto/utils) | 0.4.5 | Apache-2.0 OR MIT |
+| [ctutils](https://github.com/RustCrypto/utils) | 0.4.8 | Apache-2.0 OR MIT |
 | [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek) | 4.1.3 | BSD-3-Clause |
 | [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek) | 5.0.0 | BSD-3-Clause |
 | [curve25519-dalek-derive](https://github.com/dalek-cryptography/curve25519-dalek) | 0.1.1 | MIT OR Apache-2.0 |
@@ -831,15 +826,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [darling_macro](https://github.com/TedDriggs/darling) | 0.24.1 | MIT |
 | [dary_heap](https://github.com/hanmertens/dary_heap) | 0.3.9 | MIT OR Apache-2.0 |
 | [data-encoding](https://github.com/ia0/data-encoding) | 2.11.1 | MIT |
-| [defmt](https://github.com/knurling-rs/defmt) | 1.2.0 | MIT OR Apache-2.0 |
-| [defmt-macros](https://github.com/knurling-rs/defmt) | 1.2.0 | MIT OR Apache-2.0 |
-| [defmt-parser](https://github.com/knurling-rs/defmt) | 1.1.0 | MIT OR Apache-2.0 |
 | [der](https://github.com/RustCrypto/formats/tree/master/der) | 0.7.10 | Apache-2.0 OR MIT |
-| [der](https://github.com/RustCrypto/formats) | 0.8.2 | Apache-2.0 OR MIT |
+| [der](https://github.com/RustCrypto/formats) | 0.8.3 | Apache-2.0 OR MIT |
 | [der-parser](https://github.com/rusticata/der-parser) | 10.0.0 | MIT OR Apache-2.0 |
 | [deranged](https://github.com/jhpratt/deranged) | 0.5.9 | MIT OR Apache-2.0 |
-| [derive-deftly](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
-| [derive-deftly-macros](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
+| [derive-deftly](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.14.0 | MIT |
+| [derive-deftly-macros](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.14.0 | MIT |
 | [derive-new](https://github.com/nrc/derive-new) | 0.7.0 | MIT |
 | [derive_builder](https://github.com/colin-kiegel/rust-derive-builder) | 0.20.2 | MIT OR Apache-2.0 |
 | [derive_builder_core](https://github.com/colin-kiegel/rust-derive-builder) | 0.20.2 | MIT OR Apache-2.0 |
@@ -870,10 +862,10 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [enum-as-inner](https://github.com/bluejekyll/enum-as-inner) | 0.6.1 | MIT OR Apache-2.0 |
 | [enum-ordinalize](https://github.com/magiclen/enum-ordinalize) | 3.1.15 | MIT |
 | [enum_dispatch](https://gitlab.com/antonok/enum_dispatch) | 0.3.13 | MIT OR Apache-2.0 |
-| [enumset](https://github.com/Lymia/enumset) | 1.1.14 | MIT OR Apache-2.0 |
-| [enumset_derive](https://github.com/Lymia/enumset) | 0.15.0 | MIT OR Apache-2.0 |
+| [enumset](https://github.com/Lymia/enumset) | 1.1.15 | MIT OR Apache-2.0 |
+| [enumset_derive](https://github.com/Lymia/enumset) | 0.15.1 | MIT OR Apache-2.0 |
 | [equivalent](https://github.com/indexmap-rs/equivalent) | 1.0.3 | Apache-2.0 OR MIT |
-| [errno](https://github.com/lambda-fairy/rust-errno) | 0.3.14 | MIT OR Apache-2.0 |
+| [errno](https://github.com/lambda-fairy/rust-errno) | 0.3.15 | MIT OR Apache-2.0 |
 | [esaxx-rs](https://github.com/Narsil/esaxx-rs) | 0.1.10 | Apache-2.0 |
 | [event-listener](https://github.com/smol-rs/event-listener) | 5.4.2 | Apache-2.0 OR MIT |
 | [extend](https://github.com/davidpdrsn/extend) | 1.2.0 | MIT |
@@ -885,17 +877,17 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [fiat-crypto](https://github.com/mit-plv/fiat-crypto) | 0.2.9 | MIT OR Apache-2.0 OR BSD-1-Clause |
 | [fiat-crypto](https://github.com/mit-plv/fiat-crypto) | 0.3.0 | MIT OR Apache-2.0 OR BSD-1-Clause |
 | [figment](https://github.com/SergioBenitez/Figment) | 0.10.19 | MIT OR Apache-2.0 |
-| [filetime](https://github.com/alexcrichton/filetime) | 0.2.29 | MIT OR Apache-2.0 |
-| [find-msvc-tools](https://github.com/rust-lang/cc-rs) | 0.1.14 | MIT OR Apache-2.0 |
-| [flate2](https://github.com/rust-lang/flate2-rs) | 1.1.10 | MIT OR Apache-2.0 |
+| [filetime](https://github.com/alexcrichton/filetime) | 0.2.30 | MIT OR Apache-2.0 |
+| [find-msvc-tools](https://github.com/rust-lang/cc-rs) | 0.1.15 | MIT OR Apache-2.0 |
+| [flate2](https://github.com/rust-lang/flate2-rs) | 1.1.11 | MIT OR Apache-2.0 |
 | [float8](https://github.com/EricLBuehler/float8) | 0.7.0 | MIT |
 | [fluid-let](https://github.com/ilammy/fluid-let) | 1.0.0 | MIT |
 | [fnv](https://github.com/servo/rust-fnv) | 1.0.7 | Apache-2.0 OR MIT |
 | [foldhash](https://github.com/orlp/foldhash) | 0.1.5 | Zlib |
 | [foldhash](https://github.com/orlp/foldhash) | 0.2.0 | Zlib |
 | [form_urlencoded](https://github.com/servo/rust-url) | 1.2.2 | MIT OR Apache-2.0 |
-| [fs-mistrust](https://gitlab.torproject.org/tpo/core/arti) | 0.16.0 | MIT OR Apache-2.0 |
-| [fslock-guard](https://gitlab.torproject.org/tpo/core/arti) | 0.9.0 | MIT OR Apache-2.0 |
+| [fs-mistrust](https://gitlab.torproject.org/tpo/core/arti) | 0.16.1 | MIT OR Apache-2.0 |
+| [fslock-guard](https://gitlab.torproject.org/tpo/core/arti) | 0.9.1 | MIT OR Apache-2.0 |
 | [funty](https://github.com/myrrlyn/funty) | 2.0.0 | MIT |
 | [futures](https://github.com/rust-lang/futures-rs) | 0.3.34 | MIT OR Apache-2.0 |
 | [futures-channel](https://github.com/rust-lang/futures-rs) | 0.3.34 | MIT OR Apache-2.0 |
@@ -955,13 +947,13 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [hybrid-array](https://github.com/RustCrypto/hybrid-array) | 0.4.15 | MIT OR Apache-2.0 |
 | [iana-time-zone](https://github.com/strawlab/iana-time-zone) | 0.1.65 | MIT OR Apache-2.0 |
 | [iana-time-zone-haiku](https://github.com/strawlab/iana-time-zone) | 0.1.2 | MIT OR Apache-2.0 |
-| [icu_collections](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_locale_core](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_normalizer](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_normalizer_data](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_properties](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_properties_data](https://github.com/unicode-org/icu4x) | 2.3.0 | Unicode-3.0 |
-| [icu_provider](https://github.com/unicode-org/icu4x) | 2.3.1 | Unicode-3.0 |
+| [icu_collections](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_locale_core](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_normalizer](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_normalizer_data](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_properties](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_properties_data](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
+| [icu_provider](https://github.com/unicode-org/icu4x) | 2.4.0 | Unicode-3.0 |
 | [ident_case](https://github.com/TedDriggs/ident_case) | 1.0.1 | MIT OR Apache-2.0 |
 | [idna](https://github.com/servo/rust-url) | 1.1.0 | MIT OR Apache-2.0 |
 | [idna_adapter](https://github.com/hsivonen/idna_adapter) | 1.2.2 | Apache-2.0 OR MIT |
@@ -971,18 +963,18 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [inotify](https://github.com/hannobraun/inotify-rs) | 0.11.5 | ISC |
 | [inotify-sys](https://github.com/hannobraun/inotify-sys) | 0.1.8 | ISC |
 | [inout](https://github.com/RustCrypto/utils) | 0.1.4 | MIT OR Apache-2.0 |
-| [inout](https://github.com/RustCrypto/utils) | 0.2.4 | MIT OR Apache-2.0 |
+| [inout](https://github.com/RustCrypto/utils) | 0.2.6 | MIT OR Apache-2.0 |
 | [inventory](https://github.com/dtolnay/inventory) | 0.3.25 | MIT OR Apache-2.0 |
 | [ipnet](https://github.com/krisprice/ipnet) | 2.12.2 | MIT OR Apache-2.0 |
 | [iprange](https://github.com/sticnarf/iprange-rs) | 0.6.7 | MIT |
 | [itertools](https://github.com/rust-itertools/itertools) | 0.13.0 | MIT OR Apache-2.0 |
 | [itertools](https://github.com/rust-itertools/itertools) | 0.14.0 | MIT OR Apache-2.0 |
 | [itertools](https://github.com/rust-itertools/itertools) | 0.15.0 | MIT OR Apache-2.0 |
-| [itoa](https://github.com/dtolnay/itoa) | 1.0.18 | MIT OR Apache-2.0 |
-| [jiff](https://github.com/BurntSushi/jiff) | 0.2.38 | Unlicense OR MIT |
-| [jiff-core](https://github.com/BurntSushi/jiff) | 0.1.1 | Unlicense OR MIT |
-| [jiff-static](https://github.com/BurntSushi/jiff) | 0.2.38 | Unlicense OR MIT |
-| [jiff-tzdb](https://github.com/BurntSushi/jiff) | 0.1.9 | Unlicense OR MIT |
+| [itoa](https://github.com/dtolnay/itoa) | 1.0.19 | MIT OR Apache-2.0 |
+| [jiff](https://github.com/BurntSushi/jiff) | 0.2.46 | Unlicense OR MIT |
+| [jiff-core](https://github.com/BurntSushi/jiff) | 0.1.8 | Unlicense OR MIT |
+| [jiff-static](https://github.com/BurntSushi/jiff) | 0.2.46 | Unlicense OR MIT |
+| [jiff-tzdb](https://github.com/BurntSushi/jiff) | 0.1.10 | Unlicense OR MIT |
 | [jiff-tzdb-platform](https://github.com/BurntSushi/jiff) | 0.1.3 | Unlicense OR MIT |
 | [jni](https://github.com/jni-rs/jni-rs) | 0.21.1 | MIT OR Apache-2.0 |
 | [jni-sys](https://github.com/jni-rs/jni-sys) | 0.3.1 | MIT OR Apache-2.0 |
@@ -991,13 +983,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [jobserver](https://github.com/rust-lang/jobserver-rs) | 0.1.35 | MIT OR Apache-2.0 |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.106 | MIT OR Apache-2.0 |
 | [k256](https://github.com/RustCrypto/elliptic-curves/tree/master/k256) | 0.13.4 | Apache-2.0 OR MIT |
-| [keccak](https://github.com/RustCrypto/sponges/tree/master/keccak) | 0.1.6 | Apache-2.0 OR MIT |
 | [keccak](https://github.com/RustCrypto/sponges) | 0.2.2 | Apache-2.0 OR MIT |
 | [kem](https://github.com/RustCrypto/traits) | 0.3.0 | Apache-2.0 OR MIT |
 | [kqueue](https://gitlab.com/rust-kqueue/rust-kqueue) | 1.2.1 | MIT |
 | [kqueue-sys](https://gitlab.com/rust-kqueue/rust-kqueue-sys) | 1.1.2 | MIT |
 | [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) | 1.5.1 | MIT OR Apache-2.0 |
-| [libc](https://github.com/rust-lang/libc) | 0.2.190 | MIT OR Apache-2.0 |
+| [libc](https://github.com/rust-lang/libc) | 0.2.191 | MIT OR Apache-2.0 |
 | [libcrux-aead](https://github.com/cryspen/libcrux) | 0.0.9 | Apache-2.0 |
 | [libcrux-aes](https://github.com/cryspen/libcrux) | 0.0.9 | Apache-2.0 |
 | [libcrux-chacha20poly1305](https://github.com/cryspen/libcrux) | 0.0.9 | Apache-2.0 |
@@ -1018,7 +1009,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [libcrux-sha3](https://github.com/cryspen/libcrux) | 0.0.10 | Apache-2.0 |
 | [libcrux-traits](https://github.com/cryspen/libcrux) | 0.0.8 | Apache-2.0 |
 | [libloading](https://github.com/nagisa/rust_libloading) | 0.8.9 | ISC |
-| [liblzma](https://github.com/portable-network-archive/liblzma-rs) | 0.4.8 | MIT OR Apache-2.0 |
+| [liblzma](https://github.com/portable-network-archive/liblzma-rs) | 0.4.9 | MIT OR Apache-2.0 |
 | [liblzma-sys](https://github.com/portable-network-archive/liblzma-rs) | 0.4.9 | MIT OR Apache-2.0 |
 | [libm](https://github.com/rust-lang/compiler-builtins) | 0.2.16 | MIT |
 | [libredox](https://gitlab.redox-os.org/redox-os/libredox) | 0.1.25 | MIT |
@@ -1026,30 +1017,27 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) | 0.12.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [litemap](https://github.com/unicode-org/icu4x) | 0.8.3 | Unicode-3.0 |
 | [lock_api](https://github.com/Amanieu/parking_lot) | 0.4.14 | MIT OR Apache-2.0 |
-| [log](https://github.com/rust-lang/log) | 0.4.34 | MIT OR Apache-2.0 |
+| [log](https://github.com/rust-lang/log) | 0.4.35 | MIT OR Apache-2.0 |
 | [macro_rules_attribute](https://github.com/danielhenrymantilla/macro_rules_attribute-rs) | 0.2.3 | Apache-2.0 OR MIT OR Zlib |
 | [macro_rules_attribute-proc_macro](https://github.com/danielhenrymantilla/macro_rules_attribute-rs) | 0.2.3 | Apache-2.0 OR MIT OR Zlib |
-| [matchers](https://github.com/hawkw/matchers) | 0.2.0 | MIT |
 | [matrix-pickle](https://github.com/matrix-org/matrix-pickle) | 0.2.3 | Apache-2.0 |
 | [matrix-pickle-derive](https://github.com/matrix-org/matrix-pickle) | 0.2.3 | Apache-2.0 |
 | [memchr](https://github.com/BurntSushi/memchr) | 2.8.3 | Unlicense OR MIT |
-| [memmap2](https://github.com/RazrFalcon/memmap2-rs) | 0.9.11 | MIT OR Apache-2.0 |
-| [merlin](https://github.com/zkcrypto/merlin) | 3.0.0 | MIT |
+| [memmap2](https://github.com/RazrFalcon/memmap2-rs) | 0.9.12 | MIT OR Apache-2.0 |
 | [minimal-lexical](https://github.com/Alexhuszagh/minimal-lexical) | 0.2.1 | MIT OR Apache-2.0 |
 | [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) | 0.9.1 | MIT OR Zlib OR Apache-2.0 |
-| [mio](https://github.com/tokio-rs/mio) | 1.2.4 | MIT |
-| [ml-dsa](https://github.com/RustCrypto/signatures) | 0.1.1 | Apache-2.0 OR MIT |
-| [ml-kem](https://github.com/RustCrypto/KEMs) | 0.3.3 | Apache-2.0 OR MIT |
-| [module-lattice](https://github.com/RustCrypto/KEMs) | 0.2.3 | Apache-2.0 OR MIT |
+| [mio](https://github.com/tokio-rs/mio) | 1.2.5 | MIT |
+| [ml-dsa](https://github.com/RustCrypto/signatures) | 0.1.2 | Apache-2.0 OR MIT |
+| [ml-kem](https://github.com/RustCrypto/KEMs) | 0.3.4 | Apache-2.0 OR MIT |
+| [module-lattice](https://github.com/RustCrypto/KEMs) | 0.2.4 | Apache-2.0 OR MIT |
 | [monostate](https://github.com/dtolnay/monostate) | 0.1.18 | MIT OR Apache-2.0 |
 | [monostate-impl](https://github.com/dtolnay/monostate) | 0.1.18 | MIT OR Apache-2.0 |
 | [nix](https://github.com/nix-rust/nix) | 0.32.0 | MIT |
 | [nom](https://github.com/Geal/nom) | 7.1.3 | MIT |
 | [nonany](https://github.com/rick-de-water/nonany) | 0.3.0 | MIT OR Apache-2.0 |
-| [notify](https://github.com/notify-rs/notify) | 8.2.0 | CC0-1.0 |
-| [notify-types](https://github.com/notify-rs/notify) | 2.1.0 | MIT OR Apache-2.0 |
+| [notify](https://github.com/notify-rs/notify) | 8.2.2 | CC0-1.0 |
+| [notify-types](https://github.com/notify-rs/notify) | 2.3.1 | MIT OR Apache-2.0 |
 | [ntapi](https://github.com/MSxDOS/ntapi) | 0.4.3 | Apache-2.0 OR MIT |
-| [nu-ansi-term](https://github.com/nushell/nu-ansi-term) | 0.50.3 | MIT |
 | [num-bigint](https://github.com/rust-num/num-bigint) | 0.4.8 | MIT OR Apache-2.0 |
 | [num-bigint-dig](https://github.com/dignifiedquire/num-bigint) | 0.8.6 | MIT OR Apache-2.0 |
 | [num-complex](https://github.com/rust-num/num-complex) | 0.4.6 | MIT OR Apache-2.0 |
@@ -1063,9 +1051,9 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [objc2-core-foundation](https://github.com/madsmtm/objc2) | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
 | [objc2-io-kit](https://github.com/madsmtm/objc2) | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
 | [once_cell](https://github.com/matklad/once_cell) | 1.21.4 | MIT OR Apache-2.0 |
-| [oneshot-fused-workaround](https://gitlab.torproject.org/tpo/core/arti) | 0.8.0 | MIT OR Apache-2.0 |
+| [oneshot-fused-workaround](https://gitlab.torproject.org/tpo/core/arti) | 0.8.1 | MIT OR Apache-2.0 |
 | [opaque-debug](https://github.com/RustCrypto/utils) | 0.3.1 | MIT OR Apache-2.0 |
-| [openmls](https://github.com/openmls/openmls) | 0.9.1 | MIT |
+| [openmls](https://github.com/openmls/openmls) | 0.9.2 | MIT |
 | [openmls_basic_credential](https://github.com/openmls/openmls/tree/main/basic_credential) | 0.6.0 | MIT |
 | [openmls_memory_storage](https://github.com/openmls/openmls/tree/main/memory_storage) | 0.6.0 | MIT |
 | [openmls_rust_crypto](https://github.com/openmls/openmls/tree/main/openmls_rust_crypto) | 0.6.0 | MIT |
@@ -1110,13 +1098,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [ppv-lite86](https://github.com/cryptocorrosion/cryptocorrosion) | 0.2.21 | MIT OR Apache-2.0 |
 | [prettyplease](https://github.com/dtolnay/prettyplease) | 0.2.37 | MIT OR Apache-2.0 |
 | [primeorder](https://github.com/RustCrypto/elliptic-curves/tree/master/primeorder) | 0.13.6 | Apache-2.0 OR MIT |
-| [priority-queue](https://github.com/garro95/priority-queue) | 2.7.0 | LGPL-3.0-or-later OR MPL-2.0 |
 | [proc-macro-crate](https://github.com/bkchr/proc-macro-crate) | 3.5.0 | MIT OR Apache-2.0 |
 | [proc-macro-error-attr2](https://github.com/GnomedDev/proc-macro-error-2) | 2.0.0 | MIT OR Apache-2.0 |
 | [proc-macro-error2](https://github.com/GnomedDev/proc-macro-error-2) | 2.0.1 | MIT OR Apache-2.0 |
 | [proc-macro2](https://github.com/dtolnay/proc-macro2) | 1.0.107 | MIT OR Apache-2.0 |
-| [prost](https://github.com/tokio-rs/prost) | 0.14.4 | Apache-2.0 |
-| [prost-derive](https://github.com/tokio-rs/prost) | 0.14.4 | Apache-2.0 |
+| [prost](https://github.com/tokio-rs/prost) | 0.14.6 | Apache-2.0 |
+| [prost-derive](https://github.com/tokio-rs/prost) | 0.14.6 | Apache-2.0 |
 | [pulp](https://github.com/sarah-quinones/pulp) | 0.22.3 | MIT |
 | [pulp-wasm-simd-flag](https://github.com/sarah-quinones/pulp) | 0.1.1 | MIT |
 | [pwd-grp](https://gitlab.torproject.org/tpo/core/rust-pwd-grp) | 1.0.2 | MIT |
@@ -1126,7 +1113,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [radium](https://github.com/bitvecto-rs/radium) | 0.7.0 | MIT |
 | [rand](https://github.com/rust-random/rand) | 0.8.8 | MIT OR Apache-2.0 |
 | [rand](https://github.com/rust-random/rand) | 0.9.5 | MIT OR Apache-2.0 |
-| [rand](https://github.com/rust-random/rand) | 0.10.3 | MIT OR Apache-2.0 |
+| [rand](https://github.com/rust-random/rand) | 0.10.4 | MIT OR Apache-2.0 |
 | [rand_chacha](https://github.com/rust-random/rand) | 0.3.1 | MIT OR Apache-2.0 |
 | [rand_chacha](https://github.com/rust-random/rand) | 0.9.0 | MIT OR Apache-2.0 |
 | [rand_chacha](https://github.com/rust-random/rand) | 0.10.0 | MIT OR Apache-2.0 |
@@ -1146,11 +1133,11 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [redox_users](https://gitlab.redox-os.org/redox-os/users) | 0.5.3 | MIT |
 | [ref-cast](https://github.com/dtolnay/ref-cast) | 1.0.27 | MIT OR Apache-2.0 |
 | [ref-cast-impl](https://github.com/dtolnay/ref-cast) | 1.0.27 | MIT OR Apache-2.0 |
-| [regex](https://github.com/rust-lang/regex) | 1.13.1 | MIT OR Apache-2.0 |
-| [regex-automata](https://github.com/rust-lang/regex) | 0.4.18 | MIT OR Apache-2.0 |
-| [regex-syntax](https://github.com/rust-lang/regex) | 0.8.11 | MIT OR Apache-2.0 |
+| [regex](https://github.com/rust-lang/regex) | 1.13.2 | MIT OR Apache-2.0 |
+| [regex-automata](https://github.com/rust-lang/regex) | 0.4.19 | MIT OR Apache-2.0 |
+| [regex-syntax](https://github.com/rust-lang/regex) | 0.8.12 | MIT OR Apache-2.0 |
 | [reseeding_rng](https://github.com/LiosK/reseeding_rng-rs) | 0.10.7 | Apache-2.0 |
-| [retry-error](https://gitlab.torproject.org/tpo/core/arti) | 0.14.0 | MIT OR Apache-2.0 |
+| [retry-error](https://gitlab.torproject.org/tpo/core/arti) | 0.14.1 | MIT OR Apache-2.0 |
 | [rfc6979](https://github.com/RustCrypto/signatures/tree/master/rfc6979) | 0.4.0 | Apache-2.0 OR MIT |
 | [ring](https://github.com/briansmith/ring) | 0.17.14 | Apache-2.0 AND ISC |
 | [rsa](https://github.com/RustCrypto/RSA) | 0.9.10 | MIT OR Apache-2.0 |
@@ -1162,15 +1149,15 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [rusticata-macros](https://github.com/rusticata/rusticata-macros) | 4.1.0 | MIT OR Apache-2.0 |
 | [rustix](https://github.com/bytecodealliance/rustix) | 1.1.6 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [rustls](https://github.com/rustls/rustls) | 0.23.46 | Apache-2.0 OR ISC OR MIT |
-| [rustls-pki-types](https://github.com/rustls/pki-types) | 1.15.1 | MIT OR Apache-2.0 |
-| [rustls-webpki](https://github.com/rustls/webpki) | 0.103.16 | ISC |
+| [rustls-pki-types](https://github.com/rustls/pki-types) | 1.16.0 | MIT OR Apache-2.0 |
+| [rustls-webpki](https://github.com/rustls/webpki) | 0.103.17 | ISC |
 | [rustversion](https://github.com/dtolnay/rustversion) | 1.0.23 | MIT OR Apache-2.0 |
 | [ryu](https://github.com/dtolnay/ryu) | 1.0.23 | Apache-2.0 OR BSL-1.0 |
-| [safelog](https://gitlab.torproject.org/tpo/core/arti) | 0.10.0 | MIT OR Apache-2.0 |
+| [safelog](https://gitlab.torproject.org/tpo/core/arti) | 0.10.1 | MIT OR Apache-2.0 |
 | [safetensors](https://github.com/huggingface/safetensors) | 0.8.0 | Apache-2.0 |
 | [same-file](https://github.com/BurntSushi/same-file) | 1.0.6 | Unlicense OR MIT |
 | [sanitize-filename](https://github.com/kardeiz/sanitize-filename) | 0.6.0 | MIT |
-| [saturating-time](https://gitlab.torproject.org/tpo/core/arti) | 0.5.0 | MIT OR Apache-2.0 |
+| [saturating-time](https://gitlab.torproject.org/tpo/core/arti) | 0.6.0 | MIT OR Apache-2.0 |
 | [schemars](https://github.com/GREsau/schemars) | 0.9.0 | MIT |
 | [schemars](https://github.com/GREsau/schemars) | 1.2.3 | MIT |
 | [scopeguard](https://github.com/bluss/scopeguard) | 1.2.0 | MIT OR Apache-2.0 |
@@ -1185,7 +1172,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [serde_ignored](https://github.com/dtolnay/serde-ignored) | 0.1.14 | MIT OR Apache-2.0 |
 | [serde_json](https://github.com/serde-rs/json) | 1.0.154 | MIT OR Apache-2.0 |
 | [serde_spanned](https://github.com/toml-rs/toml) | 0.6.9 | MIT OR Apache-2.0 |
-| [serde_spanned](https://github.com/toml-rs/toml) | 1.1.2 | MIT OR Apache-2.0 |
+| [serde_spanned](https://github.com/toml-rs/toml) | 1.1.3 | MIT OR Apache-2.0 |
 | [serde_with](https://github.com/jonasbb/serde_with) | 3.24.0 | MIT OR Apache-2.0 |
 | [serde_with_macros](https://github.com/jonasbb/serde_with) | 3.24.0 | MIT OR Apache-2.0 |
 | [serdect](https://github.com/RustCrypto/formats) | 0.4.3 | Apache-2.0 OR MIT |
@@ -1193,10 +1180,8 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [sha1](https://github.com/RustCrypto/hashes) | 0.11.0 | MIT OR Apache-2.0 |
 | [sha2](https://github.com/RustCrypto/hashes) | 0.10.9 | MIT OR Apache-2.0 |
 | [sha2](https://github.com/RustCrypto/hashes) | 0.11.1 | MIT OR Apache-2.0 |
-| [sha3](https://github.com/RustCrypto/hashes) | 0.10.9 | MIT OR Apache-2.0 |
 | [sha3](https://github.com/RustCrypto/hashes) | 0.12.0 | MIT OR Apache-2.0 |
 | [shake](https://github.com/RustCrypto/XOFs) | 0.1.0 | MIT OR Apache-2.0 |
-| [sharded-slab](https://github.com/hawkw/sharded-slab) | 0.1.7 | MIT |
 | [shellexpand](https://gitlab.com/ijackson/rust-shellexpand) | 3.1.2 | MIT OR Apache-2.0 |
 | [shlex](https://github.com/comex/rust-shlex) | 1.3.0 | MIT OR Apache-2.0 |
 | [shlex](https://github.com/comex/rust-shlex) | 2.0.1 | MIT OR Apache-2.0 |
@@ -1207,8 +1192,8 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [siphasher](https://github.com/jedisct1/rust-siphash) | 1.0.4 | MIT OR Apache-2.0 |
 | [slab](https://github.com/tokio-rs/slab) | 0.4.12 | MIT |
 | [slotmap](https://github.com/orlp/slotmap) | 1.1.1 | Zlib |
-| [slotmap-careful](https://gitlab.torproject.org/tpo/core/arti) | 0.9.0 | MIT OR Apache-2.0 |
-| [smallvec](https://github.com/servo/rust-smallvec) | 1.16.3 | MIT OR Apache-2.0 |
+| [slotmap-careful](https://gitlab.torproject.org/tpo/core/arti) | 0.9.1 | MIT OR Apache-2.0 |
+| [smallvec](https://github.com/servo/rust-smallvec) | 1.16.5 | MIT OR Apache-2.0 |
 | [socket2](https://github.com/rust-lang/socket2) | 0.6.5 | MIT OR Apache-2.0 |
 | [spin](https://github.com/mvdnes/spin-rs) | 0.9.9 | MIT |
 | [spki](https://github.com/RustCrypto/formats/tree/master/spki) | 0.7.3 | Apache-2.0 OR MIT |
@@ -1221,6 +1206,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [ssh-key-fork-arti](https://github.com/RustCrypto/SSH/tree/master/ssh-key) | 0.6.7 | Apache-2.0 OR MIT |
 | [stable_deref_trait](https://github.com/storyyeller/stable_deref_trait) | 1.2.1 | MIT OR Apache-2.0 |
 | [static_assertions](https://github.com/nvzqz/static-assertions-rs) | 1.1.0 | MIT OR Apache-2.0 |
+| [strobe-rs](https://github.com/rozbb/strobe-rs) | 0.13.0 | MIT OR Apache-2.0 |
 | [strsim](https://github.com/dguo/strsim-rs) | 0.10.0 | MIT |
 | [strsim](https://github.com/rapidfuzz/strsim-rs) | 0.11.1 | MIT |
 | [strum](https://github.com/Peternator7/strum) | 0.28.0 | MIT |
@@ -1228,7 +1214,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [subtle](https://github.com/dalek-cryptography/subtle) | 2.6.1 | BSD-3-Clause |
 | [syn](https://github.com/dtolnay/syn) | 1.0.109 | MIT OR Apache-2.0 |
 | [syn](https://github.com/dtolnay/syn) | 2.0.119 | MIT OR Apache-2.0 |
-| [syn](https://github.com/dtolnay/syn) | 3.0.9 | MIT OR Apache-2.0 |
+| [syn](https://github.com/dtolnay/syn) | 3.0.10 | MIT OR Apache-2.0 |
 | [sync_wrapper](https://github.com/Actyx/sync_wrapper) | 1.0.2 | Apache-2.0 |
 | [synstructure](https://github.com/mystor/synstructure) | 0.13.2 | MIT |
 | [synstructure](https://github.com/mystor/synstructure) | 0.14.0 | MIT |
@@ -1240,73 +1226,67 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [thiserror](https://github.com/dtolnay/thiserror) | 2.0.21 | MIT OR Apache-2.0 |
 | [thiserror-impl](https://github.com/dtolnay/thiserror) | 1.0.69 | MIT OR Apache-2.0 |
 | [thiserror-impl](https://github.com/dtolnay/thiserror) | 2.0.21 | MIT OR Apache-2.0 |
-| [thread_local](https://github.com/Amanieu/thread_local-rs) | 1.1.10 | MIT OR Apache-2.0 |
 | [time](https://github.com/time-rs/time) | 0.3.55 | MIT OR Apache-2.0 |
 | [time-core](https://github.com/time-rs/time) | 0.1.9 | MIT OR Apache-2.0 |
 | [time-macros](https://github.com/time-rs/time) | 0.2.32 | MIT OR Apache-2.0 |
-| [tinystr](https://github.com/unicode-org/icu4x) | 0.8.4 | Unicode-3.0 |
+| [tinystr](https://github.com/unicode-org/icu4x) | 0.8.5 | Unicode-3.0 |
 | [tinyvec](https://github.com/Lokathor/tinyvec) | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | [tls_codec](https://github.com/RustCrypto/formats) | 0.5.0 | Apache-2.0 OR MIT |
 | [tls_codec_derive](https://github.com/RustCrypto/formats) | 0.5.0 | Apache-2.0 OR MIT |
 | [tokenizers](https://github.com/huggingface/tokenizers) | 0.23.2 | Apache-2.0 |
-| [tokio](https://github.com/tokio-rs/tokio) | 1.53.3 | MIT |
+| [tokio](https://github.com/tokio-rs/tokio) | 1.54.1 | MIT |
 | [tokio-macros](https://github.com/tokio-rs/tokio) | 2.7.2 | MIT |
 | [tokio-rustls](https://github.com/rustls/tokio-rustls) | 0.26.6 | MIT OR Apache-2.0 |
 | [tokio-tungstenite](https://github.com/snapview/tokio-tungstenite) | 0.30.0 | MIT |
 | [tokio-util](https://github.com/tokio-rs/tokio) | 0.7.20 | MIT |
 | [toml](https://github.com/toml-rs/toml) | 0.8.23 | MIT OR Apache-2.0 |
-| [toml](https://github.com/toml-rs/toml) | 1.1.8+spec-1.1.0 | MIT OR Apache-2.0 |
+| [toml](https://github.com/toml-rs/toml) | 1.2.1+spec-1.1.0 | MIT OR Apache-2.0 |
 | [toml_datetime](https://github.com/toml-rs/toml) | 0.6.11 | MIT OR Apache-2.0 |
-| [toml_datetime](https://github.com/toml-rs/toml) | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 |
+| [toml_datetime](https://github.com/toml-rs/toml) | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 |
 | [toml_edit](https://github.com/toml-rs/toml) | 0.22.27 | MIT OR Apache-2.0 |
-| [toml_edit](https://github.com/toml-rs/toml) | 0.25.17+spec-1.1.0 | MIT OR Apache-2.0 |
+| [toml_edit](https://github.com/toml-rs/toml) | 0.25.19+spec-1.1.0 | MIT OR Apache-2.0 |
 | [toml_parser](https://github.com/toml-rs/toml) | 1.1.5+spec-1.1.0 | MIT OR Apache-2.0 |
 | [toml_write](https://github.com/toml-rs/toml) | 0.1.2 | MIT OR Apache-2.0 |
-| [toml_writer](https://github.com/toml-rs/toml) | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 |
-| [tor-async-utils](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-basic-utils](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-bytes](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-cell](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-cert](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-chanmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-checkable](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-circmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-config](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-config-path](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-consdiff](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-dirclient](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-dircommon](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-dirmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-error](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-general-addr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-guardmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-hsclient](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-hscrypto](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-key-forge](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-keymgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-linkspec](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-llcrypto](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-log-ratelim](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-memquota](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-memquota-cost](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-netdir](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-netdoc](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-persist](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-proto](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-protover](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-ptmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-relay-selection](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-rtcompat](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-rtmock](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-socksproto](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
-| [tor-units](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
+| [toml_writer](https://github.com/toml-rs/toml) | 1.2.0+spec-1.1.0 | MIT OR Apache-2.0 |
+| [tor-async-utils](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-basic-utils](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-bytes](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-cell](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-cert](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-chanmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-checkable](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-circmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-config](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-config-path](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-consdiff](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-dirclient](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-dircommon](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-dirmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-error](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-general-addr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-guardmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-hsclient](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-hscrypto](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-key-forge](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-keymgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-linkspec](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-llcrypto](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-log-ratelim](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-memquota](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-memquota-cost](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-netdir](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-netdoc](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-persist](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-proto](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-protover](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-ptmgr](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-relay-selection](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-rtcompat](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-socksproto](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
+| [tor-units](https://gitlab.torproject.org/tpo/core/arti) | 0.48.0 | MIT OR Apache-2.0 |
 | [tracing](https://github.com/tokio-rs/tracing) | 0.1.44 | MIT |
 | [tracing-attributes](https://github.com/tokio-rs/tracing) | 0.1.31 | MIT |
 | [tracing-core](https://github.com/tokio-rs/tracing) | 0.1.36 | MIT |
-| [tracing-log](https://github.com/tokio-rs/tracing) | 0.2.0 | MIT |
-| [tracing-subscriber](https://github.com/tokio-rs/tracing) | 0.3.23 | MIT |
-| [tracing-test](https://github.com/dbrgn/tracing-test) | 0.2.6 | MIT |
-| [tracing-test-macro](https://github.com/dbrgn/tracing-test) | 0.2.6 | MIT |
 | [tungstenite](https://github.com/snapview/tungstenite-rs) | 0.30.0 | MIT OR Apache-2.0 |
 | [typed-index-collections](https://github.com/zheland/typed-index-collections) | 3.5.0 | MIT OR Apache-2.0 |
 | [typed-path](https://github.com/chipsenkbeil/typed-path) | 0.13.0 | MIT OR Apache-2.0 |
@@ -1322,9 +1302,9 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [untrusted](https://github.com/briansmith/untrusted) | 0.9.0 | ISC |
 | [unty](https://github.com/bincode-org/unty) | 0.0.4 | MIT OR Apache-2.0 |
 | [url](https://github.com/servo/rust-url) | 2.5.8 | MIT OR Apache-2.0 |
-| [utf8_iter](https://github.com/hsivonen/utf8_iter) | 1.0.4 | Apache-2.0 OR MIT |
-| [uuid](https://github.com/uuid-rs/uuid) | 1.28.0 | Apache-2.0 OR MIT |
-| [valuable](https://github.com/tokio-rs/valuable) | 0.1.1 | MIT |
+| [utf8_iter](https://github.com/hsivonen/utf8_iter) | 1.1.0 | Apache-2.0 OR MIT |
+| [utf_types](https://github.com/hsivonen/utf_types) | 1.0.0 | Apache-2.0 OR MIT |
+| [uuid](https://github.com/uuid-rs/uuid) | 1.29.3 | Apache-2.0 OR MIT |
 | [vcpkg](https://github.com/mcgoo/vcpkg-rs) | 0.2.15 | MIT OR Apache-2.0 |
 | [version_check](https://github.com/SergioBenitez/version_check) | 0.9.5 | MIT OR Apache-2.0 |
 | [visibility](https://github.com/danielhenrymantilla/visibility.rs) | 0.1.1 | Zlib OR MIT OR Apache-2.0 |
@@ -1340,9 +1320,9 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [wasm-bindgen-shared](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared) | 0.2.129 | MIT OR Apache-2.0 |
 | [weak-table](https://github.com/tov/weak-table-rs) | 0.4.0 | MIT |
 | [web-time](https://github.com/daxpedda/web-time) | 1.1.0 | MIT OR Apache-2.0 |
-| [web-time-compat](https://gitlab.torproject.org/tpo/core/arti) | 0.3.0 | MIT OR Apache-2.0 |
+| [web-time-compat](https://gitlab.torproject.org/tpo/core/arti) | 0.3.1 | MIT OR Apache-2.0 |
 | [webpki-roots](https://github.com/rustls/webpki-roots) | 0.26.11 | CDLA-Permissive-2.0 |
-| [webpki-roots](https://github.com/rustls/webpki-roots) | 1.0.10 | CDLA-Permissive-2.0 |
+| [webpki-roots](https://github.com/rustls/webpki-roots) | 1.0.12 | CDLA-Permissive-2.0 |
 | [winapi](https://github.com/retep998/winapi-rs) | 0.3.9 | MIT OR Apache-2.0 |
 | [winapi-i686-pc-windows-gnu](https://github.com/retep998/winapi-rs) | 0.4.0 | MIT OR Apache-2.0 |
 | [winapi-util](https://github.com/BurntSushi/winapi-util) | 0.1.11 | Unlicense OR MIT |
@@ -1360,60 +1340,50 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [windows-sys](https://github.com/microsoft/windows-rs) | 0.45.0 | MIT OR Apache-2.0 |
 | [windows-sys](https://github.com/microsoft/windows-rs) | 0.52.0 | MIT OR Apache-2.0 |
 | [windows-sys](https://github.com/microsoft/windows-rs) | 0.59.0 | MIT OR Apache-2.0 |
-| [windows-sys](https://github.com/microsoft/windows-rs) | 0.60.2 | MIT OR Apache-2.0 |
 | [windows-sys](https://github.com/microsoft/windows-rs) | 0.61.2 | MIT OR Apache-2.0 |
 | [windows-targets](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows-targets](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows-targets](https://github.com/microsoft/windows-rs) | 0.53.5 | MIT OR Apache-2.0 |
 | [windows-threading](https://github.com/microsoft/windows-rs) | 0.2.1 | MIT OR Apache-2.0 |
 | [windows_aarch64_gnullvm](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_aarch64_gnullvm](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_aarch64_gnullvm](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_aarch64_msvc](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_aarch64_msvc](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_aarch64_msvc](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_i686_gnu](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_i686_gnu](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_i686_gnu](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_i686_gnullvm](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_i686_gnullvm](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_i686_msvc](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_i686_msvc](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_i686_msvc](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_x86_64_gnu](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_x86_64_gnu](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_x86_64_gnu](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_x86_64_gnullvm](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_x86_64_gnullvm](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_x86_64_gnullvm](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [windows_x86_64_msvc](https://github.com/microsoft/windows-rs) | 0.42.2 | MIT OR Apache-2.0 |
 | [windows_x86_64_msvc](https://github.com/microsoft/windows-rs) | 0.52.6 | MIT OR Apache-2.0 |
-| [windows_x86_64_msvc](https://github.com/microsoft/windows-rs) | 0.53.1 | MIT OR Apache-2.0 |
 | [winnow](https://github.com/winnow-rs/winnow) | 0.7.15 | MIT |
-| [winnow](https://github.com/winnow-rs/winnow) | 1.0.4 | MIT |
+| [winnow](https://github.com/winnow-rs/winnow) | 1.0.5 | MIT |
 | [wit-bindgen](https://github.com/bytecodealliance/wit-bindgen) | 0.57.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [writeable](https://github.com/unicode-org/icu4x) | 0.6.4 | Unicode-3.0 |
 | [wyz](https://github.com/myrrlyn/wyz) | 0.5.1 | MIT |
 | [x-wing](https://github.com/RustCrypto/KEMs/tree/master/x-wing) | 0.1.1 | Apache-2.0 OR MIT |
 | [x25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/x25519-dalek) | 2.0.1 | BSD-3-Clause |
 | [x25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/x25519-dalek) | 3.0.0 | BSD-3-Clause |
-| [yoke](https://github.com/unicode-org/icu4x) | 0.8.3 | Unicode-3.0 |
+| [yoke](https://github.com/unicode-org/icu4x) | 0.8.4 | Unicode-3.0 |
 | [yoke-derive](https://github.com/unicode-org/icu4x) | 0.8.4 | Unicode-3.0 |
 | [zerocopy](https://github.com/google/zerocopy) | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | [zerocopy-derive](https://github.com/google/zerocopy) | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | [zerofrom](https://github.com/unicode-org/icu4x) | 0.1.8 | Unicode-3.0 |
 | [zerofrom-derive](https://github.com/unicode-org/icu4x) | 0.1.8 | Unicode-3.0 |
-| [zeroize](https://github.com/RustCrypto/utils) | 1.9.1 | Apache-2.0 OR MIT |
+| [zeroize](https://github.com/RustCrypto/utils) | 1.9.2 | Apache-2.0 OR MIT |
 | [zeroize_derive](https://github.com/RustCrypto/utils) | 1.5.0 | Apache-2.0 OR MIT |
 | [zerotrie](https://github.com/unicode-org/icu4x) | 0.2.5 | Unicode-3.0 |
-| [zerovec](https://github.com/unicode-org/icu4x) | 0.11.8 | Unicode-3.0 |
-| [zerovec-derive](https://github.com/unicode-org/icu4x) | 0.11.6 | Unicode-3.0 |
+| [zerovec](https://github.com/unicode-org/icu4x) | 0.11.9 | Unicode-3.0 |
+| [zerovec-derive](https://github.com/unicode-org/icu4x) | 0.11.7 | Unicode-3.0 |
 | [zip](https://github.com/zip-rs/zip2) | 9.7.0 | MIT |
 | [zlib-rs](https://github.com/trifectatechfoundation/zlib-rs) | 0.6.8 | Zlib |
 | [zmij](https://github.com/dtolnay/zmij) | 1.0.23 | MIT |
-| [zstd](https://github.com/gyscos/zstd-rs) | 0.14.3 | BSD-3-Clause |
-| [zstd-safe](https://github.com/gyscos/zstd-rs) | 8.2.0 | BSD-3-Clause |
-| [zstd-sys](https://github.com/gyscos/zstd-rs) | 2.1.2+zstd.1.5.7 | BSD-3-Clause |
+| [zstd](https://github.com/gyscos/zstd-rs) | 0.14.4 | BSD-3-Clause |
+| [zstd-safe](https://github.com/gyscos/zstd-rs) | 8.3.0 | BSD-3-Clause |
+| [zstd-sys](https://github.com/gyscos/zstd-rs) | 2.1.3+zstd.1.5.7 | BSD-3-Clause AND BSD-2-Clause |
 
 ### Go modules for the Tor bridges
 
