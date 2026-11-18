@@ -39,6 +39,7 @@ On main, not released yet:
 
 - New chat on a phone with no relay yet has **Pair with a code** too, under its QR code (`app/chat.tsx`): the phones meet on public Nostr relays and trade contact links, which needs no relay of one's own; it was left out of the newcomer's screen. New chat also no longer shows the screen of a phone with a relay for a moment before the newcomer's (`loaded`).
 
+- A Telegram, Matrix, XMPP or Nostr chat that opened at its last message no longer moves by itself to other messages as older ones come in above (`components/network-thread.tsx`): read away from its end, what was in view stays, moved down by as much as they take, as the Matrix chat already did; a short thread, all of it in view, counts as read at its end, so it stays there as the older messages come. Reported by the maintainer on Erevos+ 7.3.0-beta.2 (Telegram).
 ### Under the hood
 
 - The release's APK build stops after 50 minutes (`.github/workflows/release.yml`): on 7.2.0-beta.2 the F-Droid APK hung in its last packaging step for close to two hours, which held back the whole release; now the release comes out after at most about an hour, without the APK that hung. The Erevos+ build (`.github/workflows/erevosgram.yml`) stops a hung APK build after 90 minutes instead of 180.

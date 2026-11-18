@@ -107,12 +107,27 @@ export function useNetworkThread<T>({
 
   function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     view.current.y = event.nativeEvent.contentOffset.y;
-    following.current = Math.abs(view.current.y + shows() - footEnd()) < NEAR;
+    // At the end, or all of it in view (a short thread, whose end shows at the top).
+    following.current = view.current.y + shows() > footEnd() - NEAR;
     arrowsAt();
   }
 
   // Opened, or grown: at the message field once, and after that while it is read there.
   const opened = useRef(false);
+
+  // Older messages come in above, while the thread is read away from its end: what was in view
+  // stays, moved down by as much as they take (`keep`: how tall it all was before them). Else the
+  // view stayed where it was over what came, and the thread seemed to scroll by itself.
+  const tall = useRef(0);
+  const first = useRef<string | null>(null);
+  const keep = useRef<number | null>(null);
+  const firstNow = list.length > 0 ? idOf(list[0]) : null;
+  if (firstNow !== first.current) {
+    if (first.current !== null && firstNow !== null && opened.current && !following.current && tall.current > 0 && list.some((message) => idOf(message) === first.current)) {
+      keep.current ??= tall.current;
+    }
+    first.current = firstNow;
+  }
 
   // The message the chat was opened at, until it is gone to, or found not to be here.
   const goal = useRef<string | null>(openAt || null);
@@ -158,7 +173,20 @@ export function useNetworkThread<T>({
   const scrollProps = {
     scrollEventThrottle: 100,
     onScroll,
-    onContentSizeChange,
+    onContentSizeChange: (_width?: number, height?: number) => {
+      if (height !== undefined) {
+        const before = keep.current;
+        if (before !== null && height !== before) {
+          keep.current = null;
+          if (!following.current) {
+            view.current.y = Math.max(0, view.current.y + height - before);
+            scroll.current?.scrollTo({ y: view.current.y, animated: false });
+          }
+        }
+        tall.current = height;
+      }
+      onContentSizeChange();
+    },
     onLayout: (event: LayoutChangeEvent) => {
       view.current.height = event.nativeEvent.layout.height;
       onContentSizeChange();
