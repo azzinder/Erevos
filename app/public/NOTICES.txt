@@ -1013,7 +1013,7 @@ The app's JavaScript packages (609)
   Source: https://github.com/DefinitelyTyped/DefinitelyTyped
   Text: LICENSE [35]
 
-@types/react 19.2.18
+@types/react 19.3.0
   Licence: MIT
   Source: https://github.com/DefinitelyTyped/DefinitelyTyped
   Text: LICENSE [35]
@@ -2574,7 +2574,7 @@ range-parser 1.2.1
   Source: https://github.com/jshttp/range-parser
   Text: LICENSE [184]
 
-react 19.3.1
+react 19.3.0
   Licence: MIT
   Source: https://github.com/react/react
   Text: LICENSE [24]
@@ -2584,7 +2584,7 @@ react-devtools-core 6.1.5
   Source: https://github.com/facebook/react
   Text: MIT, standard text [18]
 
-react-dom 19.3.1
+react-dom 19.3.0
   Licence: MIT
   Source: https://github.com/react/react
   Text: LICENSE [24]
@@ -2649,7 +2649,7 @@ react-native-quick-crypto 1.1.10
   Source: https://github.com/margelo/react-native-quick-crypto
   Text: MIT, standard text [18]
 
-react-native-reanimated 4.7.2
+react-native-reanimated 4.7.1
   Licence: MIT
   Source: https://github.com/software-mansion/react-native-reanimated
   Text: LICENSE [188]
@@ -2664,7 +2664,7 @@ react-native-screens 4.30.1
   Source: https://github.com/software-mansion/react-native-screens
   Text: LICENSE [193]
 
-react-native-svg 15.16.1
+react-native-svg 15.16.0
   Licence: MIT
   Source: https://github.com/software-mansion/react-native-svg
   Text: LICENSE [194]
@@ -2679,7 +2679,7 @@ react-native-webrtc 155.0.1
   Source: https://github.com/react-native-webrtc/react-native-webrtc
   Text: LICENSE [196]
 
-react-native-worklets 0.13.1
+react-native-worklets 0.13.0
   Licence: MIT
   Source: https://github.com/software-mansion/react-native-reanimated
   Text: LICENSE [197]

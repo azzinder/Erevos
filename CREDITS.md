@@ -238,7 +238,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@types/istanbul-lib-report](https://github.com/DefinitelyTyped/DefinitelyTyped) | 3.0.3 | MIT |
 | [@types/istanbul-reports](https://github.com/DefinitelyTyped/DefinitelyTyped) | 3.0.4 | MIT |
 | [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) | 26.6.6 | MIT |
-| [@types/react](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.2.18 | MIT |
+| [@types/react](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.3.0 | MIT |
 | [@types/react-test-renderer](https://github.com/DefinitelyTyped/DefinitelyTyped) | 19.3.1 | MIT |
 | [@types/yargs](https://github.com/DefinitelyTyped/DefinitelyTyped) | 17.0.35 | MIT |
 | [@types/yargs-parser](https://github.com/DefinitelyTyped/DefinitelyTyped) | 21.0.3 | MIT |
@@ -551,9 +551,9 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [prompts](https://github.com/terkelg/prompts) | 2.4.2 | MIT |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | 2.0.4 | MIT |
 | [range-parser](https://github.com/jshttp/range-parser) | 1.2.1 | MIT |
-| [react](https://github.com/react/react) | 19.3.1 | MIT |
+| [react](https://github.com/react/react) | 19.3.0 | MIT |
 | [react-devtools-core](https://github.com/facebook/react) | 6.1.5 | MIT |
-| [react-dom](https://github.com/react/react) | 19.3.1 | MIT |
+| [react-dom](https://github.com/react/react) | 19.3.0 | MIT |
 | [react-fast-compare](https://github.com/FormidableLabs/react-fast-compare) | 3.2.3 | MIT |
 | [react-freeze](https://github.com/software-mansion/react-freeze) | 1.0.4 | MIT |
 | [react-is](https://github.com/facebook/react) | 18.3.1 | MIT |
@@ -566,13 +566,13 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [react-native-nitro-modules](https://github.com/margelo/nitro) | 0.37.2 | MIT |
 | [react-native-quick-base64](https://github.com/craftzdog/react-native-quick-base64) | 3.0.1 | MIT |
 | [react-native-quick-crypto](https://github.com/margelo/react-native-quick-crypto) | 1.1.10 | MIT |
-| [react-native-reanimated](https://github.com/software-mansion/react-native-reanimated) | 4.7.2 | MIT |
+| [react-native-reanimated](https://github.com/software-mansion/react-native-reanimated) | 4.7.1 | MIT |
 | [react-native-safe-area-context](https://github.com/appandflow/react-native-safe-area-context) | 5.11.1 | MIT |
 | [react-native-screens](https://github.com/software-mansion/react-native-screens) | 4.30.1 | MIT |
-| [react-native-svg](https://github.com/software-mansion/react-native-svg) | 15.16.1 | MIT |
+| [react-native-svg](https://github.com/software-mansion/react-native-svg) | 15.16.0 | MIT |
 | [react-native-web](https://github.com/necolas/react-native-web) | 0.21.4 | MIT |
 | [react-native-webrtc](https://github.com/react-native-webrtc/react-native-webrtc) | 155.0.1 | MIT |
-| [react-native-worklets](https://github.com/software-mansion/react-native-reanimated) | 0.13.1 | MIT |
+| [react-native-worklets](https://github.com/software-mansion/react-native-reanimated) | 0.13.0 | MIT |
 | [react-refresh](https://github.com/facebook/react) | 0.14.2 | MIT |
 | [readable-stream](https://github.com/nodejs/readable-stream) | 4.7.0 | MIT |
 | [regenerate](https://github.com/mathiasbynens/regenerate) | 1.5.0 | MIT |
