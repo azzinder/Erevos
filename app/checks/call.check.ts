@@ -732,10 +732,41 @@ test('through a call relay, the description goes soon after its first address re
   listeners.get('icecandidate')!.forEach((l) => l({ candidate: { candidate: 'candidate:1 1 udp 1 203.0.113.9 50001 typ relay' } }));
   assert.match(await sdp, /typ relay/);
   assert.ok(Date.now() - began < GATHER_MS / 2 && Date.now() - began >= RELAYED_GRACE_MS - 50);
-  // Direct on the same network, it waits for every address as before: none of this is listened to.
-  const direct = new Map<string, unknown[]>();
-  void describedSdp({ ...connection, addEventListener: (type: string, l: unknown) => direct.set(type, [l]) } as typeof connection, true).catch(() => undefined);
-  assert.equal(direct.has('icecandidate'), false);
+  // Direct on the same network, it waits for every address as before: one while gathering ends nothing.
+  const direct = new Map<string, ((event?: unknown) => void)[]>();
+  let directSent = false;
+  void describedSdp({ ...connection, addEventListener: (type: string, l: (event?: unknown) => void) => direct.set(type, [l]) } as typeof connection, true)
+    .then(() => (directSent = true))
+    .catch(() => undefined);
+  direct.get('icecandidate')!.forEach((l) => l({ candidate: { candidate: 'candidate:3 1 udp 1 192.168.1.20 50002 typ host' } }));
+  await new Promise((r) => setTimeout(r, RELAYED_GRACE_MS + 100));
+  assert.equal(directSent, false);
+});
+
+test('«complete» said before any address is not taken: the description waits for the addresses', async () => {
+  // As WebRTC 155 on a Pixel did: gathering said complete at once, the relayed address 150 ms later.
+  for (const direct of [false, true]) {
+    const listeners = new Map<string, ((event?: unknown) => void)[]>();
+    const connection = {
+      iceGatheringState: 'complete',
+      connectionState: 'new',
+      localDescription: { sdp: 'v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' },
+      addEventListener(type: string, listener: (event?: unknown) => void) {
+        listeners.set(type, [...(listeners.get(type) ?? []), listener]);
+      },
+    } as unknown as Parameters<typeof describedSdp>[0] & { localDescription: { sdp: string } };
+    const fire = (type: string, event?: unknown) => listeners.get(type)?.forEach((l) => l(event));
+    let sent: string | null = null;
+    const sdp = describedSdp(connection, direct).then((s) => (sent = s));
+    fire('icecandidate', { candidate: null });
+    fire('icegatheringstatechange');
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(sent, null, 'nothing goes while it holds no address');
+    const line = direct ? 'candidate:1 1 udp 1 192.168.1.20 50001 typ host' : 'candidate:1 1 udp 1 203.0.113.9 50001 typ relay';
+    connection.localDescription = { sdp: `${connection.localDescription.sdp}a=${line}\r\n` };
+    fire('icecandidate', { candidate: { candidate: line } });
+    assert.match(await sdp, /a=candidate:/);
+  }
 });
 
 test('their picture is not put aside by their sound coming in a stream of its own', () => {

@@ -317,6 +317,8 @@ export function candidateFits(candidate: { candidate: string }, direct: boolean)
   return !direct || isLocalAddress(candidateAddress(candidate.candidate));
 }
 
+const hasCandidate = (sdp: string): boolean => /^a=candidate:/m.test(sdp);
+
 /** A connection's session description once the addresses to try are in it, or after GATHER_MS
  *  with those found by then. `direct`: with no call relay, only its addresses on this network. */
 export function describedSdp(connection: Connection, direct = false): Promise<string> {
@@ -329,18 +331,29 @@ export function describedSdp(connection: Connection, direct = false): Promise<st
       else resolve(sdp);
     };
     let timer = setTimeout(done, GATHER_MS);
-    if (connection.iceGatheringState === 'complete') done();
+    // «Complete» with no address in it yet is not taken: WebRTC 155 on Android says it before it
+    // has seen the phone's networks (found on a Pixel, 2026-11-18), and its addresses come a moment
+    // later. Sent without them, the other side has nothing to try, and both stay at «Connecting».
+    const complete = () => connection.iceGatheringState === 'complete' && hasCandidate(connection.localDescription?.sdp ?? '');
+    if (complete()) done();
     else {
-      connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
-      // Through a call relay: soon after the first address it relays over UDP, not after every one.
+      connection.addEventListener('icegatheringstatechange', () => complete() && done());
       let soon = false;
-      if (!direct)
-        connection.addEventListener('icecandidate', ({ candidate }) => {
-          if (soon || !candidate || !/ udp .* typ relay/i.test(candidate.candidate)) return;
-          soon = true;
-          clearTimeout(timer);
-          timer = setTimeout(done, RELAYED_GRACE_MS);
-        });
+      connection.addEventListener('icecandidate', ({ candidate }) => {
+        if (soon) return;
+        // The last word (no candidate) after the addresses came: what there is goes.
+        if (!candidate) {
+          if (complete()) done();
+          return;
+        }
+        // Through a call relay: soon after the first address it relays over UDP, not after every one.
+        // Direct on one network: soon after an address there, should «complete» have come already.
+        const enough = direct ? connection.iceGatheringState === 'complete' : / udp .* typ relay/i.test(candidate.candidate);
+        if (!enough) return;
+        soon = true;
+        clearTimeout(timer);
+        timer = setTimeout(done, RELAYED_GRACE_MS);
+      });
     }
   });
 }
