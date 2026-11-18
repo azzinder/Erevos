@@ -32,10 +32,10 @@ pub const MOST: usize = 48_000 * 75;
 /// `pcm` (16-bit little-endian, mono, at `rate` samples a second) with its voice changed as `kind` says.
 pub fn change(pcm: &[u8], rate: u32, kind: u8) -> Result<Vec<u8>, Error> {
     let factor = factor_of(kind).ok_or(Error::Malformed)?;
-    if pcm.len() % 2 != 0 || pcm.len() / 2 > MOST || !(8_000..=96_000).contains(&rate) {
+    if !pcm.len().is_multiple_of(2) || pcm.len() / 2 > MOST || !(8_000..=96_000).contains(&rate) {
         return Err(Error::Malformed);
     }
-    let samples: Vec<f32> = pcm.chunks_exact(2).map(|b| f32::from(i16::from_le_bytes([b[0], b[1]]))).collect();
+    let samples: Vec<f32> = pcm.as_chunks::<2>().0.iter().map(|b| f32::from(i16::from_le_bytes(*b))).collect();
     let shifted = shift(&samples, rate, factor);
     Ok(shifted.iter().flat_map(|s| (s.round().clamp(-32768.0, 32767.0) as i16).to_le_bytes()).collect())
 }

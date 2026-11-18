@@ -16,6 +16,7 @@ On main, not released yet:
 
 ### Under the hood
 
+- The Rust check passes again with Rust 1.99's clippy (`crates/erevos-core/src/voice_shift.rs`): `is_multiple_of(2)` and `as_chunks::<2>()` in place of `% 2` and `chunks_exact(2)`, the same samples. Reported by the maintainer.
 ## 7.2.0-beta.3 (2026-11-18)
 
 ### For you
