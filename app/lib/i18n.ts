@@ -12,7 +12,10 @@ import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
 import { SH } from '../i18n/sh/index';
 import { EDITION, named, namesEditions, ownNames, type Edition } from './edition';
-import { secureGet, secureSet } from './secure';
+
+// The kept choice is read and written through lib/secure, which itself shows words through t() (lib/shell,
+// lib/web-store): it is taken when first needed, not at load, so neither waits on the other half made.
+const secure = () => import('./secure');
 
 /**
  * The app's language, for the whole app on every platform: English, Greek or another of LANGS.
@@ -130,13 +133,15 @@ export async function setLang(next: Lang): Promise<void> {
     current = next;
     for (const listener of listeners) listener();
   }
-  await secureSet(KEY, next).catch(() => undefined);
+  await secure()
+    .then(({ secureSet }) => secureSet(KEY, next))
+    .catch(() => undefined);
 }
 
 /** Reads the kept choice, once at start, before the first screen. */
 export async function loadLang(): Promise<Lang> {
   try {
-    const kept = await secureGet(KEY);
+    const kept = await (await secure()).secureGet(KEY);
     if (kept && (LANGS as string[]).includes(kept)) {
       if (kept !== current) {
         current = kept as Lang;
@@ -152,7 +157,9 @@ export async function loadLang(): Promise<Lang> {
 /** Reads the choice again, as a restored backup put it (lib/backup-settings.ts): the phone's
  *  language when it holds none. */
 export async function reloadLang(): Promise<Lang> {
-  const kept = await secureGet(KEY).catch(() => null);
+  const kept = await secure()
+    .then(({ secureGet }) => secureGet(KEY))
+    .catch(() => null);
   const next = kept && (LANGS as string[]).includes(kept) ? (kept as Lang) : deviceLang();
   if (next !== current) {
     current = next;

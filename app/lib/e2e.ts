@@ -18,7 +18,7 @@ import { isVoicePart, splitVoice, voiceIdOf, type VoicePart } from './voice';
 import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_OVERHEAD, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import { bodyOf, checkedList, checkedPass, PASS_MARGIN, readPass, verifyList, verifyPass, type DeviceList, type Pass } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
-import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { fromBase64, fromBase64Url, fromHex, randomBytes, sha256Bytes, toBase64, toBase64Url, toHex, utf8Decode, utf8Encode } from './crypto';
 import { circuitOf, tellTorChats } from './tor-chats';
 import { canTryLater, isQueueFull, sameRelay } from './relay';
 import { TooLargeForSlowWayError } from './nearby';
@@ -581,13 +581,8 @@ function withShots<C extends Contact>(contact: C, shots: Shots | null): C {
 }
 
 /** Base64url without padding, as the contact link carries the bundle. */
-export function toBase64Url(bytes: Uint8Array): string {
-  return toBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-export function fromBase64Url(text: string): Uint8Array {
-  return fromBase64(text.replace(/-/g, '+').replace(/_/g, '/'));
-}
+// lib/crypto has them, so that lib/device-list need not take lib/e2e, which takes it.
+export { fromBase64Url, toBase64Url };
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
 export type ContactInfo = {

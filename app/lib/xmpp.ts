@@ -13,6 +13,7 @@ import { deviceLine } from './call-lines';
 import type { Preview } from './chat-parts';
 import type { ChatWriting } from './chat-writing';
 import { t } from './i18n';
+import { bare, domainOf, isXmppId, newXmppId, NS, XmppError } from './xmpp-base';
 import { cleanStatus, isOn, type NetPresence } from './net-presence';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
 import {
@@ -101,38 +102,6 @@ import { editionName } from './edition';
 // XEP-0313) when it connects again; ones sent from the account's other devices come as carbons
 // (XEP-0280).
 
-export const NS = {
-  client: 'jabber:client',
-  streams: 'http://etherx.jabber.org/streams',
-  sasl: 'urn:ietf:params:xml:ns:xmpp-sasl',
-  bind: 'urn:ietf:params:xml:ns:xmpp-bind',
-  session: 'urn:ietf:params:xml:ns:xmpp-session',
-  stanzas: 'urn:ietf:params:xml:ns:xmpp-stanzas',
-  roster: 'jabber:iq:roster',
-  carbons: 'urn:xmpp:carbons:2',
-  forward: 'urn:xmpp:forward:0',
-  delay: 'urn:xmpp:delay',
-  mam: 'urn:xmpp:mam:2',
-  rsm: 'http://jabber.org/protocol/rsm',
-  receipts: 'urn:xmpp:receipts',
-  markers: 'urn:xmpp:chat-markers:0',
-  sid: 'urn:xmpp:sid:0',
-  hints: 'urn:xmpp:hints',
-  eme: 'urn:xmpp:eme:0',
-  ping: 'urn:xmpp:ping',
-  discoInfo: 'http://jabber.org/protocol/disco#info',
-  jmi: 'urn:xmpp:jingle-message:0',
-  jingle: 'urn:xmpp:jingle:1',
-  muji: 'urn:xmpp:jingle:muji:0',
-  callInvites: 'urn:xmpp:call-invites:0',
-  /** The older Call Invites, which Dino still sends and reads. */
-  callMessage: 'urn:xmpp:call-message:1',
-  extdisco: 'urn:xmpp:extdisco:2',
-  caps: 'http://jabber.org/protocol/caps',
-  pubsubEvent: 'http://jabber.org/protocol/pubsub#event',
-  bookmarks: 'urn:xmpp:bookmarks:1',
-  blocking: 'urn:xmpp:blocking',
-} as const;
 
 /** How many messages each chat keeps. */
 export const KEEP_MESSAGES = 300;
@@ -258,38 +227,9 @@ export type XmppState = {
   unseenBy?: string[];
 };
 
-export class XmppError extends Error {
-  readonly condition: string;
-  constructor(message: string, condition = '') {
-    super(message);
-    this.condition = condition;
-  }
-}
 
-// ---- JIDs ----
-
-/** user@domain/resource without the resource, lower-cased where XMPP says case does not matter. */
-export function bare(jid: string): string {
-  const slash = jid.indexOf('/');
-  const base = slash >= 0 ? jid.slice(0, slash) : jid;
-  const at = base.indexOf('@');
-  return at >= 0 ? `${base.slice(0, at).toLowerCase()}@${base.slice(at + 1).toLowerCase()}` : base.toLowerCase();
-}
-
-export function domainOf(jid: string): string {
-  const b = bare(jid);
-  return b.slice(b.indexOf('@') + 1);
-}
-
-/** Whether `text` is a JID with a person in it, as name@example.org. */
-export function isXmppId(text: string): boolean {
-  return /^[^\s@/"&'<>:]+@[a-z0-9-]+(\.[a-z0-9-]+)*$/i.test(text.trim());
-}
-
-/** An id for a stanza or a message. */
-export function newXmppId(): string {
-  return `erevos-${toHex(randomBytes(9))}`;
-}
+// They live in lib/xmpp-base, which lib/xmpp-muc takes without taking this file.
+export { bare, domainOf, isXmppId, newXmppId, NS, XmppError };
 const newId = newXmppId;
 
 /** A chat's name: the one in the contacts, or a group's own, or the part before the @. */

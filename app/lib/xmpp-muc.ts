@@ -4,7 +4,8 @@
 
 import { randomBytes, toHex } from './crypto';
 import { t } from './i18n';
-import { bare, domainOf, isXmppId, newXmppId, NS, XmppError, type Taken, type XmppChat, type XmppConnection, type XmppState } from './xmpp';
+import type { Taken, XmppChat, XmppConnection, XmppState } from './xmpp';
+import { bare, domainOf, isXmppId, newXmppId, NS, XmppError } from './xmpp-base';
 import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 
 // Group chats on XMPP (docs/xmpp.md), as Conversations, Monal, Gajim and Dino have them: rooms of

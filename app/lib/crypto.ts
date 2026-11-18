@@ -146,6 +146,15 @@ function jsToBase64(bytes: Uint8Array): string {
   return out;
 }
 
+/** Base64 with - and _ for + and /, and no = at the end: the form URLs and device lists carry. */
+export function toBase64Url(bytes: Uint8Array): string {
+  return toBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function fromBase64Url(text: string): Uint8Array {
+  return fromBase64(text.replace(/-/g, '+').replace(/_/g, '/'));
+}
+
 export function fromBase64(text: string): Uint8Array {
   const clean = text.replace(/[^A-Za-z0-9+/]/g, '');
   // Whole groups of four, padded as the native one wants; a lone last letter is no byte, as below.

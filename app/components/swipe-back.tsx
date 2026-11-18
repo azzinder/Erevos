@@ -33,19 +33,26 @@ export function SwipeBack({ onBack, enabled = true, style, children }: {
   const colors = useColors();
   const x = useRef(new Animated.Value(0)).current;
   const width = useRef(360);
-  const back = useRef<{ run: (() => void) | null }>({ run: null });
-  back.current.run = !enabled ? null : onBack ?? (router.canGoBack() ? () => router.back() : null);
+  // What a swipe would do, asked as the finger moves (not while drawing, where expo-router's
+  // canGoBack() may be out of date): nothing when off, `onBack`, or the screen before if any.
+  const back = useRef<{ enabled: boolean; onBack?: () => void }>({ enabled });
+  back.current = { enabled, onBack };
+  const run = useRef(() => {
+    const { enabled: on, onBack: own } = back.current;
+    if (!on) return null;
+    return own ?? (router.canGoBack() ? () => router.back() : null);
+  });
 
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => !!back.current.run && g.dx > START && g.dx > Math.abs(g.dy) * 2.5,
+        onMoveShouldSetPanResponder: (_, g) => !!run.current() && g.dx > START && g.dx > Math.abs(g.dy) * 2.5,
         onPanResponderMove: (_, g) => x.setValue(Math.max(0, g.dx)),
         onPanResponderRelease: (_, g) => {
-          const run = back.current.run;
+          const go = run.current();
           const done = g.dx > width.current / 3 || (g.vx > FLICK && g.dx > START * 2);
           Animated.spring(x, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 24 }).start();
-          if (done && run) run();
+          if (done && go) go();
         },
         onPanResponderTerminate: () => {
           Animated.spring(x, { toValue: 0, useNativeDriver: true }).start();

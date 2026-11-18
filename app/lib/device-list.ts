@@ -4,8 +4,7 @@
 
 import { isRelay, isRelayKey, type OwnList } from '../lock/e2e-data';
 import * as core from './core';
-import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
-import { fromBase64Url, toBase64Url } from './e2e';
+import { fromBase64Url, randomBytes, toBase64Url, toHex, utf8Decode, utf8Encode } from './crypto';
 
 // The account's device list (docs/multi-device.md): the endpoint of each of its linked devices, a
 // core account the device made for itself, by its bundle, signed by the account's own identity key

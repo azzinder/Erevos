@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect } from 'react';
-import { AppState, Keyboard, type ViewProps } from 'react-native';
+import { AppState, Keyboard, Platform, type ViewProps } from 'react-native';
 import { KeyboardController, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Reanimated, { makeMutable, useAnimatedReaction, useAnimatedStyle } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -49,7 +49,9 @@ export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: V
   );
   const margin = useAnimatedStyle(
     () => ({ marginBottom: keyboardDown.value ? 0 : Math.max(-height.value - inset - bottom, 0) }),
-    [bottom, inset],
+    // Reanimated takes what the style reads by itself on the phone, and warns at a list there; only
+    // the web wants it.
+    Platform.OS === 'web' ? [bottom, inset] : undefined,
   );
   return <Reanimated.View style={[style, { paddingBottom: bottom }, margin]} {...props} />;
 }
