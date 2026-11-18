@@ -27,7 +27,7 @@ On main, not released yet:
 ### Under the hood
 
 - The release's APK build stops after 50 minutes (`.github/workflows/release.yml`): on 7.2.0-beta.2 the F-Droid APK hung in its last packaging step for close to two hours, which held back the whole release; now the release comes out after at most about an hour, without the APK that hung. The Erevos+ build (`.github/workflows/erevosgram.yml`) stops a hung APK build after 90 minutes instead of 180.
-- `cargo audit` passes again (`.cargo/audit.toml`): the five zip 1.3.1 advisories (RUSTSEC-2025-0168, RUSTSEC-2026-0367, -0368, -0369, -0429, and since 2026-11-17 -0545 and -0548) are let through for now, since zip comes only from candle-core 0.9.1 for .npz and PyTorch files, which never call `extract()`, and speech and translation load only GGUF models checked by SHA-256. Taken out with the move to candle 0.11.
+- Speech and translation run on candle 0.11.1 (`crates/erevos-speech`, was 0.9.1). It takes zip 9.7, so the seven zip 1.3.1 advisories no longer need letting through `cargo audit` and are gone from `.cargo/audit.toml`. It also brings the tokenizers crate, built without its C++ (fancy-regex, esaxx-rs without `cpp`): Erevos does not call it, so only the app's size grows a little. The speech checks pass and the Android build checks; how fast voice messages are written out and translated on a phone is still to be tried on the Pixel. CREDITS.md and NOTICES.txt anew. Requested by the maintainer.
 
 ## 7.2.0-beta.2 (2026-11-17)
 

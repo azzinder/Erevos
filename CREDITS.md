@@ -702,7 +702,7 @@ Electron, which the computer app runs on, and the packages it needs (`desktop/pa
 
 ### Rust crates
 
-The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 692 crates.
+The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 708 crates.
 
 | Crate | Version | Licence |
 | --- | --- | --- |
@@ -712,14 +712,15 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [aes](https://github.com/RustCrypto/block-ciphers) | 0.8.4 | MIT OR Apache-2.0 |
 | [aes](https://github.com/RustCrypto/block-ciphers) | 0.9.3 | MIT OR Apache-2.0 |
 | [aes-gcm](https://github.com/RustCrypto/AEADs) | 0.10.3 | Apache-2.0 OR MIT |
+| [ahash](https://github.com/tkaitchuck/ahash) | 0.8.12 | MIT OR Apache-2.0 |
 | [aho-corasick](https://github.com/BurntSushi/aho-corasick) | 1.1.5 | Unlicense OR MIT |
+| [allocator-api2](https://github.com/zakarumych/allocator-api2) | 0.2.21 | MIT OR Apache-2.0 |
 | [amplify](https://github.com/rust-amplify/rust-amplify) | 4.9.0 | MIT |
 | [amplify_derive](https://github.com/rust-amplify/amplify-derive) | 4.0.1 | Apache-2.0 |
 | [amplify_num](https://github.com/rust-amplify/amplify-num) | 0.5.4 | Apache-2.0 |
 | [amplify_syn](https://github.com/rust-amplify/amplify-derive) | 2.0.1 | Apache-2.0 |
 | [android_system_properties](https://github.com/nical/android_system_properties) | 0.1.6 | MIT OR Apache-2.0 |
 | [anyhow](https://github.com/dtolnay/anyhow) | 1.0.104 | MIT OR Apache-2.0 |
-| [arbitrary](https://github.com/rust-fuzz/arbitrary) | 1.5.0 | MIT OR Apache-2.0 |
 | [argon2](https://github.com/RustCrypto/password-hashes/tree/master/argon2) | 0.5.3 | MIT OR Apache-2.0 |
 | [arrayvec](https://github.com/bluss/arrayvec) | 0.7.8 | MIT OR Apache-2.0 |
 | [arti-client](https://gitlab.torproject.org/tpo/core/arti) | 0.47.0 | MIT OR Apache-2.0 |
@@ -737,11 +738,14 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [autocfg](https://github.com/cuviper/autocfg) | 1.5.1 | Apache-2.0 OR MIT |
 | [base16ct](https://github.com/RustCrypto/formats/tree/master/base16ct) | 0.2.0 | Apache-2.0 OR MIT |
 | [base16ct](https://github.com/RustCrypto/formats) | 1.0.0 | Apache-2.0 OR MIT |
+| [base64](https://github.com/marshallpierce/rust-base64) | 0.13.1 | MIT OR Apache-2.0 |
 | [base64](https://github.com/marshallpierce/rust-base64) | 0.22.1 | MIT OR Apache-2.0 |
 | [base64](https://github.com/marshallpierce/rust-base64) | 0.23.1 | MIT OR Apache-2.0 |
 | [base64ct](https://github.com/RustCrypto/formats) | 1.8.3 | Apache-2.0 OR MIT |
 | [bincode](https://github.com/bincode-org/bincode) | 2.0.1 | MIT |
 | [bindgen](https://github.com/rust-lang/rust-bindgen) | 0.72.1 | BSD-3-Clause |
+| [bit-set](https://github.com/contain-rs/bit-set) | 0.8.0 | Apache-2.0 OR MIT |
+| [bit-vec](https://github.com/contain-rs/bit-vec) | 0.8.0 | Apache-2.0 OR MIT |
 | [bitflags](https://github.com/bitflags/bitflags) | 1.3.2 | MIT OR Apache-2.0 |
 | [bitflags](https://github.com/bitflags/bitflags) | 2.13.2 | MIT OR Apache-2.0 |
 | [bitvec](https://github.com/bitvecto-rs/bitvec) | 1.1.1 | MIT |
@@ -759,14 +763,16 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [bytemuck_derive](https://github.com/Lokathor/bytemuck) | 1.12.1 | Zlib OR Apache-2.0 OR MIT |
 | [byteorder](https://github.com/BurntSushi/byteorder) | 1.5.0 | Unlicense OR MIT |
 | [bytes](https://github.com/tokio-rs/bytes) | 1.12.1 | MIT |
-| [candle-core](https://github.com/huggingface/candle) | 0.9.1 | MIT OR Apache-2.0 |
-| [candle-nn](https://github.com/huggingface/candle) | 0.9.1 | MIT OR Apache-2.0 |
+| [candle-core](https://github.com/huggingface/candle) | 0.11.1 | MIT OR Apache-2.0 |
+| [candle-nn](https://github.com/huggingface/candle) | 0.11.1 | MIT OR Apache-2.0 |
 | [caret](https://gitlab.torproject.org/tpo/core/arti) | 0.11.0 | MIT OR Apache-2.0 |
+| [castaway](https://github.com/sagebind/castaway) | 0.2.4 | MIT |
 | [cbc](https://github.com/RustCrypto/block-modes) | 0.2.1 | MIT OR Apache-2.0 |
 | [cc](https://github.com/rust-lang/cc-rs) | 1.8.0 | MIT OR Apache-2.0 |
 | [cesu8](https://github.com/emk/cesu8-rs) | 1.1.0 | Apache-2.0 OR MIT |
 | [cexpr](https://github.com/jethrogb/rust-cexpr) | 0.6.0 | Apache-2.0 OR MIT |
 | [cfg-if](https://github.com/rust-lang/cfg-if) | 1.0.5 | MIT OR Apache-2.0 |
+| [cfg_aliases](https://github.com/katharostech/cfg_aliases) | 0.2.2 | MIT |
 | [chacha20](https://github.com/RustCrypto/stream-ciphers) | 0.9.1 | Apache-2.0 OR MIT |
 | [chacha20](https://github.com/RustCrypto/stream-ciphers) | 0.10.2 | MIT OR Apache-2.0 |
 | [chacha20poly1305](https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305) | 0.10.1 | Apache-2.0 OR MIT |
@@ -778,10 +784,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [cmov](https://github.com/RustCrypto/utils) | 0.5.4 | Apache-2.0 OR MIT |
 | [coarsetime](https://github.com/jedisct1/rust-coarsetime) | 0.1.38 | BSD-2-Clause |
 | [combine](https://github.com/Marwes/combine) | 4.6.9 | MIT |
+| [compact_str](https://github.com/ParkMyCar/compact_str) | 0.9.1 | MIT |
 | [compression-codecs](https://github.com/Nullus157/async-compression) | 0.4.46 | MIT OR Apache-2.0 |
 | [compression-core](https://github.com/Nullus157/async-compression) | 0.4.34 | MIT OR Apache-2.0 |
 | [const-oid](https://github.com/RustCrypto/formats/tree/master/const-oid) | 0.9.6 | Apache-2.0 OR MIT |
 | [const-oid](https://github.com/RustCrypto/formats) | 0.10.2 | Apache-2.0 OR MIT |
+| [constant_time_eq](https://codeberg.org/cesarb/constant_time_eq) | 0.6.1 | CC0-1.0 OR MIT-0 OR Apache-2.0 |
 | [convert_case](https://github.com/rutrum/convert-case) | 0.10.0 | MIT |
 | [cookie-factory](https://github.com/rust-bakery/cookie-factory) | 0.3.3 | MIT |
 | [core-foundation-sys](https://github.com/servo/core-foundation-rs) | 0.8.7 | MIT OR Apache-2.0 |
@@ -808,15 +816,20 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek) | 4.1.3 | BSD-3-Clause |
 | [curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek) | 5.0.0 | BSD-3-Clause |
 | [curve25519-dalek-derive](https://github.com/dalek-cryptography/curve25519-dalek) | 0.1.1 | MIT OR Apache-2.0 |
+| [daachorse](https://github.com/daac-tools/daachorse) | 3.0.3 | MIT OR Apache-2.0 |
 | [darling](https://github.com/TedDriggs/darling) | 0.14.4 | MIT |
+| [darling](https://github.com/TedDriggs/darling) | 0.20.11 | MIT |
 | [darling](https://github.com/TedDriggs/darling) | 0.21.3 | MIT |
 | [darling](https://github.com/TedDriggs/darling) | 0.24.1 | MIT |
 | [darling_core](https://github.com/TedDriggs/darling) | 0.14.4 | MIT |
+| [darling_core](https://github.com/TedDriggs/darling) | 0.20.11 | MIT |
 | [darling_core](https://github.com/TedDriggs/darling) | 0.21.3 | MIT |
 | [darling_core](https://github.com/TedDriggs/darling) | 0.24.1 | MIT |
 | [darling_macro](https://github.com/TedDriggs/darling) | 0.14.4 | MIT |
+| [darling_macro](https://github.com/TedDriggs/darling) | 0.20.11 | MIT |
 | [darling_macro](https://github.com/TedDriggs/darling) | 0.21.3 | MIT |
 | [darling_macro](https://github.com/TedDriggs/darling) | 0.24.1 | MIT |
+| [dary_heap](https://github.com/hanmertens/dary_heap) | 0.3.9 | MIT OR Apache-2.0 |
 | [data-encoding](https://github.com/ia0/data-encoding) | 2.11.1 | MIT |
 | [defmt](https://github.com/knurling-rs/defmt) | 1.2.0 | MIT OR Apache-2.0 |
 | [defmt-macros](https://github.com/knurling-rs/defmt) | 1.2.0 | MIT OR Apache-2.0 |
@@ -828,9 +841,11 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [derive-deftly](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
 | [derive-deftly-macros](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
 | [derive-new](https://github.com/nrc/derive-new) | 0.7.0 | MIT |
-| [derive_arbitrary](https://github.com/rust-fuzz/arbitrary) | 1.5.0 | MIT OR Apache-2.0 |
+| [derive_builder](https://github.com/colin-kiegel/rust-derive-builder) | 0.20.2 | MIT OR Apache-2.0 |
+| [derive_builder_core](https://github.com/colin-kiegel/rust-derive-builder) | 0.20.2 | MIT OR Apache-2.0 |
 | [derive_builder_core_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
 | [derive_builder_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
+| [derive_builder_macro](https://github.com/colin-kiegel/rust-derive-builder) | 0.20.2 | MIT OR Apache-2.0 |
 | [derive_builder_macro_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
 | [derive_more](https://github.com/JelteF/derive_more) | 2.1.1 | MIT |
 | [derive_more-impl](https://github.com/JelteF/derive_more) | 2.1.1 | MIT |
@@ -842,7 +857,6 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [displaydoc](https://github.com/yaahc/displaydoc) | 0.2.7 | MIT OR Apache-2.0 |
 | [downcast-rs](https://github.com/marcianx/downcast-rs) | 2.0.2 | MIT OR Apache-2.0 |
 | [dyn-clone](https://github.com/dtolnay/dyn-clone) | 1.0.20 | MIT OR Apache-2.0 |
-| [dyn-stack](https://github.com/kitegi/dynstack) | 0.10.0 | MIT |
 | [dyn-stack](https://codeberg.org/sarah-quinones/dyn-stack) | 0.13.2 | MIT |
 | [dyn-stack-macros](https://github.com/kitegi/dynstack) | 0.1.3 | MIT |
 | [ecdsa](https://github.com/RustCrypto/signatures/tree/master/ecdsa) | 0.16.9 | Apache-2.0 OR MIT |
@@ -860,10 +874,12 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [enumset_derive](https://github.com/Lymia/enumset) | 0.15.0 | MIT OR Apache-2.0 |
 | [equivalent](https://github.com/indexmap-rs/equivalent) | 1.0.3 | Apache-2.0 OR MIT |
 | [errno](https://github.com/lambda-fairy/rust-errno) | 0.3.14 | MIT OR Apache-2.0 |
+| [esaxx-rs](https://github.com/Narsil/esaxx-rs) | 0.1.10 | Apache-2.0 |
 | [event-listener](https://github.com/smol-rs/event-listener) | 5.4.2 | Apache-2.0 OR MIT |
 | [extend](https://github.com/davidpdrsn/extend) | 1.2.0 | MIT |
 | [fallible-iterator](https://github.com/sfackler/rust-fallible-iterator) | 0.3.0 | MIT OR Apache-2.0 |
 | [fallible-streaming-iterator](https://github.com/sfackler/fallible-streaming-iterator) | 0.1.9 | MIT OR Apache-2.0 |
+| [fancy-regex](https://github.com/fancy-regex/fancy-regex) | 0.17.0 | MIT |
 | [fastrand](https://github.com/smol-rs/fastrand) | 2.5.0 | Apache-2.0 OR MIT |
 | [ff](https://github.com/zkcrypto/ff) | 0.13.1 | MIT OR Apache-2.0 |
 | [fiat-crypto](https://github.com/mit-plv/fiat-crypto) | 0.2.9 | MIT OR Apache-2.0 OR BSD-1-Clause |
@@ -872,6 +888,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [filetime](https://github.com/alexcrichton/filetime) | 0.2.29 | MIT OR Apache-2.0 |
 | [find-msvc-tools](https://github.com/rust-lang/cc-rs) | 0.1.14 | MIT OR Apache-2.0 |
 | [flate2](https://github.com/rust-lang/flate2-rs) | 1.1.10 | MIT OR Apache-2.0 |
+| [float8](https://github.com/EricLBuehler/float8) | 0.7.0 | MIT |
 | [fluid-let](https://github.com/ilammy/fluid-let) | 1.0.0 | MIT |
 | [fnv](https://github.com/servo/rust-fnv) | 1.0.7 | Apache-2.0 OR MIT |
 | [foldhash](https://github.com/orlp/foldhash) | 0.1.5 | Zlib |
@@ -890,20 +907,13 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [futures-sink](https://github.com/rust-lang/futures-rs) | 0.3.34 | MIT OR Apache-2.0 |
 | [futures-task](https://github.com/rust-lang/futures-rs) | 0.3.34 | MIT OR Apache-2.0 |
 | [futures-util](https://github.com/rust-lang/futures-rs) | 0.3.34 | MIT OR Apache-2.0 |
-| [gemm](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-c32](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-c32](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-c64](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-c64](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-common](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-common](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-f16](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-f16](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-f32](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-f32](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
-| [gemm-f64](https://github.com/sarah-ek/gemm) | 0.17.1 | MIT |
-| [gemm-f64](https://github.com/sarah-ek/gemm) | 0.18.2 | MIT |
+| [gemm](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-c32](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-c64](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-common](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-f16](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-f32](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
+| [gemm-f64](https://github.com/sarah-ek/gemm) | 0.19.0 | MIT |
 | [generic-array](https://github.com/fizyk20/generic-array) | 0.14.7 | MIT |
 | [getrandom](https://github.com/rust-random/getrandom) | 0.2.17 | MIT OR Apache-2.0 |
 | [getrandom](https://github.com/rust-random/getrandom) | 0.3.4 | MIT OR Apache-2.0 |
@@ -966,6 +976,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [ipnet](https://github.com/krisprice/ipnet) | 2.12.2 | MIT OR Apache-2.0 |
 | [iprange](https://github.com/sticnarf/iprange-rs) | 0.6.7 | MIT |
 | [itertools](https://github.com/rust-itertools/itertools) | 0.13.0 | MIT OR Apache-2.0 |
+| [itertools](https://github.com/rust-itertools/itertools) | 0.14.0 | MIT OR Apache-2.0 |
 | [itertools](https://github.com/rust-itertools/itertools) | 0.15.0 | MIT OR Apache-2.0 |
 | [itoa](https://github.com/dtolnay/itoa) | 1.0.18 | MIT OR Apache-2.0 |
 | [jiff](https://github.com/BurntSushi/jiff) | 0.2.38 | Unlicense OR MIT |
@@ -1016,6 +1027,8 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [litemap](https://github.com/unicode-org/icu4x) | 0.8.3 | Unicode-3.0 |
 | [lock_api](https://github.com/Amanieu/parking_lot) | 0.4.14 | MIT OR Apache-2.0 |
 | [log](https://github.com/rust-lang/log) | 0.4.34 | MIT OR Apache-2.0 |
+| [macro_rules_attribute](https://github.com/danielhenrymantilla/macro_rules_attribute-rs) | 0.2.3 | Apache-2.0 OR MIT OR Zlib |
+| [macro_rules_attribute-proc_macro](https://github.com/danielhenrymantilla/macro_rules_attribute-rs) | 0.2.3 | Apache-2.0 OR MIT OR Zlib |
 | [matchers](https://github.com/hawkw/matchers) | 0.2.0 | MIT |
 | [matrix-pickle](https://github.com/matrix-org/matrix-pickle) | 0.2.3 | Apache-2.0 |
 | [matrix-pickle-derive](https://github.com/matrix-org/matrix-pickle) | 0.2.3 | Apache-2.0 |
@@ -1028,20 +1041,21 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [ml-dsa](https://github.com/RustCrypto/signatures) | 0.1.1 | Apache-2.0 OR MIT |
 | [ml-kem](https://github.com/RustCrypto/KEMs) | 0.3.3 | Apache-2.0 OR MIT |
 | [module-lattice](https://github.com/RustCrypto/KEMs) | 0.2.3 | Apache-2.0 OR MIT |
+| [monostate](https://github.com/dtolnay/monostate) | 0.1.18 | MIT OR Apache-2.0 |
+| [monostate-impl](https://github.com/dtolnay/monostate) | 0.1.18 | MIT OR Apache-2.0 |
+| [nix](https://github.com/nix-rust/nix) | 0.32.0 | MIT |
 | [nom](https://github.com/Geal/nom) | 7.1.3 | MIT |
 | [nonany](https://github.com/rick-de-water/nonany) | 0.3.0 | MIT OR Apache-2.0 |
 | [notify](https://github.com/notify-rs/notify) | 8.2.0 | CC0-1.0 |
 | [notify-types](https://github.com/notify-rs/notify) | 2.1.0 | MIT OR Apache-2.0 |
 | [ntapi](https://github.com/MSxDOS/ntapi) | 0.4.3 | Apache-2.0 OR MIT |
 | [nu-ansi-term](https://github.com/nushell/nu-ansi-term) | 0.50.3 | MIT |
-| [num](https://github.com/rust-num/num) | 0.4.3 | MIT OR Apache-2.0 |
 | [num-bigint](https://github.com/rust-num/num-bigint) | 0.4.8 | MIT OR Apache-2.0 |
 | [num-bigint-dig](https://github.com/dignifiedquire/num-bigint) | 0.8.6 | MIT OR Apache-2.0 |
 | [num-complex](https://github.com/rust-num/num-complex) | 0.4.6 | MIT OR Apache-2.0 |
 | [num-conv](https://github.com/jhpratt/num-conv) | 0.2.2 | MIT OR Apache-2.0 |
 | [num-integer](https://github.com/rust-num/num-integer) | 0.1.47 | MIT OR Apache-2.0 |
 | [num-iter](https://github.com/rust-num/num-iter) | 0.1.46 | MIT OR Apache-2.0 |
-| [num-rational](https://github.com/rust-num/num-rational) | 0.4.2 | MIT OR Apache-2.0 |
 | [num-traits](https://github.com/rust-num/num-traits) | 0.2.19 | MIT OR Apache-2.0 |
 | [num_cpus](https://github.com/seanmonstar/num_cpus) | 1.17.0 | MIT OR Apache-2.0 |
 | [num_enum](https://github.com/illicitonion/num_enum) | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
@@ -1103,8 +1117,8 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [proc-macro2](https://github.com/dtolnay/proc-macro2) | 1.0.107 | MIT OR Apache-2.0 |
 | [prost](https://github.com/tokio-rs/prost) | 0.14.4 | Apache-2.0 |
 | [prost-derive](https://github.com/tokio-rs/prost) | 0.14.4 | Apache-2.0 |
-| [pulp](https://github.com/sarah-ek/pulp) | 0.18.22 | MIT |
-| [pulp](https://github.com/sarah-ek/pulp) | 0.21.5 | MIT |
+| [pulp](https://github.com/sarah-quinones/pulp) | 0.22.3 | MIT |
+| [pulp-wasm-simd-flag](https://github.com/sarah-quinones/pulp) | 0.1.1 | MIT |
 | [pwd-grp](https://gitlab.torproject.org/tpo/core/rust-pwd-grp) | 1.0.2 | MIT |
 | [quote](https://github.com/dtolnay/quote) | 1.0.47 | MIT OR Apache-2.0 |
 | [r-efi](https://github.com/r-efi/r-efi) | 5.3.0 | MIT OR Apache-2.0 OR LGPL-2.1-or-later |
@@ -1122,9 +1136,9 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [rand_distr](https://github.com/rust-random/rand_distr) | 0.5.1 | MIT OR Apache-2.0 |
 | [rand_jitter](https://github.com/rust-random/rngs) | 0.6.1 | MIT OR Apache-2.0 |
 | [rangemap](https://github.com/jeffparsons/rangemap) | 1.8.0 | MIT OR Apache-2.0 |
-| [raw-cpuid](https://github.com/gz/rust-cpuid) | 10.7.0 | MIT |
 | [raw-cpuid](https://github.com/gz/rust-cpuid) | 11.6.0 | MIT |
 | [rayon](https://github.com/rayon-rs/rayon) | 1.12.0 | MIT OR Apache-2.0 |
+| [rayon-cond](https://github.com/cuviper/rayon-cond) | 0.4.0 | Apache-2.0 OR MIT |
 | [rayon-core](https://github.com/rayon-rs/rayon) | 1.13.0 | MIT OR Apache-2.0 |
 | [rdrand](https://github.com/nagisa/rust_rdrand) | 0.9.0 | ISC |
 | [reborrow](https://github.com/sarah-ek/reborrow) | 0.5.5 | MIT |
@@ -1151,8 +1165,9 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [rustls-pki-types](https://github.com/rustls/pki-types) | 1.15.1 | MIT OR Apache-2.0 |
 | [rustls-webpki](https://github.com/rustls/webpki) | 0.103.16 | ISC |
 | [rustversion](https://github.com/dtolnay/rustversion) | 1.0.23 | MIT OR Apache-2.0 |
+| [ryu](https://github.com/dtolnay/ryu) | 1.0.23 | Apache-2.0 OR BSL-1.0 |
 | [safelog](https://gitlab.torproject.org/tpo/core/arti) | 0.10.0 | MIT OR Apache-2.0 |
-| [safetensors](https://github.com/huggingface/safetensors) | 0.4.5 | Apache-2.0 |
+| [safetensors](https://github.com/huggingface/safetensors) | 0.8.0 | Apache-2.0 |
 | [same-file](https://github.com/BurntSushi/same-file) | 1.0.6 | Unlicense OR MIT |
 | [sanitize-filename](https://github.com/kardeiz/sanitize-filename) | 0.6.0 | MIT |
 | [saturating-time](https://gitlab.torproject.org/tpo/core/arti) | 0.5.0 | MIT OR Apache-2.0 |
@@ -1198,6 +1213,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [spin](https://github.com/mvdnes/spin-rs) | 0.9.9 | MIT |
 | [spki](https://github.com/RustCrypto/formats/tree/master/spki) | 0.7.3 | Apache-2.0 OR MIT |
 | [spki](https://github.com/RustCrypto/formats) | 0.8.1 | Apache-2.0 OR MIT |
+| [spm_precompiled](https://github.com/huggingface/spm_precompiled) | 0.1.4 | Apache-2.0 |
 | [sponge-cursor](https://github.com/RustCrypto/utils) | 0.1.0 | MIT OR Apache-2.0 |
 | [sqlite-wasm-rs](https://github.com/Spxg/sqlite-wasm-rs) | 0.5.5 | MIT |
 | [ssh-cipher-fork-arti](https://github.com/RustCrypto/SSH/tree/master/ssh-cipher) | 0.2.0 | Apache-2.0 OR MIT |
@@ -1216,7 +1232,6 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [sync_wrapper](https://github.com/Actyx/sync_wrapper) | 1.0.2 | Apache-2.0 |
 | [synstructure](https://github.com/mystor/synstructure) | 0.13.2 | MIT |
 | [synstructure](https://github.com/mystor/synstructure) | 0.14.0 | MIT |
-| [sysctl](https://github.com/johalun/sysctl-rs) | 0.5.5 | MIT |
 | [sysctl](https://github.com/johalun/sysctl-rs) | 0.6.0 | MIT |
 | [sysinfo](https://github.com/GuillaumeGomez/sysinfo) | 0.38.4 | MIT |
 | [tap](https://github.com/myrrlyn/tap) | 1.0.1 | MIT |
@@ -1233,6 +1248,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [tinyvec](https://github.com/Lokathor/tinyvec) | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | [tls_codec](https://github.com/RustCrypto/formats) | 0.5.0 | Apache-2.0 OR MIT |
 | [tls_codec_derive](https://github.com/RustCrypto/formats) | 0.5.0 | Apache-2.0 OR MIT |
+| [tokenizers](https://github.com/huggingface/tokenizers) | 0.23.2 | Apache-2.0 |
 | [tokio](https://github.com/tokio-rs/tokio) | 1.53.3 | MIT |
 | [tokio-macros](https://github.com/tokio-rs/tokio) | 2.7.2 | MIT |
 | [tokio-rustls](https://github.com/rustls/tokio-rustls) | 0.26.6 | MIT OR Apache-2.0 |
@@ -1293,12 +1309,14 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [tracing-test-macro](https://github.com/dbrgn/tracing-test) | 0.2.6 | MIT |
 | [tungstenite](https://github.com/snapview/tungstenite-rs) | 0.30.0 | MIT OR Apache-2.0 |
 | [typed-index-collections](https://github.com/zheland/typed-index-collections) | 3.5.0 | MIT OR Apache-2.0 |
+| [typed-path](https://github.com/chipsenkbeil/typed-path) | 0.13.0 | MIT OR Apache-2.0 |
 | [typenum](https://github.com/paholg/typenum) | 1.20.1 | MIT OR Apache-2.0 |
-| [ug](https://github.com/LaurentMazare/ug) | 0.4.0 | MIT OR Apache-2.0 |
 | [uncased](https://github.com/SergioBenitez/uncased) | 0.9.10 | MIT OR Apache-2.0 |
 | [unicode-ident](https://github.com/dtolnay/unicode-ident) | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| [unicode-normalization-alignments](https://github.com/n1t0/unicode-normalization) | 0.1.12 | MIT OR Apache-2.0 |
 | [unicode-segmentation](https://github.com/unicode-rs/unicode-segmentation) | 1.13.3 | MIT OR Apache-2.0 |
 | [unicode-xid](https://github.com/unicode-rs/unicode-xid) | 0.2.6 | MIT OR Apache-2.0 |
+| [unicode_categories](https://github.com/swgillespie/unicode-categories) | 0.1.1 | MIT OR Apache-2.0 |
 | [universal-hash](https://github.com/RustCrypto/traits) | 0.5.1 | MIT OR Apache-2.0 |
 | [universal-hash](https://github.com/RustCrypto/traits) | 0.6.1 | MIT OR Apache-2.0 |
 | [untrusted](https://github.com/briansmith/untrusted) | 0.9.0 | ISC |
@@ -1379,9 +1397,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [x-wing](https://github.com/RustCrypto/KEMs/tree/master/x-wing) | 0.1.1 | Apache-2.0 OR MIT |
 | [x25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/x25519-dalek) | 2.0.1 | BSD-3-Clause |
 | [x25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek/tree/main/x25519-dalek) | 3.0.0 | BSD-3-Clause |
-| [yoke](https://github.com/unicode-org/icu4x) | 0.7.5 | Unicode-3.0 |
 | [yoke](https://github.com/unicode-org/icu4x) | 0.8.3 | Unicode-3.0 |
-| [yoke-derive](https://github.com/unicode-org/icu4x) | 0.7.5 | Unicode-3.0 |
 | [yoke-derive](https://github.com/unicode-org/icu4x) | 0.8.4 | Unicode-3.0 |
 | [zerocopy](https://github.com/google/zerocopy) | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | [zerocopy-derive](https://github.com/google/zerocopy) | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
@@ -1392,7 +1408,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [zerotrie](https://github.com/unicode-org/icu4x) | 0.2.5 | Unicode-3.0 |
 | [zerovec](https://github.com/unicode-org/icu4x) | 0.11.8 | Unicode-3.0 |
 | [zerovec-derive](https://github.com/unicode-org/icu4x) | 0.11.6 | Unicode-3.0 |
-| [zip](https://github.com/zip-rs/zip2) | 1.3.1 | MIT |
+| [zip](https://github.com/zip-rs/zip2) | 9.7.0 | MIT |
 | [zlib-rs](https://github.com/trifectatechfoundation/zlib-rs) | 0.6.8 | Zlib |
 | [zmij](https://github.com/dtolnay/zmij) | 1.0.23 | MIT |
 | [zstd](https://github.com/gyscos/zstd-rs) | 0.14.3 | BSD-3-Clause |

@@ -11,9 +11,9 @@ license.workspace = true
 
 [dependencies]
 # Tensors and their matrix products on the phone's processor (no GPU, no network).
-candle-core = { version = "=0.9.1", default-features = false }
+candle-core = { version = "=0.11.1", default-features = false }
 # Its fused softmax and layer norm, several times faster than made of single steps.
-candle-nn = { version = "=0.9.1", default-features = false }
+candle-nn = { version = "=0.11.1", default-features = false }
 sha2 = "0.10"
 thiserror = "2"
 
