@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.2.0-beta.3 (2026-11-18)
+
+### For you
+
 - The web, computer and Sailfish apps no longer say a fingerprint or face can unlock Erevos, which only Android offers: Settings → Privacy and security → Lock and second password reads «Password and second password» there (`lib/settings.ts`), and the first steps leave the fingerprint out where it cannot be turned on (`app/first-steps.tsx`). Reported by the maintainer in the Erevos+ web app.
 - A call through the call relay sends its description soon after its first address relayed over UDP (`lib/call.ts` `describedSdp`, `RELAYED_GRACE_MS` 300 ms), not after every address or GATHER_MS (5 s) on each phone, as when the relay over TCP was slow to answer. While such a call is connected, the nearby links are quiet as in the background (`lib/nearby-links.ts`): Wi-Fi Aware, Wi-Fi Direct and Bluetooth looking took the Wi-Fi off its network for moments, likely the gaps heard in the sound; a call direct on the same network keeps them. Their stream shown keeps their picture when their sound comes in a stream of its own (`theirStream`). Reported by the maintainer on Pixel 10 Pro and Pixel 9 Pro; not yet tried on the phones.
 - A chat opened while the receiver's look at the relay was under way shows what that look took as soon as it ends (`app/chat.tsx` `showWhole`, `lib/shown-anew.ts`): since the chat no longer waits for it (`relayFree`), a message, mark or reaction it took went into the history but not into the open chat, and showed only when the chat opened again. Found by the review of main 26eabc8b. A call through the call relay that could not connect forgets the call relay's credentials kept (`forgetCallRelays`), so the next call asks anew, as after a new secret there or with this phone's clock far off. What's new no longer says a held message opens its menu from the start: for a moment it may say Erevos is still reading.
