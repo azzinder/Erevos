@@ -18,6 +18,7 @@ export const settingsMenu: Record<string, string> = {
   'In this space, with no message and no sender in them': 'Σε αυτόν τον χώρο, χωρίς το μήνυμα και χωρίς τον αποστολέα',
   'Privacy and security': 'Απόρρητο και ασφάλεια',
   'Password, fingerprint or face, second password': 'Κωδικός, δακτυλικό αποτύπωμα ή πρόσωπο, δεύτερος κωδικός',
+  'Password and second password': 'Κωδικός και δεύτερος κωδικός',
   'Chats that open only with their own PIN': 'Συνομιλίες που ανοίγουν μόνο με το δικό τους PIN',
   Screenshots: 'Στιγμιότυπα οθόνης',
   'Let screenshots and screen recordings of Erevos, or keep them out': 'Να επιτρέπονται στιγμιότυπα και εγγραφές οθόνης του Erevos, ή να μένει έξω από αυτά',

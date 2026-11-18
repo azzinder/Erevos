@@ -157,7 +157,10 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       // The name the space's contacts and private groups see in place of a code (lib/my-name.ts).
       { id: 'my-name', title: mark('My name'), detail: mark('The name your contacts see in place of a code'), href: '/security?part=myname', when: uses('erevos') },
-      { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
+      // A fingerprint or face unlocks Erevos only on Android (modules/erevos-biometric), so the web,
+      // computer and Sailfish apps do not offer it.
+      { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock', when: phone },
+      { id: 'lock-web', title: mark('Lock and second password'), detail: mark('Password and second password'), href: '/security?part=lock', when: (place) => !phone(place) },
       { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden', when: uses('erevos') },
       { id: 'last-seen', title: mark('Last seen'), detail: mark('Who sees when you last had Erevos open: off in a new space, until you turn it on'), href: '/security?part=lastseen', when: uses('erevos') },
       { id: 'forget-me', title: mark('Delete me from everywhere'), detail: mark('Delete what the servers keep for this space, and stop it'), href: '/forget-me', when: uses('erevos', 'nostr', 'matrix', 'xmpp') },
