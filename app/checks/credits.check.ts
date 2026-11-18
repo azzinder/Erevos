@@ -77,9 +77,12 @@ test('a package CREDITS.md lists that the lockfiles no longer hold is gone, and 
     .replace('### Rust crates\n', () => part('Rust crates', 'Crate', 'gone-crate', '9.9.9') + '### Rust crates\n')
     .replace('<!-- generated:end -->', () => part('Android libraries', 'Library', 'com.example:gone', '1.0') + '<!-- generated:end -->');
   assert.deepEqual(differences(text), { missing: [], gone: ['Android libraries: com.example:gone 1.0', 'Rust crates: gone-crate 9.9.9'] });
-  // zstd is 0.14.3 in the lock: 0.14.2 is no longer in use, and 0.14.3 is not listed.
-  const old = credits.replace(/^(\| \[?zstd\]?(?:\(.*?\))? \| )0\.14\.3/m, (_, head: string) => `${head}0.14.2`);
-  assert.deepEqual(differences(old), { missing: ['Rust crates: zstd 0.14.3'], gone: ['Rust crates: zstd 0.14.2'] });
+  // zstd as listed now (the lock's version) turned into an older one: that one is no longer in use, and the lock's is not listed.
+  const row = /^(\| \[?zstd\]?(?:\(.*?\))? \| )(\d+\.\d+\.\d+)/m;
+  const now = credits.match(row)?.[2];
+  assert.ok(now, 'zstd is listed in CREDITS.md');
+  const old = credits.replace(row, (_, head: string) => `${head}0.0.1`);
+  assert.deepEqual(differences(old), { missing: [`Rust crates: zstd ${now}`], gone: ['Rust crates: zstd 0.0.1'] });
 });
 
 test('CREDITS.md without the marks around the list is refused, not taken for an empty one', () => {
