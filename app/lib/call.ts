@@ -4,7 +4,7 @@
 
 import { MAX_SDP, type CallEnd, type CallSignal } from './call-signal';
 import { randomBytes, toHex } from './crypto';
-import type { CallRelay } from './relay';
+import { forgetCallRelays, type CallRelay } from './relay';
 import { t } from './i18n';
 
 // One voice or video call with a contact, over WebRTC (lib/webrtc.ts on the phone). It is set up
@@ -932,6 +932,8 @@ export class Call {
 
   private end(reason: CallEnd, byUs: boolean, elsewhere = false): void {
     if (this.state === 'ended') return;
+    // Through the call relay and never connected: its credentials kept are asked for anew next time.
+    if (reason === 'failed' && this.options.relay && !this.connectedAt) forgetCallRelays();
     this.stopWaiting();
     this.stopAsking();
     this.ended = { reason, byUs, ...(elsewhere ? { elsewhere } : {}) };

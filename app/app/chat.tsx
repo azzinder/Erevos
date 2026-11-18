@@ -251,6 +251,7 @@ import {
   NEAR_PHOTOS,
   useTyped,
 } from '../lib/chat-screen';
+import { shownAnew } from '../lib/shown-anew';
 import { QuickAction, DetailRow, SearchStep, dayOf, dayText, clock, dayLabel, type RowActs, steadyActs, MessageLine, SmsLine, ImportedLine, makeStyles } from '../components/chat-thread-lines';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
@@ -861,6 +862,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // until then this chat shows, and is used, but takes nothing from the relay itself, so no message
   // is taken by both.
   const [relayFree, setRelayFree] = useState(false);
+  // The ids of the messages shown as the history held them, last it was read whole (shownAnew).
+  const fromHistory = useRef<Set<number>>(new Set());
+  const showWhole = (whole: Message[]) => {
+    const was = fromHistory.current;
+    fromHistory.current = new Set(whole.map((m) => m.id));
+    setMessages((list) => shownAnew(whole, list, was));
+  };
   // A message held while the chat opens only to read: its menu opens once the chats are in hand.
   const menuWaiting = useRef<Pick<Message, 'peer' | 'tag' | 'at' | 'mine'> | null>(null);
   useEffect(() => {
@@ -1707,6 +1715,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             const kept = open.history.messages();
             const firsts = kept.filter((m) => !m.until || m.until > Date.now()).map(toShown);
             early = { kept, ids: new Set(firsts.map((m) => m.id)) };
+            fromHistory.current = early.ids;
             openingChats.current = open;
             if (!hiddenKey) setEarlyE2E(open.e2e);
             // The contacts first, so a chat locked with its PIN is never marked read before it asks.
@@ -1715,8 +1724,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }
         }
         // Not waited for: the look under way stops at its next step, and only this chat's own looks
-        // at the relay wait for it (relayFree), not the chat.
-        void Promise.all([held, placeHeld]).then(() => active && setRelayFree(true));
+        // at the relay wait for it (relayFree), not the chat. What that look took meanwhile went
+        // into the history, not to this chat, which does not hear the receiver: it is shown then
+        // (shownAnew), as are the marks and reactions it brought.
+        void Promise.all([held, placeHeld]).then(() => {
+          if (!active) return;
+          setRelayFree(true);
+          if (history.current) showWhole(history.current.messages().map(toShown));
+        });
         const shared = hiddenKey ? await placeChats(space, pocket, hiddenKey) : await spaceChats();
         const kept = shared.history;
         if (!active) return;
@@ -1728,10 +1743,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (!active) return;
         // Ahead of anything the radio brought while it loaded; in place of what showed at once, if
         // the history changed meanwhile.
-        if (early?.kept !== kept.messages()) {
-          const was = early?.ids;
-          setMessages((list) => [...kept.messages().map(toShown), ...(was ? list.filter((m) => !was.has(m.id)) : list)]);
-        }
+        if (early?.kept !== kept.messages()) showWhole(kept.messages().map(toShown));
         // With them, which chats are locked with a PIN, so none shows a moment before its PIN asks.
         setContacts(shared.e2e.contacts());
         const chats = shared.e2e;

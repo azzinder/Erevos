@@ -23,6 +23,7 @@ import {
   BadRelayAddressError,
   callRelay,
   callRelayUntil,
+  forgetCallRelays,
   canTellNewsAt,
   canTryLater,
   canWaitAt,
@@ -282,6 +283,11 @@ test('the call relay as asked is kept while its credentials last, so a call does
   assert.equal(callRelayUntil({ urls: [], username: String(now / 1000 + 12 * 3600), credential: '' }, now), now + 11 * 3600_000);
   assert.equal(callRelayUntil({ urls: [], username: 'someone', credential: '' }, now), now + 10 * 60_000);
   assert.equal(callRelayUntil(null, now), now + 10 * 60_000);
+  // Forgotten, as after a call through it that could not connect: asked anew.
+  forgetCallRelays();
+  const again = await callRelay({ url: far });
+  assert.ok(again);
+  assert.notEqual(again, first);
 });
 
 test('a relay says its clock, and one from before it says nothing, not asked again for a while', { skip: !ready }, async () => {

@@ -2355,6 +2355,13 @@ export function callRelay(relay: Relay, now = Date.now()): Promise<CallRelay | n
   return asked;
 }
 
+/** Forgets the call relays as asked (callRelay), so the next call asks anew: as when a call
+ *  through one could not connect, its credentials perhaps no longer taken (a new secret there, or
+ *  this phone's clock far off from the relay's). */
+export function forgetCallRelays(): void {
+  callRelays.clear();
+}
+
 /** Asks the relay for its call relay now, ahead of a call (callRelay): nothing when it was asked already. */
 export function warmCallRelay(relay: Relay): void {
   void callRelay(relay).catch(() => undefined);
