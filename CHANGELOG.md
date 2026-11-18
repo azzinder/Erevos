@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- The Phone's **Keypad** lists the contacts what is typed finds in the room over the number (`app/phone.tsx` `listHits`, `hitList`), all of them, scrolling if more; where the keys at full size leave no row there (a small screen), the line over the keys shows the first and **N more** as before. Each key 2–9 shows its letters in the app's language, Greek for Greek, Latin for the others (`lib/phone.ts` `keyLetters`), the same a name is found by. Requested by the maintainer.
 ### Under the hood
 
 - The Rust check passes again with Rust 1.99's clippy (`crates/erevos-core/src/voice_shift.rs`): `is_multiple_of(2)` and `as_chunks::<2>()` in place of `% 2` and `chunks_exact(2)`, the same samples. Reported by the maintainer.

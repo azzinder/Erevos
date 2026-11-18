@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { callLength, cleanReplies, dialNumber, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
+import { callLength, cleanReplies, dialNumber, keyLetters, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
 import { callKind, callMarks, callsWith, callWho, filterCalls, groupCalls, withDays, withoutCalls } from '../lib/phone-log';
 import {
   addPrefix,
@@ -257,4 +257,16 @@ test("a group's contacts are blocked for an hour, until tomorrow morning, or unt
   assert.deepEqual(rulesFrom(rulesJson(rules, after)).groups, [{ id: '7', until: 0 }]);
   assert.equal(rulesJson(liftGroup(liftGroup(rules, '7'), '12'), now), '');
   assert.deepEqual(checkedRules({ groups: [{ id: '3', until: 5 }, { id: 'x', until: 1 }, { id: '4', until: -1 }, { id: '3', until: 9 }, null] }).groups, [{ id: '3', until: 5 }]);
+});
+
+test('the keys show the letters of the app’s language, the ones a name is found by', async () => {
+  const { keysOf } = await import('../lib/contacts');
+  assert.equal(keyLetters('2', 'el'), 'ΑΒΓ');
+  assert.equal(keyLetters('7', 'el'), 'ΠΡΣ');
+  assert.equal(keyLetters('9', 'de'), 'WXYZ');
+  for (const key of ['1', '0', '*', '#']) assert.equal(keyLetters(key, 'el'), '');
+  // Every letter shown on a key is found on that key.
+  for (const lang of ['el', 'en']) {
+    for (const key of '23456789') for (const letter of keyLetters(key, lang)) assert.equal(keysOf(letter), key, `${letter} on ${key}`);
+  }
 });

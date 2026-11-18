@@ -2949,10 +2949,11 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   einer Nummer erscheinen statt der Tabs, jede Nummer in einer eigenen Zeile. Tippe auf eine, um sie anzurufen, oder
   halte sie gedrückt, um sie auf die Wähltasten zu legen. Es sucht in den Kontakten des Telefons und, bei entsperrtem
   Erevos, in den nur in Erevos gespeicherten und deinen Erevos-Kontakten mit Nummer; nie in versteckten Chats.
-- **Kontakte beim Wählen:** Während du auf den **Wähltasten** tippst, zeigt sich über den Tasten ein Kontakt, den sie
-  finden: einer, dessen Nummer die getippten Ziffern enthält, oder dessen Name mit ihnen auf den Buchstaben der Tasten
-  beginnt, wie 2 für ABC (und ΑΒΓ). Tippe ihn an, um anzurufen, oder halte ihn, um seine Nummer auf die Tasten zu
-  legen; daneben listet **weitere** die anderen Gefundenen.
+- **Kontakte beim Wählen:** Während du auf den **Wähltasten** tippst, stehen die Kontakte, die sie finden, in einer Liste
+  über der Nummer: einer, dessen Nummer die getippten Ziffern enthält, oder dessen Name mit ihnen auf den Buchstaben der
+  Tasten beginnt, wie 2 für ABC (und ΑΒΓ). Jede Taste zeigt ihre Buchstaben in der Sprache der App. Tippe einen Kontakt
+  an, um ihn anzurufen, oder halte ihn, um seine Nummer auf die Tasten zu legen. Auf einem kleinen Bildschirm, wo über der
+  Nummer kein Platz ist, zeigt sich der erste über den Tasten, und **weitere** daneben listet die anderen.
 - **Der Anrufbildschirm:** wer anruft oder wen du anrufst, mit dem Namen und Foto, das die Kontakte deines Telefons
   ihm geben; solange Erevos entsperrt ist, zeigt eine mit einem deiner Erevos-Kontakte verknüpfte Nummer den Namen,
   den du ihm gegeben hast, und ebenso die Nummer eines nur in Erevos gespeicherten Kontakts; die eines Kontakts offener

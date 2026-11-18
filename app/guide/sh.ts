@@ -2662,9 +2662,11 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   umjesto kartica, svaki broj u svom redu. Dodirnite jedan da ga pozovete, ili zadržite prst na njemu da ga stavite
   na tastaturu. Traži u kontaktima telefona i, kad je Erevos otključan, u onima koji se čuvaju samo u Erevosu i u
   vašim Erevos kontaktima s brojem; nikad u skrivenim razgovorima.
-- **Kontakti dok birate:** dok kucate na **Tastaturi**, kontakt koji pronađe pojavljuje se iznad tipki: onaj čiji broj
-  sadrži otkucane cifre, ili čije ime počinje njima na slovima tipki, kao 2 za ABC (i ΑΒΓ). Dodirnite ga da biste
-  pozvali, ili ga zadržite da biste njegov broj stavili na tastaturu; **još**, pored njega, nabraja ostale pronađene.
+- **Kontakti dok birate:** dok kucate na **Tastaturi**, kontakti koje pronađe prikazuju se na listi iznad broja: onaj čiji
+  broj sadrži otkucane cifre, ili čije ime počinje njima na slovima tipki, kao 2 za ABC (i ΑΒΓ). Svaka tipka pokazuje
+  svoja slova na jeziku aplikacije. Dodirnite kontakt da biste ga pozvali, ili ga zadržite da biste njegov broj stavili na
+  tastaturu. Na malom ekranu, gde iznad broja nema mesta, prvi se pojavljuje iznad tipki, a **još**, pored njega, nabraja
+  ostale.
 - **Ekran za pozive:** ko zove, ili koga vi zovete, s imenom i fotografijom koje mu daju kontakti vašeg telefona; dok
   je Erevos otključan, broj povezan s jednim od vaših Erevos kontakata prikazuje ime koje ste mu dali, kao i broj
   kontakta koji se čuva samo u Erevosu; broj kontakta otvorenih skrivenih razgovora, samo dok su otvoreni. Prikazuje

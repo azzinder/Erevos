@@ -13,6 +13,16 @@ export const KEYS = [
   ['*', '0', '#'],
 ] as const;
 
+// The letters under each key, as a phone's dialer prints them: Greek for an app in Greek, Latin for
+// the others. A name is found by either on any (lib/contacts.ts keysOf).
+const LATIN_LETTERS: Record<string, string> = { '2': 'ABC', '3': 'DEF', '4': 'GHI', '5': 'JKL', '6': 'MNO', '7': 'PQRS', '8': 'TUV', '9': 'WXYZ' };
+const GREEK_LETTERS: Record<string, string> = { '2': 'ΑΒΓ', '3': 'ΔΕΖ', '4': 'ΗΘΙ', '5': 'ΚΛΜ', '6': 'ΝΞΟ', '7': 'ΠΡΣ', '8': 'ΤΥΦ', '9': 'ΧΨΩ' };
+
+/** The letters shown under `key` for an app in `lang`; '' for 1, 0, * and #. */
+export function keyLetters(key: string, lang: string): string {
+  return (lang === 'el' ? GREEK_LETTERS : LATIN_LETTERS)[key] ?? '';
+}
+
 /** What can be called of what was typed or pasted: digits, * and #, and the , and ; that wait
  *  before the tones of an extension; a + only at the start. Spaces, dashes and brackets go. */
 export function dialNumber(text: string): string {

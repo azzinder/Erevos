@@ -17,9 +17,9 @@ import { cardHref, dialCards, isContactNumber, type Card as ContactCard } from '
 import { addToContactHref, newContactHref, toDial, toDialKeys, type DialRow, type Findable } from '../lib/contacts';
 import { press, tap } from '../lib/haptics';
 import { Held } from '../lib/held';
-import { mark, plural, t } from '../lib/i18n';
+import { mark, plural, t, useLang } from '../lib/i18n';
 import { refreshKnownNames } from '../lib/known-names';
-import { callLength, dialNumber, KEYS, textable, typeKey } from '../lib/phone';
+import { callLength, dialNumber, keyLetters, KEYS, textable, typeKey } from '../lib/phone';
 import { isBlocked, onSmsOrderChanged, smsOrderChanged } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import {
@@ -321,7 +321,12 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   // (down to 70%); below that the keys scroll under the number, kept at their end so Call shows,
   // and never run over the card and tabs.
   const simRow = accounts.length >= 2 || (status?.slots ?? 0) >= 2;
-  const sized = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0, HIT_LINE);
+  // Where the keys at their full size leave room over the number for a row or more, the contacts
+  // found are listed there, all of them; else the line over the keys shows the first, and the others
+  // open from it. Worked out from the room alone, so the choice does not move the keys and change.
+  const listHits = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0, 0).spare >= HIT_LINE + space.sm;
+  const sized = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0, listHits ? 0 : HIT_LINE);
+  const lang = useLang();
   // Heights as laid out, without the fractions of a pixel that rounding to the screen's pixels
   // moves back and forth: those would size the keys again, and lay them out again, for ever.
   const measured = (set: (change: (old: number) => number) => void) => (event: LayoutChangeEvent) => {
@@ -477,6 +482,13 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
             <Favourites locked={!!locked} onCall={(to) => void call(to)} />
           ) : (
             <View style={styles.keypad} onLayout={measured(setRoom)}>
+              {listHits ? (
+                <ScrollView style={styles.hitList} contentContainerStyle={styles.hitListContent} keyboardShouldPersistTaps="handled">
+                  {keyHits.map((row) => (
+                    <HitRow key={row.key} row={row} onCall={(to) => void call(to)} onKeypad={(to) => setNumber(dialNumber(to))} />
+                  ))}
+                </ScrollView>
+              ) : null}
               <View style={styles.numberLine}>
                 {number && (CAN_COPY || (!locked && textable(number))) ? (
                   <Pressable
@@ -526,18 +538,21 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                   </Text>
                 </Pressable>
               </View>
-              {/* Always this high, so the keys do not move as a contact is found or no longer. */}
-              <View style={styles.hitLine}>
-                {keyHits[0] ? (
-                  <HitRow
-                    row={keyHits[0]}
-                    onCall={(to) => void call(to)}
-                    onKeypad={(to) => setNumber(dialNumber(to))}
-                    more={keyHits.length - 1}
-                    onMore={() => setAllHits(true)}
-                  />
-                ) : null}
-              </View>
+              {/* Where there is no room for the list over the number: always this high, so the keys do
+                  not move as a contact is found or no longer. */}
+              {listHits ? null : (
+                <View style={styles.hitLine}>
+                  {keyHits[0] ? (
+                    <HitRow
+                      row={keyHits[0]}
+                      onCall={(to) => void call(to)}
+                      onKeypad={(to) => setNumber(dialNumber(to))}
+                      more={keyHits.length - 1}
+                      onMore={() => setAllHits(true)}
+                    />
+                  ) : null}
+                </View>
+              )}
               <ScrollView
                 ref={keypad}
                 style={styles.keysScroll}
@@ -576,6 +591,11 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                         style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
                       >
                         <Text style={sized.keyText}>{key}</Text>
+                        {keyLetters(key, lang) ? (
+                          <Text variant="caption" tone="faint" style={sized.letters} numberOfLines={1}>
+                            {keyLetters(key, lang)}
+                          </Text>
+                        ) : null}
                         {key === '0' ? (
                           <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
                             +
@@ -1331,6 +1351,9 @@ function keypadSizes(room: number, sims: number, note: number, hits = 0) {
   const call = Math.floor(CALL_SIZE * scale);
   const line = Math.max(ERASE, Math.floor(NUMBER_LINE * scale));
   return {
+    // What is left over the number once all is laid out at this size.
+    spare: room > 0 ? room - fixed - line - 4 * key - call : 0,
+    letters: { fontSize: Math.max(9, Math.round(11 * scale)), lineHeight: Math.max(11, Math.round(13 * scale)), letterSpacing: 1 },
     number: { fontSize: Math.round(32 * scale), height: line },
     key: { height: key, borderRadius: key / 2 },
     keyText: { fontSize: Math.round(28 * scale), lineHeight: Math.round(34 * scale) },
@@ -1516,6 +1539,15 @@ const makeStyles = (colors: Colors) =>
     },
     keysColumn: {
       gap: space.sm,
+    },
+    // Over the number, in the room the keys leave: the contacts found, right over the number.
+    hitList: {
+      flex: 1,
+    },
+    hitListContent: {
+      flexGrow: 1,
+      justifyContent: 'flex-end',
+      gap: space.xs,
     },
     hitLine: {
       height: HIT_LINE,

@@ -2784,10 +2784,11 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   numero appaiono al posto delle schede, ogni numero su una riga a sé. Toccane uno per chiamarlo, o tienilo premuto per
   metterlo sul tastierino. Cerca nei contatti del telefono e, con Erevos sbloccato, in quelli salvati solo in Erevos e
   nei tuoi contatti Erevos con un numero; mai nelle chat nascoste.
-- **Contatti mentre componi:** mentre digiti sul **Tastierino**, un contatto che trova compare sopra i tasti: uno il
-  cui numero contiene le cifre digitate, o il cui nome inizia con esse sulle lettere dei tasti, come 2 per ABC (e ΑΒΓ).
-  Toccalo per chiamare, o tienilo premuto per mettere il suo numero sul tastierino; **altri**, accanto, elenca gli altri
-  trovati.
+- **Contatti mentre componi:** mentre digiti sul **Tastierino**, i contatti che trova compaiono in un elenco sopra il
+  numero: uno il cui numero contiene le cifre digitate, o il cui nome inizia con esse sulle lettere dei tasti, come 2 per
+  ABC (e ΑΒΓ). Ogni tasto mostra le sue lettere nella lingua dell’app. Tocca un contatto per chiamarlo, o tienilo premuto
+  per mettere il suo numero sul tastierino. Su uno schermo piccolo, dove sopra il numero non c’è spazio, il primo compare
+  sopra i tasti e **altri**, accanto, elenca gli altri.
 - **La schermata di chiamata:** chi chiama, o chi chiami, con il nome e la foto che gli danno i contatti del tuo
   telefono; mentre Erevos è sbloccato, un numero collegato a uno dei tuoi contatti Erevos mostra il nome che gli hai
   dato, e così il numero di un contatto salvato solo in Erevos; quello di un contatto delle chat nascoste aperte, solo

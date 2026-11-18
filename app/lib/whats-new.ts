@@ -22,7 +22,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**The keypad lists the contacts it finds, and shows its letters**: on the Phone's **Keypad**, the contacts what you type finds are listed in the room over the number, all of them, not one at a time; and each key shows its letters in the app's language, ΑΒΓ in Greek, ABC in the others. See [Phone](#phone)."),
+  ],
   underTheHood: [],
 };
 
