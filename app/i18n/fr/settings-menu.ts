@@ -17,6 +17,7 @@ export const settingsMenu: Record<string, string> = {
   'In this space, with no message and no sender in them': 'Dans cet espace, sans le message et sans l’expéditeur',
   'Privacy and security': 'Confidentialité et sécurité',
   'Password, fingerprint or face, second password': 'Mot de passe, empreinte digitale ou visage, second mot de passe',
+  'Password and second password': 'Mot de passe et second mot de passe',
   'Chats that open only with their own PIN': 'Des discussions qui ne s’ouvrent qu’avec leur propre PIN',
   Screenshots: 'Captures d’écran',
   'Let screenshots and screen recordings of Erevos, or keep them out': 'Autoriser les captures et enregistrements d’écran d’Erevos, ou les empêcher',

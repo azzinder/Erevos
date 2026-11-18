@@ -23,6 +23,7 @@ import { ASKS_ALL, askAll, checksOffered, readChecks } from '../lib/permissions'
 import { afterSteps, checksAt, keepSetupAfter, loadSetupAfter, setupAfterDone, type SetupAfter } from '../lib/setup-after';
 import { spaceGroupsAt } from '../lib/space-groups';
 import { isPasswordLocked, loadLockConfig } from '../lock/config';
+import { biometricSealer } from '../modules/erevos-biometric';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -314,7 +315,7 @@ function LockStep({ restored }: { restored: boolean }) {
     <>
       <Text variant="title">{t('Lock and backups')}</Text>
       <Text tone="muted" style={hint}>
-        {restored
+        {restored && biometricSealer.available()
           ? t('The fingerprint or face and the folder of automatic backups stay with each phone: set them again here.')
           : t('Both are optional, and both are worth it.')}
       </Text>
@@ -326,7 +327,9 @@ function LockStep({ restored }: { restored: boolean }) {
           {status(state?.locked)}
         </Row>
         <Text variant="caption" tone="muted" style={hint}>
-          {t('Without one, whoever unlocks your phone opens Erevos too. A fingerprint or face can unlock it as well.')}
+          {biometricSealer.available()
+            ? t('Without one, whoever unlocks your phone opens Erevos too. A fingerprint or face can unlock it as well.')
+            : t('Without one, whoever opens this device opens Erevos too.')}
         </Text>
         <Row wrap>
           <Button title={t('Lock and second password')} kind="secondary" compact onPress={() => router.push('/security?part=lock')} />

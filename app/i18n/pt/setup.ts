@@ -39,6 +39,7 @@ export const setupText: Record<string, string> = {
   'A password for Erevos': 'Uma senha para o Erevos',
   'Without one, whoever unlocks your phone opens Erevos too. A fingerprint or face can unlock it as well.':
     'Sem ela, quem desbloqueia seu celular abre o Erevos também. Uma impressão digital ou o rosto também podem desbloqueá-lo.',
+  'Without one, whoever opens this device opens Erevos too.': 'Sem ela, quem abre este dispositivo abre o Erevos também.',
   'Encrypted, in a folder on this device or on your server. If the phone is lost, they bring back your chats, contacts and settings.':
     'Criptografados, numa pasta neste dispositivo ou no seu servidor. Se o celular for perdido, eles trazem de volta suas conversas, contatos e configurações.',
   'Almost ready, {name}': 'Quase pronto, {name}',

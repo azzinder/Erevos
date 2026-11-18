@@ -39,6 +39,7 @@ export const setupText: Record<string, string> = {
   'A password for Erevos': 'Ένας κωδικός για το Erevos',
   'Without one, whoever unlocks your phone opens Erevos too. A fingerprint or face can unlock it as well.':
     'Χωρίς κωδικό, όποιος ξεκλειδώνει το τηλέφωνό σου ανοίγει και το Erevos. Μπορεί να το ξεκλειδώνει και δακτυλικό αποτύπωμα ή πρόσωπο.',
+  'Without one, whoever opens this device opens Erevos too.': 'Χωρίς κωδικό, όποιος ανοίγει αυτή τη συσκευή ανοίγει και το Erevos.',
   'Encrypted, in a folder on this device or on your server. If the phone is lost, they bring back your chats, contacts and settings.':
     'Κρυπτογραφημένα, σε φάκελο σε αυτή τη συσκευή ή στον server σου. Αν χαθεί το τηλέφωνο, φέρνουν πίσω τις συνομιλίες, τις επαφές και τις ρυθμίσεις σου.',
   'Almost ready, {name}': 'Σχεδόν έτοιμο, {name}',
