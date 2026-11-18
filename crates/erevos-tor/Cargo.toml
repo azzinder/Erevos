@@ -10,9 +10,9 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-arti-client = { version = "0.47", default-features = false, features = ["tokio", "rustls", "compression", "onion-service-client", "static-sqlite", "bridge-client", "pt-client"] }
-tor-config = { version = "0.47", default-features = false }
-tor-rtcompat = { version = "0.47", default-features = false, features = ["tokio", "rustls"] }
+arti-client = { version = "0.48", default-features = false, features = ["tokio", "rustls", "compression", "onion-service-client", "static-sqlite", "bridge-client", "pt-client"] }
+tor-config = { version = "0.48", default-features = false }
+tor-rtcompat = { version = "0.48", default-features = false, features = ["tokio", "rustls"] }
 tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros", "io-util", "net"] }
 tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect", "handshake"] }
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
