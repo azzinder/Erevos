@@ -24,4 +24,6 @@ export const chatShare: Record<string, string> = {
   'Sharing, {percent}% · waiting for free space on their phone': 'Compartilhando, {percent}% · esperando espaço livre no telefone de lá',
   'Their Erevos did not take the files; only the messages went': 'O Erevos de lá não pegou os arquivos; foram só as mensagens',
   'Sharing, {percent}% · waiting for their Erevos to take it; an older one takes only the messages': 'Compartilhando, {percent}% · esperando o Erevos de lá pegá-lo; um mais antigo pega só as mensagens',
+  'Sharing · their phone is taking it': 'Compartilhando · o telefone de lá está recebendo',
+  'Sharing · it did not come to their phone; they can tap it to try again': 'Compartilhando · não chegou ao telefone de lá; pode tocar para tentar de novo',
 };

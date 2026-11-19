@@ -116,7 +116,7 @@ import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
 import { packMeta, sharable, shareSize, takeAskToShare } from '../lib/chat-share';
 import { failed as buzzFailed } from '../lib/haptics';
-import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, type ReadyShare, type ShareWay } from '../lib/share-rounds';
+import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, takingCame, type ReadyShare, type ShareWay } from '../lib/share-rounds';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
 import { ChatActions, useArrangedChats } from '../components/chat-actions';
@@ -2479,6 +2479,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     // How far a share is, said by the other phone: taken in with the next round.
     if (received.more.rounds && !received.twice && sharedChats.current) void roundsCame(sharedChats.current, received.identity, received.more.rounds).then(() => shareDrive.current(ownRelay()), () => undefined);
+    // Chats shared from here, tapped there: being taken, or did not come; the line says so.
+    if (received.more.taking && !received.twice && sharedChats.current) void takingCame(sharedChats.current, received.identity, received.more.taking).catch(() => undefined);
     if (received.text && !twice) {
       addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, placed, parts);
       if (received.tag) receipt(peer, 'got', [received.tag]);
@@ -4501,7 +4503,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (change.holder !== place.holder || change.space !== place.space) return;
       const { peer, tag, file, taking: far } = change;
       if (peer && tag && far) {
-        if (far === 'failed') buzzFailed();
+        if (far === 'failed') {
+          buzzFailed();
+          tellSharer(peer.slice(CONTACT_PREFIX.length), tag, true);
+        }
         setTaking((now) => ({ ...now, [`${peer}|${tag}`]: far }));
         return;
       }
@@ -4779,6 +4784,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     );
   }
 
+  // The contact who shared chats hears that they are being taken here, or did not come, for their
+  // line (lib/share-rounds.ts takingCame); an Erevos from before takes no notice.
+  function tellSharer(identity: string, tag: string, missed: boolean) {
+    void sendToContact(relayTarget(), identity, '', { more: { taking: { tag, ...(missed ? { f: true as const } : {}) } } }).catch(() => undefined);
+  }
+
   // Chats a contact shared, tapped: from a server the contact chose, without Tor, this phone's
   // internet address shows there, said first as for a file (lib/ip-warning.ts); then coming from
   // the tap on, so the line no longer asks for one (lib/share-rounds.ts says how far).
@@ -4789,6 +4800,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (exposed && !(await ipGate({ network: 'Erevos', act: 'file', of: circuitOf(identity), ...ipKeep() }))) return;
     setTaking((now) => ({ ...now, [`${peer}|${message.tag}`]: '0%' }));
     void takePack(way, identity, message.tag);
+    tellSharer(identity, message.tag, false);
   }
 
   // A photo or file tapped: taken from the relay if it is not here yet, otherwise shown on its own.

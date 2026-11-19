@@ -118,7 +118,13 @@ export function checkedRounds(value: unknown): Rounds | null {
  * it (`pay`, lib/pay.ts), and that it was paid with none (`settled`). A round of imported chats
  * shared goes with none (`rounds`): an Erevos from before shows nothing of it.
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal; piece?: string; pay?: Pay; settled?: Paid; card?: string; close?: Close; rounds?: Rounds };
+/**
+ * Imported chats a contact shared, being taken on this phone after a tap there (lib/share-rounds.ts),
+ * by the tag of the message they came in: begun, or did not come (`f`), so the sharer's line says so.
+ */
+export type Taking = { tag: string; f?: true };
+
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal; piece?: string; pay?: Pay; settled?: Paid; card?: string; close?: Close; rounds?: Rounds; taking?: Taking };
 
 /** A backup piece's text (lib/backup-pieces.ts), as it is carried. */
 export const isPieceText = (v: unknown): v is string => typeof v === 'string' && /^erevos-piece:[A-Za-z0-9_-]{447}$/.test(v);
@@ -166,6 +172,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
   const card = checkedCard(value.card);
   const close = value.close as { tag?: unknown } | null | undefined;
   const rounds = checkedRounds(value.rounds);
+  const taking = value.taking as { tag?: unknown; f?: unknown } | null | undefined;
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
@@ -184,6 +191,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(card ? { card } : {}),
     ...(isTag(close?.tag) ? { close: { tag: close.tag } } : {}),
     ...(rounds ? { rounds } : {}),
+    ...(taking && typeof taking === 'object' && isTag(taking.tag) ? { taking: { tag: taking.tag, ...(taking.f === true ? { f: true as const } : {}) } } : {}),
   };
 }
 
@@ -194,10 +202,10 @@ export function contentOf({ sticker, place, poll, preview, pay, forwarded, card 
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro, piece, pay, settled, card, close, rounds } = carriedOf(carried);
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro, piece, pay, settled, card, close, rounds, taking } = carriedOf(carried);
   const asks = intro?.s === 'ask';
   if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(card ? { card } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}), ...(piece ? { piece } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(close ? { close } : {}), ...(settled ? { settled } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}), ...(rounds ? { rounds } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(close ? { close } : {}), ...(settled ? { settled } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}), ...(rounds ? { rounds } : {}), ...(taking ? { taking } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */

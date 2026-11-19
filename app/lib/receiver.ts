@@ -19,7 +19,7 @@ import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBack
 import { keepOffer, offerOf } from './relay-offer';
 import { takeIntro, type IntroSend } from './intros';
 import { keepPieceFrom } from './pieces-kept';
-import { driveShares, packCame, roundsCame } from './share-rounds';
+import { driveShares, packCame, roundsCame, takingCame } from './share-rounds';
 import {
   ackTaken,
   canReadManyAt,
@@ -843,6 +843,7 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   // what they say of a share's rounds is taken in then.
   if (received.file?.history && !twice) await packCame(chats, identity, tag).catch(() => undefined);
   if (received.more.rounds && !received.twice) await roundsCame(chats, identity, received.more.rounds).catch(() => undefined);
+  if (received.more.taking && !received.twice) await takingCame(chats, identity, received.more.taking).catch(() => undefined);
   if (received.text) await add({ text: received.text });
   if (received.got.length > 0 && (await history.mark(peer, true, 1, at, received.got)).length > 0) changed = true;
   if (received.read.length > 0 && (await history.mark(peer, true, 2, at, received.read)).length > 0) changed = true;

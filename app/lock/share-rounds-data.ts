@@ -27,7 +27,8 @@ export const ID_HEX = 48;
  * them went up; `heard`, when the other phone last said how far it is; `again`, when they were last
  * said again for want of word; `at`, when it began. `came`, when its message was first found to
  * have come to the other phone, before that phone said it keeps it; `full` while the other phone
- * says it has no room for more.
+ * says it has no room for more. `taking`, when the other phone said it began taking its words, on a
+ * tap there; `missed`, when it said they did not come to it, to be tapped again.
  */
 export type OutShare = {
   s: string;
@@ -46,6 +47,8 @@ export type OutShare = {
   at: number;
   came?: number;
   full?: true;
+  taking?: number;
+  missed?: number;
 };
 
 /**
@@ -134,6 +137,8 @@ function checkedOut(value: unknown): OutShare | null {
     at: count(v.at) ? v.at : 0,
     ...(v.ready !== true && count(v.came) && v.came > 0 ? { came: v.came } : {}),
     ...(v.full === true ? { full: true as const } : {}),
+    ...(v.ready !== true && count(v.taking) && v.taking > 0 ? { taking: v.taking } : {}),
+    ...(v.ready !== true && count(v.missed) && v.missed > 0 ? { missed: v.missed } : {}),
   };
 }
 

@@ -48,7 +48,7 @@ import { MAX_IMPORTED_FILE } from '../lib/imports';
 import { messageLine } from '../lib/message-line';
 import { sweepPendingChunks } from '../lib/pending-chunks';
 import { deleteChunk, fromHex, getChunk, putChunk, RelaySession, setThroughTor } from '../lib/relay';
-import { beginShare, chunkAt, driveShares, forgetRounds, packCame, readyShare, roundsCame, shareLines, sharesSettled, sharingNow, startsOf, stopShare, WINDOW_CHUNKS, type ShareWay } from '../lib/share-rounds';
+import { beginShare, chunkAt, driveShares, forgetRounds, packCame, readyShare, roundsCame, shareLines, sharesSettled, sharingNow, startsOf, stopShare, takingCame, WINDOW_CHUNKS, type ShareWay } from '../lib/share-rounds';
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { Archive, replaceShared, type ArchivedChat } from '../lock/archive';
@@ -462,6 +462,16 @@ t(
     assert.ok(total > 3 * SMALL_MB * 1024 * 1024, 'several times what the relay keeps');
     const tag = await share(alice, bob, archive);
     const line = `contact:${alice.id}|${tag}`;
+    // Tapped on Bob's phone: Alice's line says it is being taken there, then that it did not come;
+    // what says so goes as a quiet signal only, checked as it comes.
+    const aliceLine = `contact:${bob.id}|${tag}`;
+    await takingCame(alice.chats, bob.id, carriedOf({ taking: { tag } }).taking!);
+    assert.equal((await shareLines(alice.place))[aliceLine], 'Sharing · their phone is taking it');
+    await new Promise((r) => setTimeout(r, 5));
+    await takingCame(alice.chats, bob.id, carriedOf(toCarry({ taking: { tag, f: true } }, false)).taking!);
+    assert.equal((await shareLines(alice.place))[aliceLine], 'Sharing · it did not come to their phone; they can tap it to try again');
+    assert.equal(carriedOf({ taking: { tag: 'not a tag' } }).taking, undefined);
+    assert.equal(toCarry({ taking: { tag } }, true).taking, undefined);
 
     let restarted = false;
     let percents: number[] = [];

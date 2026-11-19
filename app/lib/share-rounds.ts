@@ -7,7 +7,7 @@ import { CHUNK_SIZES, deleteChunks, HISTORY_CHUNKS, isFileRef, PREFIX, readChunk
 import { changeRounds, EMPTY, ID_HEX, loadRounds, MOST_DONE, MOST_WAIT, withHeard, withPack, type InShare, type OutShare, type RoundsData, type RoundsPlace } from '../lock/share-rounds-data';
 
 import { bytesSource, chunkPlan, FileDamagedError, FileGoneError, fileWay, keepFile, openChunk, readFile, room, takeFile, takesItself, type TakenFiles } from './attachments';
-import { ROUND_IDS, type Rounds } from './chat-parts';
+import { ROUND_IDS, type Rounds, type Taking } from './chat-parts';
 import { keptFiles, markOf, packBytes, packChats, readPack, receivedChats, refOf } from './chat-share';
 import { fromHex, randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { E2E } from './e2e';
@@ -251,9 +251,15 @@ export async function shareLines(place: RoundsPlace): Promise<Record<string, str
     if (!out.tag || ended.has(out.s)) continue;
     const percent = percentOf(out);
     const untaken = !out.ready && (out.came ?? 0) > 0 && now - out.came! > UNTAKEN;
+    // Tapped on their phone: being taken, or it did not come there, whichever they said last.
+    const said = out.ready ? null : (out.missed ?? 0) > (out.taking ?? 0) ? 'missed' : out.taking ? 'taking' : null;
     lines[`${CONTACT_PREFIX}${out.to}|${out.tag}`] = out.full
       ? t('Sharing, {percent}% · waiting for free space on their phone', { percent })
-      : untaken
+      : said === 'taking'
+        ? t('Sharing · their phone is taking it')
+        : said === 'missed'
+          ? t('Sharing · it did not come to their phone; they can tap it to try again')
+          : untaken
         ? t('Sharing, {percent}% · waiting for their Erevos to take it; an older one takes only the messages', { percent })
         : t('Sharing, {percent}%', { percent });
   }
@@ -275,6 +281,23 @@ export async function shareLines(place: RoundsPlace): Promise<Record<string, str
 /** Keeps what a contact said of a share (`identity`, theirs), for the next round. */
 export async function roundsCame(chats: SpaceChats, identity: string, rounds: Rounds): Promise<void> {
   if (chats.pieces) await changeRounds(chats.pieces, (data) => withHeard(data, identity, rounds));
+}
+
+/** Keeps what a contact said of chats shared with them that they tapped to take (`taking`): begun, or
+ *  did not come, for the line here. */
+export async function takingCame(chats: SpaceChats, identity: string, taking: Taking): Promise<void> {
+  const place = chats.pieces;
+  if (!place) return;
+  const now = Date.now();
+  let changed = false;
+  await changeRounds(place, (data) => {
+    const out = data.out.find((one) => one.to === identity && one.tag === taking.tag && !one.ready);
+    if (!out) return null;
+    changed = true;
+    const next = taking.f ? { ...out, missed: now } : { ...out, taking: now };
+    return { ...data, out: data.out.map((one) => (one === out ? next : one)) };
+  });
+  if (changed) told(place, { peer: `${CONTACT_PREFIX}${identity}` });
 }
 
 /** Notes chats a contact shared, in the message `tag`, to keep with the next round. */
