@@ -115,6 +115,7 @@ import { BlockedContactError, E2E, ONLINE, toBase64Url, type ContactInfo, type W
 import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
 import { packMeta, sharable, shareSize, takeAskToShare } from '../lib/chat-share';
+import { failed as buzzFailed } from '../lib/haptics';
 import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, type ReadyShare, type ShareWay } from '../lib/share-rounds';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
@@ -4401,6 +4402,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
+      // Tapped for: felt as well as said.
+      if (!itself) buzzFailed();
       setNote(ref.kind === 'photo' ? t('A photo did not come. {error}', { error: errorText(error) }) : t('A file did not come. {error}', { error: errorText(error) }));
     } finally {
       takingNow.current.delete(key);
@@ -4498,6 +4501,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (change.holder !== place.holder || change.space !== place.space) return;
       const { peer, tag, file, taking: far } = change;
       if (peer && tag && far) {
+        if (far === 'failed') buzzFailed();
         setTaking((now) => ({ ...now, [`${peer}|${tag}`]: far }));
         return;
       }
@@ -4775,6 +4779,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     );
   }
 
+  // Chats a contact shared, tapped: from a server the contact chose, without Tor, this phone's
+  // internet address shows there, said first as for a file (lib/ip-warning.ts); then coming from
+  // the tap on, so the line no longer asks for one (lib/share-rounds.ts says how far).
+  async function takeSharedChats(way: ShareWay, message: Message, file: FileRef) {
+    const peer = message.peer;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    const exposed = !!file.from?.url && !takesItself(way.own, file.from) && !isTorChat(peer) && !nostrOwnTor() && !netThroughTor();
+    if (exposed && !(await ipGate({ network: 'Erevos', act: 'file', of: circuitOf(identity), ...ipKeep() }))) return;
+    setTaking((now) => ({ ...now, [`${peer}|${message.tag}`]: '0%' }));
+    void takePack(way, identity, message.tag);
+  }
+
   // A photo or file tapped: taken from the relay if it is not here yet, otherwise shown on its own.
   function openFile(message: Message) {
     const file = message.file;
@@ -4783,11 +4799,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // stop. The file itself is not one to open.
     if (file.history) {
       const way = file.from && !message.mine ? shareWay(ownRelay()) : null;
-      if (way) {
-        // Coming from the tap on, so the line no longer asks for one (lib/share-rounds.ts says how far).
-        setTaking((now) => ({ ...now, [`${message.peer}|${message.tag}`]: '0%' }));
-        void takePack(way, message.peer.slice(CONTACT_PREFIX.length), message.tag);
-      } else if (message.mine) void stopSharing(message);
+      if (way) void takeSharedChats(way, message, file);
+      else if (message.mine) void stopSharing(message);
       return;
     }
     // Ours to see once is theirs to see (lib/see-once.ts).

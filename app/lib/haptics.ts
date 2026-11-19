@@ -84,3 +84,16 @@ export function tap(): void {
 export function press(): void {
   buzz(PRESS_MS);
 }
+
+/** Something asked for with a tap did not happen, as a file that did not come: two short buzzes. */
+export const FAILED_PATTERN = [0, PRESS_MS * 2, 80, PRESS_MS * 2];
+export function failed(): void {
+  if (Platform.OS === 'web') return;
+  load();
+  if (!on) return;
+  try {
+    Vibration.vibrate(FAILED_PATTERN);
+  } catch {
+    // A phone without a vibrator: the line still says so.
+  }
+}
