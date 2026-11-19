@@ -10,6 +10,7 @@ export const settings: Record<string, string> = {
   'Remove second password': 'Zweites Passwort entfernen',
   'The second password will stop working. What was in that space stays on the phone, and nothing opens it.': 'Das zweite Passwort funktioniert dann nicht mehr. Was in diesem Bereich war, bleibt auf dem Telefon, und nichts öffnet ihn.',
   'Saved.': 'Gespeichert.',
+  'No app on this phone opens this kind of file.': "Keine App auf diesem Telefon öffnet diese Art von Datei.",
   'Remove hidden chats PIN': 'PIN der versteckten Chats entfernen',
   'The hidden chats in place {place} will stop opening. They stay on the phone, and nothing opens them.': 'Die versteckten Chats auf Platz {place} lassen sich dann nicht mehr öffnen. Sie bleiben auf dem Telefon, und nichts öffnet sie.',
   'Password saved.': 'Passwort gespeichert.',

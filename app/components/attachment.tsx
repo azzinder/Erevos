@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fileSize, readFile } from '../lib/attachments';
 import { t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
+import { CAN_OPEN_FILE, openFileWith } from '../lib/open-with';
 import { onceLine } from '../lib/see-once';
 import { keepPrivate } from '../lib/screen-privacy';
 import { doubleTapped, fitted, kept, moved, pinched, WHOLE, type Look, type Point, type Size } from '../lib/photo-zoom';
@@ -145,6 +146,13 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
   return photos;
 }
 
+/** Opens a chat's file with the app the phone offers for its kind (a PDF reader), from memory (lib/open-with.ts). */
+export async function openRefWith(ref: FileRef): Promise<void> {
+  const bytes = await readFile(ref);
+  if (!bytes) throw new Error(t('The file could not be fetched.'));
+  await openFileWith(ref.name, ref.mime, bytes);
+}
+
 /** What FileViewer reads of a file: a photo of another network's chat is shown without a FileRef. */
 export type ViewedFile = Pick<FileRef, 'id' | 'kind' | 'name' | 'size' | 'w' | 'h'>;
 
@@ -154,12 +162,16 @@ export type ViewedFile = Pick<FileRef, 'id' | 'kind' | 'name' | 'size' | 'w' | '
  * two fingers or a double tap zoom in, one finger moves it while zoomed, and a tap hides or shows
  * what is around it.
  */
-export function FileViewer({ file, uri, onSave, onClose, once = false }: { file: ViewedFile | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void; once?: boolean }) {
+export function FileViewer({ file, uri, onSave, onOpen, onClose, once = false }: { file: ViewedFile | null; uri?: string; onSave: (choose: boolean) => void; onOpen?: () => Promise<void>; onClose: () => void; once?: boolean }) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [bars, setBars] = useState(true);
+  const [note, setNote] = useState('');
   const id = file?.id;
-  useEffect(() => setBars(true), [id]);
+  useEffect(() => {
+    setBars(true);
+    setNote('');
+  }, [id]);
   // A photo to see once (lib/see-once.ts): kept from screenshots while it shows, where the phone allows.
   const seeingOnce = once && file !== null;
   useEffect(() => {
@@ -182,6 +194,9 @@ export function FileViewer({ file, uri, onSave, onClose, once = false }: { file:
     </Row>
   ) : (
     <Row wrap style={styles.viewerTools}>
+      {onOpen && CAN_OPEN_FILE && file?.kind !== 'photo' ? (
+        <Button title={t('Open')} compact onPress={() => void onOpen().catch((error: unknown) => setNote(error instanceof Error ? error.message : String(error)))} />
+      ) : null}
       <Button title={t('Save')} compact onPress={() => onSave(false)} />
       {CAN_CHOOSE_FOLDER ? <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => onSave(true)} /> : null}
       <Button title={t('Close')} kind="secondary" compact onPress={onClose} />
@@ -224,6 +239,7 @@ export function FileViewer({ file, uri, onSave, onClose, once = false }: { file:
           <View style={styles.viewerFile}>
             <Text variant="heading">{file.name}</Text>
             <Text tone="muted">{fileSize(file.size)}</Text>
+            {note ? <Text tone="muted">{note}</Text> : null}
           </View>
           {tools}
         </View>

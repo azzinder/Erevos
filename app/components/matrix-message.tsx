@@ -13,6 +13,7 @@ import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { pollOver, pollShown } from '../lib/matrix-parts';
 import { isCardFile } from '../lib/message-carry';
 import { matrixFile, matrixFileKept } from '../lib/matrix-store';
+import { CAN_OPEN_FILE, openFileWith } from '../lib/open-with';
 import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
 import { softBubble, textSized } from '../theme/bubbles';
@@ -270,6 +271,17 @@ function FilePart({ file, onMenu }: { file: MatrixFile; onMenu?: () => void }) {
     return true;
   }
 
+  // Handed to the app the phone opens its kind with (a PDF reader), from memory (lib/open-with.ts).
+  async function open() {
+    const got = await get();
+    if (!got) return;
+    try {
+      await openFileWith(file.name, file.mime, got);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   const uri = useMemo(() => (file.kind === 'image' && bytes ? `data:${file.mime.startsWith('image/') ? file.mime : 'image/jpeg'};base64,${toBase64(bytes)}` : null), [file.kind, file.mime, bytes]);
   const ratio = file.w && file.h ? file.w / file.h : 4 / 3;
   return (
@@ -285,6 +297,7 @@ function FilePart({ file, onMenu }: { file: MatrixFile; onMenu?: () => void }) {
       {fetchable ? (
         <Row>
           {file.kind === 'image' && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
+          {file.kind === 'file' && CAN_OPEN_FILE ? <Button title={t('Open')} compact disabled={busy} onPress={() => void open()} /> : null}
           <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
         </Row>
       ) : null}

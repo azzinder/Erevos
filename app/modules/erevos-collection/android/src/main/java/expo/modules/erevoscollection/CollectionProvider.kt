@@ -54,7 +54,7 @@ class CollectionProvider : ContentProvider() {
     val asked = projection ?: arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
     val columns = asked.filter { it == OpenableColumns.DISPLAY_NAME || it == OpenableColumns.SIZE }.distinct().toTypedArray()
     val cursor = MatrixCursor(columns, 1)
-    cursor.addRow(columns.map { if (it == OpenableColumns.DISPLAY_NAME) open.name else open.file.size }.toTypedArray<Any?>())
+    cursor.addRow(columns.map { if (it == OpenableColumns.DISPLAY_NAME) open.name else open.size }.toTypedArray<Any?>())
     return cursor
   }
 
@@ -71,7 +71,8 @@ class CollectionProvider : ContentProvider() {
       }
     }
     val pipe = ParcelFileDescriptor.createReliablePipe()
-    Thread({ fill(open.file, folder, pipe[1]) }, "erevos-collection-open").start()
+    val sealed = open.file
+    Thread({ if (sealed != null) fill(sealed, folder, pipe[1]) else fillBytes(open, pipe[1]) }, "erevos-collection-open").start()
     return pipe[0]
   }
 
@@ -82,24 +83,33 @@ class CollectionProvider : ContentProvider() {
    */
   @RequiresApi(Build.VERSION_CODES.O)
   private class Served(private val open: OpenFiles.Open, folder: File) : ProxyFileDescriptorCallback() {
-    private val reader = SealedFile.Reader(open.file, folder)
-    private val wipe = Runnable { reader.close() }
+    private val reader = open.file?.let { SealedFile.Reader(it, folder) }
+    private val wipe = Runnable { reader?.close() }
 
     init {
       open.readers.add(wipe)
     }
 
     override fun onGetSize(): Long {
-      if (open.file.isClosed) throw ErrnoException("onGetSize", OsConstants.EBADF)
-      return open.file.size
+      if (open.isClosed) throw ErrnoException("onGetSize", OsConstants.EBADF)
+      return open.size
     }
 
     // Fills what was asked, all of it but at the file's end, as a short read means the end to many
     // apps. A token forgotten answers EBADF; a chunk damaged or gone, EIO.
     override fun onRead(offset: Long, size: Int, data: ByteArray): Int {
-      if (open.file.isClosed) {
-        reader.close()
+      if (open.isClosed) {
+        reader?.close()
         throw ErrnoException("onRead", OsConstants.EBADF)
+      }
+      // Bytes held in memory (a chat's file, OpenFiles.addBytes): copied from where asked.
+      val held = open.bytes
+      if (reader == null || held != null) {
+        val all = held ?: throw ErrnoException("onRead", OsConstants.EBADF)
+        if (offset >= all.size) return 0
+        val count = minOf(size.toLong(), all.size - offset).toInt()
+        System.arraycopy(all, offset.toInt(), data, 0, count)
+        return count
       }
       var done = 0
       try {
@@ -110,7 +120,7 @@ class CollectionProvider : ContentProvider() {
         }
       } catch (e: IOException) {
         reader.close()
-        val forgotten = open.file.isClosed
+        val forgotten = open.isClosed
         if (!forgotten) Log.i(TAG, "A file opened with another app could not be read")
         throw ErrnoException("onRead", if (forgotten) OsConstants.EBADF else OsConstants.EIO)
       }
@@ -119,7 +129,7 @@ class CollectionProvider : ContentProvider() {
 
     override fun onRelease() {
       open.readers.remove(wipe)
-      reader.close()
+      reader?.close()
     }
   }
 
@@ -151,6 +161,24 @@ class CollectionProvider : ContentProvider() {
     }
   }
 
+  // Before Android 8, bytes held in memory: written into the pipe whole.
+  private fun fillBytes(open: OpenFiles.Open, write: ParcelFileDescriptor) {
+    val out = ParcelFileDescriptor.AutoCloseOutputStream(write)
+    val all = open.bytes
+    if (all == null || open.isClosed) {
+      runCatching { write.closeWithError("closed") }
+      return
+    }
+    try {
+      out.write(all)
+      out.flush()
+      runCatching { out.close() }
+    } catch (e: Exception) {
+      Log.i(TAG, "A file opened with another app was not read whole")
+      runCatching { write.closeWithError(e.message ?: "read failed") }
+    }
+  }
+
   override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException()
 
   override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = throw UnsupportedOperationException()
@@ -164,9 +192,16 @@ class CollectionProvider : ContentProvider() {
 
 /** The files handed to other apps now, by token: in memory only, so none when Erevos starts. */
 internal object OpenFiles {
-  /** A file handed out, and what wipes the chunks its file descriptors hold (CollectionProvider). */
-  class Open(val file: SealedFile, val name: String, val mime: String) {
+  /**
+   * A file handed out: one of the Collection, read from its sealed chunks (`file`), or a chat's,
+   * held in memory as it came (`bytes`), wiped when forgotten. And what wipes the chunks its file
+   * descriptors hold (CollectionProvider).
+   */
+  class Open(val file: SealedFile?, val bytes: ByteArray?, val name: String, val mime: String) {
     val readers = CopyOnWriteArrayList<Runnable>()
+    @Volatile var closed = false
+    val size: Long get() = file?.size ?: (bytes?.size?.toLong() ?: 0L)
+    val isClosed: Boolean get() = closed || file?.isClosed == true
   }
 
   private val open = ConcurrentHashMap<String, Open>()
@@ -185,10 +220,16 @@ internal object OpenFiles {
   fun authority(packageName: String) = "$packageName.collection"
 
   /** Makes a link for the file; its token is returned with it, to forget it later. */
-  fun add(packageName: String, file: SealedFile, name: String, mime: String): Pair<String, Uri> {
+  fun add(packageName: String, file: SealedFile, name: String, mime: String): Pair<String, Uri> = link(packageName, Open(file, null, name, mime))
+
+  /** Makes a link for bytes held in memory (a chat's file), wiped when the link is forgotten. */
+  fun addBytes(packageName: String, data: ByteArray, name: String, mime: String): Pair<String, Uri> = link(packageName, Open(null, data, name, mime))
+
+  private fun link(packageName: String, file: Open): Pair<String, Uri> {
     val bytes = ByteArray(16).also(random::nextBytes)
     val token = bytes.joinToString("") { "%02x".format(it) }
-    open[token] = Open(file, name, mime)
+    val name = file.name
+    open[token] = file
     val uri = Uri.Builder().scheme("content").authority(authority(packageName)).appendPath(token).appendPath(name).build()
     return Pair(token, uri)
   }
@@ -197,7 +238,7 @@ internal object OpenFiles {
     val segments = uri.pathSegments
     if (segments.size != 2) return null
     val found = open[segments[0]] ?: return null
-    return if (segments[1] == found.name && !found.file.isClosed) found else null
+    return if (segments[1] == found.name && !found.isClosed) found else null
   }
 
   /**
@@ -206,9 +247,12 @@ internal object OpenFiles {
    */
   fun forget(token: String) {
     val gone = open.remove(token) ?: return
-    gone.file.close()
+    gone.closed = true
+    gone.file?.close()
     val wipes = gone.readers.toList()
-    if (wipes.isNotEmpty()) synchronized(this) { reading }?.post { wipes.forEach { it.run() } }
+    val held = gone.bytes
+    val reader = synchronized(this) { reading }
+    if (reader != null) reader.post { wipes.forEach { it.run() }; held?.fill(0) } else held?.fill(0)
   }
 
   /** Forgets every link and key: the space locked or closed, or the panic button. */

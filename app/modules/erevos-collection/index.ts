@@ -72,6 +72,8 @@ export type PlayerState = {
 type Native = {
   /** A link another app opens the file by, streamed as it is decrypted; forget it by its token. */
   openWith(file: SealedRef, name: string, mime: string): { token: string; uri: string };
+  /** The same for a chat's file, its bytes (base64) held in memory only until forgotten. Not in builds before it. */
+  openBytesWith?(data: string, name: string, mime: string): { token: string; uri: string };
   forget(token: string): void;
   /** Forgets every link and closes every PDF. */
   forgetAll(): void;

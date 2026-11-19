@@ -41,7 +41,7 @@ import { isPicking } from '../lib/picking';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
-import { FileViewer, shownOf, useShownPhotos } from '../components/attachment';
+import { FileViewer, openRefWith, shownOf, useShownPhotos } from '../components/attachment';
 import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type ComposerWay, type SendWay } from '../components/composer';
 import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
@@ -8400,6 +8400,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           file={viewing?.file ?? viewingImported}
           uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
           onSave={(choose) => (viewing ? void saveAttachment(viewing, choose) : viewingImported && void saveImported(viewingImported, choose))}
+          onOpen={viewing?.file ? () => openRefWith(viewing.file!) : undefined}
           once={!!viewing?.file?.once}
           onClose={() => {
             if (viewing?.file?.once && !viewing.mine) seenOnce(viewing);

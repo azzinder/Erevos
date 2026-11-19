@@ -30,7 +30,7 @@ import type { ChatLook } from '../theme/chat-theme';
 import type { Look } from '../theme/look';
 
 import { ChatLookSheet } from './chat-look';
-import { Attachment, FileViewer, shownOf, useShownPhotos } from './attachment';
+import { Attachment, FileViewer, openRefWith, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type SendWay, type VoiceControl } from './composer';
 import { useGlassBlur } from './glass';
 import { BackIcon, BellIcon, ContrastIcon, FolderIcon } from './icons';
@@ -672,7 +672,7 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
       />
       <MessageMenu key={`menu-${menuTurn}`} visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? noteLine(menuFor) : ''} actions={menuFor ? actionsOf(menuFor) : []} />
       <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={t('Chat with myself')} chat={lookChat} />
-      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
+      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onOpen={viewing ? () => openRefWith(viewing) : undefined} onClose={() => setViewing(null)} />
       <RemindSheet note={remindFor} onPick={(note, at) => void setReminder(note, at)} onClose={() => setRemindFor(null)} />
       <Sheet visible={moving !== null} onClose={() => setMoving(null)} title={t('Which folder?')}>
         {moving ? (

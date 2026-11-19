@@ -10,6 +10,7 @@ export const settings: Record<string, string> = {
   'Remove second password': 'Αφαίρεση δεύτερου κωδικού',
   'The second password will stop working. What was in that space stays on the phone, and nothing opens it.': 'Ο δεύτερος κωδικός θα σταματήσει να λειτουργεί. Ό,τι υπήρχε σε εκείνον τον χώρο μένει στο τηλέφωνο, και τίποτα δεν τον ανοίγει.',
   'Saved.': 'Αποθηκεύτηκε.',
+  'No app on this phone opens this kind of file.': "Καμία εφαρμογή στο κινητό δεν ανοίγει αυτό το είδος αρχείου.",
   'Remove hidden chats PIN': 'Αφαίρεση PIN κρυφών συνομιλιών',
   'The hidden chats in place {place} will stop opening. They stay on the phone, and nothing opens them.': 'Οι κρυφές συνομιλίες στο σημείο {place} θα σταματήσουν να ανοίγουν. Μένουν στο τηλέφωνο, και τίποτα δεν τις ανοίγει.',
   'Password saved.': 'Ο κωδικός αποθηκεύτηκε.',

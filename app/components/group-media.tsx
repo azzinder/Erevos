@@ -20,7 +20,7 @@ import { notYoursToSee, onceLine } from '../lib/see-once';
 import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage } from '../lock/group-data';
-import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from './attachment';
+import { Attachment, comingText, FileViewer, openRefWith, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, type ComposerTile, type VoiceControl } from './composer';
 import { useGroupsWhere } from './groups-at';
 import { groupIpGate } from './ip-warning';
@@ -378,7 +378,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
 
   const sheets: ReactNode = (
     <>
-      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={closeViewing} once={!!viewing?.once} />
+      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onOpen={viewing ? () => openRefWith(viewing) : undefined} onClose={closeViewing} once={!!viewing?.once} />
     </>
   );
 

@@ -91,6 +91,15 @@ class ErevosCollectionModule : Module() {
       mapOf("token" to token, "uri" to uri.toString())
     }
 
+    // The same for a chat's file, its bytes given here (base64) and held in memory only, until the
+    // link is forgotten, the space locks or closes, or the panic button: nothing is written plain.
+    Function("openBytesWith") { data: String, name: String, mime: String ->
+      val app = context ?: throw IllegalStateException("No app")
+      val bytes = Base64.decode(data, Base64.NO_WRAP)
+      val (token, uri) = OpenFiles.addBytes(app.packageName, bytes, name, mime)
+      mapOf("token" to token, "uri" to uri.toString())
+    }
+
     // Forgets one link: the other app can no longer read it.
     Function("forget") { token: String ->
       OpenFiles.forget(token)

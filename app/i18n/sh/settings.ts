@@ -10,6 +10,7 @@ export const settings: Record<string, string> = {
   'Remove second password': 'Ukloni drugu lozinku',
   'The second password will stop working. What was in that space stays on the phone, and nothing opens it.': 'Druga lozinka će prestati raditi. Ono što je bilo u tom prostoru ostaje na telefonu i ništa ga ne otvara.',
   'Saved.': 'Sačuvano.',
+  'No app on this phone opens this kind of file.': "Nijedna aplikacija na ovom telefonu ne otvara ovu vrstu datoteke.",
   'Remove hidden chats PIN': 'Ukloni PIN skrivenih razgovora',
   'The hidden chats in place {place} will stop opening. They stay on the phone, and nothing opens them.': 'Skriveni razgovori na mjestu {place} više se neće otvarati. Ostaju na telefonu i ništa ih ne otvara.',
   'Password saved.': 'Lozinka je sačuvana.',

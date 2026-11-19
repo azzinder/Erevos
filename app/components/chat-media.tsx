@@ -17,7 +17,7 @@ import type { FileRef } from '../lock/attachment-files';
 import { loadClip } from '../lock/voice-clips';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
-import { FileViewer, useShownPhotos } from './attachment';
+import { FileViewer, openRefWith, useShownPhotos } from './attachment';
 import { ScreenBackdrop } from './backdrop';
 import { IconButton } from './composer';
 import { BackIcon, FileIcon, GlobeIcon, LaterIcon, MicIcon, MusicIcon, PhotoIcon, VideoIcon } from './icons';
@@ -443,7 +443,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
         onClose={() => setCalendar(false)}
       />
       <MessageMenu key={`menu-${menuTurn}`} visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? lineTitle(menuFor) || t('Photo') : ''} actions={menuFor ? menuActions(menuFor) : []} />
-      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => viewing && void save(viewing, choose)} onClose={() => setViewing(null)} />
+      <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => viewing && void save(viewing, choose)} onOpen={viewing ? () => openRefWith(viewing) : undefined} onClose={() => setViewing(null)} />
     </Modal>
   );
 }

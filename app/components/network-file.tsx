@@ -10,6 +10,7 @@ import { playVoice } from '../lib/audio';
 import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import { isCardFile } from '../lib/message-carry';
+import { CAN_OPEN_FILE, openFileWith } from '../lib/open-with';
 import { saveBytes } from '../lib/save-file';
 import { voiceDuration } from '../lib/voice';
 import { soundLength } from '../lib/xmpp-voice';
@@ -105,6 +106,17 @@ function FileShown({ name, type, size, dim, duration, fetch, onMenu, onDuration 
     return true;
   }
 
+  // Handed to the app the phone opens its kind with (a PDF reader), from memory (lib/open-with.ts).
+  async function open() {
+    const got = await get();
+    if (!got || !here.current) return;
+    try {
+      await openFileWith(name, type, got);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async function play() {
     if (stop.current) {
       stop.current();
@@ -158,6 +170,7 @@ function FileShown({ name, type, size, dim, duration, fetch, onMenu, onDuration 
       )}
       <Row>
         {image && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
+        {!image && !sound && CAN_OPEN_FILE ? <Button title={t('Open')} compact disabled={busy} onPress={() => void open()} /> : null}
         <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
       </Row>
       {busy ? (
