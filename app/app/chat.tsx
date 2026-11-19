@@ -160,6 +160,7 @@ import { HIDDEN_ANSWER_MS, HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } 
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
+import { HiddenCallWaiting } from '../components/hidden-ring-screen';
 import { setOpenHiddenPlace, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { giveLinkedName } from '../lib/linked-name';
 import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/sealed-contacts';
@@ -322,6 +323,9 @@ export default function ChatScreen() {
   // A hidden contact's call answered with no PIN (components/hidden-ring-screen.tsx): the place's
   // chats run for the call alone, never shown, and close as it ends.
   const callOnly = hidden === 'call';
+  // Drawn again as a call comes and goes, for the waiting screen of a call answered with no PIN.
+  const [, setCallsChanged] = useState(0);
+  useEffect(() => (callOnly ? onCallChange(() => setCallsChanged((n) => n + 1)) : undefined), [callOnly]);
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch || callOnly ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
   // Hidden chats keep out of screenshots and the recent apps preview while open, as long as
@@ -425,7 +429,10 @@ export default function ChatScreen() {
             <View style={layout.gone}>
               <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown={false} callOnly onHidden={closeHidden} onLook={() => undefined} />
             </View>
-          ) : hiddenKey ? (
+          ) : null}
+          {/* Until the call answered with no PIN comes, the nameless call screen says it connects, with End. */}
+          {hiddenKey && callOnly && !currentCall() ? <HiddenCallWaiting onEnd={closeHidden} /> : null}
+          {hiddenKey && callOnly ? null : hiddenKey ? (
             <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
           ) : null}
           <PasswordSheet

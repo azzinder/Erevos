@@ -156,6 +156,30 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
   );
 }
 
+/**
+ * What shows from Answer with no PIN (app/chat.tsx `callOnly`) until the call it answered comes, as
+ * its caller may have hung up or the network be slow: the call screen's look, with no name and no
+ * face, saying it connects, and **End**, which closes the hidden chats at once.
+ */
+export function HiddenCallWaiting({ onEnd }: { onEnd: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.top, { paddingTop: insets.top + 72 }]}>
+        <View style={styles.face}>
+          <PersonIcon color="rgba(255,255,255,0.32)" size={48} />
+        </View>
+        <Text variant="body" color="rgba(255,255,255,0.8)" style={styles.shadow}>
+          {t('Connecting…')}
+        </Text>
+      </View>
+      <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
+        <Round title={t('End')} color="#C62828" onPress={onEnd} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#0B0B0D', zIndex: 100, elevation: 100 },
   top: { alignItems: 'center', gap: 10, paddingHorizontal: 24 },

@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- After **Answer** with no PIN on a hidden contact's call, the nameless call screen shows at once, saying **Connecting…**, with **End**, until the call comes (`components/hidden-ring-screen.tsx` `HiddenCallWaiting`): only the backdrop showed, with no way to tell whether it took, up to 75 seconds when the caller had hung up. **End** closes the hidden chats at once. Found by the review of 83d03391.
 - A hidden contact's call, where the hidden chats receive while closed, is answered with **Answer** and no PIN: the call shows no name and no face, and the hidden chats run only for it, out of sight, and close as it ends (`components/hidden-ring-screen.tsx`, `app/chat.tsx` `callOnly`, `CallPlace.nameless`). The small sign and the PIN still open them and answer there. Hidden chats that only ring while closed have no key before the PIN, so there **Answer** still asks for it. Requested by the maintainer, who chose no name.
 
 ### Under the hood
