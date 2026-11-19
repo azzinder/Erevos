@@ -454,6 +454,10 @@ radio, and on Android only.
   themselves once the relay or a phone nearby can take them; calls need one of those too. The first message to a
   contact takes longer, as it holds the keys.
 - **Marks:** **✓✓** comes with their next message, as marks alone do not go over LoRa.
+- **Spare pieces, and long texts packed:** a message of two pieces or more goes with spare pieces after it, one for
+  every four, so your contact's Erevos makes up pieces lost on the way, with nothing sent again; they take a little
+  more air time. A long text goes packed, smaller and with nothing lost, to a contact whose Erevos reads packed
+  messages, so it takes fewer pieces, or fits at all; a short one goes as it is.
 - **To every radio in reach:** each message is heard by every radio around, and passed on by the Meshtastic radios, as
   Meshtastic does. Every Erevos tries it; only your contact's opens it. Nothing is carried for others over LoRa.
 - **Its name and where it is:** Meshtastic radios say their name to every radio in reach now and then, and where they

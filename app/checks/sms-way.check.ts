@@ -287,7 +287,9 @@ test('two phones with no relay, no internet and no one near talk by SMS, end-to-
   // Bob answers the same way, with a longer text.
   const aliceId = message(await bob.receive((await alice.seal(bobId, 'ping', '')).packet)).identity;
   await bob.acceptRequest(aliceId);
-  const back = await bob.seal(aliceId, 'x'.repeat(600), '');
+  // Text that packing cannot make shorter, so it still needs every piece.
+  const longer = Array.from({ length: 600 }, (_, i) => String.fromCharCode(33 + ((i * 7919 + ((i * i) % 89)) % 94))).join('');
+  const back = await bob.seal(aliceId, longer, '');
   const bobNearby = new Nearby();
   const bobSettings: SmsWaySettings = { ...settings, on: () => true, phone: () => '+306900000001' };
   bobNearby.smsWay = new SmsWayRunner(bobPort, async () => undefined).way(() => bobSettings);
@@ -299,7 +301,7 @@ test('two phones with no relay, no internet and no one near talk by SMS, end-to-
   const opened = gatherSmsPieces(alicePieces.map((p) => ({ ...p, data: Buffer.from(p.data, 'base64') })), NOW).came;
   assert.equal(opened.length, 1);
   for (const packet of opened[0].packets) aliceGot.push(await alice.receive(packet));
-  assert.equal(message(aliceGot[0]).text, 'x'.repeat(600));
+  assert.equal(message(aliceGot[0]).text, longer);
 
   // Turned off: nothing goes by SMS.
   on = false;

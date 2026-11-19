@@ -513,6 +513,11 @@ tant que tu ne configures pas de radio, et sur Android seulement.
   à proximité peut les recevoir ; les appels ont aussi besoin de l’un des deux. Le premier message à un contact prend
   plus de temps, car il contient les clés.
 - **Marques :** **✓✓** arrive avec son prochain message, car les marques seules ne passent pas par LoRa.
+- **Pièces de secours, et textes longs compressés :** un message de deux pièces ou plus part avec des pièces de
+  secours après lui, une pour quatre, pour que l’Erevos de ton contact refasse les pièces perdues en route, sans rien
+  renvoyer ; elles prennent un peu plus de temps d’antenne. Un texte long part compressé, plus petit et sans rien
+  perdre, vers un contact dont l’Erevos lit les messages compressés, il prend ainsi moins de pièces, ou tient tout
+  court ; un texte court part tel quel.
 - **À toutes les radios à portée :** chaque message est entendu par toutes les radios alentour, et retransmis par les
   radios Meshtastic, comme le fait Meshtastic. Chaque Erevos l’essaie ; seul celui de ton contact l’ouvre. Rien n’est
   transporté pour d’autres par LoRa.

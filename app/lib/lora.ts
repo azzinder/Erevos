@@ -5,6 +5,7 @@
 import { CONFIG_ONLY, MAX_PAYLOAD, PRIVATE_APP, quieted, readFromRadio, restored, toRadioAdmin, toRadioPacket, wantConfig, type Admin } from './meshtastic';
 import { framesOf, SLOW_PREFIX } from './nearby';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
+import { recover, sparesOf } from './fec';
 import { t, mark } from './i18n';
 
 // Erevos over a Meshtastic LoRa radio linked to the phone by Bluetooth (modules/erevos-radio), for
@@ -24,6 +25,11 @@ import { t, mark } from './i18n';
 // is, as Meshtastic radios do now and then to every radio in reach: it sets its role to the one
 // that says nothing of itself unless asked, turns its GPS off and removes a fixed position, and
 // keeps what they were to put back (keepRadio).
+//
+// A packet of two pieces or more goes with spare pieces after them (lib/fec.ts): one for every four
+// pieces, at most four, made of all of them, so a phone that misses some of its pieces, as LoRa
+// loses some on the way, makes them up from the spares, without anything sent again. The pieces are
+// as before, and an Erevos from before spares passes the spares by.
 
 /** The link to a radio, as the phone's Bluetooth does it (modules/erevos-radio). */
 export type Mesh = {
@@ -61,6 +67,16 @@ const MAGIC = [0x45, 0x31];
 const HEAD = MAGIC.length + 5;
 const PIECE = MAX_PAYLOAD - HEAD;
 const MAX_PIECES = 16;
+// A spare piece: 'E' '2', the packet's id, its number among the spares and how many pieces (4 bits
+// each), how many spares (4 bits, the low ones), the packet's length (2 bytes), then its bytes, as
+// many as each piece has. A packet with spares has pieces that leave room for this longer head.
+const SPARE_MAGIC = [0x45, 0x32];
+const SPARE_HEAD = SPARE_MAGIC.length + 8;
+const SPARE_PIECE = MAX_PAYLOAD - SPARE_HEAD;
+// One spare for every four pieces, at most four.
+const sparesFor = (count: number) => (count < 2 ? 0 : Math.min(4, Math.ceil(count / 4)));
+// Packets already put together, by sender and id, so their spares that come after are passed by.
+const MAX_DONE = 64;
 // Pieces waiting for the radio, at most: a few messages.
 const MAX_WAITING = 48;
 // A packet coming in pieces is dropped if the rest takes longer than this.
@@ -82,14 +98,17 @@ const newId = () => {
   return ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0 || 1;
 };
 
-/** The pieces a packet goes in on LoRa, or null when it is too large. */
+/** The pieces a packet goes in on LoRa, and its spare pieces after them, or null when it is too large. */
 export function piecesOf(packet: Uint8Array): Uint8Array[] | null {
-  const count = Math.max(1, Math.ceil(packet.length / PIECE));
+  // With spares, if they leave it no more than MAX_PIECES pieces; else as before, with none.
+  const withSpares = Math.max(1, Math.ceil(packet.length / SPARE_PIECE));
+  const count = withSpares >= 2 && withSpares <= MAX_PIECES ? withSpares : Math.max(1, Math.ceil(packet.length / PIECE));
   if (count > MAX_PIECES) return null;
+  const spares = count === withSpares ? sparesFor(count) : 0;
   const size = Math.ceil(packet.length / count);
   const id = randomBytes(4);
-  return Array.from({ length: count }, (_, n) => {
-    const part = packet.subarray(n * size, (n + 1) * size);
+  const parts = Array.from({ length: count }, (_, n) => packet.subarray(n * size, (n + 1) * size));
+  const pieces = parts.map((part, n) => {
     const piece = new Uint8Array(HEAD + part.length);
     piece.set(MAGIC, 0);
     piece.set(id, MAGIC.length);
@@ -97,9 +116,25 @@ export function piecesOf(packet: Uint8Array): Uint8Array[] | null {
     piece.set(part, HEAD);
     return piece;
   });
+  const spare = sparesOf(parts, spares, size).map((bytes, j) => {
+    const piece = new Uint8Array(SPARE_HEAD + size);
+    piece.set(SPARE_MAGIC, 0);
+    piece.set(id, SPARE_MAGIC.length);
+    piece[SPARE_MAGIC.length + 4] = (j << 4) | (count - 1);
+    piece[SPARE_MAGIC.length + 5] = spares - 1;
+    piece[SPARE_MAGIC.length + 6] = packet.length >> 8;
+    piece[SPARE_MAGIC.length + 7] = packet.length & 0xff;
+    piece.set(bytes, SPARE_HEAD);
+    return piece;
+  });
+  return [...pieces, ...spare];
 }
 
 type Timer = ReturnType<typeof setTimeout>;
+
+// A packet coming in pieces: those that came, the spares that came, and, once a spare came, how
+// long the packet is and how many spares it has.
+type Gathering = { pieces: (Uint8Array | null)[]; spares: Map<number, Uint8Array>; length: number; at: number };
 
 /** The phone's LoRa radio, and what goes over it. The app has one (`lora` in lib/radio.ts). */
 export class Lora {
@@ -124,7 +159,8 @@ export class Lora {
   private restarting = false;
   private notQuiet = false;
   private reconnect: Timer | null = null;
-  private readonly gathering = new Map<string, { pieces: (Uint8Array | null)[]; at: number }>();
+  private readonly gathering = new Map<string, Gathering>();
+  private readonly done: string[] = [];
   private kept: { text: string; at: number }[] = [];
   private readonly linkListeners = new Set<(link: string) => void>();
   private readonly textListeners = new Set<(link: string, text: string) => void>();
@@ -394,25 +430,35 @@ export class Lora {
   }
 
   private pieceIn(from: number, piece: Uint8Array, now: number) {
-    if (piece.length <= HEAD || piece[0] !== MAGIC[0] || piece[1] !== MAGIC[1]) return;
+    if (piece.length <= HEAD || piece[0] !== MAGIC[0] || (piece[1] !== MAGIC[1] && piece[1] !== SPARE_MAGIC[1])) return;
+    const spare = piece[1] === SPARE_MAGIC[1];
+    if (spare && piece.length <= SPARE_HEAD) return;
     const n = piece[MAGIC.length + 4] >> 4;
     const count = (piece[MAGIC.length + 4] & 0x0f) + 1;
-    if (n >= count) return;
+    if (!spare && n >= count) return;
     const key = `${from} ${Array.from(piece.subarray(MAGIC.length, MAGIC.length + 4)).join('.')}`;
+    if (this.done.includes(key)) return;
     for (const [other, g] of this.gathering) if (now - g.at > PIECES_WITHIN) this.gathering.delete(other);
-    const g = this.gathering.get(key) ?? { pieces: new Array<Uint8Array | null>(count).fill(null), at: now };
+    const g: Gathering = this.gathering.get(key) ?? { pieces: new Array<Uint8Array | null>(count).fill(null), spares: new Map(), length: 0, at: now };
     if (g.pieces.length !== count) return;
-    g.pieces[n] = piece.slice(HEAD);
+    if (spare) {
+      const spares = (piece[SPARE_MAGIC.length + 5] & 0x0f) + 1;
+      const length = (piece[SPARE_MAGIC.length + 6] << 8) | piece[SPARE_MAGIC.length + 7];
+      const size = Math.ceil(length / count);
+      // A spare that does not fit what the pieces say, or the spares before it, is passed by.
+      if (n >= spares || length === 0 || piece.length - SPARE_HEAD !== size || (g.length && g.length !== length)) return;
+      g.length = length;
+      g.spares.set(n, piece.slice(SPARE_HEAD));
+    } else {
+      g.pieces[n] = piece.slice(HEAD);
+    }
     this.gathering.set(key, g);
     while (this.gathering.size > MAX_GATHERING) this.gathering.delete(this.gathering.keys().next().value!);
-    if (g.pieces.some((p) => p === null)) return;
+    const packet = whole(g);
+    if (!packet) return;
     this.gathering.delete(key);
-    const packet = new Uint8Array(g.pieces.reduce((sum, p) => sum + p!.length, 0));
-    let offset = 0;
-    for (const p of g.pieces) {
-      packet.set(p!, offset);
-      offset += p!.length;
-    }
+    this.done.push(key);
+    if (this.done.length > MAX_DONE) this.done.shift();
     const [text] = framesOf(packet) ?? [];
     const link = this.linkId();
     if (!text || !link) return;
@@ -420,6 +466,36 @@ export class Lora {
     if (this.kept.length > MAX_KEPT) this.kept.shift();
     this.textListeners.forEach((listener) => listener(link, text));
   }
+}
+
+// The packet, once all its pieces came, or enough of them and of its spares: else null.
+function whole(g: Gathering): Uint8Array | null {
+  const count = g.pieces.length;
+  if (g.pieces.every((p) => p !== null)) return joined(g.pieces as Uint8Array[]);
+  if (!g.length) return null;
+  const size = Math.ceil(g.length / count);
+  const came = new Map<number, Uint8Array>();
+  for (let d = 0; d < count; d++) {
+    const p = g.pieces[d];
+    if (!p) continue;
+    // Each piece is `size` bytes, but the last, which has the rest.
+    if (p.length !== (d === count - 1 ? g.length - size * (count - 1) : size)) return null;
+    came.set(d, p);
+  }
+  if (count - came.size > g.spares.size) return null;
+  const parts = recover(count, size, came, g.spares);
+  if (!parts) return null;
+  return joined(parts).subarray(0, g.length);
+}
+
+function joined(parts: Uint8Array[]): Uint8Array {
+  const packet = new Uint8Array(parts.reduce((sum, p) => sum + p.length, 0));
+  let offset = 0;
+  for (const p of parts) {
+    packet.set(p, offset);
+    offset += p.length;
+  }
+  return packet;
 }
 
 /**

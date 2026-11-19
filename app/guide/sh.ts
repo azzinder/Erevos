@@ -475,6 +475,10 @@ postavite radio, i samo na Androidu.
   s **Na čekanju**, i odlaze same čim ih relay ili telefon u blizini mogu preuzeti; i za pozive je potrebno jedno od
   toga. Prva poruka kontaktu traje duže, jer sadrži ključeve.
 - **Oznake:** **✓✓** dolazi s njegovom sljedećom porukom, jer same oznake ne idu preko LoRa veze.
+- **Rezervni dijelovi, i dugi tekstovi sažeti:** poruka od dva dijela ili više ide s rezervnim dijelovima iza sebe,
+  jednim na svaka četiri, pa Erevos vašeg kontakta nadoknadi dijelove izgubljene usput, bez ponovnog slanja; traže
+  malo više vremena u eteru. Dug tekst ide sažet, manji i bez ikakvog gubitka, kontaktu čiji Erevos čita sažete
+  poruke, pa traži manje dijelova, ili uopšte stane; kratak ide kakav jeste.
 - **Svakom radiju u dometu:** svaku poruku čuje svaki radio u okolini, a Meshtastic radiji je prosljeđuju dalje, kao
   što to Meshtastic radi. Svaki Erevos je isproba; otvara je samo radio vašeg kontakta. Preko LoRa veze ništa se ne
   prenosi za druge.

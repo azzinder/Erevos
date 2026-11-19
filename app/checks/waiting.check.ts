@@ -363,7 +363,8 @@ test('over LoRa, a text too much for it with its link’s preview goes without t
   const { bob, alice, peer, toAlice, radio, done } = await twoPhones();
   try {
     const text = 'look https://example.org/';
-    const preview = { url: 'https://example.org/', title: 'Example', text: 'An example page.', image: `/9j/${'A'.repeat(6000)}` };
+    const preview = { url: 'https://example.org/', title: 'Example', text: 'An example page.', image: `/9j/${Array.from({ length: 6000 }, (_, i) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'[(i * 7919 + ((i * i) % 89)) % 64]).join('')}` };
+    // A photo's bytes, which packing cannot make shorter.
     await bob.history.add({ peer, text, mine: true, at: 1, tag: 'ffffffffffff', mark: WAITING, preview });
     radio();
     const went = await sendWaiting(bob, nowhere);

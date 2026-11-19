@@ -19,6 +19,7 @@ import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_
 import { bodyOf, checkedList, checkedPass, PASS_MARGIN, readPass, verifyList, verifyPass, type DeviceList, type Pass } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromBase64Url, fromHex, randomBytes, sha256Bytes, toBase64, toBase64Url, toHex, utf8Decode, utf8Encode } from './crypto';
+import { packed, unpacked } from './packing';
 import { circuitOf, tellTorChats } from './tor-chats';
 import { canTryLater, isQueueFull, sameRelay } from './relay';
 import { TooLargeForSlowWayError } from './nearby';
@@ -265,6 +266,8 @@ type Message = {
   /** Says the sender's Erevos reads messages sealed with the post-quantum ratchet as well (lib/core.ts
    *  canPq, docs/spqr.md): the conversation it came in turns it on. Absent: an Erevos before it. */
   pq?: boolean;
+  /** Says the sender's Erevos reads packed messages (lib/packing.ts): a long one to them may go packed. Absent: an Erevos before it. */
+  zp?: boolean;
 };
 
 /** A chat's screenshot setting as a message says it (Message.sh). */
@@ -355,8 +358,15 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh, nm }: Message): Uint8Array {
-  // Every message says this Erevos reads post-quantum ones, whatever it carries: one is enough.
+// `packs`: to a contact whose Erevos reads packed messages (Contact.packs), packed when that makes it
+// smaller once padded (lib/packing.ts).
+function encodeMessage(message: Message, packs = false): Uint8Array {
+  const plain = plainMessage(message);
+  return (packs && packed(plain)) || plain;
+}
+
+function plainMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa, st, sh, nm }: Message): Uint8Array {
+  // Every message says this Erevos reads post-quantum ones, and packed ones, whatever it carries: one is enough.
   return utf8Encode(
     JSON.stringify({
       from,
@@ -399,6 +409,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(sh ? { sh } : {}),
       ...(nm !== undefined ? { nm } : {}),
       ...(core.canPq() ? { pq: 1 } : {}),
+      zp: 1,
       ...more,
     }),
   );
@@ -497,7 +508,7 @@ function decodeReaction(value: unknown): Reaction | null {
 
 function decodeMessage(bytes: Uint8Array): Message {
   try {
-    const value = JSON.parse(utf8Decode(bytes)) as Partial<Record<keyof Message, unknown>>;
+    const value = JSON.parse(utf8Decode(unpacked(bytes))) as Partial<Record<keyof Message, unknown>>;
     return {
       from: typeof value.from === 'string' && /^[0-9a-f]{48}$/.test(value.from) ? value.from : '',
       relay: isRelay(value.relay) ? value.relay : '',
@@ -544,6 +555,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       // Said: a name, cleaned as names are kept, or '' for none; anything else says none.
       ...('nm' in value ? { nm: typeof value.nm === 'string' ? cleanName(value.nm) : '' } : {}),
       ...(value.pq === 1 ? { pq: true } : {}),
+      ...(value.zp === 1 ? { zp: true } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -2784,7 +2796,9 @@ export class E2E {
     }
     // What goes to their account, sealed in the conversation it goes in.
     const main = said.map((m, i) => ({ ...m, got: m.got.filter((tag) => !routed.has(`${i}|${cameOf(tag)}`)), pk: through || (direct ?? contact).sealsIn ? '' : packetKey }));
-    const plaintexts = main.map(encodeMessage);
+    // Packed only in the conversation with their account, to an Erevos that said it reads them.
+    const packs = !through && !direct && contact.packs === true;
+    const plaintexts = main.map((m) => encodeMessage(m, packs));
     const sealTo = (direct ?? contact).sealTo;
     let conversation = through ? null : fromBase64((direct ?? contact).conversations[0]);
     const packets: Uint8Array[] = [];
@@ -3611,6 +3625,8 @@ export class E2E {
       ...(stale ? (known.firstAt ? { firstAt: known.firstAt } : {}) : message.fa ? { firstAt: message.fa } : known?.firstAt ? { firstAt: known.firstAt } : {}),
       ...((takes ? ringSenderOf(message, known) : known?.ringSender) ? { ringSender: takes ? ringSenderOf(message, known) : known?.ringSender } : {}),
       ...(qa ? { qa } : {}),
+      // Whether their Erevos reads packed messages, as their latest message says.
+      ...((takes ? message.zp : known?.packs) ? { packs: true as const } : {}),
       ...(known?.told ? { told: known.told } : {}),
       ...(heard && this.ownAge ? { onNew: this.ownAge } : known?.onNew ? { onNew: known.onNew } : {}),
       // What is known of their devices stays with them. Added again on their side, saying where
@@ -4009,6 +4025,8 @@ export class E2E {
         ringSender: message.rf === undefined || !takes ? contact.ringSender : message.rf || undefined,
         // Where they read on Nostr, or '' that they no longer do; absent keeps it.
         nostrTo: message.ns === undefined || !takes ? contact.nostrTo : message.ns || undefined,
+        // Whether their Erevos reads packed messages, as their latest message says.
+        packs: takes ? message.zp === true || undefined : contact.packs,
       };
     }
     const account = !given && (!way || direct);

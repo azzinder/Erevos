@@ -58,6 +58,8 @@ class Radio {
   connects = 0;
   written: { id: number; payload: Uint8Array }[] = [];
   answer: (id: number) => number | null = () => 0;
+  // Whether the air loses a piece this radio sent, before the others hear it.
+  loses: (payload: Uint8Array) => boolean = () => false;
   // Its own settings, as Config.device and Config.position say them.
   device = fromRadio.device(0, 900);
   position = fromRadio.position(1, true, 600);
@@ -114,7 +116,7 @@ class Radio {
     setTimeout(() => {
       if (res === null) return;
       lora.meshData(fromRadio.queue(res, 15, said.id));
-      if (res === 0) for (const other of this.air) if (other !== this && other.up) other.lora?.meshData(fromRadio.heard(this.node, bytes));
+      if (res === 0 && !this.loses(said.payload)) for (const other of this.air) if (other !== this && other.up) other.lora?.meshData(fromRadio.heard(this.node, bytes));
     }, 1);
     return true;
   }
@@ -173,14 +175,59 @@ const message = (r: Received) => {
   return r as Extract<Received, { kind: 'message' }>;
 };
 
-test('a packet goes in pieces that fit a Meshtastic packet', () => {
-  for (const size of [1, 221, 222, 314, 1082, 1472, 3072]) {
-    const packet = randomBytes(size);
-    const pieces = piecesOf(packet)!;
-    assert.ok(pieces.every((piece) => piece.length <= 228));
-    assert.equal(pieces.length, Math.ceil(size / 221));
+test('a packet goes in pieces that fit a Meshtastic packet, with a spare for every four', () => {
+  for (const [size, pieces, spares] of [
+    [1, 1, 0],
+    [218, 1, 0],
+    [219, 2, 1],
+    [314, 2, 1],
+    [1082, 5, 2],
+    [1472, 7, 2],
+    [3072, 15, 4],
+    // Too long for pieces with room for spares: as before, with none.
+    [16 * 218 + 1, 16, 0],
+  ]) {
+    const all = piecesOf(randomBytes(size))!;
+    assert.ok(all.every((piece) => piece.length <= 228));
+    assert.equal(all.filter((piece) => piece[1] === 0x31).length, pieces, `${size} bytes`);
+    assert.equal(all.filter((piece) => piece[1] === 0x32).length, spares, `${size} bytes`);
+    // The pieces go first, and an Erevos from before spares reads them as it did.
+    assert.ok(all.slice(0, pieces).every((piece) => piece[0] === 0x45 && piece[1] === 0x31));
   }
   assert.equal(piecesOf(randomBytes(16 * 221 + 1)), null, 'too many pieces');
+});
+
+test('pieces lost on the air are made up from the spares, and more lost than spares is lost', async () => {
+  const air: Radio[] = [];
+  const a = phone(air, 1);
+  const b = phone(air, 2);
+  b.listen();
+  a.lora.turnOn('A');
+  b.lora.turnOn('B');
+  await until('both links', () => a.links.length === 1 && b.links.length === 1);
+  // Of a packet of 7 pieces and 2 spares, its 2nd and 5th pieces are lost.
+  let n = 0;
+  a.radio.loses = () => [1, 4].includes(n++ % 9);
+  const packet = randomBytes(1472);
+  assert.equal(a.lora.sendFrame(a.links[0], framesOf(packet)![0]), true);
+  await until('the packet', () => b.came.length === 1);
+  assert.deepEqual(b.came[0].packet, packet);
+  // Its spares lost instead: the pieces are enough.
+  n = 0;
+  a.radio.loses = () => n++ % 9 >= 7;
+  const second = randomBytes(1082 + 390);
+  assert.equal(a.lora.sendFrame(a.links[0], framesOf(second)![0]), true);
+  await until('the second', () => b.came.length === 2);
+  assert.deepEqual(b.came[1].packet, second);
+  // Three of its pieces lost, with two spares: it never comes.
+  n = 0;
+  a.radio.loses = () => [0, 2, 6].includes(n++ % 9);
+  assert.equal(a.lora.sendFrame(a.links[0], framesOf(randomBytes(1472))![0]), true);
+  await until('all sent', () => a.lora.state().waiting === 0);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(b.came.length, 2);
+  a.lora.turnOff();
+  b.lora.turnOff();
 });
 
 test('a radio turned on links, tells its name and region, and is one slow link', async () => {
@@ -252,7 +299,7 @@ test('with no relay and no phone near, a message goes over LoRa, end-to-end encr
     throw new Error('Relay unreachable');
   };
   assert.equal(await a.nearby.deliver(bobId, [later.packet], down, null, true), 'lora');
-  await until('its pieces', () => a.radio.written.length === written + Math.ceil(later.packet.length / 221));
+  await until('its pieces', () => a.radio.written.length === written + piecesOf(later.packet)!.length);
   // A mark with the relay down: the relay's error, not LoRa.
   await assert.rejects(a.nearby.deliver(bobId, [mark.packet], down, null, false), /Relay unreachable/);
   a.lora.turnOff();
@@ -273,6 +320,8 @@ test('pieces wait for the radio to take each, and one it refused goes again, in 
   const packets = [randomBytes(1082), randomBytes(314), randomBytes(1472)];
   for (const packet of packets) assert.equal(a.lora.sendFrame(a.links[0], framesOf(packet)![0]), true);
   await until('all three', () => b.came.length === 3);
+  // Their spares go after them, though the packets came whole without them.
+  await until('the spares sent', () => a.lora.state().waiting === 0);
   assert.deepEqual(
     b.came.map(({ packet }) => packet),
     packets,
@@ -305,7 +354,7 @@ test('with too much waiting it takes no more, and says the link again once there
   };
   let taken = 0;
   while ((await a.nearby.deliver('someone', [randomBytes(1082)], null, null, true).catch(() => 'none')) === 'lora') taken++;
-  assert.equal(taken, 9, '48 pieces at most, 5 each');
+  assert.equal(taken, 6, '48 pieces at most, 7 each with their spares');
   // Nearby took the link as gone: even a small one finds no way.
   await assert.rejects(a.nearby.deliver('someone', [randomBytes(300)], null, null, true), NoWayError);
   // The radio takes them now.

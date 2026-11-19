@@ -484,6 +484,10 @@ mezzo. È disattivato finché non imposti una radio, e solo su Android.
   segnati **In attesa**, e partono da soli appena il relay o un telefono vicino può riceverli; anche le chiamate hanno
   bisogno di uno dei due. Il primo messaggio a un contatto ci mette di più, perché contiene le chiavi.
 - **Segni:** **✓✓** arriva con il suo messaggio successivo, perché i segni da soli non vanno via LoRa.
+- **Pezzi di scorta, e testi lunghi compressi:** un messaggio di due pezzi o più parte con pezzi di scorta dopo,
+  uno ogni quattro, così l’Erevos del tuo contatto ricostruisce i pezzi persi per strada, senza rimandare nulla;
+  occupano un po’ più di tempo in onda. Un testo lungo parte compresso, più piccolo e senza perdere nulla, verso un
+  contatto il cui Erevos legge i messaggi compressi, così prende meno pezzi, o ci sta proprio; uno corto parte com’è.
 - **A tutte le radio a portata:** ogni messaggio viene sentito da tutte le radio intorno, e ritrasmesso dalle radio
   Meshtastic, come fa Meshtastic. Ogni Erevos lo prova; solo quello del tuo contatto lo apre. Via LoRa non si trasporta
   niente per altri.

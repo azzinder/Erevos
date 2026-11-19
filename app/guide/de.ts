@@ -509,6 +509,11 @@ dazwischen. Es ist aus, solange du kein Funkgerät einstellst, und nur auf Andro
   kann; auch Anrufe brauchen eines davon. Die erste Nachricht an einen Kontakt dauert länger, weil sie die Schlüssel
   enthält.
 - **Zeichen:** **✓✓** kommt mit der nächsten Nachricht des Kontakts, da Zeichen allein nicht über LoRa gehen.
+- **Ersatzstücke, und lange Texte gepackt:** Eine Nachricht aus zwei Stücken oder mehr geht mit Ersatzstücken
+  danach, eines für je vier, damit das Erevos deines Kontakts unterwegs verlorene Stücke ersetzt, ohne dass etwas
+  erneut gesendet wird; sie brauchen etwas mehr Sendezeit. Ein langer Text geht gepackt, kleiner und ohne Verlust,
+  an einen Kontakt, dessen Erevos gepackte Nachrichten liest, und braucht so weniger Stücke oder passt überhaupt erst;
+  ein kurzer geht, wie er ist.
 - **An jedes Funkgerät in Reichweite:** Jede Nachricht wird von jedem Funkgerät in der Umgebung gehört und von den
   Meshtastic-Funkgeräten weitergegeben, wie Meshtastic es tut. Jedes Erevos probiert sie; nur das deines Kontakts
   öffnet sie. Über LoRa wird nichts für andere mitgenommen.

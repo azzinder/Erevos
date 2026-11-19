@@ -27,6 +27,8 @@ export type { Holder };
 export type Contact = {
   /** The contact's identity key, hex: who they are. */
   identity: string;
+  /** Their Erevos reads packed messages (lib/packing.ts), as their latest message said. Absent: it does not, or has not said. */
+  packs?: true;
   /** The relay sender id that reaches them, hex. Empty until they say. */
   sender: string;
   /** The relay their queue is on, when it is not this chat's own: ws:// or wss://. Empty for the
@@ -721,6 +723,7 @@ function checkedContact(value: unknown): Contact | null {
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
     sealsIn: v.sealsIn === true,
     ...(isHex(v.ringSender) && v.ringSender.length === 48 ? { ringSender: v.ringSender } : {}),
+    ...(v.packs === true ? { packs: true as const } : {}),
     ...(isTime(v.seenAt) && v.seenAt > 0 ? { seenAt: v.seenAt } : {}),
     ...(isTime(v.firstAt) && v.firstAt > 0 ? { firstAt: v.firstAt } : {}),
     ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle, ...(isTime(v.bundleAt) && v.bundleAt > 0 ? { bundleAt: v.bundleAt } : {}) } : {}),

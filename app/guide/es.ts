@@ -484,6 +484,11 @@ desactivado salvo que configures una radio, y solo en Android.
   chat, marcados como **En espera**, y salen solos en cuanto el relay o un teléfono cercano pueden recibirlos; las
   llamadas también necesitan uno de esos. El primer mensaje a un contacto tarda más, porque lleva las claves.
 - **Marcas:** **✓✓** llega con su siguiente mensaje, ya que las marcas solas no van por LoRa.
+- **Piezas de repuesto, y textos largos comprimidos:** un mensaje de dos piezas o más va con piezas de repuesto
+  detrás, una por cada cuatro, para que el Erevos de tu contacto rehaga las piezas perdidas por el camino, sin
+  volver a enviar nada; ocupan algo más de tiempo en el aire. Un texto largo va comprimido, más pequeño y sin perder
+  nada, a un contacto cuyo Erevos lee mensajes comprimidos, así ocupa menos piezas, o llega a caber; uno corto va tal
+  cual.
 - **A todas las radios al alcance:** cada mensaje lo oyen todas las radios de alrededor, y lo retransmiten las radios
   Meshtastic, como hace Meshtastic. Todos los Erevos lo prueban; solo el de tu contacto lo abre. Por LoRa no se lleva
   nada de otros.

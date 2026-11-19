@@ -480,6 +480,10 @@ que você configure um rádio, e só no Android.
   **Aguardando**, e vão sozinhos assim que o relay ou um celular por perto puder levá-los; as chamadas também precisam
   de um deles. A primeira mensagem para um contato demora mais, pois leva as chaves.
 - **Marcas:** **✓✓** chega com a próxima mensagem da outra pessoa, pois as marcas sozinhas não vão por LoRa.
+- **Peças de reserva, e textos longos compactados:** uma mensagem de duas peças ou mais vai com peças de reserva
+  depois dela, uma para cada quatro, para que o Erevos do seu contato refaça as peças perdidas no caminho, sem
+  reenviar nada; elas ocupam um pouco mais de tempo no ar. Um texto longo vai compactado, menor e sem perder nada,
+  para um contato cujo Erevos lê mensagens compactadas, então ocupa menos peças, ou chega a caber; um curto vai como é.
 - **Para todos os rádios ao alcance:** cada mensagem é ouvida por todos os rádios ao redor, e repassada pelos rádios
   Meshtastic, como o Meshtastic faz. Todo Erevos a testa; só o do seu contato a abre. Nada é levado para outros por
   LoRa.

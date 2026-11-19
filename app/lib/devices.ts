@@ -39,6 +39,7 @@ import { carriedOf } from './chat-parts';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { unpacked } from './packing';
 import { bodyOf, flagsHold, MAX_LISTED, nextList, PASS_LASTS, PASS_RENEW, signList, signPass, verifyList, verifyPass, type DeviceList } from './device-list';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
 import { isCopied, waysFor } from './endpoints';
@@ -468,7 +469,8 @@ function withoutSent<T extends Sealable>(peer: T, sent: Set<string>): T {
 
 function parse(plaintext: Uint8Array): Json | null {
   try {
-    const value: unknown = JSON.parse(utf8Decode(plaintext));
+    // A packed message (lib/packing.ts) as it was: the linked devices get it as JSON, as before.
+    const value: unknown = JSON.parse(utf8Decode(unpacked(plaintext)));
     return isObject(value) ? value : null;
   } catch {
     return null;
