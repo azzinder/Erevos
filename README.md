@@ -29,16 +29,26 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 <table align="center">
   <tr>
     <td><img src="docs/screenshots/chats.png" alt="Chats" width="170"></td>
-    <td><img src="docs/screenshots/chat.png" alt="A chat with a photo" width="170"></td>
-    <td><img src="docs/screenshots/call.png" alt="An encrypted call" width="170"></td>
-    <td><img src="docs/screenshots/nearby.png" alt="Nearby, with no internet" width="170"></td>
-    <td><img src="docs/screenshots/look.png" alt="Looks and colours" width="170"></td>
+    <td><img src="docs/screenshots/qr.png" alt="Add by QR" width="170"></td>
+    <td><img src="docs/screenshots/chat-poll.png" alt="Polls" width="170"></td>
+    <td><img src="docs/screenshots/call.png" alt="Calls" width="170"></td>
+    <td><img src="docs/screenshots/nearby.png" alt="No internet" width="170"></td>
   </tr>
   <tr align="center">
-    <td>Chats</td><td>Photos</td><td>Calls</td><td>No internet</td><td>Looks</td>
+    <td>Chats</td><td>Add by QR</td><td>Polls</td><td>Calls</td><td>No internet</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/services.png" alt="Services" width="170"></td>
+    <td><img src="docs/screenshots/phone.png" alt="Phone" width="170"></td>
+    <td><img src="docs/screenshots/contacts.png" alt="Contacts" width="170"></td>
+    <td><img src="docs/screenshots/panic.png" alt="Panic button" width="170"></td>
+    <td><img src="docs/screenshots/public-groups.png" alt="Public groups" width="170"></td>
+  </tr>
+  <tr align="center">
+    <td>Services</td><td>Phone</td><td>Contacts</td><td>Panic button</td><td>Public groups</td>
   </tr>
 </table>
-<p align="center"><sub>Screens of the Greek app, with made-up names and numbers.</sub></p>
+<p align="center"><sub>Screens of the app in English. The QR code is an example and leads to this page.</sub></p>
 
 > [!WARNING]
 > **Early work, not audited.** No one outside the project has reviewed the code or the cryptography yet. Use it,
