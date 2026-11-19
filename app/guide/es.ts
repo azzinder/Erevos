@@ -3158,8 +3158,7 @@ lo que contienen los lugares que se quitaran.
 - **Recibir estando cerrados:** un interruptor arriba de cada lugar. Activado, sus chats ocultos reciben como tus otros
   chats mientras el espacio está abierto, sea cual sea la pantalla que se vea y con Erevos en segundo plano: sus
   contactos ven al instante que llegó un mensaje, un aviso solo dice «New message», en Android una llamada suena con
-  «Incoming call» y sin nombre (en la pantalla de llamada entrante, toca **Responder** o el pequeño símbolo, escribe el
-  PIN y toca **Conectar**), y un recordatorio de su Chat conmigo muestra un aviso que solo dice **Reminder**. Lo que
+  «Incoming call» y sin nombre (en la pantalla de la llamada, **Responder** la contesta sin PIN, en una pantalla sin nombre ni cara, y los chats ocultos siguen cerrados; el pequeño signo, el PIN y **Conectar** los abren y la contestan allí), y un recordatorio de su Chat conmigo muestra un aviso que solo dice **Reminder**. Lo que
   les llega por Nostr también se lee entonces{+, y sus propias cuentas de Matrix, XMPP y Nostr siguen conectadas (ver
   abajo)}. Una llamada que terminó antes de que los abrieras, o que sonó demasiado, aparece como perdida. Nada de ellos
   aparece en ningún sitio hasta que el PIN los abre. Un lugar nuevo empieza con esto activado; los lugares configurados

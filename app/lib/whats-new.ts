@@ -22,7 +22,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Answer a hidden contact's call with no PIN**: where hidden chats receive while closed, **Answer** on the ringing screen takes their contact's call at once, on a call screen with no name and no face, and the hidden chats stay closed; the small sign and the PIN still open them. See [Hidden chats](#hidden)."),
+  ],
   underTheHood: [],
 };
 

@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { currentSpace } from '../lock/keys';
 import { MIN_PIN, searchHidden } from '../lock/hidden';
 import { handOverHidden } from '../lib/hidden-handoff';
+import { receivingPlaces } from '../lib/place-receiver';
 import { answerHiddenCall, setHiddenRinging, useHiddenRinging, type HiddenRinging } from '../lib/hidden-ring';
 import { onCallChange, shownCall } from '../lib/calls';
 import { onGroupCallChange, shownGroupCall } from '../lib/group-calls';
@@ -21,9 +22,9 @@ import { Button, Input, Text } from './ui';
 // The screen a hidden contact's call brings up while its hidden chats are closed (lib/hidden-ring.ts).
 // It says only "Incoming call", names no one, and looks like any call with no caller shown — so
 // whoever holds the phone sees a call, nothing of the hidden chats. A small, discreet sign opens a
-// PIN field, and so does Answer, as there is no call here without the PIN (the owner who answers by
-// habit is asked for it, not turned away); the right PIN opens the place and answers the call that
-// waits on its message queue (app/chat.tsx). Decline stops the ring. A wrong PIN does nothing and
+// PIN field; the right PIN opens the place and answers the call that waits on its message queue
+// (app/chat.tsx). Answer takes the call with no PIN where the place receives while closed, with
+// no name and the hidden chats left closed; elsewhere it asks for the PIN too. Decline stops the ring. A wrong PIN does nothing and
 // says nothing (searchHidden counts it apart, as the home search does), so it stays deniable.
 // Over the password screen (`locked`, app/_layout.tsx) the PIN never stands in for the password:
 // the sign steps aside, the ringtone going on, for the password; once it opens the space, the ring
@@ -64,8 +65,23 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
   }, [mode]);
 
   const decline = () => setHiddenRinging(null);
-  // The sign and Answer both ask for the PIN, or over the password screen step aside for the password.
+  // The sign asks for the PIN, or over the password screen steps aside for the password.
   const askPin = () => (onSign ? onSign() : setMode('pin'));
+  // Answer, for hidden chats that receive while closed (their key is in memory while the space is
+  // open, lib/place-receiver.ts): the call is answered with no PIN, on a call screen with no name
+  // and no face, and the hidden chats stay closed (app/chat.tsx `callOnly`), as the maintainer
+  // chose. Hidden chats that only ring while closed (lib/hidden-ring.ts) have no key here before
+  // the PIN, so Answer asks for it there, as over the password screen it steps aside.
+  function answer() {
+    if (onSign || closing.current) return askPin();
+    const place = receivingPlaces().find((one) => one.space === space && one.pocket === pocket);
+    if (!place) return askPin();
+    closing.current = true;
+    handOverHidden({ key: place.key, pocket });
+    answerHiddenCall(space, pocket);
+    setHiddenRinging(null);
+    router.push('/chat?hidden=call');
+  }
 
   async function connect() {
     if (busy || closing.current) return;
@@ -133,7 +149,7 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
       ) : (
         <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
           <Round title={t('Decline')} color="#C62828" onPress={decline} />
-          <Round title={t('Answer')} color="#2E7D32" onPress={askPin} />
+          <Round title={t('Answer')} color="#2E7D32" onPress={answer} />
         </View>
       )}
     </View>

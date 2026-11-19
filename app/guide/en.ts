@@ -2905,8 +2905,7 @@ what the places taken away hold.
   messages wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
 - **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do while
   the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a message
-  came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the ringing
-  screen, tap **Answer** or the small sign, type the PIN and tap **Connect**), and a reminder of their Chat with myself
+  came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the ringing screen, **Answer** takes it with no PIN, on a call screen with no name and no face, and the hidden chats stay closed; the small sign, the PIN and **Connect** open them and answer it there), and a reminder of their Chat with myself
   shows a notice that says only **Reminder**. What comes to them through Nostr is read then too{+, and their own Matrix,
   XMPP and Nostr accounts stay connected (see below)}. A call that ended before you opened them, or rang too long, shows
   as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts with it on; places set before

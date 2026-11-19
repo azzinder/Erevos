@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- A hidden contact's call, where the hidden chats receive while closed, is answered with **Answer** and no PIN: the call shows no name and no face, and the hidden chats run only for it, out of sight, and close as it ends (`components/hidden-ring-screen.tsx`, `app/chat.tsx` `callOnly`, `CallPlace.nameless`). The small sign and the PIN still open them and answer there. Hidden chats that only ring while closed have no key before the PIN, so there **Answer** still asks for it. Requested by the maintainer, who chose no name.
+
 ### Under the hood
 
 ## 7.2.0-beta.4 (2026-11-19)

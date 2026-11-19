@@ -3361,8 +3361,7 @@ löschen, was die weggenommenen Plätze enthalten.
 - **Empfangen, wenn geschlossen:** ein Schalter oben auf jedem Platz. Eingeschaltet empfangen seine versteckten Chats
   wie deine anderen Chats, solange der Bereich offen ist, egal welcher Bildschirm zu sehen ist und mit Erevos im
   Hintergrund: Ihre Kontakte sehen sofort, dass eine Nachricht ankam, eine Benachrichtigung sagt nur „New message“,
-  auf Android klingelt ein Anruf mit „Incoming call“ und ohne Namen (tippe auf dem Klingelbildschirm auf **Annehmen**
-  oder das kleine Zeichen, gib die PIN ein und tippe auf **Verbinden**), und eine Erinnerung aus ihrem „Chat mit mir
+  auf Android klingelt ein Anruf mit „Incoming call“ und ohne Namen (auf dem Klingelbildschirm nimmt **Annehmen** ihn ohne PIN an, auf einem Anrufbildschirm ohne Namen und ohne Gesicht, und die versteckten Chats bleiben geschlossen; das kleine Zeichen, die PIN und **Verbinden** öffnen sie und nehmen ihn dort an), und eine Erinnerung aus ihrem „Chat mit mir
   selbst“ zeigt eine Benachrichtigung, die nur **Reminder** sagt. Was über Nostr zu ihnen kommt, wird dann auch gelesen{+,
   und ihre eigenen Matrix-, XMPP- und Nostr-Konten bleiben verbunden (siehe unten)}. Ein Anruf, der endete, bevor du sie
   geöffnet hast, oder zu lange klingelte, erscheint als verpasst. Nichts von ihnen erscheint irgendwo, bis die PIN sie

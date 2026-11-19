@@ -156,7 +156,7 @@ import { placeQueues, type QueueKind } from '../lock/queues-data';
 import { onContactsCame } from '../lib/contact-queues';
 import { QueueMove, linkOf, placeMoved, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
 import { FAKE_RINGS_WITHIN, fakeRings, linkSpare } from '../lib/moves';
-import { HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
+import { HIDDEN_ANSWER_MS, HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
@@ -319,7 +319,10 @@ export default function ChatScreen() {
     at?: string;
   }>();
   const fromSearch = hidden === 'open';
-  const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
+  // A hidden contact's call answered with no PIN (components/hidden-ring-screen.tsx): the place's
+  // chats run for the call alone, never shown, and close as it ends.
+  const callOnly = hidden === 'call';
+  const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch || callOnly ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
   // Hidden chats keep out of screenshots and the recent apps preview while open, as long as
   // Screenshots in Privacy and security is on (the default); turned off, they allow them as the
@@ -344,7 +347,7 @@ export default function ChatScreen() {
   // screens over them (app/contacts.tsx).
   const closeHidden = () => {
     setHiddenPlace(null);
-    if (fromSearch) router.dismissTo('/');
+    if (fromSearch || callOnly) router.dismissTo('/');
   };
   const [asking, setAsking] = useState(false);
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
@@ -418,7 +421,11 @@ export default function ChatScreen() {
               onLook={setChatLook}
             />
           </View>
-          {hiddenKey ? (
+          {hiddenKey && callOnly ? (
+            <View style={layout.gone}>
+              <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown={false} callOnly onHidden={closeHidden} onLook={() => undefined} />
+            </View>
+          ) : hiddenKey ? (
             <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
           ) : null}
           <PasswordSheet
@@ -458,7 +465,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, inviteNow = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, inviteNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -473,6 +480,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   /** Opens with Invite someone's QR code showing (the home screen's Invite), when this phone can invite. */
   inviteNow?: boolean;
   shown: boolean;
+  /** Hidden chats run only for a call answered with no PIN (ChatScreen): its screen shows no name, and they close as it ends. */
+  callOnly?: boolean;
   /** Closes the hidden chats. */
   onHidden?: () => void;
   onChangePassword?: () => void;
@@ -846,7 +855,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     me: async () => latest.current.me(),
     ipKeep: () => latest.current.ipKeep(),
   });
+  hiddenCalls.current.nameless = callOnly;
   const callPlace = hiddenKey ? hiddenCalls.current : spaceCalls;
+  // Answered with no PIN: once the call it answered has come and ended, or none came in time, the
+  // hidden chats close again, having shown nothing.
+  useEffect(() => {
+    if (!callOnly) return;
+    let had = false;
+    const check = () => {
+      if (currentCall()) had = true;
+      else if (had) onHidden?.();
+    };
+    const stop = onCallChange(check);
+    check();
+    const timer = setTimeout(() => {
+      if (!had) onHidden?.();
+    }, HIDDEN_ANSWER_MS + 15_000);
+    return () => {
+      stop();
+      clearTimeout(timer);
+    };
+  }, [callOnly]);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
   // The relay settings as kept on the phone, as far as this chat knows: read when it opened, saved

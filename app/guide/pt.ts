@@ -3135,8 +3135,7 @@ as posições retiradas guardam.
 - **Receber quando fechadas:** um interruptor no topo de cada posição. Ativado, as conversas ocultas dela recebem
   como as suas outras conversas enquanto o espaço está aberto, seja qual for a tela e com o Erevos em segundo plano:
   os contatos delas veem na hora que uma mensagem chegou, um aviso diz só "New message", no Android uma chamada toca
-  com "Incoming call" e sem nome (na tela da chamada, toque em **Atender** ou no pequeno sinal, digite o PIN e toque em
-  **Conectar**), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas pelo
+  com "Incoming call" e sem nome (na tela da chamada, **Atender** atende sem PIN, numa tela sem nome nem rosto, e as conversas ocultas continuam fechadas; o pequeno sinal, o PIN e **Conectar** as abrem e atendem ali), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas pelo
   Nostr também é lido então{+, e as contas Matrix, XMPP e Nostr próprias delas continuam conectadas (veja abaixo)}. Uma
   chamada que terminou antes de você abri-las, ou que tocou tempo demais, aparece como perdida. Nada delas aparece em
   lugar nenhum até o PIN abri-las. Uma posição nova começa com isso ativado; as posições definidas antes ficam como

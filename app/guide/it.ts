@@ -3172,8 +3172,7 @@ cancellerebbe quello che contengono i posti tolti.
 - **Ricevere da chiuse:** un interruttore in cima a ogni posto. Se è attivo, le sue chat nascoste ricevono come le tue
   altre chat mentre lo spazio è aperto, qualunque schermata sia visibile e con Erevos in background: i loro contatti
   vedono subito che un messaggio è arrivato, una notifica dice solo «New message», su Android una chiamata squilla con
-  «Incoming call» e senza nome (sulla schermata dello squillo, tocca **Rispondi** o il piccolo segno, scrivi il PIN e
-  tocca **Connetti**), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
+  «Incoming call» e senza nome (sulla schermata della chiamata, **Rispondi** la prende senza PIN, su una schermata senza nome né volto, e le chat nascoste restano chiuse; il piccolo segno, il PIN e **Connetti** le aprono e rispondono lì), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
   **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr{+, e i loro account Matrix, XMPP e Nostr
   restano collegati (vedi sotto)}. Una chiamata che è finita prima che le aprissi, o ha squillato troppo a lungo, appare
   come persa. Niente di loro appare da nessuna parte finché il PIN non le apre. Un nuovo posto parte con questo attivo;

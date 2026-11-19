@@ -30,6 +30,8 @@ export type CallPlace = {
   line(peer: string, mine: boolean, text: string, id: string): void;
   /** The contact's name as the chat shows it. */
   name(peer: string): string;
+  /** A hidden contact's call answered with its hidden chats closed (app/chat.tsx `callOnly`): the call shows no name and no face. */
+  nameless?: boolean;
   /** Where the hidden chats keep that a call's warning was said (lib/ip-warning.ts IpKeep): their own data, not the space's. */
   ipKeep?(): IpKeep | undefined;
   /** The offer of their call that rang before it came, once it is answered here (lib/xmpp-calls.ts). */

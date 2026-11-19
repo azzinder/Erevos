@@ -15,6 +15,7 @@ import { press } from '../lib/haptics';
 import type { CallEnd } from '../lib/call-signal';
 import { t, mark } from '../lib/i18n';
 import { CallVideo } from './call-video';
+import { PersonIcon } from './icons';
 import { KeyFace } from './key-face';
 import { Button, Sheet, Text } from './ui';
 
@@ -66,8 +67,10 @@ export function callStatus(call: Call, now: number): string {
   }
 }
 
-export function CallScreen({ call, identity, name, encryption, notice, speaker, onSpeaker, onAnswer, onClose }: {
+export function CallScreen({ call, identity, name, nameless = false, encryption, notice, speaker, onSpeaker, onAnswer, onClose }: {
   call: Call;
+  /** A hidden contact's call answered without the PIN: no name, and a plain face in place of theirs. */
+  nameless?: boolean;
   /** The contact's identity key, hex, for their face. */
   identity: string;
   name: string;
@@ -158,7 +161,13 @@ export function CallScreen({ call, identity, name, encryption, notice, speaker, 
       {/* Held down, the screen shows how the call connects; it says nothing of it otherwise. */}
       <Pressable style={StyleSheet.absoluteFill} onLongPress={() => setDetails(true)} delayLongPress={800} accessible={false} />
       <View style={[styles.top, { paddingTop: insets.top + (theirs ? 16 : 72) }]} pointerEvents="none">
-        {theirs ? null : <KeyFace identity={identity} name={name} size={112} />}
+        {theirs ? null : nameless ? (
+          <View style={styles.nameless}>
+            <PersonIcon color="rgba(255,255,255,0.32)" size={48} />
+          </View>
+        ) : (
+          <KeyFace identity={identity} name={name} size={112} />
+        )}
         <Text variant="title" color="#FFFFFF" style={styles.shadow} numberOfLines={1}>
           {name}
         </Text>
@@ -312,6 +321,7 @@ export function Round({ title, onPress, on = false, color }: { title: string; on
 }
 
 const styles = StyleSheet.create({
+  nameless: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   screen: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#0B0B0D', zIndex: 100, elevation: 100 },
   unseen: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   own: { position: 'absolute', right: 16, width: 108, height: 160, borderRadius: 14, overflow: 'hidden', zIndex: 2 },

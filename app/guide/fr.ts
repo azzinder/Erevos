@@ -3330,8 +3330,7 @@ supprimerait ce que contiennent les emplacements retirés.
 - **Recevoir une fois fermées :** un interrupteur en haut de chaque emplacement. Activé, ses discussions masquées
   reçoivent comme tes autres discussions tant que l’espace est ouvert, quel que soit l’écran affiché et avec Erevos en
   arrière-plan : leurs contacts voient aussitôt qu’un message est arrivé, une notification dit seulement « Nouveau
-  message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de sonnerie, appuie sur
-  **Répondre** ou sur le petit signe, tape le code PIN et appuie sur **Connecter**), et un rappel de leur Discussion
+  message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de l’appel, **Répondre** le prend sans code PIN, sur un écran sans nom ni visage, et les discussions masquées restent fermées ; le petit signe, le code PIN et **Connecter** les ouvrent et y répondent), et un rappel de leur Discussion
   avec moi-même affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi{+,
   et leurs comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas)}. Un appel terminé avant que tu les
   ouvres, ou qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche nulle part tant que le code

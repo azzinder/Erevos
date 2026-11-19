@@ -3034,8 +3034,7 @@ sadrže uklonjena mjesta.
 - **Primanje dok su zatvoreni:** prekidač na vrhu svakog mjesta. Kad je uključen, njegovi skriveni razgovori primaju
   kao i vaši ostali razgovori dok je prostor otvoren, bez obzira na to koji je ekran prikazan i s Erevosom u
   pozadini: njihovi kontakti odmah vide da je poruka stigla, obavijest kaže samo „New message“, na Androidu poziv zvoni
-  s „Incoming call“ i bez imena (na ekranu koji zvoni dodirnite **Javi se** ili mali znak, upišite PIN i dodirnite
-  **Poveži**), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
+  s „Incoming call“ i bez imena (na ekranu poziva, **Javi se** ga prima bez PIN-a, na ekranu bez imena i lica, a skriveni razgovori ostaju zatvoreni; mali znak, PIN i **Poveži** ih otvaraju i tu odgovaraju), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
   stigne preko Nostra tada se također čita{+, a njihovi vlastiti Matrix, XMPP i Nostr računi ostaju povezani (pogledajte
   dolje)}. Poziv koji se završio prije nego što ste ih otvorili, ili je predugo zvonio, prikazuje se kao propušten. Ništa
   od njih se nigdje ne prikazuje dok ih PIN ne otvori. Novo mjesto počinje s ovim uključenim; mjesta postavljena ranije

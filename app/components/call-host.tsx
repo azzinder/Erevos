@@ -330,7 +330,8 @@ export function CallHost() {
       <CallScreen
         call={call}
         identity={call.peer.startsWith(XMPP_PREFIX) ? toHex(sha256Bytes(utf8Encode(call.peer))) : call.peer.slice(CONTACT_PREFIX.length)}
-        name={place.name(call.peer)}
+        name={place.nameless ? '' : place.name(call.peer)}
+        nameless={!!place.nameless}
         encryption={call.peer.startsWith(XMPP_PREFIX) ? t('Encrypted, but its key passes through the XMPP servers') : undefined}
         notice={warned ? ipWarningText(warned).message : undefined}
         speaker={speaker}
