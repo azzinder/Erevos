@@ -117,7 +117,8 @@ export type ShareWay = {
  * file), a file of one whole (`peer`), how far one is, one on or done; `chats` once the place's
  * imported chats changed with it.
  */
-export type SharesChanged = { holder: RoundsPlace['holder']; space: number; peer?: string; tag?: string; file?: FileRef; chats?: true };
+/** `taking`: how far shared chats tapped to take have come ('40%'), or 'failed' when they did not. */
+export type SharesChanged = { holder: RoundsPlace['holder']; space: number; peer?: string; tag?: string; file?: FileRef; chats?: true; taking?: string };
 
 const listeners = new Set<(change: SharesChanged) => void>();
 
@@ -987,8 +988,11 @@ async function keepPacks(way: ShareWay, packs: RoundsData['packs']): Promise<voi
     try {
       await keepPack(way, identity, contact.name, tag, file, !tapped.has(tap));
     } catch (error) {
-      // Not reached: tried again with the next round.
-      if (!(error instanceof FileGoneError) && !(error instanceof FileDamagedError)) continue;
+      // Not reached: tried again with the next round, and one tapped says so, to be tapped again.
+      if (!(error instanceof FileGoneError) && !(error instanceof FileDamagedError)) {
+        if (tapped.has(tap)) told(place, { peer, tag, taking: 'failed' });
+        continue;
+      }
       told(place, { peer, tag });
     } finally {
       tapped.delete(tap);
@@ -1000,7 +1004,9 @@ async function keepPacks(way: ShareWay, packs: RoundsData['packs']): Promise<voi
 async function keepPack(way: ShareWay, identity: string, name: string, tag: string, file: FileRef, itself: boolean): Promise<void> {
   const place = way.chats.pieces!;
   const peer = `${CONTACT_PREFIX}${identity}`;
-  const pack = await takeFile(way.own && forChat(way, identity, way.own), file, undefined, way.leave, place, itself);
+  // Tapped: how far it has come shows on its line.
+  const progress = itself ? undefined : (done: number, count: number) => told(place, { peer, tag, taking: `${Math.floor((done / Math.max(1, count)) * 100)}%` });
+  const pack = await takeFile(way.own && forChat(way, identity, way.own), file, progress, way.leave, place, itself);
   const bytes = await readFile(pack);
   if (!bytes) throw new FileGoneError();
   const read = readPack(bytes);

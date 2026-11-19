@@ -4496,7 +4496,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     read();
     const off = onShares((change) => {
       if (change.holder !== place.holder || change.space !== place.space) return;
-      const { peer, tag, file } = change;
+      const { peer, tag, file, taking: far } = change;
+      if (peer && tag && far) {
+        setTaking((now) => ({ ...now, [`${peer}|${tag}`]: far }));
+        return;
+      }
       if (peer && tag) {
         const key = `${peer}|${tag}`;
         if (file) {
@@ -4780,7 +4784,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (file.history) {
       const way = file.from && !message.mine ? shareWay(ownRelay()) : null;
       if (way) {
-        setTaking(({ [`${message.peer}|${message.tag}`]: _again, ...rest }) => rest);
+        // Coming from the tap on, so the line no longer asks for one (lib/share-rounds.ts says how far).
+        setTaking((now) => ({ ...now, [`${message.peer}|${message.tag}`]: '0%' }));
         void takePack(way, message.peer.slice(CONTACT_PREFIX.length), message.tag);
       } else if (message.mine) void stopSharing(message);
       return;
