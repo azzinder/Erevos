@@ -175,6 +175,8 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Relay and networks'),
     icon: 'signal',
     items: [
+      // Every way out at a glance, how each is now, and what of the space's own waits to go (app/ways.tsx).
+      { id: 'ways-now', title: mark('Ways'), detail: mark('How your messages go out now, and what waits'), href: '/ways', when: uses('erevos') },
       { id: 'relay', title: mark('Relay'), detail: mark('Your relay: its address, its token and invites'), href: '/chat?setup=relay', when: uses('erevos') },
       { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay', when: uses('erevos') },
       { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: off, unless changed'), href: '/tor', when: phoneUses('erevos', 'nostr') },

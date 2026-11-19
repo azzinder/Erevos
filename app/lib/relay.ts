@@ -927,6 +927,17 @@ async function openChannel(
  * (TOR_REST_MS). Never one a relay refused, nor to a relay that did not prove its key.
  */
 async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
+  try {
+    const reply = await requestTried(relay, bytes, signal, way);
+    heardFrom(relay.url, true);
+    return reply;
+  } catch (error) {
+    if (error instanceof RelayUnreachableError && !signal?.aborted) heardFrom(relay.url, false);
+    throw error;
+  }
+}
+
+async function requestTried(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   const tor = torFor(false);
   try {
     return await requestOnce(relay, bytes, signal, way);
@@ -935,6 +946,30 @@ async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, wa
     torRestUntil = Math.max(torRestUntil, Date.now() + TOR_REST_MS);
     return requestOnce(relay, bytes, signal, way);
   }
+}
+
+// When each relay last answered a request of this app, and when one last could not reach it, by
+// its address without a path (relayHome), for the Ways screen (app/ways.tsx): in memory only, for this run.
+export type RelayHeard = { answered: number; failed: number };
+const heardAt = new Map<string, RelayHeard>();
+const heardListeners = new Set<() => void>();
+
+function heardFrom(url: string, answered: boolean): void {
+  const home = relayHome(url);
+  const before = heardAt.get(home) ?? { answered: 0, failed: 0 };
+  heardAt.set(home, answered ? { ...before, answered: Date.now() } : { ...before, failed: Date.now() });
+  heardListeners.forEach((listener) => listener());
+}
+
+/** When the relay at `url` last answered, and when it last could not be reached, this run: 0 for never. */
+export function relayHeard(url: string): RelayHeard {
+  return heardAt.get(relayHome(url)) ?? { answered: 0, failed: 0 };
+}
+
+/** Has `listener` called each time a relay answered or could not be reached. Returns how to stop. */
+export function onRelayHeard(listener: () => void): () => void {
+  heardListeners.add(listener);
+  return () => heardListeners.delete(listener);
 }
 
 async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {

@@ -195,7 +195,7 @@ export function moduleList(text: string | undefined, here: readonly Module[] = m
 // lead there. Contacts, Settings, the password, the backups, the guide and the starred messages
 // (those of every network's chats) belong to none.
 const SCREENS: Record<Module, readonly string[]> = {
-  erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'nostr'],
+  erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'nostr', 'ways'],
   phone: ['phone', 'phone-settings'],
   sms: ['sms', 'sms-folder', 'sms-settings'],
   nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts', 'public-post'],
