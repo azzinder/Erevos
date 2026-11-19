@@ -105,10 +105,19 @@ export function useNetworkThread<T>({
     setAt(now);
   }
 
+  // Whether the owner has moved the thread by hand since it opened. Until then it is read at its
+  // end whatever the view does by itself: Android moves it when what is in it gets shorter (a
+  // photo drawn smaller than the room kept for it), which left a chat that had just opened
+  // somewhere in its middle, no longer following its end.
+  const touched = useRef(false);
+
   function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    view.current.y = event.nativeEvent.contentOffset.y;
-    // At the end, or all of it in view (a short thread, whose end shows at the top).
-    following.current = view.current.y + shows() > footEnd() - NEAR;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    view.current.y = contentOffset.y;
+    // At the end, or all of it in view (a short thread, whose end shows at the top), or at the
+    // bottom of all there is (the foot's place may not be told yet).
+    const atEnd = view.current.y + shows() > footEnd() - NEAR || contentOffset.y + layoutMeasurement.height > contentSize.height - NEAR;
+    if (atEnd || touched.current) following.current = atEnd;
     arrowsAt();
   }
 
@@ -156,7 +165,10 @@ export function useNetworkThread<T>({
   }
 
   function onContentSizeChange() {
-    if (held?.()) return;
+    // Older messages coming in above hold the place only once the chat has opened at its end, and
+    // only while it is read away from there: one asked for at the very start (the view still at
+    // its top before it went to the end) kept a chat open at its oldest messages, anywhere.
+    if (held?.() && opened.current && !following.current) return;
     if (toGoal()) {
       arrowsAt();
       return;
@@ -173,6 +185,9 @@ export function useNetworkThread<T>({
   const scrollProps = {
     scrollEventThrottle: 100,
     onScroll,
+    onScrollBeginDrag: () => {
+      touched.current = true;
+    },
     onContentSizeChange: (_width?: number, height?: number) => {
       if (height !== undefined) {
         const before = keep.current;
@@ -220,11 +235,17 @@ export function useNetworkThread<T>({
 
   // Scrolls the thread to a message, a little below the top.
   function goTo(id: string) {
+    touched.current = true;
+    following.current = false;
     const y = placed.current[id];
     if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, thread.current.y + y - BELOW_TOP), animated: true });
   }
 
-  const toStart = () => scroll.current?.scrollTo({ y: Math.max(0, thread.current.y - space.xl), animated: true });
+  const toStart = () => {
+    touched.current = true;
+    following.current = false;
+    scroll.current?.scrollTo({ y: Math.max(0, thread.current.y - space.xl), animated: true });
+  };
   const toEnd = () => {
     following.current = true;
     toFoot(true);
