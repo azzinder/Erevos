@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useRef, useState, type ReactElement } from 'react';
-import { Keyboard, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Keyboard, Platform, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
 import { leftOff } from '../lib/left-off';
 import { space } from '../theme/colors';
@@ -109,7 +109,10 @@ export function useNetworkThread<T>({
   // end whatever the view does by itself: Android moves it when what is in it gets shorter (a
   // photo drawn smaller than the room kept for it), which left a chat that had just opened
   // somewhere in its middle, no longer following its end.
-  const touched = useRef(false);
+  // In the web and desktop apps react-native-web never says a drag began (onScrollBeginDrag), and
+  // Android's own moves of the view are not there to undo: the thread follows its end only while
+  // it is read there, as before.
+  const touched = useRef(Platform.OS === 'web');
 
   function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;

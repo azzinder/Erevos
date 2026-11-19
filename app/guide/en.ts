@@ -1155,6 +1155,10 @@ photo shown on its own turns with it even when it is off. **Save** puts a copy i
 and **Save in another folder** changes it. Photos and files have the same marks as the rest, and follow the chat's
 disappearing setting.
 
+- **Open with another app:** a file that is not a photo has **Open** too, on Android: the phone's app for its kind, a
+  PDF reader say, reads it from Erevos's memory, with no copy left on the phone, and the link is let go of when the next
+  file opens or the space locks. Erevos asks first, as that app is outside Erevos and its encryption, and never opens
+  web pages, drawings or app packages that way, as they could reach the internet outside Tor: save those instead.
 - **How they travel:** each file is encrypted on the phone with a key of its own, in pieces all of one size, and put
   on your relay. Only where the pieces are and the key go to the contact, end-to-end encrypted. Their phone takes the
   pieces through their own relay, so your relay never sees their phone's address, checks every piece, and then
@@ -3485,6 +3489,10 @@ says you shared it.
   since is named as one that stayed behind.
 - **How far it is** shows under your line in the chat, **Sharing, 40%**. Tap it to **Stop sharing**: what waits on the
   relay is taken off, and their Erevos deletes what came of it. If they delete the chats, it stops the same way.
+- **From a relay their Erevos does not take from by itself**, the chats wait on their side for a tap on their line; then
+  it says how far they have come, **Coming, 40%**, and your line says **Sharing · their phone is taking it**. If they
+  could not be taken, both phones say so and theirs buzzes twice: they tap it to try again. Taking them from there
+  without Tor shows that server their internet address, and Erevos says so first.
 - **An Erevos from before** gets a file instead, **Chat from Telegram.json**, with the messages in it as text, and none
   of the photos and files.
 

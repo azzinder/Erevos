@@ -5,9 +5,10 @@
 import { startActivityAsync } from 'expo-intent-launcher';
 
 import { collectionNative } from '../modules/erevos-collection';
+import { choose } from './alert';
 import { toBase64 } from './crypto';
 import { t } from './i18n';
-import { mimeOfName } from './matrix-media';
+import { openType, refusedToOpen } from './open-type';
 
 // A chat's file (a PDF, a document) opened with the app Android offers for its type, as the
 // Collection's files are (lib/collection-out.ts): through a link of Erevos's own
@@ -22,16 +23,16 @@ export const CAN_OPEN_FILE = typeof collectionNative?.openBytesWith === 'functio
 const FLAG_GRANT_READ_URI_PERMISSION = 1;
 let last: string | null = null;
 
-/** The type to open a file by: the one it came with, or by its name's ending when that says nothing. */
-export function openType(name: string, type: string): string {
-  const said = type.split(';')[0].trim().toLowerCase();
-  return said && said !== 'application/octet-stream' ? said : mimeOfName(name);
-}
+export { openType };
 
-/** Opens a chat's file with another app; throws, in words, when no app on the phone opens it. */
+/** Opens a chat's file with another app, after asking; throws, in words, when it is refused or no app on the phone opens it. */
 export async function openFileWith(name: string, type: string, bytes: Uint8Array): Promise<void> {
   const native = collectionNative;
   if (!native?.openBytesWith) throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  if (refusedToOpen(name, type)) throw new Error(t('Erevos does not open web pages, drawings or app packages with another app, as they can reach the internet outside Tor. Save it instead.'));
+  // As for the Collection's files (app/collection.tsx): asked each time, as the other app is
+  // outside Erevos and its encryption.
+  if (!(await choose(t('Open with another app?'), t('The file goes to another app, outside Erevos and without encryption, and that app may keep a copy of it or reach the internet outside Tor. Continue?'), t('Cancel'), t('Open')))) return;
   if (last) native.forget(last);
   last = null;
   const mime = openType(name, type);

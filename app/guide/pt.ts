@@ -1242,6 +1242,11 @@ telefone enquanto **Girar automaticamente** estiver ativado nele, e uma foto vis
 desativado. **Salvar** põe uma cópia numa pasta que você escolhe na primeira vez, e **Salvar em outra pasta** a muda.
 Fotos e arquivos têm as mesmas marcas que o resto, e seguem a configuração de mensagens temporárias da conversa.
 
+- **Abrir com outro app:** um arquivo que não é foto tem também **Abrir**, no Android: o app do celular para o tipo
+  dele, um leitor de PDF por exemplo, lê da memória do Erevos, sem que fique uma cópia no celular, e o link é solto
+  quando o próximo arquivo abre ou o espaço é bloqueado. O Erevos pergunta antes, pois esse app está fora do Erevos e da
+  criptografia dele, e nunca abre assim páginas web, desenhos nem pacotes de apps, que poderiam acessar a internet fora
+  do Tor: salve esses em vez disso.
 - **Como eles viajam:** cada arquivo é criptografado no celular com uma chave própria, em pedaços todos do mesmo
   tamanho, e posto no seu relay. Só o lugar onde estão os pedaços e a chave vão para o contato, criptografados de ponta
   a ponta. O celular dele pega os pedaços pelo próprio relay, para que o seu relay nunca veja o endereço do celular
@@ -3771,6 +3776,10 @@ guardado, só para ela, criptografadas de ponta a ponta pelo seu relay, e a conv
 - **Até onde foi** aparece embaixo da sua linha na conversa, **Compartilhando, 40%**. Toque nela para **Parar de
   compartilhar**: o que espera no relay é tirado, e o Erevos dela apaga o que chegou. Se ela apagar as conversas, para
   do mesmo jeito.
+- **De um relay do qual o Erevos deles não pega sozinho**, as conversas esperam do lado deles um toque na linha; então
+  ela diz até onde chegaram, **Chegando, 40%**, e a sua linha diz **Compartilhando · o telefone de lá está recebendo**. Se
+  não deu para pegar, os dois celulares dizem e o deles vibra duas vezes: eles tocam para tentar de novo. Pegá-las de lá
+  sem Tor mostra a esse servidor o endereço de internet deles, e o Erevos avisa antes.
 - **Um Erevos anterior** recebe um arquivo no lugar, **Conversa de Telegram.json**, com as mensagens dentro como texto,
   e nenhuma das fotos e dos arquivos.
 

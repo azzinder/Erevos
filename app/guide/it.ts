@@ -1250,6 +1250,11 @@ disattivata. **Salva** mette una copia in una cartella che scegli la prima volta
 cambia. Foto e file hanno gli stessi segni degli altri messaggi, e seguono l’impostazione dei messaggi effimeri della
 chat.
 
+- **Apri con un’altra app:** un file che non è una foto ha anche **Apri**, su Android: l’app del telefono per il suo
+  tipo, un lettore PDF per esempio, lo legge dalla memoria di Erevos, senza che resti una copia sul telefono, e il
+  collegamento viene lasciato quando si apre il file successivo o lo spazio si blocca. Erevos chiede prima, perché
+  quell’app è fuori da Erevos e dalla sua cifratura, e non apre mai così pagine web, disegni o pacchetti di app, che
+  potrebbero andare su internet fuori da Tor: salvali invece.
 - **Come viaggiano:** ogni file viene crittografato sul telefono con una chiave tutta sua, in pezzi tutti della stessa
   dimensione, e messo sul tuo relay. Al contatto vanno solo dove sono i pezzi e la chiave, crittografati end-to-end. Il
   suo telefono prende i pezzi tramite il suo relay, così il tuo relay non vede mai l’indirizzo del suo telefono,
@@ -3812,6 +3817,9 @@ a lei, crittografati end-to-end tramite il tuo relay, e la chat dice che l’hai
 - **A che punto è** si vede sotto la tua riga nella chat, **Condivisione, 40%**. Toccala per **Interrompi la
   condivisione**: quello che aspetta sul relay viene tolto, e il suo Erevos elimina quello che è arrivato. Se quella
   persona elimina le chat, si ferma allo stesso modo.
+- **Da un relay da cui il loro Erevos non prende da solo**, le chat aspettano dalla loro parte un tocco sulla loro riga;
+  poi dice a che punto sono, **In arrivo, 40%**, e la tua riga dice **Condivisione · il suo telefono lo sta ricevendo**. Se non è stato possibile prenderle, lo dicono entrambi i telefoni e il loro vibra due volte: lo toccano
+  per riprovare. Prenderle da lì senza Tor mostra a quel server il loro indirizzo internet, ed Erevos lo dice prima.
 - **Un Erevos precedente** riceve invece un file, **Chat da Telegram.json**, con dentro i messaggi come testo, e nessuna
   delle foto e dei file.
 

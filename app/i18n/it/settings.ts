@@ -10,6 +10,8 @@ export const settings: Record<string, string> = {
   'Remove second password': 'Rimuovi la seconda password',
   'The second password will stop working. What was in that space stays on the phone, and nothing opens it.': 'La seconda password smetterà di funzionare. Quello che c’era in quello spazio resta sul telefono, e niente lo apre.',
   'Saved.': 'Salvato.',
+  'Erevos does not open web pages, drawings or app packages with another app, as they can reach the internet outside Tor. Save it instead.': "Erevos non apre pagine web, disegni o pacchetti di app con un'altra app, perché possono andare su internet fuori da Tor. Salvalo invece.",
+  'The file goes to another app, outside Erevos and without encryption, and that app may keep a copy of it or reach the internet outside Tor. Continue?': "Il file va a un'altra app, fuori da Erevos e senza cifratura, e quell'app può tenerne una copia o andare su internet fuori da Tor. Continuare?",
   'No app on this phone opens this kind of file.': "Nessuna app su questo telefono apre questo tipo di file.",
   'Remove hidden chats PIN': 'Rimuovi il PIN delle chat nascoste',
   'The hidden chats in place {place} will stop opening. They stay on the phone, and nothing opens them.': 'Le chat nascoste nel posto {place} non si apriranno più. Restano sul telefono, e niente le apre.',

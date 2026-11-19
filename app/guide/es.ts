@@ -1245,6 +1245,11 @@ automáticamente** está activado en él, y una foto vista sola gira incluso cua
 una copia en una carpeta que eliges la primera vez, y **Guardar en otra carpeta** la cambia. Las fotos y los archivos
 tienen las mismas marcas que el resto, y siguen el ajuste de mensajes temporales del chat.
 
+- **Abrir con otra app:** un archivo que no es una foto tiene también **Abrir**, en Android: la app del teléfono para su
+  tipo, un lector de PDF por ejemplo, lo lee de la memoria de Erevos, sin que quede una copia en el teléfono, y el
+  enlace se suelta al abrir el siguiente archivo o al bloquearse el espacio. Erevos pregunta primero, pues esa app está
+  fuera de Erevos y de su cifrado, y nunca abre así páginas web, dibujos ni paquetes de apps, que podrían conectarse a
+  internet fuera de Tor: guárdalos en su lugar.
 - **Cómo viajan:** cada archivo se cifra en el teléfono con una clave propia, en trozos todos del mismo tamaño, y se
   pone en tu relay. Solo dónde están los trozos y la clave van al contacto, cifrados de extremo a extremo. Su teléfono
   recoge los trozos a través de su propio relay, así que tu relay nunca ve la dirección de su teléfono, comprueba cada
@@ -3798,6 +3803,10 @@ extremo a extremo por tu relay, y el chat dice que lo compartiste.
   entonces se nombra como uno que se quedó atrás.
 - **Hasta dónde va** se ve bajo tu línea en el chat, **Compartiendo, 40 %**. Tócala para **Dejar de compartir**: lo que
   espera en el relay se quita, y su Erevos borra lo que llegó. Si esa persona borra los chats, se detiene igual.
+- **Desde un relay del que su Erevos no toma por sí solo**, los chats esperan en su lado un toque en su línea; luego
+  dice hasta dónde han llegado, **Recibiendo, 40%**, y tu línea dice **Compartiendo · su teléfono lo está recibiendo**. Si
+  no se pudieron tomar, lo dicen los dos teléfonos y el suyo vibra dos veces: lo tocan para volver a intentarlo.
+  Tomarlos de allí sin Tor muestra a ese servidor su dirección de internet, y Erevos lo dice antes.
 - **Un Erevos anterior** recibe en su lugar un archivo, **Chat de Telegram.json**, con los mensajes dentro como texto, y
   ninguna de las fotos ni de los archivos.
 

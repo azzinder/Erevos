@@ -1320,6 +1320,11 @@ quand elle est désactivée. **Enregistrer** en met une copie dans un dossier qu
 **Enregistrer dans un autre dossier** le change. Les photos et fichiers ont les mêmes marques que le reste, et suivent
 le réglage éphémère de la discussion.
 
+- **Ouvrir avec une autre app :** un fichier qui n’est pas une photo a aussi **Ouvrir**, sur Android : l’app du
+  téléphone pour son type, un lecteur PDF par exemple, le lit dans la mémoire d’Erevos, sans copie laissée sur le
+  téléphone, et le lien est lâché à l’ouverture du fichier suivant ou au verrouillage de l’espace. Erevos demande
+  d’abord, car cette app est hors d’Erevos et de son chiffrement, et n’ouvre jamais ainsi les pages web, les dessins ni
+  les paquets d’app, qui pourraient aller sur internet hors de Tor : enregistre-les plutôt.
 - **Comment ils voyagent :** chaque fichier est chiffré sur le téléphone avec sa propre clé, en morceaux tous de même
   taille, et déposé sur ton relais. Seuls l’emplacement des morceaux et la clé vont au contact, chiffrés de bout en
   bout. Son téléphone prend les morceaux par son propre relais, si bien que ton relais ne voit jamais l’adresse de son
@@ -4018,6 +4023,10 @@ dit que tu l’as partagée.
 - **Où il en est** s’affiche sous ta ligne dans la discussion, **Partage, 40 %**. Touche-la pour **Arrêter le partage**
   : ce qui attend sur le relais en est retiré, et son Erevos supprime ce qui est arrivé. Si cette personne supprime les
   discussions, ça s’arrête de la même façon.
+- **Depuis un relais où leur Erevos ne prend pas de lui-même**, les discussions attendent de leur côté un appui sur leur
+  ligne ; elle dit alors où elles en sont, **Réception, 40%**, et ta ligne dit **Partage · son téléphone le récupère**.
+  Si elles n’ont pas pu être prises, les deux téléphones le disent et le leur vibre deux fois : ils appuient pour
+  réessayer. Les prendre là-bas sans Tor montre à ce serveur leur adresse internet, et Erevos le dit d’abord.
 - **Un Erevos plus ancien** reçoit à la place un fichier, **Discussion depuis Telegram.json**, avec les messages dedans
   en texte, et aucune des photos ni aucun des fichiers.
 

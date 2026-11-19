@@ -252,7 +252,11 @@ export async function shareLines(place: RoundsPlace): Promise<Record<string, str
     const percent = percentOf(out);
     const untaken = !out.ready && (out.came ?? 0) > 0 && now - out.came! > UNTAKEN;
     // Tapped on their phone: being taken, or it did not come there, whichever they said last.
-    const said = out.ready ? null : (out.missed ?? 0) > (out.taking ?? 0) ? 'missed' : out.taking ? 'taking' : null;
+    // A take that said nothing more for TAKING_STALE (their phone died or lost the network as it
+    // took) goes back to the line it had before.
+    const missed = out.missed ?? 0;
+    const taking = out.taking ?? 0;
+    const said = out.ready ? null : missed && missed >= taking ? 'missed' : taking && now - taking < TAKING_STALE ? 'taking' : null;
     lines[`${CONTACT_PREFIX}${out.to}|${out.tag}`] = out.full
       ? t('Sharing, {percent}% · waiting for free space on their phone', { percent })
       : said === 'taking'
@@ -282,6 +286,9 @@ export async function shareLines(place: RoundsPlace): Promise<Record<string, str
 export async function roundsCame(chats: SpaceChats, identity: string, rounds: Rounds): Promise<void> {
   if (chats.pieces) await changeRounds(chats.pieces, (data) => withHeard(data, identity, rounds));
 }
+
+/** How long a contact's "taking it" holds the sharer's line with no word after it. */
+export const TAKING_STALE = 15 * 60_000;
 
 /** Keeps what a contact said of chats shared with them that they tapped to take (`taking`): begun, or
  *  did not come, for the line here. */

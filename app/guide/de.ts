@@ -1333,6 +1333,11 @@ allein gezeigtes Foto dreht sich auch, wenn es aus ist. **Speichern** legt eine 
 ersten Mal wählst, und **In anderem Ordner speichern** ändert ihn. Fotos und Dateien haben dieselben Zeichen wie der
 Rest und folgen der Verschwinden-Einstellung des Chats.
 
+- **Mit einer anderen App öffnen:** Eine Datei, die kein Foto ist, hat unter Android auch **Öffnen**: Die App des
+  Telefons für ihre Art, etwa ein PDF-Leser, liest sie aus dem Speicher von Erevos, ohne dass eine Kopie auf dem Telefon
+  bleibt, und der Link wird gelöst, wenn die nächste Datei geöffnet oder der Bereich gesperrt wird. Erevos fragt zuerst,
+  da diese App außerhalb von Erevos und seiner Verschlüsselung ist, und öffnet Webseiten, Zeichnungen und App-Pakete nie
+  so, da sie außerhalb von Tor ins Internet gehen könnten: Speichere diese stattdessen.
 - **Wie sie reisen:** Jede Datei wird auf dem Telefon mit einem eigenen Schlüssel verschlüsselt, in Stücken gleicher
   Größe, und auf dein Relay gelegt. Nur wo die Stücke sind und der Schlüssel gehen an den Kontakt,
   Ende-zu-Ende-verschlüsselt. Sein Telefon holt die Stücke über sein eigenes Relay, sodass dein Relay nie die Adresse
@@ -4028,6 +4033,10 @@ geteilt hast.
 - **Wie weit es ist**, steht unter deiner Zeile im Chat, **Wird geteilt, 40 %**. Tippe darauf für **Teilen beenden**:
   Was auf dem Relay wartet, wird entfernt, und ihr Erevos löscht, was davon angekommen ist. Löscht sie die Chats, endet
   es genauso.
+- **Von einem Relay, von dem ihr Erevos nicht von selbst holt**, warten die Chats bei ihnen auf ein Tippen auf ihre
+  Zeile; dann steht dort, wie weit sie sind, **Kommt an, 40%**, und deine Zeile sagt **Teilen · ihr Telefon holt es gerade**. Konnten sie nicht geholt werden, sagen es beide Telefone, und ihres vibriert zweimal: Sie tippen erneut, um es
+  noch einmal zu versuchen. Sie ohne Tor von dort zu holen, zeigt diesem Server ihre Internetadresse, und Erevos sagt
+  das zuerst.
 - **Ein älteres Erevos** bekommt stattdessen eine Datei, **Chat aus Telegram.json**, mit den Nachrichten darin als Text,
   und keines der Fotos und keine der Dateien.
 

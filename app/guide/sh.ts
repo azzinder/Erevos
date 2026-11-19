@@ -1208,6 +1208,11 @@ s telefonom dok je na telefonu uključeno **Automatsko okretanje**, a fotografij
 isključeno. **Sačuvaj** stavlja kopiju u folder koji izaberete prvi put, a **Sačuvaj u drugi folder** ga mijenja.
 Fotografije i datoteke imaju iste oznake kao i ostale i prate postavku nestajanja razgovora.
 
+- **Otvori drugom aplikacijom:** datoteka koja nije fotografija ima i **Otvori**, na Androidu: aplikacija telefona za
+  njenu vrstu, recimo čitač PDF-a, čita je iz memorije Erevosa, bez kopije na telefonu, a veza se pušta kad se otvori
+  sljedeća datoteka ili se prostor zaključa. Erevos prvo pita, jer je ta aplikacija izvan Erevosa i njegovog šifriranja,
+  i nikad tako ne otvara web stranice, crteže ni pakete aplikacija, koji bi mogli izaći na internet izvan Tora: njih
+  radije sačuvajte.
 - **Kako putuju:** svaka datoteka šifrira se na telefonu vlastitim ključem, u dijelovima iste veličine, i stavlja na
   vaš relay. Kontaktu idu samo lokacija dijelova i ključ, šifrirani s kraja na kraj. Njegov telefon preuzima dijelove
   preko vlastitog relaya, pa vaš relay nikad ne vidi adresu njegovog telefona, provjerava svaki dio, a zatim ih briše
@@ -3649,6 +3654,10 @@ kraja na kraj preko vašeg relaya, a razgovor kaže da ste ga podijelili.
 - **Dokle je stiglo** vidi se ispod vašeg reda u razgovoru, **Dijeljenje, 40%**. Dodirnite ga za **Prekini dijeljenje**:
   ono što čeka na relayu se uklanja, a njen Erevos briše ono što je stiglo. Ako ona obriše razgovore, zaustavlja se na
   isti način.
+- **Sa relaya s kojeg njihov Erevos ne uzima sam**, razgovori čekaju kod njih dodir na njihov red; onda piše dokle su
+  stigli, **Stiže, 40%**, a vaš red kaže **Dijeljenje · njihov telefon ga preuzima**. Ako nisu mogli doći, kažu to oba
+  telefona, a njihov dvaput zavibrira: dodirnu ga da pokušaju ponovo. Uzimanje odande bez Tora pokazuje tom serveru
+  njihovu internet adresu, i Erevos to prvo kaže.
 - **Stariji Erevos** umjesto toga dobija datoteku, **Razgovor (Telegram).json**, s porukama unutra kao tekst, i nijednu
   fotografiju ni datoteku.
 
