@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.2.0-beta.4 (2026-11-19)
+
+### For you
+
 - **New chat** asks over your QR code whether the other person has Erevos: **Has Erevos already** shows your QR code as before, saying it works only when both phones have a relay; **New to Erevos** shows an invite on the card itself, with **Share the invite** and **New QR code**, which brings in someone new or someone whose phone has no relay. The choice is kept on the phone. It replaces the **No Erevos yet?** row (`components/connect-cards.tsx` `MyQrCard`, `components/welcome-invite.tsx` `inline`, `app/chat.tsx`). Requested by the maintainer, from his approved mockup.
 - The Phone's **Keypad** lists the contacts what is typed finds in the room over the number (`app/phone.tsx` `listHits`, `hitList`), all of them, scrolling if more; where the keys at full size leave no row there (a small screen), the line over the keys shows the first and **N more** as before. Each key 2–9 shows its letters in the app's language, Greek for Greek, Latin for the others (`lib/phone.ts` `keyLetters`), the same a name is found by. Requested by the maintainer.
 - A call that rang at last no longer stays at **Connecting** on both phones: Android's WebRTC 155 said it had found every address to try before it had looked at the phone's networks, so the offer and the answer went with none, and neither phone had anything to try. They now wait for the addresses, at most 5 seconds as before (`lib/call.ts` `describedSdp`, for group calls too). Reported by the maintainer.

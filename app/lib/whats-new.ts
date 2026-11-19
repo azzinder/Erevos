@@ -22,17 +22,22 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**The keypad lists the contacts it finds, and shows its letters**: on the Phone's **Keypad**, the contacts what you type finds are listed in the room over the number, all of them, not one at a time; and each key shows its letters in the app's language, ΑΒΓ in Greek, ABC in the others. See [Phone](#phone)."),
-    mark("**New chat asks whether they have Erevos**: over your QR code on **New chat**, choose **Has Erevos already** or **New to Erevos**. The first is your QR code as before, and says that it works only when both phones have a relay; the second shows an invite, which brings in someone new, or someone whose phone has no relay. New chat remembers your choice. See [Chat through a relay](#relay)."),
-    mark("**Open a file with another app**: a file in a chat, a PDF say, has **Open** too, not only **Save**: the phone's app for it reads it from Erevos's memory, with no copy left on the phone. Erevos asks first, and never opens web pages, drawings or app packages that way. See [Chat through a relay](#relay)."),
-    mark("**Shared chats say how far they are, on both phones**: chats a contact shared from a relay your Erevos does not take from by itself show **Coming, 40%** once you tap them, and their phone says it is taking them; if they did not come, both phones say so and yours buzzes twice. See [Chat through a relay](#relay)."),
-    mark("**Calls connect again**: a call that rang no longer stays at **Connecting** on both phones; each phone now waits for its own addresses before it calls or answers. See [Chat through a relay](#relay)."),
-  ],
+  forYou: [],
   underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.2.0-beta.4',
+    forYou: [
+      mark("**The keypad lists the contacts it finds, and shows its letters**: on the Phone's **Keypad**, the contacts what you type finds are listed in the room over the number, all of them, not one at a time; and each key shows its letters in the app's language, ΑΒΓ in Greek, ABC in the others. See [Phone](#phone)."),
+      mark("**New chat asks whether they have Erevos**: over your QR code on **New chat**, choose **Has Erevos already** or **New to Erevos**. The first is your QR code as before, and says that it works only when both phones have a relay; the second shows an invite, which brings in someone new, or someone whose phone has no relay. New chat remembers your choice. See [Chat through a relay](#relay)."),
+      mark("**Open a file with another app**: a file in a chat, a PDF say, has **Open** too, not only **Save**: the phone's app for it reads it from Erevos's memory, with no copy left on the phone. Erevos asks first, and never opens web pages, drawings or app packages that way. See [Chat through a relay](#relay)."),
+      mark("**Shared chats say how far they are, on both phones**: chats a contact shared from a relay your Erevos does not take from by itself show **Coming, 40%** once you tap them, and their phone says it is taking them; if they did not come, both phones say so and yours buzzes twice. See [Chat through a relay](#relay)."),
+      mark("**Calls connect again**: a call that rang no longer stays at **Connecting** on both phones; each phone now waits for its own addresses before it calls or answers. See [Chat through a relay](#relay)."),
+    ],
+    underTheHood: [],
+  },
   {
     version: '7.2.0-beta.3',
     forYou: [
