@@ -53,8 +53,6 @@ export const connect: Record<string, string> = {
   "From a photo of their QR code": "De uma foto do código QR da outra pessoa",
   "With no relay, messages go through Nostr, or nearby.": "Sem relay, as mensagens vão pelo Nostr, ou por perto.",
   "Small QR code": "Código QR pequeno",
-  "No Erevos yet?": "Ainda não tem o Erevos?",
-  "Make them an invite": "Faça um convite para a pessoa",
   "Getting it ready…": "Preparando…",
   "They scan it with the camera, and you are each other’s contacts at once.": "A outra pessoa lê com a câmera, e vocês viram contatos na hora.",
   "Scan theirs": "Ler o da outra pessoa",
@@ -64,4 +62,9 @@ export const connect: Record<string, string> = {
   "Bring them?": "Trazer?",
   "A phone near you has internet. Should it bring the messages of these hidden chats too?": "Um celular perto de você tem internet. Ele deve trazer também as mensagens destas conversas ocultas?",
   "It would learn that this phone has a second queue on the relay, and so that there may be hidden chats here, though never what they say. Knowing the queue, it could take their messages before they reach you, so they get a new queue once you have internet again. Say yes only for a phone you know whose it is.": "Ele ficaria sabendo que este celular tem uma segunda fila no relay, e portanto que aqui pode haver conversas ocultas, mas nunca o que dizem. Sabendo a fila, ele poderia pegar as mensagens delas antes que cheguem a você, então elas ganham uma fila nova assim que você tiver internet de novo. Diga sim só para um celular que você sabe de quem é.",
+  "Does the other person have Erevos?": "A outra pessoa tem Erevos?",
+  "Has Erevos already": "Já tem Erevos",
+  "New to Erevos": "Novo no Erevos",
+  "Invite to Erevos": "Convite para o Erevos",
+  "This works only when both phones have a relay. If you do not connect, choose New to Erevos.": "Isso só funciona se os dois celulares tiverem um relay. Se não conectarem, escolha «Novo no Erevos».",
 };

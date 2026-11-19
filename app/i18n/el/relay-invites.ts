@@ -93,4 +93,6 @@ export const relayInvites: Record<string, string> = {
   "Back to {relay}": "Πίσω στο {relay}",
   "Use": "Χρήση",
   "That is not a relay address. Type it as its operator gave it, such as relay.example.org.": "Δεν είναι διεύθυνση relay. Γράψ' τη όπως σου την έδωσε ο διαχειριστής του, π.χ. relay.example.org.",
+  "They scan it with their phone’s camera. With no Erevos yet, it shows them where to get it; then it gets ready by itself, with no relay or codes to type, and you are each other’s contacts.": "Το σκανάρει με την κάμερα του κινητού του. Αν δεν έχει Erevos, του δείχνει πού να το κατεβάσει· μετά ετοιμάζεται μόνο του, χωρίς relay ή κωδικούς, και γίνεστε επαφές.",
+  "For one person, until {when}. It works when they have Erevos already, too.": "Για ένα άτομο, έως {when}. Δουλεύει και όταν ο άλλος έχει ήδη Erevos.",
 };

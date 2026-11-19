@@ -93,4 +93,6 @@ export const relayInvites: Record<string, string> = {
   "Back to {relay}": "Voltar para {relay}",
   "Use": "Usar",
   "That is not a relay address. Type it as its operator gave it, such as relay.example.org.": "Isso não é um endereço de relay. Digite como quem cuida dele te passou, por exemplo relay.example.org.",
+  "They scan it with their phone’s camera. With no Erevos yet, it shows them where to get it; then it gets ready by itself, with no relay or codes to type, and you are each other’s contacts.": "Ela escaneia com a câmera do celular. Sem Erevos, ele mostra onde baixá-lo; depois se prepara sozinho, sem relay nem códigos para digitar, e vocês viram contatos.",
+  "For one person, until {when}. It works when they have Erevos already, too.": "Para uma pessoa, até {when}. Funciona também se ela já tiver Erevos.",
 };

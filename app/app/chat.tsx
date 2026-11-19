@@ -55,7 +55,7 @@ import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { ConnectStatus, InviteRow, MyQrCard, WayCard } from '../components/connect-cards';
+import { ConnectStatus, MyQrCard, WayCard } from '../components/connect-cards';
 import { RelayKeyNote, useRelayCheck } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
@@ -116,6 +116,7 @@ import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
 import { packMeta, sharable, shareSize, takeAskToShare } from '../lib/chat-share';
 import { failed as buzzFailed } from '../lib/haptics';
+import { secureGet, secureSet } from '../lib/secure';
 import { beginShare, driveShares, dropReady, onShares, packCame, readyShare, roundsCame, shareLines, sharingNow, stopShare, takePack, takingCame, type ReadyShare, type ShareWay } from '../lib/share-rounds';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
@@ -296,6 +297,8 @@ import { QuickAction, DetailRow, SearchStep, dayOf, dayText, clock, dayLabel, ty
 
 
 /** How long a relay address stays the same before its queue is made by itself (#11). */
+// Whether New chat's QR card was last set for someone new to Erevos ('1') or one who has it ('0').
+const QR_FOR_NEW = 'erevos.qr-for-new';
 const AUTO_QUEUE_MS = 3000;
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -666,6 +669,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
   // 'qr': opened from Show your QR code, where it stands for this phone's QR code (#11).
   const [welcoming, setWelcoming] = useState<boolean | 'qr'>(false);
+  // New chat's QR card: for someone new to Erevos (an invite), or one who has it (the contact link),
+  // as last chosen on this phone.
+  const [qrForNew, setQrForNew] = useState(false);
+  useEffect(() => {
+    void secureGet(QR_FOR_NEW).then((said) => setQrForNew(said === '1'), () => undefined);
+  }, []);
+  function chooseQrForNew(on: boolean) {
+    setQrForNew(on);
+    void secureSet(QR_FOR_NEW, on ? '1' : '0').catch(() => undefined);
+  }
   // Link for a website (components/website-link.tsx), from the space's contact link.
   const [webLinking, setWebLinking] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
@@ -7779,6 +7792,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   shareTitle={Platform.OS === 'web' ? t('Copy') : t('Share')}
                   onShare={() => ownLink && void shareMine(ownLink)}
                   onPhoto={() => void addFromQr('photos')}
+                  forNew={
+                    canWelcome
+                      ? {
+                          on: qrForNew,
+                          onChoose: chooseQrForNew,
+                          invite: (
+                            <WelcomeInvite
+                              visible={qrForNew && shown}
+                              inline
+                              onClose={() => undefined}
+                              e2e={linkE2E}
+                              relay={relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? { url: relayUrl.trim(), token: relayToken.trim() } : null}
+                              onOwnLine={(relay) => ownLine(relay.url, relay.token ?? '')}
+                              contactLink={ownLink}
+                              onNote={setNote}
+                            />
+                          ),
+                        }
+                      : undefined
+                  }
                 >
                   {card && !bigQr && cardNfc === 'on' ? (
                     <Text variant="caption" tone="muted" style={styles.centered}>
@@ -7787,7 +7820,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   ) : null}
                   {card ? <TextButton title={bigQr ? t('Small QR code') : t('Large QR code, for no internet')} onPress={() => setBigQr(!bigQr)} /> : null}
                 </MyQrCard>
-                {canWelcome ? <InviteRow title={t('No Erevos yet?')} line={t('Make them an invite')} onPress={() => setWelcoming(true)} /> : null}
               </>
             )}
             <View style={styles.panel}>

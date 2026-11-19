@@ -551,7 +551,7 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
 1. Sur l’écran d’accueil, appuie sur **Nouvelle discussion**. Tant qu’il manque quelque chose, **Comment tu te connectes maintenant** dit en haut en
    mots simples comment tes contacts te joignent : par ton relais, par Nostr sans relais, ou seulement à proximité ; quand
    tout fonctionne, il n’est pas affiché. Avec un relais, un champ tout en haut trouve un contact par son nom ou ajoute
-   un lien collé dedans, et en dessous viennent **Ton code QR**, **Pas encore Erevos ?** et des lignes pour **Ton lien
+   un lien collé dedans, et en dessous viennent **Ton code QR**, avec **A déjà Erevos** et **Nouveau sur Erevos** au-dessus, et des lignes pour **Ton lien
    de contact** et d’autres ; un téléphone qui n’a pas encore de relais commence par **Commence par une invitation**.
    Les réglages propres du relais sont sous **Pour les utilisateurs avancés**,
    en bas ; **Réglages** → **Relais et réseaux** → **Relais** ouvre Nouvelle discussion avec ceux-ci ouverts.
@@ -565,8 +565,10 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    sur **Ajouter à la discussion** seulement si tu l’as scanné toi-même. **Ajouter et associer à un de mes contacts**
    l’ajoute aussi, relié au contact que tu choisis, dont la discussion prend le nom.
    Le code est court, donc n’importe quel appareil photo le lit. Qui le scanne répond avec son propre lien de contact, puis ce téléphone lui écrit en premier. Le code est nouveau à chaque ouverture de Nouvelle discussion, et vaut une fois : le premier qui le scanne devient un contact aussitôt ; qui le scanne ensuite, ou prend le lien que tu partages, écrit d’abord une demande de message. **Grand code QR, sans internet** montre à la place le code entier, qui marche à proximité sans internet, et **Petit code QR** revient en arrière. **Partager**, en dessous, envoie un lien court que toute application laisse toucher ; sur Android, il ouvre Erevos, qui demande avant de le prendre. Pour ajouter quelqu’un avec son code QR de contact, ton téléphone a d’abord besoin d’un relais.
-   Pour quelqu’un qui n’a pas encore Erevos, appuie plutôt sur **Pas encore Erevos ?**, en dessous : son téléphone
-   rejoint ton relais quand il prend l’invitation, comme dans Inviter quelqu’un de nouveau, plus bas.
+   Ce code QR ne marche que si les deux téléphones ont un relais, comme le dit la carte. Pour quelqu’un qui n’a pas
+   encore Erevos, ou dont le téléphone n’a pas de relais, choisis plutôt **Nouveau sur Erevos**, au-dessus : la carte
+   montre **Invitation à Erevos**, une invitation avec laquelle son téléphone rejoint ton relais, comme dans Inviter
+   quelqu’un de nouveau, plus bas. Nouvelle discussion montre ce que tu as choisi la dernière fois.
    Il en va de même par contact : tant que le petit code de contact s’affiche et que le NFC est activé sur Android,
    l’autre téléphone le prend si tu poses son dos contre le dos du tien. Cela ne marche que lorsqu’Erevos est au premier
    plan, pas en arrière-plan, et jamais avec le grand code QR.
@@ -645,7 +647,7 @@ Un code QR ou un lien fait entrer quelqu’un de nouveau : son téléphone rejoi
 lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans demande de message.
 
 - **Pour inviter :** sur l’écran d’accueil, appuie sur **Inviter** à côté de la ligne du relais ou, sur **Nouvelle
-  discussion**, appuie sur **Pas encore Erevos ?**. Le code QR s’affiche tout de suite : quand Erevos
+  discussion**, choisis **Nouveau sur Erevos** au-dessus du code QR. Le code QR s’affiche tout de suite : quand Erevos
   est sur son téléphone, la personne le scanne avec l’appareil photo et ouvre le lien dans Erevos, ou appuie sur
   **Partager l’invitation** et envoie-lui le lien. En dessous, tu peux taper pour qui c’est (son nom dans tes
   discussions) et **Ton nom, pour cette personne**, ou laisser les deux vides. Rouverte tant que personne ne l’a prise

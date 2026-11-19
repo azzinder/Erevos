@@ -53,8 +53,6 @@ export const connect: Record<string, string> = {
   "From a photo of their QR code": "Iz fotografije njegovog QR koda",
   "With no relay, messages go through Nostr, or nearby.": "Bez relaya poruke idu preko Nostra ili u blizini.",
   "Small QR code": "Mali QR kod",
-  "No Erevos yet?": "Još nema Erevos?",
-  "Make them an invite": "Napravi mu pozivnicu",
   "Getting it ready…": "Priprema se…",
   "They scan it with the camera, and you are each other’s contacts at once.": "Druga osoba ga skenira kamerom i odmah ste jedno drugome kontakti.",
   "Scan theirs": "Skeniraj njegov",
@@ -64,4 +62,9 @@ export const connect: Record<string, string> = {
   "Bring them?": "Doneti ih?",
   "A phone near you has internet. Should it bring the messages of these hidden chats too?": "Telefon blizu vas ima internet. Da donese i poruke ovih skrivenih razgovora?",
   "It would learn that this phone has a second queue on the relay, and so that there may be hidden chats here, though never what they say. Knowing the queue, it could take their messages before they reach you, so they get a new queue once you have internet again. Say yes only for a phone you know whose it is.": "Saznao bi da ovaj telefon ima drugi red na relayu, pa time da ovde mogu postojati skriveni razgovori, ali nikad šta kažu. Znajući red, mogao bi da uzme njihove poruke pre nego što stignu do vas, pa dobijaju novi red čim ponovo imate internet. Recite da samo za telefon za koji znate čiji je.",
+  "Does the other person have Erevos?": "Ima li druga osoba Erevos?",
+  "Has Erevos already": "Već ima Erevos",
+  "New to Erevos": "Nov u Erevosu",
+  "Invite to Erevos": "Pozivnica za Erevos",
+  "This works only when both phones have a relay. If you do not connect, choose New to Erevos.": "Ovo radi samo ako oba telefona imaju relay. Ako se ne povežete, izaberi „Nov u Erevosu“.",
 };

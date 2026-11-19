@@ -489,7 +489,7 @@ email to reach you: whoever has your contact link can write to your queue, and o
 1. On the home screen, tap **New chat**. While something is missing, **How you connect now** at the top says in plain
    words how your contacts reach you: through your relay, through Nostr with no relay, or only nearby; when everything
    works it is not shown. With a relay, a field at the top finds a contact by name or adds a link pasted into it, and
-   under it come **Your QR code**, **No Erevos yet?** and rows for **Your contact link** and more; a phone with no relay
+   under it come **Your QR code**, with **Has Erevos already** and **New to Erevos** over it, and rows for **Your contact link** and more; a phone with no relay
    yet starts with **Start with an invite**. The relay's own settings are under **For advanced users**, at the bottom;
    **Settings** → **Relay and networks** → **Relay** opens New chat with them open.
 2. Under **For advanced users**, type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
@@ -502,8 +502,9 @@ email to reach you: whoever has your contact link can write to your queue, and o
    yourself. **Add and connect to one of my contacts** adds them too, linked to the contact you choose, whose name the
    chat takes.
    The code is short, so any camera reads it. Whoever scans it answers with their own contact link, and then this phone writes to them first. The code is new each time New chat opens, and good once: the first to scan it is a contact at once; anyone who scans it after, or takes the link you share, writes a message request first. **Large QR code, for no internet** shows the whole code instead, which works nearby with no internet, and **Small QR code** goes back. **Share**, under it, sends a short link that any app lets you tap; on Android it opens Erevos, which asks before it takes it. To add someone with their contact QR code, your phone needs a relay first.
-   For someone with no Erevos yet, tap **No Erevos yet?** under it instead: their phone joins your relay as they take
-   the invite, as in Inviting someone new, below.
+   This QR code works only when both phones have a relay, as the card says. For someone with no Erevos yet, or whose
+   phone has no relay, choose **New to Erevos** over it instead: the card shows **Invite to Erevos**, an invite their
+   phone joins your relay with, as in Inviting someone new, below. New chat shows the one you chose last.
    Touch works too: while the small contact QR code shows and NFC is on, on Android, the other phone takes it when you
    hold the back of their phone to the back of yours. It works only while Erevos is open in front, not in the
    background, and never with the large QR code.
@@ -574,8 +575,8 @@ of tokens.
 One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
 nothing, and you are each other's contacts at once, with no message request.
 
-- **To invite:** on the home screen, tap **Invite** beside the relay's line, or, on **New chat**, tap **No Erevos
-  yet?**. The QR code shows at once: once Erevos is on their phone, they scan it with the camera and
+- **To invite:** on the home screen, tap **Invite** beside the relay's line, or, on **New chat**, choose **New to Erevos**
+  over the QR code. The QR code shows at once: once Erevos is on their phone, they scan it with the camera and
   open the link in Erevos, or tap **Share the invite** and send them the link. Below it you may type who it is for
   (their name in your chats) and **Your name, for them**, or leave both empty. Opened again while no one took it and it
   has a day left, it shows the same invite, so it spends none of the 5 waiting and 10 a day; **Invite someone else**

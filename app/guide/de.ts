@@ -551,7 +551,7 @@ schreiben, und nur du liest sie.
 1. Tippe auf dem Startbildschirm auf **Neuer Chat**. Solange etwas fehlt, sagt oben **So bist du jetzt verbunden** in einfachen Worten, wie
    deine Kontakte dich erreichen: über dein Relay, über Nostr ohne Relay oder nur in der Nähe; wenn alles funktioniert,
    wird es nicht angezeigt. Mit Relay findet ein Feld ganz oben einen Kontakt nach Namen oder fügt einen dort
-   eingefügten Link hinzu, und darunter kommen **Dein QR-Code**, **Noch kein Erevos?** und Zeilen für **Dein
+   eingefügten Link hinzu, und darunter kommen **Dein QR-Code**, darüber **Hat Erevos schon** und **Neu bei Erevos**, und Zeilen für **Dein
    Kontaktlink** und mehr; ein Telefon, das noch kein Relay hat, beginnt mit **Mit einer Einladung beginnen**. Die
    eigenen Einstellungen des Relays sind unter **Für Fortgeschrittene**, ganz unten;
    **Einstellungen** → **Relay und Netze** → **Relay** öffnet „Neuer Chat“ mit ihnen geöffnet.
@@ -565,8 +565,10 @@ schreiben, und nur du liest sie.
    auf **Zum Chat hinzufügen**, wenn du ihn selbst gescannt hast. **Hinzufügen und mit einem meiner Kontakte
    verknüpfen** fügt ihn ebenfalls hinzu, verknüpft mit dem Kontakt, den du wählst, dessen Namen der Chat übernimmt.
    Der Code ist kurz, sodass jede Kamera ihn liest. Wer ihn scannt, antwortet mit dem eigenen Kontaktlink, und dann schreibt dieses Telefon ihm zuerst. Der Code ist jedes Mal neu, wenn sich Neuer Chat öffnet, und gilt einmal: Wer ihn zuerst scannt, ist sofort ein Kontakt; wer ihn danach scannt oder den Link nimmt, den du teilst, schreibt zuerst eine Nachrichtenanfrage. **Großer QR-Code, ohne Internet** zeigt stattdessen den ganzen Code, der in der Nähe ohne Internet funktioniert, und **Kleiner QR-Code** geht zurück. **Teilen**, darunter, sendet einen kurzen Link, den jede App antippbar macht; auf Android öffnet er Erevos, das fragt, bevor es ihn übernimmt. Um jemanden mit seinem Kontakt-QR-Code hinzuzufügen, braucht dein Telefon zuerst ein Relay.
-   Für jemanden, der noch kein Erevos hat, tippe stattdessen darunter auf **Noch kein Erevos?**: Sein Telefon tritt
-   deinem Relay bei, wenn es die Einladung nimmt, wie unten in Jemand Neues einladen.
+   Dieser QR-Code klappt nur, wenn beide Telefone ein Relay haben, wie die Karte sagt. Für jemanden, der noch kein
+   Erevos hat oder dessen Telefon kein Relay hat, wähle stattdessen darüber **Neu bei Erevos**: Die Karte zeigt
+   **Einladung zu Erevos**, eine Einladung, mit der sein Telefon deinem Relay beitritt, wie unten in Jemand Neues
+   einladen. Neuer Chat zeigt, was du zuletzt gewählt hast.
    Dasselbe geht per Berührung: Solange der kleine Kontaktcode zu sehen ist und NFC auf Android eingeschaltet ist, nimmt
    das andere Telefon ihn, wenn du seine Rückseite an die Rückseite deines hältst. Das geht nur, solange Erevos im
    Vordergrund ist, nicht im Hintergrund, und nie mit dem großen QR-Code.
@@ -645,7 +647,7 @@ Ein QR-Code oder Link holt jemand Neues herein: Das Telefon dieser Person tritt 
 eigenem Zugang, ohne etwas einzutippen, und ihr seid sofort gegenseitig Kontakte, ohne Nachrichtenanfrage.
 
 - **Einladen:** Tippe auf dem Startbildschirm auf **Einladen** neben der Zeile des Relays oder, auf **Neuer Chat**,
-  auf **Noch kein Erevos?**. Der QR-Code erscheint sofort: Sobald Erevos auf dem anderen Telefon
+  wähle über dem QR-Code **Neu bei Erevos**. Der QR-Code erscheint sofort: Sobald Erevos auf dem anderen Telefon
   ist, scannt die Person ihn mit der Kamera und öffnet den Link in Erevos, oder du tippst auf **Einladung teilen** und
   schickst ihr den Link. Darunter kannst du eingeben, für wen sie ist (der Name der Person in deinen Chats), und
   **Dein Name, für die Person**, oder beides leer lassen. Erneut geöffnet, solange niemand sie genommen hat und sie

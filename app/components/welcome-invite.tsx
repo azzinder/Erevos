@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Share } from 'react-native';
+import { Platform, Share, StyleSheet, View } from 'react-native';
 
 import { QrCode } from './QrCode';
 import { Button, Field, Input, Row, Sheet, Text, TextButton } from './ui';
@@ -19,6 +19,7 @@ import { welcomeLink } from '../lib/welcome';
 import { MAX_NAME } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { space } from '../theme/colors';
 
 // Invite someone (lib/welcome.ts): one QR code or link, for one person, for 7 days. Their phone
 // opens it in Erevos and joins: it takes access of its own to this phone's relay (an invite to it,
@@ -41,8 +42,11 @@ type Made = { link: string; hi: string; line: string; code: string | null; until
 // The invite last made while Erevos runs, by space and contact link: never kept anywhere else.
 let lastMade: { key: string; made: Made; name: string } | null = null;
 
-export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, relay, onOwnLine, contactLink, onNote }: {
+export function WelcomeInvite({ visible, asQr = false, inline = false, onPlain, onClose, e2e, relay, onOwnLine, contactLink, onNote }: {
   visible: boolean;
+  /** On New chat's QR card itself, for someone new to Erevos: the invite's QR code, sharing it and
+   *  a new one, with no sheet around it. */
+  inline?: boolean;
   /** Opened from Show your QR code on New chat (#11): the same invite, said as this phone's QR code. */
   asQr?: boolean;
   /** With `asQr`, when no invite can be made: the contact link's QR code instead, saying nothing of relays. */
@@ -203,6 +207,36 @@ export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, re
     }
   }
 
+  if (inline) {
+    return made ? (
+      <View style={styles.inline}>
+        <QrCode text={made.link} size={200} />
+        <Text variant="caption" tone="muted" style={styles.center}>
+          {t('They scan it with their phone’s camera. With no Erevos yet, it shows them where to get it; then it gets ready by itself, with no relay or codes to type, and you are each other’s contacts.')}
+        </Text>
+        <Text variant="caption" tone="muted" style={styles.center}>
+          {t('For one person, until {when}. It works when they have Erevos already, too.', { when: laterLabel(made.until) })}
+        </Text>
+        {nfc === 'on' ? (
+          <Text variant="caption" tone="muted" style={styles.center}>
+            {t('Or hold the back of their phone to the back of yours: their phone opens the invite.')}
+          </Text>
+        ) : null}
+        <Row wrap style={styles.buttons}>
+          <Button title={Platform.OS === 'web' ? t('Copy the invite') : t('Share the invite')} onPress={() => void share(made.link)} />
+          <Button title={t('New QR code')} kind="secondary" onPress={another} />
+        </Row>
+      </View>
+    ) : (
+      <View style={styles.inline}>
+        <Text variant="caption" tone="muted" style={styles.center}>
+          {failed || t('Making the invite…')}
+        </Text>
+        {failed && !busy ? <Button title={t('Try again')} compact onPress={() => void make(as)} /> : null}
+      </View>
+    );
+  }
+
   return (
     <Sheet visible={visible} onClose={close} title={name.trim() ? t('Invite for {name}', { name: name.trim() }) : asQr ? t('Your QR code') : t('Invite someone')}>
       {made ? (
@@ -259,3 +293,17 @@ export function WelcomeInvite({ visible, asQr = false, onPlain, onClose, e2e, re
     </Sheet>
   );
 }
+
+const styles = StyleSheet.create({
+  inline: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  center: {
+    textAlign: 'center',
+  },
+  buttons: {
+    justifyContent: 'center',
+  },
+});

@@ -512,7 +512,7 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
 1. Na početnom ekranu dodirnite **Novi razgovor**. Dok nešto nedostaje, na vrhu **Kako ste sada povezani** jednostavnim riječima kaže kako
    vas kontakti dosežu: preko vašeg relaya, preko Nostra bez relaya ili samo u blizini; kad sve radi, ne prikazuje se.
    S relayem, polje na samom vrhu nalazi kontakt po imenu ili dodaje link zalijepljen u njega, a ispod dolaze **Tvoj QR
-   kod**, **Još nema Erevos?** i redovi za **Vaš link za kontakt** i drugo; telefon koji još nema relay počinje s
+   kod**, iznad njega **Već ima Erevos** i **Nov u Erevosu**, i redovi za **Vaš link za kontakt** i drugo; telefon koji još nema relay počinje s
    **Počni s pozivnicom**. Vlastite postavke relaya
    su pod **Za napredne korisnike**, na dnu; **Postavke** → **Relay i mreže** → **Relay** otvara Novi razgovor s tim
    postavkama otvorenim.
@@ -525,8 +525,10 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu, povezanu s kontaktom koji izaberete,
    čije ime razgovor preuzima.
    Kod je kratak, pa ga čita svaka kamera. Ko ga skenira, odgovara svojim linkom za kontakt, a zatim mu ovaj telefon prvi piše. Kod je nov svaki put kad se Novi razgovor otvori i vrijedi jednom: ko ga prvi skenira, odmah postaje kontakt; ko ga skenira poslije, ili uzme link koji podijelite, prvo piše zahtjev za poruku. **Veliki QR kod, bez interneta** umjesto toga prikazuje cijeli kod, koji radi u blizini bez interneta, a **Mali QR kod** vraća nazad. **Podijeli**, ispod njega, šalje kratak link koji svaka aplikacija dopušta dodirnuti; na Androidu otvara Erevos, koji pita prije nego ga preuzme. Da biste nekoga dodali njegovim QR kodom za kontakt, vašem telefonu prvo treba relay.
-   Za nekoga ko još nema Erevos dodirnite umjesto toga **Još nema Erevos?**, ispod: njegov telefon se pridružuje vašem
-   relayu kad uzme pozivnicu, kao u Pozivanje nekoga novog, niže.
+   Ovaj QR kod radi samo ako oba telefona imaju relay, kao što kartica kaže. Za nekoga ko još nema Erevos, ili čiji
+   telefon nema relay, izaberite umjesto toga **Nov u Erevosu**, iznad: kartica prikazuje **Pozivnica za Erevos**,
+   pozivnicu s kojom se njegov telefon pridružuje vašem relayu, kao u Pozivanje nekoga novog, niže. Novi razgovor
+   prikazuje ono što ste posljednje izabrali.
    Isto vrijedi za dodir: dok se prikazuje mali kod za kontakt, a NFC je na Androidu uključen, drugi telefon ga uzima
    ako njegovu poleđinu prislonite uz poleđinu svog. Radi samo dok je Erevos u prvom planu, ne u pozadini, i nikad s
    velikim QR kodom.
@@ -598,8 +600,8 @@ ne može napuniti njegovu datoteku tokena.
 Jedan QR kod ili link dovodi nekoga novog: njegov telefon ulazi u Erevos na vašem relayu, s vlastitim pristupom, bez
 ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgovor.
 
-- **Da pozovete:** na početnom ekranu dodirnite **Pozovi** pored retka relaya ili, na **Novom razgovoru**, dodirnite
-  **Još nema Erevos?**. QR kod se prikaže odmah: kad Erevos bude na njenom telefonu, ona ga skenira
+- **Da pozovete:** na početnom ekranu dodirnite **Pozovi** pored retka relaya ili, na **Novom razgovoru**, izaberite
+  **Nov u Erevosu** iznad QR koda. QR kod se prikaže odmah: kad Erevos bude na njenom telefonu, ona ga skenira
   kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj link. Ispod možete upisati za
   koga je (ime te osobe u vašim razgovorima) i **Vaše ime, za tu osobu**, ili oba polja ostaviti prazna. Ako je opet
   otvorite dok je niko nije uzeo i dok joj ostaje bar jedan dan, prikazuje istu pozivnicu, pa ne troši nijednu od 5 na

@@ -24,6 +24,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**The keypad lists the contacts it finds, and shows its letters**: on the Phone's **Keypad**, the contacts what you type finds are listed in the room over the number, all of them, not one at a time; and each key shows its letters in the app's language, ΑΒΓ in Greek, ABC in the others. See [Phone](#phone)."),
+    mark("**New chat asks whether they have Erevos**: over your QR code on **New chat**, choose **Has Erevos already** or **New to Erevos**. The first is your QR code as before, and says that it works only when both phones have a relay; the second shows an invite, which brings in someone new, or someone whose phone has no relay. New chat remembers your choice. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };

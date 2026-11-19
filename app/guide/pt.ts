@@ -520,7 +520,7 @@ a lê.
 1. Na tela inicial, toque em **Nova conversa**. Enquanto algo estiver faltando, no topo **Como você se conecta agora** diz em palavras simples como os
    seus contatos chegam até você: pelo seu relay, pelo Nostr sem relay, ou só por perto; quando tudo funciona, ele não
    aparece. Com um relay, um campo bem no topo encontra um contato pelo nome ou adiciona um link colado nele, e embaixo
-   vêm **Seu código QR**, **Ainda não tem o Erevos?** e linhas para **Seu link de contato** e mais; um celular ainda
+   vêm **Seu código QR**, com **Já tem Erevos** e **Novo no Erevos** acima, e linhas para **Seu link de contato** e mais; um celular ainda
    sem relay começa com **Comece com um convite**. As
    configurações do próprio relay ficam em **Para usuários avançados**, embaixo; **Configurações** → **Relay e redes**
    → **Relay** abre Nova conversa com elas abertas.
@@ -533,8 +533,10 @@ a lê.
    conversa** só se você mesmo o leu. **Adicionar e vincular a um dos meus contatos** também adiciona a pessoa,
    vinculada ao contato que você escolher, cujo nome a conversa recebe.
    O código é curto, então qualquer câmera o lê. Quem o lê responde com o próprio link de contato, e depois este celular escreve para a pessoa primeiro. O código é novo cada vez que Nova conversa abre, e vale uma vez: quem o ler primeiro vira contato na hora; quem o ler depois, ou pegar o link que você compartilha, escreve primeiro um pedido de mensagem. **Código QR grande, sem internet** mostra o código inteiro no lugar, que funciona por perto sem internet, e **Código QR pequeno** volta atrás. **Compartilhar**, embaixo, envia um link curto que qualquer app deixa tocar; no Android ele abre o Erevos, que pergunta antes de aceitá-lo. Para adicionar alguém com o código QR de contato dela, seu celular precisa antes de um relay.
-   Para alguém que ainda não tem o Erevos, toque em vez disso em **Ainda não tem o Erevos?**, embaixo: o celular da
-   pessoa entra no seu relay quando ela pega o convite, como em Convidar alguém novo, mais abaixo.
+   Este código QR só funciona se os dois celulares tiverem um relay, como diz o cartão. Para alguém que ainda não tem
+   o Erevos, ou cujo celular não tem relay, escolha em vez disso **Novo no Erevos**, acima: o cartão mostra **Convite
+   para o Erevos**, um convite com o qual o celular da pessoa entra no seu relay, como em Convidar alguém novo, mais
+   abaixo. Nova conversa mostra o que você escolheu por último.
    O mesmo vale por toque: enquanto o código pequeno de contato aparece e o NFC está ligado no Android, o outro celular
    o pega se você encostar a parte de trás dele na do seu. Só funciona com o Erevos em primeiro plano, não em segundo
    plano, e nunca com o código QR grande.
@@ -608,8 +610,8 @@ parar onde não devia não possa encher o arquivo de tokens.
 Um código QR ou link traz alguém novo: o celular da pessoa entra no Erevos no seu relay, com acesso próprio, sem digitar
 nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
 
-- **Para convidar:** na tela inicial, toque em **Convidar** ao lado da linha do relay ou, em **Nova conversa**, toque
-  em **Ainda não tem o Erevos?**. O código QR aparece na hora: quando o Erevos está no celular da
+- **Para convidar:** na tela inicial, toque em **Convidar** ao lado da linha do relay ou, em **Nova conversa**, escolha
+  **Novo no Erevos** acima do código QR. O código QR aparece na hora: quando o Erevos está no celular da
   pessoa, ela o escaneia com a câmera e abre o link no Erevos, ou toque em **Compartilhar o convite** e mande o link a
   ela. Abaixo você pode digitar para quem é (o nome dela nas suas conversas) e **Seu nome, para essa pessoa**, ou
   deixar os dois vazios. Aberto de novo enquanto ninguém o pegou e ainda falta pelo menos um dia, mostra o mesmo

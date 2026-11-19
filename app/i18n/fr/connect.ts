@@ -53,8 +53,6 @@ export const connect: Record<string, string> = {
   "From a photo of their QR code": "Depuis une photo de son code QR",
   "With no relay, messages go through Nostr, or nearby.": "Sans relais, les messages passent par Nostr, ou à proximité.",
   "Small QR code": "Petit code QR",
-  "No Erevos yet?": "Pas encore Erevos ?",
-  "Make them an invite": "Fais-lui une invitation",
   "Getting it ready…": "Préparation…",
   "They scan it with the camera, and you are each other’s contacts at once.": "On le scanne avec l’appareil photo, et vous êtes aussitôt contacts l’un de l’autre.",
   "Scan theirs": "Scanner le sien",
@@ -64,4 +62,9 @@ export const connect: Record<string, string> = {
   "Bring them?": "Les apporter ?",
   "A phone near you has internet. Should it bring the messages of these hidden chats too?": "Un téléphone près de toi a internet. Doit-il aussi apporter les messages de ces discussions masquées ?",
   "It would learn that this phone has a second queue on the relay, and so that there may be hidden chats here, though never what they say. Knowing the queue, it could take their messages before they reach you, so they get a new queue once you have internet again. Say yes only for a phone you know whose it is.": "Il apprendrait que ce téléphone a une deuxième file d’attente sur le relais, et donc qu’il peut y avoir des discussions masquées ici, mais jamais ce qu’elles disent. Connaissant la file, il pourrait prendre leurs messages avant qu’ils t’arrivent, alors elles reçoivent une nouvelle file dès que tu as de nouveau internet. Dis oui seulement pour un téléphone dont tu sais à qui il est.",
+  "Does the other person have Erevos?": "L’autre personne a-t-elle Erevos ?",
+  "Has Erevos already": "A déjà Erevos",
+  "New to Erevos": "Nouveau sur Erevos",
+  "Invite to Erevos": "Invitation à Erevos",
+  "This works only when both phones have a relay. If you do not connect, choose New to Erevos.": "Cela ne marche que si les deux téléphones ont un relais. Si vous ne vous connectez pas, choisis « Nouveau sur Erevos ».",
 };

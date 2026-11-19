@@ -53,8 +53,6 @@ export const connect: Record<string, string> = {
   "From a photo of their QR code": "Από φωτογραφία του QR του",
   "With no relay, messages go through Nostr, or nearby.": "Χωρίς relay, τα μηνύματα πάνε μέσω Nostr ή κοντά.",
   "Small QR code": "Μικρός κωδικός QR",
-  "No Erevos yet?": "Δεν έχει Erevos ακόμα;",
-  "Make them an invite": "Φτιάξε του πρόσκληση",
   "Getting it ready…": "Ετοιμάζεται…",
   "They scan it with the camera, and you are each other’s contacts at once.": "Ο άλλος το σκανάρει με την κάμερα και γίνεστε επαφές αμέσως.",
   "Scan theirs": "Σκάναρε το δικό του",
@@ -64,4 +62,9 @@ export const connect: Record<string, string> = {
   "Bring them?": "Να τα φέρει;",
   "A phone near you has internet. Should it bring the messages of these hidden chats too?": "Ένα κινητό κοντά σου έχει internet. Να φέρει και τα μηνύματα αυτών των κρυφών συνομιλιών;",
   "It would learn that this phone has a second queue on the relay, and so that there may be hidden chats here, though never what they say. Knowing the queue, it could take their messages before they reach you, so they get a new queue once you have internet again. Say yes only for a phone you know whose it is.": "Θα μάθει ότι αυτό το κινητό έχει δεύτερη ουρά στο relay, άρα ότι εδώ μπορεί να υπάρχουν κρυφές συνομιλίες, ποτέ όμως τι λένε. Ξέροντας την ουρά, θα μπορούσε να πάρει τα μηνύματά τους πριν φτάσουν σε σένα, γι’ αυτό παίρνουν νέα ουρά μόλις ξαναβρείς internet. Πες ναι μόνο για κινητό που ξέρεις τίνος είναι.",
+  "Does the other person have Erevos?": "Ο άλλος έχει Erevos;",
+  "Has Erevos already": "Έχει ήδη Erevos",
+  "New to Erevos": "Νέος στο Erevos",
+  "Invite to Erevos": "Πρόσκληση στο Erevos",
+  "This works only when both phones have a relay. If you do not connect, choose New to Erevos.": "Αυτό δουλεύει μόνο αν και τα δύο τηλέφωνα έχουν relay. Αν δεν συνδέεστε, διάλεξε «Νέος στο Erevos».",
 };
