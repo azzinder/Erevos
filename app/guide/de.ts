@@ -1282,6 +1282,12 @@ gespeichert. **Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf A
 GB freien Arbeitsspeicher, da es beim Schreiben etwa 1,5 GB belegt; schlägt das fehl, öffnet der nächste Versuch das
 Modell neu. Wo niemand spricht, bei Stille oder Rauschen, schreibt es nichts, statt Wörter, die niemand gesagt hat.
 
+**Sprechen statt tippen:** Tippe auf das Mikrofon mit Linien neben dem Nachrichtenfeld, in einem Chat oder einer
+Gruppe, und sprich; tippe auf **Fertig**, und deine Worte werden ins Feld geschrieben, damit du sie vor dem Senden
+ändern kannst. Es nutzt dasselbe Sprachmodell wie **In Worten**, einmal geladen, wenn du es sagst, und alles geschieht
+auf deinem Telefon: Weder deine Stimme noch ihre Worte verlassen es, und der Ton wird nicht behalten. Es hört bis zu
+zwei Minuten zu und kann Fehler machen. Nur auf Android.
+
 **Übersetzen:** Halte eine Nachricht gedrückt, im Chat mit einem Kontakt oder in einer Gruppe, und wähle **Übersetzen**:
 Dein Telefon übersetzt sie in deine Sprache, zum Lesen oder Kopieren, zwischen Griechisch, Englisch, Deutsch, Spanisch,
 Französisch und Italienisch. Es errät die Sprache der Nachricht; tippe unter **Von** oder **Nach** eine andere an, um

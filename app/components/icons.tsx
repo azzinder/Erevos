@@ -361,6 +361,27 @@ export function MicIcon({ color, size = 24 }: Props) {
   );
 }
 
+/** A small microphone beside lines of writing: words spoken into the field (dictation). */
+export function DictateIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={3.5} y={2} w={6} h={11} r={3} />
+      <View
+        style={[
+          box(k, { x: 1, y: 8, w: 12, h: 8 }),
+          { borderWidth: 2 * k, borderTopWidth: 0, borderColor: color, borderBottomLeftRadius: 6 * k, borderBottomRightRadius: 6 * k },
+        ]}
+      />
+      <Bar k={k} color={color} x={6} y={16} w={2} h={4} r={0} />
+      <Bar k={k} color={color} x={3.5} y={19.8} w={7} h={2} />
+      <Bar k={k} color={color} x={15} y={5} w={8} h={2} />
+      <Bar k={k} color={color} x={15} y={10.5} w={8} h={2} />
+      <Bar k={k} color={color} x={15} y={16} w={5.5} h={2} />
+    </Grid>
+  );
+}
+
 /** Two notes joined by a beam: music. */
 export function MusicIcon({ color, size = 24 }: Props) {
   const k = size / 24;

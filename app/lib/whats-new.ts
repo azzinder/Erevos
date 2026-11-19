@@ -24,6 +24,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark("**Answer a hidden contact's call with no PIN**: where hidden chats receive while closed, **Answer** on the ringing screen takes their contact's call at once, on a call screen with no name and no face, and the hidden chats stay closed; the small sign and the PIN still open them. See [Hidden chats](#hidden)."),
+    mark("**Speak to write**: tap the microphone with lines beside the message field and speak, and your words are written into the field, to change before you send them. It uses the speech model of **In words**, so all of it is done on your phone, and neither your voice nor its words leave it. On Android. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [],
 };

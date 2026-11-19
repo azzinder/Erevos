@@ -1202,6 +1202,12 @@ libera lo spazio. Solo su Android, e serve un telefono con circa 2 GB di memoria
 occupa circa 1,5 GB; se non riesce, il tentativo successivo riapre il modello. Dove nessuno parla, nel silenzio o nel
 rumore, non scrive nulla, invece di parole che nessuno ha detto.
 
+**Parla per scrivere:** tocca il microfono con le righe accanto al campo del messaggio, in una chat o in un gruppo, e
+parla; tocca **Fatto**, e le tue parole vengono scritte nel campo, da cambiare prima di inviarle. Usa lo stesso
+modello vocale di **In parole**, scaricato una volta quando lo dici, e tutto avviene sul tuo telefono: né la tua voce
+né le sue parole lo lasciano, e il suono non viene conservato. Ascolta fino a due minuti e può sbagliare. Solo su
+Android.
+
 **Traduci:** tieni premuto un messaggio, nella chat di un contatto o in un gruppo, e scegli **Traduci**: il telefono lo
 traduce nella tua lingua, da leggere o copiare, tra greco, inglese, tedesco, spagnolo, francese e italiano. Indovina
 la lingua del messaggio; tocca un’altra sotto **Da** o **In** per cambiare l’una o l’altra. La prima volta per una

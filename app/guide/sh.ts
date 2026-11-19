@@ -1163,6 +1163,11 @@ pogriješiti, a riječi se ne čuvaju. **Obriši govorni model**, ispod, osloba�
 telefon s oko 2 GB slobodne memorije, jer dok piše zauzima oko 1,5 GB; ako to ne uspije, sljedeći pokušaj ponovo
 otvara model. Gdje niko ne govori, u tišini ili buci, ne piše ništa, umjesto riječi koje niko nije rekao.
 
+**Govori da pišeš:** dodirni mikrofon s linijama pored polja za poruku, u chatu ili u grupi, i govori; dodirni
+**Gotovo**, i tvoje riječi se upisuju u polje, da ih promijeniš prije slanja. Koristi isti govorni model kao
+**Riječima**, preuzet jednom kad ti kažeš, i sve se radi na tvom telefonu: ni tvoj glas ni njegove riječi ga ne
+napuštaju, a zvuk se ne čuva. Sluša do dvije minute i može griješiti. Samo na Androidu.
+
 **Prevedi:** drži pritisnutu poruku, u razgovoru s kontaktom ili u grupi, i izaberi **Prevedi**: tvoj telefon je
 prevodi na tvoj jezik, ili na engleski, da je pročitaš ili kopiraš, između grčkog, engleskog, njemačkog, španjolskog,
 francuskog i talijanskog. Pogađa jezik poruke; dodirni drugi pod **S** ili **Na** da promijeniš bilo koji. Prvi put za

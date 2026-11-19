@@ -22,4 +22,9 @@ export const speechText: Record<string, string> = {
   "The speech model is not on this phone.": "Govorni model nije na ovom telefonu.",
   "Android could not read the sound of this voice message.": "Android nije mogao pročitati zvuk ove glasovne poruke.",
   "The speech model on this phone is not the one expected, so it was deleted. Download it again.": "Govorni model na ovom telefonu nije očekivani, pa je obrisan. Preuzmi ga ponovno.",
+  "Speak to write": "Govori da pišeš",
+  "To write what you say, Erevos needs a speech model ({size} MB), once. It is downloaded from {host}, which sees your IP address, as for any download. Then everything is done on this phone: your voice and its words never leave it.": "Da bi pisao ono što govoriš, Erevosu treba govorni model ({size} MB), jednom. Preuzima se sa {host}, koji vidi tvoju IP adresu, kao kod svakog preuzimanja. Zatim se sve radi na ovom telefonu: tvoj glas i njegove riječi ga nikad ne napuštaju.",
+  "Listening… {time}": "Slušam… {time}",
+  "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Govori, pa dodirni Gotovo: riječi idu u polje, da ih promijeniš prije slanja. Zapisano na ovom telefonu, pa može imati grešaka.",
+  "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Erevos ne smije koristiti mikrofon. Dozvoli to u postavkama telefona da bi govorio u polje.",
 };

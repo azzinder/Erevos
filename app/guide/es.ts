@@ -1201,6 +1201,11 @@ Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre, pues mi
 falla, el siguiente intento vuelve a abrir el modelo. Donde nadie habla, en silencio o con ruido, no escribe nada, en
 vez de palabras que nadie dijo.
 
+**Habla para escribir:** toca el micrófono con líneas junto al campo del mensaje, en un chat o un grupo, y habla; toca
+**Hecho**, y tus palabras se escriben en el campo, para cambiarlas antes de enviarlas. Usa el mismo modelo de voz que
+**En palabras**, descargado una vez cuando lo dices, y todo se hace en tu teléfono: ni tu voz ni sus palabras salen de
+él, y el sonido no se guarda. Escucha hasta dos minutos y puede cometer errores. Solo en Android.
+
 **Traducir:** mantén pulsado un mensaje, en el chat de un contacto o en un grupo, y elige **Traducir**: tu teléfono lo
 traduce a tu idioma, para leerlo o copiarlo, entre griego, inglés, alemán, español, francés e italiano. Adivina el
 idioma del mensaje; toca otro bajo **De** o **A** para cambiar cualquiera de los dos. La primera vez para un idioma

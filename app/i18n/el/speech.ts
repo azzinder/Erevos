@@ -22,4 +22,9 @@ export const speechText: Record<string, string> = {
   "The speech model is not on this phone.": "Το μοντέλο ομιλίας δεν είναι σε αυτό το τηλέφωνο.",
   "Android could not read the sound of this voice message.": "Το Android δεν μπόρεσε να διαβάσει τον ήχο αυτού του φωνητικού μηνύματος.",
   "The speech model on this phone is not the one expected, so it was deleted. Download it again.": "Το μοντέλο ομιλίας σε αυτό το τηλέφωνο δεν είναι το αναμενόμενο, οπότε διαγράφηκε. Κατέβασέ το ξανά.",
+  "Speak to write": "Μίλα για να γράψεις",
+  "To write what you say, Erevos needs a speech model ({size} MB), once. It is downloaded from {host}, which sees your IP address, as for any download. Then everything is done on this phone: your voice and its words never leave it.": "Για να γράφει ό,τι λες, το Erevos χρειάζεται ένα μοντέλο ομιλίας ({size} MB), μία φορά. Κατεβαίνει από το {host}, που βλέπει τη διεύθυνση IP σου, όπως σε κάθε λήψη. Μετά όλα γίνονται σε αυτό το τηλέφωνο: η φωνή σου και οι λέξεις της δεν φεύγουν ποτέ από αυτό.",
+  "Listening… {time}": "Ακούω… {time}",
+  "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Μίλα και μετά πάτα Τέλος: οι λέξεις μπαίνουν στο πεδίο, για να τις αλλάξεις πριν τις στείλεις. Γράφονται σε αυτό το τηλέφωνο, οπότε μπορεί να έχουν λάθη.",
+  "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Το Erevos δεν έχει άδεια για το μικρόφωνο. Επίτρεψέ το στις ρυθμίσεις του τηλεφώνου για να μιλάς στο πεδίο.",
 };

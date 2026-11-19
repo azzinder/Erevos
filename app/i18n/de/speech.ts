@@ -22,4 +22,9 @@ export const speechText: Record<string, string> = {
   "The speech model is not on this phone.": "Das Sprachmodell ist nicht auf diesem Telefon.",
   "Android could not read the sound of this voice message.": "Android konnte den Ton dieser Sprachnachricht nicht lesen.",
   "The speech model on this phone is not the one expected, so it was deleted. Download it again.": "Das Sprachmodell auf diesem Telefon ist nicht das erwartete und wurde gelöscht. Lade es erneut.",
+  "Speak to write": "Sprechen statt tippen",
+  "To write what you say, Erevos needs a speech model ({size} MB), once. It is downloaded from {host}, which sees your IP address, as for any download. Then everything is done on this phone: your voice and its words never leave it.": "Um zu schreiben, was du sagst, braucht Erevos einmalig ein Sprachmodell ({size} MB). Es wird von {host} geladen, das dabei deine IP-Adresse sieht, wie bei jedem Download. Danach geschieht alles auf diesem Telefon: Deine Stimme und ihre Worte verlassen es nie.",
+  "Listening… {time}": "Hört zu … {time}",
+  "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Sprich und tippe dann auf Fertig: Die Worte kommen ins Feld, damit du sie vor dem Senden ändern kannst. Auf diesem Telefon geschrieben, daher sind Fehler möglich.",
+  "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Erevos darf das Mikrofon nicht nutzen. Erlaube es in den Einstellungen des Telefons, um ins Feld zu sprechen.",
 };

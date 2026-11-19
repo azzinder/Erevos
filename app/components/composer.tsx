@@ -6,20 +6,24 @@ import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { ActivityIndicator, BackHandler, Keyboard, Modal, Platform, Pressable, ScrollView, TextInput, View, useWindowDimensions, type AccessibilityActionEvent, type GestureResponderEvent, type NativeSyntheticEvent, type TextInputKeyPressEvent, type TextStyle, type HostInstance, type TextInputInstance } from 'react-native';
 
+import { withDictated } from '../lib/dictate';
 import { press, tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { QUALITIES, qualityNote } from '../lib/photo-quality';
 import type { PhotoQuality } from '../lib/pick-photo';
+import { canWriteOut } from '../lib/speech';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useTheme } from '../theme/context';
 import { glassLift, glassSide } from '../theme/glass';
 
+import { DictateSheet } from './dictate-sheet';
 import { useGlassBlur } from './glass';
 import {
   BackIcon,
   CameraIcon,
   ChevronIcon,
   CloseIcon,
+  DictateIcon,
   FileIcon,
   LaterIcon,
   LockIcon,
@@ -319,6 +323,16 @@ export function Composer({
   const bar = useRef<HostInstance>(null);
   const canSend = value.trim().length > 0;
   const button = buttonColors('primary', colors);
+  // Dictation (components/dictate-sheet.tsx): open, and what is in the field as the words come.
+  const [dictating, setDictating] = useState(false);
+  const typed = useRef(value);
+  typed.current = value;
+  const canDictate = canWriteOut();
+  function dictated(words: string) {
+    onChangeText(withDictated(typed.current, words, maxLength));
+    // The field takes the keyboard, so the words can be changed at once.
+    setTimeout(() => input.current?.focus(), 350);
+  }
   // While the microphone is held (or, for a screen reader, on), from when, and how far it slid left.
   const [holding, setHolding] = useState(false);
   const [tapped, setTapped] = useState(false);
@@ -708,6 +722,18 @@ export function Composer({
                   </View>
                 )}
               </View>
+              {canDictate ? (
+                <IconButton
+                  label={t('Speak to write')}
+                  width={40}
+                  onPress={() => {
+                    if (panelOpen) onPanel(false);
+                    setDictating(true);
+                  }}
+                >
+                  <DictateIcon color={colors.textMuted} size={22} />
+                </IconButton>
+              ) : null}
               {onSticker ? (
                 <IconButton
                   label={t('Send a sticker')}
@@ -777,6 +803,8 @@ export function Composer({
         </View>
       </View>
       {panelOpen && panel ? panel : null}
+      {/* Mounted only while open, so a bar holds no second recorder for it. */}
+      {dictating ? <DictateSheet open onWords={dictated} onClose={() => setDictating(false)} /> : null}
       <Modal visible={menuAt !== null} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuAt(null)}>
         {/* A light dim under the menu, so it reads over the thread. */}
         <Pressable style={{ flex: 1, backgroundColor: withAlpha('#000000', scheme === 'dark' ? 0.32 : 0.16) }} onPress={() => setMenuAt(null)} accessibilityLabel={t('Close')} />
