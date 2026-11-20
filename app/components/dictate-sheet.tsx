@@ -174,7 +174,14 @@ export function DictateSheet({ open, onWords, onClose }: {
           <Button title={t('Cancel')} kind="secondary" onPress={onClose} />
         </>
       ) : step.at === 'writing' ? (
-        <Button title={t('Writing it out…')} loading disabled onPress={() => undefined} />
+        <>
+          <Button title={t('Writing it out…')} loading disabled onPress={() => undefined} />
+          <Text variant="caption" tone="muted">
+            {t('A long one takes a while, up to a minute or two, as the phone writes it out by itself.')}
+          </Text>
+          {/* Closed now, what it writes out is dropped (turn), and the model let go of. */}
+          <Button title={t('Cancel')} kind="secondary" onPress={onClose} />
+        </>
       ) : (
         <>
           <Text>{step.why}</Text>

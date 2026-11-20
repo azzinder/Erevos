@@ -1117,7 +1117,7 @@ mistakes, and the words are not kept. **Delete the speech model**, under it, fre
 needs a phone with about 2 GB of memory free, as it takes about 1.5 GB while it writes; should that fail, the next try
 opens the model again. Where nobody speaks, in silence or noise, it writes nothing, rather than words nobody said.
 
-**Speak to write:** tap the microphone with lines beside the message field, in a chat or a group, and speak; tap
+**Speak to write:** tap **+** beside the message field, in a chat or a group, then **Speak to write**, and speak; tap
 **Done**, and your words are written into the field, to change before you send them. It uses the same speech model as
 **In words**, downloaded once when you say so, and all of it is done on your phone: neither your voice nor its words
 leave it, and the sound is not kept. It listens for up to two minutes, and may make mistakes. Only on Android.

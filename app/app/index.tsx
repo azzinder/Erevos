@@ -40,6 +40,7 @@ import { moduleOn, onModulesChange, useModules } from '../lib/modules';
 import { arrangeServices, hideService, moveService, servicePart, startOn, startPart, useServiceOrder } from '../lib/service-order';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { directOther, matrixPresence } from '../lib/matrix';
+import { nearbyOn } from '../lib/nearby-links';
 import { isOn } from '../lib/net-presence';
 import { xmppOnline } from '../lib/xmpp';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
@@ -1072,7 +1073,7 @@ function Home() {
           </View>
         </Pressable>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {MENU.filter((item) => (!item.erevos || erevosOn) && (item.href !== '/starred' || messagesOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {MENU.map((item) => (item.links && !nearbyOn() ? { ...item, detail: mark('Off on this phone. Tap to turn on Look for phones nearby.'), href: '/chat?setup=nearby' as Href } : item)).filter((item) => (!item.erevos || erevosOn) && (item.href !== '/starred' || messagesOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

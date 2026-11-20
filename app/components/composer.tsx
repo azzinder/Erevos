@@ -722,18 +722,6 @@ export function Composer({
                   </View>
                 )}
               </View>
-              {canDictate ? (
-                <IconButton
-                  label={t('Speak to write')}
-                  width={40}
-                  onPress={() => {
-                    if (panelOpen) onPanel(false);
-                    setDictating(true);
-                  }}
-                >
-                  <DictateIcon color={colors.textMuted} size={22} />
-                </IconButton>
-              ) : null}
               {onSticker ? (
                 <IconButton
                   label={t('Send a sticker')}
@@ -802,6 +790,21 @@ export function Composer({
           )}
         </View>
       </View>
+      {/* Dictation, under "+", so the bar keeps one microphone, the voice message's, and the field its width. */}
+      {panelOpen && canDictate ? (
+        <Pressable
+          onPress={() => {
+            onPanel(false);
+            setDictating(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('Speak to write')}
+          style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm, minHeight: 44 }, pressed && { opacity: 0.7 }]}
+        >
+          <DictateIcon color={colors.text} size={22} />
+          <Text>{t('Speak to write')}</Text>
+        </Pressable>
+      ) : null}
       {panelOpen && panel ? panel : null}
       {/* Mounted only while open, so a bar holds no second recorder for it. */}
       {dictating ? <DictateSheet open onWords={dictated} onClose={() => setDictating(false)} /> : null}

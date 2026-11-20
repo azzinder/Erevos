@@ -50,6 +50,13 @@ let applyLinks: (() => Promise<void>) | null = null;
 // Whether the links run now; and the switch as turned on or off while Erevos runs, should the phone not keep it.
 let linksUp = false;
 let nearbyNow: boolean | null = null;
+// The switch as last read or set, for screens that say it before reading it (off until then).
+let nearbyLast = false;
+
+/** Whether this phone looks for phones nearby, as last read or set (nearbySettings, setNearbyKept). */
+export function nearbyOn(): boolean {
+  return nearbyLast;
+}
 
 /** Keeps the links up until the function it gives is called: from when a space opens until it closes. */
 export function startNearbyLinks(): () => void {
@@ -182,12 +189,14 @@ export async function nearbySettings(): Promise<{ on: boolean; carrying: boolean
   // Carrying for others is on unless turned off (the owner's word, 2026-11-16): what phones nearby
   // give it is sealed for their contact's relay, kept three days at most, and handed on through
   // this phone's relay, which a stranger nearby can make it do.
-  return { on: nearbyNow ?? near === 'on', carrying: carry !== 'off', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
+  nearbyLast = nearbyNow ?? near === 'on';
+  return { on: nearbyLast, carrying: carry !== 'off', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
 }
 
 /** Looks for phones nearby, or no longer: the links start or stop at once. Throws as setCarryingKept, having started or stopped them. */
 export async function setNearbyKept(on: boolean): Promise<void> {
   nearbyNow = on;
+  nearbyLast = on;
   await applyLinks?.();
   await secureSet(NEARBY_KEY, on ? 'on' : 'off');
 }

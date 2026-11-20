@@ -1204,10 +1204,10 @@ abaixo, libera o espaço. Só no Android, e precisa de um telefone com cerca de 
 escreve ocupa cerca de 1,5 GB; se falhar, a próxima tentativa abre o modelo de novo. Onde ninguém fala, em silêncio ou
 ruído, não escreve nada, em vez de palavras que ninguém disse.
 
-**Fale para escrever:** toque no microfone com linhas ao lado do campo da mensagem, em um chat ou em um grupo, e fale;
-toque em **Pronto**, e suas palavras são escritas no campo, para você mudar antes de enviar. Usa o mesmo modelo de voz
-de **Em palavras**, baixado uma vez quando você diz, e tudo é feito no seu celular: nem sua voz nem as palavras dela
-saem dele, e o som não é guardado. Ouve por até dois minutos e pode errar. Só no Android.
+**Fale para escrever:** toque em **+** ao lado do campo da mensagem, em um chat ou em um grupo, depois em **Fale para
+escrever**, e fale; toque em **Pronto**, e suas palavras são escritas no campo, para você mudar antes de enviar. Usa o
+mesmo modelo de voz de **Em palavras**, baixado uma vez quando você diz, e tudo é feito no seu celular: nem sua voz
+nem as palavras dela saem dele, e o som não é guardado. Ouve por até dois minutos e pode errar. Só no Android.
 
 **Traduzir:** segure uma mensagem, no chat de um contato ou em um grupo, e escolha **Traduzir**: o seu celular traduz
 para o seu idioma, ou para o inglês, para você ler ou copiar, entre grego, inglês, alemão, espanhol, francês e
