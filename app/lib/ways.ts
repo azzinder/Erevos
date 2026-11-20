@@ -64,7 +64,7 @@ function nostrWay({ on, relays, reading }: NonNullable<WaysInput['nostr']>): Way
 }
 
 function nearbyWay({ phones, bluetooth, lan, direct, carried }: NonNullable<WaysInput['nearby']>): Way {
-  const base = { id: 'nearby' as const, title: t('Nearby'), href: '/chat?setup=relay' };
+  const base = { id: 'nearby' as const, title: t('Nearby'), href: '/chat?setup=nearby' };
   const on = [bluetooth ? 'Bluetooth' : '', lan ? t('the same Wi-Fi') : '', direct ? 'Wi-Fi Direct' : ''].filter(Boolean);
   const carries = carried > 0 ? ` ${plural(carried, 'You carry {n} encrypted message of others.', 'You carry {n} encrypted messages of others.')}` : '';
   if (on.length === 0) return { ...base, line: `${t('It looks for no phone nearby.')}${carries}`, figure: t('off'), look: 'off' };

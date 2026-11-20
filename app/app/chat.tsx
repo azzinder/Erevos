@@ -10,7 +10,7 @@ import { takeCall } from '../lib/call-handoff';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { notYoursToSee } from '../lib/see-once';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
-import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept, setNearbyKept } from '../lib/nearby-links';
+import { nearbyOn as nearbyOnNow, nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept, setNearbyKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
 import { openHeldIn, openPlaceNearby, placeNear, unopenedNearby, type PlaceOpener } from '../lib/place-nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, keepUnsent, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Unsent, type Went } from '../lib/waiting';
@@ -307,7 +307,8 @@ export default function ChatScreen() {
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or New
   // chat (`setup=1`, which shows the same as with no contact), with For advanced users, the relay's
-  // own settings, open (`setup=relay`), or with Invite someone's QR code (`setup=invite`, the home
+  // own settings, open (`setup=relay`), its phones nearby open (`setup=nearby`, from Ways and the
+  // home screen's Nearby phones while they are off), or with Invite someone's QR code (`setup=invite`, the home
   // screen's Invite). `at`:
   // the tag of a message to go to, starred or found. A call to start with the contact comes only
   // from a tap in Erevos (lib/call-handoff.ts), never from the address, which any app or web page
@@ -420,6 +421,7 @@ export default function ChatScreen() {
               initialCall={initialCall}
               linkNumber={linkNumber}
               relaySettings={setup === 'relay'}
+              nearbyOpen={setup === 'nearby'}
               inviteNow={setup === 'invite'}
               shown={!hiddenKey}
               onLook={setChatLook}
@@ -472,7 +474,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, inviteNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, nearbyOpen = false, inviteNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -484,6 +486,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   linkNumber?: string;
   /** Opens with For advanced users open, the relay's own settings (Settings → Relay). */
   relaySettings?: boolean;
+  /** New chat with its phones nearby open, where they are turned on. */
+  nearbyOpen?: boolean;
   /** Opens with Invite someone's QR code showing (the home screen's Invite), when this phone can invite. */
   inviteNow?: boolean;
   shown: boolean;
@@ -611,7 +615,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // needs, for a phone with no relay yet; and what opens under Nearby, Blocked contacts and For
   // advanced users (the relay's own settings), each closed until asked for.
   const [way, setWay] = useState<'invite' | 'own' | null>(null);
-  const [nearbyShown, setNearbyShown] = useState(false);
+  const [nearbyShown, setNearbyShown] = useState(nearbyOpen);
   const [blockedShown, setBlockedShown] = useState(false);
   const [relayShown, setRelayShown] = useState(relaySettings);
   // Where a phone with no relay yet signs in: LPHL's relay, or another typed in its place (Another
@@ -1262,6 +1266,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const nearbyOnly = !onNostr && (!target || !code.senderHex);
       // Connected as it was added, from the screen a scanned link opens: said after the note.
       const linked = offer?.name && offer.added ? ` ${t('Connected to {name}.', { name: cleanName(offer.name) })}` : '';
+      // Nearby only, with phones nearby off here: said, and where to turn them on opened.
+      const nearbyOff = added && nearbyOnly && HAS_LINKS && !nearbyOnNow();
+      if (nearbyOff) setNearbyShown(true);
+      const turnOn = nearbyOff ? ` ${t('Phones nearby are off on this phone: turn on Look for phones nearby, under Nearby, with no internet.')}` : '';
       setNote(
         (added
           ? nearbyOnly
@@ -1275,7 +1283,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               : lent
                 ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
                 : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
-          : t('Already a contact. Where to reach them is updated.')) + linked,
+          : t('Already a contact. Where to reach them is updated.')) + turnOn + linked,
       );
       return identity;
     } catch (error) {

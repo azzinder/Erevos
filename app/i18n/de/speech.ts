@@ -27,4 +27,5 @@ export const speechText: Record<string, string> = {
   "Listening… {time}": "Hört zu … {time}",
   "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Sprich und tippe dann auf Fertig: Die Worte kommen ins Feld, damit du sie vor dem Senden ändern kannst. Auf diesem Telefon geschrieben, daher sind Fehler möglich.",
   "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Erevos darf das Mikrofon nicht nutzen. Erlaube es in den Einstellungen des Telefons, um ins Feld zu sprechen.",
+  "A long one takes a while, up to a minute or two, as the phone writes it out by itself.": "Ein langes dauert, bis zu ein, zwei Minuten, da das Telefon es selbst schreibt.",
 };

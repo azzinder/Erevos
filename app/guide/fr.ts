@@ -1279,11 +1279,11 @@ modèle vocal**, en dessous, libère la place. Seulement sur Android, et il faut
 mémoire libre, car il en prend environ 1,5 Go pendant qu’il écrit ; si cela échoue, l’essai suivant rouvre le modèle.
 Là où personne ne parle, dans le silence ou le bruit, il n’écrit rien, plutôt que des mots que personne n’a dits.
 
-**Parler pour écrire :** touche le micro avec des lignes à côté du champ du message, dans une discussion ou un groupe,
-et parle ; touche **Terminé**, et tes mots s’écrivent dans le champ, pour les modifier avant de les envoyer. Il
-utilise le même modèle vocal que **En mots**, téléchargé une fois quand tu le dis, et tout se fait sur ton téléphone :
-ni ta voix ni ses mots ne le quittent, et le son n’est pas gardé. Il écoute jusqu’à deux minutes et peut se tromper.
-Seulement sur Android.
+**Parler pour écrire :** touche **+** à côté du champ du message, dans une discussion ou un groupe, puis **Parler pour
+écrire**, et parle ; touche **Terminé**, et tes mots s’écrivent dans le champ, pour les modifier avant de les envoyer.
+Il utilise le même modèle vocal que **En mots**, téléchargé une fois quand tu le dis, et tout se fait sur ton
+téléphone : ni ta voix ni ses mots ne le quittent, et le son n’est pas gardé. Il écoute jusqu’à deux minutes et peut
+se tromper. Seulement sur Android.
 
 **Traduire :** reste appuyé sur un message, dans le chat d’un contact ou dans un groupe, et choisis **Traduire** : ton
 téléphone le traduit dans ta langue, pour le lire ou le copier, entre le grec, l’anglais, l’allemand, l’espagnol, le
