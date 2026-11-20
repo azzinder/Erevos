@@ -401,6 +401,10 @@ Bluetooth et, là où le téléphone l’a, par Wi-Fi Aware, et sur le Wi-Fi où
 internet, ni SIM, ni réseau Wi-Fi ne sont nécessaires. Il porte les messages à tes contacts, chiffrés de bout en bout
 comme ceux qui passent par le relais.
 
+Il ne cherche que lorsque **Chercher les téléphones à proximité** est activé, sous **À proximité, sans internet**,
+dans **Nouvelle discussion** : c’est désactivé jusqu’à ce que tu l’actives, sur les deux téléphones, et d’ici là tout
+passe par le relais.
+
 1. Ouvre **Téléphones à proximité** depuis le menu sur les deux téléphones. La première fois, Android demande
    l’autorisation de trouver les appareils à proximité (sur Android 12 et plus ancien, aussi pour la position) ;
    autorise-la, sinon les téléphones ne peuvent pas se trouver.

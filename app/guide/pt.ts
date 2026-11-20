@@ -377,6 +377,9 @@ e, onde o celular tem, por Wi-Fi Aware, e na rede Wi-Fi em que está, celulares 
 internet, chip nem rede Wi-Fi. Ele leva as mensagens aos seus contatos, criptografadas de ponta a ponta como as que
 passam pelo relay.
 
+Só procura quando **Procurar celulares por perto** está ligado, em **Perto, sem internet**, em **Nova conversa**: fica
+desligado até você ligar, nos dois celulares, e até lá tudo vai pelo relay.
+
 1. Abra **Celulares por perto** no menu nos dois celulares. Na primeira vez, o Android pede para encontrar dispositivos
    por perto (no Android 12 e anteriores, também a localização); permita, ou os celulares não conseguem se encontrar.
 2. Se vocês ainda não são contatos, adicionem um ao outro: num celular toque em **Nova conversa**, onde aparece **Seu

@@ -398,6 +398,9 @@ Solange ein Bereich offen ist, auf jedem Bildschirm, sucht Erevos nach anderen E
 gleichermaßen. Internet, SIM-Karte oder WLAN-Netz sind nicht nötig. Es überbringt Nachrichten an deine Kontakte,
 Ende-zu-Ende-verschlüsselt wie die über das Relay.
 
+Es sucht erst, wenn **Nach Telefonen in der Nähe suchen** an ist, unter **In der Nähe, ohne Internet**, in **Neuer
+Chat**: Es ist aus, bis du es auf beiden Telefonen einschaltest, und bis dahin geht alles über das Relay.
+
 1. Öffne **Telefone in der Nähe** im Menü auf beiden Telefonen. Beim ersten Mal bittet Android darum, Geräte in der
    Nähe finden zu dürfen (auf Android 12 und älter auch um den Standort); erlaube es, sonst finden sich die Telefone
    nicht.

@@ -372,6 +372,9 @@ Dok je prostor otvoren, na bilo kojem ekranu, Erevos traži druge Erevos telefon
 ga telefon ima, Wi-Fi Aware, te na Wi-Fi mreži na kojoj se nalazi, i telefone i računare. Nisu potrebni ni internet,
 ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s kraja na kraj kao i one preko relaya.
 
+Traži tek kad je uključeno **Traži telefone u blizini**, pod **U blizini, bez interneta**, u **Novi razgovor**:
+isključeno je dok ga ne uključiš, na oba telefona, a do tada sve ide preko relaya.
+
 1. Otvorite **Telefoni u blizini** iz menija na oba telefona. Prvi put Android traži dozvolu za pronalaženje uređaja u
    blizini (na Androidu 12 i starijem i za lokaciju); dozvolite to, inače se telefoni ne mogu pronaći.
 2. Ako još niste kontakti, dodajte jedno drugo: na jednom telefonu dodirnite **Novi razgovor**, gdje se vidi **Tvoj QR

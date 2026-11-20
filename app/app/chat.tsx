@@ -10,7 +10,7 @@ import { takeCall } from '../lib/call-handoff';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { notYoursToSee } from '../lib/see-once';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
-import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
+import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept, setNearbyKept } from '../lib/nearby-links';
 import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
 import { openHeldIn, openPlaceNearby, placeNear, unopenedNearby, type PlaceOpener } from '../lib/place-nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, keepUnsent, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Unsent, type Went } from '../lib/waiting';
@@ -500,6 +500,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Whether this phone carries messages from phones nearby to their relays (lib/nearby.ts), and
   // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
   const [carrying, setCarrying] = useState(true);
+  // Whether this phone looks for phones nearby at all: off unless turned on (lib/nearby-links.ts).
+  const [nearbyOn, setNearbyOn] = useState(false);
   const [lanOn, setLanOn] = useState(true);
   // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews),
   // and whether only through Tor (SpaceData.previewsTor).
@@ -1147,6 +1149,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     (hiddenKey ? setPlaceTellOpen(currentSpace().space, pocket, hiddenKey, on) : setTellOpen(on)).catch((error) => setNote(errorText(error)));
   }
 
+  // Looks for phones nearby at all, or no longer (lib/nearby-links.ts).
+  function changeNearby(on: boolean) {
+    setNearbyOn(on);
+    setNearbyKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
+  }
+
   // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
   function changeLan(on: boolean) {
     setLanOn(on);
@@ -1550,6 +1558,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     let active = true;
     nearbySettings().then((settings) => {
       if (!active) return;
+      setNearbyOn(settings.on);
       setCarrying(settings.carrying);
       setLanOn(settings.lan);
       setDirectOn(settings.direct);
@@ -7903,7 +7912,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />
                   {nearbyShown ? (
                     <View>
-                      {HAS_RADIO ? (
+                      <DetailRow title={t('Look for phones nearby')} checked={nearbyOn} onPress={() => changeNearby(!nearbyOn)} />
+                      <Text variant="caption" tone="muted">
+                        {nearbyOn
+                          ? t('Erevos phones near this one find each other and talk with no internet, over Bluetooth and the ways below.')
+                          : t('Off: Erevos looks for no phone nearby, and everything goes through the relay. Turn it on to chat and call with no internet, beside each other or on the same Wi-Fi.')}
+                      </Text>
+                      {nearbyOn && HAS_RADIO ? (
                         <>
                           <DetailRow title={t('Look with Wi-Fi Aware')} checked={awareOn} onPress={() => changeAware(!awareOn)} />
                           <Text variant="caption" tone="muted">
@@ -7913,6 +7928,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           </Text>
                         </>
                       ) : null}
+                      {nearbyOn ? (
+                        <>
                       <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
                       <Text variant="caption" tone="muted">
                         {lanOn
@@ -7937,6 +7954,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         <Text variant="caption" tone="muted">
                           {t('On a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on: while Erevos uses them, Samsung asks to turn off its own sharing.')}
                         </Text>
+                      ) : null}
+                        </>
                       ) : null}
                       <DetailRow title={t('Carry messages for others')} checked={carrying} onPress={() => changeCarrying(!carrying)} />
                       <Text variant="caption" tone="muted">
