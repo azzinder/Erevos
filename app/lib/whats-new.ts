@@ -22,18 +22,23 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**Answer a hidden contact's call with no PIN**: where hidden chats receive while closed, **Answer** on the ringing screen takes their contact's call at once, on a call screen with no name and no face, and the hidden chats stay closed; the small sign and the PIN still open them. See [Hidden chats](#hidden)."),
-    mark("**Speak to write**: tap the microphone with lines beside the message field and speak, and your words are written into the field, to change before you send them. It uses the speech model of **In words**, so all of it is done on your phone, and neither your voice nor its words leave it. On Android. See [Chat through a relay](#relay)."),
-    mark("**See yourself in a video call**: once their picture comes, yours stays in a small window in the top corner, on both phones; before, it vanished, and each side saw only the other. See [Chat through a relay](#relay)."),
-    mark("**Phones nearby are off until you turn them on**: Erevos no longer looks for phones nearby by itself, with Bluetooth, Wi-Fi Aware or on the same Wi-Fi, as on the same Wi-Fi it held a call back for up to a minute before it rang. Turn on **Look for phones nearby** under **Nearby, with no internet**, on **New chat**, to chat and call with no internet. See [Chat with a nearby phone](#nearby)."),
-    mark("**Ways at a glance**: **Settings** → **Relay and networks** → **Ways** shows each way your messages go out by, the relay, Nostr, the phones nearby, LoRa, SMS and Tor, with how each is now and a line under it: full when it works, faint when it reaches no one now, dashed when it is off. Above them, how many of your messages wait to go, an orange dot for each. Only the space that is open shows, never hidden chats. See [How Erevos picks the path](#paths)."),
-    mark("**LoRa makes up for lost pieces, and long texts go shorter**: a text sent by LoRa in several pieces now goes with spare pieces, one for each four, so it comes whole even when a piece or two are lost on the air; older Erevos reads it as before. And long texts are packed, with nothing lost, before they are encrypted, when that makes them go in fewer bytes, to contacts whose Erevos unpacks them. See [Over a LoRa radio](#lora)."),
-  ],
+  forYou: [],
   underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.2.0-rc.1',
+    forYou: [
+      mark("**Answer a hidden contact's call with no PIN**: where hidden chats receive while closed, **Answer** on the ringing screen takes their contact's call at once, on a call screen with no name and no face, and the hidden chats stay closed; the small sign and the PIN still open them. See [Hidden chats](#hidden)."),
+      mark("**Speak to write**: tap the microphone with lines beside the message field and speak, and your words are written into the field, to change before you send them. It uses the speech model of **In words**, so all of it is done on your phone, and neither your voice nor its words leave it. On Android. See [Chat through a relay](#relay)."),
+      mark("**See yourself in a video call**: once their picture comes, yours stays in a small window in the top corner, on both phones; before, it vanished, and each side saw only the other. See [Chat through a relay](#relay)."),
+      mark("**Phones nearby are off until you turn them on**: Erevos no longer looks for phones nearby by itself, with Bluetooth, Wi-Fi Aware or on the same Wi-Fi, as on the same Wi-Fi it held a call back for up to a minute before it rang. Turn on **Look for phones nearby** under **Nearby, with no internet**, on **New chat**, to chat and call with no internet. See [Chat with a nearby phone](#nearby)."),
+      mark("**Ways at a glance**: **Settings** → **Relay and networks** → **Ways** shows each way your messages go out by, the relay, Nostr, the phones nearby, LoRa, SMS and Tor, with how each is now and a line under it: full when it works, faint when it reaches no one now, dashed when it is off. Above them, how many of your messages wait to go, an orange dot for each. Only the space that is open shows, never hidden chats. See [How Erevos picks the path](#paths)."),
+      mark("**LoRa makes up for lost pieces, and long texts go shorter**: a text sent by LoRa in several pieces now goes with spare pieces, one for each four, so it comes whole even when a piece or two are lost on the air; older Erevos reads it as before. And long texts are packed, with nothing lost, before they are encrypted, when that makes them go in fewer bytes, to contacts whose Erevos unpacks them. See [Over a LoRa radio](#lora)."),
+    ],
+    underTheHood: [],
+  },
   {
     version: '7.2.0-beta.4',
     forYou: [
