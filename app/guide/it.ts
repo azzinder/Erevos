@@ -1377,6 +1377,9 @@ una chiamata persa.
   dell’altra parte può cambiare una chiamata mentre è in corso; una chiamata di gruppo resta come vi sei entrato.
 - **Aggiungere il video a una chiamata vocale:** in una chiamata vocale di Erevos, **Aggiungi video** accende la tua
   fotocamera quando l’altra persona dice sì; se dice no, la chiamata resta vocale.
+- **La tua immagine:** in una videochiamata la tua fotocamera riempie lo schermo finché non arriva l’immagine
+  dell’altro; poi passa in una piccola finestra nell’angolo in alto, su entrambi i telefoni, così ognuno vede l’altro
+  e sé stesso.
 - **Cambiare fotocamera:** **Gira** passa alla fotocamera successiva. Su un computer compare solo se c’è più di una
   fotocamera.
 - **Come si collega la chiamata:** tieni premuto per un momento lo schermo della chiamata per vedere quanto audio

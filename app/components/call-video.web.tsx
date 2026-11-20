@@ -8,7 +8,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
 import type { Stream } from '../lib/call';
 
 /** A call's picture in the browser: the other side's, or our own camera (`mirror`). */
-export function CallVideo({ stream, mirror = false, cover = true, style }: { stream: Stream; mirror?: boolean; cover?: boolean; style?: StyleProp<ViewStyle> }) {
+export function CallVideo({ stream, own = false, mirror = false, cover = true, style }: { stream: Stream; own?: boolean; mirror?: boolean; cover?: boolean; style?: StyleProp<ViewStyle> }) {
   const video = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {
     if (video.current) video.current.srcObject = stream as unknown as MediaStream;
@@ -19,8 +19,8 @@ export function CallVideo({ stream, mirror = false, cover = true, style }: { str
         ref: video,
         autoPlay: true,
         playsInline: true,
-        // Our own sound would echo.
-        muted: mirror,
+        // Our own sound would echo, whichever way the camera faces.
+        muted: own,
         style: { width: '100%', height: '100%', objectFit: cover ? 'cover' : 'contain', transform: mirror ? 'scaleX(-1)' : undefined },
       })}
     </View>

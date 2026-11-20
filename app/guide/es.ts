@@ -1369,6 +1369,8 @@ trasera, y **Colgar**. Cada llamada deja una línea en el chat, como cuánto dur
   puede cambiar una llamada mientras dura; una llamada de grupo queda como entraste.
 - **Añadir vídeo a una llamada de voz:** en una llamada de voz de Erevos, **Añadir vídeo** enciende tu cámara cuando la
   otra persona dice que sí; si dice que no, la llamada sigue siendo de voz.
+- **Tu propia imagen:** en una videollamada tu cámara llena la pantalla hasta que llega la imagen del otro; luego pasa
+  a una ventana pequeña en la esquina superior, en ambos teléfonos, para que cada uno vea al otro y a sí mismo.
 - **Cambiar de cámara:** **Girar** pasa a la siguiente cámara. En un ordenador solo aparece cuando hay más de una
   cámara.
 - **Cómo se conecta la llamada:** mantén pulsada un momento la pantalla de la llamada para ver cuánto sonido del otro

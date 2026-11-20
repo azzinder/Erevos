@@ -1450,6 +1450,9 @@ appel manqué.
   modifier un appel en cours ; un appel de groupe reste comme tu l’as rejoint.
 - **Ajouter la vidéo à un appel vocal :** dans un appel vocal d’Erevos, **Ajouter la vidéo** allume ta caméra quand
   l’autre personne dit oui ; si elle dit non, l’appel reste vocal.
+- **Ta propre image :** dans un appel vidéo, ta caméra remplit l’écran jusqu’à ce que l’image de l’autre arrive ; elle
+  passe alors dans une petite fenêtre dans le coin du haut, sur les deux téléphones, pour que chacun voie l’autre et
+  soi-même.
 - **Changer de caméra :** **Retourner** passe à la caméra suivante. Sur un ordinateur, il ne s’affiche que s’il y a plus
   d’une caméra.
 - **Comment l'appel est relié :** maintenez un instant l'écran de l'appel pour voir quelle part du son de l'autre a été

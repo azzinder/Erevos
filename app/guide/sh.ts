@@ -1326,6 +1326,8 @@ mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati s
   poziv dok traje; grupni poziv ostaje kako ste mu se pridružili.
 - **Dodati video glasovnom pozivu:** u glasovnom pozivu Erevosa **Dodaj video** uključuje vašu kameru kad druga osoba
   kaže da; ako kaže ne, poziv ostaje glasovni.
+- **Tvoja slika:** u video pozivu tvoja kamera ispunjava ekran dok ne stigne slika druge strane; onda prelazi u mali
+  prozor u gornjem uglu, na oba telefona, pa svako vidi drugog i sebe.
 - **Promijeniti kameru:** **Promijeni kameru** prelazi na sljedeću kameru. Na računaru se prikazuje samo kad postoji
   više od jedne kamere.
 - **Kako se poziv povezuje:** zadrži ekran poziva pritisnutim na trenutak da vidiš koliko je zvuka druge strane

@@ -1465,6 +1465,9 @@ und **Auflegen**. Jeder Anruf hinterlässt eine Zeile im Chat, etwa wie lange er
   Anruf während des Gesprächs ändern kann; ein Gruppenanruf bleibt, wie du beigetreten bist.
 - **Video zu einem Sprachanruf hinzufügen:** In einem Erevos-Sprachanruf schaltet **Video dazu** deine Kamera ein,
   sobald die andere Person Ja sagt; sagt sie Nein, bleibt der Anruf ein Sprachanruf.
+- **Dein eigenes Bild:** In einem Videoanruf füllt deine Kamera den Bildschirm, bis das Bild der anderen Seite kommt;
+  dann wandert es in ein kleines Fenster in der oberen Ecke, auf beiden Telefonen, sodass ihr jeweils die andere
+  Person und euch selbst seht.
 - **Kamera wechseln:** **Wechseln** geht zur nächsten Kamera. Auf einem Computer erscheint es nur, wenn es mehr als eine
   Kamera gibt.
 - **Wie der Anruf verbunden ist:** Halte den Anrufbildschirm kurz gedrückt, um zu sehen, wie viel vom Ton der anderen

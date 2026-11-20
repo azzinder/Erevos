@@ -1270,6 +1270,8 @@ a missed call.
   while it goes on; a group call stays as you joined it.
 - **Add video to a voice call:** in an Erevos voice call, **Add video** turns your camera on once the other person says
   yes; if they say no, the call stays voice.
+- **Your own picture:** in a video call your camera fills the screen until their picture comes; then it moves to a
+  small window in the top corner, on both phones, so each of you sees the other and yourself.
 - **Switch camera:** **Flip** moves to the next camera. On a computer it shows only when there is more than one camera.
 - **How the call connects:** hold the call screen down for a moment to see how much of their sound was lost or had to
   be filled in, heard as gaps, how often that happened, the time there and back, the way the call goes, and how long it

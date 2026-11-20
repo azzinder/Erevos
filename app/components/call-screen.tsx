@@ -154,9 +154,18 @@ export function CallScreen({ call, identity, name, nameless = false, encryption,
   return (
     <View style={styles.screen}>
       {/* Their sound plays through this too in a browser, so it is there in a voice call as well. */}
-      {call.remote ? <CallVideo key={`theirs-${theirVideos}`} stream={call.remote} style={theirs ? StyleSheet.absoluteFill : styles.unseen} /> : null}
+      {/* Each picture is made anew as it moves between the whole screen and the corner: Android's
+          view of a call's picture, resized, drew ours at no size at all once theirs came (a Pixel's
+          log, 2026-11-20), so each side saw only the other. */}
+      {call.remote ? <CallVideo key={`theirs-${theirVideos}-${theirs ? 'whole' : 'unseen'}`} stream={call.remote} style={theirs ? StyleSheet.absoluteFill : styles.unseen} /> : null}
       {ours ? (
-        <CallVideo key={`ours-${camera?.id ?? 1}`} stream={call.local!} mirror={mirror} style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]} />
+        <CallVideo
+          key={`ours-${camera?.id ?? 1}-${theirs ? 'corner' : 'whole'}`}
+          stream={call.local!}
+          own
+          mirror={mirror}
+          style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]}
+        />
       ) : null}
       {/* Held down, the screen shows how the call connects; it says nothing of it otherwise. */}
       <Pressable style={StyleSheet.absoluteFill} onLongPress={() => setDetails(true)} delayLongPress={800} accessible={false} />

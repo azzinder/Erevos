@@ -1364,6 +1364,8 @@ durou, ou uma chamada perdida.
   chamada enquanto ela dura; uma chamada de grupo fica como você entrou.
 - **Adicionar vídeo a uma chamada de voz:** numa chamada de voz do Erevos, **Adicionar vídeo** liga a sua câmera quando
   a outra pessoa diz sim; se ela diz não, a chamada continua de voz.
+- **Sua própria imagem:** numa videochamada sua câmera ocupa a tela até chegar a imagem do outro; depois vai para uma
+  janela pequena no canto de cima, nos dois celulares, para cada um ver o outro e a si mesmo.
 - **Trocar de câmera:** **Virar** passa para a câmera seguinte. Num computador só aparece quando há mais de uma câmera.
 - **Como a chamada se conecta:** segure a tela da chamada por um momento para ver quanto do som do outro se perdeu ou
   precisou ser preenchido, o que se ouve como falhas, quantas vezes isso aconteceu, o tempo de ida e volta, o caminho da

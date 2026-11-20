@@ -80,7 +80,14 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
             (tile, _, all) => (
               <View key={tile.key} style={[styles.tile, { width: all.length > 2 ? '50%' : '100%', height: all.length > 1 ? '50%' : '100%' }]}>
                 {tile.stream ? (
-                  <CallVideo key={tile.own ? `own-${camera?.id ?? 1}` : `${tile.key}-${tile.stream.getVideoTracks().length}`} stream={tile.stream} mirror={tile.own && mirror} style={StyleSheet.absoluteFill} />
+                  <CallVideo
+                    // Made anew as the tiles change size, as a picture resized may draw at no size (call-screen.tsx).
+                    key={`${tile.own ? `own-${camera?.id ?? 1}` : `${tile.key}-${tile.stream.getVideoTracks().length}`}-${all.length}`}
+                    stream={tile.stream}
+                    own={tile.own}
+                    mirror={tile.own && mirror}
+                    style={StyleSheet.absoluteFill}
+                  />
                 ) : (
                   <KeyFace identity={tile.own ? '' : tile.key} name={tile.label} size={64} />
                 )}
