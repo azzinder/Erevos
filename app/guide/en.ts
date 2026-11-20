@@ -357,6 +357,9 @@ While a space is open, on any screen, Erevos looks for other Erevos phones aroun
 phone has it, Wi-Fi Aware, and on the Wi-Fi it is on, phones and computers alike. No internet, SIM or Wi-Fi network is
 needed. It carries messages to your contacts, end-to-end encrypted like those through the relay.
 
+It looks only once **Look for phones nearby** is on, under **Nearby, with no internet**, on **New chat**: it is off
+until you turn it on, on both phones, and until then everything goes through the relay.
+
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
 2. If you are not contacts yet, add each other: on one phone tap **New chat**, where **Your QR code** shows, and scan

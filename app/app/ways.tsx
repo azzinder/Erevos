@@ -67,7 +67,7 @@ async function readWays(): Promise<{ input: WaysInput; waiting: number }> {
   input.nostr = { on: data.nostr.on && relays.length > 0, relays: relays.length, reading: relays.filter((url) => states.get(url)?.read?.reading).length };
   if (HAS_LINKS) {
     const kept = await nearbySettings();
-    input.nearby = { phones: nearby.count(), bluetooth: HAS_RADIO, lan: kept.lan, direct: HAS_RADIO && kept.direct, carried: nearby.carriedCount().others };
+    input.nearby = { phones: nearby.count(), bluetooth: HAS_RADIO && kept.on, lan: kept.on && kept.lan, direct: HAS_RADIO && kept.on && kept.direct, carried: nearby.carriedCount().others };
   }
   if (canLora()) {
     const radio = await savedRadio().catch(() => null);

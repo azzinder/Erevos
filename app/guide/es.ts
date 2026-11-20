@@ -380,6 +380,9 @@ Bluetooth y, donde el teléfono lo tiene, Wi-Fi Aware, y en la Wi-Fi a la que es
 igual. No hace falta internet, SIM ni red Wi-Fi. Lleva los mensajes a tus contactos, cifrados de extremo a extremo como
 los que van por el relay.
 
+Solo busca cuando **Buscar teléfonos cerca** está activado, en **Cerca, sin internet**, en **Chat nuevo**: está
+apagado hasta que lo actives, en los dos teléfonos, y hasta entonces todo va por el relay.
+
 1. Abre **Teléfonos cercanos** desde el menú en los dos teléfonos. La primera vez, Android pide permiso para encontrar
    dispositivos cercanos (en Android 12 y anteriores, también para la ubicación); permítelo, o los teléfonos no podrán
    encontrarse.

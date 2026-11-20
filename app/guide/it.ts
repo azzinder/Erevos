@@ -380,6 +380,9 @@ e, dove il telefono ce l’ha, Wi-Fi Aware, e sulla rete Wi-Fi a cui è collegat
 Non servono internet, SIM o una rete Wi-Fi. Porta i messaggi ai tuoi contatti, crittografati end-to-end come quelli
 tramite il relay.
 
+Cerca solo quando **Cerca telefoni vicini** è attivo, in **Vicino, senza internet**, in **Nuova chat**: è spento
+finché non lo attivi, su entrambi i telefoni, e fino ad allora tutto passa dal relay.
+
 1. Apri **Telefoni vicini** dal menu su entrambi i telefoni. La prima volta, Android chiede di trovare i dispositivi
    vicini (su Android 12 e precedenti, anche per la posizione); consentilo, o i telefoni non possono trovarsi.
 2. Se non siete ancora contatti, aggiungetevi a vicenda: su un telefono tocca **Nuova chat**, dove si vede **Il tuo

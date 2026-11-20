@@ -16,7 +16,7 @@ import { t } from './i18n';
 import { nearby } from './nearby';
 import { readForOthers } from './relay';
 import { ipWarningText } from './ip-warning';
-import { HAS_LINKS, onLinkEvent, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
+import { HAS_LINKS, onLinkEvent, resumeLora, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
 
@@ -35,12 +35,21 @@ import { secureGet, secureSet } from './secure';
 // Erevos on the same Wi-Fi, whether it makes one with Wi-Fi Direct, and whether it looks with
 // Wi-Fi Aware: for the whole phone, on unless turned off. On a Samsung phone Wi-Fi Direct and
 // Wi-Fi Aware are off unless turned on, as Samsung asks to turn off its own sharing for them.
+// And whether it looks for phones nearby at all, Bluetooth, Wi-Fi Aware, the same Wi-Fi and Wi-Fi
+// Direct alike: off unless turned on (the owner's word, 2026-11-20), as on the same Wi-Fi the links
+// held a call back for up to a minute before it rang. A LoRa radio set stays linked either way.
+const NEARBY_KEY = 'erevos.nearby';
 const CARRY_KEY = 'erevos.carry';
 const LAN_KEY = 'erevos.lan';
 const DIRECT_KEY = 'erevos.direct';
 const AWARE_KEY = 'erevos.aware';
 
 let othersKept = false;
+// The open space's links, started again or stopped as the settings now say; null while none is open.
+let applyLinks: (() => Promise<void>) | null = null;
+// Whether the links run now; and the switch as turned on or off while Erevos runs, should the phone not keep it.
+let linksUp = false;
+let nearbyNow: boolean | null = null;
 
 /** Keeps the links up until the function it gives is called: from when a space opens until it closes. */
 export function startNearbyLinks(): () => void {
@@ -103,6 +112,18 @@ export function startNearbyLinks(): () => void {
   // With the battery mode Also nearby (or more), the radios are off while Erevos is in the
   // background (lib/battery-mode.ts), and start again as it shows.
   let paused = false;
+  // Started as the settings say, or stopped when the links are off or paused; LoRa stays either way.
+  const apply = async () => {
+    const { on, lan, direct, aware } = await nearbySettings();
+    if (!active) return;
+    linksUp = on && !paused;
+    if (linksUp) startLinks({ lan, direct, aware });
+    else {
+      stopLinks();
+      resumeLora();
+    }
+  };
+  applyLinks = apply;
   const follow = async () => {
     const want = (await loadBatteryMode()) !== 'normal' && AppState.currentState !== 'active';
     if (!active || want === paused) return;
@@ -111,15 +132,14 @@ export function startNearbyLinks(): () => void {
       stopLinks();
       return;
     }
-    const { lan, direct, aware } = await nearbySettings();
-    if (active && !paused) startLinks({ lan, direct, aware });
+    await apply();
   };
   const quiet = AppState.addEventListener('change', (state) => {
     calm();
     void follow();
   });
   const stopBattery = onBatteryMode(() => void follow());
-  void nearbySettings().then(async ({ carrying, lan, direct, aware }) => {
+  void nearbySettings().then(async ({ carrying }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
     if (!othersKept) {
@@ -128,7 +148,7 @@ export function startNearbyLinks(): () => void {
     }
     // Opened in the background (a call, say) with the radios to be off: they stay off.
     paused = (await loadBatteryMode()) !== 'normal' && AppState.currentState !== 'active';
-    if (active && !paused) startLinks({ lan, direct, aware });
+    await apply();
   });
   // What came nearby for this space while another was open.
   void (async () => {
@@ -136,6 +156,10 @@ export function startNearbyLinks(): () => void {
   })();
   return () => {
     active = false;
+    if (applyLinks === apply) {
+      applyLinks = null;
+      linksUp = false;
+    }
     subscriptions.forEach((subscription) => subscription.remove());
     stopWatching();
     quiet.remove();
@@ -152,13 +176,20 @@ export function startNearbyLinks(): () => void {
   };
 }
 
-/** Whether this phone carries for others, looks on the same Wi-Fi, makes one with Wi-Fi Direct, and looks with Wi-Fi Aware, as last set. */
-export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean; direct: boolean; aware: boolean }> {
-  const [carry, lan, direct, aware] = await Promise.all([CARRY_KEY, LAN_KEY, DIRECT_KEY, AWARE_KEY].map((key) => secureGet(key).catch(() => null)));
+/** Whether this phone looks for phones nearby at all (`on`), carries for others, looks on the same Wi-Fi, makes one with Wi-Fi Direct, and looks with Wi-Fi Aware, as last set. */
+export async function nearbySettings(): Promise<{ on: boolean; carrying: boolean; lan: boolean; direct: boolean; aware: boolean }> {
+  const [near, carry, lan, direct, aware] = await Promise.all([NEARBY_KEY, CARRY_KEY, LAN_KEY, DIRECT_KEY, AWARE_KEY].map((key) => secureGet(key).catch(() => null)));
   // Carrying for others is on unless turned off (the owner's word, 2026-11-16): what phones nearby
   // give it is sealed for their contact's relay, kept three days at most, and handed on through
   // this phone's relay, which a stranger nearby can make it do.
-  return { carrying: carry !== 'off', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
+  return { on: nearbyNow ?? near === 'on', carrying: carry !== 'off', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
+}
+
+/** Looks for phones nearby, or no longer: the links start or stop at once. Throws as setCarryingKept, having started or stopped them. */
+export async function setNearbyKept(on: boolean): Promise<void> {
+  nearbyNow = on;
+  await applyLinks?.();
+  await secureSet(NEARBY_KEY, on ? 'on' : 'off');
 }
 
 /** Carries messages from phones nearby to their relays, or no longer. Throws when the phone could not keep it: it holds until Erevos closes. */
@@ -169,18 +200,18 @@ export async function setCarryingKept(on: boolean): Promise<void> {
 
 /** Looks for Erevos on the same Wi-Fi or hotspot too, or no longer. Throws as setCarryingKept. */
 export async function setLanKept(on: boolean): Promise<void> {
-  setLanLinks(on);
+  if (linksUp) setLanLinks(on);
   await secureSet(LAN_KEY, on ? 'on' : 'off');
 }
 
 /** Looks for Erevos phones nearby with Wi-Fi Aware too, or no longer. Throws as setCarryingKept. */
 export async function setAwareKept(on: boolean): Promise<void> {
-  setAwareLinks(on);
+  if (linksUp) setAwareLinks(on);
   await secureSet(AWARE_KEY, on ? 'on' : 'off');
 }
 
 /** Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer. Throws as setCarryingKept. */
 export async function setDirectKept(on: boolean): Promise<void> {
-  setDirectLinks(on);
+  if (linksUp) setDirectLinks(on);
   await secureSet(DIRECT_KEY, on ? 'on' : 'off');
 }

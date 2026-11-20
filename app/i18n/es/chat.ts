@@ -414,4 +414,7 @@ export const chat: Record<string, string> = {
   "Starts empty and never takes the space's name. The same name as your space's tells whoever sees both that they are you.": 'Empieza vacío y nunca toma el nombre del espacio. El mismo nombre que el de tu espacio le dice a quien vea ambos que eres tú.',
   'Calls themselves: {name}': 'Se hace llamar: {name}',
   "Erevos is still reading what came. The menu opens in a moment.": "Erevos aún está leyendo lo que llegó. El menú se abre en un momento.",
+  "Look for phones nearby": "Buscar teléfonos cerca",
+  "Erevos phones near this one find each other and talk with no internet, over Bluetooth and the ways below.": "Los teléfonos Erevos cerca de este se encuentran y hablan sin internet, por Bluetooth y las vías de abajo.",
+  "Off: Erevos looks for no phone nearby, and everything goes through the relay. Turn it on to chat and call with no internet, beside each other or on the same Wi-Fi.": "Apagado: Erevos no busca ningún teléfono cerca, y todo va por el relay. Actívalo para chatear y llamar sin internet, uno al lado del otro o en la misma Wi-Fi.",
 };
