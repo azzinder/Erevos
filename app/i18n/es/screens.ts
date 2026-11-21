@@ -43,7 +43,6 @@ export const screens: Record<string, string> = {
   'For testing a relay': 'Para probar un relay',
   'Radio test': 'Prueba de radio',
   'For testing the nearby link': 'Para probar la conexión cercana',
-  'Relay ready · end-to-end encrypted': 'Relay listo · cifrado de extremo a extremo',
   'Relay set · no queue yet': 'Relay configurado · aún sin cola',
   'No relay yet · tap to set one': 'Aún no hay relay · toca para configurar uno',
   'Lock now': 'Bloquear ahora',

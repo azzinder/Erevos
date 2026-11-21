@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- The microphone beside the message field can write instead of record: a tap on it opens a menu, **Voice message** or **Speak to write**, ticked as chosen, and what is chosen stays for every chat and group on the device (`lib/mic-mode.ts`, key `erevos.mic`), until chosen again. Held, it then records as before, or opens **Speak to write** listening; it shows the microphone with lines while it writes. A press is a tap until it is held a quarter of a second (`MIC_TAP_MS`), so a voice message starts that much later. With Talkie on, or where nothing can be written out, the microphone only records, with no menu, as before. **Speak to write** under **+** is gone (`components/composer.tsx`). Requested by the maintainer, from his chosen mockup («Γ» with «Α»'s menu).
+- **Ways on home**: once a relay is set, the line under the top bar of home is **Ways**, with a dot for each way out of the space (full when it works, faint when it reaches no one now, a ring of dashes when it is off; Tor, which covers others, has none) and, in orange, how many of the space's own messages wait to go; a tap opens **Ways** (`app/index.tsx`, `lib/ways-read.ts` `useWays`, read every 10 seconds and as a way changes, only while home shows). It took the place of «Relay ready · end-to-end encrypted»; before a relay is set, the line says what it still needs, as before. What the Ways screen reads moved to `lib/ways-read.ts`. Requested by the maintainer, from his chosen mockup («Α»).
+
 ### Under the hood
 
 ## 7.2.0-rc.1 (2026-11-20)

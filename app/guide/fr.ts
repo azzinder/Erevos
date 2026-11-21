@@ -1279,8 +1279,7 @@ modèle vocal**, en dessous, libère la place. Seulement sur Android, et il faut
 mémoire libre, car il en prend environ 1,5 Go pendant qu’il écrit ; si cela échoue, l’essai suivant rouvre le modèle.
 Là où personne ne parle, dans le silence ou le bruit, il n’écrit rien, plutôt que des mots que personne n’a dits.
 
-**Parler pour écrire :** touche **+** à côté du champ du message, dans une discussion ou un groupe, puis **Parler pour
-écrire**, et parle ; touche **Terminé**, et tes mots s’écrivent dans le champ, pour les modifier avant de les envoyer.
+**Parler pour écrire :** touche le micro à côté du champ du message, dans une discussion ou un groupe, et choisis **Parler pour écrire** : dès lors, le micro maintenu écoute au lieu d’enregistrer un message vocal, jusqu’à ce que tu choisisses **Message vocal** dans le même menu. Parle ; touche **Terminé**, et tes mots s’écrivent dans le champ, pour les modifier avant de les envoyer.
 Il utilise le même modèle vocal que **En mots**, téléchargé une fois quand tu le dis, et tout se fait sur ton
 téléphone : ni ta voix ni ses mots ne le quittent, et le son n’est pas gardé. Il écoute jusqu’à deux minutes et peut
 se tromper. Seulement sur Android.
@@ -1798,7 +1797,7 @@ Quand tu envoies un message, Erevos choisit le chemin tout seul :
 Tous les chemins sont chiffrés de bout en bout : aucun relais ni aucun téléphone entre les deux ne peut lire ce que tu
 envoies.
 
-**Voies**, dans **Réglages** → **Relais et réseaux**, montre chaque voie d’un coup d’œil : une carte pour le relais, Nostr, les téléphones à proximité, LoRa, les SMS et Tor, chacune avec son état et une ligne dessous, pleine quand la voie fonctionne, pâle quand elle est activée mais n’atteint personne pour l’instant, et en tirets quand elle est désactivée. Au-dessus, il dit combien de tes messages attendent de partir, avec un point orange pour chacun. Une carte ouvre les réglages de sa voie. Seul l’espace ouvert s’y affiche, jamais les discussions cachées.
+**Voies**, dans **Réglages** → **Relais et réseaux**, montre chaque voie d’un coup d’œil : une carte pour le relais, Nostr, les téléphones à proximité, LoRa, les SMS et Tor, chacune avec son état et une ligne dessous, pleine quand la voie fonctionne, pâle quand elle est activée mais n’atteint personne pour l’instant, et en tirets quand elle est désactivée. Au-dessus, il dit combien de tes messages attendent de partir, avec un point orange pour chacun. Une carte ouvre les réglages de sa voie. Seul l’espace ouvert s’y affiche, jamais les discussions cachées. Sur l’accueil, la ligne sous la barre du haut est aussi **Voies**, dès qu’un relais est réglé : un point pour chaque voie, et combien de tes messages attendent ; un toucher l’ouvre.
 
 | Ligne sous la discussion | Que faire |
 | --- | --- |

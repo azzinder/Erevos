@@ -43,7 +43,6 @@ export const screens: Record<string, string> = {
   'For testing a relay': 'Za testiranje relaya',
   'Radio test': 'Test radija',
   'For testing the nearby link': 'Za testiranje veze u blizini',
-  'Relay ready · end-to-end encrypted': 'Relay je spreman · šifrirano s kraja na kraj',
   'Relay set · no queue yet': 'Relay je postavljen · još nema reda',
   'No relay yet · tap to set one': 'Još nema relaya · dodirnite da ga postavite',
   'Lock now': 'Zaključaj sada',

@@ -1209,8 +1209,7 @@ libera lo spazio. Solo su Android, e serve un telefono con circa 2 GB di memoria
 occupa circa 1,5 GB; se non riesce, il tentativo successivo riapre il modello. Dove nessuno parla, nel silenzio o nel
 rumore, non scrive nulla, invece di parole che nessuno ha detto.
 
-**Parla per scrivere:** tocca **+** accanto al campo del messaggio, in una chat o in un gruppo, poi **Parla per
-scrivere**, e parla; tocca **Fatto**, e le tue parole vengono scritte nel campo, da cambiare prima di inviarle. Usa lo
+**Parla per scrivere:** tocca il microfono accanto al campo del messaggio, in una chat o in un gruppo, e scegli **Parla per scrivere**: da allora, tenendo premuto il microfono ascolta invece di registrare un messaggio vocale, finché non scegli **Messaggio vocale** nello stesso menu. Parla; tocca **Fatto**, e le tue parole vengono scritte nel campo, da cambiare prima di inviarle. Usa lo
 stesso modello vocale di **In parole**, scaricato una volta quando lo dici, e tutto avviene sul tuo telefono: né la
 tua voce né le sue parole lo lasciano, e il suono non viene conservato. Ascolta fino a due minuti e può sbagliare.
 Solo su Android.
@@ -1709,7 +1708,7 @@ Quando invii un messaggio, Erevos sceglie la strada da solo:
 
 Ogni strada è crittografata end-to-end: nessun relay e nessun telefono nel mezzo può leggere quello che invii.
 
-**Vie**, in **Impostazioni** → **Relay e reti**, mostra ogni via a colpo d’occhio: una scheda per il relay, Nostr, i telefoni vicini, LoRa, gli SMS e Tor, ognuna con com’è ora e una linea sotto, piena quando funziona, tenue quando è attiva ma ora non raggiunge nessuno, e a trattini quando è spenta. Sopra dice quanti tuoi messaggi aspettano di partire, con un punto arancione per ognuno. Una scheda apre le impostazioni della sua via. Mostra solo lo spazio aperto, mai le chat nascoste.
+**Vie**, in **Impostazioni** → **Relay e reti**, mostra ogni via a colpo d’occhio: una scheda per il relay, Nostr, i telefoni vicini, LoRa, gli SMS e Tor, ognuna con com’è ora e una linea sotto, piena quando funziona, tenue quando è attiva ma ora non raggiunge nessuno, e a trattini quando è spenta. Sopra dice quanti tuoi messaggi aspettano di partire, con un punto arancione per ognuno. Una scheda apre le impostazioni della sua via. Mostra solo lo spazio aperto, mai le chat nascoste. Nella schermata principale, la riga sotto la barra in alto è anche **Vie**, una volta impostato un relay: un punto per ogni via, e quanti tuoi messaggi aspettano; un tocco la apre.
 
 | Riga sotto la chat | Cosa fare |
 | --- | --- |

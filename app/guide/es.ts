@@ -1209,8 +1209,7 @@ Solo en Android, y necesita un teléfono con unos 2 GB de memoria libre, pues mi
 falla, el siguiente intento vuelve a abrir el modelo. Donde nadie habla, en silencio o con ruido, no escribe nada, en
 vez de palabras que nadie dijo.
 
-**Habla para escribir:** toca **+** junto al campo del mensaje, en un chat o un grupo, luego **Habla para escribir**,
-y habla; toca **Hecho**, y tus palabras se escriben en el campo, para cambiarlas antes de enviarlas. Usa el mismo
+**Habla para escribir:** toca el micrófono junto al campo del mensaje, en un chat o un grupo, y elige **Habla para escribir**: desde entonces, al mantener pulsado el micrófono escucha en vez de grabar un mensaje de voz, hasta que elijas **Mensaje de voz** en el mismo menú. Habla; toca **Hecho**, y tus palabras se escriben en el campo, para cambiarlas antes de enviarlas. Usa el mismo
 modelo de voz que **En palabras**, descargado una vez cuando lo dices, y todo se hace en tu teléfono: ni tu voz ni sus
 palabras salen de él, y el sonido no se guarda. Escucha hasta dos minutos y puede cometer errores. Solo en Android.
 
@@ -1699,7 +1698,7 @@ Cuando envías un mensaje, Erevos elige el camino por sí solo:
 Todos los caminos están cifrados de extremo a extremo: ningún relay ni ningún teléfono entre medias puede leer lo que
 envías.
 
-**Caminos**, en **Ajustes** → **Relay y redes**, muestra cada camino de un vistazo: una tarjeta para el relay, Nostr, los teléfonos cercanos, LoRa, SMS y Tor, cada una con cómo está ahora y una línea debajo, llena cuando funciona, tenue cuando está activo pero ahora no llega a nadie, y de guiones cuando está apagado. Encima dice cuántos de tus mensajes esperan salir, con un punto naranja por cada uno. Una tarjeta abre los ajustes de su camino. Solo muestra el espacio abierto, nunca los chats ocultos.
+**Caminos**, en **Ajustes** → **Relay y redes**, muestra cada camino de un vistazo: una tarjeta para el relay, Nostr, los teléfonos cercanos, LoRa, SMS y Tor, cada una con cómo está ahora y una línea debajo, llena cuando funciona, tenue cuando está activo pero ahora no llega a nadie, y de guiones cuando está apagado. Encima dice cuántos de tus mensajes esperan salir, con un punto naranja por cada uno. Una tarjeta abre los ajustes de su camino. Solo muestra el espacio abierto, nunca los chats ocultos. En el inicio, la línea bajo la barra superior también es **Caminos**, una vez puesto un relay: un punto por cada camino, y cuántos de tus mensajes esperan; un toque lo abre.
 
 | Línea bajo el chat | Qué hacer |
 | --- | --- |

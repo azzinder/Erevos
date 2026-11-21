@@ -46,4 +46,6 @@ export const waysText: Record<string, string> = {
   "{n} phones": "{n} teléfonos",
   "{n} of your messages waits to go.": "{n} de tus mensajes espera salir.",
   "{n} of your messages wait to go.": "{n} de tus mensajes esperan salir.",
+  "· {n} waits to go": "· {n} espera",
+  "· {n} wait to go": "· {n} esperan",
 };

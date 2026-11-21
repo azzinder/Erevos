@@ -9,6 +9,7 @@ import { ActivityIndicator, BackHandler, Keyboard, Modal, Platform, Pressable, S
 import { withDictated } from '../lib/dictate';
 import { press, tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
+import { setMicMode, useMicMode, type MicMode } from '../lib/mic-mode';
 import { QUALITIES, qualityNote } from '../lib/photo-quality';
 import type { PhotoQuality } from '../lib/pick-photo';
 import { canWriteOut } from '../lib/speech';
@@ -22,6 +23,7 @@ import {
   BackIcon,
   CameraIcon,
   ChevronIcon,
+  CheckIcon,
   CloseIcon,
   DictateIcon,
   FileIcon,
@@ -63,6 +65,14 @@ import { buttonColors, Chip, fontStyle, Text, Toggle } from './ui';
 
 /** How long after the send arrow turns back into the microphone a press on it does nothing, ms. */
 const MIC_REST_MS = 600;
+// Let go of the microphone sooner than this, where it can also write, and it was a tap: its menu opens.
+const MIC_TAP_MS = 250;
+
+// What the microphone can do, in its menu (lib/mic-mode.ts).
+const MIC_MODES: { mode: MicMode; icon: ComponentType<{ color: string; size?: number }>; title: () => string; hint: () => string }[] = [
+  { mode: 'voice', icon: MicIcon, title: () => t('Voice message'), hint: () => t('Hold the microphone to record, and let go to send.') },
+  { mode: 'write', icon: DictateIcon, title: () => t('Speak to write'), hint: () => t('Hold the microphone, and the words go into the field.') },
+];
 /** How far left the finger slides, holding the microphone, to let go of the recording, px. */
 const CANCEL_SLIDE = 96;
 /** The bar's corners where the style rounds them; square styles keep theirs. */
@@ -328,6 +338,13 @@ export function Composer({
   const typed = useRef(value);
   typed.current = value;
   const canDictate = canWriteOut();
+  // What the microphone does when held (lib/mic-mode.ts): a tap on it opens a menu to choose.
+  // With Talkie on, or where nothing can be written out, it only records, as before.
+  const micMode = useMicMode();
+  const micChooses = canDictate && !talkie?.on;
+  const micWrites = micChooses && micMode === 'write';
+  // A press is a tap until it is held this long; then it records, or listens to write.
+  const pressing = useRef<ReturnType<typeof setTimeout> | null>(null);
   function dictated(words: string) {
     onChangeText(withDictated(typed.current, words, maxLength));
     // The field takes the keyboard, so the words can be changed at once.
@@ -344,6 +361,8 @@ export function Composer({
   const restUntil = useRef(0);
   const sent = useRef(canSend);
   const [menuAt, setMenuAt] = useState<{ bottom: number; right: number } | null>(null);
+  // Which menu shows there: the ways to send (Send held), or what the microphone does (tapped).
+  const [menuOf, setMenuOf] = useState<'send' | 'mic'>('send');
   const [choosing, setChoosing] = useState(false);
   // The field's height on the web, where it does not grow by itself.
   const [fieldHeight, setFieldHeight] = useState(44);
@@ -443,7 +462,19 @@ export function Composer({
     onResponderGrant: (event: GestureResponderEvent) => {
       held.current.x = event.nativeEvent.pageX;
       if (held.current.tapped) return;
-      begin(false);
+      if (!micChooses) {
+        begin(false);
+        return;
+      }
+      // Held a moment: it records, or listens to write; let go before, it was a tap (onResponderRelease).
+      if (pressing.current) clearTimeout(pressing.current);
+      pressing.current = setTimeout(() => {
+        pressing.current = null;
+        if (micWrites) {
+          buzz();
+          setDictating(true);
+        } else begin(false);
+      }, MIC_TAP_MS);
     },
     onResponderMove: (event: GestureResponderEvent) => {
       if (!held.current.on || held.current.tapped) return;
@@ -452,12 +483,23 @@ export function Composer({
       if (dx < -CANCEL_SLIDE) end(true);
     },
     onResponderRelease: () => {
+      if (pressing.current) {
+        clearTimeout(pressing.current);
+        pressing.current = null;
+        openMenu('mic');
+        return;
+      }
       if (held.current.tapped) return;
       end(false);
     },
     // Taken away by the system (a call, the notification shade): the recording goes. Before the
     // microphone was ready (its permission asked the first time), it was too short, and says to hold.
     onResponderTerminate: () => {
+      if (pressing.current) {
+        clearTimeout(pressing.current);
+        pressing.current = null;
+        return;
+      }
       if (!held.current.tapped) end(voice.recording);
     },
   };
@@ -466,14 +508,24 @@ export function Composer({
     const name = event.nativeEvent.actionName;
     if (name === 'activate') {
       if (held.current.on) end(false);
+      else if (micWrites) setDictating(true);
       else begin(true);
     } else if (name === 'cancel') end(true);
+    else if (name === 'choose') openMenu('mic');
+  }
+
+  // Chosen in the microphone's menu: kept for every bar; to write, it listens at once too.
+  function chooseMic(mode: MicMode) {
+    setMenuAt(null);
+    setMicMode(mode);
+    if (mode === 'write') setDictating(true);
   }
 
   // The menu opens over the bar where it sits once the keyboard has closed: measured while the
   // keyboard is still going down, it would float a keyboard's height above the arrow.
-  function openMenu() {
-    if (sendWays.length === 0) return;
+  function openMenu(of: 'send' | 'mic' = 'send') {
+    if (of === 'send' && sendWays.length === 0) return;
+    setMenuOf(of);
     press();
     const fallback = { bottom: 96, right: space.sm };
     void dismissKeyboard().then(() => {
@@ -754,7 +806,7 @@ export function Composer({
                 buzz();
                 onSend();
               }}
-              onLongPress={sendWays.length > 0 ? openMenu : undefined}
+              onLongPress={sendWays.length > 0 ? () => openMenu() : undefined}
               delayLongPress={350}
               accessibilityRole="button"
               accessibilityLabel={t('Send')}
@@ -774,10 +826,14 @@ export function Composer({
               {...mic}
               accessible
               accessibilityRole="button"
-              accessibilityLabel={holding ? t('Stop and send') : talkieOn ? t('Talk with Talkie') : t('Record a voice message')}
-              accessibilityHint={holding ? undefined : talkieOn ? t('Hold while you talk; it plays on their phone as it comes.') : t('Hold to record, and let go to send.')}
+              accessibilityLabel={holding ? t('Stop and send') : talkieOn ? t('Talk with Talkie') : micWrites ? t('Speak to write') : t('Record a voice message')}
+              accessibilityHint={holding ? undefined : talkieOn ? t('Hold while you talk; it plays on their phone as it comes.') : micWrites ? t('Hold to speak, and the words go into the field. Tap to choose a voice message instead.') : micChooses ? t('Hold to record, and let go to send. Tap to choose speaking to write instead.') : t('Hold to record, and let go to send.')}
               accessibilityState={{ busy: holding }}
-              accessibilityActions={[{ name: 'activate', label: holding ? t('Stop and send') : t('Start recording') }, ...(holding ? [{ name: 'cancel', label: t('Cancel recording') }] : [])]}
+              accessibilityActions={[
+                { name: 'activate', label: holding ? t('Stop and send') : micWrites ? t('Speak to write') : t('Start recording') },
+                ...(holding ? [{ name: 'cancel', label: t('Cancel recording') }] : []),
+                ...(micChooses && !holding ? [{ name: 'choose', label: t('What the microphone does') }] : []),
+              ]}
               onAccessibilityAction={onMicAction}
               style={[
                 disc(button.line),
@@ -785,26 +841,11 @@ export function Composer({
                 shape.glow ? { boxShadow: `0px 0px 14px ${withAlpha(colors.primary, 0.55)}` } : null,
               ]}
             >
-              {talkieOn ? <TalkieIcon color={holding ? colors.onPrimary : button.fg} size={22} /> : <MicIcon color={holding ? colors.onPrimary : button.fg} size={22} />}
+              {talkieOn ? <TalkieIcon color={holding ? colors.onPrimary : button.fg} size={22} /> : micWrites ? <DictateIcon color={button.fg} size={22} /> : <MicIcon color={holding ? colors.onPrimary : button.fg} size={22} />}
             </View>
           )}
         </View>
       </View>
-      {/* Dictation, under "+", so the bar keeps one microphone, the voice message's, and the field its width. */}
-      {panelOpen && canDictate ? (
-        <Pressable
-          onPress={() => {
-            onPanel(false);
-            setDictating(true);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('Speak to write')}
-          style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm, minHeight: 44 }, pressed && { opacity: 0.7 }]}
-        >
-          <DictateIcon color={colors.text} size={22} />
-          <Text>{t('Speak to write')}</Text>
-        </Pressable>
-      ) : null}
       {panelOpen && panel ? panel : null}
       {/* Mounted only while open, so a bar holds no second recorder for it. */}
       {dictating ? <DictateSheet open onWords={dictated} onClose={() => setDictating(false)} /> : null}
@@ -833,7 +874,41 @@ export function Composer({
             ]}
           >
             <View style={{ paddingVertical: 6, backgroundColor: colors.popover }}>
-              {sendWays.map((way) => {
+              {menuOf === 'mic'
+                ? MIC_MODES.map((mode) => {
+                    const Icon = mode.icon;
+                    const on = micMode === mode.mode;
+                    return (
+                      <Pressable
+                        key={mode.mode}
+                        onPress={() => chooseMic(mode.mode)}
+                        accessibilityRole="menuitem"
+                        accessibilityState={{ selected: on }}
+                        style={({ pressed }) => ({
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: space.md,
+                          minHeight: 56,
+                          paddingVertical: space.sm,
+                          paddingHorizontal: space.lg,
+                          backgroundColor: pressed ? colors.surfacePressed : 'transparent',
+                        })}
+                      >
+                        <Icon color={colors.accentText} size={22} />
+                        <View style={{ flexShrink: 1, gap: 2 }}>
+                          <Text variant="bodyStrong" style={{ fontSize: 15 }}>
+                            {mode.title()}
+                          </Text>
+                          <Text variant="caption" tone="faint">
+                            {mode.hint()}
+                          </Text>
+                        </View>
+                        <View style={{ width: 20, marginLeft: 'auto' }}>{on ? <CheckIcon color={colors.accentText} size={20} /> : null}</View>
+                      </Pressable>
+                    );
+                  })
+                : null}
+              {menuOf === 'send' && sendWays.map((way) => {
                 const Icon = ICONS[way.icon];
                 return (
                   <Pressable

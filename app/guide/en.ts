@@ -1117,7 +1117,7 @@ mistakes, and the words are not kept. **Delete the speech model**, under it, fre
 needs a phone with about 2 GB of memory free, as it takes about 1.5 GB while it writes; should that fail, the next try
 opens the model again. Where nobody speaks, in silence or noise, it writes nothing, rather than words nobody said.
 
-**Speak to write:** tap **+** beside the message field, in a chat or a group, then **Speak to write**, and speak; tap
+**Speak to write:** tap the microphone beside the message field, in a chat or a group, and choose **Speak to write**: from then on, holding the microphone listens instead of recording a voice message, until you choose **Voice message** in the same menu. Speak; tap
 **Done**, and your words are written into the field, to change before you send them. It uses the same speech model as
 **In words**, downloaded once when you say so, and all of it is done on your phone: neither your voice nor its words
 leave it, and the sound is not kept. It listens for up to two minutes, and may make mistakes. Only on Android.
@@ -1560,7 +1560,7 @@ When you send a message, Erevos picks the path by itself:
 
 Every path is end-to-end encrypted: no relay and no phone in between can read what you send.
 
-**Ways**, under **Settings** → **Relay and networks**, shows every path at a glance: a card for the relay, Nostr, the phones nearby, LoRa, SMS and Tor, each with how it is now and a line under it, full when it works, faint when it is on but reaches no one now, and dashed when it is off. Above them it says how many of your messages wait to go, with an orange dot for each. A card opens the settings of its path. It shows only the space that is open, never hidden chats.
+**Ways**, under **Settings** → **Relay and networks**, shows every path at a glance: a card for the relay, Nostr, the phones nearby, LoRa, SMS and Tor, each with how it is now and a line under it, full when it works, faint when it is on but reaches no one now, and dashed when it is off. Above them it says how many of your messages wait to go, with an orange dot for each. A card opens the settings of its path. It shows only the space that is open, never hidden chats. On home, the line under the top bar is **Ways** too, once a relay is set: a dot for each way, and how many of your messages wait; a tap opens it.
 
 | Line under the chat | What to do |
 | --- | --- |
