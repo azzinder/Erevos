@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.telecom.PhoneAccount
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
 import expo.modules.kotlin.modules.Module
@@ -31,7 +32,7 @@ class ErevosPhoneModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ErevosPhone")
-    Events("onCalls", "onHistory")
+    Events("onCalls", "onHistory", "onVoicemail")
 
     OnCreate {
       Calls.onCount = { count -> main.post { sendEvent("onCalls", mapOf("count" to count)) } }
@@ -39,6 +40,7 @@ class ErevosPhoneModule : Module() {
     }
 
     OnDestroy {
+      Voicemail.stop()
       Calls.onCount = null
       unwatch?.invoke()
       unwatch = null
@@ -119,6 +121,44 @@ class ErevosPhoneModule : Module() {
       val extras = Bundle()
       if (account.isNotEmpty()) Sims.find(context, account)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it.handle) }
       telecom.placeCall(Uri.fromParts("tel", number, null), extras)
+    }
+
+    // The voicemail of the SIM with this account id, or of the phone's default for "": Telecom
+    // calls the number the SIM gives for it.
+    AsyncFunction("callVoicemail") { account: String ->
+      val context = context()
+      val telecom = context.getSystemService(TelecomManager::class.java) ?: throw IllegalStateException("This phone cannot call")
+      val extras = Bundle()
+      if (account.isNotEmpty()) Sims.find(context, account)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it.handle) }
+      telecom.placeCall(Uri.fromParts(PhoneAccount.SCHEME_VOICEMAIL, "", null), extras)
+    }
+
+    // Whether that SIM has a voicemail number: "yes", "no", or "" when Android does not say.
+    Function("hasVoicemail") { account: String ->
+      when (Voicemail.hasNumber(context(), account)) {
+        true -> "yes"
+        false -> "no"
+        null -> ""
+      }
+    }
+
+    // The voicemails Android keeps (visual voicemail, where the phone company sends it).
+    AsyncFunction("voicemails") {
+      Voicemail.list(context())
+    }
+
+    AsyncFunction("playVoicemail") { id: Double ->
+      Voicemail.play(context(), id.toLong()) { which, on ->
+        main.post { sendEvent("onVoicemail", mapOf("id" to which.toDouble(), "playing" to on)) }
+      }
+    }
+
+    Function("stopVoicemail") {
+      Voicemail.stop()
+    }
+
+    AsyncFunction("deleteVoicemail") { id: Double ->
+      Voicemail.delete(context(), id.toLong())
     }
 
     // The call history, newest first, once Erevos may read it.

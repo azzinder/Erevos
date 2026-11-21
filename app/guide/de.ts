@@ -3009,6 +3009,13 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   Anrufbildschirm sie bei gesperrtem Erevos zeigt.
 - **Die Wähltasten:** Gib unter **Telefon** eine Nummer ein und tippe auf **Anrufen**; halte **0** für +. Gedrückt
   gehalten, fügt das Nummernfeld eine ein. **Add call**, während eines Anrufs, öffnet sie, sobald Erevos entsperrt ist.
+- **Mailbox:** Halte bei leerer Wähltastatur die **1** (mit oo markiert), um deine Mailbox anzurufen, über die SIM,
+  die über **Anrufen** gewählt ist. Hat die SIM keine Mailbox-Nummer, sagt es das Telefon: Dein Anbieter gibt sie
+  dir. Wo dein Anbieter Sprachnachrichten als Aufnahmen schickt (visuelle Mailbox), steht **Mailbox** neben
+  **Favoriten**: jede Nachricht mit dem, der sie hinterließ, wann, wie lang, und ihren Worten, wenn sie kamen. **▶**
+  spielt sie ab, **■** hält sie an; ein Tippen auf die Zeile bietet **Zurückrufen**, **SMS senden** und
+  **Sprachnachricht löschen**. **Mailbox anrufen** oben ruft sie an. Erevos spielt sie aus dem Speicher von Android
+  ab und behält keine Kopie; bei gesperrtem Erevos erscheint der Tab nicht.
 - **Zwei SIMs:** Tippe über **Anrufen** auf die SIM, über die du anrufen willst; beim ersten Mal bittet **SIM wählen**
   Android, Erevos sie sehen zu lassen. Eine Nummer, die du ohne Wahl anrufst, fragt mit **Anrufen über**, welche.
   Erevos merkt sich die SIM, die du für jede Nummer genutzt hast, versiegelt im Bereich, und ruft beim nächsten Mal

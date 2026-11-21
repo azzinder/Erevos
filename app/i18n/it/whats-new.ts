@@ -4,6 +4,8 @@
 
 // The Italian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/it/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":
+    "**La segreteria tenendo premuto**: sul tastierino del Telefono, tieni premuto **1** per chiamare la segreteria. Dove il tuo operatore invia i messaggi come registrazioni, **Segreteria** accanto a **Recenti** li elenca, da ascoltare, richiamare o eliminare. Vedi [Telefono](#phone).",
   "**Emergency calls without delay**: an emergency number is called at once, never asking which SIM, and with Erevos locked, **Emergency call** on the password screen opens Android's emergency keypad. See [Phone](#phone).":
     "**Chiamate di emergenza senza attese**: un numero di emergenza si chiama subito, senza chiedere la SIM, e con Erevos bloccato **Chiamata di emergenza** nella schermata della password apre il tastierino di emergenza di Android. Vedi [Telefono](#phone).",
   "**Gallery originals, deleted as chosen**: with **Delete the original from the gallery after importing** on, a photo picked from the phone's storage is now deleted from the gallery too, and when Android does not say which photo of the gallery it is, Erevos says so instead of keeping quiet. See [Collection](#collection).":

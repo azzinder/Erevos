@@ -56,11 +56,32 @@ export type Favourite = {
  *  account it is in, and how many contacts it has. */
 export type ContactGroup = { id: string; title: string; account: string; count: number };
 
+/**
+ * A voicemail Android keeps (visual voicemail, which only some phone companies send): `shown` the
+ * number as the phone's country writes it, `name` from the phone's contacts or ''; `at` in
+ * milliseconds, `duration` in seconds; `isNew` not heard yet; `transcript` the words, when the phone
+ * company sends them; `playable` whether its recording came; `account` the SIM's id.
+ */
+export type Voicemail = {
+  id: number;
+  number: string;
+  shown: string;
+  name: string;
+  at: number;
+  duration: number;
+  isNew: boolean;
+  transcript: string;
+  playable: boolean;
+  account: string;
+};
+
 export type PhoneEvents = {
   /** A call came, was made, or ended: how many are on now. */
   onCalls: (event: { count: number }) => void;
   /** The call history or the phone's contacts changed. */
   onHistory: (event: Record<string, never>) => void;
+  /** A voicemail started or stopped playing. */
+  onVoicemail: (event: { id: number; playing: boolean }) => void;
 };
 
 type NativePhone = {
@@ -74,6 +95,12 @@ type NativePhone = {
   isEmergency?(number: string): boolean;
   emergencyDial?(): boolean;
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
+  callVoicemail?(account: string): Promise<void>;
+  hasVoicemail?(account: string): string;
+  voicemails?(): Promise<{ allowed: boolean; voicemails: Voicemail[] }>;
+  playVoicemail?(id: number): Promise<void>;
+  stopVoicemail?(): void;
+  deleteVoicemail?(id: number): Promise<boolean>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
   deleteCalls(ids: number[]): Promise<number>;
@@ -157,6 +184,47 @@ export function isEmergencyNumber(number: string): boolean {
 export function placeCall(number: string, account = ''): Promise<void> {
   if (!native) return Promise.reject(new Error('This app was built without the phone.'));
   return native.placeCall(number, account);
+}
+
+/** Whether this build can call the voicemail and show the voicemails. */
+export function voicemailReady(): boolean {
+  return typeof native?.callVoicemail === 'function';
+}
+
+/** Calls the voicemail of the SIM with this account id, or of the phone's default SIM for ''. */
+export function callVoicemail(account = ''): Promise<void> {
+  if (!native?.callVoicemail) return Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+  return native.callVoicemail(account);
+}
+
+/** Whether that SIM has a voicemail number: true, false, or null when Android does not say. */
+export function hasVoicemail(account = ''): boolean | null {
+  try {
+    const answer = native?.hasVoicemail?.(account) ?? '';
+    return answer === 'yes' ? true : answer === 'no' ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The voicemails Android keeps, newest first; none where the phone company sends no visual
+ *  voicemail. `allowed` is false while Erevos is not the phone app. Erevos keeps no copy. */
+export function voicemails(): Promise<{ allowed: boolean; voicemails: Voicemail[] }> {
+  return native?.voicemails ? native.voicemails() : Promise.resolve({ allowed: false, voicemails: [] });
+}
+
+/** Plays a voicemail from Android's store, stopping any other; it is marked heard. */
+export function playVoicemail(id: number): Promise<void> {
+  return native?.playVoicemail ? native.playVoicemail(id) : Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+}
+
+export function stopVoicemail(): void {
+  native?.stopVoicemail?.();
+}
+
+/** Deletes a voicemail; whether it went. */
+export function deleteVoicemail(id: number): Promise<boolean> {
+  return native?.deleteVoicemail ? native.deleteVoicemail(id) : Promise.resolve(false);
 }
 
 /** Android's call history, its newest 500 calls; `allowed` is false while Android does not let

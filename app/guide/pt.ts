@@ -2813,6 +2813,13 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   bloqueado.
 - **O teclado:** em **Telefone**, digite um número e toque em **Ligar**; segure **0** para o +. Ao segurar, o campo
   do número cola um. **Add call**, durante uma chamada, o abre assim que o Erevos estiver desbloqueado.
+- **Correio de voz:** com o teclado vazio, segure o **1** (marcado oo) para ligar para o seu correio de voz, pelo
+  chip escolhido acima de **Ligar**. Se o chip não tiver número de correio de voz, o Telefone diz: a operadora o
+  fornece. Onde a sua operadora envia as mensagens como gravações (correio de voz visual), **Correio de voz**
+  aparece ao lado de **Favoritos**: cada mensagem com quem deixou, quando, quanto dura e as palavras dela quando
+  vieram. **▶** toca, **■** para; um toque na linha oferece **Retornar a ligação**, **Enviar um SMS** e **Apagar
+  esta mensagem de voz**. **Ligar para o correio de voz** no alto liga para ele. O Erevos toca do armazenamento do
+  Android e não guarda cópia; com o Erevos bloqueado a aba não aparece.
 - **Dois chips:** acima de **Ligar**, toque no chip pelo qual ligar; na primeira vez, **Escolher o chip** pede ao
   Android que deixe o Erevos vê-los. Um número para o qual você liga sem escolher pergunta **Ligar com** qual. O
   Erevos guarda o chip que você usou para cada número, selado no espaço, e liga por ele da próxima vez. A tela de

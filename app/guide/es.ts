@@ -2835,6 +2835,13 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
 - **El teclado:** en **Teléfono**, escribe un número y toca **Llamar**; mantén pulsado **0** para el +. Al mantenerlo
   pulsado, el campo del número pega uno. **Add call**, durante una llamada, lo abre en cuanto Erevos está
   desbloqueado.
+- **Buzón de voz:** con el teclado vacío, mantén pulsado el **1** (marcado oo) para llamar a tu buzón de voz, desde
+  la SIM elegida encima de **Llamar**. Si la SIM no tiene número de buzón, el Teléfono lo dice: te lo da tu
+  compañía. Donde tu compañía envía los mensajes como grabaciones (buzón de voz visual), **Buzón de voz** aparece
+  junto a **Favoritos**: cada mensaje con quién lo dejó, cuándo, cuánto dura y sus palabras cuando llegaron. **▶**
+  lo reproduce, **■** lo para; un toque en la fila ofrece **Devolver la llamada**, **Enviar un SMS** y **Borrar este
+  mensaje de voz**. **Llamar al buzón de voz** arriba lo llama. Erevos los reproduce desde el almacén de Android y
+  no guarda copia; con Erevos bloqueado la pestaña no aparece.
 - **Dos SIM:** encima de **Llamar**, toca la SIM con la que llamar; la primera vez, **Elegir la SIM** pide a Android que
   deje a Erevos verlas. Un número al que llamas sin elegir pregunta con cuál (**Llamar con**). Erevos guarda la SIM que
   usaste para cada número, sellada en el espacio, y la próxima vez llama con la misma. La pantalla de llamada nombra la

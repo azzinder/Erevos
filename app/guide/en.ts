@@ -2611,6 +2611,12 @@ that title, and tapping it opens the Phone's **Settings**.
   on the phone, not sealed, as the call screen shows them with Erevos locked.
 - **The keypad:** under **Phone**, type a number and tap **Call**; hold **0** for +. Held down, the number's field
   pastes one. **Add call**, during a call, opens it once Erevos is unlocked.
+- **Voicemail:** on an empty keypad, hold **1** (marked oo) to call your voicemail, on the SIM chosen above
+  **Call**. If the SIM has no voicemail number, the Phone says so: your phone company gives it. Where your phone
+  company sends voicemails as recordings (visual voicemail), **Voicemail** shows beside **Favourites**: each
+  voicemail with who left it, when, how long, and its words when they came. **▶** plays it, **■** stops it; a tap on
+  the row offers **Call back**, **Send an SMS** and **Delete this voicemail**. **Call the voicemail** at the top
+  calls it. Erevos plays them from Android's store and keeps no copy; with Erevos locked the tab does not show.
 - **Two SIMs:** above **Call**, tap the SIM to call on; the first time, **Choose the SIM** asks Android to let Erevos
   see them. A number you call without choosing asks **Call on** which. Erevos keeps the SIM you used for each number,
   sealed in the space, and calls it on the same one next time. The call screen names the SIM of each call.

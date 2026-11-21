@@ -2985,6 +2985,13 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   verrouillé.
 - **Le clavier :** sous **Téléphone**, tape un numéro et appuie sur **Appeler** ; maintiens **0** pour +. En appui long,
   le champ du numéro en colle un. **Add call**, pendant un appel, l’ouvre une fois Erevos déverrouillé.
+- **Messagerie vocale :** clavier vide, maintiens **1** (marqué oo) pour appeler ta messagerie vocale, avec la SIM
+  choisie au-dessus d’**Appeler**. Si la SIM n’a pas de numéro de messagerie, le Téléphone le dit : ton opérateur le
+  donne. Là où ton opérateur envoie les messages en enregistrements (messagerie vocale visuelle), **Messagerie
+  vocale** s’affiche à côté de **Favoris** : chaque message avec qui l’a laissé, quand, sa durée, et ses mots quand
+  ils sont venus. **▶** le lit, **■** l’arrête ; un appui sur la ligne propose **Rappeler**, **Envoyer un SMS** et
+  **Supprimer ce message vocal**. **Appeler la messagerie vocale** en haut l’appelle. Erevos les lit depuis le
+  stockage d’Android et n’en garde aucune copie ; Erevos verrouillé, l’onglet ne s’affiche pas.
 - **Deux SIM :** au-dessus d’**Appeler**, appuie sur la SIM avec laquelle appeler ; la première fois, **Choisir la SIM**
   demande à Android de laisser Erevos les voir. Un numéro que tu appelles sans choisir demande **Appeler avec**
   laquelle. Erevos garde la SIM que tu as utilisée pour chaque numéro, scellée dans l’espace, et l’appelle avec la même

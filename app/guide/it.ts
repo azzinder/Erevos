@@ -2842,6 +2842,13 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   Erevos bloccato.
 - **Il tastierino:** in **Telefono**, scrivi un numero e tocca **Chiama**; tieni premuto **0** per +. Tenuto premuto,
   il campo del numero ne incolla uno. **Add call**, durante una chiamata, lo apre appena Erevos è sbloccato.
+- **Segreteria:** a tastierino vuoto, tieni premuto **1** (segnato oo) per chiamare la segreteria, dalla SIM scelta
+  sopra **Chiama**. Se la SIM non ha un numero di segreteria, il Telefono lo dice: te lo dà l’operatore. Dove il tuo
+  operatore invia i messaggi come registrazioni (segreteria visiva), **Segreteria** compare accanto a **Preferiti**:
+  ogni messaggio con chi l’ha lasciato, quando, quanto dura e le sue parole quando sono arrivate. **▶** lo
+  riproduce, **■** lo ferma; un tocco sulla riga offre **Richiama**, **Invia un SMS** ed **Elimina questo
+  messaggio**. **Chiama la segreteria** in alto la chiama. Erevos li riproduce dall’archivio di Android e non tiene
+  copie; con Erevos bloccato la scheda non compare.
 - **Due SIM:** sopra **Chiama**, tocca la SIM con cui chiamare; la prima volta, **Scegli la SIM** chiede ad Android di
   lasciare che Erevos le veda. Un numero che chiami senza scegliere chiede **Chiama con** quale. Erevos conserva la SIM
   che hai usato per ogni numero, sigillata nello spazio, e la volta dopo lo chiama con la stessa. La schermata di

@@ -2716,6 +2716,13 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   telefonu, nezapečaćeni, jer ih ekran za pozive prikazuje dok je Erevos zaključan.
 - **Tastatura:** pod **Telefon** upišite broj i dodirnite **Pozovi**; zadržite **0** za +. Kad zadržite prst na
   polju za broj, ono lijepi broj. **Add call**, tokom poziva, otvara tastaturu kad je Erevos otključan.
+- **Govorna pošta:** s praznom tastaturom zadržite **1** (označeno oo) da pozovete govornu poštu, preko SIM kartice
+  izabrane iznad **Pozovi**. Ako SIM kartica nema broj govorne pošte, Telefon to kaže: daje ga operater. Gdje
+  operater šalje poruke kao snimke (vizuelna govorna pošta), **Govorna pošta** se pojavi pored **Favoriti**: svaka
+  poruka s tim ko ju je ostavio, kada, koliko traje i njenim riječima kad su stigle. **▶** je pušta, **■** je
+  zaustavlja; dodir na red nudi **Uzvrati poziv**, **Pošalji SMS** i **Obriši ovu poruku**. **Pozovi govornu poštu**
+  na vrhu je poziva. Erevos ih pušta iz Androidove memorije i ne čuva kopiju; dok je Erevos zaključan, kartica se ne
+  pojavljuje.
 - **Dvije SIM kartice:** iznad **Pozovi** dodirnite SIM karticu preko koje zovete; prvi put **Izaberi SIM karticu**
   traži od Androida da Erevosu dozvoli da ih vidi. Broj koji pozovete bez izbora pita **Pozovi preko** koje. Erevos
   za svaki broj čuva SIM karticu koju ste koristili, zapečaćenu u prostoru, i sljedeći put zove preko iste. Ekran za
