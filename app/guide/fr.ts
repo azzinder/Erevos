@@ -2786,6 +2786,8 @@ téléphone sans Erevos n’affiche rien.
 - **Plusieurs messages :** maintiens un message et choisis **Sélectionner**, puis appuie sur d’autres : **Copier** les
   met dans un seul texte, **Transférer** les envoie comme un seul dans le brouillon d’une autre conversation, et
   **Supprimer** les supprime du téléphone, avec **Annuler** pendant quelques secondes.
+- **Nouveau SMS :** dans la partie **SMS** de la liste des discussions, le bouton du bas est **Nouveau SMS** et
+  n’ouvre que cela, même avec les discussions d’Erevos activées.
 - **Choisir le destinataire :** sous **Nouveau SMS**, touche **Contacts** pour choisir parmi tes contacts, avec une
   recherche, ou tape simplement : les contacts dont le nom ou le numéro correspond à ce que tu tapes s'affichent sous le
   champ, et un toucher le remplit. Un contact avec plusieurs numéros montre une ligne pour chacun. Pour un groupe,

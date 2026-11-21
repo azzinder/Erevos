@@ -2643,6 +2643,8 @@ Erevos no muestra nada.
 - **Varios mensajes:** mantén pulsado un mensaje y elige **Seleccionar**, luego toca otros: **Copiar** los pone en un
   solo texto, **Reenviar** los envía como uno al borrador de otra conversación, y **Eliminar** los elimina del teléfono,
   con **Deshacer** unos segundos.
+- **SMS nuevo:** en la parte **SMS** de la lista de chats, el botón de abajo es **SMS nuevo** y abre solo eso,
+  también con los chats propios de Erevos activados.
 - **Elegir al destinatario:** en **SMS nuevo**, toca **Contactos** para elegir entre tus contactos, con búsqueda, o
   simplemente escribe: los contactos que coinciden con el nombre o el número que escribes aparecen bajo el campo, y un
   toque lo rellena. Un contacto con varios números muestra una línea por cada uno. En un grupo, cada contacto que elijas

@@ -624,11 +624,11 @@ function Home() {
   const tabs: InboxShow[] = [...arranged.shown, ...(show !== 'all' && !arranged.shown.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Where New chat goes: on Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one
-  // (app/xmpp.tsx); on Nostr's, one with another Nostr app (app/nostr-chats.tsx); otherwise an
-  // Erevos chat, or, with Erevos off, the first other part on, a new SMS last. None without chats,
+  // (app/xmpp.tsx); on Nostr's, one with another Nostr app (app/nostr-chats.tsx); on the SMS's, a new
+  // SMS; otherwise an Erevos chat, or, with Erevos off, the first other part on, a new SMS last. None without chats,
   // and none on the Public part, which has New post instead, for a space with a Nostr key.
   const newChat: Href | 'sms' | null =
-    show === 'public' ? null : show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : show === 'sms' && !erevosOn ? 'sms' : erevosOn ? '/chat?setup=1' : modules.has('matrix') ? '/matrix' : modules.has('xmpp') ? '/xmpp' : modules.has('nostr') ? '/nostr-chats' : modules.has('sms') ? 'sms' : null;
+    show === 'public' ? null : show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : show === 'sms' ? 'sms' : erevosOn ? '/chat?setup=1' : modules.has('matrix') ? '/matrix' : modules.has('xmpp') ? '/xmpp' : modules.has('nostr') ? '/nostr-chats' : modules.has('sms') ? 'sms' : null;
   // New post, on the Public part, for a space with a Nostr key: its public posts are signed with it.
   const newPost = show === 'public' && !!nostr;
   const [writingSms, setWritingSms] = useState(false);

@@ -2534,6 +2534,8 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
 - **Više poruka:** zadržite prst na poruci i izaberite **Odaberi**, pa dodirnite druge: **Kopiraj** ih stavlja u jedan
   tekst, **Proslijedi** ih šalje kao jednu u nacrt drugog razgovora, a **Obriši** ih briše s telefona, s **Poništi**
   nekoliko sekundi.
+- **Novi SMS:** u dijelu **SMS** liste razgovora, dugme dolje je **Novi SMS** i otvara samo to, i kada su Erevosovi
+  razgovori uključeni.
 - **Biranje primaoca:** pod **Novi SMS** dodirnite **Kontakti** da biste izabrali iz kontakata, uz pretragu, ili samo
   ukucajte: kontakti čije ime ili broj odgovara onome što kucate prikazuju se ispod polja, a dodir ga popunjava. Kontakt
   s više brojeva prikazuje po jedan red za svaki. Za grupu se svaki izabrani kontakt dodaje brojevima koji već postoje.

@@ -2434,6 +2434,8 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **Several messages:** hold a message and choose **Select**, then tap others: **Copy** puts them in one text,
   **Forward** sends them as one into another conversation's draft, and **Delete** deletes them from the phone, with
   **Undo** for a few seconds.
+- **A new SMS:** on the **SMS** part of the chat list, the button at the bottom is **New SMS**, and it opens only
+  that, also with Erevos's own chats on.
 - **Choosing a recipient:** under **New SMS**, tap **Contacts** to pick from your contacts, with a search, or just type: contacts
   that match the name or number you type show under the field, and a tap fills it in. A contact with several numbers
   shows one line for each. For a group, each one you pick is added to the numbers there. They are the Phone's contacts
