@@ -2849,6 +2849,13 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   riproduce, **■** lo ferma; un tocco sulla riga offre **Richiama**, **Invia un SMS** ed **Elimina questo
   messaggio**. **Chiama la segreteria** in alto la chiama. Erevos li riproduce dall’archivio di Android e non tiene
   copie; con Erevos bloccato la scheda non compare.
+- **Impostazioni chiamate:** in **Telefono** → **Impostazioni**, **Impostazioni chiamate** apre le schermate di
+  Android stesso per ciò che il tuo operatore tiene delle chiamate di ogni SIM: **Inoltro, avviso e il tuo numero**
+  e **Numero di segreteria**; con due SIM, tocca prima la SIM. In **Chiedi al tuo operatore**, ogni pulsante compone
+  il codice della rete (**Verifica** l’inoltro \`*#21#\`, **Disattiva tutto** \`##002#\`; avviso di chiamata
+  \`*#43#\`, **Attivato** \`*43#\`, **Disattivato** \`#43#\`; mostrare il tuo numero \`*#31#\`), e la risposta
+  compare in un messaggio di Android. Per nascondere il tuo numero in una sola chiamata, digita \`#31#\` prima del
+  numero.
 - **Due SIM:** sopra **Chiama**, tocca la SIM con cui chiamare; la prima volta, **Scegli la SIM** chiede ad Android di
   lasciare che Erevos le veda. Un numero che chiami senza scegliere chiede **Chiama con** quale. Erevos conserva la SIM
   che hai usato per ogni numero, sigillata nello spazio, e la volta dopo lo chiama con la stessa. La schermata di

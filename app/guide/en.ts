@@ -2617,6 +2617,12 @@ that title, and tapping it opens the Phone's **Settings**.
   voicemail with who left it, when, how long, and its words when they came. **▶** plays it, **■** stops it; a tap on
   the row offers **Call back**, **Send an SMS** and **Delete this voicemail**. **Call the voicemail** at the top
   calls it. Erevos plays them from Android's store and keeps no copy; with Erevos locked the tab does not show.
+- **Call settings:** under **Phone** → **Settings**, **Call settings** opens Android's own screens for what your
+  phone company keeps of each SIM's calls: **Forwarding, waiting and your number**, and **Voicemail number**; with
+  two SIMs, tap the SIM first. Under **Ask your phone company**, each button dials the network's code (**Check**
+  call forwarding \`*#21#\`, **Turn it all off** \`##002#\`; call waiting \`*#43#\`, **On** \`*43#\`, **Off**
+  \`#43#\`; showing your number \`*#31#\`), and the answer shows in a message of Android. To hide your number for
+  one call only, type \`#31#\` before the number.
 - **Two SIMs:** above **Call**, tap the SIM to call on; the first time, **Choose the SIM** asks Android to let Erevos
   see them. A number you call without choosing asks **Call on** which. Erevos keeps the SIM you used for each number,
   sealed in the space, and calls it on the same one next time. The call screen names the SIM of each call.

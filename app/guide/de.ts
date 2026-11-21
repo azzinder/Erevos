@@ -3016,6 +3016,13 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   spielt sie ab, **■** hält sie an; ein Tippen auf die Zeile bietet **Zurückrufen**, **SMS senden** und
   **Sprachnachricht löschen**. **Mailbox anrufen** oben ruft sie an. Erevos spielt sie aus dem Speicher von Android
   ab und behält keine Kopie; bei gesperrtem Erevos erscheint der Tab nicht.
+- **Anrufeinstellungen:** Unter **Telefon** → **Einstellungen** öffnen die **Anrufeinstellungen** die eigenen
+  Bildschirme von Android für das, was dein Anbieter von den Anrufen jeder SIM verwaltet: **Umleitung, Anklopfen und
+  deine Nummer** und **Mailbox-Nummer**; bei zwei SIMs tippe zuerst die SIM an. Unter **Deinen Anbieter fragen**
+  wählt jede Taste den Code des Netzes (**Prüfen** der Rufumleitung \`*#21#\`, **Alles ausschalten** \`##002#\`;
+  Anklopfen \`*#43#\`, **An** \`*43#\`, **Aus** \`#43#\`; Anzeigen deiner Nummer \`*#31#\`), und die Antwort
+  erscheint in einer Meldung von Android. Um deine Nummer nur für einen Anruf zu verbergen, tippe \`#31#\` vor die
+  Nummer.
 - **Zwei SIMs:** Tippe über **Anrufen** auf die SIM, über die du anrufen willst; beim ersten Mal bittet **SIM wählen**
   Android, Erevos sie sehen zu lassen. Eine Nummer, die du ohne Wahl anrufst, fragt mit **Anrufen über**, welche.
   Erevos merkt sich die SIM, die du für jede Nummer genutzt hast, versiegelt im Bereich, und ruft beim nächsten Mal

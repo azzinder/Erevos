@@ -2723,6 +2723,12 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   zaustavlja; dodir na red nudi **Uzvrati poziv**, **Pošalji SMS** i **Obriši ovu poruku**. **Pozovi govornu poštu**
   na vrhu je poziva. Erevos ih pušta iz Androidove memorije i ne čuva kopiju; dok je Erevos zaključan, kartica se ne
   pojavljuje.
+- **Postavke poziva:** pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove vlastite ekrane za
+  ono što operater čuva o pozivima svake SIM kartice: **Preusmjeravanje, čekanje i vaš broj** i **Broj govorne
+  pošte**; s dvije SIM kartice prvo dodirnite SIM. Pod **Pitaj operatera** svako dugme bira kod mreže (**Provjeri**
+  preusmjeravanje \`*#21#\`, **Isključi sve** \`##002#\`; poziv na čekanju \`*#43#\`, **Uključeno** \`*43#\`,
+  **Isključeno** \`#43#\`; prikaz vašeg broja \`*#31#\`), a odgovor se prikaže u poruci Androida. Da sakrijete broj
+  samo za jedan poziv, upišite \`#31#\` ispred broja.
 - **Dvije SIM kartice:** iznad **Pozovi** dodirnite SIM karticu preko koje zovete; prvi put **Izaberi SIM karticu**
   traži od Androida da Erevosu dozvoli da ih vidi. Broj koji pozovete bez izbora pita **Pozovi preko** koje. Erevos
   za svaki broj čuva SIM karticu koju ste koristili, zapečaćenu u prostoru, i sljedeći put zove preko iste. Ekran za

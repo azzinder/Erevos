@@ -96,6 +96,7 @@ type NativePhone = {
   emergencyDial?(): boolean;
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   callVoicemail?(account: string): Promise<void>;
+  openCallSettings?(kind: string, account: string): boolean;
   hasVoicemail?(account: string): string;
   voicemails?(): Promise<{ allowed: boolean; voicemails: Voicemail[] }>;
   playVoicemail?(id: number): Promise<void>;
@@ -184,6 +185,17 @@ export function isEmergencyNumber(number: string): boolean {
 export function placeCall(number: string, account = ''): Promise<void> {
   if (!native) return Promise.reject(new Error('This app was built without the phone.'));
   return native.placeCall(number, account);
+}
+
+/** Opens Android's own screen of the SIM's call settings, which the phone company keeps:
+ *  'calls' (forwarding, call waiting, showing your number) or 'voicemail' (its number); false when
+ *  the phone has none, or in a build without it. */
+export function openCallSettings(kind: 'calls' | 'voicemail', account = ''): boolean {
+  try {
+    return native?.openCallSettings?.(kind, account) === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Whether this build can call the voicemail and show the voicemails. */

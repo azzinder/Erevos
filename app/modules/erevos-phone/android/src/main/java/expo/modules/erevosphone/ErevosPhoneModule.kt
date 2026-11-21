@@ -5,6 +5,7 @@
 package expo.modules.erevosphone
 
 import android.app.role.RoleManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -121,6 +122,25 @@ class ErevosPhoneModule : Module() {
       val extras = Bundle()
       if (account.isNotEmpty()) Sims.find(context, account)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it.handle) }
       telecom.placeCall(Uri.fromParts("tel", number, null), extras)
+    }
+
+    // Android's own screens for what the phone company keeps of the SIM's calls: "calls" for
+    // forwarding, call waiting and showing the number, "voicemail" for the voicemail number.
+    // False when the phone has neither (index.ts then offers the codes).
+    Function("openCallSettings") { kind: String, account: String ->
+      val context = context()
+      val handle = if (account.isNotEmpty()) Sims.find(context, account)?.handle else null
+      val tries = if (kind == "voicemail") {
+        listOf(Intent(TelephonyManager.ACTION_CONFIGURE_VOICEMAIL).apply { handle?.let { putExtra(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
+      } else {
+        listOf(
+          Intent().setComponent(ComponentName("com.android.phone", "com.android.phone.CallFeaturesSettingActivity")).apply {
+            handle?.let { putExtra(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) }
+          },
+          Intent(TelecomManager.ACTION_SHOW_CALL_SETTINGS),
+        )
+      }
+      tries.any { intent -> runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess }
     }
 
     // The voicemail of the SIM with this account id, or of the phone's default for "": Telecom

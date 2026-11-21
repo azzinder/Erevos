@@ -2992,6 +2992,12 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   ils sont venus. **▶** le lit, **■** l’arrête ; un appui sur la ligne propose **Rappeler**, **Envoyer un SMS** et
   **Supprimer ce message vocal**. **Appeler la messagerie vocale** en haut l’appelle. Erevos les lit depuis le
   stockage d’Android et n’en garde aucune copie ; Erevos verrouillé, l’onglet ne s’affiche pas.
+- **Réglages d’appel :** sous **Téléphone** → **Réglages**, **Réglages d’appel** ouvre les écrans d’Android lui-même
+  pour ce que ton opérateur garde des appels de chaque SIM : **Renvoi, double appel et ton numéro** et **Numéro de
+  messagerie vocale** ; avec deux SIM, appuie d’abord sur la SIM. Sous **Demander à ton opérateur**, chaque bouton
+  compose le code du réseau (**Vérifier** le renvoi \`*#21#\`, **Tout désactiver** \`##002#\` ; double appel
+  \`*#43#\`, **Activé** \`*43#\`, **Désactivé** \`#43#\` ; affichage de ton numéro \`*#31#\`), et la réponse
+  s’affiche dans un message d’Android. Pour masquer ton numéro pour un seul appel, tape \`#31#\` avant le numéro.
 - **Deux SIM :** au-dessus d’**Appeler**, appuie sur la SIM avec laquelle appeler ; la première fois, **Choisir la SIM**
   demande à Android de laisser Erevos les voir. Un numéro que tu appelles sans choisir demande **Appeler avec**
   laquelle. Erevos garde la SIM que tu as utilisée pour chaque numéro, scellée dans l’espace, et l’appelle avec la même

@@ -2842,6 +2842,12 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
   lo reproduce, **■** lo para; un toque en la fila ofrece **Devolver la llamada**, **Enviar un SMS** y **Borrar este
   mensaje de voz**. **Llamar al buzón de voz** arriba lo llama. Erevos los reproduce desde el almacén de Android y
   no guarda copia; con Erevos bloqueado la pestaña no aparece.
+- **Ajustes de llamadas:** en **Teléfono** → **Ajustes**, **Ajustes de llamadas** abre las pantallas del propio
+  Android para lo que tu compañía guarda de las llamadas de cada SIM: **Desvío, espera y tu número** y **Número del
+  buzón de voz**; con dos SIM, toca primero la SIM. En **Preguntar a tu compañía**, cada botón marca el código de la
+  red (**Comprobar** el desvío \`*#21#\`, **Desactivarlo todo** \`##002#\`; llamada en espera \`*#43#\`,
+  **Activado** \`*43#\`, **Desactivado** \`#43#\`; mostrar tu número \`*#31#\`), y la respuesta aparece en un
+  mensaje de Android. Para ocultar tu número en una sola llamada, escribe \`#31#\` antes del número.
 - **Dos SIM:** encima de **Llamar**, toca la SIM con la que llamar; la primera vez, **Elegir la SIM** pide a Android que
   deje a Erevos verlas. Un número al que llamas sin elegir pregunta con cuál (**Llamar con**). Erevos guarda la SIM que
   usaste para cada número, sellada en el espacio, y la próxima vez llama con la misma. La pantalla de llamada nombra la

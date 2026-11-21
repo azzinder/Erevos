@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":
+    "**Postavke poziva na jednom mjestu**: pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove ekrane za preusmjeravanje, poziv na čekanju, prikaz vašeg broja i broj govorne pošte, za svaku SIM karticu, i pitaju operatera uobičajenim kodovima gdje telefon nema takav ekran. Vidi [Telefon](#phone).",
   "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":
     "**Govorna pošta jednim držanjem**: na tastaturi Telefona drži **1** da pozoveš govornu poštu. Gdje operater šalje poruke kao snimke, **Govorna pošta** pored **Nedavni** ih prikazuje, da ih preslušaš, uzvratiš poziv ili obrišeš. Vidi [Telefon](#phone).",
   "**Emergency calls without delay**: an emergency number is called at once, never asking which SIM, and with Erevos locked, **Emergency call** on the password screen opens Android's emergency keypad. See [Phone](#phone).":

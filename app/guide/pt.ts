@@ -2820,6 +2820,12 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   vieram. **▶** toca, **■** para; um toque na linha oferece **Retornar a ligação**, **Enviar um SMS** e **Apagar
   esta mensagem de voz**. **Ligar para o correio de voz** no alto liga para ele. O Erevos toca do armazenamento do
   Android e não guarda cópia; com o Erevos bloqueado a aba não aparece.
+- **Configurações de chamada:** em **Telefone** → **Configurações**, **Configurações de chamada** abre as telas do
+  próprio Android para o que a operadora guarda das chamadas de cada chip: **Encaminhamento, espera e o seu número**
+  e **Número do correio de voz**; com dois chips, toque primeiro no chip. Em **Perguntar à operadora**, cada botão
+  disca o código da rede (**Verificar** o encaminhamento \`*#21#\`, **Desativar tudo** \`##002#\`; chamada em espera
+  \`*#43#\`, **Ativado** \`*43#\`, **Desativado** \`#43#\`; mostrar o seu número \`*#31#\`), e a resposta aparece
+  numa mensagem do Android. Para ocultar o seu número em uma só chamada, digite \`#31#\` antes do número.
 - **Dois chips:** acima de **Ligar**, toque no chip pelo qual ligar; na primeira vez, **Escolher o chip** pede ao
   Android que deixe o Erevos vê-los. Um número para o qual você liga sem escolher pergunta **Ligar com** qual. O
   Erevos guarda o chip que você usou para cada número, selado no espaço, e liga por ele da próxima vez. A tela de

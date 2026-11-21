@@ -4,6 +4,8 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":
+    "**Les réglages d’appel au même endroit** : sous **Téléphone** → **Réglages**, **Réglages d’appel** ouvre les écrans d’Android pour le renvoi d’appel, le double appel, l’affichage de ton numéro et le numéro de messagerie vocale, pour chaque SIM, et interroge ton opérateur avec les codes habituels là où le téléphone n’a pas cet écran. Voir [Téléphone](#phone).",
   "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":
     "**La messagerie vocale d’un appui long** : sur le clavier du Téléphone, maintiens **1** pour appeler ta messagerie vocale. Là où ton opérateur envoie les messages en enregistrements, **Messagerie vocale** à côté de **Récents** les liste, pour les écouter, rappeler ou les supprimer. Voir [Téléphone](#phone).",
   "**Emergency calls without delay**: an emergency number is called at once, never asking which SIM, and with Erevos locked, **Emergency call** on the password screen opens Android's emergency keypad. See [Phone](#phone).":

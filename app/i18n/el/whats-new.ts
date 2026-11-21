@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":
+    "**Ρυθμίσεις κλήσεων σε ένα σημείο**: στο **Τηλέφωνο** → **Ρυθμίσεις**, οι **Ρυθμίσεις κλήσεων** ανοίγουν τις οθόνες του Android για προώθηση κλήσεων, αναμονή κλήσης, εμφάνιση του αριθμού σου και αριθμό τηλεφωνητή, για κάθε SIM, και ρωτούν την εταιρεία κινητής με τους γνωστούς κωδικούς όπου το κινητό δεν έχει τέτοια οθόνη. Δες [Τηλέφωνο](#phone).",
   "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":
     "**Τηλεφωνητής με ένα κράτημα**: στο πληκτρολόγιο του Τηλεφώνου, κράτα πατημένο το **1** για να καλέσεις τον τηλεφωνητή. Όπου η εταιρεία κινητής στέλνει τα μηνύματα ως ηχογραφήσεις, ο **Τηλεφωνητής** δίπλα στα **Πρόσφατα** τα δείχνει, για να τα ακούσεις, να καλέσεις πίσω ή να τα διαγράψεις. Δες [Τηλέφωνο](#phone).",
   "**Emergency calls without delay**: an emergency number is called at once, never asking which SIM, and with Erevos locked, **Emergency call** on the password screen opens Android's emergency keypad. See [Phone](#phone).":

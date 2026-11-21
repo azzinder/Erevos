@@ -32,6 +32,10 @@ import {
 import {
   blockingRules,
   onPhoneEvent,
+  openCallSettings,
+  phoneAccounts,
+  placeCall,
+  type PhoneAccount,
   phoneGroups,
   phoneReady,
   phoneStatus,
@@ -45,6 +49,7 @@ import {
 } from '../modules/erevos-phone';
 import { smsToolsReady } from '../modules/erevos-sms';
 import { useLock } from '../lock/context';
+import { accountLabel } from '../lib/phone-sims';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -66,6 +71,26 @@ const PHONE_PERMISSIONS = [
 const NOT_CHOSEN = mark(
   "Choose Erevos in Android's Default apps → Phone app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.",
 );
+// The codes every GSM network takes for what it keeps of a SIM's calls (3GPP TS 22.030): dialled
+// like a number, and the network answers in Android's own message.
+const CALL_CODES: { what: string; codes: { label: string; code: string }[] }[] = [
+  {
+    what: mark('Call forwarding'),
+    codes: [
+      { label: mark('Check'), code: '*#21#' },
+      { label: mark('Turn it all off'), code: '##002#' },
+    ],
+  },
+  {
+    what: mark('Call waiting'),
+    codes: [
+      { label: mark('Check'), code: '*#43#' },
+      { label: mark('On'), code: '*43#' },
+      { label: mark('Off'), code: '#43#' },
+    ],
+  },
+  { what: mark('Showing your number'), codes: [{ label: mark('Check'), code: '*#31#' }] },
+];
 const RESTRICTED = mark(
   "Android did not allow it all. In Erevos's App info, under Permissions, call logs may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow Phone, Call logs and Contacts under Permissions.",
 );
@@ -191,6 +216,7 @@ export default function PhoneSettings() {
         {note ? <Text tone="muted">{note}</Text> : null}
       </Card>
       {status?.isDefault ? <OpenLocked /> : null}
+      {status?.isDefault && status.phone ? <CallSettings /> : null}
       {status?.isDefault ? <QuickReplies /> : null}
       {status?.isDefault ? <Blocking screens={status.screens} /> : null}
     </Page>
@@ -385,6 +411,72 @@ function Blocking({ screens }: { screens: boolean }) {
         ))}
       </Sheet>
     </>
+  );
+}
+
+// What the phone company keeps of each SIM's calls: forwarding, call waiting, showing your number and
+// the voicemail number. Android's own screens set them; where a phone has none, the network's codes
+// ask it, and it answers in Android's own message.
+function CallSettings() {
+  const [accounts, setAccounts] = useState<PhoneAccount[]>([]);
+  const [chosen, setChosen] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    phoneAccounts().then(
+      (found) => {
+        setAccounts(found);
+        if (found.length >= 2) setChosen(found[0].id);
+      },
+      () => setAccounts([]),
+    );
+  }, []);
+
+  function open(kind: 'calls' | 'voicemail') {
+    setNote(openCallSettings(kind, chosen) ? '' : t('This phone has no such screen of its own. The codes below ask your phone company instead.'));
+  }
+
+  async function dial(code: string) {
+    setNote('');
+    try {
+      await placeCall(code, chosen);
+    } catch (error) {
+      setNote(t('Not called. {error}', { error: error instanceof Error ? error.message : String(error) }));
+    }
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Call settings')}</Text>
+      <Text tone="muted">
+        {t('Call forwarding, call waiting, showing your number and the voicemail number are kept by your phone company, for each SIM. Android sets them in its own screens.')}
+      </Text>
+      {accounts.length >= 2 ? (
+        <Row wrap style={{ gap: space.sm }}>
+          {accounts.map((a) => (
+            <Button key={a.id} title={accountLabel(a)} kind={chosen === a.id ? 'primary' : 'secondary'} compact onPress={() => setChosen(a.id)} />
+          ))}
+        </Row>
+      ) : null}
+      <Button title={t('Forwarding, waiting and your number')} kind="secondary" onPress={() => open('calls')} />
+      <Button title={t('Voicemail number')} kind="secondary" onPress={() => open('voicemail')} />
+      <Text variant="bodyStrong">{t('Ask your phone company')}</Text>
+      <Text tone="muted">{t('Each button calls a code, as every network takes them; the answer shows in a message of Android.')}</Text>
+      {CALL_CODES.map((group) => (
+        <View key={group.what} style={{ gap: space.xs }}>
+          <Text>{t(group.what)}</Text>
+          <Row wrap style={{ gap: space.sm }}>
+            {group.codes.map((each) => (
+              <Button key={each.code} title={`${t(each.label)} · ${each.code}`} kind="secondary" compact onPress={() => void dial(each.code)} />
+            ))}
+          </Row>
+        </View>
+      ))}
+      <Text variant="caption" tone="faint">
+        {t('To hide your number for one call only, type #31# before the number on the keypad.')}
+      </Text>
+      {note ? <Text tone="muted">{note}</Text> : null}
+    </Card>
   );
 }
 
