@@ -2828,6 +2828,9 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
 - **Una segunda llamada:** una que entra durante una llamada muestra **Hold and answer**, **End and answer** y
   **Decline**. Con una llamada retenida, la línea bajo el nombre lo dice: tócala, o **Swap**, para hablar con la
   otra. **Merge** junta las dos en una llamada, cuando tu compañía telefónica lo permite.
+- **Una conferencia:** con las llamadas combinadas, la pantalla de llamada muestra a las personas que están en ella
+  en lugar de la foto. Junto a cada una, **Separar** habla solo con ella mientras las demás esperan en espera, y
+  **Colgar** saca solo a esa; cada botón aparece solo donde tu compañía lo permite.
 - **Rechazar con un mensaje:** **Message**, en una llamada que suena, la rechaza con una respuesta rápida, o una que
   escribas, que tu teléfono envía a quien llama como SMS; aparece entre tus SMS. En **Teléfono** → **Ajustes**,
   **Respuestas rápidas** las cambia: **Añadir una respuesta**, **Quitar**, **Guardar** y **Usar las respuestas

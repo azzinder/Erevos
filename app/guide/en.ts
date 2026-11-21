@@ -2605,6 +2605,9 @@ that title, and tapping it opens the Phone's **Settings**.
 - **A second call:** one that comes during a call shows **Hold and answer**, **End and answer** and **Decline**.
   With a call on hold, the line under the name says so: tap it, or **Swap**, to talk with the other. **Merge** puts
   the two in one call, when your phone company allows it.
+- **A conference call:** once calls are merged, the call screen lists the people in it instead of the photo. Beside
+  each, **Separate** talks with that person alone while the others wait on hold, and **End** drops only them; each
+  shows only where your phone company allows it.
 - **Decline with a message:** **Message**, on a call that rings, declines it with a quick reply, or one you write,
   which your phone sends the caller as an SMS; it shows among your SMS. Under **Phone** → **Settings**,
   **Quick replies** changes them: **Add a reply**, **Remove**, **Save**, and **Use the usual replies**. They are kept

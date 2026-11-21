@@ -2978,6 +2978,9 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
 - **Un second appel :** un appel qui arrive pendant un appel affiche **Hold and answer**, **End and
   answer** et **Decline**. Avec un appel en attente, la ligne sous le nom le dit : appuie dessus, ou sur **Swap**,
   pour parler avec l’autre. **Merge** réunit les deux en un seul appel, quand ton opérateur téléphonique le permet.
+- **Une conférence :** une fois les appels fusionnés, l’écran d’appel liste les personnes présentes à la place de la
+  photo. À côté de chacune, **Séparer** te fait lui parler seul pendant que les autres attendent en attente, et
+  **Raccrocher** ne retire qu’elle ; chacun ne s’affiche que là où ton opérateur le permet.
 - **Refuser avec un message :** **Message**, sur un appel qui sonne, le refuse avec une réponse rapide, ou une que tu
   écris, que ton téléphone envoie à l’appelant en SMS ; elle s’affiche parmi tes SMS. Sous **Téléphone** → **Réglages**,
   **Réponses rapides** les change : **Ajouter une réponse**, **Retirer**, **Enregistrer**, et **Utiliser les réponses

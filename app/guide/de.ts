@@ -3002,6 +3002,9 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   **Decline**. Mit einem gehaltenen Anruf sagt es die Zeile unter dem Namen: Tippe darauf, oder auf **Swap**, um mit
   dem anderen zu sprechen. **Merge** legt die beiden zu einem Anruf zusammen, wenn deine Telefongesellschaft es
   erlaubt.
+- **Eine Konferenz:** Sind Anrufe zusammengeführt, listet der Anrufbildschirm statt des Fotos die Personen darin.
+  Neben jeder spricht **Einzeln** allein mit ihr, während die anderen in der Warteschleife warten, und **Auflegen**
+  nimmt nur sie heraus; beides erscheint nur, wo dein Anbieter es erlaubt.
 - **Mit einer Nachricht ablehnen:** **Message**, bei einem klingelnden Anruf, lehnt ihn mit einer Schnellantwort ab,
   oder mit einer, die du schreibst, die dein Telefon dem Anrufer als SMS schickt; sie erscheint zwischen deinen SMS.
   Unter **Telefon** → **Einstellungen** ändert **Schnellantworten** sie: **Antwort hinzufügen**, **Entfernen**,

@@ -67,6 +67,7 @@ internal object Words {
     "Phone" to t("Telefon", "Teléfono", "Téléphone", "Telefono", "Telefone", "Telefon"),
     "Private number" to t("Unterdrückte Nummer", "Número privado", "Numéro masqué", "Numero privato", "Número privado", "Skriveni broj"),
     "Resume" to t("Fortsetzen", "Reanudar", "Reprendre", "Riprendi", "Retomar", "Nastavi"),
+    "Separate" to t("Einzeln", "Separar", "Séparer", "Separa", "Separar", "Odvoji"),
     "Send" to t("Senden", "Enviar", "Envoyer", "Invia", "Enviar", "Pošalji"),
     "Sound" to t("Ton", "Sonido", "Son", "Audio", "Som", "Zvuk"),
     "Speaker" to t("Lautsprecher", "Altavoz", "Haut-parleur", "Altoparlante", "Alto-falante", "Zvučnik"),

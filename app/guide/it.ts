@@ -2835,6 +2835,9 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
 - **Una seconda chiamata:** una che arriva durante una chiamata mostra **Hold and answer**, **End and answer** e
   **Decline**. Con una chiamata in attesa, la riga sotto il nome lo dice: toccala, o tocca **Swap**, per parlare con
   l’altra. **Merge** mette le due in un’unica chiamata, quando il tuo operatore telefonico lo permette.
+- **Una conferenza:** unite le chiamate, la schermata di chiamata elenca le persone presenti al posto della foto.
+  Accanto a ognuna, **Separa** ti fa parlare solo con lei mentre le altre restano in attesa, e **Chiudi** toglie
+  solo lei; ciascuno compare solo dove il tuo operatore lo permette.
 - **Rifiutare con un messaggio:** **Message**, su una chiamata che squilla, la rifiuta con una risposta rapida, o una
   che scrivi, che il tuo telefono invia a chi chiama come SMS; appare tra i tuoi SMS. In **Telefono** →
   **Impostazioni**, **Risposte rapide** le cambia: **Aggiungi una risposta**, **Rimuovi**, **Salva**, e **Usa le

@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Who is in a conference call**: once calls are merged, the call screen lists each person, with **Separate** to talk with one alone and **End** to drop one, where your phone company allows it. See [Phone](#phone).":
+    "**Ko je u konferenciji**: kad spojite pozive, ekran poziva prikazuje svaku osobu, s **Odvoji** da razgovarate samo s njom i **Prekini** da je izbacite, gdje operater to dozvoljava. Vidi [Telefon](#phone).",
   "**Speed dial**: hold a key from 2 to 9 on the Phone's empty keypad to call the number you put on it; an empty key offers to choose one, and **Phone** → **Settings** → **Speed dial** shows them all. Kept sealed in the space. See [Phone](#phone).":
     "**Brzo biranje**: zadržite tipku od 2 do 9 na praznoj tastaturi Telefona da pozovete broj koji ste joj dodijelili; prazna tipka vam da da izaberete broj, a **Telefon** → **Postavke** → **Brzo biranje** pokazuje sve. Čuvaju se šifrovano u prostoru. Vidi [Telefon](#phone).",
   "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":

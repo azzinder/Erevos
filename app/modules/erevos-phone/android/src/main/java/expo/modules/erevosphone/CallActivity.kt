@@ -46,7 +46,8 @@ import android.widget.TextView
  * The call screen of the phone's calls, built in code: who it is, with their photo, whether the
  * call goes over Wi-Fi or in HD, on which SIM; Answer, Decline and Message (decline with an SMS)
  * while it rings, and Hold and answer while another call is on; then Mute, the keypad, where the sound goes (the earpiece, the
- * loudspeaker, a Bluetooth device, a headset), Hold, Add call, Merge or Swap, and End. It shows
+ * loudspeaker, a Bluetooth device, a headset), Hold, Add call, Merge or Swap, and End; a
+ * conference lists its people, each with Separate and End where the network allows. It shows
  * over the phone's lock screen and turns the screen on, and needs no unlocking of Erevos: its own
  * task, apart from the app, which stays locked behind its password. While the phone is at the ear
  * the screen goes off.
@@ -61,6 +62,7 @@ class CallActivity : Activity() {
   private lateinit var marks: TextView
   private lateinit var other: TextView
   private lateinit var tones: TextView
+  private lateinit var people: LinearLayout
   private lateinit var buttons: LinearLayout
   private var stop: (() -> Unit)? = null
   private var keypad = false
@@ -68,6 +70,8 @@ class CallActivity : Activity() {
   private var proximity: PowerManager.WakeLock? = null
   // What the buttons were built for: they are built again only when that changes.
   private var built = ""
+  // What the list of a conference's people was built for.
+  private var peopleBuilt = ""
   // The call whose SIM was asked for, so it is asked once.
   private var askedSim: Call? = null
   // The ways the phone can call, read when the screen shows.
@@ -212,6 +216,16 @@ class CallActivity : Activity() {
     top.addView(marks, wrap(4))
     top.addView(other, wrap(20))
     top.addView(tones, wrap(16))
+    people = LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      background = GradientDrawable().apply {
+        cornerRadius = dp(16).toFloat()
+        setColor(SOFT)
+      }
+      setPadding(dp(12), dp(4), dp(12), dp(4))
+      visibility = View.GONE
+    }
+    top.addView(people, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) })
     root.addView(top, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
     buttons = LinearLayout(this).apply {
       orientation = LinearLayout.VERTICAL
@@ -298,7 +312,10 @@ class CallActivity : Activity() {
     initial.text = name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: ""
     photo.setImageBitmap(caller.photo)
     photo.visibility = if (caller.photo != null) View.VISIBLE else View.GONE
-    face.visibility = if (keypad) View.GONE else View.VISIBLE
+    // A conference lists its people instead of the face, with End or Separate for each.
+    val members = if (conference && !keypad && ringing == null) shown.children.filter { Calls.state(it) != Call.STATE_DISCONNECTED } else emptyList()
+    face.visibility = if (keypad || members.isNotEmpty()) View.GONE else View.VISIBLE
+    showPeople(members)
     status.text = statusOf(shown, state)
     val parts = ArrayList<String>()
     if (caller.name != null && caller.number.isNotEmpty() && !conference) parts.add(Callers.shown(this, caller.number))
@@ -366,6 +383,57 @@ class CallActivity : Activity() {
     if (ringing != null) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
   }
+
+  /** The people of a conference, each with Separate (talk with them alone, the others held) and
+   *  End, where the network allows them. Built again only when who or what changes. */
+  private fun showPeople(members: List<Call>) {
+    val key = members.joinToString(";") {
+      listOf(Calls.id(it), nameOf(it), it.details.can(Call.Details.CAPABILITY_SEPARATE_FROM_CONFERENCE), it.details.can(Call.Details.CAPABILITY_DISCONNECT_FROM_CONFERENCE), Words.lang(this)).joinToString("|")
+    }
+    if (key == peopleBuilt) return
+    peopleBuilt = key
+    people.removeAllViews()
+    people.visibility = if (members.isEmpty()) View.GONE else View.VISIBLE
+    for (member in members) {
+      val line = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(0, dp(8), 0, dp(8))
+      }
+      val name = text(16f, INK).apply {
+        this.text = nameOf(member)
+        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        maxLines = 1
+        ellipsize = TextUtils.TruncateAt.END
+      }
+      line.addView(name, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+      if (member.details.can(Call.Details.CAPABILITY_SEPARATE_FROM_CONFERENCE)) {
+        line.addView(pill(say("Separate", "Χωριστά"), SOFT) { member.splitFromConference() }, pillPlace())
+      }
+      if (member.details.can(Call.Details.CAPABILITY_DISCONNECT_FROM_CONFERENCE)) {
+        line.addView(pill(say("End", "Τέλος"), END_FILL) { member.disconnect() }, pillPlace())
+      }
+      people.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+    }
+  }
+
+  private fun pillPlace() =
+    LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginStart = dp(8) }
+
+  /** A small rounded button with words, for a line of the conference's people. */
+  private fun pill(label: String, fill: Int, onClick: () -> Unit): View =
+    text(14f, INK, true).apply {
+      this.text = label
+      background = GradientDrawable().apply {
+        cornerRadius = dp(14).toFloat()
+        setColor(fill)
+      }
+      foreground = RippleDrawable(ColorStateList.valueOf(0x40FFFFFF), null, null)
+      setPadding(dp(12), dp(6), dp(12), dp(6))
+      contentDescription = label
+      isClickable = true
+      setOnClickListener { onClick() }
+    }
 
   private fun nameOf(call: Call): String {
     if (call.details.hasProperty(Call.Details.PROPERTY_CONFERENCE)) return say("Conference call", "Κλήση συνδιάσκεψης")
@@ -583,6 +651,8 @@ class CallActivity : Activity() {
     status.text = listOfNotNull(say("Call ended", "Η κλήση τελείωσε"), why).joinToString(" · ")
     other.visibility = View.GONE
     tones.visibility = View.GONE
+    people.visibility = View.GONE
+    peopleBuilt = ""
     buttons.removeAllViews()
     built = ""
     keypad = false

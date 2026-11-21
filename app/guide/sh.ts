@@ -2710,6 +2710,9 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
 - **Drugi poziv:** poziv koji stigne tokom poziva prikazuje **Hold and answer**, **End and answer** i **Decline**. Kad
   je poziv na čekanju, red ispod imena to kaže: dodirnite ga, ili **Swap**, da razgovarate s drugim. **Merge** spaja
   ta dva u jedan poziv, kad to vaša telefonska kompanija dozvoljava.
+- **Konferencijski poziv:** kad se pozivi spoje, ekran poziva umjesto fotografije prikazuje osobe u njemu. Pored
+  svake, **Odvoji** vam daje da razgovarate samo s njom dok ostali čekaju na čekanju, a **Prekini** izbacuje samo
+  nju; svako se prikazuje samo gdje operater to dozvoljava.
 - **Odbijanje porukom:** **Message**, na pozivu koji zvoni, odbija ga brzim odgovorom, ili onim koji napišete, a vaš
   telefon ga šalje pozivaocu kao SMS; prikazuje se među vašim SMS porukama. Pod **Telefon** → **Postavke**, **Brzi
   odgovori** ih mijenja: **Dodaj odgovor**, **Ukloni**, **Sačuvaj** i **Koristi uobičajene odgovore**. Čuvaju se na
