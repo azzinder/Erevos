@@ -1290,8 +1290,7 @@ gespeichert. **Sprachmodell löschen**, darunter, gibt den Platz frei. Nur auf A
 GB freien Arbeitsspeicher, da es beim Schreiben etwa 1,5 GB belegt; schlägt das fehl, öffnet der nächste Versuch das
 Modell neu. Wo niemand spricht, bei Stille oder Rauschen, schreibt es nichts, statt Wörter, die niemand gesagt hat.
 
-**Sprechen statt tippen:** Tippe auf **+** neben dem Nachrichtenfeld, in einem Chat oder einer Gruppe, dann auf
-**Sprechen statt tippen**, und sprich; tippe auf **Fertig**, und deine Worte werden ins Feld geschrieben, damit du sie
+**Sprechen statt tippen:** Tippe auf das Mikrofon neben dem Nachrichtenfeld, in einem Chat oder einer Gruppe, und wähle **Sprechen statt tippen**: Von da an hört das gedrückt gehaltene Mikrofon zu, statt eine Sprachnachricht aufzunehmen, bis du im selben Menü **Sprachnachricht** wählst. Sprich; tippe auf **Fertig**, und deine Worte werden ins Feld geschrieben, damit du sie
 vor dem Senden ändern kannst. Es nutzt dasselbe Sprachmodell wie **In Worten**, einmal geladen, wenn du es sagst, und
 alles geschieht auf deinem Telefon: Weder deine Stimme noch ihre Worte verlassen es, und der Ton wird nicht behalten.
 Es hört bis zu zwei Minuten zu und kann Fehler machen. Nur auf Android.
@@ -1813,7 +1812,7 @@ Wenn du eine Nachricht sendest, wählt Erevos den Weg von selbst:
 
 Jeder Weg ist Ende-zu-Ende-verschlüsselt: Kein Relay und kein Telefon dazwischen kann lesen, was du sendest.
 
-**Wege**, unter **Einstellungen** → **Relay und Netze**, zeigt jeden Weg auf einen Blick: eine Karte für das Relay, Nostr, die Telefone in der Nähe, LoRa, SMS und Tor, jede mit ihrem Zustand und einer Linie darunter, voll, wenn der Weg funktioniert, blass, wenn er an ist, aber gerade niemanden erreicht, und gestrichelt, wenn er aus ist. Darüber steht, wie viele deiner Nachrichten darauf warten, zu gehen, mit einem orangen Punkt für jede. Eine Karte öffnet die Einstellungen ihres Wegs. Es zeigt nur den offenen Bereich, nie versteckte Chats.
+**Wege**, unter **Einstellungen** → **Relay und Netze**, zeigt jeden Weg auf einen Blick: eine Karte für das Relay, Nostr, die Telefone in der Nähe, LoRa, SMS und Tor, jede mit ihrem Zustand und einer Linie darunter, voll, wenn der Weg funktioniert, blass, wenn er an ist, aber gerade niemanden erreicht, und gestrichelt, wenn er aus ist. Darüber steht, wie viele deiner Nachrichten darauf warten, zu gehen, mit einem orangen Punkt für jede. Eine Karte öffnet die Einstellungen ihres Wegs. Es zeigt nur den offenen Bereich, nie versteckte Chats. Auf der Startseite ist die Zeile unter der oberen Leiste ebenfalls **Wege**, sobald ein Relay gesetzt ist: ein Punkt für jeden Weg, und wie viele deiner Nachrichten warten; ein Tippen öffnet sie.
 
 | Zeile unter dem Chat | Was zu tun ist |
 | --- | --- |

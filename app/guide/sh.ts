@@ -1170,7 +1170,7 @@ pogriješiti, a riječi se ne čuvaju. **Obriši govorni model**, ispod, osloba�
 telefon s oko 2 GB slobodne memorije, jer dok piše zauzima oko 1,5 GB; ako to ne uspije, sljedeći pokušaj ponovo
 otvara model. Gdje niko ne govori, u tišini ili buci, ne piše ništa, umjesto riječi koje niko nije rekao.
 
-**Govori da pišeš:** dodirni **+** pored polja za poruku, u chatu ili u grupi, pa **Govori da pišeš**, i govori;
+**Govori da pišeš:** dodirni mikrofon pored polja za poruku, u chatu ili u grupi, i izaberi **Govori da pišeš**: od tada, kad držiš mikrofon, on sluša umjesto da snima glasovnu poruku, dok u istom meniju ne izabereš **Glasovna poruka**. Govori;
 dodirni **Gotovo**, i tvoje riječi se upisuju u polje, da ih promijeniš prije slanja. Koristi isti govorni model kao
 **Riječima**, preuzet jednom kad ti kažeš, i sve se radi na tvom telefonu: ni tvoj glas ni njegove riječi ga ne
 napuštaju, a zvuk se ne čuva. Sluša do dvije minute i može griješiti. Samo na Androidu.
@@ -1631,7 +1631,7 @@ Kad pošaljete poruku, Erevos sam bira put:
 
 Svaki put je šifriran s kraja na kraj: nijedan relay ni telefon između ne može pročitati ono što šaljete.
 
-**Putevi**, pod **Postavke** → **Relay i mreže**, pokazuju svaki put na prvi pogled: karticu za relay, Nostr, telefone u blizini, LoRa, SMS i Tor, svaku s time kakav je put sada i linijom ispod, punom kad radi, blijedom kad je uključen ali sada nikoga ne doseže, i isprekidanom kad je isključen. Iznad piše koliko vaših poruka čeka da ode, s narandžastom tačkom za svaku. Kartica otvara postavke svog puta. Prikazuje samo otvoreni prostor, nikad skrivene razgovore.
+**Putevi**, pod **Postavke** → **Relay i mreže**, pokazuju svaki put na prvi pogled: karticu za relay, Nostr, telefone u blizini, LoRa, SMS i Tor, svaku s time kakav je put sada i linijom ispod, punom kad radi, blijedom kad je uključen ali sada nikoga ne doseže, i isprekidanom kad je isključen. Iznad piše koliko vaših poruka čeka da ode, s narandžastom tačkom za svaku. Kartica otvara postavke svog puta. Prikazuje samo otvoreni prostor, nikad skrivene razgovore. Na početnom ekranu, red ispod gornje trake su takođe **Putevi**, čim je relay postavljen: tačka za svaki put, i koliko vaših poruka čeka; dodir ih otvara.
 
 | Linija ispod razgovora | Šta uraditi |
 | --- | --- |

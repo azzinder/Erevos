@@ -43,7 +43,6 @@ export const screens: Record<string, string> = {
   'For testing a relay': 'Για δοκιμή ενός relay',
   'Radio test': 'Δοκιμή ασυρμάτου',
   'For testing the nearby link': 'Για δοκιμή της σύνδεσης με κοντινά τηλέφωνα',
-  'Relay ready · end-to-end encrypted': 'Relay έτοιμο · κρυπτογράφηση από άκρη σε άκρη',
   'Relay set · no queue yet': 'Relay ορισμένο · χωρίς ουρά ακόμα',
   'No relay yet · tap to set one': 'Χωρίς relay ακόμα · πάτα για να ορίσεις',
   'Lock now': 'Κλείδωμα τώρα',

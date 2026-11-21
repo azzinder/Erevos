@@ -12,7 +12,7 @@ import { ChatRow, MyselfRow } from '../components/chat-row';
 import { NewSmsSheet } from '../components/new-sms-sheet';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
-import { BellIcon, GearIcon, MoreIcon, PencilIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
+import { BellIcon, ChevronIcon, GearIcon, MoreIcon, PencilIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { usePublicFeed } from '../components/public-feed';
@@ -74,6 +74,8 @@ import { editionNote } from '../lib/edition-notice';
 import { EDITION, editionName, named, type Edition } from '../lib/edition';
 import { answerAsked, invitesToAsk, onInvitesToAsk } from '../lib/sms-relay';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { waysNow } from '../lib/ways';
+import { HUES, NO_INPUT, useWays } from '../lib/ways-read';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 import Contacts from './contacts';
@@ -137,6 +139,9 @@ const DOOR_HOLD = 600;
 const DOOR_BUZZ = 40;
 
 // With only the SMS or the Contacts open (app/_layout.tsx), the home screen is their list alone.
+// How often home reads the ways out again, for its line under the top bar.
+const WAYS_EVERY = 10_000;
+
 export default function HomeScreen() {
   const only = useLock().only;
   return only === 'sms' ? <SmsHome /> : only === 'contacts' ? <Contacts /> : <Home />;
@@ -144,7 +149,7 @@ export default function HomeScreen() {
 
 function Home() {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const lock = useLock();
   // Only the modules on show (lib/modules.ts): their chats, tiles, menu and buttons.
@@ -684,7 +689,13 @@ function Home() {
   const hits = useMemo(() => (query.trim().length >= 2 ? searchMessages(searched.messages, query, 50) : []), [searched, query]);
   const nameOf = (peer: string) => searched.names.get(peer) ?? shownName({ identity: peer.replace(/^contact:/, ''), name: '' });
 
-  const relayText = relay === 'ready' ? t('Relay ready · end-to-end encrypted') : relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
+  const relayText = relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
+  // The ways out of the space, for the line under the top bar (lib/ways-read.ts); Tor covers others and has no dot.
+  const waysRead = useWays(WAYS_EVERY);
+  const waysWaiting = waysRead?.waiting ?? 0;
+  const waysShown = waysNow(waysRead?.input ?? NO_INPUT, waysWaiting);
+  const shownWays = waysShown.ways.filter((way) => way.id !== 'tor');
+  const waysLabel = `${t('Ways')}. ${waysShown.lead} ${waysShown.waiting}`;
 
   // The bar at the top, with the name and its buttons, stays where it is while the list scrolls (#12).
   const topBar = (
@@ -755,16 +766,49 @@ function Home() {
       {/* The relay is Erevos's own (lib/modules.ts). */}
       {erevosOn ? (
         <View style={styles.statusRow}>
-          <Pressable
-            onPress={() => router.push(relay === 'ready' ? '/chat' : '/chat?setup=1')}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.status, pressed && styles.pressed]}
-          >
-            <View style={[styles.dot, { backgroundColor: relay === 'ready' ? colors.success : relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
-            <Text variant="caption" tone="muted" style={styles.statusText}>
-              {relayText}
-            </Text>
-          </Pressable>
+          {/* With a relay, the line is the Ways (app/ways.tsx): a dot for each way out, full when it
+              works, faint when it is on but reaches no one, a ring when it is off, and how many of the
+              space's own messages wait to go. Before, it says what the relay still needs. */}
+          {relay === 'ready' ? (
+            <Pressable
+              onPress={() => router.push('/ways')}
+              accessibilityRole="button"
+              accessibilityLabel={waysLabel}
+              style={({ pressed }) => [styles.status, pressed && styles.pressed]}
+            >
+              <View style={styles.wayDots}>
+                {shownWays.map((way) => {
+                  const hue = HUES[way.id][scheme === 'dark' ? 1 : 0];
+                  return (
+                    <View
+                      key={way.id}
+                      style={[styles.dot, way.look === 'off' ? { borderWidth: 1.5, borderColor: colors.textFaint, borderStyle: 'dashed' } : { backgroundColor: way.look === 'up' ? hue : withAlpha(hue, 0.35) }]}
+                    />
+                  );
+                })}
+              </View>
+              <Text variant="caption" tone="muted" style={styles.statusText}>
+                {t('Ways')}
+              </Text>
+              {waysWaiting > 0 ? (
+                <Text variant="caption" color={colors.warning} style={[styles.statusText, fontStyle('600')]}>
+                  {plural(waysWaiting, '· {n} waits to go', '· {n} wait to go')}
+                </Text>
+              ) : null}
+              <ChevronIcon color={colors.textFaint} size={12} />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.push('/chat?setup=1')}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.status, pressed && styles.pressed]}
+            >
+              <View style={[styles.dot, { backgroundColor: relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
+              <Text variant="caption" tone="muted" style={styles.statusText}>
+                {relayText}
+              </Text>
+            </Pressable>
+          )}
           {/* Invite someone at a tap: its QR code shows at once (components/welcome-invite.tsx). A linked device invites from the phone. */}
           {relay === 'ready' && linkedRole() !== 'linked' ? (
             <Pressable
@@ -1277,6 +1321,10 @@ const makeStyles = (colors: Colors) =>
       width: 8,
       height: 8,
       borderRadius: 4,
+    },
+    wayDots: {
+      flexDirection: 'row',
+      gap: 3,
     },
     row: {
       flexDirection: 'row',

@@ -1204,8 +1204,7 @@ abaixo, libera o espaço. Só no Android, e precisa de um telefone com cerca de 
 escreve ocupa cerca de 1,5 GB; se falhar, a próxima tentativa abre o modelo de novo. Onde ninguém fala, em silêncio ou
 ruído, não escreve nada, em vez de palavras que ninguém disse.
 
-**Fale para escrever:** toque em **+** ao lado do campo da mensagem, em um chat ou em um grupo, depois em **Fale para
-escrever**, e fale; toque em **Pronto**, e suas palavras são escritas no campo, para você mudar antes de enviar. Usa o
+**Fale para escrever:** toque no microfone ao lado do campo da mensagem, em um chat ou em um grupo, e escolha **Fale para escrever**: a partir daí, segurar o microfone escuta em vez de gravar uma mensagem de voz, até você escolher **Mensagem de voz** no mesmo menu. Fale; toque em **Pronto**, e suas palavras são escritas no campo, para você mudar antes de enviar. Usa o
 mesmo modelo de voz de **Em palavras**, baixado uma vez quando você diz, e tudo é feito no seu celular: nem sua voz
 nem as palavras dela saem dele, e o som não é guardado. Ouve por até dois minutos e pode errar. Só no Android.
 
@@ -1686,7 +1685,7 @@ Quando você envia uma mensagem, o Erevos escolhe o caminho sozinho:
 
 Todo caminho é criptografado de ponta a ponta: nenhum relay e nenhum celular no meio consegue ler o que você envia.
 
-**Caminhos**, em **Configurações** → **Relay e redes**, mostra cada caminho de relance: um cartão para o relay, o Nostr, os celulares por perto, o LoRa, o SMS e o Tor, cada um com como está agora e uma linha embaixo, cheia quando funciona, fraca quando está ligado mas agora não alcança ninguém, e tracejada quando está desligado. Em cima diz quantas mensagens suas estão esperando para sair, com um ponto laranja para cada uma. Um cartão abre as configurações do seu caminho. Mostra só o espaço aberto, nunca as conversas ocultas.
+**Caminhos**, em **Configurações** → **Relay e redes**, mostra cada caminho de relance: um cartão para o relay, o Nostr, os celulares por perto, o LoRa, o SMS e o Tor, cada um com como está agora e uma linha embaixo, cheia quando funciona, fraca quando está ligado mas agora não alcança ninguém, e tracejada quando está desligado. Em cima diz quantas mensagens suas estão esperando para sair, com um ponto laranja para cada uma. Um cartão abre as configurações do seu caminho. Mostra só o espaço aberto, nunca as conversas ocultas. Na tela inicial, a linha abaixo da barra de cima também é **Caminhos**, depois que um relay é definido: um ponto para cada caminho, e quantas mensagens suas esperam; um toque abre.
 
 | Linha abaixo da conversa | O que fazer |
 | --- | --- |

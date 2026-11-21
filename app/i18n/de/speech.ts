@@ -28,4 +28,9 @@ export const speechText: Record<string, string> = {
   "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Sprich und tippe dann auf Fertig: Die Worte kommen ins Feld, damit du sie vor dem Senden ändern kannst. Auf diesem Telefon geschrieben, daher sind Fehler möglich.",
   "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Erevos darf das Mikrofon nicht nutzen. Erlaube es in den Einstellungen des Telefons, um ins Feld zu sprechen.",
   "A long one takes a while, up to a minute or two, as the phone writes it out by itself.": "Ein langes dauert, bis zu ein, zwei Minuten, da das Telefon es selbst schreibt.",
+  "What the microphone does": "Was das Mikrofon tut",
+  "Hold the microphone to record, and let go to send.": "Halte das Mikrofon gedrückt zum Aufnehmen, und lass los zum Senden.",
+  "Hold the microphone, and the words go into the field.": "Halte das Mikrofon gedrückt, und die Worte kommen ins Feld.",
+  "Hold to speak, and the words go into the field. Tap to choose a voice message instead.": "Gedrückt halten zum Sprechen, und die Worte kommen ins Feld. Tippen, um stattdessen eine Sprachnachricht zu wählen.",
+  "Hold to record, and let go to send. Tap to choose speaking to write instead.": "Zum Aufnehmen gedrückt halten, zum Senden loslassen. Tippen, um stattdessen Sprechen statt tippen zu wählen.",
 };

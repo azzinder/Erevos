@@ -28,4 +28,9 @@ export const speechText: Record<string, string> = {
   "Speak, then tap Done: the words go into the field, to change before you send them. Written out on this phone, so it may have mistakes.": "Govori, pa dodirni Gotovo: riječi idu u polje, da ih promijeniš prije slanja. Zapisano na ovom telefonu, pa može imati grešaka.",
   "Erevos may not use the microphone. Allow it in the phone settings to speak into the field.": "Erevos ne smije koristiti mikrofon. Dozvoli to u postavkama telefona da bi govorio u polje.",
   "A long one takes a while, up to a minute or two, as the phone writes it out by itself.": "Dugačko traje, do minute-dvije, jer telefon sam zapisuje.",
+  "What the microphone does": "Što radi mikrofon",
+  "Hold the microphone to record, and let go to send.": "Drži mikrofon za snimanje, i pusti za slanje.",
+  "Hold the microphone, and the words go into the field.": "Drži mikrofon, i riječi idu u polje.",
+  "Hold to speak, and the words go into the field. Tap to choose a voice message instead.": "Drži da govoriš, i riječi idu u polje. Dodirni da izabereš glasovnu poruku.",
+  "Hold to record, and let go to send. Tap to choose speaking to write instead.": "Drži za snimanje, i pusti za slanje. Dodirni da izabereš Govori da pišeš.",
 };

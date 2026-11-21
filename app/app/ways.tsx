@@ -9,19 +9,13 @@ import { Pressable, View } from 'react-native';
 import { Divider } from '../components/guide';
 import { ChevronIcon, GlobeIcon, LockIcon, PersonIcon, PhoneIcon, SignalIcon, StackIcon } from '../components/icons';
 import { Card, Page, Text } from '../components/ui';
-import { canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { nearby } from '../lib/nearby';
-import { nearbySettings } from '../lib/nearby-links';
-import { nostrRelays, nostrStates, onNostrStates } from '../lib/nostr';
-import { canLora, HAS_LINKS, HAS_RADIO, lora, savedRadio } from '../lib/radio';
-import { onRelayHeard, relayHeard } from '../lib/relay';
-import { spaceSmsLink } from '../lib/sms-relay';
-import { spaceChats } from '../lib/space-chats';
-import { torStatus } from '../lib/tor';
+import { onNostrStates } from '../lib/nostr';
+import { lora } from '../lib/radio';
+import { onRelayHeard } from '../lib/relay';
 import { waysNow, type Way, type WayId, type WaysInput } from '../lib/ways';
-import { loadCurrentSpaceData } from '../lock/space-data';
-import { smsPacketsReady, smsReady, smsStatus } from '../modules/erevos-sms';
+import { HUES, NO_INPUT, readWays } from '../lib/ways-read';
 import { space, withAlpha } from '../theme/colors';
 import { useColors, useTheme } from '../theme/context';
 
@@ -35,16 +29,6 @@ const LOOK_EVERY = 3000;
 // The most dots shown for what waits; more say so with a plus.
 const MOST_DOTS = 8;
 
-// A colour of its own for each way, for a light and a dark look.
-const HUES: Record<WayId, [string, string]> = {
-  relay: ['#3D78A8', '#7FB4E0'],
-  nostr: ['#7A5BB5', '#B9A0E8'],
-  nearby: ['#2F8A63', '#72C7A0'],
-  lora: ['#9A7A12', '#D9B85A'],
-  sms: ['#B5652A', '#E4A06A'],
-  tor: ['#5E6B66', '#A6B3AD'],
-};
-
 const ICONS: Record<WayId, (props: { color: string; size?: number }) => ReactNode> = {
   relay: StackIcon,
   nostr: GlobeIcon,
@@ -53,42 +37,6 @@ const ICONS: Record<WayId, (props: { color: string; size?: number }) => ReactNod
   sms: PhoneIcon,
   tor: LockIcon,
 };
-
-const NO_INPUT: WaysInput = { relay: { url: '', answered: 0, failed: 0, spare: '', via: false }, nostr: null, nearby: null, lora: null, sms: null, tor: null };
-
-// What the screen reads now of each way, and how many of the space's own messages wait.
-async function readWays(): Promise<{ input: WaysInput; waiting: number }> {
-  const data = await loadCurrentSpaceData();
-  const heard = data.url ? relayHeard(data.url) : { answered: 0, failed: 0 };
-  const input: WaysInput = { ...NO_INPUT, relay: { url: data.url, ...heard, spare: data.spare.url, via: !!data.via.trim() } };
-  // The relays the space reads on now, and those of them that answer.
-  const relays = nostrRelays() ?? [];
-  const states = nostrStates();
-  input.nostr = { on: data.nostr.on && relays.length > 0, relays: relays.length, reading: relays.filter((url) => states.get(url)?.read?.reading).length };
-  if (HAS_LINKS) {
-    const kept = await nearbySettings();
-    input.nearby = { phones: nearby.count(), bluetooth: HAS_RADIO && kept.on, lan: kept.on && kept.lan, direct: HAS_RADIO && kept.on && kept.direct, carried: nearby.carriedCount().others };
-  }
-  if (canLora()) {
-    const radio = await savedRadio().catch(() => null);
-    const state = lora.state();
-    input.lora = { set: radio !== null, status: state.status, name: state.name || radio?.name || '' };
-  }
-  if (smsReady() && smsPacketsReady()) {
-    const app = !!smsStatus()?.isDefault;
-    let contacts = 0;
-    if (app) {
-      const [link, chats] = await Promise.all([spaceSmsLink(), spaceChats()]);
-      contacts = chats.e2e.phones().filter(({ identity, phone }) => !!phone && link.smsWayOn(identity)).length;
-    }
-    input.sms = { app, contacts };
-  }
-  if (canTor()) input.tor = { way: data.tor, ready: data.tor === 'off' ? false : !!(await torStatus().catch(() => null))?.ready };
-  // Those sent for later wait for their time, not for a way.
-  const now = Date.now();
-  const waiting = (await spaceChats()).history.waiting().filter((message) => message.at <= now).length;
-  return { input, waiting };
-}
 
 export default function WaysScreen() {
   const [read, setRead] = useState<{ input: WaysInput; waiting: number } | null>(null);
