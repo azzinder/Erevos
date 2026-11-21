@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Gallery originals, deleted as chosen**: with **Delete the original from the gallery after importing** on, a photo picked from the phone's storage is now deleted from the gallery too, and when Android does not say which photo of the gallery it is, Erevos says so instead of keeping quiet. See [Collection](#collection).":
+    "**Οι αρχικές της γκαλερί σβήνονται όπως διάλεξες**: με ενεργό το **Σβήσιμο της αρχικής από τη γκαλερί μετά την εισαγωγή**, μια φωτογραφία από τον χώρο του κινητού σβήνεται πλέον κι αυτή από τη γκαλερί, κι όταν το Android δεν πει ποια φωτογραφία της γκαλερί είναι, το Erevos το λέει αντί να σωπαίνει. Δες [Συλλογή](#collection).",
   "**The services stay in sight**: on home, the services button stays under the top bar while the list scrolls, so another part is a tap away; the search and **Ways** scroll with the list. **Names** shows only on the **SMS** part, where it belongs.":
     "**Οι υπηρεσίες μένουν σε θέα**: στην αρχική, το κουμπί των υπηρεσιών μένει κάτω από την πάνω μπάρα όσο κυλά η λίστα, οπότε άλλο μέρος είναι ένα πάτημα μακριά· η αναζήτηση και οι **Δρόμοι** κυλούν με τη λίστα. Τα **Ονόματα** φαίνονται μόνο στο κομμάτι **SMS**, όπου ανήκουν.",
   "**New SMS on the SMS part**: on the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on. See [SMS](#sms).":

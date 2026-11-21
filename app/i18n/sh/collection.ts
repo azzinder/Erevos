@@ -120,4 +120,6 @@ export const collectionText: Record<string, string> = {
   "The Collection asks for the password that opens this space each time it opens.": "Zbirka traži lozinku koja otvara ovaj prostor svaki put kad se otvara.",
   "Type the password": "Upišite lozinku",
   "The password that opens this space": "Lozinka koja otvara ovaj prostor",
+  "In the Collection. The original stays: Android did not say which photo of the gallery it is. Pick it from Images or the phone’s storage, not from Recent.": "U Zbirci. Original ostaje: Android nije rekao koja je to fotografija galerije. Izaberite je iz Slika ili iz memorije telefona, ne iz Nedavnih.",
+  "In the Collection. Android could not delete the original.": "U Zbirci. Android nije mogao izbrisati original.",
 };

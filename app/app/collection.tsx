@@ -763,7 +763,7 @@ function OpenCollection() {
         {CAN_TAKE_PHOTO ? (
           <AddRow icon={<CameraIcon color={colors.primary} size={22} />} title={t('Camera')} text={t('The photo goes straight here, never to the gallery.')} onPress={() => void bringIn((p) => importFromCamera(place!, folder, p))} colors={colors} />
         ) : null}
-        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={DESK ? t('From the computer’s files') : BROWSER ? t('From this device’s files') : t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
+        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={DESK ? t('From the computer’s files') : BROWSER ? t('From this device’s files') : t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true, told: setNote }))} colors={colors} />
         <AddRow
           icon={<FolderIcon color={colors.primary} size={22} />}
           title={t('New folder')}

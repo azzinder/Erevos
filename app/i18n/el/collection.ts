@@ -120,4 +120,6 @@ export const collectionText: Record<string, string> = {
   "The Collection asks for the password that opens this space each time it opens.": "Η Συλλογή ζητά τον κωδικό που ανοίγει αυτόν τον χώρο κάθε φορά που ανοίγει.",
   "Type the password": "Γράψε τον κωδικό",
   "The password that opens this space": "Ο κωδικός που ανοίγει αυτόν τον χώρο",
+  "In the Collection. The original stays: Android did not say which photo of the gallery it is. Pick it from Images or the phone’s storage, not from Recent.": "Στη Συλλογή. Η αρχική μένει: το Android δεν είπε ποια φωτογραφία της γκαλερί είναι. Διάλεξέ τη από τις Εικόνες ή από τον χώρο του κινητού, όχι από τα Πρόσφατα.",
+  "In the Collection. Android could not delete the original.": "Στη Συλλογή. Το Android δεν μπόρεσε να σβήσει την αρχική.",
 };

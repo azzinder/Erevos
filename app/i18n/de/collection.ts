@@ -120,4 +120,6 @@ export const collectionText: Record<string, string> = {
   "The Collection asks for the password that opens this space each time it opens.": "Die Sammlung fragt jedes Mal, wenn sie sich öffnet, nach dem Passwort, das diesen Bereich öffnet.",
   "Type the password": "Passwort eingeben",
   "The password that opens this space": "Das Passwort, das diesen Bereich öffnet",
+  "In the Collection. The original stays: Android did not say which photo of the gallery it is. Pick it from Images or the phone’s storage, not from Recent.": "In der Sammlung. Das Original bleibt: Android hat nicht gesagt, welches Foto der Galerie es ist. Wähle es unter Bilder oder im Speicher des Telefons, nicht unter Zuletzt.",
+  "In the Collection. Android could not delete the original.": "In der Sammlung. Android konnte das Original nicht löschen.",
 };
