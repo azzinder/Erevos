@@ -2909,6 +2909,17 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   toccane uno per sbloccarlo. In **Recenti**, le chiamate di una riga mostrano **Blocca questo numero** o **Sblocca
   questo numero**, con **Annulla**. Android rifiuta le loro chiamate prima che squillino, e i loro SMS e MMS. Ogni
   spazio vede lo stesso elenco.
+- **Numeri sconosciuti e spam:** per un numero che non è tra i tuoi contatti, la schermata di chiamata dice sotto il
+  numero da dove viene (il paese e la bandiera, e la città di un fisso quando il numero la indica) e se è un
+  cellulare, un fisso, gratuito o a tariffa maggiorata: letto dal solo numero, sul telefono. In **Telefono** →
+  **Impostazioni**, **Lista spam** scarica intera una lista di numeri noti per lo spam dall’indirizzo https:// che
+  scrivi: un numero per riga con il prefisso del paese, o l’inizio di numeri seguito da \`*\`, poi che tipo di
+  chiamate sono. Erevos non ne ha una sua; scegli una lista di cui ti fidi. Senza Tor, il server della lista vede
+  l’indirizzo internet del telefono, ed Erevos lo dice prima. La schermata di chiamata di un numero della lista
+  mostra **Possibile spam**; **Chiamate spam in silenzio** le fa squillare senza suono (Android 10 e successivi),
+  mai quelle di un contatto. In **Recenti**, **Segnala come spam** su un numero che non è tra i tuoi contatti lo
+  aggiunge solo su questo telefono, e **Non è spam** lo toglie; **Dimentica le mie segnalazioni** le cancella.
+  Nessun numero viene mai cercato da nessuna parte.
 - **Un gruppo di contatti per un po’:** in **Telefono** → **Impostazioni**, **Blocca un gruppo di contatti** elenca i
   gruppi (le etichette) dei contatti del tuo telefono. **Blocca** accanto a uno blocca le chiamate dei suoi contatti
   **Per un’ora**,

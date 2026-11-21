@@ -34,6 +34,12 @@ import {
   blockingRules,
   onPhoneEvent,
   openCallSettings,
+  clearSpamList,
+  clearSpamReports,
+  setSpamSwitches,
+  spamReady,
+  spamState,
+  type SpamState,
   phoneAccounts,
   placeCall,
   type PhoneAccount,
@@ -53,6 +59,9 @@ import { useLock } from '../lock/context';
 import { accountLabel, PhoneSims } from '../lib/phone-sims';
 import { currentSpace } from '../lock/keys';
 import { SPEED_KEYS } from '../lock/phone-data';
+import { confirm } from '../lib/alert';
+import { netThroughTor } from '../lib/net-http';
+import { downloadSpamList, spamAddress } from '../lib/spam-list';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -223,6 +232,7 @@ export default function PhoneSettings() {
       {status?.phone ? <SpeedDials /> : null}
       {status?.isDefault ? <QuickReplies /> : null}
       {status?.isDefault ? <Blocking screens={status.screens} /> : null}
+      {status?.isDefault && spamReady() ? <SpamList screens={status.screens} /> : null}
     </Page>
   );
 }
@@ -537,6 +547,111 @@ function SpeedDials() {
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
       <SpeedDialPick slot={choosing} current={choosing ? sims.speed(choosing) : undefined} onClose={() => setChoosing(null)} onPick={pick} />
+    </Card>
+  );
+}
+
+// The spam list: a list of numbers downloaded whole, from an address the owner chooses, matched on
+// the phone (lib/spam-list.ts), and the numbers they reported in Recents. The call screen warns of
+// a number on it; it can ring silently. Never a number looked up anywhere.
+function SpamList({ screens }: { screens: boolean }) {
+  const [state, setState] = useState<SpamState | null>(spamState());
+  const [address, setAddress] = useState(state?.source ?? '');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  if (!state) return null;
+
+  const look = () => setState(spamState());
+
+  function switches(warn: boolean, silence: boolean) {
+    setSpamSwitches(warn, silence);
+    look();
+    if (silence && !screens) {
+      try {
+        requestScreening();
+      } catch (error) {
+        setNote(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
+  async function download() {
+    const from = spamAddress(address);
+    if (!from) {
+      setNote(t('Type the https:// address of a list.'));
+      return;
+    }
+    if (!netThroughTor()) {
+      const go = await confirm(
+        t('Your internet address can be seen'),
+        t("Without Tor, the list's server sees this phone's internet address (IP address), though no number of yours: the list comes whole, and is matched on the phone."),
+        t('Download'),
+      );
+      if (!go) return;
+    }
+    setBusy(true);
+    setNote('');
+    try {
+      const count = await downloadSpamList(from);
+      setNote(plural(count, 'The list holds {n} number.', 'The list holds {n} numbers.'));
+    } catch (error) {
+      setNote(t('The list did not come. {error}', { error: error instanceof Error ? error.message : String(error) }));
+    } finally {
+      setBusy(false);
+      look();
+    }
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Spam list')}</Text>
+      <Text tone="muted">
+        {t("A list of numbers known for spam, downloaded whole from an address you choose and matched on the phone, so no number of yours or of who calls is ever looked up anywhere. The call screen of a number on it warns you; the numbers you report in Recents count too. Without a list, the call screen still says where an unknown number is from and whether it is a mobile, from the number alone.")}
+      </Text>
+      <Button
+        title={state.warn ? t('Stop warning of spam') : t('Warn of spam')}
+        kind={state.warn ? 'secondary' : 'primary'}
+        onPress={() => switches(!state.warn, state.silence)}
+      />
+      <Button
+        title={state.silence ? t('Let spam calls ring') : t('Ring spam calls silently')}
+        kind="secondary"
+        onPress={() => switches(state.warn, !state.silence)}
+      />
+      <Text variant="caption" tone="faint">
+        {t('A silent call still shows, and can be answered; a contact of yours is never silenced.')}
+      </Text>
+      <Input value={address} onChangeText={setAddress} placeholder="https://" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
+      <Button title={busy ? t('Downloading…') : t('Download the list')} disabled={busy} onPress={() => void download()} />
+      <Text tone="muted">
+        {state.at > 0
+          ? t('{count} on the list, downloaded {date}.', { count: String(state.count), date: new Date(state.at).toLocaleDateString() })
+          : t('No list downloaded yet.')}
+      </Text>
+      {state.at > 0 ? (
+        <Button
+          title={t('Remove the list')}
+          kind="secondary"
+          onPress={() => {
+            clearSpamList();
+            look();
+          }}
+        />
+      ) : null}
+      {state.own > 0 ? (
+        <>
+          <Text tone="muted">{plural(state.own, 'You reported {n} number.', 'You reported {n} numbers.')}</Text>
+          <Button
+            title={t('Forget my reports')}
+            kind="secondary"
+            onPress={() => {
+              clearSpamReports();
+              look();
+            }}
+          />
+        </>
+      ) : null}
+      {note ? <Text tone="muted">{note}</Text> : null}
     </Card>
   );
 }

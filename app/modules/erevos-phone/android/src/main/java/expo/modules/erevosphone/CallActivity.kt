@@ -63,6 +63,8 @@ class CallActivity : Activity() {
   private lateinit var title: TextView
   private lateinit var status: TextView
   private lateinit var marks: TextView
+  // The spam list's warning, for a number on it.
+  private lateinit var warning: TextView
   private lateinit var other: TextView
   private lateinit var tones: TextView
   private lateinit var people: LinearLayout
@@ -222,6 +224,15 @@ class CallActivity : Activity() {
     top.addView(title, wrap())
     top.addView(status, wrap(6))
     top.addView(marks, wrap(4))
+    warning = text(14f, WARN_INK, true).apply {
+      background = GradientDrawable().apply {
+        cornerRadius = dp(12).toFloat()
+        setColor(WARN_FILL)
+      }
+      setPadding(dp(14), dp(8), dp(14), dp(8))
+      visibility = View.GONE
+    }
+    top.addView(warning, wrap(12))
     top.addView(other, wrap(20))
     top.addView(tones, wrap(16))
     people = LinearLayout(this).apply {
@@ -334,6 +345,11 @@ class CallActivity : Activity() {
     status.text = statusOf(shown, state)
     val parts = ArrayList<String>()
     if (caller.name != null && caller.number.isNotEmpty() && !conference) parts.add(Callers.shown(this, caller.number))
+    // What the number says of itself, for one that is none of the contacts.
+    if (!conference) caller.info?.let { parts.add(it) }
+    val spam = if (conference) null else caller.spam
+    warning.text = if (spam.isNullOrBlank()) say("Possible spam: on your spam list", "Πιθανό spam: στη λίστα spam") else say("Possible spam: {0}", "Πιθανό spam: {0}", spam)
+    warning.visibility = if (spam != null && !keypad) View.VISIBLE else View.GONE
     if (conference) shown.children.size.takeIf { it > 0 }?.let { parts.add(say("{0} people", "{0} άτομα", "$it")) }
     if (video.isVideo(shown)) parts.add(say("Video call", "Βιντεοκλήση"))
     if (shown.details.hasProperty(Call.Details.PROPERTY_WIFI)) parts.add(say("Wi-Fi calling", "Κλήση μέσω Wi-Fi"))
@@ -762,6 +778,8 @@ class CallActivity : Activity() {
     private const val FACE = 0xFF2A2520.toInt()
     private const val ANSWER_FILL = 0xFF2E7D32.toInt()
     private const val END_FILL = 0xFFC62828.toInt()
+    private const val WARN_FILL = 0xFF3A2E12.toInt()
+    private const val WARN_INK = 0xFFFBBF24.toInt()
 
     fun intent(context: Context): Intent =
       Intent(context, CallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)

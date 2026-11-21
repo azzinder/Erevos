@@ -4,6 +4,8 @@
 
 // The German of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/de/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Who an unknown number is, without asking anyone**: the call screen of a number that is none of your contacts says its country, place and whether it is a mobile, from the number alone, and warns of spam from a list you download whole under **Phone** → **Settings** → **Spam list**, or numbers you reported in **Recents**. See [Phone](#phone).":
+    "**Wer eine unbekannte Nummer ist, ohne jemanden zu fragen**: Der Anrufbildschirm einer Nummer, die keiner deiner Kontakte ist, nennt Land, Ort und ob sie mobil ist, allein aus der Nummer, und warnt vor Spam aus einer Liste, die du unter **Telefon** → **Einstellungen** → **Spam-Liste** ganz herunterlädst, oder vor Nummern, die du in der **Anrufliste** gemeldet hast. Siehe [Telefon](#phone).",
   "**Video calls through your phone company**: where your SIM and network carry them (ViLTE), a video call that comes shows **Answer with video** and **Audio only**, a call can turn video on with **Video**, and **⋯** beside a typed number offers **Video call**. See [Phone](#phone).":
     "**Videoanrufe über deinen Anbieter**: Wo deine SIM und dein Netz sie unterstützen (ViLTE), zeigt ein ankommender Videoanruf **Mit Video annehmen** und **Nur Ton**, ein Anruf schaltet mit **Video** das Bild ein, und **⋯** neben einer getippten Nummer bietet **Videoanruf**. Siehe [Telefon](#phone).",
   "**Who is in a conference call**: once calls are merged, the call screen lists each person, with **Separate** to talk with one alone and **End** to drop one, where your phone company allows it. See [Phone](#phone).":

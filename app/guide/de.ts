@@ -3078,6 +3078,17 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   zeigen die Anrufe einer Zeile **Diese Nummer blockieren** oder **Blockierung dieser Nummer aufheben**, mit
   **Rückgängig**. Android weist ihre Anrufe ab, bevor sie klingeln, und ihre SMS und MMS. Jeder Bereich sieht dieselbe
   Liste.
+- **Unbekannte Nummern und Spam:** Bei einer Nummer, die keiner deiner Kontakte ist, sagt der Anrufbildschirm unter
+  der Nummer, woher sie kommt (Land und Flagge, und den Ort eines Festnetzanschlusses, wo die Nummer ihn verrät) und
+  ob sie mobil, Festnetz, gebührenfrei oder eine Mehrwertnummer ist: allein aus der Nummer gelesen, auf dem Telefon.
+  Unter **Telefon** → **Einstellungen** lädt **Spam-Liste** eine Liste von Nummern, die für Spam bekannt sind, ganz
+  von der https://-Adresse herunter, die du eingibst: eine Nummer pro Zeile mit Ländervorwahl, oder der Anfang von
+  Nummern gefolgt von \`*\`, dann welche Art von Anrufen es sind. Erevos hat keine eigene; wähle eine Liste, der du
+  vertraust. Ohne Tor sieht der Server der Liste die Internetadresse des Telefons, und Erevos sagt es vorher. Der
+  Anrufbildschirm einer Nummer darauf zeigt **Möglicher Spam**; **Spam-Anrufe lautlos klingeln lassen** lässt sie
+  ohne Ton klingeln (ab Android 10), nie die eines Kontakts. In der **Anrufliste** fügt **Als Spam melden** bei
+  einer Nummer, die keiner deiner Kontakte ist, sie nur auf diesem Telefon hinzu, und **Kein Spam** nimmt es zurück;
+  **Meine Meldungen vergessen** löscht sie. Keine Nummer wird je irgendwo nachgeschlagen.
 - **Eine Kontaktgruppe für eine Weile:** Unter **Telefon** → **Einstellungen** listet **Eine Kontaktgruppe
   blockieren** die Gruppen (die Labels) der Kontakte deines Telefons auf. **Blockieren** neben einer blockiert die
   Anrufe ihrer Kontakte **Eine Stunde lang**, **Bis morgen früh** (7:00) oder **Bis ich es aufhebe**; die Zeile unter

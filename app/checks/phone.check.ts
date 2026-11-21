@@ -270,3 +270,35 @@ test('the keys show the letters of the app’s language, the ones a name is foun
     for (const key of '23456789') for (const letter of keyLetters(key, lang)) assert.equal(keysOf(letter), key, `${letter} on ${key}`);
   }
 });
+
+test('the spam list takes numbers with their country code, and starts of numbers', async () => {
+  const { spamAddress, spamLines } = await import('../lib/spam-list');
+  const list = [
+    '# A list of numbers',
+    '+30 211 000 4455, telemarketing',
+    '0030211000999\tcall centre',
+    '+33 162*',
+    '+30 21*',
+    '2110004455',
+    '+30 12',
+    '',
+  ].join('\n');
+  // The two whole numbers and the two starts; a national number and a short one are not taken.
+  assert.equal(spamLines(list), 4);
+  assert.equal(spamLines('nothing here\n'), 0);
+  assert.equal(spamAddress(' https://example.org/spam.txt '), 'https://example.org/spam.txt');
+  assert.equal(spamAddress('http://example.org/spam.txt'), null);
+  assert.equal(spamAddress('example.org'), null);
+});
+
+test('a spam list is kept only when it came and holds numbers', async () => {
+  const { downloadSpamList } = await import('../lib/spam-list');
+  const { spamKept } = await import('./phone-memory');
+  const bytes = (text: string) => new TextEncoder().encode(text);
+  const kept = spamKept.length;
+  assert.equal(await downloadSpamList('https://example.org/spam.txt', async () => ({ status: 200, bytes: bytes('+30 211 000 4455\n+33 162*\n') })), 2);
+  assert.equal(spamKept.length, kept + 1);
+  await assert.rejects(downloadSpamList('https://example.org/spam.txt', async () => ({ status: 404, bytes: bytes('') })));
+  await assert.rejects(downloadSpamList('https://example.org/spam.txt', async () => ({ status: 200, bytes: bytes('<html>not a list</html>') })));
+  assert.equal(spamKept.length, kept + 1);
+});

@@ -61,3 +61,10 @@ export const restoreCallLog = async (json: string): Promise<{ calls: number; blo
   phone.blocked.push(...blocked);
   return { calls: given.calls.length, blocked: blocked.length };
 };
+
+// The spam list's keeping (lib/spam-list.ts): the text last kept.
+export const spamKept: { text: string; source: string }[] = [];
+export const setSpamList = async (text: string, source: string): Promise<number> => {
+  spamKept.push({ text, source });
+  return text.split('\n').filter(Boolean).length;
+};

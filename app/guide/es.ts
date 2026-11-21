@@ -2900,6 +2900,17 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
   uno para desbloquearlo. En **Recientes**, las llamadas de una fila muestran **Bloquear este número** o **Desbloquear
   este número**, con **Deshacer**. Android rechaza sus llamadas antes de que suenen, y sus SMS y MMS. Todos los
   espacios ven la misma lista.
+- **Números desconocidos y spam:** para un número que no está en tus contactos, la pantalla de llamada dice bajo el
+  número de dónde es (su país y bandera, y la ciudad de un fijo cuando el número la indica) y si es un móvil, un
+  fijo, gratuito o de tarificación adicional: leído solo del número, en el teléfono. En **Teléfono** → **Ajustes**,
+  **Lista de spam** descarga entera una lista de números conocidos por spam desde la dirección https:// que
+  escribes: un número por línea con su código de país, o el comienzo de números seguido de \`*\`, y luego qué tipo de
+  llamadas son. Erevos no tiene una propia; elige una lista de confianza. Sin Tor, el servidor de la lista ve la
+  dirección de internet del teléfono, y Erevos lo dice antes. La pantalla de llamada de un número de la lista
+  muestra **Posible spam**; **Llamadas de spam en silencio** las hace sonar sin sonido (Android 10 y posteriores),
+  nunca las de un contacto. En **Recientes**, **Denunciar como spam** en un número que no está en tus contactos lo
+  añade solo en este teléfono, y **No es spam** lo quita; **Olvidar mis denuncias** las borra. Ningún número se
+  busca nunca en ningún sitio.
 - **Un grupo de contactos durante un tiempo:** en **Teléfono** → **Ajustes**, **Bloquear un grupo de contactos** lista
   los grupos (las etiquetas) de los contactos de tu teléfono. **Bloquear** junto a uno bloquea las llamadas de sus
   contactos **Durante una hora**, **Hasta mañana por la mañana** (7:00) o **Hasta que lo desbloquee**; la línea bajo el

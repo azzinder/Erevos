@@ -6995,7 +6995,7 @@ golang.org/x/tools v0.49.0
 
 
 ==============================================================================
-Android libraries (5)
+Android libraries (7)
 ==============================================================================
 
 androidx.media3:media3-exoplayer 1.8.0
@@ -7021,6 +7021,16 @@ androidx.media3:media3-ui 1.8.0
 com.google.zxing:core 3.5.3
   Licence: Apache-2.0
   Source: https://github.com/zxing/zxing
+  Text: Apache-2.0, standard text [108]
+
+com.googlecode.libphonenumber:geocoder 3.43
+  Licence: Apache-2.0
+  Source: https://github.com/google/libphonenumber
+  Text: Apache-2.0, standard text [108]
+
+com.googlecode.libphonenumber:libphonenumber 9.0.43
+  Licence: Apache-2.0
+  Source: https://github.com/google/libphonenumber
   Text: Apache-2.0, standard text [108]
 
 

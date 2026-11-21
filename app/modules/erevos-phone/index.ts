@@ -75,6 +75,11 @@ export type Voicemail = {
   account: string;
 };
 
+/** The spam list (Spam.kt): how many numbers the downloaded list holds, where from and when (ms,
+ *  0 for never), how many the owner reported, and whether the call screen warns of them and
+ *  whether they ring silently. */
+export type SpamState = { count: number; source: string; at: number; own: number; warn: boolean; silence: boolean };
+
 export type PhoneEvents = {
   /** A call came, was made, or ended: how many are on now. */
   onCalls: (event: { count: number }) => void;
@@ -98,6 +103,13 @@ type NativePhone = {
   callVoicemail?(account: string): Promise<void>;
   openCallSettings?(kind: string, account: string): boolean;
   videoCalling?(): boolean;
+  spamState?(): SpamState;
+  setSpamList?(text: string, source: string): Promise<number>;
+  clearSpamList?(): void;
+  setSpamSwitches?(warn: boolean, silence: boolean): void;
+  reportSpam?(number: string, spam: boolean): void;
+  reportedSpam?(number: string): boolean;
+  clearSpamReports?(): void;
   placeVideoCall?(number: string, account: string): Promise<void>;
   hasVoicemail?(account: string): string;
   voicemails?(): Promise<{ allowed: boolean; voicemails: Voicemail[] }>;
@@ -239,6 +251,49 @@ export function stopVoicemail(): void {
 /** Deletes a voicemail; whether it went. */
 export function deleteVoicemail(id: number): Promise<boolean> {
   return native?.deleteVoicemail ? native.deleteVoicemail(id) : Promise.resolve(false);
+}
+
+/** Whether this build has the spam list. */
+export function spamReady(): boolean {
+  return typeof native?.spamState === 'function';
+}
+
+export function spamState(): SpamState | null {
+  try {
+    return native?.spamState?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keeps a downloaded list in place of the one before; how many numbers it holds. */
+export function setSpamList(text: string, source: string): Promise<number> {
+  return native?.setSpamList ? native.setSpamList(text, source) : Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+}
+
+export function clearSpamList(): void {
+  native?.clearSpamList?.();
+}
+
+export function setSpamSwitches(warn: boolean, silence: boolean): void {
+  native?.setSpamSwitches?.(warn, silence);
+}
+
+/** Reports a number as spam on this phone only, or takes it back. */
+export function reportSpam(number: string, spam: boolean): void {
+  native?.reportSpam?.(number, spam);
+}
+
+export function reportedSpam(number: string): boolean {
+  try {
+    return native?.reportedSpam?.(number) === true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearSpamReports(): void {
+  native?.clearSpamReports?.();
 }
 
 /** Whether a SIM of the phone can make the phone company's video calls (ViLTE); false in a build without them. */

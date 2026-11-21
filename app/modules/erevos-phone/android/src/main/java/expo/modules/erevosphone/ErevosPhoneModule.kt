@@ -182,6 +182,35 @@ class ErevosPhoneModule : Module() {
       Voicemail.delete(context(), id.toLong())
     }
 
+    // The spam list (Spam.kt): how it stands, a downloaded list kept, the switches, the owner's reports.
+    Function("spamState") {
+      Spam.state(context())
+    }
+
+    AsyncFunction("setSpamList") { text: String, source: String ->
+      Spam.setList(context(), text, source)
+    }
+
+    Function("clearSpamList") {
+      Spam.clearList(context())
+    }
+
+    Function("setSpamSwitches") { warn: Boolean, silence: Boolean ->
+      Spam.setSwitches(context(), warn, silence)
+    }
+
+    Function("reportSpam") { number: String, spam: Boolean ->
+      Spam.report(context(), number, spam)
+    }
+
+    Function("reportedSpam") { number: String ->
+      Spam.reported(context(), number)
+    }
+
+    Function("clearSpamReports") {
+      Spam.clearReports(context())
+    }
+
     // Whether a SIM can make the phone company's video calls (ViLTE).
     Function("videoCalling") {
       val context = context()

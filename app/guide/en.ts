@@ -2669,6 +2669,16 @@ that title, and tapping it opens the Phone's **Settings**.
   **Settings** → **Phone and SMS** → **SMS** → **Blocked numbers**: type a number and tap **Block**, or tap one to
   unblock it. In **Recents**, a row's calls show **Block this number** or **Unblock this number**, with **Undo**.
   Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.
+- **Unknown numbers and spam:** for a number that is none of your contacts, the call screen says under the number
+  where it is from (its country and flag, and the town of a landline where the number tells it) and whether it is a
+  mobile, a landline, free or premium rate: read from the number alone, on the phone. Under **Phone** →
+  **Settings**, **Spam list** downloads a list of numbers known for spam, whole, from the https:// address you type:
+  one number a line with its country code, or the start of numbers followed by \`*\`, then what kind of calls they
+  are. Erevos keeps none of its own; choose a list you trust. Without Tor, the list's server sees this phone's
+  internet address, and Erevos says so first. The call screen of a number on it shows **Possible spam**; **Ring spam
+  calls silently** lets them ring with no sound (Android 10 and later), never a contact's. In **Recents**, **Report
+  as spam** on a number that is none of your contacts adds it on this phone only, and **Not spam** takes it back;
+  **Forget my reports** clears them. No number is ever looked up anywhere.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**

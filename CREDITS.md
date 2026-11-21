@@ -34,6 +34,7 @@ Makers and licences are as the projects' own packages and files state them.
 | [fflate](https://github.com/101arrowz/fflate) | Arjun Barrett | MIT | Reading the zip files of chat exports |
 | [jsQR](https://github.com/cozmo/jsQR) | Cosmo Wolfe | Apache-2.0 | Reading a QR code from a picture in the web app |
 | [ZXing](https://github.com/zxing/zxing) | The ZXing authors | Apache-2.0 | Reading a QR code from a photo on Android |
+| [libphonenumber](https://github.com/google/libphonenumber) and its geocoder | Google LLC and the libphonenumber authors | Apache-2.0 | Saying where an unknown caller's number is from, and whether it is a mobile, offline on Android |
 | [AndroidX Media3](https://github.com/androidx/media) (`media3-exoplayer`, `media3-session`, `media3-ui`) | The Android Open Source Project | Apache-2.0 | Playing the Collection's music and videos on Android, with the screen off and on the lock screen |
 | [hls.js](https://github.com/video-dev/hls.js) | The hls.js authors (video-dev) | Apache-2.0 | Playing HLS streams (TV channels, radio) in the desktop app and a browser, where the browser cannot by itself |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | Kazuhiko Arase | MIT | Drawing the QR codes of the donation page |
@@ -1459,7 +1460,7 @@ The Android app's Tor bridges are lyrebird, built from these modules (`transport
 
 ### Android libraries
 
-Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 5 libraries.
+Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 7 libraries.
 
 | Library | Version | Licence |
 | --- | --- | --- |
@@ -1468,6 +1469,8 @@ Libraries that Erevos's own Android code declares (`group:name`). React Native a
 | [androidx.media3:media3-session](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [androidx.media3:media3-ui](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [com.google.zxing:core](https://github.com/zxing/zxing) | 3.5.3 | Apache-2.0 |
+| [com.googlecode.libphonenumber:geocoder](https://github.com/google/libphonenumber) | 3.43 | Apache-2.0 |
+| [com.googlecode.libphonenumber:libphonenumber](https://github.com/google/libphonenumber) | 9.0.43 | Apache-2.0 |
 
 <!-- generated:end -->
 

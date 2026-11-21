@@ -2877,6 +2877,16 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   **Bloquear**, ou toque num para desbloqueá-lo. Em **Recentes**, as chamadas de uma linha mostram **Bloquear este
   número** ou **Desbloquear este número**, com **Desfazer**. O Android rejeita as chamadas deles antes de tocarem, e
   os SMS e MMS deles. Todos os espaços veem a mesma lista.
+- **Números desconhecidos e spam:** para um número que não está nos seus contatos, a tela de chamada diz abaixo do
+  número de onde ele é (o país e a bandeira, e a cidade de um fixo quando o número indica) e se é celular, fixo,
+  gratuito ou de tarifa premium: lido só do número, no celular. Em **Telefone** → **Configurações**, **Lista de
+  spam** baixa inteira uma lista de números conhecidos por spam do endereço https:// que você digita: um número por
+  linha com o código do país, ou o começo de números seguido de \`*\`, e depois que tipo de chamadas são. O Erevos não
+  tem uma própria; escolha uma lista em que confie. Sem Tor, o servidor da lista vê o endereço de internet do
+  celular, e o Erevos avisa antes. A tela de chamada de um número da lista mostra **Possível spam**; **Chamadas de
+  spam em silêncio** as faz tocar sem som (Android 10 em diante), nunca as de um contato. Em **Recentes**,
+  **Denunciar como spam** num número que não está nos seus contatos o adiciona só neste celular, e **Não é spam** o
+  tira; **Esquecer minhas denúncias** as apaga. Nenhum número é procurado em lugar nenhum.
 - **Um grupo de contatos por um tempo:** em **Telefone** → **Configurações**, **Bloquear um grupo de contatos** lista
   os grupos (os marcadores) dos contatos do seu celular. **Bloquear** ao lado de um bloqueia as chamadas dos contatos
   dele **Por uma hora**, **Até amanhã de manhã** (7:00) ou **Até eu liberar**; a linha abaixo do grupo diz até

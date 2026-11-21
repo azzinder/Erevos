@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Who an unknown number is, without asking anyone**: the call screen of a number that is none of your contacts says its country, place and whether it is a mobile, from the number alone, and warns of spam from a list you download whole under **Phone** → **Settings** → **Spam list**, or numbers you reported in **Recents**. See [Phone](#phone).":
+    "**Ποιος είναι ένας άγνωστος αριθμός, χωρίς να ρωτηθεί κανείς**: η οθόνη κλήσης ενός αριθμού που δεν είναι στις επαφές σου λέει τη χώρα, τον τόπο του και αν είναι κινητό, μόνο από τον αριθμό, και προειδοποιεί για spam από μια λίστα που κατεβάζεις ολόκληρη στο **Τηλέφωνο** → **Ρυθμίσεις** → **Λίστα spam**, ή από αριθμούς που ανέφερες στα **Πρόσφατα**. Δες [Τηλέφωνο](#phone).",
   "**Video calls through your phone company**: where your SIM and network carry them (ViLTE), a video call that comes shows **Answer with video** and **Audio only**, a call can turn video on with **Video**, and **⋯** beside a typed number offers **Video call**. See [Phone](#phone).":
     "**Βιντεοκλήσεις μέσω της εταιρείας κινητής**: όπου η SIM και το δίκτυό σου τις υποστηρίζουν (ViLTE), μια βιντεοκλήση που έρχεται δείχνει **Απάντηση με βίντεο** και **Μόνο ήχος**, μια κλήση ανοίγει βίντεο με το **Βίντεο**, και το **⋯** δίπλα σε αριθμό που έγραψες δίνει **Βιντεοκλήση**. Δες [Τηλέφωνο](#phone).",
   "**Who is in a conference call**: once calls are merged, the call screen lists each person, with **Separate** to talk with one alone and **End** to drop one, where your phone company allows it. See [Phone](#phone).":

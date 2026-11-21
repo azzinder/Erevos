@@ -68,6 +68,9 @@ import {
   voicemails,
   placeVideoCall,
   videoCalling,
+  reportedSpam,
+  reportSpam,
+  spamReady,
   type Voicemail,
   seenMissedCalls,
   setBlockingRules,
@@ -1205,6 +1208,18 @@ function Recents({ accounts, locked, onCall, onEdit }: {
                 onEdit(first.number);
               }}
             />
+            {spamReady() && !locked && !first.name ? (
+              <Button
+                title={reportedSpam(first.number) ? t('Not spam') : t('Report as spam')}
+                kind="secondary"
+                onPress={() => {
+                  const spam = !reportedSpam(first.number);
+                  setOpen(null);
+                  reportSpam(first.number, spam);
+                  setNote(spam ? t('Reported as spam on this phone only. Its calls show a warning.') : t('No longer reported as spam.'));
+                }}
+              />
+            ) : null}
             {blocked && !locked ? (
               <Button
                 title={isBlocked(first.number, blocked) ? t('Unblock this number') : t('Block this number')}

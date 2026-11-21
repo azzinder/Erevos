@@ -2778,6 +2778,15 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   dodirnite jedan da ga odblokirate. U **Nedavni** pozivi reda prikazuju **Blokiraj ovaj broj** ili **Odblokiraj ovaj
   broj**, s **Poništi**. Android odbija njihove pozive prije nego što zazvone, kao i njihove SMS i MMS poruke. Svaki
   prostor vidi isti popis.
+- **Nepoznati brojevi i spam:** za broj koji nije među vašim kontaktima, ekran poziva ispod broja kaže odakle je
+  (državu i zastavu, i grad fiksnog broja kad ga broj otkriva) i da li je mobilni, fiksni, besplatan ili skuplji
+  poziv: pročitano samo iz broja, na telefonu. Pod **Telefon** → **Postavke**, **Lista spama** preuzima cijelu listu
+  brojeva poznatih po spamu s https:// adrese koju upišete: jedan broj po redu s pozivnim brojem zemlje, ili početak
+  brojeva i zatim \`*\`, pa kakvi su to pozivi. Erevos nema svoju; izaberite listu kojoj vjerujete. Bez Tora, server
+  liste vidi internet adresu telefona, i Erevos to prvo kaže. Ekran poziva broja s liste prikazuje **Mogući spam**;
+  **Spam pozivi bez zvuka** ih pušta da zvone bez zvuka (Android 10 i noviji), nikad poziv kontakta. U **Nedavnim**,
+  **Prijavi kao spam** na broju koji nije među vašim kontaktima dodaje ga samo na ovom telefonu, a **Nije spam** ga
+  uklanja; **Zaboravi moje prijave** ih briše. Nijedan broj se nikad nigdje ne traži.
 - **Grupa kontakata na neko vrijeme:** pod **Telefon** → **Postavke**, **Blokiraj grupu kontakata** navodi grupe
   (oznake) kontakata vašeg telefona. **Blokiraj** pored jedne blokira pozive njenih kontakata **Na sat vremena**,
   **Do sutra ujutro** (7:00) ili **Dok ne ukinem blokadu**; red ispod grupe kaže do kada, a **Ukini** to završava

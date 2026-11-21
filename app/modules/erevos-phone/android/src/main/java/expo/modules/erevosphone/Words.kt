@@ -35,6 +35,13 @@ internal object Words {
   private val OTHERS: Map<String, Map<String, String>> = mapOf(
     "{0} people" to t("{0} Personen", "{0} personas", "{0} personnes", "{0} persone", "{0} pessoas", "Osobe: {0}"),
     "Add call" to t("Anruf hinzufügen", "Añadir llamada", "Ajouter un appel", "Aggiungi chiamata", "Adicionar chamada", "Dodaj poziv"),
+    "Free to call" to t("Gebührenfrei", "Gratuito", "Gratuit", "Gratuito", "Gratuito", "Besplatan"),
+    "Landline" to t("Festnetz", "Fijo", "Fixe", "Fisso", "Fixo", "Fiksni"),
+    "Mobile" to t("Mobil", "Móvil", "Mobile", "Cellulare", "Celular", "Mobilni"),
+    "Possible spam: on your spam list" to t("Möglicher Spam: auf deiner Spam-Liste", "Posible spam: en tu lista de spam", "Spam possible : sur ta liste de spam", "Possibile spam: nella tua lista spam", "Possível spam: na sua lista de spam", "Mogući spam: na vašoj listi spama"),
+    "Possible spam: {0}" to t("Möglicher Spam: {0}", "Posible spam: {0}", "Spam possible : {0}", "Possibile spam: {0}", "Possível spam: {0}", "Mogući spam: {0}"),
+    "Premium rate" to t("Mehrwertnummer", "Tarificación adicional", "Numéro surtaxé", "Numero a tariffa maggiorata", "Tarifa premium", "Skuplji poziv"),
+    "Shared cost" to t("Geteilte Kosten", "Coste compartido", "Coût partagé", "Costo condiviso", "Custo compartilhado", "Podijeljeni trošak"),
     "Answer with video" to t("Mit Video annehmen", "Responder con vídeo", "Répondre en vidéo", "Rispondi con video", "Atender com vídeo", "Javi se s videom"),
     "Audio only" to t("Nur Ton", "Solo audio", "Audio seul", "Solo audio", "Só áudio", "Samo zvuk"),
     "Camera off" to t("Kamera aus", "Apagar cámara", "Couper la caméra", "Spegni fotocamera", "Desligar câmera", "Isključi kameru"),
