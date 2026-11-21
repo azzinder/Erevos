@@ -2652,6 +2652,8 @@ nulla.
 - **Più messaggi:** tieni premuto un messaggio e scegli **Seleziona**, poi tocca gli altri: **Copia** li mette in un
   solo testo, **Inoltra** li invia come uno nella bozza di un’altra conversazione, ed **Elimina** li elimina dal
   telefono, con **Annulla** per qualche secondo.
+- **Nuovo SMS:** nella parte **SMS** dell’elenco delle chat, il pulsante in basso è **Nuovo SMS** e apre solo
+  quello, anche con le chat di Erevos attive.
 - **Scegliere il destinatario:** sotto **Nuovo SMS**, tocca **Contatti** per scegliere tra i tuoi contatti, con una
   ricerca, oppure scrivi e basta: i contatti il cui nome o numero corrisponde a quello che scrivi compaiono sotto il
   campo, e un tocco lo compila. Un contatto con più numeri mostra una riga per ciascuno. Per un gruppo, ogni contatto

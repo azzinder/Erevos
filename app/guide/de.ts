@@ -2810,6 +2810,8 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
 - **Mehrere Nachrichten:** Halte eine Nachricht gedrückt und wähle **Auswählen**, dann tippe auf weitere: **Kopieren**
   legt sie in einen Text, **Weiterleiten** sendet sie als eine in den Entwurf einer anderen Unterhaltung, und
   **Löschen** löscht sie vom Telefon, mit **Rückgängig** für einige Sekunden.
+- **Neue SMS:** Im Bereich **SMS** der Chatliste heißt der Knopf unten **Neue SMS** und öffnet nur das, auch wenn
+  Erevos’ eigene Chats an sind.
 - **Empfänger wählen:** Tippe unter **Neue SMS** auf **Kontakte**, um aus deinen Kontakten zu wählen, mit Suche, oder
   tippe einfach: Kontakte, die zu Name oder Nummer passen, erscheinen unter dem Feld, und ein Tippen füllt es aus. Ein
   Kontakt mit mehreren Nummern zeigt für jede eine Zeile. Bei einer Gruppe wird jede Wahl zu den vorhandenen Nummern

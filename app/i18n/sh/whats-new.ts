@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**New SMS on the SMS part**: on the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on. See [SMS](#sms).":
+    "**Novi SMS u dijelu SMS**: u dijelu **SMS** liste razgovora, dugme dolje je **Novi SMS** i otvara samo novi SMS, i kada su Erevosovi razgovori uključeni. Vidi [SMS](#sms).",
   "**The day stands out in every chat**: over the first message of each day, groups and Chat with myself too, the day shows in bold between two lines: **Today**, **Yesterday**, the weekday within the last week, and before that the weekday and date. See [Chat through a relay](#relay).":
     "**Dan se jasno vidi u svakom razgovoru**: iznad prve poruke svakog dana, i u grupama i u Razgovoru sa sobom, dan stoji podebljano između dvije linije: **Danas**, **Jučer**, dan u sedmici unutar zadnje sedmice, a prije toga dan i datum. Vidi [Razgovor preko relaya](#relay).",
   "**The microphone writes, if you like**: tap the microphone beside the message field and choose **Speak to write**, and from then on holding it writes what you say into the field, until you choose **Voice message** again. The choice stays for every chat. See [Chat through a relay](#relay).": "**Mikrofon piše, ako hoćeš**: dodirni mikrofon pored polja za poruku i izaberi **Govori da pišeš**, i od tada, kad ga držiš, piše u polje ono što govoriš, dok opet ne izabereš **Glasovna poruka**. Izbor važi za svaki razgovor. Vidi [Razgovor preko relaya](#relay).",

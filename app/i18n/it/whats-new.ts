@@ -4,6 +4,8 @@
 
 // The Italian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/it/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**New SMS on the SMS part**: on the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on. See [SMS](#sms).":
+    "**Nuovo SMS nella parte SMS**: nella parte **SMS** dell’elenco delle chat, il pulsante in basso è **Nuovo SMS** e apre solo un nuovo SMS, anche con le chat di Erevos attive. Vedi [SMS](#sms).",
   "**The day stands out in every chat**: over the first message of each day, groups and Chat with myself too, the day shows in bold between two lines: **Today**, **Yesterday**, the weekday within the last week, and before that the weekday and date. See [Chat through a relay](#relay).":
     "**Il giorno si vede bene in ogni chat**: sopra il primo messaggio di ogni giorno, anche nei gruppi e in Chat con me stesso, il giorno compare in grassetto tra due linee: **Oggi**, **Ieri**, il giorno della settimana nell’ultima settimana, e prima il giorno con la data. Vedi [Chat tramite un relay](#relay).",
   "**The microphone writes, if you like**: tap the microphone beside the message field and choose **Speak to write**, and from then on holding it writes what you say into the field, until you choose **Voice message** again. The choice stays for every chat. See [Chat through a relay](#relay).": "**Il microfono scrive, se vuoi**: tocca il microfono accanto al campo del messaggio e scegli **Parla per scrivere**, e da allora, tenuto premuto, scrive nel campo quello che dici, finché non scegli di nuovo **Messaggio vocale**. La scelta vale per ogni chat. Vedi [Chat tramite un relay](#relay).",

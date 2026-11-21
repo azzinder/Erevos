@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- On the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on; it opened New chat's Erevos steps there unless Erevos was off (`app/index.tsx` `newChat`). Holding it still opens the hidden chats' PIN. Reported by the maintainer.
 ### Under the hood
 
 ## 7.2.0-rc.2 (2026-11-21)

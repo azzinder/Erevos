@@ -2622,6 +2622,8 @@ mostra nada.
 - **Várias mensagens:** toque e segure uma mensagem e escolha **Selecionar**, depois toque em outras: **Copiar** as põe
   num só texto, **Encaminhar** as envia como uma só para o rascunho de outra conversa, e **Apagar** as apaga do celular,
   com **Desfazer** por alguns segundos.
+- **Novo SMS:** na parte **SMS** da lista de conversas, o botão em baixo é **Novo SMS** e abre só isso, também com
+  as conversas do Erevos ligadas.
 - **Escolher o destinatário:** em **Novo SMS**, toque em **Contatos** para escolher entre seus contatos, com busca, ou
   apenas digite: os contatos cujo nome ou número combina com o que você digita aparecem sob o campo, e um toque o
   preenche. Um contato com vários números mostra uma linha para cada um. Em um grupo, cada contato escolhido é
