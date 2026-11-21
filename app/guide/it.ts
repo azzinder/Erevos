@@ -817,6 +817,10 @@ presenta potrebbe spacciare qualcun altro, confronta il codice di sicurezza con 
 
 ### Inviato, arrivato e letto
 
+Sopra il primo messaggio di ogni giorno, in ogni chat, anche nei gruppi e in Chat con me stesso, il giorno si vede
+bene: **Oggi**, **Ieri**, il giorno della settimana nell’ultima settimana, e prima il giorno con la data, come
+**Martedì 10 novembre**.
+
 Sotto ognuno dei tuoi messaggi a un contatto, **✓** dice che il relay o un telefono vicino l’ha preso, **✓✓** che è
 arrivato al suo telefono, e **✓✓✓** che l’ha letto. Il suo telefono lo dice al tuo, dentro la crittografia, la
 prossima volta che ognuno controlla il relay, o subito quando siete vicini. Un messaggio conta come letto appena la sua

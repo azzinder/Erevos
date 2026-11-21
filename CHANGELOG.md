@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- The day stands out in every chat: over the first message of each day, in chats, groups (which showed only the time of each message, and now show the day too) and Chat with myself, the day shows in bold on its own chip between two lines (`components/chat-thread-lines.tsx` `DayMark`), as **Today**, **Yesterday**, the weekday within the last week, and before that the weekday and date, with the year once it is another year's (`lib/day-mark.ts`, in the app's language; `checks/day-mark.check.ts`). It took the place of the faint `YYYY-MM-DD`. Requested by the maintainer, from his chosen mockup («Α»).
+
 ### Under the hood
 
 ## 7.2.0-rc.2 (2026-11-21)

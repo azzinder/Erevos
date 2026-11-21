@@ -869,6 +869,10 @@ vorstellt, jemand anderen unterschieben könnte, vergleiche mit dem neuen Kontak
 
 ### Gesendet, angekommen und gelesen
 
+Über der ersten Nachricht jedes Tages steht in jedem Chat, auch in Gruppen und im Chat mit mir selbst, deutlich der
+Tag: **Heute**, **Gestern**, in der letzten Woche der Wochentag und davor Wochentag und Datum, etwa **Dienstag, 10.
+November**.
+
 Unter jeder deiner Nachrichten an einen Kontakt sagt **✓**, dass das Relay oder ein Telefon in der Nähe sie angenommen
 hat, **✓✓**, dass sie auf seinem Telefon angekommen ist, und **✓✓✓**, dass er sie gelesen hat. Sein Telefon sagt es
 deinem, innerhalb der Verschlüsselung, wenn jedes das nächste Mal beim Relay nachsieht, oder sofort, wenn ihr in der

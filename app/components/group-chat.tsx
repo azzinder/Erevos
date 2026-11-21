@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatLookSheet } from './chat-look';
 import { canNotifyChats, ChatNotifySheet } from './chat-notify-sheet';
 import { ChatPinGate } from './chat-pin-gate';
+import { DayMark } from './chat-thread-lines';
 import { DraftComposer, IconButton, useDraft } from './composer';
 import { useGlassBlur } from './glass';
 import { useGroupMedia } from './group-media';
@@ -29,6 +30,7 @@ import { choose, confirm } from '../lib/alert';
 import { screenOfGroup, showOnScreen } from '../lib/background';
 import { forwardedTo } from '../lib/forward';
 import { currentCall } from '../lib/call';
+import { sameDay } from '../lib/day-mark';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
@@ -527,16 +529,22 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
           scrollEventThrottle={100}
         >
           {lines.map((m, i) => {
+            const before = lines[i - 1];
+            // The day over the first line of each day, as in every chat.
+            const newDay = !!m.at && (!before?.at || !sameDay(before.at, m.at));
+            const day = newDay ? <DayMark at={m.at} /> : null;
             if (m.note) {
               return (
-                <Text key={i} variant="caption" tone="muted" style={styles.noteLine}>
-                  {noteText(m.text, name)}
-                </Text>
+                <View key={i}>
+                  {day}
+                  <Text variant="caption" tone="muted" style={styles.noteLine}>
+                    {noteText(m.text, name)}
+                  </Text>
+                </View>
               );
             }
             const mine = !m.from;
-            const before = lines[i - 1];
-            const first = !before || before.note || before.from !== m.from;
+            const first = newDay || !before || before.note || before.from !== m.from;
             const ink = mine ? b.mineText : b.theirsText;
             const caption = parts.caption(m);
             // A sticker, built in or made from a photo, shows on its own, with no bubble.
@@ -544,6 +552,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
             const chosen = parts.chosen(m);
             return (
               <View key={i} onLayout={parts.placedAt(m)}>
+                {day}
                 {/* While messages are chosen, a tap adds it or takes it out, and nothing in it acts. */}
                 <Pressable
                   disabled={!parts.choosing}
