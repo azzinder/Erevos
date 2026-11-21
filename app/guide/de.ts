@@ -3005,6 +3005,13 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
 - **Eine Konferenz:** Sind Anrufe zusammengeführt, listet der Anrufbildschirm statt des Fotos die Personen darin.
   Neben jeder spricht **Einzeln** allein mit ihr, während die anderen in der Warteschleife warten, und **Auflegen**
   nimmt nur sie heraus; beides erscheint nur, wo dein Anbieter es erlaubt.
+- **Videoanrufe über deinen Anbieter:** Wo deine SIM und dein Netz sie unterstützen (ViLTE, über 4G oder 5G), zeigt
+  ein ankommender Videoanruf **Mit Video annehmen** und **Nur Ton**; im Anruf erscheint die andere Seite
+  bildschirmfüllend und deine Kamera in einer Ecke, mit **Kamera aus** und **Kamera wechseln**. Ein Anruf ohne Video
+  zeigt **Video**, wenn beide Seiten es können, und fragt die andere Seite danach, fragt Erevos dich: **Video
+  einschalten** oder **Nur Ton behalten**. Um einen zu beginnen, tippe die Nummer und dann **⋯** → **Videoanruf**.
+  Android fragt einmal nach der Kamera. Wie jeden Telefonanruf trägt ihn der Anbieter und kann ihn sehen; nichts
+  davon erscheint, wo das Netz keine Videoanrufe hat.
 - **Mit einer Nachricht ablehnen:** **Message**, bei einem klingelnden Anruf, lehnt ihn mit einer Schnellantwort ab,
   oder mit einer, die du schreibst, die dein Telefon dem Anrufer als SMS schickt; sie erscheint zwischen deinen SMS.
   Unter **Telefon** → **Einstellungen** ändert **Schnellantworten** sie: **Antwort hinzufügen**, **Entfernen**,

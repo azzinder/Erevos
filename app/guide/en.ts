@@ -2608,6 +2608,12 @@ that title, and tapping it opens the Phone's **Settings**.
 - **A conference call:** once calls are merged, the call screen lists the people in it instead of the photo. Beside
   each, **Separate** talks with that person alone while the others wait on hold, and **End** drops only them; each
   shows only where your phone company allows it.
+- **Video calls through your phone company:** where your SIM and network carry them (ViLTE, over 4G or 5G), a video
+  call that comes shows **Answer with video** and **Audio only**; in a call, the other side shows full screen and
+  your camera in a corner, with **Camera off** and **Switch camera**. A call without video shows **Video** when both
+  sides can, and when the other side asks, Erevos asks you: **Turn video on** or **Keep to sound**. To start one,
+  type the number and tap **⋯** → **Video call**. Android asks once for the camera. Like any phone call, the phone
+  company carries it and can see it; none of this shows where the network has no video calls.
 - **Decline with a message:** **Message**, on a call that rings, declines it with a quick reply, or one you write,
   which your phone sends the caller as an SMS; it shows among your SMS. Under **Phone** → **Settings**,
   **Quick replies** changes them: **Add a reply**, **Remove**, **Save**, and **Use the usual replies**. They are kept

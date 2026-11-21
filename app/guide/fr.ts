@@ -2981,6 +2981,13 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
 - **Une conférence :** une fois les appels fusionnés, l’écran d’appel liste les personnes présentes à la place de la
   photo. À côté de chacune, **Séparer** te fait lui parler seul pendant que les autres attendent en attente, et
   **Raccrocher** ne retire qu’elle ; chacun ne s’affiche que là où ton opérateur le permet.
+- **Appels vidéo par ton opérateur :** là où ta SIM et ton réseau les prennent en charge (ViLTE, en 4G ou 5G), un
+  appel vidéo entrant affiche **Répondre en vidéo** et **Audio seul** ; pendant l’appel, l’autre côté s’affiche en
+  plein écran et ta caméra dans un coin, avec **Couper la caméra** et **Changer de caméra**. Un appel sans vidéo
+  affiche **Vidéo** quand les deux côtés le peuvent, et quand l’autre le demande, Erevos te demande : **Activer la
+  vidéo** ou **Rester en audio**. Pour en lancer un, tape le numéro puis **⋯** → **Appel vidéo**. Android demande
+  une fois la caméra. Comme tout appel téléphonique, ton opérateur le transporte et peut le voir ; rien de cela ne
+  s’affiche là où le réseau n’a pas d’appels vidéo.
 - **Refuser avec un message :** **Message**, sur un appel qui sonne, le refuse avec une réponse rapide, ou une que tu
   écris, que ton téléphone envoie à l’appelant en SMS ; elle s’affiche parmi tes SMS. Sous **Téléphone** → **Réglages**,
   **Réponses rapides** les change : **Ajouter une réponse**, **Retirer**, **Enregistrer**, et **Utiliser les réponses

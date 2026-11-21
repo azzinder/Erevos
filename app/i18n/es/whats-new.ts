@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Video calls through your phone company**: where your SIM and network carry them (ViLTE), a video call that comes shows **Answer with video** and **Audio only**, a call can turn video on with **Video**, and **⋯** beside a typed number offers **Video call**. See [Phone](#phone).":
+    "**Videollamadas a través de tu compañía**: donde tu SIM y tu red las admiten (ViLTE), una videollamada entrante muestra **Responder con vídeo** y **Solo audio**, una llamada activa el vídeo con **Vídeo**, y **⋯** junto a un número escrito ofrece **Videollamada**. Mira [Teléfono](#phone).",
   "**Who is in a conference call**: once calls are merged, the call screen lists each person, with **Separate** to talk with one alone and **End** to drop one, where your phone company allows it. See [Phone](#phone).":
     "**Quién está en una conferencia**: con las llamadas combinadas, la pantalla de llamada muestra a cada persona, con **Separar** para hablar solo con ella y **Colgar** para sacarla, donde tu compañía lo permite. Mira [Teléfono](#phone).",
   "**Speed dial**: hold a key from 2 to 9 on the Phone's empty keypad to call the number you put on it; an empty key offers to choose one, and **Phone** → **Settings** → **Speed dial** shows them all. Kept sealed in the space. See [Phone](#phone).":

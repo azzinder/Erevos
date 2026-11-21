@@ -2713,6 +2713,12 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
 - **Konferencijski poziv:** kad se pozivi spoje, ekran poziva umjesto fotografije prikazuje osobe u njemu. Pored
   svake, **Odvoji** vam daje da razgovarate samo s njom dok ostali čekaju na čekanju, a **Prekini** izbacuje samo
   nju; svako se prikazuje samo gdje operater to dozvoljava.
+- **Video pozivi preko operatera:** gdje ih SIM kartica i mreža podržavaju (ViLTE, preko 4G ili 5G), dolazni video
+  poziv prikazuje **Javi se s videom** i **Samo zvuk**; u pozivu se druga strana vidi preko cijelog ekrana, a vaša
+  kamera u uglu, s **Isključi kameru** i **Promijeni kameru**. Poziv bez videa prikazuje **Video** kad obje strane
+  mogu, a kad druga strana zatraži, Erevos vas pita: **Uključi video** ili **Ostani na zvuku**. Da pokrenete jedan,
+  upišite broj i dodirnite **⋯** → **Video poziv**. Android jednom traži kameru. Kao svaki telefonski poziv, prenosi
+  ga operater i može ga vidjeti; ništa od ovoga se ne prikazuje gdje mreža nema video pozive.
 - **Odbijanje porukom:** **Message**, na pozivu koji zvoni, odbija ga brzim odgovorom, ili onim koji napišete, a vaš
   telefon ga šalje pozivaocu kao SMS; prikazuje se među vašim SMS porukama. Pod **Telefon** → **Postavke**, **Brzi
   odgovori** ih mijenja: **Dodaj odgovor**, **Ukloni**, **Sačuvaj** i **Koristi uobičajene odgovore**. Čuvaju se na

@@ -2838,6 +2838,13 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
 - **Una conferenza:** unite le chiamate, la schermata di chiamata elenca le persone presenti al posto della foto.
   Accanto a ognuna, **Separa** ti fa parlare solo con lei mentre le altre restano in attesa, e **Chiudi** toglie
   solo lei; ciascuno compare solo dove il tuo operatore lo permette.
+- **Videochiamate tramite il tuo operatore:** dove SIM e rete le supportano (ViLTE, in 4G o 5G), una videochiamata
+  in arrivo mostra **Rispondi con video** e **Solo audio**; durante la chiamata, l’altra parte appare a tutto
+  schermo e la tua fotocamera in un angolo, con **Spegni fotocamera** e **Cambia fotocamera**. Una chiamata senza
+  video mostra **Video** quando entrambe le parti possono, e quando l’altra lo chiede, Erevos ti chiede: **Attiva
+  video** o **Resta solo audio**. Per iniziarne una, digita il numero e tocca **⋯** → **Videochiamata**. Android
+  chiede una volta la fotocamera. Come ogni chiamata telefonica, la trasporta l’operatore e può vederla; niente di
+  tutto questo compare dove la rete non ha videochiamate.
 - **Rifiutare con un messaggio:** **Message**, su una chiamata che squilla, la rifiuta con una risposta rapida, o una
   che scrivi, che il tuo telefono invia a chi chiama come SMS; appare tra i tuoi SMS. In **Telefono** →
   **Impostazioni**, **Risposte rapide** le cambia: **Aggiungi una risposta**, **Rimuovi**, **Salva**, e **Usa le

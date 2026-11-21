@@ -2809,6 +2809,13 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
 - **Uma conferência:** com as chamadas mescladas, a tela de chamada lista as pessoas que estão nela no lugar da
   foto. Ao lado de cada uma, **Separar** fala só com ela enquanto as outras aguardam em espera, e **Encerrar** tira
   só ela; cada um aparece só onde a operadora permite.
+- **Videochamadas pela operadora:** onde o seu chip e a rede as suportam (ViLTE, por 4G ou 5G), uma videochamada
+  recebida mostra **Atender com vídeo** e **Só áudio**; na chamada, o outro lado aparece em tela cheia e a sua
+  câmera num canto, com **Desligar câmera** e **Trocar câmera**. Uma chamada sem vídeo mostra **Vídeo** quando os
+  dois lados podem, e quando o outro pede, o Erevos pergunta a você: **Ligar vídeo** ou **Continuar só com áudio**.
+  Para começar uma, digite o número e toque em **⋯** → **Videochamada**. O Android pede a câmera uma vez. Como
+  qualquer chamada telefônica, a operadora a transporta e pode vê-la; nada disso aparece onde a rede não tem
+  videochamadas.
 - **Recusar com uma mensagem:** **Message**, numa chamada que toca, a recusa com uma resposta rápida, ou uma que você
   escreve, que o seu celular envia a quem liga como SMS; ela aparece entre os seus SMS. Em **Telefone** →
   **Configurações**, **Respostas rápidas** as muda: **Adicionar uma resposta**, **Remover**, **Salvar** e **Usar as

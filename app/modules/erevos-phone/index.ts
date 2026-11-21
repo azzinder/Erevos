@@ -97,6 +97,8 @@ type NativePhone = {
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   callVoicemail?(account: string): Promise<void>;
   openCallSettings?(kind: string, account: string): boolean;
+  videoCalling?(): boolean;
+  placeVideoCall?(number: string, account: string): Promise<void>;
   hasVoicemail?(account: string): string;
   voicemails?(): Promise<{ allowed: boolean; voicemails: Voicemail[] }>;
   playVoicemail?(id: number): Promise<void>;
@@ -237,6 +239,21 @@ export function stopVoicemail(): void {
 /** Deletes a voicemail; whether it went. */
 export function deleteVoicemail(id: number): Promise<boolean> {
   return native?.deleteVoicemail ? native.deleteVoicemail(id) : Promise.resolve(false);
+}
+
+/** Whether a SIM of the phone can make the phone company's video calls (ViLTE); false in a build without them. */
+export function videoCalling(): boolean {
+  try {
+    return native?.videoCalling?.() === true;
+  } catch {
+    return false;
+  }
+}
+
+/** A video call through the phone company (ViLTE) to `number`, on that SIM or the default one. */
+export function placeVideoCall(number: string, account = ''): Promise<void> {
+  if (!native?.placeVideoCall) return Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+  return native.placeVideoCall(number, account);
 }
 
 /** Android's call history, its newest 500 calls; `allowed` is false while Android does not let

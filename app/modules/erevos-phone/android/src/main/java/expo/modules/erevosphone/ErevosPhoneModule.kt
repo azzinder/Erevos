@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.telecom.PhoneAccount
 import android.telecom.TelecomManager
+import android.telecom.VideoProfile
 import android.telephony.TelephonyManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -179,6 +180,23 @@ class ErevosPhoneModule : Module() {
 
     AsyncFunction("deleteVoicemail") { id: Double ->
       Voicemail.delete(context(), id.toLong())
+    }
+
+    // Whether a SIM can make the phone company's video calls (ViLTE).
+    Function("videoCalling") {
+      val context = context()
+      val telecom = context.getSystemService(TelecomManager::class.java)
+      telecom != null && Sims.accounts(context).any { runCatching { telecom.getPhoneAccount(it.handle)?.hasCapabilities(PhoneAccount.CAPABILITY_VIDEO_CALLING) }.getOrNull() == true }
+    }
+
+    // A video call to `number`, as placeCall, with video both ways from the start.
+    AsyncFunction("placeVideoCall") { number: String, account: String ->
+      val context = context()
+      val telecom = context.getSystemService(TelecomManager::class.java) ?: throw IllegalStateException("This phone cannot call")
+      val extras = Bundle()
+      if (account.isNotEmpty()) Sims.find(context, account)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it.handle) }
+      extras.putInt(TelecomManager.EXTRA_START_CALL_WITH_VIDEO_STATE, VideoProfile.STATE_BIDIRECTIONAL)
+      telecom.placeCall(Uri.fromParts("tel", number, null), extras)
     }
 
     // The call history, newest first, once Erevos may read it.

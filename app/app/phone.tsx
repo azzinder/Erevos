@@ -66,6 +66,8 @@ import {
   stopVoicemail,
   voicemailReady,
   voicemails,
+  placeVideoCall,
+  videoCalling,
   type Voicemail,
   seenMissedCalls,
   setBlockingRules,
@@ -328,6 +330,22 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     setNote((await copyText(to)) ? t('Copied.') : t('Not copied.'));
   }
 
+  // A video call through the phone company (ViLTE), from the number's ⋯, where a SIM can make one.
+  async function videoCall(to: string) {
+    press();
+    const plain = dialNumber(to);
+    if (!plain) return;
+    setNote('');
+    const account = accounts.some((a) => a.id === chosen) ? chosen : (callAccount(accounts, sims?.accountFor(plain) ?? '') ?? '');
+    try {
+      if (!phoneStatus()?.isDefault) throw new Error(t('Erevos may not make calls. Make it the phone app under Settings.'));
+      locked?.onCalled();
+      await placeVideoCall(plain, account);
+    } catch (error) {
+      setNote(t('Not called. {error}', { error: error instanceof Error ? error.message : String(error) }));
+    }
+  }
+
   // Speed dial, 2 to 9 held on an empty keypad: calls the key's number, or offers to choose one.
   function speedDial(key: string) {
     if (locked || !sims) {
@@ -568,7 +586,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                 </ScrollView>
               ) : null}
               <View style={styles.numberLine}>
-                {number && (CAN_COPY || (!locked && textable(number))) ? (
+                {number && (CAN_COPY || (!locked && textable(number)) || videoCalling()) ? (
                   <Pressable
                     onPress={() => {
                       tap();
@@ -781,6 +799,15 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
         ))}
       </Sheet>
       <Sheet visible={more} onClose={() => setMore(false)} title={number}>
+        {more && videoCalling() ? (
+          <Button
+            title={t('Video call')}
+            onPress={() => {
+              setMore(false);
+              void videoCall(number);
+            }}
+          />
+        ) : null}
         {locked || !textable(number) ? null : (
           <>
             <Button

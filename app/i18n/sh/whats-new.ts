@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Video calls through your phone company**: where your SIM and network carry them (ViLTE), a video call that comes shows **Answer with video** and **Audio only**, a call can turn video on with **Video**, and **⋯** beside a typed number offers **Video call**. See [Phone](#phone).":
+    "**Video pozivi preko operatera**: gdje ih SIM kartica i mreža podržavaju (ViLTE), dolazni video poziv prikazuje **Javi se s videom** i **Samo zvuk**, poziv uključuje video dugmetom **Video**, a **⋯** pored upisanog broja nudi **Video poziv**. Vidi [Telefon](#phone).",
   "**Who is in a conference call**: once calls are merged, the call screen lists each person, with **Separate** to talk with one alone and **End** to drop one, where your phone company allows it. See [Phone](#phone).":
     "**Ko je u konferenciji**: kad spojite pozive, ekran poziva prikazuje svaku osobu, s **Odvoji** da razgovarate samo s njom i **Prekini** da je izbacite, gdje operater to dozvoljava. Vidi [Telefon](#phone).",
   "**Speed dial**: hold a key from 2 to 9 on the Phone's empty keypad to call the number you put on it; an empty key offers to choose one, and **Phone** → **Settings** → **Speed dial** shows them all. Kept sealed in the space. See [Phone](#phone).":

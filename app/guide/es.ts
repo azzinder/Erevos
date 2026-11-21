@@ -2831,6 +2831,13 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
 - **Una conferencia:** con las llamadas combinadas, la pantalla de llamada muestra a las personas que están en ella
   en lugar de la foto. Junto a cada una, **Separar** habla solo con ella mientras las demás esperan en espera, y
   **Colgar** saca solo a esa; cada botón aparece solo donde tu compañía lo permite.
+- **Videollamadas a través de tu compañía:** donde tu SIM y tu red las admiten (ViLTE, por 4G o 5G), una
+  videollamada entrante muestra **Responder con vídeo** y **Solo audio**; en la llamada, el otro lado aparece a
+  pantalla completa y tu cámara en una esquina, con **Apagar cámara** y **Cambiar de cámara**. Una llamada sin vídeo
+  muestra **Vídeo** cuando ambos lados pueden, y cuando el otro lo pide, Erevos te pregunta: **Activar vídeo** o
+  **Seguir solo con audio**. Para empezar una, escribe el número y toca **⋯** → **Videollamada**. Android pide la
+  cámara una vez. Como cualquier llamada telefónica, la lleva tu compañía y puede verla; nada de esto aparece donde
+  la red no tiene videollamadas.
 - **Rechazar con un mensaje:** **Message**, en una llamada que suena, la rechaza con una respuesta rápida, o una que
   escribas, que tu teléfono envía a quien llama como SMS; aparece entre tus SMS. En **Teléfono** → **Ajustes**,
   **Respuestas rápidas** las cambia: **Añadir una respuesta**, **Quitar**, **Guardar** y **Usar las respuestas

@@ -4,12 +4,14 @@
 
 package expo.modules.erevosphone
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Outline
@@ -26,6 +28,7 @@ import android.telecom.Call
 import android.telecom.DisconnectCause
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
+import android.telecom.VideoProfile
 import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
@@ -64,6 +67,10 @@ class CallActivity : Activity() {
   private lateinit var tones: TextView
   private lateinit var people: LinearLayout
   private lateinit var buttons: LinearLayout
+  // The picture of a video call (ViLTE), under the words and buttons.
+  private lateinit var video: CallVideo
+  // What waits for the camera's permission: answering with video, or turning it on.
+  private var afterCamera: ((Boolean) -> Unit)? = null
   private var stop: (() -> Unit)? = null
   private var keypad = false
   private var closing = false
@@ -86,6 +93,7 @@ class CallActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     overLock()
+    video = CallVideo(this, main, ::dp) { call, profile -> askedVideo(call, profile) }
     setContentView(build())
     stop = Calls.listen { render() }
     act(intent)
@@ -115,6 +123,7 @@ class CallActivity : Activity() {
   override fun onDestroy() {
     stop?.invoke()
     stop = null
+    video.stop()
     main.removeCallbacksAndMessages(null)
     atEar(false)
     super.onDestroy()
@@ -161,7 +170,6 @@ class CallActivity : Activity() {
   private fun build(): View {
     val root = LinearLayout(this).apply {
       orientation = LinearLayout.VERTICAL
-      setBackgroundColor(GROUND)
     }
     // Drawn under the phone's bars, kept clear of them.
     root.setOnApplyWindowInsetsListener { view, insets ->
@@ -233,7 +241,11 @@ class CallActivity : Activity() {
       setPadding(dp(8), 0, dp(8), dp(28))
     }
     root.addView(buttons, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-    return root
+    // The video, when there is one, under it all.
+    val stage = FrameLayout(this).apply { setBackgroundColor(GROUND) }
+    stage.addView(video.layer, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    stage.addView(root, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    return stage
   }
 
   private fun wrap(above: Int = 0) =
@@ -314,12 +326,16 @@ class CallActivity : Activity() {
     photo.visibility = if (caller.photo != null) View.VISIBLE else View.GONE
     // A conference lists its people instead of the face, with End or Separate for each.
     val members = if (conference && !keypad && ringing == null) shown.children.filter { Calls.state(it) != Call.STATE_DISCONNECTED } else emptyList()
-    face.visibility = if (keypad || members.isNotEmpty()) View.GONE else View.VISIBLE
+    // A video call shows the other side's picture instead of the face.
+    val videoNow = ringing == null && !keypad && state == Call.STATE_ACTIVE && video.isVideo(shown)
+    video.follow(if (ringing == null) shown else null, videoNow)
+    face.visibility = if (keypad || members.isNotEmpty() || videoNow) View.GONE else View.VISIBLE
     showPeople(members)
     status.text = statusOf(shown, state)
     val parts = ArrayList<String>()
     if (caller.name != null && caller.number.isNotEmpty() && !conference) parts.add(Callers.shown(this, caller.number))
     if (conference) shown.children.size.takeIf { it > 0 }?.let { parts.add(say("{0} people", "{0} άτομα", "$it")) }
+    if (video.isVideo(shown)) parts.add(say("Video call", "Βιντεοκλήση"))
     if (shown.details.hasProperty(Call.Details.PROPERTY_WIFI)) parts.add(say("Wi-Fi calling", "Κλήση μέσω Wi-Fi"))
     if (shown.details.hasProperty(Call.Details.PROPERTY_HIGH_DEF_AUDIO)) parts.add(say("HD voice", "Φωνή HD"))
     simLabel(shown)?.let { parts.add(it) }
@@ -354,14 +370,18 @@ class CallActivity : Activity() {
     val key = listOf(
       layout, Calls.id(shown), state, Calls.muted, route?.kind, route?.name, Calls.routes.size, Calls.canAdd,
       Calls.canHold(shown), Calls.canMerge(shown), second?.let { Calls.state(it) }, Words.lang(this),
-      shown.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT),
+      shown.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT), video.isVideo(shown), video.canVideo(shown),
     ).joinToString("|")
     if (key != built) {
       built = key
       buttons.removeAllViews()
       when (layout) {
         "ringing" -> {
-          row(declineButton(), answerButton(say("Answer", "Απάντηση")))
+          if (video.isVideo(shown)) {
+            row(declineButton(), answerButton(say("Audio only", "Μόνο ήχος")), round(say("Answer with video", "Απάντηση με βίντεο"), Glyph.VIDEO, { answerWithVideo() }, fill = ANSWER_FILL))
+          } else {
+            row(declineButton(), answerButton(say("Answer", "Απάντηση")))
+          }
           row(messageButton(shown))
         }
         "waiting" -> {
@@ -379,7 +399,7 @@ class CallActivity : Activity() {
     }
     // At the ear the screen goes off; with the keypad, the loudspeaker or a headset it stays on.
     val talking = ringing == null && (state == Call.STATE_ACTIVE || state == Call.STATE_DIALING || state == Call.STATE_CONNECTING)
-    atEar(talking && !keypad && (route == null || route.kind == Calls.EARPIECE))
+    atEar(talking && !keypad && !videoNow && (route == null || route.kind == Calls.EARPIECE))
     if (ringing != null) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
   }
@@ -444,7 +464,8 @@ class CallActivity : Activity() {
 
   private fun statusOf(call: Call, state: Int): String =
     when (state) {
-      Call.STATE_RINGING, Call.STATE_SIMULATED_RINGING -> say("Incoming call", "Εισερχόμενη κλήση")
+      Call.STATE_RINGING, Call.STATE_SIMULATED_RINGING ->
+        if (video.isVideo(call)) say("Incoming video call", "Εισερχόμενη βιντεοκλήση") else say("Incoming call", "Εισερχόμενη κλήση")
       Call.STATE_SELECT_PHONE_ACCOUNT -> say("Choose the SIM", "Διάλεξε SIM")
       Call.STATE_HOLDING -> say("On hold", "Σε αναμονή")
       Call.STATE_DISCONNECTING -> say("Hanging up…", "Κλείσιμο…")
@@ -461,6 +482,42 @@ class CallActivity : Activity() {
     val handle = call.details.accountHandle ?: return null
     if (accounts.size < 2) return null
     return accounts.firstOrNull { it.handle == handle }?.let(Sims::label)
+  }
+
+  // Answers the call that rings with video, once the camera may be used; without it, with sound only.
+  private fun answerWithVideo() {
+    withCamera { yes -> Calls.ringing()?.let { if (yes) Calls.answerVideo(it) else Calls.answer(it) } }
+  }
+
+  // The other side asks to turn video on during the call.
+  private fun askedVideo(call: Call, profile: VideoProfile) {
+    if (isFinishing || !VideoProfile.isVideo(profile.videoState)) return
+    AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+      .setTitle(say("{0} wants to turn video on", "{0} θέλει να ανοίξει βίντεο", nameOf(call)))
+      .setPositiveButton(say("Turn video on", "Άνοιγμα βίντεο")) { _, _ -> withCamera { yes -> video.answer(call, profile, yes) } }
+      .setNegativeButton(say("Keep to sound", "Μόνο ήχος")) { _, _ -> video.answer(call, profile, false) }
+      .setOnCancelListener { video.answer(call, profile, false) }
+      .show()
+  }
+
+  // Runs `then` once Android says whether the camera may be used, asking it first when needed.
+  private fun withCamera(then: (Boolean) -> Unit) {
+    if (video.mayUseCamera()) {
+      then(true)
+      return
+    }
+    afterCamera = then
+    requestPermissions(arrayOf(Manifest.permission.CAMERA), CAMERA_ASK)
+  }
+
+  override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    if (requestCode != CAMERA_ASK) return
+    val then = afterCamera
+    afterCamera = null
+    then?.invoke(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+    built = ""
+    render()
   }
 
   private fun answerButton(label: String) =
@@ -528,6 +585,14 @@ class CallActivity : Activity() {
       }),
       round(soundLabel, soundGlyph, { sound() }, on = soundOn),
     )
+    if (video.isVideo(call)) {
+      row(
+        round(say("Camera off", "Κλείσιμο κάμερας"), Glyph.VIDEO, { video.ask(call, false) }, on = true),
+        round(say("Switch camera", "Αλλαγή κάμερας"), Glyph.FLIP, { video.switchCamera() }),
+      )
+    } else if (video.canVideo(call) && Calls.state(call) == Call.STATE_ACTIVE) {
+      row(round(say("Video", "Βίντεο"), Glyph.VIDEO, { withCamera { yes -> if (yes) video.ask(call, true) } }))
+    }
     val merge = Calls.canMerge(call)
     val swap = second != null && Calls.state(second) == Call.STATE_HOLDING
     row(
@@ -653,6 +718,7 @@ class CallActivity : Activity() {
     tones.visibility = View.GONE
     people.visibility = View.GONE
     peopleBuilt = ""
+    video.follow(null, false)
     buttons.removeAllViews()
     built = ""
     keypad = false
@@ -686,6 +752,7 @@ class CallActivity : Activity() {
   companion object {
     const val ANSWER = "expo.modules.erevosphone.ANSWER"
     const val CALL = "call"
+    private const val CAMERA_ASK = 4245
     // Erevos's own call screen's colours (components/call-screen.tsx).
     private const val GROUND = 0xFF0B0B0D.toInt()
     private const val INK = Color.WHITE
