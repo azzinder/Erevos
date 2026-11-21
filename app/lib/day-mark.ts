@@ -35,10 +35,12 @@ export function dayLabel(at: number, now: number = Date.now()): string {
       : d.getFullYear() === new Date(now).getFullYear()
         ? { weekday: 'long', day: 'numeric', month: 'long' }
         : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  // Always in the app's language, English too, also on a phone set to another one.
+  const lang = locale() ?? 'en';
   try {
-    const text = d.toLocaleDateString(locale(), options);
+    const text = d.toLocaleDateString(lang, options);
     // A word in lower case, as some languages write weekdays, starts the line in upper case.
-    return text ? text.charAt(0).toLocaleUpperCase(locale()) + text.slice(1) : text;
+    return text ? text.charAt(0).toLocaleUpperCase(lang) + text.slice(1) : text;
   } catch {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }

@@ -466,6 +466,11 @@ export function Composer({
         begin(false);
         return;
       }
+      // Just after a send (a double tap on Send), a tap opens no menu and a hold records nothing.
+      if (Date.now() < restUntil.current) {
+        held.current.ignored = true;
+        return;
+      }
       // Held a moment: it records, or listens to write; let go before, it was a tap (onResponderRelease).
       if (pressing.current) clearTimeout(pressing.current);
       pressing.current = setTimeout(() => {
