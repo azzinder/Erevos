@@ -2952,6 +2952,9 @@ avec un mot de passe, après que tu l’as tapé, sauf si le Téléphone s’ouv
 ci-dessous). D’ici là, une carte en haut dit **Erevos n’est pas l’app Téléphone** ; sur un petit téléphone, elle ne
 montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
 
+- **Appels d’urgence :** un numéro d’urgence (112, ou celui de ton pays) est appelé tout de suite, sans demander la
+  SIM : Android la choisit. Avec Erevos verrouillé et le Téléphone derrière le mot de passe, **Appel d’urgence** sur
+  l’écran du mot de passe ouvre le clavier d’urgence d’Android, sans mot de passe.
 - **Rechercher des contacts :** en haut du Téléphone, tape un nom, un numéro ou une partie de l’un ou de l’autre : les
   contacts avec un numéro s’affichent à la place des onglets, chaque numéro sur sa propre ligne. Appuie sur l’un pour
   l’appeler, ou appuie longuement pour le mettre sur le clavier. La recherche regarde dans les contacts du téléphone et,

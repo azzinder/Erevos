@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.telecom.TelecomManager
+import android.telephony.TelephonyManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -94,6 +95,21 @@ class ErevosPhoneModule : Module() {
     // The ways the phone can call: its SIMs, once Erevos may read the phone's state.
     AsyncFunction("accounts") {
       Sims.accounts(context()).map { mapOf("id" to it.id, "label" to it.label, "slot" to it.slot.toDouble(), "name" to Sims.label(it)) }
+    }
+
+    // Android's own emergency keypad, which calls only emergency numbers and needs no password:
+    // for the password screen, with Erevos the phone app and locked. False when the phone has none.
+    Function("emergencyDial") {
+      val intent = Intent("com.android.phone.EmergencyDialer.DIAL").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      runCatching { context().startActivity(intent) }.isSuccess
+    }
+
+    // Whether `number` is one of the emergency numbers of the SIM's network or country (112, 911,
+    // 100 and the like), as Android knows them: such a call goes at once, on whichever SIM Android
+    // picks. False when Android cannot say (before 10, or no SIM service).
+    Function("isEmergency") { number: String ->
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return@Function false
+      runCatching { context().getSystemService(TelephonyManager::class.java)?.isEmergencyNumber(number) == true }.getOrDefault(false)
     }
 
     // Calls `number` on the SIM whose account id is `account`, or on the phone's default for "".

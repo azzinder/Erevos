@@ -2686,6 +2686,9 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
 **Erevos nije aplikacija za telefon**; na malom telefonu prikazuje samo taj naslov, a dodir na njega otvara
 **Postavke** Telefona.
 
+- **Hitni pozivi:** hitni broj (112 ili broj vaše zemlje) poziva se odmah, bez pitanja za SIM: bira ga Android. Kad
+  je Erevos zaključan, a Telefon iza lozinke, **Hitni poziv** na ekranu lozinke otvara Androidovu tastaturu za hitne
+  pozive, bez lozinke.
 - **Traži kontakte:** na vrhu Telefona upišite ime, broj ili dio jednog od njih: kontakti s brojem prikazuju se
   umjesto kartica, svaki broj u svom redu. Dodirnite jedan da ga pozovete, ili zadržite prst na njemu da ga stavite
   na tastaturu. Traži u kontaktima telefona i, kad je Erevos otključan, u onima koji se čuvaju samo u Erevosu i u

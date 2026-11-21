@@ -2803,6 +2803,9 @@ lo abre en cuanto Erevos está desbloqueado: con contraseña, después de escrib
 ella (ver La contraseña de Erevos, más abajo). Hasta entonces una tarjeta arriba dice **Erevos no es la app de
 teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se abren los **Ajustes** del Teléfono.
 
+- **Llamadas de emergencia:** un número de emergencia (112, o el de tu país) se llama al momento, sin preguntar la
+  SIM: la elige Android. Con Erevos bloqueado y Teléfono tras la contraseña, **Llamada de emergencia** en la pantalla
+  de contraseña abre el teclado de emergencia de Android, sin contraseña.
 - **Buscar contactos:** arriba del Teléfono, escribe un nombre, un número o parte de cualquiera de los dos: los
   contactos con número aparecen en lugar de las pestañas, cada número en una línea propia. Toca uno para llamarlo, o
   mantenlo pulsado para ponerlo en el teclado. Busca en los contactos del teléfono y, con Erevos desbloqueado, en los

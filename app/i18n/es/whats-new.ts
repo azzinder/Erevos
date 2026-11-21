@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Emergency calls without delay**: an emergency number is called at once, never asking which SIM, and with Erevos locked, **Emergency call** on the password screen opens Android's emergency keypad. See [Phone](#phone).":
+    "**Llamadas de emergencia sin demora**: un número de emergencia se llama al momento, sin preguntar la SIM, y con Erevos bloqueado, **Llamada de emergencia** en la pantalla de contraseña abre el teclado de emergencia de Android. Consulta [Teléfono](#phone).",
   "**Gallery originals, deleted as chosen**: with **Delete the original from the gallery after importing** on, a photo picked from the phone's storage is now deleted from the gallery too, and when Android does not say which photo of the gallery it is, Erevos says so instead of keeping quiet. See [Collection](#collection).":
     "**Los originales de la galería se borran como elegiste**: con **Borrar el original de la galería tras importar** activado, una foto del almacenamiento del teléfono ahora también se borra de la galería, y cuando Android no dice qué foto de la galería es, Erevos lo dice en lugar de callar. Consulta [Colección](#collection).",
   "**The services stay in sight**: on home, the services button stays under the top bar while the list scrolls, so another part is a tap away; the search and **Ways** scroll with the list. **Names** shows only on the **SMS** part, where it belongs.":

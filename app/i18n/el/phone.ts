@@ -154,4 +154,6 @@ export const phone: Record<string, string> = {
   "No contact has this number.": "Καμία επαφή δεν έχει αυτόν τον αριθμό.",
   'One more': "Ακόμα μία",
   '{n} more': "Ακόμα {n}",
+  "Emergency call": "Κλήση έκτακτης ανάγκης",
+  "Call emergency services from the phone’s own lock screen.": "Κάλεσε τις υπηρεσίες έκτακτης ανάγκης από την οθόνη κλειδώματος του κινητού.",
 };

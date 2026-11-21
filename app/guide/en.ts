@@ -2581,6 +2581,9 @@ opens it once Erevos is unlocked: with a password, after you type it, unless the
 password, below). Until then a card at the top says **Erevos is not the phone app**; on a small phone it shows only
 that title, and tapping it opens the Phone's **Settings**.
 
+- **Emergency calls:** an emergency number (112, or your country's) is called at once, never asking which SIM:
+  Android picks it. With Erevos locked and the Phone behind the password, **Emergency call** on the password screen
+  opens Android's own emergency keypad, with no password.
 - **Search contacts:** at the top of the Phone, type a name, a number or part of either: the contacts with a number
   show instead of the tabs, each number on a line of its own. Tap one to call it, or hold it down to put it on the
   keypad. It looks in the phone's contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos

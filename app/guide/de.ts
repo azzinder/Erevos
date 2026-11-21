@@ -2976,6 +2976,9 @@ Zeichen von Erevos, das die Wähltasten öffnet. Jedes davon, wie ein tel:-Link,
 (siehe „Das Passwort von Erevos“ weiter unten). Bis dahin sagt eine Karte oben **Erevos ist nicht die Telefon-App**;
 auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öffnet die **Einstellungen** des Telefons.
 
+- **Notrufe:** Eine Notrufnummer (112 oder die deines Landes) wird sofort gewählt, ohne nach der SIM zu fragen:
+  Android wählt sie. Ist Erevos gesperrt und das Telefon hinter dem Passwort, öffnet **Notruf** auf dem
+  Passwortbildschirm die Notruftastatur von Android, ohne Passwort.
 - **Kontakte durchsuchen:** Gib oben im Telefon einen Namen, eine Nummer oder einen Teil davon ein: Die Kontakte mit
   einer Nummer erscheinen statt der Tabs, jede Nummer in einer eigenen Zeile. Tippe auf eine, um sie anzurufen, oder
   halte sie gedrückt, um sie auf die Wähltasten zu legen. Es sucht in den Kontakten des Telefons und, bei entsperrtem

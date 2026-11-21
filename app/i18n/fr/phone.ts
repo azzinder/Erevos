@@ -154,4 +154,6 @@ export const phone: Record<string, string> = {
   "No contact has this number.": "Aucun contact n’a ce numéro.",
   'One more': "Une de plus",
   '{n} more': "{n} de plus",
+  "Emergency call": "Appel d’urgence",
+  "Call emergency services from the phone’s own lock screen.": "Appelle les urgences depuis l’écran de verrouillage du téléphone.",
 };

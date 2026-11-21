@@ -71,6 +71,8 @@ type NativePhone = {
   setRules(json: string): void;
   accounts(): Promise<PhoneAccount[]>;
   placeCall(number: string, account: string): Promise<void>;
+  isEmergency?(number: string): boolean;
+  emergencyDial?(): boolean;
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
@@ -125,6 +127,29 @@ export function setBlockingRules(json: string): void {
 /** The phone's SIMs, once Erevos may read the phone's state; else none. */
 export function phoneAccounts(): Promise<PhoneAccount[]> {
   return native ? native.accounts() : Promise.resolve([]);
+}
+
+// Emergency numbers every network takes, for when Android cannot say (an older build of this module).
+const ALWAYS_EMERGENCY = new Set(['112', '911']);
+
+/** Opens Android's emergency keypad, which calls only emergency numbers, with no password; false if it could not. */
+export function openEmergencyDial(): boolean {
+  try {
+    return native?.emergencyDial?.() === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether `number` is an emergency number: called at once, on the SIM Android picks, never asked. */
+export function isEmergencyNumber(number: string): boolean {
+  const plain = number.replace(/[\s-]/g, '');
+  if (ALWAYS_EMERGENCY.has(plain)) return true;
+  try {
+    return native?.isEmergency?.(plain) === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Calls `number` on the SIM with this account id, or on the phone's default SIM for ''. Needs

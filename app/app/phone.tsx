@@ -57,6 +57,7 @@ import {
   phoneReady,
   phoneStatus,
   placeCall,
+  isEmergencyNumber,
   seenMissedCalls,
   setBlockingRules,
   showCall,
@@ -278,7 +279,9 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
       return;
     }
     setNote('');
-    const on = account ?? callAccount(accounts, sims?.accountFor(plain) ?? '');
+    // An emergency number goes at once, on the SIM Android picks: never asked which, nor kept.
+    const emergency = isEmergencyNumber(plain);
+    const on = emergency ? '' : (account ?? callAccount(accounts, sims?.accountFor(plain) ?? ''));
     if (on === null) {
       setChoosing(plain);
       return;
@@ -291,7 +294,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
       }
       locked?.onCalled();
       await placeCall(plain, on);
-      if (on && accounts.length >= 2) sims?.remember(plain, on).catch(() => undefined);
+      if (on && !emergency && accounts.length >= 2) sims?.remember(plain, on).catch(() => undefined);
     } catch (error) {
       setNote(t('Not called. {error}', { error: error instanceof Error ? error.message : String(error) }));
     }

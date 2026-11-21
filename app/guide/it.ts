@@ -2810,6 +2810,9 @@ lo apre appena Erevos è sbloccato: con una password, dopo che l’hai inserita,
 (vedi La password di Erevos, più sotto). Fino ad allora una scheda in alto dice **Erevos non è l’app Telefono**; su un
 telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** del Telefono.
 
+- **Chiamate di emergenza:** un numero di emergenza (112, o quello del tuo paese) si chiama subito, senza chiedere
+  la SIM: la sceglie Android. Con Erevos bloccato e il Telefono dietro la password, **Chiamata di emergenza** nella
+  schermata della password apre il tastierino di emergenza di Android, senza password.
 - **Cerca nei contatti:** in cima al Telefono, scrivi un nome, un numero o una parte di uno dei due: i contatti con un
   numero appaiono al posto delle schede, ogni numero su una riga a sé. Toccane uno per chiamarlo, o tienilo premuto per
   metterlo sul tastierino. Cerca nei contatti del telefono e, con Erevos sbloccato, in quelli salvati solo in Erevos e

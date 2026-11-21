@@ -2780,6 +2780,9 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
 **O Erevos não é o app de telefone**; num celular pequeno ele mostra só esse título, e tocar nele abre as
 **Configurações** do Telefone.
 
+- **Chamadas de emergência:** um número de emergência (112, ou o do seu país) é chamado na hora, sem perguntar o
+  SIM: o Android escolhe. Com o Erevos bloqueado e o Telefone atrás da senha, **Chamada de emergência** na tela da
+  senha abre o teclado de emergência do Android, sem senha.
 - **Buscar contatos:** no topo do Telefone, digite um nome, um número ou parte de um deles: os contatos com número
   aparecem no lugar das abas, cada número numa linha própria. Toque num para ligar, ou segure-o para pô-lo no
   teclado. Procura nos contatos do celular e, com o Erevos desbloqueado, nos guardados só no Erevos e nos seus
