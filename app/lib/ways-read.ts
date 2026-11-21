@@ -16,7 +16,7 @@ import { onRelayHeard, relayHeard } from './relay';
 import { spaceSmsLink } from './sms-relay';
 import { spaceChats } from './space-chats';
 import { torStatus } from './tor';
-import type { WayId, WaysInput } from './ways';
+import { waysNow, type WayId, type WaysInput } from './ways';
 
 // What the ways out of the open space are now (lib/ways.ts), read from each of them: for the Ways
 // screen (app/ways.tsx) and its line on home (app/index.tsx).
@@ -68,22 +68,54 @@ export async function readWays(): Promise<{ input: WaysInput; waiting: number }>
 }
 
 
-/** The ways now, read while the screen shows: every `every` ms, and at once as one of them changes. */
+/** What home shows of the ways: each dot's way and look, and the count waiting. */
+const shownKey = ({ input, waiting }: { input: WaysInput; waiting: number }) =>
+  `${waysNow(input, waiting).ways.map((way) => `${way.id}:${way.look}`).join(',')}|${waiting}`;
+
+/** Reads of the ways at most this often, however often a way changes. */
+const WAYS_GAP_MS = 1000;
+
+/**
+ * The ways now, read while the screen shows: every `every` ms, and as one of them changes, at
+ * most once a second; it changes only when a dot or the count waiting does.
+ */
 export function useWays(every: number): { input: WaysInput; waiting: number } | null {
   const [read, setRead] = useState<{ input: WaysInput; waiting: number } | null>(null);
   useFocusEffect(
     useCallback(() => {
       let stopped = false;
-      const look = () =>
+      let last = 0;
+      let later: ReturnType<typeof setTimeout> | null = null;
+      let key = '';
+      const read = () => {
+        last = Date.now();
         readWays()
-          .then((next) => !stopped && setRead(next))
+          .then((next) => {
+            if (stopped) return;
+            const nextKey = shownKey(next);
+            if (nextKey === key) return;
+            key = nextKey;
+            setRead(next);
+          })
           .catch(() => undefined);
-      look();
+      };
+      const look = () => {
+        if (stopped || later) return;
+        const wait = last + WAYS_GAP_MS - Date.now();
+        if (wait <= 0) read();
+        else
+          later = setTimeout(() => {
+            later = null;
+            if (!stopped) read();
+          }, wait);
+      };
+      read();
       const timer = setInterval(look, every);
       const stops = [onRelayHeard(look), onNostrStates(look), nearby.onChange(look), lora.onChange(look)];
       return () => {
         stopped = true;
         clearInterval(timer);
+        if (later) clearTimeout(later);
         stops.forEach((stop) => stop());
       };
     }, [every]),
