@@ -22,14 +22,19 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**The microphone writes, if you like**: tap the microphone beside the message field and choose **Speak to write**, and from then on holding it writes what you say into the field, until you choose **Voice message** again. The choice stays for every chat. See [Chat through a relay](#relay)."),
-    mark("**Ways on home**: once a relay is set, the line under the top bar of home is **Ways**, with a dot for each way your messages go out by and how many of them wait; a tap opens **Ways**. See [How Erevos picks the path](#paths)."),
-  ],
+  forYou: [],
   underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.2.0-rc.2',
+    forYou: [
+      mark("**The microphone writes, if you like**: tap the microphone beside the message field and choose **Speak to write**, and from then on holding it writes what you say into the field, until you choose **Voice message** again. The choice stays for every chat. See [Chat through a relay](#relay)."),
+      mark("**Ways on home**: once a relay is set, the line under the top bar of home is **Ways**, with a dot for each way your messages go out by and how many of them wait; a tap opens **Ways**. See [How Erevos picks the path](#paths)."),
+    ],
+    underTheHood: [],
+  },
   {
     version: '7.2.0-rc.1',
     forYou: [
