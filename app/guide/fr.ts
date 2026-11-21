@@ -151,7 +151,7 @@ touche-le encore pour revenir. Les discussions masquées ont leurs propres discu
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
   aux couleurs de leurs icônes sur l’écran d’accueil du téléphone. Ils ne sont pas aussi dans le menu sous les trois
   points.
-- **Le bouton des services**, sous la recherche dès que deux parties avec des messages sont activées dans Modules, dit
+- **Le bouton des services**, sous la barre du haut, où il reste quand la liste défile, dès que deux parties avec des messages sont activées dans Modules, dit
   quelle partie de la liste s’affiche (**Tous les services**, ou celle choisie), avec les signes des services, les
   messages non lus de tous et, en rouge, un service qui n’est pas connecté en ce moment. Appuie dessus pour la fenêtre
   **Services** : une carte par partie activée, même sans conversation encore, chacune avec ses messages non lus (99+
@@ -289,7 +289,7 @@ appareils, chiffrées de bout en bout entre eux comme tes discussions : le relai
   **Tous**, **SMS**{+,}{- et} **Erevos**{+, **Matrix**, **XMPP** et **Nostr**} sur l’écran d’accueil (ceux activés dans Modules),
   **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans **Contacts**, et les séries de
   stickers. Sur l’écran d’accueil, les parties se choisissent dans la fenêtre **Services**, avec le bouton sous la
-  recherche.
+  barre du haut.
 - Sur un écran avec des onglets, un balayage ne fait que changer d’onglet, sur les lignes de sa liste aussi, et au-delà
   du premier ou du dernier onglet il ne fait rien : reviens-y avec la flèche de retour. Une conversation SMS s’archive
   ou se supprime par un appui long.
@@ -2812,7 +2812,7 @@ téléphone sans Erevos n’affiche rien.
 - **Liens :** une adresse web dans un SMS est soulignée, et s’ouvre comme dans une discussion, une fois que tu l’as vue
   en entier.
 - **Noms de tes contacts :** désactivé au début, si bien que les numéros des SMS s’affichent comme numéros. **Noms**,
-  au-dessus de la liste, les débloque (comme **Afficher les noms de mes contacts** sous **Réglages** → **Téléphone et
+  au-dessus de la liste dans la partie **SMS**, les débloque (comme **Afficher les noms de mes contacts** sous **Réglages** → **Téléphone et
   SMS** → **SMS** → **Noms de tes contacts**) : les noms que les contacts de ton téléphone donnent aux numéros des SMS,
   et les photos qu’ils ont pour eux, ou sinon ceux de tes contacts gardés seulement dans Erevos, dans la liste et dans
   la conversation. Appuie de nouveau sur **Noms** pour n’avoir que les numéros. Erevos ne les lit que pour les afficher,

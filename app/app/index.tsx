@@ -740,6 +740,27 @@ function Home() {
     </View>
   );
 
+  // The services: one button, which opens them all in a window (components/services.tsx), so
+  // however many there are, the list starts at once under it. It stays under the top bar while the
+  // list scrolls, so another part is a tap away from anywhere in it.
+  const servicesBar = mixed || arranged.hidden.length > 0 ? (
+    <Services
+      services={services}
+      hidden={arranged.hidden.map((key) => ({ key, label: SHOW_LABELS[key]() }))}
+      current={show}
+      onPick={(key) => setShow(key as InboxShow)}
+      onAdd={() => router.push('/modules')}
+      onReadAll={readAll}
+      onMove={(key, by) => void moveService(tabs, key, by)}
+      start={start}
+      onStart={(key) => void startOn(key)}
+      onHide={(key, hide) => {
+        void hideService(key, hide);
+        if (hide && show === key) setShow('all');
+      }}
+    />
+  ) : null;
+
   const header = (
     <View style={styles.headerBlock}>
       {messagesOn ? (
@@ -825,26 +846,7 @@ function Home() {
           ) : null}
         </View>
       ) : null}
-      {/* The services: one button, which opens them all in a window (components/services.tsx), so
-          however many there are, the list starts at once under it. */}
-      {mixed || arranged.hidden.length > 0 ? (
-        <Services
-          services={services}
-          hidden={arranged.hidden.map((key) => ({ key, label: SHOW_LABELS[key]() }))}
-          current={show}
-          onPick={(key) => setShow(key as InboxShow)}
-          onAdd={() => router.push('/modules')}
-          onReadAll={readAll}
-          onMove={(key, by) => void moveService(tabs, key, by)}
-          start={start}
-          onStart={(key) => void startOn(key)}
-          onHide={(key, hide) => {
-            void hideService(key, hide);
-            if (hide && show === key) setShow('all');
-          }}
-        />
-      ) : null}
-      {hasSmsRows && !smsMirrored() && (show === 'all' || show === 'sms') ? (
+      {hasSmsRows && !smsMirrored() && show === 'sms' ? (
         <Row wrap>
           <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} />
         </Row>
@@ -874,7 +876,10 @@ function Home() {
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
       {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Public, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
-      <View style={[styles.list, styles.fixedBar]}>{topBar}</View>
+      <View style={[styles.list, styles.fixedBar]}>
+        {topBar}
+        {servicesBar ? <View style={styles.fixedServices}>{servicesBar}</View> : null}
+      </View>
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
         <FlatList<InboxRow | PublicItem | Section>
           // The Public tab's posts are rows of the same list, so the search above them stays as it is.
@@ -1242,6 +1247,9 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: space.sm,
     },
     fixedBar: {
+      paddingTop: space.md,
+    },
+    fixedServices: {
       paddingTop: space.md,
     },
     topBar: {

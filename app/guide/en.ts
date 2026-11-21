@@ -134,7 +134,7 @@ SMS too, and tap it again to go back. Hidden chats keep their own pinned and arc
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
   colours of their icons on the phone's home screen. They are not in the menu under the three dots as well.
-- **The services button**, under the search once two parts with messages are on in Modules, says which part of the
+- **The services button**, under the top bar, where it stays while the list scrolls, once two parts with messages are on in Modules, says which part of the
   list shows (**All services**, or the one chosen), with the services' signs, the messages not read in all of them,
   and in red a service that is not connected now. Tap it for the **Services** window: a card for each part that is on,
   also with no chat yet, each with the messages not read in it (99+ above 99) and a dot, green while its network is
@@ -255,7 +255,7 @@ carries them only sealed.
 - **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**{+,}{- and}
   **Erevos**{+, **Matrix**, **XMPP** and **Nostr**} on the home screen (those on in Modules), **Keypad**, **Recents** and
   **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On the home screen the parts are
-  chosen in the **Services** window, under the button below the search.
+  chosen in the **Services** window, under the button below the top bar.
 - On a screen with tabs, a swipe only changes the tab, on the rows of its list too, and past the first or the last
   tab it does nothing: go back there with the back arrow. An SMS conversation is archived or deleted by holding it
   down.
@@ -2455,7 +2455,7 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   Keystore), not with your space's password, as Android has to send it while Erevos is locked: the protection every
   SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
 - **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
-- **Names from your contacts:** off at first, so SMS numbers show as numbers. **Names**, above the list, unlocks them
+- **Names from your contacts:** off at first, so SMS numbers show as numbers. **Names**, above the list on the **SMS** part, unlocks them
   (as does **Show names from my contacts** under **Settings** → **Phone and SMS** → **SMS** → **Names from your
   contacts**): the names your phone's contacts give SMS numbers, and the pictures they have for them, or else those of
   your contacts kept only in Erevos, in the list and in the conversation. Tap **Names** again for numbers only. Erevos
