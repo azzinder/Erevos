@@ -19,6 +19,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- On the web and the computer, a packet that made the core panic no longer stops it for every message after: the core runs there as WebAssembly, where a panic cannot be caught as on Android (`crates/erevos-ffi/src/android.rs` `guarded`) and stops it with a trap. Each call is now guarded (`lib/core-guard.ts`, used by `lib/crypto-setup.ts`): after a trap the core is set up again from the same module (`__wbg_reset_state`, made by wasm-bindgen's `--experimental-reset-state-function`, in `scripts/build-web-core.mjs` and `checks/build-core.mjs`), which loses nothing, as it keeps nothing between calls, and that call fails with a plain error, as a damaged packet does elsewhere (`checks/core-guard.check.ts`). No packet that does it is known.
+- No incoming bytes make the core panic: `crates/erevos-ffi/src/no_panic.rs` gives every call that reads what another phone, a relay, a group, Nostr, a pairing or an imported file sent random bytes, and good packets cut short, grown, with bits turned or a length made huge, 400 each in every `cargo test` (`EREVOS_NO_PANIC_ROUNDS` for more; 6000 each found none). A group's own state is left out: it comes only from the phone's own sealed storage, where OpenMLS's memory storage unwraps what it reads. Requested by the maintainer, after a look at Kryfo 0.6.3.
+
 ## 7.2.0-rc.1 (2026-11-20)
 
 ### For you

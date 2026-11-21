@@ -952,6 +952,9 @@ mod group {
 pub use group::*;
 
 #[cfg(test)]
+mod no_panic;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

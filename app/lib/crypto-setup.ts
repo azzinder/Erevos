@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { setCore, type Core } from './core';
+import { setCore } from './core';
+import { guardCore, type WebCore } from './core-guard';
 import { setPbkdf2, webCryptoPbkdf2 } from './crypto';
 import { setupShell } from './shell';
 
@@ -12,24 +13,17 @@ import { setupShell } from './shell';
 // The Erevos core (lib/core.ts) runs here as WebAssembly, the same build the checks use, made for
 // the browser by scripts/build-web-core.mjs into public/core/. It is loaded beside the bundle, by
 // public/core/load.js, so the bundle does not carry it; a web build made without it has no
-// encryption, and the chat says so.
-
-type WebCore = Record<string, unknown>;
+// encryption, and the chat says so. Its calls are guarded (lib/core-guard.ts): a panic inside it
+// costs that call, and it is set up again.
 
 let ready: Promise<void> = Promise.resolve();
-
-// The core's calls return at once. The Android module's return promises, as Core says.
-function wrap(wasm: WebCore): Core {
-  const calls = Object.entries(wasm).filter(([name, call]) => typeof call === 'function' && name !== 'default' && name !== 'initSync');
-  return Object.fromEntries(calls.map(([name, call]) => [name, async (...args: unknown[]) => (call as (...a: unknown[]) => unknown)(...args)])) as unknown as Core;
-}
 
 function loadCore(): Promise<void> {
   if (typeof document === 'undefined') return Promise.resolve();
   return new Promise((resolve) => {
     const done = () => {
       const wasm = (globalThis as { erevosCore?: WebCore }).erevosCore;
-      if (wasm) setCore(wrap(wasm));
+      if (wasm) setCore(guardCore(wasm));
       resolve();
     };
     window.addEventListener('erevos-core', done, { once: true });
