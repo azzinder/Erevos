@@ -19,6 +19,7 @@ run('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 
 run('wasm-bindgen', [
   '--target',
   'nodejs',
+  '--experimental-reset-state-function',
   '--out-dir',
   out,
   'target/wasm32-unknown-unknown/release/erevos_ffi.wasm',
