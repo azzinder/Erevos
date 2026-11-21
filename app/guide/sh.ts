@@ -140,7 +140,7 @@ svoje prikvačene i arhivirane razgovore.
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
   bojama njihovih ikona na početnom ekranu telefona. Nema ih i u meniju pod tri tačke.
-- **Dugme usluga**, ispod pretrage čim su u Modulima uključena dva dijela s porukama, kaže koji se dio popisa vidi
+- **Dugme usluga**, ispod gornje trake, gdje ostaje dok se lista pomiče, čim su u Modulima uključena dva dijela s porukama, kaže koji se dio popisa vidi
   (**Sve usluge** ili izabrani), sa znakovima usluga, nepročitanim porukama svih i, crveno, uslugom koja sada nije
   povezana. Dodirnite ga za prozor **Usluge**: kartica za svaki uključeni dio, i bez razgovora zasad, svaka sa svojim
   nepročitanim porukama (99+ iznad 99) i tačkom, zelenom dok je njena mreža povezana, crvenom uz **Van mreže** kad
@@ -269,7 +269,7 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 - **Kartice:** prevucite ulijevo ili udesno da pređete na susjednu karticu, kao kad dodirnete njeno dugme: **Sve
   poruke**, **SMS**, **Erevos**{+, **Matrix**, **XMPP** i **Nostr**} na početnom ekranu (one uključene u Modulima),
   **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti naljepnica.
-  Na početnom ekranu dijelovi se biraju u prozoru **Usluge**, dugmetom ispod pretrage.
+  Na početnom ekranu dijelovi se biraju u prozoru **Usluge**, dugmetom ispod gornje trake.
 - Na ekranu s karticama prevlačenje samo mijenja karticu, i na redovima njenog popisa, a iza prve ili posljednje
   kartice ne radi ništa: tamo se vratite strelicom nazad. SMS razgovor se arhivira ili briše zadržavanjem prsta na
   njemu.
@@ -2557,7 +2557,7 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   broj.
 - **Linkovi:** web adresa u SMS-u je podvučena i otvara se kao u razgovoru, kad je vidite cijelu.
 - **Imena iz vaših kontakata:** na početku isključeno, pa se SMS brojevi prikazuju kao brojevi. **Imena**, iznad
-  popisa, ih otključava (kao i **Prikazuj imena iz mojih kontakata** pod **Postavke** → **Telefon i SMS** → **SMS** →
+  popisa u dijelu **SMS**, ih otključava (kao i **Prikazuj imena iz mojih kontakata** pod **Postavke** → **Telefon i SMS** → **SMS** →
   **Imena iz vaših kontakata**): imena koja kontakti vašeg telefona daju SMS brojevima i slike koje za njih imaju, ili
   inače one vaših kontakata koji se čuvaju samo u Erevosu, na popisu i u razgovoru. Ponovo dodirnite **Imena** za samo
   brojeve. Erevos ih samo čita da bi ih prikazao i ne čuva nikakvu kopiju.

@@ -147,7 +147,7 @@ einmal, um zurückzugehen. Versteckte Chats haben ihre eigenen angehefteten und 
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den
   Farben ihrer Symbole auf dem Startbildschirm des Telefons. Im Menü unter den drei Punkten sind sie nicht noch einmal.
-- **Die Dienste-Schaltfläche**, unter der Suche, sobald in den Modulen zwei Teile mit Nachrichten an sind, sagt,
+- **Die Dienste-Schaltfläche**, unter der oberen Leiste, wo sie beim Scrollen der Liste bleibt, sobald in den Modulen zwei Teile mit Nachrichten an sind, sagt,
   welcher Teil der Liste zu sehen ist (**Alle Dienste** oder der gewählte), mit den Zeichen der Dienste, den
   ungelesenen Nachrichten aller und in Rot einem Dienst, der gerade nicht verbunden ist. Tippe darauf für das Fenster
   **Dienste**: eine Karte für jeden Teil, der an ist, auch ohne Chat, jede mit ihren ungelesenen Nachrichten (99+ über
@@ -285,7 +285,7 @@ Das Relay trägt sie nur verschlüsselt.
 - **Tabs:** Wische nach links oder rechts, um zum benachbarten Tab zu gehen, wie ein Tippen auf seinen Chip: **Alle**,
   **SMS**{+,}{- und} **Erevos**{+, **Matrix**, **XMPP** und **Nostr**} auf dem Startbildschirm (die, die in den Modulen an sind),
   **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die Sticker-Sätze.
-  Auf dem Startbildschirm wählst du die Teile im Fenster **Dienste**, über die Schaltfläche unter der Suche.
+  Auf dem Startbildschirm wählst du die Teile im Fenster **Dienste**, über die Schaltfläche unter der oberen Leiste.
 - Auf einem Bildschirm mit Tabs wechselt ein Wischen nur den Tab, auch auf den Zeilen seiner Liste, und über den
   ersten oder letzten Tab hinaus tut es nichts: Geh dorthin mit dem Zurück-Pfeil zurück. Eine SMS-Unterhaltung wird
   archiviert oder gelöscht, indem du sie gedrückt hältst.
@@ -2834,7 +2834,7 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   gesendete SMS in den SMS des Telefons bleiben. Nur Text, an eine Nummer.
 - **Links:** Eine Webadresse in einer SMS ist unterstrichen und öffnet sich wie in einem Chat, sobald du sie
   vollständig gesehen hast.
-- **Namen aus deinen Kontakten:** Anfangs aus, sodass SMS-Nummern als Nummern erscheinen. **Namen**, über der Liste,
+- **Namen aus deinen Kontakten:** Anfangs aus, sodass SMS-Nummern als Nummern erscheinen. **Namen**, über der Liste im Bereich **SMS**,
   schaltet sie frei (wie **Namen aus meinen Kontakten zeigen** unter **Einstellungen** → **Telefon und SMS** → **SMS**
   → **Namen aus deinen Kontakten**): die Namen, die die Kontakte deines Telefons SMS-Nummern geben, und die Bilder, die
   sie für sie haben, oder sonst die deiner nur in Erevos gespeicherten Kontakte, in der Liste und in der Unterhaltung.

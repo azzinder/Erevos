@@ -143,7 +143,7 @@ chats fijados y archivados.
   de al lado, te escribe un recordatorio.
 - **El auricular verde y la persona violeta** de arriba, en Android, abren **Teléfono** y **Contactos** directamente, en
   los colores de sus iconos en la pantalla de inicio del teléfono. No están además en el menú de los tres puntos.
-- **El botón de servicios**, bajo la búsqueda cuando hay dos partes con mensajes activadas en Módulos, dice qué parte
+- **El botón de servicios**, bajo la barra superior, donde se queda mientras la lista se desplaza, cuando hay dos partes con mensajes activadas en Módulos, dice qué parte
   de la lista se ve (**Todos los servicios**, o la elegida), con los signos de los servicios, los mensajes sin leer de
   todos y, en rojo, un servicio que ahora no está conectado. Tócalo para la ventana **Servicios**: una tarjeta por
   cada parte activada, también sin chats todavía, cada una con sus mensajes sin leer (99+ por encima de 99) y un
@@ -273,7 +273,7 @@ extremo entre ellos como tus chats: el relay solo las lleva cifradas.
 - **Pestañas:** desliza hacia la izquierda o la derecha para ir a la pestaña de al lado, como al tocar su chip:
   **Todos**, **SMS**{- y}{+,} **Erevos**{+, **Matrix**, **XMPP** y **Nostr**} en la pantalla de inicio (los activados en
   Módulos), **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en **Contactos**, y los grupos de
-  stickers. En la pantalla de inicio las partes se eligen en la ventana **Servicios**, con el botón bajo la búsqueda.
+  stickers. En la pantalla de inicio las partes se eligen en la ventana **Servicios**, con el botón bajo la barra superior.
 - En una pantalla con pestañas, deslizar solo cambia de pestaña, también sobre las filas de su lista, y más allá de la
   primera o la última pestaña no hace nada: vuelve ahí con la flecha de volver. Una conversación SMS se archiva o se
   elimina manteniéndola pulsada.
@@ -2668,7 +2668,7 @@ Erevos no muestra nada.
 - **Enlaces:** una dirección web en un SMS aparece subrayada, y se abre como en un chat, después de haberla visto
   entera.
 - **Nombres de tus contactos:** desactivado al principio, así que los números de los SMS aparecen como números.
-  **Nombres**, encima de la lista, los desbloquea (como **Mostrar nombres de mis contactos** en **Ajustes** → **Teléfono
+  **Nombres**, encima de la lista en la parte **SMS**, los desbloquea (como **Mostrar nombres de mis contactos** en **Ajustes** → **Teléfono
   y SMS** → **SMS** → **Nombres de tus contactos**): los nombres que los contactos de tu teléfono dan a los números de
   SMS, y las fotos que tienen para ellos, o si no los de tus contactos guardados solo en Erevos, en la lista y en la
   conversación. Toca **Nombres** otra vez para ver solo números. Erevos solo los lee para mostrarlos, y no guarda

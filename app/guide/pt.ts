@@ -142,7 +142,7 @@ conversas fixadas e arquivadas.
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
   ícones deles na tela inicial do celular. Eles não estão também no menu dos três pontos.
-- **O botão de serviços**, abaixo da busca quando duas partes com mensagens estão ligadas em Módulos, diz qual parte
+- **O botão de serviços**, abaixo da barra do topo, onde fica enquanto a lista rola, quando duas partes com mensagens estão ligadas em Módulos, diz qual parte
   da lista aparece (**Todos os serviços**, ou a escolhida), com os sinais dos serviços, as mensagens não lidas de
   todos e, em vermelho, um serviço que não está conectado agora. Toque nele para a janela **Serviços**: um cartão para
   cada parte ligada, mesmo sem conversa ainda, cada um com suas mensagens não lidas (99+ acima de 99) e um ponto,
@@ -273,7 +273,7 @@ criptografadas de ponta a ponta entre eles como as suas conversas: o relay só a
 - **Abas:** deslize para a esquerda ou para a direita para ir à aba ao lado, como ao tocar no chip dela: **Todos**,
   **SMS**{- e}{+,} **Erevos**{+, **Matrix**, **XMPP** e **Nostr**} na tela inicial (os ligados em Módulos), **Teclado**,
   **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de figurinhas. Na tela
-  inicial as partes são escolhidas na janela **Serviços**, pelo botão abaixo da busca.
+  inicial as partes são escolhidas na janela **Serviços**, pelo botão abaixo da barra do topo.
 - Numa tela com abas, deslizar só muda a aba, também sobre as linhas da lista dela, e antes da primeira ou depois da
   última aba não faz nada: volte dali com a seta de voltar. Uma conversa de SMS é arquivada ou apagada segurando-a.
 
@@ -2646,7 +2646,7 @@ mostra nada.
   celular. Só texto, para um número.
 - **Links:** um endereço web num SMS fica sublinhado, e abre como numa conversa, depois de você vê-lo inteiro.
 - **Nomes dos seus contatos:** desativado no início, então os números de SMS aparecem como números. **Nomes**, acima
-  da lista, os desbloqueia (assim como **Mostrar nomes dos meus contatos** em **Configurações** → **Telefone e SMS** →
+  da lista na parte **SMS**, os desbloqueia (assim como **Mostrar nomes dos meus contatos** em **Configurações** → **Telefone e SMS** →
   **SMS** → **Nomes dos seus contatos**): os nomes que os contatos do seu celular dão aos números de SMS, e as imagens
   que eles têm para eles, ou senão os dos seus contatos guardados só no Erevos, na lista e na conversa. Toque em
   **Nomes** de novo para ver só números. O Erevos só os lê para mostrá-los, e não guarda cópia.

@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**The services stay in sight**: on home, the services button stays under the top bar while the list scrolls, so another part is a tap away; the search and **Ways** scroll with the list. **Names** shows only on the **SMS** part, where it belongs.":
+    "**Los servicios siguen a la vista**: en el inicio, el botón de servicios se queda bajo la barra superior mientras la lista se desplaza, así otra parte está a un toque; la búsqueda y **Caminos** se desplazan con la lista. **Nombres** aparece solo en la parte **SMS**, donde corresponde.",
   "**New SMS on the SMS part**: on the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on. See [SMS](#sms).":
     "**SMS nuevo en la parte SMS**: en la parte **SMS** de la lista de chats, el botón de abajo es **SMS nuevo** y abre solo un SMS nuevo, también con los chats propios de Erevos activados. Consulta [SMS](#sms).",
   "**The day stands out in every chat**: over the first message of each day, groups and Chat with myself too, the day shows in bold between two lines: **Today**, **Yesterday**, the weekday within the last week, and before that the weekday and date. See [Chat through a relay](#relay).":

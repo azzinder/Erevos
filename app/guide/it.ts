@@ -144,7 +144,7 @@ nascoste hanno le proprie chat fissate e archiviate.
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori
   delle loro icone sulla schermata Home del telefono. Non sono anche nel menu dei tre puntini.
-- **Il pulsante dei servizi**, sotto la ricerca quando in Moduli sono attive due parti con messaggi, dice quale parte
+- **Il pulsante dei servizi**, sotto la barra in alto, dove resta mentre l’elenco scorre, quando in Moduli sono attive due parti con messaggi, dice quale parte
   dell’elenco si vede (**Tutti i servizi**, o quella scelta), con i segni dei servizi, i messaggi non letti di tutti
   e, in rosso, un servizio che ora non è connesso. Toccalo per la finestra **Servizi**: una scheda per ogni parte
   attiva, anche senza chat, ognuna con i suoi messaggi non letti (99+ oltre 99) e un punto, verde finché la sua rete è
@@ -274,7 +274,7 @@ dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le tra
   etichetta: **Tutti**, **SMS**{- e}{+,} **Erevos**{+, **Matrix**, **XMPP** e **Nostr**} nella schermata principale (quelli
   attivi in Moduli), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e le serie
   di sticker. Nella schermata principale le parti si scelgono nella finestra **Servizi**, con il pulsante sotto la
-  ricerca.
+  barra in alto.
 - In una schermata con schede, uno scorrimento cambia solo la scheda, anche sulle righe del suo elenco, e oltre la
   prima o l’ultima scheda non fa nulla: torna indietro con la freccia indietro. Una conversazione SMS si archivia o si
   elimina tenendola premuta.
@@ -2676,7 +2676,7 @@ nulla.
   che ogni SMS ha una volta inviato, perché gli SMS inviati restano negli SMS del telefono. Solo testo, a un numero.
 - **Link:** un indirizzo web in un SMS è sottolineato, e si apre come in una chat, dopo che l’hai visto intero.
 - **Nomi dai tuoi contatti:** all’inizio disattivato, quindi i numeri degli SMS appaiono come numeri. **Nomi**, sopra
-  l’elenco, li sblocca (come fa **Mostra i nomi dai miei contatti** in **Impostazioni** → **Telefono e SMS** → **SMS**
+  l’elenco nella parte **SMS**, li sblocca (come fa **Mostra i nomi dai miei contatti** in **Impostazioni** → **Telefono e SMS** → **SMS**
   → **Nomi dai tuoi contatti**): i nomi che i contatti del tuo telefono danno ai numeri degli SMS, e le immagini che
   hanno per loro, oppure quelli dei tuoi contatti salvati solo in Erevos, nell’elenco e nella conversazione. Tocca di
   nuovo **Nomi** per vedere solo i numeri. Erevos li legge solo per mostrarli, e non ne conserva una copia.
