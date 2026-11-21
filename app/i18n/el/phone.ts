@@ -180,4 +180,13 @@ export const phone: Record<string, string> = {
   "Ask your phone company": "Ρώτα την εταιρεία κινητής",
   "Each button calls a code, as every network takes them; the answer shows in a message of Android.": "Κάθε κουμπί καλεί έναν κωδικό, όπως τους δέχεται κάθε δίκτυο· η απάντηση φαίνεται σε μήνυμα του Android.",
   "To hide your number for one call only, type #31# before the number on the keypad.": "Για να κρύψεις τον αριθμό σου μόνο σε μία κλήση, γράψε #31# πριν από τον αριθμό στο πληκτρολόγιο.",
+  "Speed dial": "Γρήγορη κλήση",
+  "Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.": "Κράτα πατημένο ένα πλήκτρο από το 2 ως το 9 με άδειο πληκτρολόγιο για να καλέσεις τον αριθμό του. Το 1 καλεί τον τηλεφωνητή. Μένουν κρυπτογραφημένα σε αυτόν τον χώρο.",
+  "Set": "Ορισμός",
+  "Speed dial works with Erevos unlocked.": "Η γρήγορη κλήση δουλεύει με το Erevos ξεκλείδωτο.",
+  "{name} is on speed dial {key}. Hold {key} to call.": "Ο/Η {name} είναι στη γρήγορη κλήση {key}. Κράτα πατημένο το {key} για κλήση.",
+  "Speed dial {key}": "Γρήγορη κλήση {key}",
+  "A name or a number": "Ένα όνομα ή ένας αριθμός",
+  "Use {number}": "Χρήση του {number}",
+  "Held down on an empty keypad, the key calls this number. Erevos keeps it sealed in this space.": "Με άδειο πληκτρολόγιο, το πλήκτρο κρατημένο καλεί αυτόν τον αριθμό. Το Erevos τον κρατά κρυπτογραφημένο σε αυτόν τον χώρο.",
 };

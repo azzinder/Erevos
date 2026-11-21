@@ -2617,6 +2617,10 @@ that title, and tapping it opens the Phone's **Settings**.
   voicemail with who left it, when, how long, and its words when they came. **▶** plays it, **■** stops it; a tap on
   the row offers **Call back**, **Send an SMS** and **Delete this voicemail**. **Call the voicemail** at the top
   calls it. Erevos plays them from Android's store and keeps no copy; with Erevos locked the tab does not show.
+- **Speed dial:** on an empty keypad, hold a key from 2 to 9 to call the number on it. A key with none offers to
+  choose one: type a name or a number and tap the contact, or **Use** the number typed. Under **Phone** →
+  **Settings**, **Speed dial** shows the eight keys; tap one to change it, or **Take it off**. Speed dial is kept
+  sealed in the space, and works with Erevos unlocked.
 - **Call settings:** under **Phone** → **Settings**, **Call settings** opens Android's own screens for what your
   phone company keeps of each SIM's calls: **Forwarding, waiting and your number**, and **Voicemail number**; with
   two SIMs, tap the SIM first. Under **Ask your phone company**, each button dials the network's code (**Check**

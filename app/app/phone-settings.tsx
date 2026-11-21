@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform, View } from 'react-native';
 
 import { BlockedNumbers } from '../components/blocked-numbers';
+import { SpeedDialPick } from '../components/speed-dial';
 import { Button, Card, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
 import { mark, plural, t } from '../lib/i18n';
@@ -49,7 +50,9 @@ import {
 } from '../modules/erevos-phone';
 import { smsToolsReady } from '../modules/erevos-sms';
 import { useLock } from '../lock/context';
-import { accountLabel } from '../lib/phone-sims';
+import { accountLabel, PhoneSims } from '../lib/phone-sims';
+import { currentSpace } from '../lock/keys';
+import { SPEED_KEYS } from '../lock/phone-data';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -217,6 +220,7 @@ export default function PhoneSettings() {
       </Card>
       {status?.isDefault ? <OpenLocked /> : null}
       {status?.isDefault && status.phone ? <CallSettings /> : null}
+      {status?.phone ? <SpeedDials /> : null}
       {status?.isDefault ? <QuickReplies /> : null}
       {status?.isDefault ? <Blocking screens={status.screens} /> : null}
     </Page>
@@ -476,6 +480,63 @@ function CallSettings() {
         {t('To hide your number for one call only, type #31# before the number on the keypad.')}
       </Text>
       {note ? <Text tone="muted">{note}</Text> : null}
+    </Card>
+  );
+}
+
+// Speed dial: the number each of the keys 2 to 9 calls, held down on an empty keypad; sealed in the
+// space (lib/phone-sims.ts).
+function SpeedDials() {
+  const [sims, setSims] = useState<PhoneSims | null>(null);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  // Bumped when a key changes, to show it.
+  const [, setShown] = useState(0);
+
+  useEffect(() => {
+    try {
+      const { space: open, key } = currentSpace();
+      PhoneSims.open(open, key).then(setSims, () => setSims(null));
+    } catch {
+      setSims(null);
+    }
+  }, []);
+
+  if (!sims) return null;
+
+  function pick(number: string, name: string) {
+    const key = choosing;
+    setChoosing(null);
+    if (!key || !sims) return;
+    sims.setSpeed(key, number, name).then(
+      () => {
+        setNote('');
+        setShown((n) => n + 1);
+      },
+      (error) => setNote(error instanceof Error ? error.message : String(error)),
+    );
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Speed dial')}</Text>
+      <Text tone="muted">{t('Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.')}</Text>
+      <Row wrap style={{ gap: space.sm }}>
+        {SPEED_KEYS.map((key) => {
+          const kept = sims.speed(key);
+          return (
+            <Button
+              key={key}
+              title={`${key} · ${kept ? kept.name || kept.number : t('Set')}`}
+              kind={kept ? 'primary' : 'secondary'}
+              compact
+              onPress={() => setChoosing(key)}
+            />
+          );
+        })}
+      </Row>
+      {note ? <Text tone="muted">{note}</Text> : null}
+      <SpeedDialPick slot={choosing} current={choosing ? sims.speed(choosing) : undefined} onClose={() => setChoosing(null)} onPick={pick} />
     </Card>
   );
 }

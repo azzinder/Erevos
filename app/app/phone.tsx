@@ -8,6 +8,7 @@ import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, Scr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchIcon } from '../components/icons';
+import { SpeedDialPick } from '../components/speed-dial';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
@@ -215,6 +216,8 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   const [allHits, setAllHits] = useState(false);
   // Whether the phone keeps voicemails (visual voicemail), for their tab; never with Erevos locked.
   const [hasVoicemails, setHasVoicemails] = useState(false);
+  // The speed dial key whose number is being chosen.
+  const [speedKey, setSpeedKey] = useState<string | null>(null);
   const tabs = hasVoicemails ? [...TABS, VOICEMAIL_TAB] : TABS;
   const tabOrder = tabs.map((each) => each.tab);
   const readVoicemails = useCallback(() => {
@@ -323,6 +326,22 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
 
   async function copyNumber(to: string) {
     setNote((await copyText(to)) ? t('Copied.') : t('Not copied.'));
+  }
+
+  // Speed dial, 2 to 9 held on an empty keypad: calls the key's number, or offers to choose one.
+  function speedDial(key: string) {
+    if (locked || !sims) {
+      press();
+      setNote(t('Speed dial works with Erevos unlocked.'));
+      return;
+    }
+    const kept = sims.speed(key);
+    if (kept) {
+      void call(kept.number);
+      return;
+    }
+    press();
+    setSpeedKey(key);
   }
 
   // The voicemail, held 1 on an empty keypad: on the SIM chosen above Call, else the default one.
@@ -645,7 +664,9 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                               }
                             : key === '1' && !number
                               ? () => void callTheVoicemail()
-                              : undefined
+                              : !number && key >= '2' && key <= '9'
+                                ? () => speedDial(key)
+                                : undefined
                         }
                         accessibilityRole="button"
                         accessibilityLabel={key}
@@ -728,6 +749,20 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
           </Text>
         )}
       </Sheet>
+
+      <SpeedDialPick
+        slot={speedKey}
+        onClose={() => setSpeedKey(null)}
+        onPick={(to, name) => {
+          const key = speedKey;
+          setSpeedKey(null);
+          if (!key || !sims || !to) return;
+          sims.setSpeed(key, to, name).then(
+            () => setNote(t('{name} is on speed dial {key}. Hold {key} to call.', { name: name || to, key })),
+            (error) => setNote(errorText(error)),
+          );
+        }}
+      />
 
       <Sheet visible={allHits && keyHits.length > 0} onClose={() => setAllHits(false)} title={number}>
         {keyHits.map((row) => (

@@ -180,4 +180,13 @@ export const phone: Record<string, string> = {
   "Ask your phone company": "Deinen Anbieter fragen",
   "Each button calls a code, as every network takes them; the answer shows in a message of Android.": "Jede Taste wählt einen Code, wie jedes Netz ihn annimmt; die Antwort erscheint in einer Meldung von Android.",
   "To hide your number for one call only, type #31# before the number on the keypad.": "Um deine Nummer nur für einen Anruf zu verbergen, tippe #31# vor die Nummer auf der Wähltastatur.",
+  "Speed dial": "Kurzwahl",
+  "Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.": "Halte bei leerer Wähltastatur eine Taste von 2 bis 9, um ihre Nummer anzurufen. Die 1 ruft die Mailbox an. Verschlüsselt in diesem Bereich aufbewahrt.",
+  "Set": "Festlegen",
+  "Speed dial works with Erevos unlocked.": "Kurzwahl funktioniert bei entsperrtem Erevos.",
+  "{name} is on speed dial {key}. Hold {key} to call.": "{name} liegt auf Kurzwahl {key}. Halte {key} zum Anrufen.",
+  "Speed dial {key}": "Kurzwahl {key}",
+  "A name or a number": "Ein Name oder eine Nummer",
+  "Use {number}": "{number} verwenden",
+  "Held down on an empty keypad, the key calls this number. Erevos keeps it sealed in this space.": "Auf leerer Wähltastatur gehalten, ruft die Taste diese Nummer an. Erevos bewahrt sie verschlüsselt in diesem Bereich auf.",
 };

@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Speed dial**: hold a key from 2 to 9 on the Phone's empty keypad to call the number you put on it; an empty key offers to choose one, and **Phone** → **Settings** → **Speed dial** shows them all. Kept sealed in the space. See [Phone](#phone).":
+    "**Brzo biranje**: zadržite tipku od 2 do 9 na praznoj tastaturi Telefona da pozovete broj koji ste joj dodijelili; prazna tipka vam da da izaberete broj, a **Telefon** → **Postavke** → **Brzo biranje** pokazuje sve. Čuvaju se šifrovano u prostoru. Vidi [Telefon](#phone).",
   "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":
     "**Postavke poziva na jednom mjestu**: pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove ekrane za preusmjeravanje, poziv na čekanju, prikaz vašeg broja i broj govorne pošte, za svaku SIM karticu, i pitaju operatera uobičajenim kodovima gdje telefon nema takav ekran. Vidi [Telefon](#phone).",
   "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":

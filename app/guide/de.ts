@@ -3016,6 +3016,11 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   spielt sie ab, **■** hält sie an; ein Tippen auf die Zeile bietet **Zurückrufen**, **SMS senden** und
   **Sprachnachricht löschen**. **Mailbox anrufen** oben ruft sie an. Erevos spielt sie aus dem Speicher von Android
   ab und behält keine Kopie; bei gesperrtem Erevos erscheint der Tab nicht.
+- **Kurzwahl:** Halte bei leerer Wähltastatur eine Taste von 2 bis 9, um ihre Nummer anzurufen. Eine Taste ohne
+  Nummer lässt dich eine wählen: Gib einen Namen oder eine Nummer ein und tippe auf den Kontakt, oder nimm die
+  getippte Nummer mit **verwenden**. Unter **Telefon** → **Einstellungen** zeigt **Kurzwahl** die acht Tasten; tippe
+  auf eine, um sie zu ändern oder zu leeren. Die Kurzwahl wird verschlüsselt im Bereich aufbewahrt und funktioniert
+  bei entsperrtem Erevos.
 - **Anrufeinstellungen:** Unter **Telefon** → **Einstellungen** öffnen die **Anrufeinstellungen** die eigenen
   Bildschirme von Android für das, was dein Anbieter von den Anrufen jeder SIM verwaltet: **Umleitung, Anklopfen und
   deine Nummer** und **Mailbox-Nummer**; bei zwei SIMs tippe zuerst die SIM an. Unter **Deinen Anbieter fragen**

@@ -180,4 +180,13 @@ export const phone: Record<string, string> = {
   "Ask your phone company": "Preguntar a tu compañía",
   "Each button calls a code, as every network takes them; the answer shows in a message of Android.": "Cada botón marca un código, como los acepta cualquier red; la respuesta aparece en un mensaje de Android.",
   "To hide your number for one call only, type #31# before the number on the keypad.": "Para ocultar tu número solo en una llamada, escribe #31# antes del número en el teclado.",
+  "Speed dial": "Marcación rápida",
+  "Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.": "Mantén pulsada una tecla del 2 al 9 con el teclado vacío para llamar a su número. El 1 llama al buzón de voz. Se guardan cifrados en este espacio.",
+  "Set": "Elegir",
+  "Speed dial works with Erevos unlocked.": "La marcación rápida funciona con Erevos desbloqueado.",
+  "{name} is on speed dial {key}. Hold {key} to call.": "{name} está en la marcación rápida {key}. Mantén pulsado {key} para llamar.",
+  "Speed dial {key}": "Marcación rápida {key}",
+  "A name or a number": "Un nombre o un número",
+  "Use {number}": "Usar {number}",
+  "Held down on an empty keypad, the key calls this number. Erevos keeps it sealed in this space.": "Mantenida pulsada con el teclado vacío, la tecla llama a este número. Erevos lo guarda cifrado en este espacio.",
 };

@@ -2849,6 +2849,10 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   riproduce, **■** lo ferma; un tocco sulla riga offre **Richiama**, **Invia un SMS** ed **Elimina questo
   messaggio**. **Chiama la segreteria** in alto la chiama. Erevos li riproduce dall’archivio di Android e non tiene
   copie; con Erevos bloccato la scheda non compare.
+- **Chiamata rapida:** a tastierino vuoto, tieni premuto un tasto da 2 a 9 per chiamarne il numero. Un tasto senza
+  numero ti fa sceglierne uno: scrivi un nome o un numero e tocca il contatto, oppure **Usa** il numero scritto. In
+  **Telefono** → **Impostazioni**, **Chiamata rapida** mostra gli otto tasti; toccane uno per cambiarlo o svuotarlo.
+  La chiamata rapida è conservata cifrata nello spazio e funziona con Erevos sbloccato.
 - **Impostazioni chiamate:** in **Telefono** → **Impostazioni**, **Impostazioni chiamate** apre le schermate di
   Android stesso per ciò che il tuo operatore tiene delle chiamate di ogni SIM: **Inoltro, avviso e il tuo numero**
   e **Numero di segreteria**; con due SIM, tocca prima la SIM. In **Chiedi al tuo operatore**, ogni pulsante compone

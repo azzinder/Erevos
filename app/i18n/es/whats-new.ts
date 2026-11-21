@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Speed dial**: hold a key from 2 to 9 on the Phone's empty keypad to call the number you put on it; an empty key offers to choose one, and **Phone** → **Settings** → **Speed dial** shows them all. Kept sealed in the space. See [Phone](#phone).":
+    "**Marcación rápida**: mantén pulsada una tecla del 2 al 9 en el teclado vacío del Teléfono para llamar al número que le pusiste; una tecla vacía te deja elegir uno, y **Teléfono** → **Ajustes** → **Marcación rápida** los muestra todos. Se guardan cifrados en el espacio. Mira [Teléfono](#phone).",
   "**Call settings in one place**: under **Phone** → **Settings**, **Call settings** opens Android's screens for call forwarding, call waiting, showing your number and the voicemail number, for each SIM, and asks your phone company with the usual codes where a phone has no such screen. See [Phone](#phone).":
     "**Los ajustes de llamadas en un sitio**: en **Teléfono** → **Ajustes**, **Ajustes de llamadas** abre las pantallas de Android para el desvío, la llamada en espera, mostrar tu número y el número del buzón de voz, para cada SIM, y pregunta a tu compañía con los códigos de siempre donde el teléfono no tiene esa pantalla. Mira [Teléfono](#phone).",
   "**Voicemail at a hold**: on the Phone's keypad, hold **1** to call your voicemail. Where your phone company sends voicemails as recordings, **Voicemail** beside **Recents** lists them, to play, call back or delete. See [Phone](#phone).":

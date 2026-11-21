@@ -181,4 +181,13 @@ export const phone: Record<string, string> = {
   "Ask your phone company": "Perguntar à operadora",
   "Each button calls a code, as every network takes them; the answer shows in a message of Android.": "Cada botão disca um código, como toda rede aceita; a resposta aparece numa mensagem do Android.",
   "To hide your number for one call only, type #31# before the number on the keypad.": "Para ocultar o seu número em uma só chamada, digite #31# antes do número no teclado.",
+  "Speed dial": "Discagem rápida",
+  "Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.": "Segure uma tecla de 2 a 9 com o teclado vazio para ligar para o número dela. O 1 liga para o correio de voz. Guardados criptografados neste espaço.",
+  "Set": "Definir",
+  "Speed dial works with Erevos unlocked.": "A discagem rápida funciona com o Erevos desbloqueado.",
+  "{name} is on speed dial {key}. Hold {key} to call.": "{name} está na discagem rápida {key}. Segure {key} para ligar.",
+  "Speed dial {key}": "Discagem rápida {key}",
+  "A name or a number": "Um nome ou um número",
+  "Use {number}": "Usar {number}",
+  "Held down on an empty keypad, the key calls this number. Erevos keeps it sealed in this space.": "Segurada com o teclado vazio, a tecla liga para este número. O Erevos o guarda criptografado neste espaço.",
 };

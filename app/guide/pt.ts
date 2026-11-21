@@ -2820,6 +2820,10 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   vieram. **▶** toca, **■** para; um toque na linha oferece **Retornar a ligação**, **Enviar um SMS** e **Apagar
   esta mensagem de voz**. **Ligar para o correio de voz** no alto liga para ele. O Erevos toca do armazenamento do
   Android e não guarda cópia; com o Erevos bloqueado a aba não aparece.
+- **Discagem rápida:** com o teclado vazio, segure uma tecla de 2 a 9 para ligar para o número dela. Uma tecla sem
+  número deixa você escolher um: digite um nome ou um número e toque no contato, ou **Usar** o número digitado. Em
+  **Telefone** → **Configurações**, **Discagem rápida** mostra as oito teclas; toque numa para mudá-la ou
+  esvaziá-la. A discagem rápida fica criptografada no espaço e funciona com o Erevos desbloqueado.
 - **Configurações de chamada:** em **Telefone** → **Configurações**, **Configurações de chamada** abre as telas do
   próprio Android para o que a operadora guarda das chamadas de cada chip: **Encaminhamento, espera e o seu número**
   e **Número do correio de voz**; com dois chips, toque primeiro no chip. Em **Perguntar à operadora**, cada botão

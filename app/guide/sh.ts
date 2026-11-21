@@ -2723,6 +2723,10 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   zaustavlja; dodir na red nudi **Uzvrati poziv**, **Pošalji SMS** i **Obriši ovu poruku**. **Pozovi govornu poštu**
   na vrhu je poziva. Erevos ih pušta iz Androidove memorije i ne čuva kopiju; dok je Erevos zaključan, kartica se ne
   pojavljuje.
+- **Brzo biranje:** s praznom tastaturom zadržite tipku od 2 do 9 da pozovete njen broj. Tipka bez broja vam da da
+  izaberete: upišite ime ili broj i dodirnite kontakt, ili **Koristi** upisani broj. Pod **Telefon** → **Postavke**,
+  **Brzo biranje** pokazuje osam tipki; dodirnite jednu da je promijenite ili ispraznite. Brzo biranje se čuva
+  šifrovano u prostoru i radi kad je Erevos otključan.
 - **Postavke poziva:** pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove vlastite ekrane za
   ono što operater čuva o pozivima svake SIM kartice: **Preusmjeravanje, čekanje i vaš broj** i **Broj govorne
   pošte**; s dvije SIM kartice prvo dodirnite SIM. Pod **Pitaj operatera** svako dugme bira kod mreže (**Provjeri**

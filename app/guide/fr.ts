@@ -2992,6 +2992,10 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   ils sont venus. **▶** le lit, **■** l’arrête ; un appui sur la ligne propose **Rappeler**, **Envoyer un SMS** et
   **Supprimer ce message vocal**. **Appeler la messagerie vocale** en haut l’appelle. Erevos les lit depuis le
   stockage d’Android et n’en garde aucune copie ; Erevos verrouillé, l’onglet ne s’affiche pas.
+- **Numérotation rapide :** clavier vide, maintiens une touche de 2 à 9 pour appeler son numéro. Une touche sans
+  numéro te laisse en choisir un : tape un nom ou un numéro et appuie sur le contact, ou **Utiliser** le numéro
+  tapé. Sous **Téléphone** → **Réglages**, **Numérotation rapide** montre les huit touches ; appuie sur une pour la
+  changer ou la vider. La numérotation rapide est gardée chiffrée dans l’espace, et marche avec Erevos déverrouillé.
 - **Réglages d’appel :** sous **Téléphone** → **Réglages**, **Réglages d’appel** ouvre les écrans d’Android lui-même
   pour ce que ton opérateur garde des appels de chaque SIM : **Renvoi, double appel et ton numéro** et **Numéro de
   messagerie vocale** ; avec deux SIM, appuie d’abord sur la SIM. Sous **Demander à ton opérateur**, chaque bouton

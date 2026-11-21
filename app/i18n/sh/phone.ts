@@ -181,4 +181,13 @@ export const phone: Record<string, string> = {
   "Ask your phone company": "Pitaj operatera",
   "Each button calls a code, as every network takes them; the answer shows in a message of Android.": "Svako dugme bira kod, kako ga prima svaka mreža; odgovor se prikaže u poruci Androida.",
   "To hide your number for one call only, type #31# before the number on the keypad.": "Da sakrijete broj samo za jedan poziv, upišite #31# ispred broja na tastaturi.",
+  "Speed dial": "Brzo biranje",
+  "Hold a key from 2 to 9 on an empty keypad to call its number. 1 calls the voicemail. Kept sealed in this space.": "Zadržite tipku od 2 do 9 na praznoj tastaturi da pozovete njen broj. 1 poziva govornu poštu. Čuvaju se šifrovano u ovom prostoru.",
+  "Set": "Postavi",
+  "Speed dial works with Erevos unlocked.": "Brzo biranje radi kad je Erevos otključan.",
+  "{name} is on speed dial {key}. Hold {key} to call.": "{name} je na brzom biranju {key}. Zadržite {key} za poziv.",
+  "Speed dial {key}": "Brzo biranje {key}",
+  "A name or a number": "Ime ili broj",
+  "Use {number}": "Koristi {number}",
+  "Held down on an empty keypad, the key calls this number. Erevos keeps it sealed in this space.": "Zadržana na praznoj tastaturi, tipka poziva ovaj broj. Erevos ga čuva šifrovano u ovom prostoru.",
 };
