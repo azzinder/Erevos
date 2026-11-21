@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- **Delete the original from the gallery after importing** deletes more of what it should: a photo or video picked from the phone's storage, whose link Android maps to the gallery's files table, was taken for no photo of the gallery and kept; it is now asked for too. One picked through the photo picker is found in the gallery by its id, and asked for only when its name and size there match (`modules/erevos-collection` `galleryUri`, `pickedInGallery`). When Android still does not say which photo it is, or cannot delete it, the Collection says so under the list instead of nothing (`lib/collection-import.ts`). Reported by the maintainer; not yet tried on a phone.
 - On home, the services button stays under the top bar while the list scrolls (out of the list's header into the fixed part, `app/index.tsx` `servicesBar`); the search, **Ways** and **Invite** still scroll with the list. **Names** (SMS names from the phone's contacts) shows only on the **SMS** part, no longer on **All services**. Reported by the maintainer.
 - On the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on; it opened New chat's Erevos steps there unless Erevos was off (`app/index.tsx` `newChat`). Holding it still opens the hidden chats' PIN. Reported by the maintainer.
 ### Under the hood

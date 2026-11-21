@@ -75,7 +75,7 @@ export async function thumbOf(bytes: Uint8Array): Promise<Uint8Array | undefined
 export const importFromCamera = (_place: CollectionPlace, _folder: string, _progress?: Progress): Promise<CollectionItem | null> => unavailable();
 
 /** Picks a file from the computer, or the phone's files, into the Collection, in `folder`, or returns null if the owner cancelled. */
-export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, _options: { deleteOriginal?: boolean } = {}): Promise<CollectionItem | null> {
+export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, _options: { deleteOriginal?: boolean; told?: (text: string) => void } = {}): Promise<CollectionItem | null> {
   const picked = await pickPieces(MAX_COLLECTION_FILE);
   if (!picked) return null;
   try {

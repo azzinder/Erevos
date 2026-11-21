@@ -10,6 +10,7 @@ import { addSealedToCollection, addToCollection, CollectionFileTooLargeError, MA
 import { cleanFileName, cleanMime, mimeOf, type FileRef } from '../lock/attachment-files';
 import { bytesSource, readFile, refSource } from './attachments';
 import { fromBase64, randomBytes, toHex } from './crypto';
+import { t } from './i18n';
 import { NoCameraError, preparePhoto } from './pick-photo';
 import { photoSize } from './photo';
 import { pickLink, pickSource } from './pick-file';
@@ -117,7 +118,12 @@ export const isGalleryType = (mime: string) => mime.startsWith('image/') || mime
  * owner went back. With `deleteOriginal`, a photo or video the gallery has is then deleted there,
  * once it is safely in the Collection and the owner confirms in Android's dialog; nothing else is.
  */
-export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, { deleteOriginal = false } = {}): Promise<CollectionItem | null> {
+export async function importFromFiles(
+  place: CollectionPlace,
+  folder: string,
+  progress?: Progress,
+  { deleteOriginal = false, told }: { deleteOriginal?: boolean; told?: (text: string) => void } = {},
+): Promise<CollectionItem | null> {
   let added: CollectionItem;
   let uri: string | undefined;
   if (canSealLinks()) {
@@ -137,8 +143,11 @@ export async function importFromFiles(place: CollectionPlace, folder: string, pr
     }
   }
   if (deleteOriginal && CAN_DELETE_ORIGINALS && uri && isGalleryType(added.file.mime)) {
-    // Android says whether it deleted it; the file is in the Collection either way.
-    await collectionNative?.deleteFromGallery([uri]).catch(() => undefined);
+    // Android says whether it deleted it; the file is in the Collection either way. When it was
+    // not the gallery's, or Android would not, the owner is told why the original stays.
+    const outcome = await collectionNative?.deleteFromGallery([uri]).catch(() => 'failed' as const);
+    if (outcome === 'none') told?.(t('In the Collection. The original stays: Android did not say which photo of the gallery it is. Pick it from Images or the phone’s storage, not from Recent.'));
+    else if (outcome === 'failed') told?.(t('In the Collection. Android could not delete the original.'));
   }
   return added;
 }

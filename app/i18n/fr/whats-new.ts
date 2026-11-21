@@ -4,6 +4,8 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Gallery originals, deleted as chosen**: with **Delete the original from the gallery after importing** on, a photo picked from the phone's storage is now deleted from the gallery too, and when Android does not say which photo of the gallery it is, Erevos says so instead of keeping quiet. See [Collection](#collection).":
+    "**Les originaux de la galerie sont supprimés comme choisi** : avec **Supprimer l’original de la galerie après l’import** activé, une photo du stockage du téléphone est maintenant supprimée de la galerie aussi, et quand Android ne dit pas quelle photo de la galerie c’est, Erevos le dit au lieu de se taire. Voir [Collection](#collection).",
   "**The services stay in sight**: on home, the services button stays under the top bar while the list scrolls, so another part is a tap away; the search and **Ways** scroll with the list. **Names** shows only on the **SMS** part, where it belongs.":
     "**Les services restent en vue** : sur l’accueil, le bouton des services reste sous la barre du haut quand la liste défile, une autre partie est donc à une touche ; la recherche et **Voies** défilent avec la liste. **Noms** n’apparaît que dans la partie **SMS**, là où il sert.",
   "**New SMS on the SMS part**: on the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on. See [SMS](#sms).":
