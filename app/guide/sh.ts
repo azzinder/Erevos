@@ -796,6 +796,9 @@ podmetnuti nekog drugog, uporedite sigurnosni broj s novim kontaktom kao s bilo 
 
 ### Poslano, stiglo i pročitano
 
+Iznad prve poruke svakog dana, u svakom razgovoru, i u grupama i u Razgovoru sa sobom, dan se jasno vidi: **Danas**,
+**Jučer**, dan u sedmici unutar zadnje sedmice, a prije toga dan i datum, npr. **Utorak, 10. novembar**.
+
 Ispod svake vaše poruke kontaktu, **✓** kaže da ju je preuzeo relay ili telefon u blizini, **✓✓** da je stigla na
 telefon te osobe, a **✓✓✓** da ju je pročitala. Njen telefon to javlja vašem, unutar šifriranja, sljedeći put kad
 svaki od njih pogleda relay, ili odmah kad su u blizini. Poruka se računa kao pročitana čim se njen razgovor prikaže

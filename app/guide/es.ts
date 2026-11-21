@@ -819,6 +819,10 @@ pasar a otra persona, compara el número de seguridad con el nuevo contacto como
 
 ### Enviado, llegado y leído
 
+Encima del primer mensaje de cada día, en todos los chats, también en los grupos y en Chat conmigo, el día se ve bien
+marcado: **Hoy**, **Ayer**, el día de la semana dentro de la última semana y, antes, el día de la semana con la fecha,
+como **Martes, 10 de noviembre**.
+
 Bajo cada uno de tus mensajes a un contacto, **✓** dice que el relay o un teléfono cercano lo recogió, **✓✓** que llegó
 a su teléfono, y **✓✓✓** que lo leyó. Su teléfono se lo dice al tuyo, dentro del cifrado, la próxima vez que cada uno
 consulta el relay, o al instante cuando están cerca. Un mensaje cuenta como leído en cuanto su chat se ve en la

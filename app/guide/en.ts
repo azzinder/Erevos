@@ -764,6 +764,10 @@ introduces could pass someone else off, compare the safety number with the new c
 
 ### Sent, came and read
 
+Over the first message of each day, in every chat, groups and Chat with myself too, the day stands out on its own:
+**Today**, **Yesterday**, the weekday within the last week, and before that the weekday and date, such as **Tuesday,
+November 10**.
+
 Under each of your messages to a contact, **✓** says the relay or a phone nearby took it, **✓✓** that it came to
 their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
 at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen. **Mark all as

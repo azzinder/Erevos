@@ -868,6 +868,10 @@ avec tout autre.
 
 ### Envoyé, arrivé et lu
 
+Au-dessus du premier message de chaque jour, dans chaque discussion, groupes et Discussion avec moi-même compris, le
+jour se voit nettement : **Aujourd’hui**, **Hier**, le jour de la semaine dans la dernière semaine, et avant le jour
+avec sa date, comme **Mardi 10 novembre**.
+
 Sous chacun de tes messages à un contact, **✓** dit que le relais ou un téléphone à proximité l’a pris, **✓✓** qu’il est
 arrivé sur son téléphone, et **✓✓✓** qu’il l’a lu. Son téléphone le dit au tien, à l’intérieur du chiffrement, la
 prochaine fois que chacun regarde le relais, ou aussitôt quand vous êtes proches. Un message compte comme lu dès que sa

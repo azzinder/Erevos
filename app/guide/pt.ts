@@ -812,6 +812,10 @@ fazer passar outra pessoa, compare o número de segurança com o novo contato co
 
 ### Enviada, chegou e lida
 
+Acima da primeira mensagem de cada dia, em todas as conversas, também nos grupos e na Conversa comigo, o dia aparece
+em destaque: **Hoje**, **Ontem**, o dia da semana na última semana e, antes disso, o dia da semana com a data, como
+**Terça-feira, 10 de novembro**.
+
 Abaixo de cada uma das suas mensagens para um contato, **✓** diz que o relay ou um celular por perto a pegou, **✓✓**
 que ela chegou ao celular da pessoa, e **✓✓✓** que a pessoa a leu. O celular dela avisa o seu, dentro da criptografia,
 na próxima vez que cada um olhar o relay, ou na hora quando estão perto. Uma mensagem conta como lida assim que a

@@ -11,6 +11,7 @@ import { confirm } from '../lib/alert';
 import { bytesSource, keepFile, MAX_FILE, type Source } from '../lib/attachments';
 import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { CAN_COPY, copyText } from '../lib/clipboard';
+import { sameDay } from '../lib/day-mark';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { armReminders, deleteNote, everyLabel, isDue, isWaiting, makeFolder, moveNote, myNotes, noteFolders, notesLook, onNotesChanged, remindAt, renameFolder, seenReminders, setNotesLook, writeNote, type Note, type NotesAt } from '../lib/myself';
@@ -30,6 +31,7 @@ import type { ChatLook } from '../theme/chat-theme';
 import type { Look } from '../theme/look';
 
 import { ChatLookSheet } from './chat-look';
+import { DayMark } from './chat-thread-lines';
 import { Attachment, FileViewer, openRefWith, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type SendWay, type VoiceControl } from './composer';
 import { useGlassBlur } from './glass';
@@ -57,15 +59,6 @@ const clock = (at: number) => {
   const d = new Date(at);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-
-// Above the first note of a day: Today, Yesterday, or its date.
-function dayLabel(at: number): string {
-  const d = new Date(at);
-  const today = new Date();
-  if (d.toDateString() === today.toDateString()) return t('Today');
-  if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return t('Yesterday');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 
 /** A note in one line, for its menu. */
 function noteLine(note: Note): string {
@@ -591,17 +584,13 @@ export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () =
             </View>
           ) : null}
           {list.map((note, i) => {
-            const newDay = i === 0 || dayLabel(list[i - 1].at) !== dayLabel(note.at);
+            const newDay = i === 0 || !sameDay(list[i - 1].at, note.at);
             const ink = b.mineText;
             const photo = note.file?.kind === 'photo';
             const due = note.due !== undefined && note.due <= now;
             return (
               <View key={note.id}>
-                {newDay ? (
-                  <Text variant="caption" tone="muted" style={styles.day}>
-                    {dayLabel(note.at)}
-                  </Text>
-                ) : null}
+                {newDay ? <DayMark at={note.at} /> : null}
                 <Pressable
                   onLongPress={() => {
                     setMenuTurn((n) => n + 1);
@@ -799,10 +788,6 @@ const makeStyles = (colors: Colors) =>
     emptyText: {
       textAlign: 'center',
       maxWidth: 360,
-    },
-    day: {
-      alignSelf: 'center',
-      paddingVertical: space.sm,
     },
     bubble: {
       alignSelf: 'flex-end',

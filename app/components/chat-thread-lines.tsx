@@ -34,6 +34,7 @@ import { type SmsMessage } from '../modules/erevos-sms';
 import { press, tap } from '../lib/haptics';
 import { t, locale, plural, useLang } from '../lib/i18n';
 import { caption, pad, type Message } from '../lib/chat-screen';
+import { dayLabel } from '../lib/day-mark';
 
 // A round button under the picture in a chat's details, with its name under it.
 export function QuickAction({ title, sign, on = false, onPress }: { title: string; sign: string; on?: boolean; onPress: () => void }) {
@@ -139,14 +140,40 @@ export const clock = (at: number) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-// Above the first message of a day: Today, Yesterday, or its date.
-export function dayLabel(at: number): string {
-  const d = new Date(at);
-  const today = new Date();
-  if (d.toDateString() === today.toDateString()) return t('Today');
-  if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return t('Yesterday');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export { dayLabel };
+
+/**
+ * Over the first message of each day, in every chat: the day in bold on its own chip, with a line
+ * either side, so it stands out from the messages (lib/day-mark.ts says the day).
+ */
+export function DayMark({ at }: { at: number }) {
+  useLang();
+  const colors = useColors();
+  const label = dayLabel(at);
+  return (
+    <View style={dayStyles.row} accessible accessibilityRole="header" accessibilityLabel={label}>
+      <View style={[dayStyles.rule, { backgroundColor: colors.border }]} />
+      <Text style={[dayStyles.chip, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text }]}>{label}</Text>
+      <View style={[dayStyles.rule, { backgroundColor: colors.border }]} />
+    </View>
+  );
 }
+
+const dayStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md, marginBottom: space.sm, paddingHorizontal: space.sm },
+  rule: { flex: 1, height: StyleSheet.hairlineWidth * 2 },
+  chip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+});
+
 // What a line of the thread does when pressed, held or laid out (ChatScreen's rowDo).
 export type RowActs = {
   play: (message: Message) => void;
@@ -242,11 +269,7 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
     const status = !message.mine && message.file.from ? comingText(message.file, taking) : (taking ?? null);
     return (
       <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
-        {newDay && message.at ? (
-          <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-            {dayLabel(message.at)}
-          </Text>
-        ) : null}
+        {newDay && message.at ? <DayMark at={message.at} /> : null}
         <Pressable
           onPress={() => (choosing ? acts.choose(message) : acts.open(message))}
           onLongPress={() => {
@@ -266,11 +289,7 @@ export const MessageLine = memo(function MessageLine({ message, quoted, name, ne
   }
   return (
     <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
-      {newDay && message.at ? (
-        <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-          {dayLabel(message.at)}
-        </Text>
-      ) : null}
+      {newDay && message.at ? <DayMark at={message.at} /> : null}
       <Pressable
         disabled={!choosing}
         accessible={choosing}
@@ -387,11 +406,7 @@ export const SmsLine = memo(function SmsLine({ sms: m, earlier, newDay, tail, li
   return (
     <View onLayout={(event) => acts.smsPlaced(id, event.nativeEvent.layout.y)}>
       {earlier ? <TextButton title={t('Show earlier SMS')} onPress={acts.smsEarlier} /> : null}
-      {newDay ? (
-        <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-          {dayLabel(m.at)}
-        </Text>
-      ) : null}
+      {newDay ? <DayMark at={m.at} /> : null}
       <Pressable
         onPress={smsFailed(m) ? () => acts.smsAgain(m) : undefined}
         onLongPress={() => acts.smsMenu(m)}
@@ -452,11 +467,7 @@ export const ImportedLine = memo(
     const menu = () => acts.importedMenu(message);
     return (
       <View onLayout={(event) => acts.importedPlaced(index, message, event.nativeEvent.layout.y)}>
-        {newDay ? (
-          <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-            {dayLabel(message.at)}
-          </Text>
-        ) : null}
+        {newDay ? <DayMark at={message.at} /> : null}
         <Pressable
           onLongPress={menu}
           accessibilityHint={t('Hold for more')}
