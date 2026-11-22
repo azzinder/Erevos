@@ -39,6 +39,8 @@ internal object MmsStore {
   private const val ROAMING = "roaming"
   private const val WAITING = "waiting"
   private const val MAX_WAITING = 50
+  // How long a waiting MMS is listed: carriers keep one some days, then it can no longer be fetched.
+  private const val WAITING_DAYS = 7L
   private const val OWN = "own"
   private val MMS: Uri = Uri.parse("content://mms")
   private val PARTS: Uri = Uri.parse("content://mms/part")
@@ -91,7 +93,11 @@ internal object MmsStore {
 
   // Fetches the MMS at `location` from the carrier.
   private fun fetch(context: Context, location: String, transaction: String, sim: Int) {
-    if (!remember(context, location)) return
+    if (!remember(context, location)) {
+      // Fetched already: a waiting one leaves the list.
+      fetched(context, location, true)
+      return
+    }
     val name = "in-${System.currentTimeMillis()}.pdu"
     val done = Intent(context, MmsDownloadedReceiver::class.java).setAction(DOWNLOADED_ACTION)
       .putExtra("file", name).putExtra("sim", sim).putExtra("transaction", transaction).putExtra("location", location)
@@ -101,6 +107,7 @@ internal object MmsStore {
     } catch (_: Exception) {
       forget(context, location)
       SmsStore.notifyNew(context)
+      fetched(context, location, false)
     }
   }
 
@@ -116,28 +123,53 @@ internal object MmsStore {
     SmsStore.came(context, mapOf("address" to notice.from, "waiting" to true))
   }
 
+  // The waiting list, without those announced more than WAITING_DAYS ago, which the carrier no longer keeps.
   private fun waitingJson(prefs: android.content.SharedPreferences): List<JSONObject> = try {
-    JSONArray(prefs.getString(WAITING, "[]")).let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
+    val since = System.currentTimeMillis() - WAITING_DAYS * 24 * 60 * 60 * 1000
+    JSONArray(prefs.getString(WAITING, "[]")).let { a -> (0 until a.length()).map { a.getJSONObject(it) } }.filter { it.optLong("at") >= since }
   } catch (_: Exception) {
     emptyList()
   }
 
-  /** The MMS waiting at the carrier for a tap: from, size (bytes), when announced, and where. */
+  /** The MMS waiting at the carrier for a tap: from, size (bytes), when announced, where, and whether
+   *  it is being fetched, or the last try failed. */
   fun waiting(context: Context): List<Map<String, Any?>> =
     waitingJson(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)).map {
-      mapOf("location" to it.optString("location"), "from" to it.optString("from"), "size" to it.optLong("size").toDouble(), "at" to it.optLong("at").toDouble(), "sim" to it.optInt("sim", -1).toDouble())
+      mapOf(
+        "location" to it.optString("location"), "from" to it.optString("from"), "size" to it.optLong("size").toDouble(),
+        "at" to it.optLong("at").toDouble(), "sim" to it.optInt("sim", -1).toDouble(),
+        "fetching" to it.optBoolean("fetching", false), "failed" to it.optBoolean("failed", false),
+      )
     }
 
-  /** Fetches a waiting MMS now, as the owner tapped it. */
-  fun fetchWaiting(context: Context, location: String) {
+  // Changes the waiting MMS at `location`, or takes it off the list (`change` null).
+  private fun changeWaiting(context: Context, location: String, change: ((JSONObject) -> Unit)?): JSONObject? {
     val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    val one: JSONObject
     synchronized(this) {
       val list = waitingJson(prefs)
-      one = list.firstOrNull { it.optString("location") == location } ?: return
-      prefs.edit().putString(WAITING, JSONArray(list.filter { it !== one }).toString()).apply()
+      val one = list.firstOrNull { it.optString("location") == location } ?: return null
+      val kept = if (change == null) list.filter { it !== one } else list.also { change(one) }
+      prefs.edit().putString(WAITING, JSONArray(kept).toString()).apply()
+      return one
     }
+  }
+
+  /** Fetches a waiting MMS now, as the owner tapped it. It stays listed until it came: if it does not
+   *  come, it is marked so, to be tried again. */
+  fun fetchWaiting(context: Context, location: String) {
+    val one = changeWaiting(context, location) { it.put("fetching", true).put("failed", false) } ?: return
     fetch(context, location, one.optString("transaction"), one.optInt("sim", -1))
+  }
+
+  // A fetch ended: a waiting MMS that came leaves the list; one that did not is marked, and the
+  // screens that show it are told, with no notice.
+  private fun fetched(context: Context, location: String, ok: Boolean) {
+    if (ok) {
+      changeWaiting(context, location, null)
+      return
+    }
+    val one = changeWaiting(context, location) { it.put("fetching", false).put("failed", true) } ?: return
+    SmsStore.listener?.invoke("onSms", mapOf("address" to one.optString("from"), "waiting" to true, "failed" to true, "shown" to false))
   }
 
   /** The fetched message is in its file: keep it, and tell the carrier it came. */
@@ -146,18 +178,24 @@ internal object MmsStore {
     val sim = intent.getIntExtra("sim", -1)
     val file = File(folder(context), name)
     try {
+      val location = intent.getStringExtra("location")
       if (!ok || !file.exists()) {
-        // Fetched again with the next notice the carrier sends.
-        intent.getStringExtra("location")?.let { forget(context, it) }
+        // Fetched again with the next notice the carrier sends, or a tap on a waiting one.
+        location?.let {
+          forget(context, it)
+          fetched(context, it, false)
+        }
         return
       }
       val message = MmsPdu.message(file.readBytes())
       val id = keep(context, message, sim)
+      location?.let { fetched(context, it, true) }
       val transaction = intent.getStringExtra("transaction") ?: message.transactionId
       if (transaction.isNotEmpty()) acknowledge(context, transaction, sim)
       SmsStore.came(context, mapOf("address" to message.from, "mms" to id.toDouble()))
     } catch (_: Exception) {
       SmsStore.notifyNew(context)
+      intent.getStringExtra("location")?.let { fetched(context, it, false) }
     } finally {
       file.delete()
     }

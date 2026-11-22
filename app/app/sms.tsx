@@ -1033,12 +1033,17 @@ function Sms({ tools }: { tools: ReactNode }) {
                 {t('MMS · {size} KB', { size: String(Math.max(1, Math.round(w.size / 1024))) })}
               </Text>
               <Button
-                title={t('Fetch (may cost)')}
+                title={w.fetching ? t('Fetching…') : t('Fetch (may cost)')}
                 onPress={() => {
-                  setAtCarrier((now) => now.filter((x) => x.location !== w.location));
+                  setAtCarrier((now) => now.map((x) => (x.location === w.location ? { ...x, fetching: true, failed: false } : x)));
                   fetchMms(w.location).catch((error: unknown) => setNote(errorText(error)));
                 }}
               />
+              {w.failed && !w.fetching ? (
+                <Text variant="caption" tone="muted">
+                  {t('It did not come. Try again with mobile data on.')}
+                </Text>
+              ) : null}
               <Text variant="caption" tone="faint">
                 {new Date(w.at).toLocaleString(locale())}
               </Text>

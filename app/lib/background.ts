@@ -233,8 +233,9 @@ if (Platform.OS === 'android') {
   // Spam that Spam's built-in rule caught (SmsStore.kt) plays nothing, on the screen too. A
   // conversation muted in the open space plays nothing either; one with a sound of its own came with
   // a notice that made none, and plays its own here, on the screen or not (lib/sms-notices.ts).
-  onSmsEvent('onSms', ({ address, shown, spam }) => {
-    if (spam) return;
+  onSmsEvent('onSms', ({ address, shown, spam, failed }) => {
+    // An MMS that did not come when fetched only changes the screens that list it.
+    if (spam || failed) return;
     const own = smsSoundOf(address);
     if (own === null) return;
     if (own !== undefined) {

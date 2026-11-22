@@ -210,4 +210,6 @@ export const smsTools: Record<string, string> = {
   "Or hold + down.": "Ou garde + appuyé.",
   "Fetch (may cost)": "Récupérer (peut coûter)",
   "MMS · {size} KB": "MMS · {size} Ko",
+  "MMS waiting · {n}": "MMS en attente · {n}",
+  "It did not come. Try again with mobile data on.": "Il n’est pas arrivé. Réessaie avec les données mobiles activées.",
 };

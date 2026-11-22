@@ -217,4 +217,6 @@ export const smsTools: Record<string, string> = {
   "Or hold + down.": "Ili držite +.",
   "Fetch (may cost)": "Preuzmi (može koštati)",
   "MMS · {size} KB": "MMS · {size} KB",
+  "MMS waiting · {n}": "MMS na čekanju · {n}",
+  "It did not come. Try again with mobile data on.": "Nije stigla. Pokušajte ponovo s uključenim mobilnim podacima.",
 };

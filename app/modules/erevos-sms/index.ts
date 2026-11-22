@@ -77,7 +77,7 @@ export type SmsEvents = {
   /** `shown`: its conversation shows on the screen (smsShowOnScreen), so it came with no notice.
    *  `spam`: Spam's built-in rule caught it (BuiltInSpam.kt), so it came with no notice and plays
    *  nothing; the app's Spam folder (lib/sms-folders.ts) still decides where it shows. */
-  onSms: (event: { address: string; mms?: number; shown?: boolean; spam?: boolean }) => void;
+  onSms: (event: { address: string; mms?: number; shown?: boolean; spam?: boolean; waiting?: boolean; failed?: boolean }) => void;
   onSmsSent: (event: { id: number; ok: boolean; mms?: boolean }) => void;
   onSmsDelivered: (event: { id: number; ok: boolean }) => void;
   /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
@@ -422,8 +422,9 @@ export function smsNoticeDetails(on: boolean): void {
 }
 
 /** An MMS announced by the carrier and not fetched yet, as the owner fetches none at once, or none
- *  while roaming (MmsStore.kt): from whom, how big (bytes), and when. */
-export type WaitingMms = { location: string; from: string; size: number; at: number; sim: number };
+ *  while roaming (MmsStore.kt): from whom, how big (bytes), and when; whether it is being fetched,
+ *  or the last try did not bring it. Listed for 7 days, as long as carriers keep one. */
+export type WaitingMms = { location: string; from: string; size: number; at: number; sim: number; fetching?: boolean; failed?: boolean };
 
 /** Whether MMS are fetched at once (on unless turned off) and while roaming (off unless turned on); null in a build without it. */
 export function mmsSwitches(): { auto: boolean; roaming: boolean } | null {

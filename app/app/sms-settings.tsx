@@ -17,7 +17,7 @@ import { SmsLink } from '../lib/sms-link';
 import { smsDevicesChanged } from '../lib/sms-share';
 import { currentSpace } from '../lock/keys';
 import { MAX_WORDS, UNDO_SECONDS, WORD, type SmsData } from '../lock/sms-data';
-import { fetchMms, mmsSwitches, requestDefaultSms, setMmsSwitches, smsMirrored, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, waitingMms, type SmsStatus, type WaitingMms } from '../modules/erevos-sms';
+import { fetchMms, mmsSwitches, onSmsEvent, requestDefaultSms, setMmsSwitches, smsMirrored, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, waitingMms, type SmsStatus, type WaitingMms } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
@@ -108,6 +108,11 @@ export default function SmsSettings() {
   // MMS fetched at once and while roaming (MmsStore.kt), and those waiting for a tap.
   const [mms, setMms] = useState(mmsSwitches());
   const [waiting, setWaiting] = useState<WaitingMms[]>(() => waitingMms());
+  // A waiting MMS that came, or did not when fetched, changes the list.
+  useEffect(() => {
+    const changed = onSmsEvent('onSms', () => setWaiting(waitingMms()));
+    return () => changed?.remove();
+  }, []);
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -617,8 +622,11 @@ export default function SmsSettings() {
             </Text>
             {waiting.map((one) => (
               <Row key={one.location} wrap>
-                <Text style={{ flex: 1 }}>{t('MMS from {from} · {size} KB', { from: one.from || '?', size: String(Math.max(1, Math.round(one.size / 1024))) })}</Text>
-                <Button title={t('Fetch (may cost)')} kind="secondary" onPress={() => void fetchWaiting(one)} />
+                <Text style={{ flex: 1 }}>
+                  {t('MMS from {from} · {size} KB', { from: one.from || '?', size: String(Math.max(1, Math.round(one.size / 1024))) })}
+                  {one.failed && !one.fetching ? `\n${t('It did not come. Try again with mobile data on.')}` : ''}
+                </Text>
+                <Button title={one.fetching ? t('Fetching…') : t('Fetch (may cost)')} kind="secondary" onPress={() => void fetchWaiting(one)} />
               </Row>
             ))}
             {part === 'mms' && note ? <Text tone="muted">{note}</Text> : null}

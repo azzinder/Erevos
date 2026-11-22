@@ -210,4 +210,6 @@ export const smsTools: Record<string, string> = {
   "Or hold + down.": "Ή κράτα πατημένο το +.",
   "Fetch (may cost)": "Λήψη (μπορεί να χρεωθεί)",
   "MMS · {size} KB": "MMS · {size} KB",
+  "MMS waiting · {n}": "MMS σε αναμονή · {n}",
+  "It did not come. Try again with mobile data on.": "Δεν ήρθε. Δοκίμασε ξανά με τα δεδομένα κινητής ανοιχτά.",
 };
