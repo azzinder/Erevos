@@ -2913,6 +2913,10 @@ dernier chemin, et seulement quand tu le choisis.
   la voir et la changer.
 - **Brouillons :** ce que tu tapes sans l’envoyer reste avec cette conversation, et la liste l’affiche comme
   **Brouillon**. Un SMS qui n’a pas pu partir reste là aussi comme brouillon.
+- **Textes rapides :** garde le **+** à côté du champ appuyé, ou choisis **Textes rapides** dedans, pour des mots
+  courts que tu écris souvent (Je suis en route, Je t’appelle plus tard) : un appui en met un dans le champ, à
+  envoyer tel quel ou avec plus. **Ajouter** en garde un à toi, et en garder un appuyé le retire ; dès lors la liste
+  est la tienne, gardée chiffrée avec les SMS de l’espace, chaque espace la sienne.
 - **Annuler l’envoi d’un SMS :** un SMS que tu envoies attend d’abord 5 secondes à la fin de la conversation : appuie
   alors dessus pour le reprendre dans le champ de message. **Réglages** → **Téléphone et SMS** → **SMS** → **Annuler
   l’envoi d’un SMS** règle **Désactivé**, 5 ou 10 secondes. Quand tu quittes Erevos, il part aussitôt.

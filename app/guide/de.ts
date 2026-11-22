@@ -2936,6 +2936,10 @@ wenn du ihn wählst.
   Telefon-App darf sie sehen und ändern.
 - **Entwürfe:** Was du eingibst und nicht sendest, bleibt bei dieser Unterhaltung, und die Liste zeigt es als
   **Entwurf**. Eine SMS, die nicht gehen konnte, bleibt dort auch als Entwurf.
+- **Schnelltexte:** halte das **+** neben dem Feld gedrückt oder wähle darunter **Schnelltexte**, für kurze Worte,
+  die du oft schreibst (Ich bin unterwegs, Ich rufe dich später an): Ein Tippen setzt einen ins Feld, um ihn so oder
+  mit mehr zu senden. **Hinzufügen** behält einen eigenen, und gedrückt halten entfernt einen; von da an ist die
+  Liste deine, verschlüsselt bei den SMS des Bereichs, jeder Bereich seine eigene.
 - **SMS zurückholen:** Eine SMS, die du sendest, wartet zuerst 5 Sekunden am Ende der Unterhaltung: Tippe dann darauf,
   um sie zurück ins Nachrichtenfeld zu holen. **Einstellungen** → **Telefon und SMS** → **SMS** → **SMS zurückholen**
   stellt **Aus**, 5 oder 10 Sekunden ein. Wenn du Erevos verlässt, geht sie sofort.

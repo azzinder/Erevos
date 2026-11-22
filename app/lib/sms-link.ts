@@ -12,7 +12,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { CARDS_ONCE_DAYS, DEVICE_ASKS_KEPT, fresh, MAX_CARDS_ONCE, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_VANISH, MAX_WORDS, saveSmsData, SMS_TITLE, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
+import { CARDS_ONCE_DAYS, DEVICE_ASKS_KEPT, fresh, MAX_CARDS_ONCE, LATER_TEXT, loadSmsData, MAX_LATER, MAX_MESSAGE_PINS, MAX_PINS, MAX_QUICK, MAX_SMS_WAY, MAX_TRASH, MAX_VANISH, MAX_WORDS, QUICK_TEXT, saveSmsData, SMS_TITLE, smsSaves, UNDO_SECONDS, WORD, type DeviceAsk, type LaterSms, type SentInvite, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -364,6 +364,16 @@ export class SmsLink {
 
   setPlain(on: boolean): Promise<void> {
     return this.update((d) => ({ ...d, plain: on }));
+  }
+
+  /** The owner's quick texts, or null for the app's own until they change them. */
+  get quick(): string[] | null {
+    return this.data.quick;
+  }
+
+  setQuick(list: string[]): Promise<void> {
+    const kept = [...new Set(list.map((q) => q.trim()).filter((q) => q.length > 0 && q.length <= QUICK_TEXT))].slice(0, MAX_QUICK);
+    return this.update((d) => ({ ...d, quick: kept }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open

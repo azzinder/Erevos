@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Quick texts**: hold the **+** in an SMS conversation down for short words you write often, and keep your own. See [SMS](#sms).":
+    "**Textos rápidos**: mantén pulsado el **+** en una conversación SMS para palabras cortas que escribes a menudo, y guarda las tuyas. Ver [SMS](#sms).",
   "**Reactions from iPhones**: a like or another reaction an iPhone or Google Messages sends by SMS, Liked “…”, shows as 👍 on your message instead of a message of its own. See [SMS](#sms).":
     "**Reacciones de iPhones**: un like u otra reacción que un iPhone o Google Messages envía por SMS, Liked “…”, se muestra como 👍 en tu mensaje en vez de como un mensaje aparte. Ver [SMS](#sms).",
   "**Videos by MMS**: **+** → **Record a video** in an SMS conversation records one in MMS quality with the phone's camera app, and a video that comes plays with a tap. See [SMS](#sms).":

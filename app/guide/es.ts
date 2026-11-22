@@ -2765,6 +2765,10 @@ cuando tú lo eliges.
   verla y cambiarla.
 - **Borradores:** lo que escribes y no envías se queda con esa conversación, y la lista lo muestra como **Borrador**. Un
   SMS que no pudo salir también se queda ahí como borrador.
+- **Textos rápidos:** mantén pulsado el **+** junto al campo, o elige **Textos rápidos** en él, para palabras cortas
+  que escribes a menudo (Voy de camino, Te llamo luego): un toque pone uno en el campo, para enviarlo tal cual o con
+  algo más. **Añadir** guarda uno tuyo, y mantener uno pulsado lo quita; desde entonces la lista es tuya, guardada
+  cifrada con los SMS del espacio, cada espacio la suya.
 - **Deshacer el envío de un SMS:** un SMS que envías espera antes 5 segundos al final de la conversación: tócalo
   entonces para devolverlo al campo de mensaje. **Ajustes** → **Teléfono y SMS** → **SMS** → **Deshacer el envío de un
   SMS** fija **Desactivado**, 5 o 10 segundos. Cuando sales de Erevos, sale al instante.

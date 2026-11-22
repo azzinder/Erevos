@@ -479,3 +479,9 @@ test("an iPhone's or Google Messages' reaction by SMS shows as a mark on the mes
   assert.deepEqual(marks.get('sms:1'), []);
   assert.deepEqual(marks.get('sms:3'), ['❤️']);
 });
+
+test('quick texts are the app\'s own until the owner keeps theirs, each kept once', async () => {
+  const { checked } = await import('../lock/sms-data');
+  assert.equal(checked({}).quick, null);
+  assert.deepEqual(checked({ quick: ['On my way', 'On my way', '', 7, 'x'.repeat(400), 'Later'] }).quick, ['On my way', 'Later']);
+});

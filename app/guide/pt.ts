@@ -2742,6 +2742,10 @@ escolhe.
   vê-la e mudá-la.
 - **Rascunhos:** o que você digita e não envia fica com aquela conversa, e a lista o mostra como **Rascunho**. Um SMS
   que não pôde ir também fica ali como rascunho.
+- **Textos rápidos:** segure o **+** ao lado do campo, ou escolha **Textos rápidos** nele, para palavras curtas que
+  você escreve com frequência (Estou a caminho, Te ligo depois): um toque põe um no campo, para enviar como está ou
+  com mais. **Adicionar** guarda um seu, e segurar um o remove; a partir daí a lista é sua, guardada criptografada
+  com os SMS do espaço, cada espaço a sua.
 - **Desfazer envio de SMS:** um SMS que você envia espera antes 5 segundos no fim da conversa: toque nele nesse
   momento para trazê-lo de volta ao campo de mensagem. **Configurações** → **Telefone e SMS** → **SMS** → **Desfazer
   envio de SMS** define **Desativado**, 5 ou 10 segundos. Quando você sai do Erevos, ele vai na hora.

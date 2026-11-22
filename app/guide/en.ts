@@ -2546,6 +2546,10 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
   space and the phone app see the same list. Only the SMS app or the phone app may see and change it.
 - **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
   that could not go stays there as the draft too.
+- **Quick texts:** hold the **+** beside the field down, or choose **Quick texts** under it, for short words you
+  write often (I'm on my way, I'll call you later): a tap puts one in the field, to send as it is or with more.
+  **Add** keeps one of your own, and holding one down removes it; from then on the list is yours, kept encrypted
+  with the space's SMS, each space its own.
 - **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take it
   back into the message field. **Settings** → **Phone and SMS** → **SMS** → **Taking an SMS back** sets **Off**, 5 or
   10 seconds. When you leave Erevos, it goes at once.

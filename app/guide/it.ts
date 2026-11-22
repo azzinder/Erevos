@@ -2773,6 +2773,10 @@ la scegli tu.
   vederlo e cambiarlo.
 - **Bozze:** quello che scrivi e non invii resta con quella conversazione, e l’elenco lo mostra come **Bozza**. Anche
   un SMS che non è potuto partire resta lì come bozza.
+- **Testi rapidi:** tieni premuto il **+** accanto al campo, o scegli **Testi rapidi** da lì, per parole brevi che
+  scrivi spesso (Sto arrivando, Ti chiamo dopo): un tocco ne mette uno nel campo, da inviare così o con altro.
+  **Aggiungi** ne tiene uno tuo, e tenerne premuto uno lo toglie; da allora la lista è tua, tenuta cifrata con gli
+  SMS dello spazio, ogni spazio la sua.
 - **Annullare l’invio di un SMS:** un SMS che invii prima aspetta 5 secondi alla fine della conversazione: toccalo in
   quel momento per riportarlo nel campo del messaggio. **Impostazioni** → **Telefono e SMS** → **SMS** → **Annullare
   l’invio di un SMS** imposta **Disattivato**, 5 o 10 secondi. Quando lasci Erevos, parte subito.

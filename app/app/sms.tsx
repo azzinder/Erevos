@@ -70,6 +70,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsCount, withoutAccents } from '../lib/sms-count';
 import { withReactions } from '../lib/sms-reactions';
+import { QuickTexts } from '../components/sms-quick';
 import { MMS_VIDEO_SECONDS, pickMmsVideo, recordMmsVideo } from '../lib/pick-mms-video';
 import { spaceStarPlace } from '../lock/stars-data';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
@@ -268,6 +269,8 @@ function Sms({ tools }: { tools: ReactNode }) {
   const [menu, setMenu] = useState<SmsTarget | null>(null);
   // The sheet of what an MMS can carry, where you are being found, a contact being chosen to send.
   const [attaching, setAttaching] = useState(false);
+  // The sheet of quick texts (components/sms-quick.tsx): held +, or from Attach and more.
+  const [quicking, setQuicking] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [choosingCard, setChoosingCard] = useState(false);
   // The built-in stickers' sheet, what it says, and whether one's picture is being made.
@@ -796,7 +799,6 @@ function Sms({ tools }: { tools: ReactNode }) {
   const lineOf = (m: SmsMessage) => m.text.split('\n')[0].trim() || (partsOf(m)[0] ? partWord(partsOf(m)[0].type) : '');
   // What an MMS carries can be added: a picture or a contact card where this build sends MMS, where you are where the phone finds it.
   const canPart = mmsReady();
-  const canAttach = canPart || CAN_PLACE;
   const partLabel = (p: Part) =>
     p.mime.startsWith('image/')
       ? t('Picture · {size} KB · remove', { size: Math.ceil(p.bytes.length / 1024) })
@@ -1082,8 +1084,8 @@ function Sms({ tools }: { tools: ReactNode }) {
       {mayAnswer && !part && !group && draft.trim() ? <SmsCounter text={sent(draft.trim())} /> : null}
       {mayAnswer ? (
         <View style={styles.composer}>
-          {canAttach && !voice.recording ? (
-            <IconButton label={t('Attach and more')} onPress={() => setAttaching(true)}>
+          {!voice.recording ? (
+            <IconButton label={t('Attach and more')} onPress={() => setAttaching(true)} onLongPress={() => setQuicking(true)}>
               <PlusIcon color={colors.text} size={22} />
             </IconButton>
           ) : null}
@@ -1212,7 +1214,26 @@ function Sms({ tools }: { tools: ReactNode }) {
       </Sheet>
       <SmsForward message={forwarding} contacts={contacts} onClose={() => setForwarding(null)} onNote={setNote} />
       <RemindSheet of={reminding} where="space" onClose={() => setReminding(null)} say={setNote} />
+      <QuickTexts
+        visible={quicking}
+        link={link.current}
+        onClose={() => setQuicking(false)}
+        onPick={(text) => setDraft((typed) => (typed.trim() ? `${typed.trimEnd()} ${text}` : text))}
+      />
       <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Attach and more')}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setAttaching(false);
+            setQuicking(true);
+          }}
+          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+        >
+          <Text variant="bodyStrong">{t('Quick texts')}</Text>
+          <Text variant="caption" tone="muted">
+            {t('Or hold + down.')}
+          </Text>
+        </Pressable>
         {canPart ? (
           <Pressable
             accessibilityRole="button"

@@ -2648,6 +2648,9 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
   ga vidjeti i mijenjati.
 - **Nacrti:** ono što upišete, a ne pošaljete, ostaje uz taj razgovor, a popis to prikazuje kao **Nacrt**. SMS koji
   nije mogao otići također tamo ostaje kao nacrt.
+- **Brzi tekstovi:** držite **+** pored polja, ili izaberite **Brzi tekstovi** u njemu, za kratke riječi koje često
+  pišete (Na putu sam, Zovem vas kasnije): dodir stavlja jedan u polje, da ode takav ili s još nečim. **Dodaj** čuva
+  vaš, a držanje jednog ga uklanja; od tada je lista vaša, šifrovana uz SMS prostora, svaki prostor svoju.
 - **Povlačenje SMS-a:** SMS koji pošaljete prvo čeka 5 sekundi na kraju razgovora: tada ga dodirnite da ga vratite u
   polje za poruku. **Postavke** → **Telefon i SMS** → **SMS** → **Povlačenje SMS-a** postavlja **Isključeno**, 5 ili
   10 sekundi. Kad napustite Erevos, odlazi odmah.
