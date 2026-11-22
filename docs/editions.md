@@ -40,8 +40,9 @@ and script names the plain Erevos `erevos`.
   Their JavaScript finds no native module, as in a browser. The Collection's native module stays,
   as chats open files with another app and play videos through it, but the Collection is not
   offered. The guide leaves out their sections (`EREVOS_SECTIONS`) and, in the others, what speaks
-  of them (`editionSource` in lib/guide.ts: what links to them or names SMS, and items marked
-  `- [~] `); What's new their lines (`inErevosLite`), under Erevos Lite's own numbers (`asLite`);
+  of them, marked in the sources of every language (`{~…}`, `{~…|…}`, `- [~]` and `[~]`, read by
+  `editionSource` in lib/guide.ts; checks/guide.check.ts holds every language to the English
+  shape and to what Erevos Lite keeps); What's new their lines (`inErevosLite`), under Erevos Lite's own numbers (`asLite`);
   the widget and Appearance → Launcher icons their icons. Chat photos, video calls and the QR
   scanner keep the camera permission.
 - Erevos Lite has no payment requests of Fasouli's: `erevos://pay` only opens it, and a request a
@@ -49,6 +50,10 @@ and script names the plain Erevos `erevos`.
 - Releases: Erevos Lite has its own workflow (`.github/workflows/release-lite.yml`, by hand, version
   3.2.x) and its own download repository, `azzinder/erevos-lite-releases` (secret
   `LITE_RELEASES_TOKEN`); the release computer signs it with `deploy/web/publish-android.sh`.
+  Before each, CHANGELOG.md gets its `## 3.2.x (date)` and app/lib/whats-new.ts its entry (the
+  workflow checks both): Erevos Lite's What's new shows what Erevos brought since its last release
+  under its new one, and Erevos and Erevos+ never list a 3.2.x release. Should a run stop after its
+  release is made, Re-run failed jobs finishes it with the same build.
 
 ## In a browser
 

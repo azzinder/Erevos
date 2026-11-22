@@ -15,9 +15,15 @@ name: release-lite
 # repository alone. Here only the tag v<version> is made, on the commit built: no release, so
 # Erevos's own releases and their numbers (release.yml) never see Erevos Lite's.
 #
-# Only by hand (Actions, release-lite, Run workflow), from main, with the version named. As with
-# every release, Check for updates installs it only once the release computer has signed it
-# (deploy/web/publish-android.sh <version>, which knows 3.2.x is Erevos Lite's).
+# Only by hand (Actions, release-lite, Run workflow), from main, with the version named, once
+# CHANGELOG.md has its "## <version>" and What's new (app/lib/whats-new.ts) its entry, so that the
+# next release of Erevos Lite tells only what came after this one. As with every release, Check for
+# updates installs it only once the release computer has signed it (deploy/web/publish-android.sh
+# <version>, which knows 3.2.x is Erevos Lite's).
+#
+# Should a run stop after its release is made, Re-run failed jobs finishes it with the same build:
+# the release, its betas' channel and the tag are each made only if they are not there yet. A new
+# run for a version out already stops at once, so that its files never change under another build.
 
 on:
   workflow_dispatch:
@@ -51,6 +57,10 @@ jobs:
       latest: ${{ steps.check.outputs.latest }}
       channel: ${{ steps.check.outputs.channel }}
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
       - name: Check the branch, the token and the version
         id: check
         env:
@@ -86,6 +96,10 @@ jobs:
             channel=lite-beta; latest=false
           else
             channel=lite; latest=true
+          fi
+          # Recorded, so What's new keeps what came before it under it.
+          if ! grep -q "^## $version (" CHANGELOG.md || ! grep -q "version: '$version'," app/lib/whats-new.ts; then
+            echo "::error::CHANGELOG.md has no \"## $version (…)\", or app/lib/whats-new.ts no entry for it: write them first."; exit 1
           fi
           echo "Erevos Lite $version, channel $channel."
           { echo "version=$version"; echo "channel=$channel"; echo "latest=$latest"; } >> "$GITHUB_OUTPUT"
@@ -314,9 +328,13 @@ jobs:
         run: |
           PRE=""
           if [ "$CHANNEL" = lite-beta ]; then PRE=--prerelease; fi
-          # Run again after a failure, the release made then gets its files again.
-          if gh release view "v$EREVOS_VERSION" --repo "$LITE_RELEASES_REPO" > /dev/null 2>&1; then
+          # Run again after a failure (Re-run failed jobs, the same build), the release made then gets
+          # its files again, and one left a draft by a create cut short is published now.
+          if draft=$(gh release view "v$EREVOS_VERSION" --repo "$LITE_RELEASES_REPO" --json isDraft --jq .isDraft 2> /dev/null); then
             gh release upload "v$EREVOS_VERSION" files/* --repo "$LITE_RELEASES_REPO" --clobber
+            if [ "$draft" = true ]; then
+              gh release edit "v$EREVOS_VERSION" --repo "$LITE_RELEASES_REPO" --draft=false --latest="$LATEST" --prerelease="$([ "$CHANNEL" = lite-beta ] && echo true || echo false)"
+            fi
           else
             gh release create "v$EREVOS_VERSION" files/* --repo "$LITE_RELEASES_REPO" --title "Erevos Lite $EREVOS_VERSION" --notes-file notes.md --latest="$LATEST" $PRE
           fi

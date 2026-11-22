@@ -70,10 +70,20 @@ export const VERSIONS: WhatsNew[] = [
  * release.
  */
 export function whatsNewFor(running: string, edition: Edition = EDITION): (Changes & { version: string | null })[] {
-  const released = VERSIONS[0]?.version ?? '0';
-  const pending = NEXT.forYou.length + NEXT.underTheHood.length > 0;
-  const next = pending && !VERSIONS.some((v) => v.version === running) ? [{ version: laterThan(running, released) ? running : null, ...NEXT }] : [];
-  const all = [...next, ...VERSIONS];
+  return whatsNewOf(VERSIONS, NEXT, running, edition);
+}
+
+/** whatsNewFor, of any list of releases and what is not out yet: for the checks. */
+export function whatsNewOf(versions: WhatsNew[], next: Changes, running: string, edition: Edition): (Changes & { version: string | null })[] {
+  // A release of Erevos Lite (x.2.y) is told only in Erevos Lite: what it brought of Erevos's own is
+  // told in Erevos's releases already.
+  const lite = (v: { version: string | null }) => v.version !== null && LITE_RELEASE.test(v.version);
+  const own = edition === 'lite' ? versions : versions.filter((v) => !lite(v));
+  // The last release of this edition: Erevos Lite's own, before which what runs is its first.
+  const released = (edition === 'lite' ? own.find(lite) : own[0])?.version ?? '0';
+  const pending = next.forYou.length + next.underTheHood.length > 0;
+  const coming = pending && !own.some((v) => v.version === running) ? [{ version: laterThan(running, released) ? running : null, ...next }] : [];
+  const all = [...coming, ...own];
   if (edition === 'plus') return asPlus(all);
   const kept = edition === 'lite' ? (text: string) => inLite(text) && inErevosLite(text) : inLite;
   const shown = all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(kept), underTheHood: underTheHood.filter(kept) }));
@@ -83,7 +93,9 @@ export function whatsNewFor(running: string, edition: Edition = EDITION): (Chang
 // Erevos Lite tells its releases (x.2.y, their betas and rcs) as its own: what a release of another
 // edition brought shows under the Lite release that came after it, or, with none yet, under the
 // Lite version that runs (its first release, 3.2.0-beta.1, brings all Erevos had until then). A
-// build of main for testing, with no Lite number, keeps them as they are.
+// build of main for testing, with no Lite number, keeps them as they are. So each release of Erevos
+// Lite has its entry in VERSIONS, as CHANGELOG.md's "## 3.2.x" (release-lite.yml checks it): what
+// came before it then stays under it, not under the next one.
 const LITE_RELEASE = /^(?!7\.)\d+\.2\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/;
 
 export function asLite<T extends Changes & { version: string | null }>(list: T[], running: string): (Changes & { version: string | null })[] {

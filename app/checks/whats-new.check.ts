@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import { GUIDE_SOURCES } from '../guide/index';
 import { parseGuide, parseInline } from '../lib/guide';
 import { laterThan, VERSION_NAME } from '../lib/version-name';
-import { asPlus as asPlusForCheck, NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
+import { asPlus as asPlusForCheck, NEXT, VERSIONS, whatsNewFor, whatsNewOf, type Changes } from '../lib/whats-new';
 
 import { ROOT } from './words';
 
@@ -139,4 +139,24 @@ test('Erevos Lite tells what Erevos had until it under its own number, without t
   for (const line of all) assert.doesNotMatch(line, /\bSMS\b|\bPhone\b|\bCollection\b|\(#(?:sms|phone|collection|modules)\)/, line);
   // Nothing empty is listed.
   for (const v of whatsNewFor('0.0.1', 'lite')) assert.ok(lines(v).length > 0, String(v.version));
+});
+
+test("each release of Erevos Lite keeps what came before it; Erevos and Erevos+ never list Erevos Lite's", () => {
+  const v = (version: string, line: string) => ({ version, forYou: [line], underTheHood: [] as string[] });
+  const none = { forYou: [] as string[], underTheHood: [] as string[] };
+  const list = [v('3.0.2', 'two'), v('3.2.0-beta.1', 'lite one'), v('3.0.1', 'one'), v('3.0.0', 'zero')];
+  // Its second beta: only what came after the first, under this version; the first keeps the rest.
+  assert.deepEqual(
+    whatsNewOf(list, none, '3.2.0-beta.2', 'lite').map((x) => [x.version, x.forYou]),
+    [['3.2.0-beta.2', ['two']], ['3.2.0-beta.1', ['lite one', 'one', 'zero']]],
+  );
+  // The first beta itself, recorded.
+  assert.deepEqual(whatsNewOf(list.slice(1), none, '3.2.0-beta.1', 'lite').map((x) => x.version), ['3.2.0-beta.1']);
+  // What is not out yet, in Erevos Lite after its release, and in Erevos after Erevos Lite's.
+  const next = { forYou: ['next'], underTheHood: [] as string[] };
+  assert.deepEqual(whatsNewOf(list, next, '3.2.0-beta.2', 'lite')[0].forYou, ['next', 'two']);
+  const plain = whatsNewOf([v('3.2.0-beta.1', 'lite one'), v('3.0.1', 'one')], next, '3.0.2', 'erevos');
+  assert.deepEqual(plain.map((x) => x.version), ['3.0.2', '3.0.1']);
+  assert.ok(!plain.some((x) => x.forYou.includes('lite one')));
+  assert.ok(!whatsNewOf(list, none, '3.0.2', 'plus').some((x) => x.forYou.includes('lite one')));
 });
