@@ -20,7 +20,7 @@ ili preko interneta.
 
 {-**Erevos+** je ista aplikacija sa više: razgovori sa ljudima na Telegramu, Messengeru, Signalu, Sessionu, Matrixu,
 XMPP-u i Nostru, na Androidu 8.0 ili novijem. Prelaziš na nju, ili nazad, u **Ažuriranja**: vidi
-[Erevos ili Erevos+, i beta verzije](#update-channel).}
+[Erevos, Erevos+ ili Erevos Lite, i beta verzije](#update-channel).}
 
 > Poruke su **šifrirane s kraja na kraj**, i preko relaya i u blizini, ali još ništa nisu provjerili nezavisni
 > stručnjaci. [Šta je danas zaštićeno](#privacy) kaže tačno šta jeste, a šta nije zaštićeno.
@@ -4165,15 +4165,21 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
 Verzija poput **4.0.0-rc.1** je probna verzija prije 4.0.0 (kandidat za izdanje): instalira se i ažurira kao svaka
 druga, a 4.0.0 dolazi poslije nje.
 
-### Erevos ili Erevos+, i beta verzije {#update-channel}
+### Erevos, Erevos+ ili Erevos Lite, i beta verzije {#update-channel}
 
 Na Androidu, **Ažuriranja** kažu i koje se verzije nude ovom telefonu:
 
-- **Sljedeće ažuriranje**: **Erevos** (njegovi razgovori, Telefon, SMS i Zbirka; verzije 7.0.x) ili **Erevos+** (sve
-  to, s Telegramom, Messengerom, Signalom, Sessionom, Matrixom, XMPP-om i Nostrom; verzije 7.1.x). Na početku je
-  izabrano ono što imate. Izaberite drugo, i sljedeće ažuriranje je tog izdanja, čim izađe neko s brojem builda većim
-  od vašeg, jer Android ne instalira ništa starije. Instalira se preko onog što imate i sve zadržava: pri prelasku na
-  Erevos, razgovori i računi drugih mreža ostaju na telefonu, nekorišteni, i ponovo su tu u Erevosu+.
+- **Sljedeće ažuriranje**: **Erevos Lite** (Erevosovi vlastiti razgovori i pozivi, ništa drugo; verzije 3.2.x),
+  **Erevos** (njegovi vlastiti razgovori, Telefon, SMS i Kolekcija; verzije 3.0.x) ili **Erevos+** (sve to, uz
+  Telegram, Messenger, Signal, Session, Matrix, XMPP i Nostr; verzije 3.1.x). Na početku je odabrano ono što imate.
+  Svaki je posebna aplikacija, s vlastitim podacima, pa je odabir drugog prelazak, a ne ažuriranje: **Provjeri
+  ažuriranja** ga pronalazi i pita **Pređi na …**. Ovaj Erevos tada pravi kopiju svega, šifrovanu, ovdje na telefonu
+  (svaki prostor, s njegovim kontaktima, porukama i postavkama), a Android instalira drugu aplikaciju pored ove, ako
+  već nije tu. Otvorite je u roku od jednog dana: pita da li da donese vaše razgovore i preuzima ih; ništa ne napušta
+  telefon. Prostori se zatim otvaraju svojim lozinkama, kao nakon svakog vraćanja. SMS i pozivi telefona ostaju u
+  telefonu: postavite novu aplikaciju kao aplikaciju za SMS i telefon, ako ih koristite. Stara aplikacija ostaje dok
+  je ne deinstalirate; prelazak koji nije preuzet u roku od jednog dana se briše. F-Droid verzija, potpisana drugim
+  ključem, ne može tako preći: koristite [Rezervne kopije](#backup).
 - **Beta verzije**: isključeno, nude se samo redovne verzije. Uključeno, i beta verzije (kao **7.0.1-beta.1**): izlaze
   prve, za isprobavanje, i mogu imati problema. Beta ga na početku ima uključenog. Isključite ga da napustite beta
   verzije: sljedeća redovna verzija s brojem builda većim od bete koju imate instalira se preko nje i sve zadržava, bez

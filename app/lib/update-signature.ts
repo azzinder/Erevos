@@ -71,7 +71,7 @@ export async function fetchStatement(fetchImpl: typeof fetch = fetch): Promise<s
   return res.text();
 }
 
-// Since there are four channels (lib/update-channel.ts), the release computer signs each apart, in
+// Since there are several channels (lib/update-channel.ts), the release computer signs each apart, in
 // android-update-<channel>.json beside android-update.json, with a statement that names the channel
 // and the release's name too: so a statement of one channel never lets another's package install,
 // and the notice of a new version (lib/release-notice.ts) reads the name from it. android-update.json
@@ -87,7 +87,7 @@ export function channelStatementOf(name: ChannelName, version: string, build: nu
   return `erevos android update v2\nchannel ${name}\nname ${version}\nbuild ${build}\nsha256 ${sha256}\n`;
 }
 
-const V2 = /^erevos android update v2\nchannel (erevos|erevos-beta|plus|plus-beta)\nname ([0-9a-z.-]{1,40})\nbuild ([1-9]\d*)\nsha256 ([0-9a-f]{64})\n$/;
+const V2 = /^erevos android update v2\nchannel (erevos|erevos-beta|plus|plus-beta|lite|lite-beta)\nname ([0-9a-z.-]{1,40})\nbuild ([1-9]\d*)\nsha256 ([0-9a-f]{64})\n$/;
 
 /** A channel's statement as it reads, when signed by `key`: its channel, name, build and SHA-256; null for anything else. */
 export async function readChannelStatement(text: string, key = RELEASE_KEY): Promise<{ channel: ChannelName; name: string; build: number; sha256: string } | null> {

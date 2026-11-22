@@ -20,7 +20,7 @@ nenhuma rede, pelo Wi-Fi ou pela internet.
 
 {-O **Erevos+** é o mesmo app com mais: conversas com pessoas no Telegram, Messenger, Signal, Session, Matrix, XMPP
 e Nostr, no Android 8.0 ou mais recente. Passe para ele, ou volte, em **Atualizações**: veja
-[Erevos ou Erevos+, e betas](#update-channel).}
+[Erevos, Erevos+ ou Erevos Lite, e betas](#update-channel).}
 
 > As mensagens são **criptografadas de ponta a ponta**, tanto por um relay quanto por perto, mas nada foi auditado
 > ainda por especialistas independentes. [O que está protegido hoje](#privacy) diz exatamente o que está e o que não está.
@@ -4308,16 +4308,21 @@ sai uma versão nova, sem perguntar ao GitHub, como diz **Aviso quando sai uma v
 Uma versão como **4.0.0-rc.1** é uma versão de teste anterior à 4.0.0 (uma versão candidata): instala e atualiza como
 qualquer outra, e a 4.0.0 vem depois dela.
 
-### Erevos ou Erevos+, e betas {#update-channel}
+### Erevos, Erevos+ ou Erevos Lite, e betas {#update-channel}
 
 No Android, **Atualizações** diz também quais versões são oferecidas a este celular:
 
-- **Próxima atualização**: **Erevos** (as conversas dele, o Telefone, os SMS e a Coleção; versões 7.0.x) ou
-  **Erevos+** (tudo isso, com Telegram, Messenger, Signal, Session, Matrix, XMPP e Nostr; versões 7.1.x). No começo
-  fica escolhida a que você tem. Escolha a outra, e a próxima atualização é dessa edição, assim que sair uma com número
-  de build maior que o seu, já que o Android não instala nada mais antigo. Ela é instalada por cima da que você tem e
-  mantém tudo: ao passar para o Erevos, as conversas e as contas das outras redes ficam no celular, sem uso, e estão de
-  volta no Erevos+.
+- **Próxima atualização**: **Erevos Lite** (as conversas e chamadas do próprio Erevos, nada mais; versões 3.2.x),
+  **Erevos** (suas próprias conversas, o Telefone, os SMS e a Coleção; versões 3.0.x) ou **Erevos+** (tudo isso, com
+  Telegram, Messenger, Signal, Session, Matrix, XMPP e Nostr; versões 3.1.x). No início está escolhida a que você tem.
+  Cada uma é um app à parte, com seus próprios dados, então escolher outra é uma mudança, não uma atualização:
+  **Procurar atualizações** a encontra e pergunta **Mudar para o …**. Este Erevos faz então uma cópia de tudo,
+  criptografada, aqui no telefone (cada espaço, com seus contatos, mensagens e configurações), e o Android instala o
+  outro app ao lado deste, se ele ainda não estiver lá. Abra-o dentro de um dia: ele pergunta se deve trazer suas
+  conversas e as pega; nada sai do telefone. Os espaços abrem depois com suas senhas, como após qualquer restauração.
+  Os SMS e chamadas do telefone ficam no telefone: torne o novo app o app de SMS e de telefone, se você os usa. O app
+  antigo fica até você desinstalá-lo; uma mudança não feita em um dia é apagada. A versão do F-Droid, assinada com
+  outra chave, não pode mudar assim: use os [Backups](#backup).
 - **Versões beta**: desativado, só as versões normais são oferecidas. Ativado, as betas também (como
   **7.0.1-beta.1**): saem antes, para teste, e podem ter problemas. Uma beta vem com ele ativado. Desative para sair
   das betas: a próxima versão normal com número de build maior que a beta que você tem é instalada por cima e mantém

@@ -18,7 +18,7 @@ internet.
 - **Appearance:** the LPHL looks: Classic, Modernist and Nocturne, twelve palettes, and glass as on lphl.nekten.eu.
 
 {-**Erevos+** is the same app with more: chats with people on Telegram, Messenger, Signal, Session, Matrix, XMPP
-and Nostr, on Android 8.0 or newer. Move to it, or back, in **Updates**: see [Erevos or Erevos+, and betas](#update-channel).}
+and Nostr, on Android 8.0 or newer. Move to it, or back, in **Updates**: see [Erevos, Erevos+ or Erevos Lite, and betas](#update-channel).}
 
 > Messages are **end-to-end encrypted**, through a relay and nearby alike, but nothing has been audited yet by
 > independent experts. [What is protected today](#privacy) says exactly what is and is not.
@@ -3992,15 +3992,20 @@ asking GitHub, as **Told when a new version is out** below says. To update:
 A version such as **4.0.0-rc.1** is a test version before 4.0.0 (a release candidate): it installs and updates like
 any other, and 4.0.0 comes after it.
 
-### Erevos or Erevos+, and betas {#update-channel}
+### Erevos, Erevos+ or Erevos Lite, and betas {#update-channel}
 
 On Android, **Updates** also says which releases are offered to this phone:
 
-- **Next update**: **Erevos** (its own chats, the Phone, SMS and the Collection; versions 7.0.x) or **Erevos+** (all of
-  that, with Telegram, Messenger, Signal, Session, Matrix, XMPP and Nostr; versions 7.1.x). The one you have is chosen
-  at first. Choose the other, and the next update is of that edition, once one is out with a build number above the
-  one you have, since Android installs nothing older. It installs over the one you have and keeps everything: moving to
-  Erevos, the chats and accounts of the other networks stay on the phone, unused, and are there again in Erevos+.
+- **Next update**: **Erevos Lite** (Erevos's own chats and calls, nothing else; versions 3.2.x), **Erevos** (its own
+  chats, the Phone, SMS and the Collection; versions 3.0.x) or **Erevos+** (all of that, with Telegram, Messenger,
+  Signal, Session, Matrix, XMPP and Nostr; versions 3.1.x). The one you have is chosen at first. Each is an app of its
+  own, with its own data, so choosing another is a move, not an update: **Check for updates** finds it and asks **Move
+  to …**. This Erevos then makes a copy of everything, encrypted, here on the phone (every space, with its contacts,
+  messages and settings), and Android installs the other app beside this one, if it is not there already. Open it
+  within a day: it asks whether to bring your chats, and takes them; nothing leaves the phone. The spaces then open
+  with their passwords, as after any restore. The phone's SMS and calls stay in the phone: make the new app the SMS
+  and phone app, if you use them. The old app stays until you uninstall it; a move not taken within a day is deleted.
+  The F-Droid build, signed with another key, cannot move this way: use [Backups](#backup) instead.
 - **Beta versions**: off, only regular versions are offered. On, betas too (such as **7.0.1-beta.1**): they come out
   first, for trying, and may have problems. A beta has it on at first. Turn it off to leave the betas: the next regular
   version with a build number above the beta you have installs over it and keeps everything, with no uninstalling.

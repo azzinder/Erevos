@@ -20,7 +20,7 @@ por internet.
 - **Apariencia:** los acabados de LPHL: Classic, Modernist y Nocturne, doce paletas, y cristal como en lphl.nekten.eu.
 
 {-**Erevos+** es la misma app con más: chats con gente en Telegram, Messenger, Signal, Session, Matrix, XMPP y
-Nostr, en Android 8.0 o posterior. Pasa a ella, o vuelve, en **Actualizaciones**: ver [Erevos o Erevos+, y betas](#update-channel).}
+Nostr, en Android 8.0 o posterior. Pasa a ella, o vuelve, en **Actualizaciones**: ver [Erevos, Erevos+ o Erevos Lite, y betas](#update-channel).}
 
 > Los mensajes están **cifrados de extremo a extremo**, tanto a través de un relay como cerca, pero nada ha sido auditado
 > todavía por expertos independientes. [Qué está protegido hoy](#privacy) dice exactamente qué lo está y qué no.
@@ -4349,16 +4349,21 @@ versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una ver
 Una versión como **4.0.0-rc.1** es una versión de prueba anterior a la 4.0.0 (una versión candidata): se instala y se
 actualiza como cualquier otra, y la 4.0.0 llega después.
 
-### Erevos o Erevos+, y betas {#update-channel}
+### Erevos, Erevos+ o Erevos Lite, y betas {#update-channel}
 
 En Android, **Actualizaciones** dice también qué versiones se ofrecen a este teléfono:
 
-- **Próxima actualización**: **Erevos** (sus propios chats, el Teléfono, los SMS y la Colección; versiones 7.0.x) o
-  **Erevos+** (todo eso, con Telegram, Messenger, Signal, Session, Matrix, XMPP y Nostr; versiones 7.1.x). Al principio
-  está elegida la que tienes. Elige la otra, y la próxima actualización es de esa edición, en cuanto salga una con un
-  número de compilación mayor que el tuyo, ya que Android no instala nada más antiguo. Se instala sobre la que tienes y
-  lo conserva todo: al pasar a Erevos, los chats y las cuentas de las otras redes se quedan en el teléfono, sin usar, y
-  vuelven a estar en Erevos+.
+- **Próxima actualización**: **Erevos Lite** (los chats y llamadas propios de Erevos, nada más; versiones 3.2.x),
+  **Erevos** (sus propios chats, el Teléfono, los SMS y la Colección; versiones 3.0.x) o **Erevos+** (todo eso, con
+  Telegram, Messenger, Signal, Session, Matrix, XMPP y Nostr; versiones 3.1.x). Al principio está elegida la que
+  tienes. Cada una es una app aparte, con sus propios datos, así que elegir otra es un traslado, no una actualización:
+  **Buscar actualizaciones** la encuentra y pregunta **Pasar a …**. Este Erevos hace entonces una copia de todo,
+  cifrada, aquí en el teléfono (cada espacio, con sus contactos, mensajes y ajustes), y Android instala la otra app
+  junto a esta, si no está ya. Ábrela en el plazo de un día: pregunta si traer tus chats y los toma; nada sale del
+  teléfono. Los espacios se abren luego con sus contraseñas, como tras cualquier restauración. Los SMS y las llamadas
+  del teléfono se quedan en el teléfono: haz de la nueva app la app de SMS y de teléfono, si los usas. La app antigua
+  se queda hasta que la desinstales; un traslado no tomado en un día se borra. La versión de F-Droid, firmada con otra
+  clave, no puede trasladarse así: usa las [Copias de seguridad](#backup).
 - **Versiones beta**: desactivado, solo se ofrecen las versiones normales. Activado, también las betas (como
   **7.0.1-beta.1**): salen antes, para probar, y pueden tener problemas. Una beta lo tiene activado al principio.
   Desactívalo para salir de las betas: la próxima versión normal con un número de compilación mayor que la beta que

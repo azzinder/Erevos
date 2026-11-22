@@ -27,9 +27,9 @@ name: release
 # repositories, titled "Erevos+ …"; they count for nothing in the version.
 #
 # Every build has its own number, which Android and Check for updates go by: the run's, unless an
-# Erevos+ build already took it or one above it. Erevos and Erevos+ are the same app to Android
-# (app.erevos) and each installs over the other, so they share one row of build numbers, and a
-# build's is always above every one before it (the version job, Choose the build number).
+# Erevos+ build already took it or one above it. Erevos+'s 7.x were the same app to Android as
+# Erevos (app.erevos); since 3.1.0 it is app.erevos.plus. They still share one row of build
+# numbers, and a build's is always above every one before it (the version job, Choose the build number).
 #
 # The jobs hand their files to the publish job through a draft release, build-<build number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
@@ -660,12 +660,13 @@ jobs:
               --argjson size "$(stat -c %s files/erevos-android.apk)" --arg sha256 "$(sha256sum files/erevos-android.apk | cut -d' ' -f1)" \
               '{url: $url, size: $size, sha256: $sha256}')
           fi
-          # Its channel (app/lib/update-channel.ts): a beta or an alpha is in Erevos's beta channel.
+          # Its channel (app/lib/update-channel.ts): a beta or an alpha is in Erevos's beta channel. And
+          # its Android app, app.erevos: another edition's is a move, not an update (lib/edition-move.ts).
           if [[ "$EREVOS_VERSION" =~ -(alpha|beta)\. ]]; then CHANNEL=erevos-beta; else CHANNEL=erevos; fi
           echo "CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
           jq -n --arg name "$EREVOS_VERSION" --arg version "0.1.$EREVOS_BUILD" --argjson build "$EREVOS_BUILD" \
             --arg date "$(TZ=Europe/Athens date +%F)" --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" --arg channel "$CHANNEL" \
-            '{name: $name, version: $version, build: $build, date: $date, commit: $commit, channel: $channel, apk: $apk}' > files/version.json
+            '{name: $name, version: $version, build: $build, date: $date, commit: $commit, channel: $channel, package: "app.erevos", apk: $apk}' > files/version.json
           cat files/version.json
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }

@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Erevos, Erevos+ or Erevos Lite**: each is now an app of its own. Choose another under **Updates**, and this Erevos hands it everything here on the phone, encrypted: open the new one within a day and it brings your chats. See [Updates](#updates).":
+    "**Erevos, Erevos+ ili Erevos Lite**: svaki je sada posebna aplikacija. Odaberite drugi u **Ažuriranjima**, i ovaj Erevos mu predaje sve ovdje na telefonu, šifrovano: otvorite novi u roku od jednog dana i donosi vaše razgovore. Pogledajte [Ažuriranja](#updates).",
   "**Make a backup** shows what it does and how far it is in its card, with a bar, and a notice says when the backup is done. See [Backups](#backup).":
     "**Napravi rezervnu kopiju** pokazuje u svojoj kartici šta radi i dokle je stigla, sa trakom, a obavještenje kaže kad je kopija napravljena. Vidite [Rezervne kopije](#backup).",
   "**MMS abroad**: while roaming, an MMS waits for a tap, **Fetch (may cost)**, unless you choose otherwise under **Settings** → **Phone and SMS** → **SMS** → **MMS**. See [SMS](#sms).":

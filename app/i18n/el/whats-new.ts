@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Erevos, Erevos+ or Erevos Lite**: each is now an app of its own. Choose another under **Updates**, and this Erevos hands it everything here on the phone, encrypted: open the new one within a day and it brings your chats. See [Updates](#updates).":
+    "**Erevos, Erevos+ ή Erevos Lite**: το καθένα είναι πλέον ξεχωριστή εφαρμογή. Διάλεξε άλλο στις **Ενημερώσεις**, και αυτό το Erevos του δίνει τα πάντα εδώ στο τηλέφωνο, κρυπτογραφημένα: άνοιξε το νέο μέσα σε μία μέρα και φέρνει τις συνομιλίες σου. Δες [Ενημερώσεις](#updates).",
   "**Make a backup** shows what it does and how far it is in its card, with a bar, and a notice says when the backup is done. See [Backups](#backup).":
     "Η **Δημιουργία αντιγράφου** δείχνει στην κάρτα της τι κάνει και πόσο έχει προχωρήσει, με μια μπάρα, και μια ειδοποίηση λέει πότε έγινε το αντίγραφο. Δες [Αντίγραφα ασφαλείας](#backup).",
   "**MMS abroad**: while roaming, an MMS waits for a tap, **Fetch (may cost)**, unless you choose otherwise under **Settings** → **Phone and SMS** → **SMS** → **MMS**. See [SMS](#sms).":

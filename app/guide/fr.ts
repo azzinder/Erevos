@@ -21,7 +21,7 @@ sans aucun réseau, par Wi-Fi, ou par internet.
 
 {-**Erevos+** est la même app, avec plus : des discussions avec des gens sur Telegram, Messenger, Signal, Session,
 Matrix, XMPP et Nostr, sur Android 8.0 ou plus récent. On y passe, ou on en revient, dans **Mises à jour** : voir
-[Erevos ou Erevos+, et bêtas](#update-channel).}
+[Erevos, Erevos+ ou Erevos Lite, et bêtas](#update-channel).}
 
 > Les messages sont **chiffrés de bout en bout**, par un relais comme à proximité, mais rien n’a encore été audité par
 > des experts indépendants. [Ce qui est protégé aujourd’hui](#privacy) dit exactement ce qui l’est et ce qui ne l’est
@@ -4591,16 +4591,22 @@ version sort** plus bas. Pour mettre à jour :
 Une version comme **4.0.0-rc.1** est une version de test avant la 4.0.0 (une version candidate) : elle s’installe et
 se met à jour comme les autres, et la 4.0.0 vient après elle.
 
-### Erevos ou Erevos+, et bêtas {#update-channel}
+### Erevos, Erevos+ ou Erevos Lite, et bêtas {#update-channel}
 
 Sur Android, **Mises à jour** indique aussi quelles versions sont proposées à ce téléphone :
 
-- **Prochaine mise à jour** : **Erevos** (ses propres discussions, le Téléphone, les SMS et la Collection ; versions
-  7.0.x) ou **Erevos+** (tout cela, avec Telegram, Messenger, Signal, Session, Matrix, XMPP et Nostr ; versions 7.1.x).
-  Au début, c’est celle que vous avez. Choisissez l’autre, et la prochaine mise à jour est de cette édition, dès qu’il
-  en sort une avec un numéro de build supérieur au vôtre, car Android n’installe rien de plus ancien. Elle s’installe
-  par-dessus la vôtre et garde tout : en passant à Erevos, les discussions et les comptes des autres réseaux restent sur
-  le téléphone, inutilisés, et sont de nouveau là dans Erevos+.
+- **Prochaine mise à jour**: **Erevos Lite** (les discussions et appels propres à Erevos, rien d'autre ; versions
+  3.2.x), **Erevos** (ses propres discussions, le Téléphone, les SMS et la Collection ; versions 3.0.x) ou **Erevos+**
+  (tout cela, avec Telegram, Messenger, Signal, Session, Matrix, XMPP et Nostr ; versions 3.1.x). Au début, celle que
+  tu as est choisie. Chacune est une app à part, avec ses propres données, donc en choisir une autre est un passage,
+  pas une mise à jour : **Rechercher des mises à jour** la trouve et demande **Passer à …**. Cet Erevos fait alors une
+  copie de tout, chiffrée, ici sur le téléphone (chaque espace, avec ses contacts, messages et réglages), et Android
+  installe l'autre app à côté de celle-ci, si elle n'y est pas déjà. Ouvre-la dans la journée : elle demande s'il faut
+  reprendre tes discussions, et les prend ; rien ne quitte le téléphone. Les espaces s'ouvrent ensuite avec leurs mots
+  de passe, comme après toute restauration. Les SMS et appels du téléphone restent dans le téléphone : fais de la
+  nouvelle app l'app SMS et téléphone, si tu t'en sers. L'ancienne app reste jusqu'à ce que tu la désinstalles ; un
+  passage non repris dans la journée est supprimé. La version F-Droid, signée avec une autre clé, ne peut pas passer
+  ainsi : utilise plutôt les [Sauvegardes](#backup).
 - **Versions bêta** : désactivé, seules les versions normales sont proposées. Activé, les bêtas aussi (comme
   **7.0.1-beta.1**) : elles sortent d’abord, pour essayer, et peuvent avoir des problèmes. Une bêta l’a activé au
   début. Désactivez-le pour quitter les bêtas : la prochaine version normale avec un numéro de build supérieur à la
