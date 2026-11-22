@@ -101,7 +101,10 @@ test('since 7.x the numbers start again at 3, after every 7.x (the second number
   assert.equal(named('v6.0.0', '8.0.0'), '8.0.0');
   assert.match(named('v3.0.0', '7.2.1'), /not newer/);
   assert.match(named('v3.0.1', '3.0.0'), /not newer/);
-  for (const [a, b] of [['7.2.0', '3.0.0'], ['7.3.0-rc.2', '3.0.0-beta.1'], ['7.9.9', '8.0.0'], ['3.0.0', '3.1.0']]) {
+  // Only 3.x to 6.x come after 7.x: 8.x and on after them, and 1.x or 2.x stay before.
+  assert.match(named('v7.2.0', '2.0.0'), /not newer/);
+  assert.equal(named('v6.9.0', '9.0.0'), '9.0.0');
+  for (const [a, b] of [['7.2.0', '3.0.0'], ['7.3.0-rc.2', '3.0.0-beta.1'], ['7.9.9', '8.0.0'], ['3.0.0', '3.1.0'], ['6.9.9', '8.0.0'], ['2.0.0', '7.0.0'], ['1.0.0', '2.0.0'], ['8.0.0', '9.0.0']]) {
     assert.equal(laterThan(b, a), true, `${b} after ${a}`);
     assert.equal(laterThan(a, b), false, `${a} not after ${b}`);
   }
@@ -231,4 +234,5 @@ test("the Sailfish RPM's version has no -: 4.0.0~rc.1, which RPM puts before 4.0
   // Since 7.x the numbers start again at 3: an epoch puts them after 7.x.
   assert.equal(spec('3.0.0'), '1:3.0.0');
   assert.equal(spec('3.0.0-rc.1'), '1:3.0.0~rc.1');
+  assert.equal(spec('8.0.0'), '1:8.0.0');
 });

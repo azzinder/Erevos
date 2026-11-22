@@ -18,10 +18,11 @@ function parts(version: string): { numbers: number[]; test: (string | number)[] 
 }
 
 // Since 7.x the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos⁻) and the
-// numbers start again at 3: every 7.x comes before all others, which skip 7 itself (6.x, then 8.0.0).
-// The release workflow orders them the same way (its version job, order). A build made on a
-// computer (0.0.x) comes before all.
-const line = (major: number | undefined) => (major === 0 ? 0 : major === 7 ? 1 : 2);
+// numbers start again at 3: 3.x to 6.x come after 7.x and before 8.x (they skip 7 itself: 6.x, then
+// 8.0.0); every other major in its own order, so a build made on a computer (0.0.x) comes before
+// all. No release before 7.x is published any longer. The release workflow orders them the same way
+// (its version job, order).
+const rank = (major: number | undefined) => ((major ?? 0) >= 3 && (major ?? 0) <= 6 ? 70 + (major ?? 0) - 2 : (major ?? 0) * 10);
 
 /**
  * Whether `a` comes after `b`: "3.10.0" after "3.9.1", "4.0.0-rc.10" after "4.0.0-rc.9", "4.0.0"
@@ -30,7 +31,7 @@ const line = (major: number | undefined) => (major === 0 ? 0 : major === 7 ? 1 :
 export function laterThan(a: string, b: string): boolean {
   const x = parts(a);
   const y = parts(b);
-  if (line(x.numbers[0]) !== line(y.numbers[0])) return line(x.numbers[0]) > line(y.numbers[0]);
+  if (rank(x.numbers[0]) !== rank(y.numbers[0])) return rank(x.numbers[0]) > rank(y.numbers[0]);
   for (let i = 0; i < Math.max(x.numbers.length, y.numbers.length); i++) {
     if ((x.numbers[i] ?? 0) !== (y.numbers[i] ?? 0)) return (x.numbers[i] ?? 0) > (y.numbers[i] ?? 0);
   }
