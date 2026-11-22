@@ -190,4 +190,11 @@ export const smsTools: Record<string, string> = {
   'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Otvoreni su samo SMS-ovi. Sve ostalo u Erevosu ponovo traži lozinku.',
   'Only the contacts are open. Everything else in Erevos asks for the password again.': 'Otvoreni su samo kontakti. Sve ostalo u Erevosu ponovo traži lozinku.',
   'No SMS yet.': 'Još nema SMS-ova.',
+  "{n} letters an SMS": "{n} znakova po SMS-u",
+  "Greek, accents or emoji: {n} letters an SMS": "Grčki, akcenti ili emoji: {n} znakova po SMS-u",
+  "{used} / {n} SMS": "{used} / {n} SMS",
+  "Without accents (cheaper)": "Bez akcenata (jeftinije)",
+  "Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.": "S grčkim malim slovima i akcentima SMS prima 70 znakova, a ne 160. Kad je ovo uključeno, običan SMS ide bez akcenata, a grčki velikim slovima, kako su pisali stari telefoni, pa opet prima 160. Ne s emojijem, ni u MMS-u, koji ionako košta isto.",
+  "Send with accents": "Šalji s akcentima",
+  "Send without accents": "Šalji bez akcenata",
 };

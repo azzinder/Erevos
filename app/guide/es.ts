@@ -2754,6 +2754,11 @@ cuando tú lo eliges.
 - **Deshacer el envío de un SMS:** un SMS que envías espera antes 5 segundos al final de la conversación: tócalo
   entonces para devolverlo al campo de mensaje. **Ajustes** → **Teléfono y SMS** → **SMS** → **Deshacer el envío de un
   SMS** fija **Desactivado**, 5 o 10 segundos. Cuando sales de Erevos, sale al instante.
+- **Lo que cuesta enviar:** un SMS más largo muestra sobre el campo una línea con cuántos caracteres tiene y en
+  cuántos SMS va: 160 caracteres en un SMS, o 153 en cada parte de uno más largo, pero 70, o 67, en cuanto tiene una
+  minúscula griega, un acento o un emoji. **Ajustes** → **Teléfono y SMS** → **SMS** → **Sin acentos (más barato)**
+  envía un SMS simple sin acentos y el griego en mayúsculas, como lo escribían los teléfonos antiguos (ΚΑΛΗΜΕΡΑ), y
+  vuelve a admitir 160; no uno con emoji, ni un MMS.
 - **Volver a enviar:** uno tuyo que no salió, o no se entregó, lo dice: tócalo para volver a enviarlo. Mantén pulsado
   cualquier mensaje para **Reenviar**, **Volver a enviar** y **Eliminar**, con sus palabras para seleccionar y copiar;
   un mensaje eliminado también tiene **Deshacer**.

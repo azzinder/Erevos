@@ -2762,6 +2762,11 @@ la scegli tu.
 - **Annullare l’invio di un SMS:** un SMS che invii prima aspetta 5 secondi alla fine della conversazione: toccalo in
   quel momento per riportarlo nel campo del messaggio. **Impostazioni** → **Telefono e SMS** → **SMS** → **Annullare
   l’invio di un SMS** imposta **Disattivato**, 5 o 10 secondi. Quando lasci Erevos, parte subito.
+- **Quanto costa inviare:** un SMS più lungo mostra sopra il campo una riga con quanti caratteri ha e in quanti SMS
+  parte: 160 caratteri in un SMS, o 153 in ogni parte di uno più lungo, ma 70, o 67, appena ha una minuscola greca,
+  un accento o un emoji. **Impostazioni** → **Telefono e SMS** → **SMS** → **Senza accenti (più economico)** invia
+  un SMS semplice senza accenti e il greco in maiuscolo, come lo scrivevano i vecchi telefoni (ΚΑΛΗΜΕΡΑ), e contiene
+  di nuovo 160; non uno con un emoji, né un MMS.
 - **Invia di nuovo:** uno dei tuoi che non è partito, o non è stato consegnato, lo dice: toccalo per inviarlo di nuovo.
   Tieni premuto qualsiasi messaggio per **Inoltra**, **Invia di nuovo** ed **Elimina**, con le sue parole da
   selezionare e copiare; un messaggio eliminato ha anche **Annulla**.

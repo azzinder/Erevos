@@ -68,6 +68,7 @@ import { restoredAt } from '../lock/restored';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
+import { smsCount, withoutAccents } from '../lib/sms-count';
 import { spaceStarPlace } from '../lock/stars-data';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
 import {
@@ -569,7 +570,7 @@ function Sms({ tools }: { tools: ReactNode }) {
       await maySendSms();
       if (group && !mmsReady() && !smsMirrored()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
       // A group's message goes to everyone as one MMS, even without a part.
-      const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text, part: carried, sim, group, space: currentSpace().space };
+      const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text: sent(text, carried), part: carried, sim, group, space: currentSpace().space };
       taken?.();
       const seconds = link.current?.undo ?? 0;
       if (seconds > 0) outbox.hold(sms, seconds * 1000, deliver);
@@ -579,6 +580,13 @@ function Sms({ tools }: { tools: ReactNode }) {
       setNote(t('Not sent. {error}', { error: errorText(error) }));
       return false;
     }
+  }
+
+  // The words as they go: without accents, Greek in capitals, when the owner chose so and that keeps
+  // a plain SMS in the GSM alphabet (lib/sms-count.ts); an MMS costs the same either way.
+  function sent(text: string, carried: Part | null = null): string {
+    if (!link.current?.plain || carried || group) return text;
+    return withoutAccents(text) ?? text;
   }
 
   // Sends what is typed, and the part with it.
@@ -654,7 +662,7 @@ function Sms({ tools }: { tools: ReactNode }) {
     try {
       if (text.length > LATER_TEXT) throw new Error(t('It is too long to send later.'));
       await maySendSms();
-      if (!(await sms.addLater({ to, text, at, sim }))) throw new Error(t('{n} SMS already wait to go later.', { n: sms.later.length }));
+      if (!(await sms.addLater({ to, text: sent(text), at, sim }))) throw new Error(t('{n} SMS already wait to go later.', { n: sms.later.length }));
       setDraft('');
       setLater(sms.later.filter((l) => sameNumber(l.to, to)));
       laterChanged();
@@ -1054,6 +1062,7 @@ function Sms({ tools }: { tools: ReactNode }) {
           {part ? <Chip label={partLabel(part)} selected onPress={() => setPart(null)} /> : null}
         </Row>
       ) : null}
+      {mayAnswer && !part && !group && draft.trim() ? <SmsCounter text={sent(draft.trim())} /> : null}
       {mayAnswer ? (
         <View style={styles.composer}>
           {canAttach && !voice.recording ? (
@@ -1281,6 +1290,7 @@ const makeStyles = (colors: Colors) =>
     theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface },
     composer: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.md, borderTopWidth: 1, borderTopColor: colors.border },
     input: { flex: 1, maxHeight: 140 },
+    counter: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingTop: space.xs },
     options: { paddingHorizontal: space.md, paddingTop: space.sm },
     picture: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
     later: { borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border },
@@ -1289,3 +1299,23 @@ const makeStyles = (colors: Colors) =>
     menuRow: { paddingVertical: space.md, paddingHorizontal: space.sm, borderRadius: radius.md },
     chosenText: { flexGrow: 0, maxHeight: 220, padding: space.md, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
   });
+
+// How many SMS what is typed costs, shown once it nears or passes one SMS: 160 letters in the GSM
+// alphabet, 70 with Greek small letters, accents or an emoji (lib/sms-count.ts).
+function SmsCounter({ text }: { text: string }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const count = smsCount(text);
+  if (count.parts === 1 && count.used < count.each - 20) return null;
+  return (
+    <View style={styles.counter}>
+      <Text variant="caption" tone="faint" style={styles.input}>
+        {count.gsm ? t('{n} letters an SMS', { n: String(count.each) }) : t('Greek, accents or emoji: {n} letters an SMS', { n: String(count.each) })}
+      </Text>
+      <Text variant="caption" style={{ color: count.parts > 1 ? colors.warning : colors.textMuted, fontWeight: '700' }}>
+        {t('{used} / {n} SMS', { used: String(count.used), n: String(count.parts) })}
+      </Text>
+    </View>
+  );
+}
+

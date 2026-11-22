@@ -2902,6 +2902,11 @@ dernier chemin, et seulement quand tu le choisis.
 - **Annuler l’envoi d’un SMS :** un SMS que tu envoies attend d’abord 5 secondes à la fin de la conversation : appuie
   alors dessus pour le reprendre dans le champ de message. **Réglages** → **Téléphone et SMS** → **SMS** → **Annuler
   l’envoi d’un SMS** règle **Désactivé**, 5 ou 10 secondes. Quand tu quittes Erevos, il part aussitôt.
+- **Ce que coûte l’envoi :** un SMS plus long montre au-dessus du champ une ligne avec son nombre de caractères et
+  en combien de SMS il part : 160 caractères dans un SMS, ou 153 dans chaque partie d’un plus long, mais 70, ou 67,
+  dès qu’il a une minuscule grecque, un accent ou un emoji. **Réglages** → **Téléphone et SMS** → **SMS** → **Sans
+  accents (moins cher)** envoie un SMS simple sans accents et le grec en majuscules, comme l’écrivaient les anciens
+  téléphones (ΚΑΛΗΜΕΡΑ), et il contient de nouveau 160 ; pas un avec un emoji, ni un MMS.
 - **Renvoyer :** un de tes SMS qui n’est pas parti, ou n’a pas été distribué, le dit : appuie dessus pour le renvoyer.
   Appuie longuement sur n’importe quel message pour **Transférer**, **Renvoyer** et **Supprimer**, avec ses mots à
   sélectionner et copier ; un message supprimé a aussi **Annuler**.

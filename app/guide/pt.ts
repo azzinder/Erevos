@@ -2732,6 +2732,11 @@ escolhe.
 - **Desfazer envio de SMS:** um SMS que você envia espera antes 5 segundos no fim da conversa: toque nele nesse
   momento para trazê-lo de volta ao campo de mensagem. **Configurações** → **Telefone e SMS** → **SMS** → **Desfazer
   envio de SMS** define **Desativado**, 5 ou 10 segundos. Quando você sai do Erevos, ele vai na hora.
+- **Quanto custa enviar:** um SMS mais longo mostra acima do campo uma linha com quantos caracteres tem e em quantos
+  SMS vai: 160 caracteres num SMS, ou 153 em cada parte de um mais longo, mas 70, ou 67, assim que tem uma minúscula
+  grega, um acento ou um emoji. **Configurações** → **Telefone e SMS** → **SMS** → **Sem acentos (mais barato)**
+  envia um SMS simples sem acentos e o grego em maiúsculas, como os celulares antigos escreviam (ΚΑΛΗΜΕΡΑ), e volta
+  a comportar 160; não um com emoji, nem um MMS.
 - **Enviar de novo:** uma mensagem sua que não foi, ou não foi entregue, diz isso: toque nela para enviá-la de novo.
   Segure qualquer mensagem para **Encaminhar**, **Enviar de novo** e **Apagar**, com as palavras dela para selecionar
   e copiar; uma mensagem apagada também tem **Desfazer**.

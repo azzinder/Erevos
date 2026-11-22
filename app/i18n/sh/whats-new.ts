@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**What an SMS costs**: as you write a longer SMS, a line over the field says how many SMS it goes as, 70 letters each with Greek small letters, accents or an emoji, 160 without. **Without accents (cheaper)**, under the SMS settings, sends it without accents and Greek in capitals, as the old phones wrote it. See [SMS](#sms).":
+    "**Koliko košta SMS**: kad pišete duži SMS, red iznad polja kaže u koliko SMS-ova ide, po 70 znakova s grčkim malim slovima, akcentima ili emojijem, inače 160. **Bez akcenata (jeftinije)**, u postavkama SMS-a, šalje ga bez akcenata, a grčki velikim slovima, kao stari telefoni. Vidite [SMS](#sms).",
   "**Who an unknown number is, without asking anyone**: the call screen of a number that is none of your contacts says its country, place and whether it is a mobile, from the number alone, and warns of spam from a list you download whole under **Phone** → **Settings** → **Spam list**, or numbers you reported in **Recents**. See [Phone](#phone).":
     "**Ko je nepoznat broj, bez pitanja ikoga**: ekran poziva broja koji nije među vašim kontaktima kaže državu, mjesto i da li je mobilni, samo iz broja, i upozorava na spam s liste koju preuzmete cijelu pod **Telefon** → **Postavke** → **Lista spama**, ili s brojeva koje ste prijavili u **Nedavnim**. Vidi [Telefon](#phone).",
   "**Video calls through your phone company**: where your SIM and network carry them (ViLTE), a video call that comes shows **Answer with video** and **Audio only**, a call can turn video on with **Video**, and **⋯** beside a typed number offers **Video call**. See [Phone](#phone).":

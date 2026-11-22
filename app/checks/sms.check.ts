@@ -426,3 +426,24 @@ test('a contact goes as a vCard without the owner\'s note and groups, and withou
   assert.ok(bytes.length <= 2000);
   assert.ok(!new TextDecoder().decode(bytes).includes('PHOTO'));
 });
+
+test('an SMS counts as the phone company counts it, and goes without accents in capitals when chosen', async () => {
+  const { smsCount, withoutAccents, isGsm } = await import('../lib/sms-count');
+  assert.deepEqual(smsCount('a'.repeat(160)), { used: 160, parts: 1, each: 160, gsm: true });
+  assert.deepEqual(smsCount('a'.repeat(161)), { used: 161, parts: 2, each: 153, gsm: true });
+  // A letter of the extension table counts twice.
+  assert.equal(smsCount('€'.repeat(80)).used, 160);
+  assert.equal(smsCount('€'.repeat(81)).parts, 2);
+  // Greek small letters make it UCS-2: 70 in one, 67 in each part.
+  assert.deepEqual(smsCount('α'.repeat(70)), { used: 70, parts: 1, each: 70, gsm: false });
+  assert.equal(smsCount('α'.repeat(71)).parts, 2);
+  assert.equal(smsCount('α'.repeat(135)).parts, 3);
+  // The Greek capitals that look Latin go Latin; Δ Λ Σ Ω and the others stay.
+  assert.equal(withoutAccents('Ναί, θά έρθω στίς 8!'), 'NAI, ΘA EPΘΩ ΣTIΣ 8!');
+  assert.equal(withoutAccents('Καλημέρα «φίλε»…'), 'KAΛHMEPA "ΦIΛE"...');
+  assert.ok(isGsm(withoutAccents('ΐ ΰ ϊ ϋ άέήίόύώ ς') ?? ''));
+  assert.equal(withoutAccents('plain words'), 'plain words');
+  assert.equal(withoutAccents('Ναι 👍'), null);
+  assert.equal(withoutAccents('Да'), null);
+  assert.equal(smsCount(withoutAccents('α'.repeat(150)) ?? '').parts, 1);
+});

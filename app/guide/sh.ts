@@ -2639,6 +2639,10 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
 - **Povlačenje SMS-a:** SMS koji pošaljete prvo čeka 5 sekundi na kraju razgovora: tada ga dodirnite da ga vratite u
   polje za poruku. **Postavke** → **Telefon i SMS** → **SMS** → **Povlačenje SMS-a** postavlja **Isključeno**, 5 ili
   10 sekundi. Kad napustite Erevos, odlazi odmah.
+- **Koliko košta slanje:** duži SMS iznad polja pokazuje red s brojem znakova i u koliko SMS-ova ide: 160 znakova u
+  jednom SMS-u, ili 153 u svakom dijelu dužeg, ali 70, ili 67, čim ima grčko malo slovo, akcent ili emoji.
+  **Postavke** → **Telefon i SMS** → **SMS** → **Bez akcenata (jeftinije)** šalje običan SMS bez akcenata, a grčki
+  velikim slovima, kako su pisali stari telefoni (ΚΑΛΗΜΕΡΑ), pa opet prima 160; ne onaj s emojijem, ni MMS.
 - **Pošalji ponovo:** vaša poruka koja nije otišla, ili nije isporučena, to kaže: dodirnite je da je ponovo pošaljete.
   Zadržite prst na bilo kojoj poruci za **Proslijedi**, **Pošalji ponovo** i **Obriši**, s njenim riječima za
   označavanje i kopiranje; obrisana poruka ima i **Poništi**.

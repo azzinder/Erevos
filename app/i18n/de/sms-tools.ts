@@ -183,4 +183,11 @@ export const smsTools: Record<string, string> = {
   'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Nur die SMS sind offen. Alles andere in Erevos fragt wieder nach dem Passwort.',
   'Only the contacts are open. Everything else in Erevos asks for the password again.': 'Nur die Kontakte sind offen. Alles andere in Erevos fragt wieder nach dem Passwort.',
   'No SMS yet.': 'Noch keine SMS.',
+  "{n} letters an SMS": "{n} Zeichen pro SMS",
+  "Greek, accents or emoji: {n} letters an SMS": "Griechisch, Akzente oder Emoji: {n} Zeichen pro SMS",
+  "{used} / {n} SMS": "{used} / {n} SMS",
+  "Without accents (cheaper)": "Ohne Akzente (günstiger)",
+  "Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.": "Griechische Kleinbuchstaben und Akzente passen mit 70 Zeichen in eine SMS, nicht mit 160. Ist dies an, geht eine einfache SMS ohne Akzente und Griechisch in Großbuchstaben, wie alte Telefone es schrieben, und passt wieder mit 160. Nicht mit einem Emoji und nicht in einer MMS, die so oder so gleich kostet.",
+  "Send with accents": "Mit Akzenten senden",
+  "Send without accents": "Ohne Akzente senden",
 };

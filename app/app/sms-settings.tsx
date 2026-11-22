@@ -100,6 +100,8 @@ export default function SmsSettings() {
   const [sender, setSender] = useState('');
   const [home, setHome] = useState('');
   const [undo, setUndo] = useState(5);
+  // SMS without accents, Greek in capitals, to cost fewer (lib/sms-count.ts).
+  const [plain, setPlain] = useState(false);
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -113,6 +115,7 @@ export default function SmsSettings() {
         setSpam(spamOf(opened.state));
         setHome(opened.state.home);
         setUndo(opened.undo);
+        setPlain(opened.plain);
       })
       .catch(() => setNote(t('The SMS settings of this space could not open.')));
     const look = () => {
@@ -281,6 +284,12 @@ export default function SmsSettings() {
     if (!link) return;
     await link.setUndo(seconds);
     setUndo(link.undo);
+  }
+
+  async function togglePlain() {
+    if (!link) return;
+    await link.setPlain(!plain);
+    setPlain(link.plain);
   }
 
   function open() {
@@ -545,6 +554,13 @@ export default function SmsSettings() {
                 <Chip key={seconds} label={seconds ? plural(seconds, '{n} second', '{n} seconds') : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
               ))}
             </Row>
+          </Card>
+          <Card>
+            <Text variant="bodyStrong">{t('Without accents (cheaper)')}</Text>
+            <Text tone="muted">
+              {t('Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.')}
+            </Text>
+            <Button title={plain ? t('Send with accents') : t('Send without accents')} kind="secondary" onPress={() => void togglePlain()} />
           </Card>
         </>
       ) : null}

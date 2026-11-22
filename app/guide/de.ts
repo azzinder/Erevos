@@ -2925,6 +2925,11 @@ wenn du ihn wählst.
 - **SMS zurückholen:** Eine SMS, die du sendest, wartet zuerst 5 Sekunden am Ende der Unterhaltung: Tippe dann darauf,
   um sie zurück ins Nachrichtenfeld zu holen. **Einstellungen** → **Telefon und SMS** → **SMS** → **SMS zurückholen**
   stellt **Aus**, 5 oder 10 Sekunden ein. Wenn du Erevos verlässt, geht sie sofort.
+- **Was das Senden kostet:** eine längere SMS zeigt über dem Feld eine Zeile, wie viele Zeichen sie hat und als wie
+  viele SMS sie geht: 160 Zeichen in einer SMS oder 153 in jedem Teil einer längeren, aber 70 oder 67, sobald sie
+  einen griechischen Kleinbuchstaben, einen Akzent oder ein Emoji hat. **Einstellungen** → **Telefon und SMS** →
+  **SMS** → **Ohne Akzente (günstiger)** sendet eine einfache SMS ohne Akzente und Griechisch in Großbuchstaben, wie
+  alte Telefone es schrieben (ΚΑΛΗΜΕΡΑ), sodass sie wieder 160 fasst; keine mit Emoji und keine MMS.
 - **Erneut senden:** Eine von dir, die nicht gegangen ist oder nicht zugestellt wurde, sagt das: Tippe darauf, um sie
   erneut zu senden. Halte eine beliebige Nachricht gedrückt für **Weiterleiten**, **Erneut senden** und **Löschen**,
   mit ihren Worten zum Auswählen und Kopieren; eine gelöschte Nachricht hat auch **Rückgängig**.

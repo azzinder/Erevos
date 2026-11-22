@@ -2536,6 +2536,11 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
 - **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take it
   back into the message field. **Settings** → **Phone and SMS** → **SMS** → **Taking an SMS back** sets **Off**, 5 or
   10 seconds. When you leave Erevos, it goes at once.
+- **What it costs to send:** a longer SMS shows a line over the field with how many letters it has and how many SMS
+  it goes as: 160 letters in one SMS, or 153 in each part of a longer one, but 70, or 67, as soon as it has a Greek
+  small letter, an accent or an emoji. **Settings** → **Phone and SMS** → **SMS** → **Without accents (cheaper)**
+  sends a plain SMS without accents and Greek in capitals, as the old phones wrote it (ΚΑΛΗΜΕΡΑ), so it fits 160
+  again; not one with an emoji, nor an MMS.
 - **Send again:** one of yours that did not go, or was not delivered, says so: tap it to send it again. Hold any
   message down for **Forward**, **Send again** and **Delete**, with its words to select and copy; a deleted message
   has **Undo** too.

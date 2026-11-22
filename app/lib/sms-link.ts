@@ -347,6 +347,15 @@ export class SmsLink {
     return this.update((d) => ({ ...d, undo: UNDO_SECONDS.includes(seconds) ? seconds : d.undo }));
   }
 
+  /** Whether SMS go without accents, Greek in capitals, to cost fewer (lib/sms-count.ts). */
+  get plain(): boolean {
+    return this.data.plain;
+  }
+
+  setPlain(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, plain: on }));
+  }
+
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open
    *  the answer, and the number was not invited, nor invited this chat, lately. */
   wantsInvite(number: string): boolean {
