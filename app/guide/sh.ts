@@ -2529,6 +2529,9 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   jednom MMS-u. Fotografije, glasovne poruke i kartice kontakata koje stignu prikazuju se u razgovoru, za puštanje ili
   čuvanje (**Sačuvaj** otvara novi kontakt s podacima kartice). MMS je jednako otvoren kao SMS: operater ga može
   vidjeti.
+- **Video (MMS):** **+** → **Snimi video** traži od aplikacije kamere video u MMS kvalitetu, do 30 sekundi male
+  slike, što većina kamera poštuje; **Video s telefona** uzima samo onaj koji je već dovoljno mali, oko 280 KB, jer
+  Erevos ne smanjuje video. Video koji stigne pokazuje ▶ u razgovoru, a dodir ga pušta u video aplikaciji telefona.
 - **Gdje ste:** **+** → **Lokacija** šalje gdje ste kao SMS s geo: adresom i OpenStreetMap linkom, koji otvara svaki
   telefon. Geo: adresa, ili link OpenStreetMapa, Google Mapsa, Apple Mapsa ili Wazea, u SMS-u koji stigne prikazuje se
   kao mjesto, za otvaranje u aplikaciji za karte; kratak link ostaje link, jer bi se morao preuzeti da bi se znalo

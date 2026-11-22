@@ -69,6 +69,7 @@ import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsCount, withoutAccents } from '../lib/sms-count';
+import { MMS_VIDEO_SECONDS, pickMmsVideo, recordMmsVideo } from '../lib/pick-mms-video';
 import { spaceStarPlace } from '../lock/stars-data';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
 import {
@@ -549,6 +550,17 @@ function Sms({ tools }: { tools: ReactNode }) {
   function pickSim(id: number) {
     setSim(id);
     link.current?.setSim(to, id).catch(() => undefined);
+  }
+
+  // A video for an MMS: recorded by the camera app in MMS quality, or one of the phone's small enough.
+  async function addVideo(record: boolean) {
+    setNote('');
+    try {
+      const picked = record ? await recordMmsVideo() : await pickMmsVideo();
+      if (picked) setPart(picked);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function addPhoto() {
@@ -1206,6 +1218,36 @@ function Sms({ tools }: { tools: ReactNode }) {
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
           >
             <Text variant="bodyStrong">{t('Photo')}</Text>
+          </Pressable>
+        ) : null}
+        {canPart ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              void addVideo(true);
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Record a video')}</Text>
+            <Text variant="caption" tone="muted">
+              {t('Up to {n} seconds, in the small picture an MMS takes.', { n: String(MMS_VIDEO_SECONDS) })}
+            </Text>
+          </Pressable>
+        ) : null}
+        {canPart ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setAttaching(false);
+              void addVideo(false);
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+          >
+            <Text variant="bodyStrong">{t('Video from the phone')}</Text>
+            <Text variant="caption" tone="muted">
+              {t('Only one small enough for an MMS, about {n} KB.', { n: String(Math.round(MMS_MAX / 1024)) })}
+            </Text>
           </Pressable>
         ) : null}
         {CAN_PLACE ? (

@@ -447,3 +447,11 @@ test('an SMS counts as the phone company counts it, and goes without accents in 
   assert.equal(withoutAccents('Да'), null);
   assert.equal(smsCount(withoutAccents('α'.repeat(150)) ?? '').parts, 1);
 });
+
+test('a video of an MMS is a video, in the list and among its parts', async () => {
+  const { partKind, partsOf } = await import('../lib/sms-parts');
+  assert.equal(partKind('video/3gpp'), 'video');
+  assert.equal(partKind('video/mp4; name=clip.mp4'), 'video');
+  const video = { uri: 'content://mms/part/9', type: 'video/mp4' };
+  assert.deepEqual(partsOf({ pictures: [], voices: [], cards: [], videos: [video] }), [video]);
+});

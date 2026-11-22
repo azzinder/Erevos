@@ -201,6 +201,8 @@ internal object MmsStore {
       "amr" -> "audio/amr"
       "m4a" -> "audio/mp4"
       "vcf" -> "text/x-vcard"
+      "mp4" -> "video/mp4"
+      "3gp" -> "video/3gpp"
       else -> type
     }
 
@@ -215,7 +217,11 @@ internal object MmsStore {
       "audio/mp4", "audio/aac", "audio/x-m4a" -> "voice.m4a"
       "audio/mpeg" -> "voice.mp3"
       "audio/ogg", "application/ogg" -> "voice.ogg"
+      "video/3gpp" -> "video.3gp"
+      "video/3gpp2" -> "video.3g2"
+      "video/webm" -> "video.webm"
       else -> when {
+        plainType(type).startsWith("video/") -> "video.mp4"
         isCard(type) -> "contact.vcf"
         isVoice(type) -> "voice"
         else -> "image.jpg"
@@ -320,6 +326,7 @@ internal object MmsStore {
             "pictures" to found.pictures,
             "voices" to found.voices,
             "cards" to found.cards,
+            "videos" to found.videos,
           ),
         )
       }
@@ -329,10 +336,11 @@ internal object MmsStore {
 
   /** A message's text, and its pictures, sounds and contact cards as content addresses the app may
    *  read (partBytes). Destructured, the first two are its text and its pictures. */
-  data class Parts(val text: String, val pictures: List<Map<String, Any?>>, val voices: List<Map<String, Any?>>, val cards: List<Map<String, Any?>>) {
+  data class Parts(val text: String, val pictures: List<Map<String, Any?>>, val voices: List<Map<String, Any?>>, val cards: List<Map<String, Any?>>, val videos: List<Map<String, Any?>> = emptyList()) {
     /** What the list says of one without text, in English: the app says it in the owner's language (lib/sms-rows.ts). */
     fun word(): String = when {
       pictures.isNotEmpty() -> "Picture"
+      videos.isNotEmpty() -> "Video"
       voices.isNotEmpty() -> "Voice message"
       cards.isNotEmpty() -> "Contact card"
       else -> "MMS"
@@ -344,6 +352,7 @@ internal object MmsStore {
     val pictures = ArrayList<Map<String, Any?>>()
     val voices = ArrayList<Map<String, Any?>>()
     val cards = ArrayList<Map<String, Any?>>()
+    val videos = ArrayList<Map<String, Any?>>()
     val projection = arrayOf(Telephony.Mms.Part._ID, Telephony.Mms.Part.CONTENT_TYPE, Telephony.Mms.Part.TEXT, Telephony.Mms.Part.NAME, Telephony.Mms.Part.CONTENT_LOCATION)
     context.contentResolver.query(PARTS, projection, "${Telephony.Mms.Part.MSG_ID}=?", arrayOf(id.toString()), null)?.use { c ->
       while (c.moveToNext()) {
@@ -353,12 +362,13 @@ internal object MmsStore {
         when {
           type == "text/plain" -> c.getString(2)?.let { if (it.isNotEmpty()) texts.add(it) }
           type.startsWith("image/") -> pictures.add(part)
+          type.startsWith("video/") -> videos.add(part)
           isVoice(type) -> voices.add(part)
           isCard(type) -> cards.add(part)
         }
       }
     }
-    return Parts(texts.joinToString("\n"), pictures, voices, cards)
+    return Parts(texts.joinToString("\n"), pictures, voices, cards, videos)
   }
 
   /** The numbers of a conversation, as Android keeps them for its thread. */
@@ -463,7 +473,7 @@ internal object MmsStore {
     }
     val found = parts(context, id)
     val text = found.text
-    val picture = (found.pictures + found.voices + found.cards).firstOrNull()
+    val picture = (found.pictures + found.videos + found.voices + found.cards).firstOrNull()
     val data = picture?.let { partBytes(context, it["uri"] as String) }
     require(to.isNotEmpty() && (text.isNotEmpty() || data != null)) { "That MMS is no longer on the phone" }
     val sent = send(context, to.joinToString(","), text, data, (picture?.get("type") as String?) ?: "", if (sim >= 0) sim else was)

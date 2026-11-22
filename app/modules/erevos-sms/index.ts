@@ -50,6 +50,8 @@ export type SmsMessage = {
   voices?: SmsPart[];
   /** Its contact cards (text/x-vcard). */
   cards?: SmsPart[];
+  /** Its videos (video/*); missing in a build before them. */
+  videos?: SmsPart[];
   /** Who wrote it, in a group's conversation (an MMS that came). */
   from?: string;
 };

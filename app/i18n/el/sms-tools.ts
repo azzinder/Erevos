@@ -190,4 +190,11 @@ export const smsTools: Record<string, string> = {
   "Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.": "Με ελληνικά πεζά και τόνους, ένα SMS χωράει 70 χαρακτήρες, όχι 160. Με αυτό ανοιχτό, ένα απλό SMS φεύγει χωρίς τόνους και τα ελληνικά με κεφαλαία, όπως τα έγραφαν τα παλιά κινητά, οπότε χωράει πάλι 160. Όχι με emoji, ούτε σε MMS, που κοστίζει το ίδιο έτσι κι αλλιώς.",
   "Send with accents": "Αποστολή με τόνους",
   "Send without accents": "Αποστολή χωρίς τόνους",
+  "Record a video": "Εγγραφή βίντεο",
+  "Up to {n} seconds, in the small picture an MMS takes.": "Έως {n} δευτερόλεπτα, στη μικρή εικόνα που χωράει ένα MMS.",
+  "Video from the phone": "Βίντεο από το κινητό",
+  "Only one small enough for an MMS, about {n} KB.": "Μόνο ένα αρκετά μικρό για MMS, περίπου {n} KB.",
+  "Play the video": "Αναπαραγωγή του βίντεο",
+  "This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.": "Αυτό το βίντεο είναι πολύ μεγάλο για MMS ({size} KB, το πολύ {most} KB). Τράβηξε ένα με την «Εγγραφή βίντεο», που ζητά από την κάμερα ποιότητα MMS.",
+  "Erevos may not use the camera. Allow it in the phone settings to record videos.": "Το Erevos δεν έχει άδεια για την κάμερα. Δώσε την άδεια στις ρυθμίσεις του τηλεφώνου για να τραβάς βίντεο.",
 };

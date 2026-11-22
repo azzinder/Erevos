@@ -2781,6 +2781,10 @@ téléphone sans Erevos n’affiche rien.
   seul dans un MMS. Les photos, messages vocaux et cartes de contact qui arrivent s’affichent dans la conversation, à
   lire ou à enregistrer (**Enregistrer** ouvre un nouveau contact avec les détails de la carte). Un MMS est aussi en
   clair qu’un SMS : l’opérateur peut le voir.
+- **Vidéos (MMS) :** **+** → **Filmer une vidéo** demande à l’app appareil photo du téléphone une vidéo en qualité
+  MMS, jusqu’à 30 secondes en petite image, ce que la plupart respectent ; **Vidéo du téléphone** n’en prend une que
+  si elle est déjà assez petite, environ 280 Ko, car Erevos ne réduit pas les vidéos. Une vidéo reçue montre ▶ dans
+  la conversation, et un appui la lit dans l’app vidéo du téléphone.
 - **Où tu es :** **+** → **Position** envoie où tu es en SMS avec une adresse geo: et un lien OpenStreetMap, que
   n’importe quel téléphone ouvre. Une adresse geo:, ou un lien d’OpenStreetMap, de Google Maps, d’Apple Maps ou de Waze,
   dans un SMS qui arrive s’affiche comme un lieu, à ouvrir dans l’appli de cartes ; un lien court reste un lien, car il

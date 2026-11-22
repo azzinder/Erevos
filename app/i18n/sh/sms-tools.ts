@@ -197,4 +197,11 @@ export const smsTools: Record<string, string> = {
   "Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.": "S grčkim malim slovima i akcentima SMS prima 70 znakova, a ne 160. Kad je ovo uključeno, običan SMS ide bez akcenata, a grčki velikim slovima, kako su pisali stari telefoni, pa opet prima 160. Ne s emojijem, ni u MMS-u, koji ionako košta isto.",
   "Send with accents": "Šalji s akcentima",
   "Send without accents": "Šalji bez akcenata",
+  "Record a video": "Snimi video",
+  "Up to {n} seconds, in the small picture an MMS takes.": "Do {n} sekundi, u maloj slici koju MMS prima.",
+  "Video from the phone": "Video s telefona",
+  "Only one small enough for an MMS, about {n} KB.": "Samo dovoljno mali za MMS, oko {n} KB.",
+  "Play the video": "Pusti video",
+  "This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.": "Ovaj video je prevelik za MMS ({size} KB, najviše {most} KB). Snimite ga sa Snimi video, koje od kamere traži MMS kvalitet.",
+  "Erevos may not use the camera. Allow it in the phone settings to record videos.": "Erevos ne smije koristiti kameru. Dozvolite to u postavkama telefona da biste snimali video.",
 };

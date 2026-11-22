@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Videos by MMS**: **+** → **Record a video** in an SMS conversation records one in MMS quality with the phone's camera app, and a video that comes plays with a tap. See [SMS](#sms).":
+    "**Video putem MMS-a**: **+** → **Snimi video** u SMS razgovoru snima video u MMS kvalitetu kamerom telefona, a video koji stigne pušta se dodirom. Vidite [SMS](#sms).",
   "**Answer an SMS from its notice**: **What an SMS says, on its notice**, under the SMS settings, off at first, shows who wrote and what on the notice while the space is open, with **Reply** and **Mark as read**. Locked, it says \"New message\" again. See [SMS](#sms).":
     "**Odgovor na SMS iz obavještenja**: **Šta SMS kaže, u svom obavještenju**, u postavkama SMS-a, u početku isključeno, pokazuje u obavještenju ko je pisao i šta dok je prostor otvoren, s **Odgovori** i **Označi kao pročitano**. Zaključano, opet kaže „Nova poruka“. Vidite [SMS](#sms).",
   "**What an SMS costs**: as you write a longer SMS, a line over the field says how many SMS it goes as, 70 letters each with Greek small letters, accents or an emoji, 160 without. **Without accents (cheaper)**, under the SMS settings, sends it without accents and Greek in capitals, as the old phones wrote it. See [SMS](#sms).":

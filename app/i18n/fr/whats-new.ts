@@ -4,6 +4,8 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Videos by MMS**: **+** → **Record a video** in an SMS conversation records one in MMS quality with the phone's camera app, and a video that comes plays with a tap. See [SMS](#sms).":
+    "**Vidéos par MMS** : **+** → **Filmer une vidéo** dans une conversation SMS en filme une en qualité MMS avec l’appareil photo du téléphone, et une vidéo reçue se lit d’un appui. Voir [SMS](#sms).",
   "**Answer an SMS from its notice**: **What an SMS says, on its notice**, under the SMS settings, off at first, shows who wrote and what on the notice while the space is open, with **Reply** and **Mark as read**. Locked, it says \"New message\" again. See [SMS](#sms).":
     "**Répondre à un SMS depuis sa notification** : **Ce que dit un SMS, sur sa notification**, dans les réglages SMS, désactivé au début, montre sur la notification qui a écrit et quoi tant que l’espace est ouvert, avec **Répondre** et **Marquer comme lu**. Verrouillé, elle redit « Nouveau message ». Voir [SMS](#sms).",
   "**What an SMS costs**: as you write a longer SMS, a line over the field says how many SMS it goes as, 70 letters each with Greek small letters, accents or an emoji, 160 without. **Without accents (cheaper)**, under the SMS settings, sends it without accents and Greek in capitals, as the old phones wrote it. See [SMS](#sms).":

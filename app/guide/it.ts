@@ -2647,6 +2647,10 @@ nulla.
   sticker integrati come la sua immagine, da solo in un MMS. Le foto, i messaggi vocali e le schede contatto che
   arrivano si vedono nella conversazione, da riprodurre o salvare (**Salva** apre un nuovo contatto con i dati della
   scheda). Un MMS è in chiaro come un SMS: l’operatore può vederlo.
+- **Video (MMS):** **+** → **Registra un video** chiede all’app fotocamera del telefono un video in qualità MMS,
+  fino a 30 secondi di immagine piccola, che la maggior parte delle fotocamere rispetta; **Video dal telefono** ne
+  prende uno solo se è già abbastanza piccolo, circa 280 KB, perché Erevos non rimpicciolisce i video. Un video
+  ricevuto mostra ▶ nella conversazione, e un tocco lo riproduce nell’app video del telefono.
 - **Dove sei:** **+** → **Posizione** invia dove sei come SMS con un indirizzo geo: e un link OpenStreetMap, che ogni
   telefono apre. Un indirizzo geo:, o un link di OpenStreetMap, Google Maps, Apple Maps o Waze, in un SMS che arriva si
   vede come un luogo, da aprire nell’app delle mappe; un link breve resta un link, perché andrebbe scaricato per

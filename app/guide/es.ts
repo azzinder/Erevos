@@ -2638,6 +2638,10 @@ Erevos no muestra nada.
   Erevos como su imagen, solo en un MMS. Las fotos, mensajes de voz y tarjetas de contacto que llegan se ven en la
   conversación, para reproducir o guardar (**Guardar** abre un contacto nuevo con los datos de la tarjeta). Un MMS es
   tan claro como un SMS: la operadora puede verlo.
+- **Vídeos (MMS):** **+** → **Grabar un vídeo** pide a la app de cámara del teléfono un vídeo en calidad de MMS,
+  hasta 30 segundos de imagen pequeña, que la mayoría de cámaras respetan; **Vídeo del teléfono** toma uno solo si
+  ya es lo bastante pequeño, unos 280 KB, ya que Erevos no reduce vídeos. Un vídeo que llega muestra ▶ en la
+  conversación, y un toque lo reproduce en la app de vídeo del teléfono.
 - **Dónde estás:** **+** → **Ubicación** envía dónde estás como un SMS con una dirección geo: y un enlace de
   OpenStreetMap, que abre cualquier teléfono. Una dirección geo:, o un enlace de OpenStreetMap, Google Maps, Apple Maps
   o Waze, en un SMS que llega se ve como un lugar, para abrir en la app de mapas; un enlace corto sigue siendo un

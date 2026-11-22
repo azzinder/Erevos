@@ -2617,6 +2617,10 @@ mostra nada.
   imagem dela, sozinha num MMS. As fotos, mensagens de voz e cartões de contato que chegam aparecem na conversa, para
   reproduzir ou salvar (**Salvar** abre um novo contato com os dados do cartão). Um MMS é tão aberto quanto um SMS: a
   operadora pode vê-lo.
+- **Vídeos (MMS):** **+** → **Gravar um vídeo** pede ao app de câmera do celular um vídeo em qualidade de MMS, até
+  30 segundos de imagem pequena, o que a maioria das câmeras respeita; **Vídeo do celular** só pega um que já seja
+  pequeno o bastante, cerca de 280 KB, pois o Erevos não diminui vídeos. Um vídeo que chega mostra ▶ na conversa, e
+  um toque o reproduz no app de vídeo do celular.
 - **Onde você está:** **+** → **Localização** envia onde você está como um SMS com um endereço geo: e um link do
   OpenStreetMap, que qualquer celular abre. Um endereço geo:, ou um link do OpenStreetMap, Google Maps, Apple Maps ou
   Waze, num SMS que chega aparece como um lugar, para abrir no app de mapas; um link curto continua sendo um link,

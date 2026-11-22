@@ -2429,6 +2429,10 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   that still fits. **+** → **Sticker** sends one of the built-in stickers as its picture, alone in an MMS. Photos,
   voice messages and contact cards that come show in the conversation, to play or to save (**Save** opens a new contact
   with the card's details). An MMS is as plain as an SMS: the phone company can see it.
+- **Videos (MMS):** **+** → **Record a video** asks the phone's camera app for a video in MMS quality, up to 30
+  seconds of small picture, which most camera apps keep; **Video from the phone** takes one only when it is small
+  enough already, about 280 KB, as Erevos does not make a video smaller. A video that comes shows ▶ in the
+  conversation, and a tap plays it in the phone's own video app.
 - **Where you are:** **+** → **Location** sends where you are as an SMS with a geo: address and an OpenStreetMap link,
   which any phone opens. A geo: address, or a link of OpenStreetMap, Google Maps, Apple Maps or Waze, in an SMS that
   comes shows as a place, to open in the maps app; a short link stays a link, as it would have to be fetched to tell the
