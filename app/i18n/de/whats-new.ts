@@ -4,6 +4,10 @@
 
 // The German of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/de/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock).":
+    "**Kurze Passwörter**: Ein neues Passwort oder eine PIN versteckter Chats, die kurz ist, wird erst nach **Trotzdem verwenden** übernommen. Siehe [Passwortsperre](#lock).",
+  "Tries of a password or PIN count one at a time, also across a browser's tabs; a restore that cannot finish puts back what the phone had; a release's SHA256SUMS is signed.":
+    "Versuche eines Passworts oder einer PIN zählen einzeln, auch über die Tabs eines Browsers; eine Wiederherstellung, die nicht fertig wird, stellt wieder her, was das Telefon hatte; die SHA256SUMS einer Version sind signiert.",
   "**Erevos, Erevos+ or Erevos Lite**: each is now an app of its own. Choose another under **Updates**, and this Erevos hands it everything here on the phone, encrypted: open the new one within a day and it brings your chats. See [Updates](#updates).":
     "**Erevos, Erevos+ oder Erevos Lite**: Jede ist jetzt eine eigene App. Wähle unter **Updates** eine andere, und dieses Erevos gibt ihr alles hier auf dem Telefon, verschlüsselt: Öffne die neue innerhalb eines Tages, und sie holt deine Chats. Siehe [Updates](#updates).",
   "**Make a backup** shows what it does and how far it is in its card, with a bar, and a notice says when the backup is done. See [Backups](#backup).":

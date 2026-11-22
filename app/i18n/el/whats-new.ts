@@ -4,6 +4,10 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock).":
+    "**Σύντομοι κωδικοί**: ένας νέος κωδικός, ή PIN κρυφών συνομιλιών, που είναι σύντομος γίνεται δεκτός μόνο μετά το **Χρήση παρ’ όλα αυτά**. Δες [Κλείδωμα με κωδικό](#lock).",
+  "Tries of a password or PIN count one at a time, also across a browser's tabs; a restore that cannot finish puts back what the phone had; a release's SHA256SUMS is signed.":
+    "Οι προσπάθειες κωδικού ή PIN μετρούν μία-μία, και ανάμεσα σε καρτέλες του browser· μια επαναφορά που δεν ολοκληρώνεται επαναφέρει ό,τι είχε το τηλέφωνο· το SHA256SUMS κάθε έκδοσης είναι υπογεγραμμένο.",
   "**Erevos, Erevos+ or Erevos Lite**: each is now an app of its own. Choose another under **Updates**, and this Erevos hands it everything here on the phone, encrypted: open the new one within a day and it brings your chats. See [Updates](#updates).":
     "**Erevos, Erevos+ ή Erevos Lite**: το καθένα είναι πλέον ξεχωριστή εφαρμογή. Διάλεξε άλλο στις **Ενημερώσεις**, και αυτό το Erevos του δίνει τα πάντα εδώ στο τηλέφωνο, κρυπτογραφημένα: άνοιξε το νέο μέσα σε μία μέρα και φέρνει τις συνομιλίες σου. Δες [Ενημερώσεις](#updates).",
   "**Make a backup** shows what it does and how far it is in its card, with a bar, and a notice says when the backup is done. See [Backups](#backup).":

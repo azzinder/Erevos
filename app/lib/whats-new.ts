@@ -28,6 +28,15 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.0.0-beta.2',
+    forYou: [
+      mark("**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock)."),
+    ],
+    underTheHood: [
+      mark("Tries of a password or PIN count one at a time, also across a browser's tabs; a restore that cannot finish puts back what the phone had; a release's SHA256SUMS is signed."),
+    ],
+  },
+  {
     version: '3.0.0-beta.1',
     forYou: [
       mark("**Erevos, Erevos+ or Erevos Lite**: each is now an app of its own. Choose another under **Updates**, and this Erevos hands it everything here on the phone, encrypted: open the new one within a day and it brings your chats. See [Updates](#updates)."),
