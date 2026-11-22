@@ -3275,7 +3275,8 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   Speichers reicht also nicht, um Passwörter zu probieren. Wer aber die Sicherheit des Telefons selbst knackt, wie es
   Forensik-Werkzeuge bei manchen Telefonen tun, könnte auf eigenen Computern raten, und eine PIN aus 6 Ziffern, eine
   Million Möglichkeiten, fällt in Tagen. Ein Satz aus 4 oder 5 Wörtern nicht. Unter einem kurzen neuen Passwort oder
-  einer PIN versteckter Chats sagt Erevos das; es nimmt es trotzdem.
+  einer PIN versteckter Chats sagt Erevos das und nimmt es erst nach **Trotzdem verwenden**. Dieselben Versuche kann,
+  wer eine Sicherung und ihr Passwort hat, an der Sicherung machen: dort ist eine kurze PIN am schwächsten.
 - **Gesperrt, und es empfängt weiter:** Wenn Erevos sich sperrt, legt sich der Passwortbildschirm vor den offenen
   Bereich, der dahinter weiterläuft: Nachrichten und Anrufe kommen weiterhin, mit ihren Benachrichtigungen, und ein
   Anruf erscheint über dem Passwortbildschirm. Seine Bildschirme schließen sich, versteckte Chats auch, und der

@@ -692,7 +692,7 @@ jobs:
 
           ${missing:+Not in this release:${missing%,} (its build failed or is switched off; the release before may have it).}
 
-          SHA256SUMS lists every file's SHA-256: \`sha256sum -c SHA256SUMS\`.
+          SHA256SUMS lists every file's SHA-256: \`sha256sum -c SHA256SUMS\`. Once the web app of this release is published, its release key signs the list too (SHA256SUMS.sig beside the web app): \`node pwa/release.mjs verify-sums SHA256SUMS https://<web app address>\` checks it first.
           Updating keeps your contacts and chats; make a backup first. In Erevos: Updates → Check for updates; by hand: User guide → Updates.
           NOTES
           cat notes.md

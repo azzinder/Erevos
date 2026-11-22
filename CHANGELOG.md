@@ -14,7 +14,15 @@ On main, not released yet:
 
 ### For you
 
+- A new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**, under the word of care it already had; the guide says a backup and its password let anyone try short ones too.
+
 ### Under the hood
+
+- Every check of a password or PIN (lock screen, search on the home screen, the hidden chats' door, chat PINs, the lock settings) runs one at a time, in a browser across all its tabs too, and counts as wrong before its slow keys are made: tries sent all at once, or cut short, each count (lock/tries.ts countedCheck).
+- A backup file asking more than twice Erevos's own key cost (Argon2id over 64 MiB or 6 passes, PBKDF2 over 1,000,000 rounds) is refused before its password is tried.
+- A restore that cannot write all of its files and keystore entries (a full phone) puts back what the phone held, instead of leaving half of each.
+- Relay: sign-in with an OpenID provider also checks the ID token's `exp` and, when it names other audiences, `azp`; lending refuses a place or quota while its counts cannot be written to disk.
+- Releases: `npm audit` fails the checks on high advisories too; reproduce-apk runs by itself after every release; the web publish on the release computer signs the release's SHA256SUMS too (SHA256SUMS.sig beside the web app, `node pwa/release.mjs verify-sums`).
 
 ## 3.0.0-beta.1 (2026-11-22)
 

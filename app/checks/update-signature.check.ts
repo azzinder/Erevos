@@ -79,6 +79,31 @@ test('an APK signed by the release computer installs; any other, or another buil
   }
 });
 
+test("the release key signs a release's SHA256SUMS by its name, and the tool tells another list from it", () => {
+  const dir = mkdtempSync(join(tmpdir(), 'erevos-sums-'));
+  try {
+    const env = { ...process.env, EREVOS_RELEASE_PASSPHRASE: 'only-for-this-check' };
+    const run = (...args: string[]) => execFileSync('node', [join(PWA, 'release.mjs'), ...args], { env, stdio: 'pipe' }).toString();
+    run('keygen', join(dir, 'key'), join(dir, 'key.pub'));
+    const pub = readFileSync(join(dir, 'key.pub'), 'utf8').trim();
+    writeFileSync(join(dir, 'sw.js'), `const KEY = '${pub}';\n`);
+    writeFileSync(join(dir, 'release.json'), JSON.stringify({ version: 1, label: '3.0.0', files: {} }));
+    const sums = join(dir, 'SUMS');
+    writeFileSync(sums, `${SHA}  erevos-android.apk\n`);
+    run('sign', dir, join(dir, 'key'), '--android', '17', SHA, '--sums', sums);
+    assert.equal(readFileSync(join(dir, 'SHA256SUMS'), 'utf8'), readFileSync(sums, 'utf8'));
+    assert.match(run('verify-sums', sums, join(dir, 'SHA256SUMS.sig'), join(dir, 'key.pub')), /OK: SHA256SUMS of 3\.0\.0/);
+    // Another list beside a changed package, or the right list with another key: refused.
+    writeFileSync(sums, `${'cd'.repeat(32)}  erevos-android.apk\n`);
+    assert.throws(() => run('verify-sums', sums, join(dir, 'SHA256SUMS.sig'), join(dir, 'key.pub')));
+    assert.throws(() => run('verify-sums', join(dir, 'SHA256SUMS'), join(dir, 'SHA256SUMS.sig')));
+    // A statement that is not one's own kind (the Android one) does not pass for it.
+    assert.throws(() => run('verify-sums', join(dir, 'SHA256SUMS'), join(dir, 'android-update.json'), join(dir, 'key.pub')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("the release tool checks a server that answers an address it has no file for with the app's page", async () => {
   const dir = mkdtempSync(join(tmpdir(), 'erevos-served-'));
   const env = { ...process.env, EREVOS_RELEASE_PASSPHRASE: 'only-for-this-check' };

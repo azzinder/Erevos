@@ -3096,7 +3096,8 @@ due scelte: **Nessun blocco** e **Password**.
   quindi una copia della sua memoria non basta per provare password. Ma chi viola la sicurezza del telefono stesso,
   come fanno strumenti forensi su alcuni telefoni, potrebbe provare su computer propri, e un PIN di 6 cifre, un
   milione di combinazioni, cade in pochi giorni. Una frase di 4 o 5 parole no. Sotto una nuova password corta, o un
-  PIN di chat nascoste, Erevos lo dice; la accetta comunque.
+  PIN di chat nascoste, Erevos lo dice, e la accetta solo dopo **Usalo comunque**. Chi ha un backup e la sua password
+  può fare gli stessi tentativi sul backup: lì un PIN corto è più debole.
 - **Bloccato, ma riceve:** quando Erevos si blocca, la schermata della password si mette davanti allo spazio aperto,
   che continua dietro di essa: messaggi e chiamate arrivano comunque, con le loro notifiche, e una chiamata appare sopra
   la schermata della password. Le sue schermate si chiudono, anche le chat nascoste, e la schermata di chiamata non

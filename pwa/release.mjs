@@ -8,7 +8,7 @@
 //       Makes a new Ed25519 key. The private half goes to the file, encrypted with a passphrase
 //       you type, readable by you only; the public half to pwa/release-key.pub, for the
 //       repository (or to the file given). Shows the key's fingerprint, which the app shows too.
-//   node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>]
+//   node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>] [--sums <SHA256SUMS>]
 //       Signs <web app>/release.json (made by pwa/build.mjs) into release.sig, after checking that
 //       the service worker there carries this key's public half. With --android, also signs the
 //       statement that names the Android app of the same release, by its build and SHA-256, into
@@ -23,6 +23,10 @@
 //       <folder>/android-update-<channel>.json, which the server serves beside the web app
 //       (deploy/web/publish-android.sh): Check for updates installs a release of that channel only
 //       when it is signed so (app/lib/update-signature.ts).
+//       With --sums, also signs the release's SHA256SUMS by its name into <web app>/SHA256SUMS.sig,
+//       served beside it with the list itself.
+//   node pwa/release.mjs verify-sums <SHA256SUMS> <SHA256SUMS.sig, or https://address> [public key file]
+//       Checks that a SHA256SUMS is the one the release key signed, and for which release.
 //   node pwa/release.mjs verify <web app folder, or https://address> [public key file]
 //       Checks a release, in a folder or as a server serves it: the signature, every file's hash,
 //       and that the service worker carries the key. From a server, Element Call's files
@@ -121,15 +125,28 @@ async function signChannel(dir, file, channel, name, build, sha256) {
   writeChannel(dir, key, channel, name, build, sha256);
 }
 
+/** What the release key signs for a release's SHA256SUMS: its name and the list's own SHA-256. */
+export const sumsStatement = (name, sha256) => `erevos release sums v1\nname ${name}\nsha256 ${sha256}\n`;
+const SUMS_STATEMENT = /^erevos release sums v1\nname ([0-9a-z.-]{1,40})\nsha256 ([0-9a-f]{64})\n$/;
+
+const SIGN_USAGE = 'usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256, lowercase hex>] [--sums <SHA256SUMS>]';
+
 async function signRelease(dir, file, ...more) {
-  if (!dir || !file) fail('usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>]');
+  if (!dir || !file) fail(SIGN_USAGE);
   let android = null;
-  if (more.length) {
-    const [flag, build, sha256] = more;
-    if (flag !== '--android' || !/^[1-9]\d*$/.test(build ?? '') || !/^[0-9a-f]{64}$/.test(sha256 ?? '')) {
-      fail('usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256, lowercase hex>]');
-    }
-    android = androidStatement(Number(build), sha256);
+  let androidArgs = null;
+  let sums = null;
+  for (let i = 0; i < more.length; ) {
+    if (more[i] === '--android' && !android) {
+      const [build, sha256] = more.slice(i + 1, i + 3);
+      if (!/^[1-9]\d*$/.test(build ?? '') || !/^[0-9a-f]{64}$/.test(sha256 ?? '')) fail(SIGN_USAGE);
+      android = androidStatement(Number(build), sha256);
+      androidArgs = [build, sha256];
+      i += 3;
+    } else if (more[i] === '--sums' && !sums && more[i + 1]) {
+      sums = fs.readFileSync(more[i + 1]);
+      i += 2;
+    } else fail(SIGN_USAGE);
   }
   const key = createPrivateKey({ key: fs.readFileSync(file), passphrase: await passphrase('Passphrase for the release key: ') });
   const raw = rawPublic(key);
@@ -144,8 +161,36 @@ async function signRelease(dir, file, ...more) {
     fs.writeFileSync(path.join(dir, 'android-update.json'), `${JSON.stringify({ statement: android, signature })}\n`);
     console.log(`Signed the Android app of the same release: ${android.trim().split('\n').slice(1).join(', ')}.`);
     // The same, as Erevos's own channel says it, with the release's name.
-    if (NAME.test(release.label ?? '')) writeChannel(dir, key, 'erevos', release.label, more[1], more[2]);
+    if (NAME.test(release.label ?? '')) writeChannel(dir, key, 'erevos', release.label, ...androidArgs);
   }
+  // The release's SHA256SUMS, signed by its name, served beside the web app: whoever downloads a
+  // package by hand can check that the list of hashes is the release's own (verify-sums), not
+  // one put beside a changed package.
+  if (sums) {
+    if (!NAME.test(release.label ?? '')) fail('That build has no release name to sign SHA256SUMS by.');
+    const statement = sumsStatement(release.label, createHash('sha256').update(sums).digest('hex'));
+    fs.writeFileSync(path.join(dir, 'SHA256SUMS'), sums);
+    fs.writeFileSync(path.join(dir, 'SHA256SUMS.sig'), `${JSON.stringify({ statement, signature: sign(null, Buffer.from(statement), key).toString('base64') })}\n`);
+    console.log(`Signed the SHA256SUMS of ${release.label}.`);
+  }
+}
+
+/**
+ * Checks a release's SHA256SUMS against its signature (SHA256SUMS.sig, from the web app's server
+ * or a file): that the release key signed this very list, and for which release. Anyone can run it.
+ */
+async function verifySums(sumsFile, from, keyFile = PUBLIC) {
+  if (!sumsFile || !from) fail('usage: node pwa/release.mjs verify-sums <SHA256SUMS> <SHA256SUMS.sig, or the web app\'s https://address> [public key file]');
+  const raw = Buffer.from(fs.readFileSync(keyFile, 'utf8').trim(), 'base64');
+  const sums = fs.readFileSync(sumsFile);
+  const signed = /^https?:\/\//.test(from) ? await readStatement(from, 'SHA256SUMS.sig') : fs.readFileSync(from);
+  if (!signed) fail('No SHA256SUMS.sig there.');
+  const { statement, signature } = JSON.parse(signed.toString());
+  const [, name, sha256] = SUMS_STATEMENT.exec(statement ?? '') ?? [];
+  if (!name) fail('SHA256SUMS.sig does not say what it should.');
+  if (!verify(null, Buffer.from(statement), publicFromRaw(raw), Buffer.from(signature ?? '', 'base64'))) fail(`SHA256SUMS.sig is NOT SIGNED with the key ${fingerprint(raw)}.`);
+  if (createHash('sha256').update(sums).digest('hex') !== sha256) fail(`That SHA256SUMS is NOT the one signed for ${name}.`);
+  console.log(`OK: SHA256SUMS of ${name}, signed with ${fingerprint(raw)}. Now check the files with it: sha256sum -c SHA256SUMS`);
 }
 
 async function read(from, name) {
@@ -224,5 +269,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   else if (command === 'sign') await signRelease(...rest);
   else if (command === 'channel') await signChannel(...rest);
   else if (command === 'verify') await verifyRelease(...rest);
-  else fail('usage: node pwa/release.mjs keygen|sign|channel|verify …');
+  else if (command === 'verify-sums') await verifySums(...rest);
+  else fail('usage: node pwa/release.mjs keygen|sign|channel|verify|verify-sums …');
 }

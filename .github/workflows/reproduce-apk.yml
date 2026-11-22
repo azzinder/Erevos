@@ -6,10 +6,14 @@ name: reproduce-apk
 
 # Builds a published release's Android app again, on a fresh runner, unsigned, and checks that it
 # is the same as the published APK apart from its signature (scripts/reproduce-apk.sh,
-# docs/reproducible-builds.md). Only by hand: Actions, reproduce-apk, Run workflow. About as many
-# Actions minutes as the release's apk job.
+# docs/reproducible-builds.md). By itself after every release that succeeded (the newest published
+# one), and by hand: Actions, reproduce-apk, Run workflow. About as many Actions minutes as the
+# release's apk job.
 
 on:
+  workflow_run:
+    workflows: [release]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -26,6 +30,7 @@ env:
 
 jobs:
   apk:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -62,6 +67,11 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
+          # After a release: the one it published, the newest (releases/latest, as Updates reads it).
+          if [ -z "$VERSION" ]; then
+            VERSION=$(curl -fsSL --retry 4 https://github.com/azzinder/erevos-releases/releases/latest/download/version.json | jq -r '.name // .version')
+            echo "Checking the newest release, $VERSION"
+          fi
           # The script runs from outside the checkout, which it moves to the release's commit.
           cp scripts/reproduce-apk.sh "$RUNNER_TEMP/reproduce-apk.sh"
           cd "$RUNNER_TEMP"

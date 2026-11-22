@@ -215,8 +215,16 @@ function Home() {
   // one opens those and the search empties; a wrong one is a search like any other.
   // A search sent is tried as a PIN of hidden chats and as another space's password
   // (lock/hidden.ts searchOpens): what it opens opens, and anything else stays a search.
+  // One try at a time from here: one sent again while the last is being checked is let go.
+  const trying = useRef(false);
   async function searchSubmitted() {
-    const found = await searchOpens(currentSpace().space, query, moduleOn('erevos')).catch(() => null);
+    if (trying.current) return;
+    trying.current = true;
+    const found = await searchOpens(currentSpace().space, query, moduleOn('erevos'))
+      .catch(() => null)
+      .finally(() => {
+        trying.current = false;
+      });
     if (!found) return;
     setQuery('');
     if ('space' in found) {
@@ -237,7 +245,13 @@ function Home() {
   async function openDoor() {
     const pin = doorPin;
     closeDoor();
-    const place = await searchHidden(currentSpace().space, pin).catch(() => null);
+    if (trying.current) return;
+    trying.current = true;
+    const place = await searchHidden(currentSpace().space, pin)
+      .catch(() => null)
+      .finally(() => {
+        trying.current = false;
+      });
     if (!place) return;
     handOverHidden(place);
     router.push('/chat?hidden=open');
