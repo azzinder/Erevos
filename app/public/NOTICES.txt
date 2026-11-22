@@ -4170,7 +4170,7 @@ foldhash 0.2.0
   Source: https://github.com/orlp/foldhash
   Text: LICENSE [390]
 
-form_urlencoded 1.2.2
+form_urlencoded 1.2.3
   Licence: MIT OR Apache-2.0
   Source: https://github.com/servo/rust-url
   Text: LICENSE-APACHE [267]; LICENSE-MIT [391]
@@ -6248,7 +6248,7 @@ unty 0.0.4
   Source: https://github.com/bincode-org/unty
   Text: LICENSE-APACHE [579]; LICENSE-MIT [580]
 
-url 2.5.8
+url 2.5.9
   Licence: MIT OR Apache-2.0
   Source: https://github.com/servo/rust-url
   Text: LICENSE-APACHE [267]; LICENSE-MIT [429]

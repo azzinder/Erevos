@@ -887,7 +887,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [fnv](https://github.com/servo/rust-fnv) | 1.0.7 | Apache-2.0 OR MIT |
 | [foldhash](https://github.com/orlp/foldhash) | 0.1.5 | Zlib |
 | [foldhash](https://github.com/orlp/foldhash) | 0.2.0 | Zlib |
-| [form_urlencoded](https://github.com/servo/rust-url) | 1.2.2 | MIT OR Apache-2.0 |
+| [form_urlencoded](https://github.com/servo/rust-url) | 1.2.3 | MIT OR Apache-2.0 |
 | [fs-mistrust](https://gitlab.torproject.org/tpo/core/arti) | 0.16.1 | MIT OR Apache-2.0 |
 | [fslock-guard](https://gitlab.torproject.org/tpo/core/arti) | 0.9.1 | MIT OR Apache-2.0 |
 | [funty](https://github.com/myrrlyn/funty) | 2.0.0 | MIT |
@@ -1303,7 +1303,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [universal-hash](https://github.com/RustCrypto/traits) | 0.6.1 | MIT OR Apache-2.0 |
 | [untrusted](https://github.com/briansmith/untrusted) | 0.9.0 | ISC |
 | [unty](https://github.com/bincode-org/unty) | 0.0.4 | MIT OR Apache-2.0 |
-| [url](https://github.com/servo/rust-url) | 2.5.8 | MIT OR Apache-2.0 |
+| [url](https://github.com/servo/rust-url) | 2.5.9 | MIT OR Apache-2.0 |
 | [utf8_iter](https://github.com/hsivonen/utf8_iter) | 1.1.0 | Apache-2.0 OR MIT |
 | [utf_types](https://github.com/hsivonen/utf_types) | 1.0.0 | Apache-2.0 OR MIT |
 | [uuid](https://github.com/uuid-rs/uuid) | 1.29.3 | Apache-2.0 OR MIT |

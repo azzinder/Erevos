@@ -41,6 +41,7 @@ On main, not released yet:
 - On the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on; it opened New chat's Erevos steps there unless Erevos was off (`app/index.tsx` `newChat`). Holding it still opens the hidden chats' PIN. Reported by the maintainer.
 
 ### Under the hood
+- The core's `url` crate is 2.5.9 (with `form_urlencoded` 1.2.3): 2.5.8 could overflow the stack on a URL of nested `blob:` addresses (RUSTSEC-2026-0592), which `cargo audit` in the rust check now refuses.
 - The Collection's camera says what went wrong in the owner's language (not opened, stopped, not ready, the photo or video not taken or not kept): the camera's own English words, from Android, showed before (`cameraTrouble` in `components/erevos-camera.tsx`, `troubleOf` in `lib/camera-controls.ts`). From the review of 8a88072 (Υ1).
 - What the Collection's camera left unencrypted in the app's cache, when Erevos stopped before keeping it (the battery ran out, Android stopped it while recording), is deleted as Erevos starts (`lib/camera-cache.ts`). From the review of b379943f (Τ12).
 - Only 3.x to 6.x go after 7.x in a release's order and in GitHub's latest; 8.x and on come after them, and 1.x and 2.x stay before 7.x (`order` in `release.yml`, `laterThan`). The Sailfish OS RPM and the Arch Linux package keep epoch 1 for every major from 3 on but 7, so 8.0.0 also installs over 6.x. From the review of b379943f (Τ11).
