@@ -2651,6 +2651,11 @@ nulla.
   fino a 30 secondi di immagine piccola, che la maggior parte delle fotocamere rispetta; **Video dal telefono** ne
   prende uno solo se è già abbastanza piccolo, circa 280 KB, perché Erevos non rimpicciolisce i video. Un video
   ricevuto mostra ▶ nella conversazione, e un tocco lo riproduce nell’app video del telefono.
+- **MMS all’estero:** un MMS aspetta presso l’operatore finché il telefono non lo scarica con i dati mobili, che
+  all’estero possono costare. **Impostazioni** → **Telefono e SMS** → **SMS** → **MMS** li scarica subito ma, se non
+  lo attivi, non in roaming: allora uno appare nella sua conversazione come **MMS** con la sua dimensione e
+  **Scarica (può costare)**, e anche sotto **MMS**, per un numero senza ancora una conversazione. Disattivato del
+  tutto, ogni MMS aspetta un tocco.
 - **Dove sei:** **+** → **Posizione** invia dove sei come SMS con un indirizzo geo: e un link OpenStreetMap, che ogni
   telefono apre. Un indirizzo geo:, o un link di OpenStreetMap, Google Maps, Apple Maps o Waze, in un SMS che arriva si
   vede come un luogo, da aprire nell’app delle mappe; un link breve resta un link, perché andrebbe scaricato per

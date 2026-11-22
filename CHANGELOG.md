@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- SMS: **MMS** under SMS settings: fetched at once (on by default) and while roaming (off by default); one not fetched waits in its conversation, and under MMS, with its size and **Fetch (may cost)** (MmsStore keeps the carrier's notice). Not yet tried on a phone.
 - SMS: quick texts, held **+** or **Quick texts** in an SMS conversation: the app's own until the owner adds or removes one, then theirs, kept encrypted with the space's SMS data (components/sms-quick.tsx). Not yet tried on a phone.
 - SMS: a reaction an iPhone or Google Messages sends by SMS in English (Liked “…”, Reacted 😂 to “…”, Removed a like from “…”) shows as its mark under the message it names instead of a message of its own (lib/sms-reactions.ts); one whose message is not found stays. Not yet tried on a phone.
 - SMS: videos by MMS: **+** → **Record a video** asks the camera app for MMS quality (EXTRA_VIDEO_QUALITY 0, 30 seconds), **Video from the phone** takes one already under the MMS size; one that comes shows ▶ and plays in the phone's video app (MmsStore keeps video/* parts). Not yet tried on a phone.

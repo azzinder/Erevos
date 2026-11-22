@@ -17,7 +17,7 @@ import { SmsLink } from '../lib/sms-link';
 import { smsDevicesChanged } from '../lib/sms-share';
 import { currentSpace } from '../lock/keys';
 import { MAX_WORDS, UNDO_SECONDS, WORD, type SmsData } from '../lock/sms-data';
-import { requestDefaultSms, smsMirrored, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
+import { fetchMms, mmsSwitches, requestDefaultSms, setMmsSwitches, smsMirrored, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, waitingMms, type SmsStatus, type WaitingMms } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
@@ -55,6 +55,7 @@ const PARTS = {
   spam: mark('Spam filter'),
   blocked: mark('Blocked numbers'),
   undo: mark('Taking an SMS back'),
+  mms: mark('MMS'),
   sims: mark('Two SIMs'),
   new: mark('New SMS'),
 };
@@ -104,6 +105,9 @@ export default function SmsSettings() {
   const [plain, setPlain] = useState(false);
   // Who wrote and what on an SMS's notice, with Reply and Mark as read (lib/sms-notices.ts).
   const [notices, setNotices] = useState(false);
+  // MMS fetched at once and while roaming (MmsStore.kt), and those waiting for a tap.
+  const [mms, setMms] = useState(mmsSwitches());
+  const [waiting, setWaiting] = useState<WaitingMms[]>(() => waitingMms());
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -287,6 +291,22 @@ export default function SmsSettings() {
     if (!link) return;
     await link.setUndo(seconds);
     setUndo(link.undo);
+  }
+
+  function mmsSwitch(auto: boolean, roaming: boolean) {
+    setMmsSwitches(auto, roaming);
+    setMms(mmsSwitches());
+  }
+
+  async function fetchWaiting(one: WaitingMms) {
+    setNote('');
+    try {
+      await fetchMms(one.location);
+      setWaiting(waitingMms());
+      setNote(t('Fetching it: it shows in its conversation once it came.'));
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function toggleNotices() {
@@ -577,6 +597,31 @@ export default function SmsSettings() {
               {t('Greek small letters and accents fit 70 letters in an SMS, not 160. With this on, a plain SMS goes without accents and Greek in capitals, as the old phones wrote it, so it fits 160 again. Not with an emoji, nor in an MMS, which costs the same either way.')}
             </Text>
             <Button title={plain ? t('Send with accents') : t('Send without accents')} kind="secondary" onPress={() => void togglePlain()} />
+          </Card>
+        </>
+      ) : null}
+
+      {mms && shows('mms') ? (
+        <>
+          {part ? null : <SectionTitle title={t('MMS')} />}
+          <Card>
+            <Text tone="muted">
+              {t('An MMS waits at the phone company until the phone fetches it, over mobile data, which abroad may cost. Turned off, it waits for a tap: in its conversation, or here.')}
+            </Text>
+            <Button title={mms.auto ? t('Fetch MMS only on a tap') : t('Fetch MMS at once')} kind="secondary" onPress={() => mmsSwitch(!mms.auto, mms.roaming)} />
+            {mms.auto ? (
+              <Button title={mms.roaming ? t('Not at once while roaming') : t('At once while roaming too')} kind="secondary" onPress={() => mmsSwitch(mms.auto, !mms.roaming)} />
+            ) : null}
+            <Text variant="caption" tone="faint">
+              {mms.auto ? (mms.roaming ? t('Fetched at once, abroad too.') : t('Fetched at once, but while roaming only on a tap.')) : t('Fetched only on a tap.')}
+            </Text>
+            {waiting.map((one) => (
+              <Row key={one.location} wrap>
+                <Text style={{ flex: 1 }}>{t('MMS from {from} · {size} KB', { from: one.from || '?', size: String(Math.max(1, Math.round(one.size / 1024))) })}</Text>
+                <Button title={t('Fetch (may cost)')} kind="secondary" onPress={() => void fetchWaiting(one)} />
+              </Row>
+            ))}
+            {part === 'mms' && note ? <Text tone="muted">{note}</Text> : null}
           </Card>
         </>
       ) : null}

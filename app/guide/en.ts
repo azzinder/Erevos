@@ -2433,6 +2433,10 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   seconds of small picture, which most camera apps keep; **Video from the phone** takes one only when it is small
   enough already, about 280 KB, as Erevos does not make a video smaller. A video that comes shows ▶ in the
   conversation, and a tap plays it in the phone's own video app.
+- **MMS abroad:** an MMS waits at the phone company until the phone fetches it over mobile data, which abroad may
+  cost. **Settings** → **Phone and SMS** → **SMS** → **MMS** fetches them at once but, unless you turn it on, not
+  while roaming: then one shows in its conversation as **MMS** with its size and **Fetch (may cost)**, and under
+  **MMS** too, for a number with no conversation yet. Turned off altogether, every MMS waits for a tap.
 - **Where you are:** **+** → **Location** sends where you are as an SMS with a geo: address and an OpenStreetMap link,
   which any phone opens. A geo: address, or a link of OpenStreetMap, Google Maps, Apple Maps or Waze, in an SMS that
   comes shows as a place, to open in the maps app; a short link stays a link, as it would have to be fetched to tell the

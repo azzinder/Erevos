@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**MMS abroad**: while roaming, an MMS waits for a tap, **Fetch (may cost)**, unless you choose otherwise under **Settings** → **Phone and SMS** → **SMS** → **MMS**. See [SMS](#sms).":
+    "**MMS στο εξωτερικό**: σε περιαγωγή, ένα MMS περιμένει ένα πάτημα, **Λήψη (μπορεί να χρεωθεί)**, εκτός αν διαλέξεις αλλιώς στις **Ρυθμίσεις** → **Τηλέφωνο και SMS** → **SMS** → **MMS**. Δες [SMS](#sms).",
   "**Quick texts**: hold the **+** in an SMS conversation down for short words you write often, and keep your own. See [SMS](#sms).":
     "**Έτοιμα κείμενα**: κράτα πατημένο το **+** σε μια συνομιλία SMS για λίγες λέξεις που γράφεις συχνά, και κράτα και δικά σου. Δες [SMS](#sms).",
   "**Reactions from iPhones**: a like or another reaction an iPhone or Google Messages sends by SMS, Liked “…”, shows as 👍 on your message instead of a message of its own. See [SMS](#sms).":

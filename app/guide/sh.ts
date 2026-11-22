@@ -2532,6 +2532,10 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
 - **Video (MMS):** **+** → **Snimi video** traži od aplikacije kamere video u MMS kvalitetu, do 30 sekundi male
   slike, što većina kamera poštuje; **Video s telefona** uzima samo onaj koji je već dovoljno mali, oko 280 KB, jer
   Erevos ne smanjuje video. Video koji stigne pokazuje ▶ u razgovoru, a dodir ga pušta u video aplikaciji telefona.
+- **MMS u inostranstvu:** MMS čeka kod operatera dok ga telefon ne preuzme preko mobilnih podataka, koji u
+  inostranstvu mogu koštati. **Postavke** → **Telefon i SMS** → **SMS** → **MMS** ih preuzima odmah, ali, ako to ne
+  uključite, ne u romingu: tada se jedan pojavi u svom razgovoru kao **MMS** s veličinom i **Preuzmi (može
+  koštati)**, i ispod **MMS**, za broj koji još nema razgovor. Potpuno isključeno, svaki MMS čeka dodir.
 - **Gdje ste:** **+** → **Lokacija** šalje gdje ste kao SMS s geo: adresom i OpenStreetMap linkom, koji otvara svaki
   telefon. Geo: adresa, ili link OpenStreetMapa, Google Mapsa, Apple Mapsa ili Wazea, u SMS-u koji stigne prikazuje se
   kao mjesto, za otvaranje u aplikaciji za karte; kratak link ostaje link, jer bi se morao preuzeti da bi se znalo

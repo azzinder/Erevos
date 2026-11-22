@@ -4,6 +4,8 @@
 
 // The German of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/de/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**MMS abroad**: while roaming, an MMS waits for a tap, **Fetch (may cost)**, unless you choose otherwise under **Settings** → **Phone and SMS** → **SMS** → **MMS**. See [SMS](#sms).":
+    "**MMS im Ausland**: Beim Roaming wartet eine MMS auf ein Tippen, **Abrufen (kann kosten)**, außer du wählst anders unter **Einstellungen** → **Telefon und SMS** → **SMS** → **MMS**. Siehe [SMS](#sms).",
   "**Quick texts**: hold the **+** in an SMS conversation down for short words you write often, and keep your own. See [SMS](#sms).":
     "**Schnelltexte**: Halte das **+** in einer SMS-Unterhaltung gedrückt für kurze Worte, die du oft schreibst, und behalte eigene. Siehe [SMS](#sms).",
   "**Reactions from iPhones**: a like or another reaction an iPhone or Google Messages sends by SMS, Liked “…”, shows as 👍 on your message instead of a message of its own. See [SMS](#sms).":

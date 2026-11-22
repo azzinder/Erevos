@@ -2809,6 +2809,11 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   zu 30 Sekunden kleines Bild, was die meisten Kamera-Apps einhalten; **Video vom Telefon** nimmt nur eines, das
   schon klein genug ist, etwa 280 KB, da Erevos Videos nicht verkleinert. Ein ankommendes Video zeigt ▶ in der
   Unterhaltung, und ein Tippen spielt es in der Video-App des Telefons ab.
+- **MMS im Ausland:** Eine MMS wartet beim Anbieter, bis das Telefon sie über mobile Daten abruft, was im Ausland
+  kosten kann. **Einstellungen** → **Telefon und SMS** → **SMS** → **MMS** ruft sie sofort ab, aber, solange du es
+  nicht einschaltest, nicht beim Roaming: dann zeigt sich eine in ihrer Unterhaltung als **MMS** mit ihrer Größe und
+  **Abrufen (kann kosten)**, und auch unter **MMS**, für eine Nummer ohne Unterhaltung. Ganz ausgeschaltet wartet
+  jede MMS auf ein Tippen.
 - **Wo du bist:** **+** → **Standort** sendet, wo du bist, als SMS mit einer geo:-Adresse und einem OpenStreetMap-Link,
   den jedes Telefon öffnet. Eine geo:-Adresse oder ein Link von OpenStreetMap, Google Maps, Apple Maps oder Waze in
   einer SMS, die ankommt, erscheint als Ort, zum Öffnen in der Karten-App; ein Kurzlink bleibt ein Link, da er geholt

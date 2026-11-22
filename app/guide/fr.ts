@@ -2785,6 +2785,11 @@ téléphone sans Erevos n’affiche rien.
   MMS, jusqu’à 30 secondes en petite image, ce que la plupart respectent ; **Vidéo du téléphone** n’en prend une que
   si elle est déjà assez petite, environ 280 Ko, car Erevos ne réduit pas les vidéos. Une vidéo reçue montre ▶ dans
   la conversation, et un appui la lit dans l’app vidéo du téléphone.
+- **MMS à l’étranger :** un MMS attend chez l’opérateur jusqu’à ce que le téléphone le récupère par les données
+  mobiles, qui à l’étranger peuvent coûter. **Réglages** → **Téléphone et SMS** → **SMS** → **MMS** les récupère
+  tout de suite mais, sauf si tu l’actives, pas en itinérance : alors un MMS apparaît dans sa conversation comme
+  **MMS** avec sa taille et **Récupérer (peut coûter)**, et aussi sous **MMS**, pour un numéro sans conversation
+  encore. Désactivé complètement, chaque MMS attend un appui.
 - **Où tu es :** **+** → **Position** envoie où tu es en SMS avec une adresse geo: et un lien OpenStreetMap, que
   n’importe quel téléphone ouvre. Une adresse geo:, ou un lien d’OpenStreetMap, de Google Maps, d’Apple Maps ou de Waze,
   dans un SMS qui arrive s’affiche comme un lieu, à ouvrir dans l’appli de cartes ; un lien court reste un lien, car il

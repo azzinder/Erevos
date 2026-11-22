@@ -15,6 +15,9 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.Telephony
+import android.telephony.TelephonyManager
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -30,6 +33,12 @@ internal object MmsStore {
   private const val PREFS = "erevos-mms"
   private const val FETCHED = "fetched"
   private const val MAX_FETCHED = 100
+  // Whether an MMS is fetched as soon as the carrier announces it, and when roaming too; and the
+  // notices waiting for a tap to fetch them, kept as JSON (location, from, size, sim, transaction, at).
+  private const val AUTO = "auto"
+  private const val ROAMING = "roaming"
+  private const val WAITING = "waiting"
+  private const val MAX_WAITING = 50
   private const val OWN = "own"
   private val MMS: Uri = Uri.parse("content://mms")
   private val PARTS: Uri = Uri.parse("content://mms/part")
@@ -46,24 +55,89 @@ internal object MmsStore {
 
   // --- Receiving -------------------------------------------------------------------------------
 
-  /** A notice that an MMS waits at the carrier: fetch it, unless it was fetched already. */
+  /** Whether an MMS is fetched as soon as it is announced (on unless turned off), and when roaming (off unless turned on). */
+  fun switches(context: Context): Map<String, Boolean> {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    return mapOf("auto" to prefs.getBoolean(AUTO, true), "roaming" to prefs.getBoolean(ROAMING, false))
+  }
+
+  fun setSwitches(context: Context, auto: Boolean, roaming: Boolean) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(AUTO, auto).putBoolean(ROAMING, roaming).apply()
+  }
+
+  // Whether the SIM `sim` (or the phone's, -1) is roaming now; a phone that does not say is not.
+  private fun roaming(context: Context, sim: Int): Boolean = try {
+    val phone = context.getSystemService(TelephonyManager::class.java)
+    (if (sim >= 0) phone?.createForSubscriptionId(sim) else phone)?.isNetworkRoaming == true
+  } catch (_: Exception) {
+    false
+  }
+
+  /** A notice that an MMS waits at the carrier: fetch it, unless it was fetched already, or keep it
+   *  to fetch on a tap when the owner fetches none at once, or none while roaming and roaming now. */
   fun notified(context: Context, pdu: ByteArray, sim: Int) {
     val notice = try {
       MmsPdu.notification(pdu)
     } catch (_: Exception) {
       return
     }
-    if (!remember(context, notice.location)) return
+    val on = switches(context)
+    if (on["auto"] == false || (on["roaming"] == false && roaming(context, sim))) {
+      wait(context, notice, sim)
+      return
+    }
+    fetch(context, notice.location, notice.transactionId, sim)
+  }
+
+  // Fetches the MMS at `location` from the carrier.
+  private fun fetch(context: Context, location: String, transaction: String, sim: Int) {
+    if (!remember(context, location)) return
     val name = "in-${System.currentTimeMillis()}.pdu"
     val done = Intent(context, MmsDownloadedReceiver::class.java).setAction(DOWNLOADED_ACTION)
-      .putExtra("file", name).putExtra("sim", sim).putExtra("transaction", notice.transactionId).putExtra("location", notice.location)
+      .putExtra("file", name).putExtra("sim", sim).putExtra("transaction", transaction).putExtra("location", location)
     val pending = PendingIntent.getBroadcast(context, name.hashCode(), done, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     try {
-      SmsStore.manager(context, sim).downloadMultimediaMessage(context, notice.location, fileUri(context, name), null, pending)
+      SmsStore.manager(context, sim).downloadMultimediaMessage(context, location, fileUri(context, name), null, pending)
     } catch (_: Exception) {
-      forget(context, notice.location)
+      forget(context, location)
       SmsStore.notifyNew(context)
     }
+  }
+
+  // Keeps a notice to fetch on a tap, and says something came, from whom when the open space shows that.
+  private fun wait(context: Context, notice: MmsPdu.Notification, sim: Int) {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    synchronized(this) {
+      val list = waitingJson(prefs).filter { it.optString("location") != notice.location }
+      val one = JSONObject().put("location", notice.location).put("from", notice.from).put("size", notice.size)
+        .put("sim", sim).put("transaction", notice.transactionId).put("at", System.currentTimeMillis())
+      prefs.edit().putString(WAITING, JSONArray(list.takeLast(MAX_WAITING - 1) + one).toString()).apply()
+    }
+    SmsStore.came(context, mapOf("address" to notice.from, "waiting" to true))
+  }
+
+  private fun waitingJson(prefs: android.content.SharedPreferences): List<JSONObject> = try {
+    JSONArray(prefs.getString(WAITING, "[]")).let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
+  } catch (_: Exception) {
+    emptyList()
+  }
+
+  /** The MMS waiting at the carrier for a tap: from, size (bytes), when announced, and where. */
+  fun waiting(context: Context): List<Map<String, Any?>> =
+    waitingJson(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)).map {
+      mapOf("location" to it.optString("location"), "from" to it.optString("from"), "size" to it.optLong("size").toDouble(), "at" to it.optLong("at").toDouble(), "sim" to it.optInt("sim", -1).toDouble())
+    }
+
+  /** Fetches a waiting MMS now, as the owner tapped it. */
+  fun fetchWaiting(context: Context, location: String) {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val one: JSONObject
+    synchronized(this) {
+      val list = waitingJson(prefs)
+      one = list.firstOrNull { it.optString("location") == location } ?: return
+      prefs.edit().putString(WAITING, JSONArray(list.filter { it !== one }).toString()).apply()
+    }
+    fetch(context, location, one.optString("transaction"), one.optInt("sim", -1))
   }
 
   /** The fetched message is in its file: keep it, and tell the carrier it came. */

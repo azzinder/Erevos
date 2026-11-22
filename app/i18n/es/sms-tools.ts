@@ -208,4 +208,6 @@ export const smsTools: Record<string, string> = {
   "Tap one to put it in the field. Hold one down to remove it.": "Toca uno para ponerlo en el campo. Mantén uno pulsado para quitarlo.",
   "A new quick text": "Un texto rápido nuevo",
   "Or hold + down.": "O mantén pulsado +.",
+  "Fetch (may cost)": "Descargar (puede costar)",
+  "MMS · {size} KB": "MMS · {size} KB",
 };

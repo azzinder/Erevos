@@ -100,6 +100,10 @@ type NativeSms = {
   setSpamFilter?(on: boolean): void;
   setOwnNotices?(muted: string[], until: number[], sounds: string[]): void;
   setNoticeDetails?(on: boolean): void;
+  mmsSwitches?(): { auto: boolean; roaming: boolean };
+  setMmsSwitches?(auto: boolean, roaming: boolean): void;
+  waitingMms?(): WaitingMms[];
+  fetchMms?(location: string): Promise<void>;
   /** `sim` only in a build with MMS (an older one takes two arguments). */
   send(address: string, text: string, sim?: number): Promise<number>;
   sendMms?(address: string, text: string, data: Uint8Array, type: string, sim: number): Promise<number>;
@@ -415,4 +419,36 @@ export function smsNoticeDetails(on: boolean): void {
   } catch {
     // A build from before it: every notice says "New message".
   }
+}
+
+/** An MMS announced by the carrier and not fetched yet, as the owner fetches none at once, or none
+ *  while roaming (MmsStore.kt): from whom, how big (bytes), and when. */
+export type WaitingMms = { location: string; from: string; size: number; at: number; sim: number };
+
+/** Whether MMS are fetched at once (on unless turned off) and while roaming (off unless turned on); null in a build without it. */
+export function mmsSwitches(): { auto: boolean; roaming: boolean } | null {
+  try {
+    return own()?.mmsSwitches?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function setMmsSwitches(auto: boolean, roaming: boolean): void {
+  own()?.setMmsSwitches?.(auto, roaming);
+}
+
+/** The MMS waiting at the carrier for a tap. */
+export function waitingMms(): WaitingMms[] {
+  try {
+    return own()?.waitingMms?.() ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** Fetches a waiting MMS now; it comes as any MMS does. */
+export function fetchMms(location: string): Promise<void> {
+  const sms = own();
+  return sms?.fetchMms ? sms.fetchMms(location) : Promise.reject(new Error('This build of Erevos cannot do this yet.'));
 }

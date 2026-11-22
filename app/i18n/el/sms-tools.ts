@@ -208,4 +208,6 @@ export const smsTools: Record<string, string> = {
   "Tap one to put it in the field. Hold one down to remove it.": "Πάτα ένα για να μπει στο πεδίο. Κράτα ένα πατημένο για να φύγει.",
   "A new quick text": "Νέο έτοιμο κείμενο",
   "Or hold + down.": "Ή κράτα πατημένο το +.",
+  "Fetch (may cost)": "Λήψη (μπορεί να χρεωθεί)",
+  "MMS · {size} KB": "MMS · {size} KB",
 };

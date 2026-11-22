@@ -89,8 +89,11 @@ import {
   smsMirrored,
   smsPictureBytes,
   smsStatus,
+  fetchMms,
+  waitingMms,
   type Sim,
   type SmsMessage,
+  type WaitingMms,
 } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -271,6 +274,7 @@ function Sms({ tools }: { tools: ReactNode }) {
   const [attaching, setAttaching] = useState(false);
   // The sheet of quick texts (components/sms-quick.tsx): held +, or from Attach and more.
   const [quicking, setQuicking] = useState(false);
+  const [atCarrier, setAtCarrier] = useState<WaitingMms[]>([]);
   const [placing, setPlacing] = useState(false);
   const [choosingCard, setChoosingCard] = useState(false);
   // The built-in stickers' sheet, what it says, and whether one's picture is being made.
@@ -334,6 +338,9 @@ function Sms({ tools }: { tools: ReactNode }) {
   // away stays unread, and its notice with it, until it comes back to it (SmsStore.kt markRead).
   const focusedNow = useRef(false);
   const load = useCallback(() => {
+    // The MMS of this conversation waiting at the phone company for a tap (MmsStore.kt).
+    const here = smsNumbers(to);
+    setAtCarrier(waitingMms().filter((w) => here.some((n) => sameNumber(n, w.from))));
     smsMessages(to, drawn.current)
       .then((loaded) => {
         setMessages(loaded);
@@ -1020,6 +1027,23 @@ function Sms({ tools }: { tools: ReactNode }) {
               </View>
             );
           })}
+          {atCarrier.map((w) => (
+            <View key={w.location} style={[styles.bubble, styles.theirs]}>
+              <Text variant="caption" tone="muted">
+                {t('MMS · {size} KB', { size: String(Math.max(1, Math.round(w.size / 1024))) })}
+              </Text>
+              <Button
+                title={t('Fetch (may cost)')}
+                onPress={() => {
+                  setAtCarrier((now) => now.filter((x) => x.location !== w.location));
+                  fetchMms(w.location).catch((error: unknown) => setNote(errorText(error)));
+                }}
+              />
+              <Text variant="caption" tone="faint">
+                {new Date(w.at).toLocaleString(locale())}
+              </Text>
+            </View>
+          ))}
           {later.map((l) => (
             <Pressable
               key={l.id}
