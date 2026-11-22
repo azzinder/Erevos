@@ -8,6 +8,15 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+), and What's new in the app starts again there. **Not audited.**
 
+## Unreleased
+
+On main, not released yet:
+
+### Under the hood
+
+- **Erevos Lite** as an edition of its own (`EREVOS_EDITION=lite`, docs/editions.md): Erevos's own chats and calls alone, the Android app `app.erevos.lite`, versions 3.2.x, released by hand with `.github/workflows/release-lite.yml` to `azzinder/erevos-lite-releases`. The Phone's and the SMS's native modules are left out of its app (`app/plugins/with-edition-modules.js`), and with them every permission of theirs; the Collection is not offered, though its native module stays for opening chat files with another app; its first start has no step for the modules, Settings no Modules, the widget no Phone or SMS button, and its guide and What's new leave them out.
+- The plain Erevos is built as `EREVOS_EDITION=erevos`: `lite` was its name until 3.0.0 and is Erevos Lite's now. Every workflow says `erevos`; `scripts/reproduce-apk.sh` and `scripts/reproduce-web.sh` still build a commit from before with `lite`, and `reproduce-apk.sh` also checks Erevos Lite's releases.
+
 ## 3.0.0-beta.2 (2026-11-22)
 
 3.0.0-beta.1 went out without its Android app and its Sailfish package, which did not build; 3.0.0-beta.2

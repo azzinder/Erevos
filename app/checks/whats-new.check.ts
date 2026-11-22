@@ -79,18 +79,18 @@ test('what is not out yet shows under the version that runs, once it comes after
   assert.equal(laterThan('7.2.0', '3.0.0'), false);
   assert.equal(laterThan('8.0.0', '7.9.9'), true);
   // The plain Erevos, whichever edition this build is: Erevos+ also takes in the plain releases (asPlus, below).
-  const shown = whatsNewFor('99.0.0', 'lite');
+  const shown = whatsNewFor('99.0.0', 'erevos');
   const pending = lines(NEXT).length > 0;
   assert.equal(shown.length, VERSIONS.length + (pending ? 1 : 0));
   if (pending) assert.equal(shown[0].version, '99.0.0');
   // A build of a release: no list of what is to come.
-  assert.deepEqual(whatsNewFor(last, 'lite').map((v) => v.version), VERSIONS.map((v) => v.version));
+  assert.deepEqual(whatsNewFor(last, 'erevos').map((v) => v.version), VERSIONS.map((v) => v.version));
   // A build of main for testing: with no number.
-  if (pending) assert.equal(whatsNewFor('0.0.1', 'lite')[0].version, null);
+  if (pending) assert.equal(whatsNewFor('0.0.1', 'erevos')[0].version, null);
 });
 
 test('plain Erevos keeps the lines that are its own: SMS, Phone, Collection', () => {
-  const all = whatsNewFor(VERSIONS[0].version, 'lite').flatMap((v) => [...v.forYou, ...v.underTheHood]);
+  const all = whatsNewFor(VERSIONS[0].version, 'erevos').flatMap((v) => [...v.forYou, ...v.underTheHood]);
   for (const start of ['**Quick texts**', '**Speed dial**', '**Night photos and HDR**']) assert.ok(all.some((line) => line.startsWith(start)), start);
 });
 

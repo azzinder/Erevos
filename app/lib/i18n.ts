@@ -205,10 +205,10 @@ export function t(text: string, vars?: Record<string, string | number>): string 
 
 /** `t`, with the name of `edition`'s app: Erevos+ says its own name wherever the words say Erevos
  *  (lib/edition.ts), unless they speak of the two editions apart, as the English says: the translation
- *  follows it. A text about a release of the plain Erevos, in Erevos+, asks for 'lite'. */
+ *  follows it. A text about a release of the plain Erevos, in Erevos+, asks for 'erevos'. */
 export function tFor(edition: Edition, text: string, vars?: Record<string, string | number>): string {
   const words = current === 'en' ? text : (WORDS[current][text] ?? text);
-  const shown = edition === 'plus' && ownNames() && !namesEditions(text) ? named(words, edition) : words;
+  const shown = edition !== 'erevos' && ownNames() && !namesEditions(text) ? named(words, edition) : words;
   return vars ? fill(shown, vars) : shown;
 }
 
@@ -230,7 +230,7 @@ export function plural(n: number, one: string, many: string, vars?: Record<strin
     // English, until the language has the words: one form, for every count.
     const forms = (words(current)[many] ?? many).split(FORM_SPLIT);
     const chosen = forms[Math.min(form(Math.abs(n)), forms.length - 1)];
-    return fill(EDITION === 'plus' && ownNames() && !namesEditions(many) ? named(chosen) : chosen, all);
+    return fill(EDITION !== 'erevos' && ownNames() && !namesEditions(many) ? named(chosen) : chosen, all);
   }
   const first = ONE[current] ?? ((count: number) => count === 1);
   return t(first(n) ? one : many, all);

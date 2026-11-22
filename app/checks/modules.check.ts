@@ -220,17 +220,17 @@ test('each permission is asked on the first screen whose module needs it; later 
 });
 
 test('the plain Erevos has only Erevos, the Phone, the SMS and the Collection; moving to Erevos+ turns the others on', () => {
-  assert.deepEqual(editionModules('lite'), ['erevos', 'phone', 'sms', 'collection']);
+  assert.deepEqual(editionModules('erevos'), ['erevos', 'phone', 'sms', 'collection']);
   assert.deepEqual(editionModules('plus'), MODULES);
-  assert.deepEqual(modulesHere('android', null, 'lite'), ['erevos', 'phone', 'sms', 'collection']);
-  assert.deepEqual(modulesHere('web', null, 'lite'), ['erevos', 'collection']);
-  assert.deepEqual(modulesHere('ios', null, 'lite'), ['erevos']);
+  assert.deepEqual(modulesHere('android', null, 'erevos'), ['erevos', 'phone', 'sms', 'collection']);
+  assert.deepEqual(modulesHere('web', null, 'erevos'), ['erevos', 'collection']);
+  assert.deepEqual(modulesHere('ios', null, 'erevos'), ['erevos']);
   // A choice made in Erevos+ read in the plain Erevos: only its own modules.
-  const LITE_HERE = modulesHere('android', null, 'lite');
+  const LITE_HERE = modulesHere('android', null, 'erevos');
   assert.deepEqual([...(parseModules('{"on":["erevos","sms","matrix"],"known":["erevos","phone","sms","nostr","matrix","xmpp","collection"]}', LITE_HERE) ?? [])], ['erevos', 'sms']);
   // A choice made in the plain Erevos (SMS off) read in Erevos+: SMS stays off, the networks it
   // did not have are on.
-  const kept = keptModules(['erevos', 'phone', 'collection'], LITE_HERE, 'lite');
+  const kept = keptModules(['erevos', 'phone', 'collection'], LITE_HERE, 'erevos');
   assert.ok(kept);
   assert.deepEqual([...(parseModules(kept, ANDROID) ?? [])], ['erevos', 'phone', 'nostr', 'matrix', 'xmpp', 'collection']);
   // Only Matrix-like modules chosen in Erevos+ leave nothing usable in the plain Erevos: every one of its own is on.

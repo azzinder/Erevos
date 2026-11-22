@@ -68,7 +68,7 @@ concurrency:
 # built by erevosgram.yml.
 env:
   EXPO_NO_TELEMETRY: "1"
-  EREVOS_EDITION: lite
+  EREVOS_EDITION: erevos
 
 jobs:
   # Decides whether to build at all and the build's number, then opens the draft release the jobs
@@ -394,7 +394,7 @@ jobs:
           test -f ../desktop/web/core/erevos_ffi_bg.wasm
           # Element Call, for Matrix calls, served apart at app://element-call (desktop/main.js):
           # Erevos+ only, as the plain Erevos has no Matrix.
-          if [ "$EREVOS_EDITION" != lite ]; then node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call; fi
+          if [ "$EREVOS_EDITION" = plus ]; then node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call; fi
 
       # Handed over before the Linux packages, so a failure there does not hold the Mac and Windows back.
       - name: Hand the desktop web build to the macOS and Windows jobs
@@ -414,7 +414,7 @@ jobs:
           npx expo export --clear --platform web --output-dir ../web-build
           cd ..
           # Element Call only in Erevos+: the plain Erevos has no Matrix.
-          node pwa/build.mjs web-build erevos-web --label "$EREVOS_VERSION" $([ "$EREVOS_EDITION" = lite ] && echo --no-element-call)
+          node pwa/build.mjs web-build erevos-web --label "$EREVOS_VERSION" $([ "$EREVOS_EDITION" != plus ] && echo --no-element-call)
           tar -czf erevos-web.tar.gz -C erevos-web .
       - name: Hand the web app to the publish job
         env:

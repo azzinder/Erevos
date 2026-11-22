@@ -1207,7 +1207,7 @@ function ReleaseRow({ release }: { release: Told & { seen: boolean } }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   // A release of the plain Erevos (7.0.x), told in Erevos+ whose Updates chose it, says Erevos's name.
-  const of: Edition = /^\d+\.0\.\d/.test(release.name) ? 'lite' : EDITION;
+  const of: Edition = /^\d+\.0\.\d/.test(release.name) ? 'erevos' : /^\d+\.2\.\d/.test(release.name) ? 'lite' : EDITION;
   const said = tFor(of, 'Erevos {name} is out. Tap to see what is new and update.', { name: release.name });
   return (
     <Pressable

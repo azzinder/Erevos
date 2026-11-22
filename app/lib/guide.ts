@@ -63,8 +63,8 @@ function cells(line: string): string[] {
  *
  * With Erevos+, the marks go and their text stays: the guide reads as if there were none.
  */
-export function editionSource(source: string, edition: 'plus' | 'lite'): string {
-  const lite = edition === 'lite';
+export function editionSource(source: string, edition: 'plus' | 'erevos' | 'lite'): string {
+  const lite = edition !== 'plus';
   const text = source.replace(/\{([+-])([\s\S]*?)\}/g, (_all, which: string, inner: string) => ((which === '-') === lite ? inner : ''));
   const lines = text.split('\n');
   const out: string[] = [];

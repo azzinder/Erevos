@@ -137,9 +137,9 @@ test('the guide has the same sections, in the same order and shape, in every lan
 });
 
 test("the plain Erevos's guide leaves out what only Erevos+ has, the same in every language", () => {
-  const liteEn = guideFor('en', 'lite');
+  const liteEn = guideFor('en', 'erevos');
   for (const lang of GUIDE_LANGS) {
-    const lite = guideFor(lang, 'lite');
+    const lite = guideFor(lang, 'erevos');
     assert.deepEqual(
       lite.map((s) => ({ id: s.id, blocks: s.blocks.map(shape) })),
       liteEn.map((s) => ({ id: s.id, blocks: s.blocks.map(shape) })),
@@ -150,7 +150,7 @@ test("the plain Erevos's guide leaves out what only Erevos+ has, the same in eve
       .filter((s) => !['about', 'appearance', 'updates'].includes(s.id))
       .flatMap((s) => s.blocks.flatMap(blockTexts).filter((t) => /Matrix|XMPP/.test(t)).map((t) => `${lang} ${s.id}: ${t.slice(0, 120)}`));
     assert.deepEqual(said, [], lang);
-    for (const edition of ['plus', 'lite'] as const) {
+    for (const edition of ['plus', 'erevos', 'lite'] as const) {
       const left = guideFor(lang, edition).flatMap((s) => s.blocks.flatMap(blockTexts)).filter((t) => /\{[+-]|\[\+\]/.test(t));
       assert.deepEqual(left, [], `${lang} ${edition}`);
     }
@@ -160,7 +160,9 @@ test("the plain Erevos's guide leaves out what only Erevos+ has, the same in eve
 test('the marks of the editions: Erevos+ reads the text without them, the plain Erevos without what they keep for Erevos+', () => {
   const source = 'A{+ and B}{- alone}.\n\n- [+] Plus only\n  goes on\n  - and its sub-item\n- Both\n\n[+] A paragraph\nof Erevos+.\n\n| a |\n| --- |\n| [+] b |\n| c |';
   assert.equal(editionSource(source, 'plus'), 'A and B.\n\n- Plus only\n  goes on\n  - and its sub-item\n- Both\n\nA paragraph\nof Erevos+.\n\n| a |\n| --- |\n| b |\n| c |');
-  assert.equal(editionSource(source, 'lite'), 'A alone.\n\n- Both\n\n\n| a |\n| --- |\n| c |');
+  assert.equal(editionSource(source, 'erevos'), 'A alone.\n\n- Both\n\n\n| a |\n| --- |\n| c |');
+  // Erevos Lite has none of the other networks either.
+  assert.equal(editionSource(source, 'lite'), editionSource(source, 'erevos'));
 });
 
 test('the guide links only to sections that exist, the same ones in every language, and leaves no mark unread', () => {

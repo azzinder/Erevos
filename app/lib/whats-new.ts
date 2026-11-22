@@ -74,7 +74,9 @@ export function whatsNewFor(running: string, edition: Edition = EDITION): (Chang
   const pending = NEXT.forYou.length + NEXT.underTheHood.length > 0;
   const next = pending && !VERSIONS.some((v) => v.version === running) ? [{ version: laterThan(running, released) ? running : null, ...NEXT }] : [];
   const all = [...next, ...VERSIONS];
-  return edition === 'lite' ? all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(inLite), underTheHood: underTheHood.filter(inLite) })) : asPlus(all);
+  if (edition === 'plus') return asPlus(all);
+  const kept = edition === 'lite' ? (text: string) => inLite(text) && inErevosLite(text) : inLite;
+  return all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(kept), underTheHood: underTheHood.filter(kept) }));
 }
 
 // Erevos+ tells its releases as its own: a release of the plain Erevos alone (7.0.y after 7.0.0,
@@ -108,3 +110,8 @@ export function asPlus<T extends Changes & { version: string | null }>(list: T[]
 const PLUS_ONLY = /\bMatrix\b|\bXMPP\b|other Nostr apps|Nostr chats|Nostr accounts?\b|\bElement Call\b|\bPublic\b/;
 const IN_PLUS = '**Matrix, XMPP and Nostr chats are in Erevos+**';
 export const inLite = (text: string): boolean => text.startsWith(IN_PLUS) || !PLUS_ONLY.test(text);
+
+// What Erevos Lite shows besides: not what is of the Phone, the SMS, the Collection or its camera,
+// which it has not.
+const EREVOS_ONLY = /\(#(?:phone|sms|collection|modules)\)|\bSMS\b|\bMMS\b|\bthe Phone\b|\bPhone:|\bCollection\b|\bvoicemails?\b|\bspeed dial\b/i;
+export const inErevosLite = (text: string): boolean => !EREVOS_ONLY.test(text);
