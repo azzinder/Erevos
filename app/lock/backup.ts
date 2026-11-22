@@ -852,10 +852,10 @@ async function restoreParts(
   read: PartReader | null,
   progress: ((done: number, all: number) => void) | undefined,
   without: RestoreOptions['without'],
-): Promise<{ wrote: Set<string>; left: string[] }> {
+): Promise<{ wrote: Set<string>; fresh: string[]; left: string[] }> {
   const wrote = new Set<string>();
   const left: string[] = [];
-  if (names.length === 0) return { wrote, left };
+  if (names.length === 0) return { wrote, fresh: [], left };
   const had = new Set([...(await listFiles(ATTACHMENT)), ...(await listFiles(VOICE))]);
   let going = false;
   try {
@@ -884,7 +884,8 @@ async function restoreParts(
     for (const name of wrote) if (!had.has(name)) await deleteFile(name).catch(() => undefined);
     throw error;
   }
-  return { wrote, left };
+  // What the parts wrote that the phone had not: gone again should the rest of the restore fail.
+  return { wrote, fresh: [...wrote].filter((name) => !had.has(name)), left };
 }
 
 /**
@@ -935,11 +936,13 @@ export async function restoreBackup(
   const mine = await thisPhone();
   const undo = await markRestore(Date.now(), !!parts && (!mine || parts.phone !== mine));
   let left: string[] = [];
+  let fresh: string[] = [];
   if (parts) {
     try {
       const done = await restoreParts(parts, read, progress, without);
       for (const name of done.wrote) keep.add(name);
       left = done.left;
+      fresh = done.fresh;
     } catch (error) {
       await undo();
       throw error;
@@ -963,6 +966,9 @@ export async function restoreBackup(
     for (const entry of entries) if (entry.kind === KIND_KEY) await secureSet(entry.name, keptHere(entry.name, utf8Decode(entry.data), here.get(entry.name) ?? null));
   } catch (error) {
     await putBack(before);
+    // The photos, files and voice messages its parts brought go too: unseen, they would only take
+    // room, just when the phone is full.
+    for (const name of fresh) await deleteFile(name).catch(() => undefined);
     await undo();
     throw error;
   }

@@ -99,6 +99,14 @@ test("the release key signs a release's SHA256SUMS by its name, and the tool tel
     assert.throws(() => run('verify-sums', join(dir, 'SHA256SUMS'), join(dir, 'SHA256SUMS.sig')));
     // A statement that is not one's own kind (the Android one) does not pass for it.
     assert.throws(() => run('verify-sums', join(dir, 'SHA256SUMS'), join(dir, 'android-update.json'), join(dir, 'key.pub')));
+    // A package added later rewrote the list: signed again alone (publish-sums.sh), it fits again,
+    // and only with the release key.
+    const again = join(dir, 'again');
+    run('sums', again, join(dir, 'key'), '3.0.0-beta.1', sums, join(dir, 'key.pub'));
+    assert.match(run('verify-sums', sums, join(again, 'SHA256SUMS.sig'), join(dir, 'key.pub')), /OK: SHA256SUMS of 3\.0\.0-beta\.1/);
+    run('keygen', join(dir, 'other'), join(dir, 'other.pub'));
+    assert.throws(() => run('sums', join(dir, 'wrong'), join(dir, 'other'), '3.0.0', sums, join(dir, 'key.pub')));
+    assert.throws(() => run('sums', join(dir, 'wrong'), join(dir, 'key'), 'not a name', sums, join(dir, 'key.pub')));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

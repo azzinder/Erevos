@@ -25,6 +25,9 @@
 //       when it is signed so (app/lib/update-signature.ts).
 //       With --sums, also signs the release's SHA256SUMS by its name into <web app>/SHA256SUMS.sig,
 //       served beside it with the list itself.
+//   node pwa/release.mjs sums <folder> <private key file> <release name> <SHA256SUMS> [public key file]
+//       Signs a release's SHA256SUMS again, alone, after a package added later rewrote it
+//       (deploy/web/publish-sums.sh).
 //   node pwa/release.mjs verify-sums <SHA256SUMS> <SHA256SUMS.sig, or https://address> [public key file]
 //       Checks that a SHA256SUMS is the one the release key signed, and for which release.
 //   node pwa/release.mjs verify <web app folder, or https://address> [public key file]
@@ -168,11 +171,30 @@ async function signRelease(dir, file, ...more) {
   // one put beside a changed package.
   if (sums) {
     if (!NAME.test(release.label ?? '')) fail('That build has no release name to sign SHA256SUMS by.');
-    const statement = sumsStatement(release.label, createHash('sha256').update(sums).digest('hex'));
-    fs.writeFileSync(path.join(dir, 'SHA256SUMS'), sums);
-    fs.writeFileSync(path.join(dir, 'SHA256SUMS.sig'), `${JSON.stringify({ statement, signature: sign(null, Buffer.from(statement), key).toString('base64') })}\n`);
-    console.log(`Signed the SHA256SUMS of ${release.label}.`);
+    writeSums(dir, key, release.label, sums);
   }
+}
+
+function writeSums(dir, key, name, sums) {
+  const statement = sumsStatement(name, createHash('sha256').update(sums).digest('hex'));
+  fs.writeFileSync(path.join(dir, 'SHA256SUMS'), sums);
+  fs.writeFileSync(path.join(dir, 'SHA256SUMS.sig'), `${JSON.stringify({ statement, signature: sign(null, Buffer.from(statement), key).toString('base64') })}\n`);
+  console.log(`Signed the SHA256SUMS of ${name}.`);
+}
+
+/**
+ * Signs a release's SHA256SUMS again, alone, into <folder>/SHA256SUMS.sig: after a package was
+ * added to the release later (release-macos.yml, release-android.yml), which rewrites the list
+ * (deploy/web/publish-sums.sh). The key is checked against the repository's public half.
+ */
+async function signSums(dir, file, name, sumsFile, publicFile = PUBLIC) {
+  if (!dir || !file || !NAME.test(name ?? '') || !sumsFile) fail('usage: node pwa/release.mjs sums <folder> <private key file> <release name, e.g. 3.0.0-beta.1> <SHA256SUMS> [public key file]');
+  const sums = fs.readFileSync(sumsFile);
+  const key = createPrivateKey({ key: fs.readFileSync(file), passphrase: await passphrase('Passphrase for the release key: ') });
+  const expected = Buffer.from(fs.readFileSync(publicFile, 'utf8').trim(), 'base64');
+  if (!rawPublic(key).equals(expected)) fail(`That is not the release key (${fingerprint(expected)}).`);
+  fs.mkdirSync(dir, { recursive: true });
+  writeSums(dir, key, name, sums);
 }
 
 /**
@@ -270,5 +292,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   else if (command === 'channel') await signChannel(...rest);
   else if (command === 'verify') await verifyRelease(...rest);
   else if (command === 'verify-sums') await verifySums(...rest);
-  else fail('usage: node pwa/release.mjs keygen|sign|channel|verify|verify-sums …');
+  else if (command === 'sums') await signSums(...rest);
+  else fail('usage: node pwa/release.mjs keygen|sign|channel|sums|verify|verify-sums …');
 }

@@ -216,6 +216,9 @@ t('a restore that cannot write all of it (a full phone) leaves the phone as it w
   // The phone moves on after the backup: another space password, other files.
   store.set('erevos.lock', 'the phone now');
   files.set('erevos-archive', 'the phone now');
+  // And its photos and files are gone since, so the parts bring ones it does not have.
+  const brought = [...blobs.keys()];
+  for (const name of brought) blobs.delete(name);
   const marks = ['erevos.restored', 'erevos.restored-at', 'erevos.restored-elsewhere', 'erevos.restored-other', 'erevos.phone-id'];
   const keys = new Map([...store].filter(([name]) => !marks.includes(name)));
   const texts = new Map(files);
@@ -240,8 +243,9 @@ t('a restore that cannot write all of it (a full phone) leaves the phone as it w
   }
   assert.deepEqual(new Map([...store].filter(([name]) => !marks.includes(name))), keys);
   assert.deepEqual(new Map(files), texts);
-  // The parts' photos and files it put in place may stay beside the phone's own: none of the phone's own is gone.
-  for (const [name, value] of bytes) assert.deepEqual(blobs.get(name), value, name);
+  // Nor do the parts' photos and files stay, unseen, taking room.
+  assert.ok(brought.length > 0);
+  assert.deepEqual(new Map(blobs), bytes);
   // And the backup still restores whole once there is room.
   await restoreBackup(await openBackup(file, 'backup-pass'), fromShelf);
   assert.ok(await unlock(await loadLockConfig(), 'real-1111'));
