@@ -2536,6 +2536,10 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   telefon. Geo: adresa, ili link OpenStreetMapa, Google Mapsa, Apple Mapsa ili Wazea, u SMS-u koji stigne prikazuje se
   kao mjesto, za otvaranje u aplikaciji za karte; kratak link ostaje link, jer bi se morao preuzeti da bi se znalo
   mjesto.
+- **Reakcije s iPhonea ili Google Messagesa:** kad neko bez Erevosa reaguje na vaš SMS, njegov telefon to šalje kao
+  riječi, Liked “Vidimo se u 8” ili Reacted 😂 to “Vidimo se u 8”: razgovor to pokazuje kao 👍 ili 😂 ispod poruke koju
+  navodi, posljednje s tim riječima, a ne kao zasebnu poruku; povučena (Removed a like from …) nestaje. Za sada se
+  čitaju samo one napisane na engleskom; ona čija poruka nije nađena ostaje kako je stigla.
 - **Prikvačene za vas:** zadržite prst na poruci i izaberite **Prikvači samo za mene** da je prikvačite iznad razgovora.
   SMS nemaju prikvačenih poruka: čuva se samo na ovom telefonu, šifrirana SMS podacima prostora, i druga osoba nikad ne
   sazna.

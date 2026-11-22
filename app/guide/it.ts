@@ -2655,6 +2655,11 @@ nulla.
   telefono apre. Un indirizzo geo:, o un link di OpenStreetMap, Google Maps, Apple Maps o Waze, in un SMS che arriva si
   vede come un luogo, da aprire nell’app delle mappe; un link breve resta un link, perché andrebbe scaricato per
   conoscere il luogo.
+- **Reazioni da un iPhone o da Google Messages:** quando qualcuno senza Erevos reagisce a un tuo SMS, il suo
+  telefono la invia come parole, Liked “Ci vediamo alle 8” o Reacted 😂 to “Ci vediamo alle 8”: la conversazione la
+  mostra come 👍 o 😂 sotto il messaggio nominato, l’ultimo con quelle parole, e non come un messaggio a parte; una
+  ritirata (Removed a like from …) scompare. Per ora si leggono solo quelle scritte in inglese; una il cui messaggio
+  non si trova resta com’è arrivata.
 - **Fissati per te:** tieni premuto un messaggio e scegli **Fissa solo per me** per fissarlo sopra la conversazione. Gli
   SMS non hanno messaggi fissati: resta solo su questo telefono, crittografato con i dati SMS dello spazio, e l’altra
   persona non lo sa mai.

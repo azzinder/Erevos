@@ -2437,6 +2437,11 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   which any phone opens. A geo: address, or a link of OpenStreetMap, Google Maps, Apple Maps or Waze, in an SMS that
   comes shows as a place, to open in the maps app; a short link stays a link, as it would have to be fetched to tell the
   place.
+- **Reactions from an iPhone or Google Messages:** when someone without Erevos reacts to an SMS of yours, their
+  phone sends it as words, Liked “See you at 8” or Reacted 😂 to “See you at 8”: the conversation shows it as 👍 or 😂
+  under the message it names, the latest with those words, and not as a message of its own; one taken back (Removed
+  a like from …) goes. Only those written in English are read so far; one whose message is not found stays as it
+  came.
 - **Pinned for you:** hold a message and choose **Pin for me** to pin it over the conversation. SMS have no pins: it is
   kept only on this phone, encrypted with the space's SMS data, and the other person never knows.
 - **Several messages:** hold a message and choose **Select**, then tap others: **Copy** puts them in one text,

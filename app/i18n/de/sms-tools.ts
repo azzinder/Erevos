@@ -197,4 +197,5 @@ export const smsTools: Record<string, string> = {
   "Play the video": "Video abspielen",
   "This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.": "Dieses Video ist zu groß für eine MMS ({size} KB, höchstens {most} KB). Nimm eines mit Video aufnehmen auf, das die Kamera um MMS-Qualität bittet.",
   "Erevos may not use the camera. Allow it in the phone settings to record videos.": "Erevos darf die Kamera nicht nutzen. Erlaube es in den Telefoneinstellungen, um Videos aufzunehmen.",
+  "Reactions: {marks}": "Reaktionen: {marks}",
 };

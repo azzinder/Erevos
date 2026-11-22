@@ -2813,6 +2813,11 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   den jedes Telefon öffnet. Eine geo:-Adresse oder ein Link von OpenStreetMap, Google Maps, Apple Maps oder Waze in
   einer SMS, die ankommt, erscheint als Ort, zum Öffnen in der Karten-App; ein Kurzlink bleibt ein Link, da er geholt
   werden müsste, um den Ort zu kennen.
+- **Reaktionen von einem iPhone oder Google Messages:** reagiert jemand ohne Erevos auf eine SMS von dir, schickt
+  sein Telefon das als Worte, Liked “Bis um 8” oder Reacted 😂 to “Bis um 8”: Die Unterhaltung zeigt es als 👍 oder 😂
+  unter der genannten Nachricht, der letzten mit diesen Worten, und nicht als eigene Nachricht; eine zurückgenommene
+  (Removed a like from …) verschwindet. Bisher werden nur englisch geschriebene gelesen; eine, deren Nachricht nicht
+  gefunden wird, bleibt, wie sie kam.
 - **Für dich angeheftet:** Halte eine Nachricht gedrückt und wähle **Für mich anheften**, um sie über der Unterhaltung
   anzuheften. SMS haben keine Anheftungen: Sie wird nur auf diesem Telefon gespeichert, verschlüsselt mit den SMS-Daten
   des Bereichs, und die andere Person erfährt nie davon.

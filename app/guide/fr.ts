@@ -2789,6 +2789,11 @@ téléphone sans Erevos n’affiche rien.
   n’importe quel téléphone ouvre. Une adresse geo:, ou un lien d’OpenStreetMap, de Google Maps, d’Apple Maps ou de Waze,
   dans un SMS qui arrive s’affiche comme un lieu, à ouvrir dans l’appli de cartes ; un lien court reste un lien, car il
   faudrait le récupérer pour connaître le lieu.
+- **Réactions d’un iPhone ou de Google Messages :** quand quelqu’un sans Erevos réagit à un de tes SMS, son
+  téléphone l’envoie en mots, Liked “À 8 h” ou Reacted 😂 to “À 8 h” : la conversation la montre en 👍 ou 😂 sous le
+  message nommé, le dernier avec ces mots, et non comme un message à part ; une retirée (Removed a like from …)
+  disparaît. Pour l’instant, seules celles écrites en anglais sont lues ; une dont le message n’est pas trouvé reste
+  comme elle est arrivée.
 - **Épinglés pour toi :** maintiens un message et choisis **Épingler pour moi** pour l’épingler au-dessus de la
   conversation. Les SMS n’ont pas d’épingles : il n’est gardé que sur ce téléphone, chiffré avec les données SMS de
   l’espace, et l’autre personne ne le sait jamais.

@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+- SMS: a reaction an iPhone or Google Messages sends by SMS in English (Liked “…”, Reacted 😂 to “…”, Removed a like from “…”) shows as its mark under the message it names instead of a message of its own (lib/sms-reactions.ts); one whose message is not found stays. Not yet tried on a phone.
 - SMS: videos by MMS: **+** → **Record a video** asks the camera app for MMS quality (EXTRA_VIDEO_QUALITY 0, 30 seconds), **Video from the phone** takes one already under the MMS size; one that comes shows ▶ and plays in the phone's video app (MmsStore keeps video/* parts). Not yet tried on a phone.
 - SMS: **What an SMS says, on its notice**, off by default, shows who wrote and what on an SMS's notice while the space is open, with Reply (a plain SMS on the SIM it came on, Erevos locked too) and Mark as read (NoticeReply.kt); told to the phone in memory only, and never for one with a one-time code. Not yet tried on a phone.
 - SMS: a longer SMS shows over the field how many letters it has and how many SMS it goes as (GSM alphabet 160/153, UCS-2 70/67, counted as the phone company does), and **Without accents (cheaper)** under SMS settings, off by default, sends a plain SMS without accents and Greek in capitals when that keeps it in the GSM alphabet (lib/sms-count.ts). Not yet tried on a phone.

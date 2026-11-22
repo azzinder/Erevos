@@ -2625,6 +2625,10 @@ mostra nada.
   OpenStreetMap, que qualquer celular abre. Um endereço geo:, ou um link do OpenStreetMap, Google Maps, Apple Maps ou
   Waze, num SMS que chega aparece como um lugar, para abrir no app de mapas; um link curto continua sendo um link,
   porque teria de ser buscado para saber o lugar.
+- **Reações de um iPhone ou do Google Messages:** quando alguém sem Erevos reage a um SMS seu, o celular dele a
+  envia como palavras, Liked “Até às 8” ou Reacted 😂 to “Até às 8”: a conversa a mostra como 👍 ou 😂 sob a mensagem
+  citada, a mais recente com essas palavras, e não como uma mensagem à parte; uma retirada (Removed a like from …)
+  some. Por enquanto só são lidas as escritas em inglês; uma cuja mensagem não é encontrada fica como chegou.
 - **Fixadas para você:** toque e segure uma mensagem e escolha **Fixar só para mim** para fixá-la acima da conversa. SMS
   não têm fixadas: ela fica só neste celular, criptografada com os dados de SMS do espaço, e a outra pessoa nunca fica
   sabendo.

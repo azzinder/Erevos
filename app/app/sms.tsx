@@ -69,6 +69,7 @@ import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData, type SmsPin } from '../lock/sms-data';
 import { smsCount, withoutAccents } from '../lib/sms-count';
+import { withReactions } from '../lib/sms-reactions';
 import { MMS_VIDEO_SECONDS, pickMmsVideo, recordMmsVideo } from '../lib/pick-mms-video';
 import { spaceStarPlace } from '../lock/stars-data';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
@@ -514,7 +515,8 @@ function Sms({ tools }: { tools: ReactNode }) {
 
   const trashed = order ? trashOf(to, order) : null;
   const hidden = new Set(going.filter((g) => sameConversation(g.item.to, to)).map((g) => g.item.id));
-  const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)) && !timedOut.includes(m));
+  // A reaction an iPhone or Google Messages sent as words shows as its mark on the message it names (lib/sms-reactions.ts).
+  const { lines: shown, marks: reactions } = withReactions(shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)) && !timedOut.includes(m)));
   spot.current = () => (left.current && shown.some((m) => smsLineId(m) === left.current) ? (placed.current.get(left.current) ?? null) : undefined);
   // The one-time code of each SMS that came with one, found once for the conversation as read.
   const codes = useMemo(() => new Map(messages.filter((m) => !m.mine && m.text).map((m) => [smsLineId(m), oneTimeCode(m.text)] as const)), [messages]);
@@ -987,6 +989,9 @@ function Sms({ tools }: { tools: ReactNode }) {
                     </Text>
                   ) : null}
                   <SmsExtras m={m} />
+                  {reactions.get(id)?.length ? (
+                    <Text accessibilityLabel={t('Reactions: {marks}', { marks: reactions.get(id)!.join(' ') })}>{reactions.get(id)!.join(' ')}</Text>
+                  ) : null}
                   <Text variant="caption" tone="faint">
                     {new Date(m.at).toLocaleString(locale())}
                     {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}

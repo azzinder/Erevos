@@ -455,3 +455,27 @@ test('a video of an MMS is a video, in the list and among its parts', async () =
   const video = { uri: 'content://mms/part/9', type: 'video/mp4' };
   assert.deepEqual(partsOf({ pictures: [], voices: [], cards: [], videos: [video] }), [video]);
 });
+
+test("an iPhone's or Google Messages' reaction by SMS shows as a mark on the message it names", async () => {
+  const { reactionOf, withReactions } = await import('../lib/sms-reactions');
+  assert.deepEqual(reactionOf('Liked “See you at 8”'), { emoji: '👍', quoted: 'See you at 8', removed: false, picture: false });
+  assert.deepEqual(reactionOf('Reacted 😂 to "See you at 8"'), { emoji: '😂', quoted: 'See you at 8', removed: false, picture: false });
+  assert.equal(reactionOf('Removed a heart from “See you at 8”')?.removed, true);
+  assert.equal(reactionOf('Loved an image')?.picture, true);
+  assert.equal(reactionOf('I liked “the film”'), null);
+  assert.equal(reactionOf('Reacted badly to “that”'), null);
+  const at = (n: number) => 1_700_000_000_000 + n * 1000;
+  const sms = (id: number, text: string, mine: boolean) => ({ id, kind: 'sms' as const, text, at: at(id), mine, state: 'done', read: true, sim: -1 });
+  const messages = [
+    sms(1, 'Έρχομαι σε 10\'', true),
+    sms(2, 'Liked “Έρχομαι σε 10\'”', false),
+    sms(3, 'A long one that an iPhone cuts when it quotes it in a reaction, as it does', true),
+    sms(4, 'Loved “A long one that an iPhone cuts…”', false),
+    sms(5, 'Laughed at “nothing said here”', false),
+    sms(6, 'Removed a like from “Έρχομαι σε 10\'”', false),
+  ];
+  const { lines, marks } = withReactions(messages as never);
+  assert.deepEqual(lines.map((m) => m.id), [1, 3, 5]);
+  assert.deepEqual(marks.get('sms:1'), []);
+  assert.deepEqual(marks.get('sms:3'), ['❤️']);
+});
