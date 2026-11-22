@@ -2566,6 +2566,11 @@ conversas do Erevos numa lista só.
   Android 12 e posteriores, o botão do aviso pede para desbloquear o celular antes. Só os 4 a 8 dígitos dele são
   copiados, nunca um número de telefone, um valor, uma data ou uma hora, e o Android não mostra prévia deles. Qualquer
   app que leia a área de transferência pode lê-los, então cole o código logo.
+- **Responder pelo aviso:** **Configurações** → **Telefone e SMS** → **SMS** → **O que um SMS diz, no seu aviso**,
+  desligado no início, mostra no aviso de um SMS quem escreveu e o quê enquanto este espaço está aberto, com
+  **Responder**, que envia um SMS simples pelo SIM em que chegou, e **Marcar como lida**. Quem vê a tela vê;
+  bloqueado, ou com outro espaço aberto, o aviso volta a dizer só “Nova mensagem”, e um com código de uso único
+  sempre.
 - **Se nenhum SMS aparecer:** o Android 15 e posteriores bloqueiam a permissão de SMS para um app instalado pelo
   navegador. Em **Configurações** → **Telefone e SMS** → **SMS** → **O Erevos como app de SMS**, toque em **Permitir
   SMS**. Se o Android chamar isso de configuração restrita, abra as **informações do app Erevos**, toque em **⋮** no

@@ -110,6 +110,8 @@ class ErevosSmsModule : Module() {
     Function("setSpamFilter") { on: Boolean -> SmsStore.setSpamFilter(context(), on) }
     // The open space's conversations muted (numbers, until when) and with a sound of their own (lib/sms-notices.ts).
     Function("setOwnNotices") { numbers: List<String>, ends: List<Double>, sounds: List<String> -> SmsStore.setOwnNotices(numbers, ends, sounds) }
+    // Whether the open space shows who wrote and what on an SMS's notice, with Reply (lib/sms-notices.ts).
+    Function("setNoticeDetails") { on: Boolean -> SmsStore.setNoticeDetails(on) }
     AsyncFunction("send") { address: String, text: String, sim: Int -> SmsStore.send(context(), address, text, sim).toDouble() }
     AsyncFunction("sendMms") { address: String, text: String, data: ByteArray, type: String, sim: Int ->
       MmsStore.send(context(), address, text, if (data.isEmpty()) null else data, type, sim).toDouble()

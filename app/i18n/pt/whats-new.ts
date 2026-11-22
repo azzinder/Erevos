@@ -4,6 +4,8 @@
 
 // The Portuguese of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/pt/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Answer an SMS from its notice**: **What an SMS says, on its notice**, under the SMS settings, off at first, shows who wrote and what on the notice while the space is open, with **Reply** and **Mark as read**. Locked, it says \"New message\" again. See [SMS](#sms).":
+    "**Responder a um SMS pelo aviso**: **O que um SMS diz, no seu aviso**, nos ajustes de SMS, desligado no início, mostra no aviso quem escreveu e o quê enquanto o espaço está aberto, com **Responder** e **Marcar como lida**. Bloqueado, volta a dizer “Nova mensagem”. Veja [SMS](#sms).",
   "**What an SMS costs**: as you write a longer SMS, a line over the field says how many SMS it goes as, 70 letters each with Greek small letters, accents or an emoji, 160 without. **Without accents (cheaper)**, under the SMS settings, sends it without accents and Greek in capitals, as the old phones wrote it. See [SMS](#sms).":
     "**Quanto custa um SMS**: ao escrever um SMS mais longo, uma linha acima do campo diz em quantos SMS ele vai, 70 caracteres cada com minúsculas gregas, acentos ou um emoji, 160 sem. **Sem acentos (mais barato)**, nos ajustes de SMS, o envia sem acentos e o grego em maiúsculas, como os celulares antigos. Veja [SMS](#sms).",
   "**Who an unknown number is, without asking anyone**: the call screen of a number that is none of your contacts says its country, place and whether it is a mobile, from the number alone, and warns of spam from a list you download whole under **Phone** → **Settings** → **Spam list**, or numbers you reported in **Recents**. See [Phone](#phone).":

@@ -410,4 +410,8 @@ export const settings: Record<string, string> = {
     'Os SMS passam pelo seu celular, e não chegam mais a este dispositivo.',
   'Your SMS on your computer, answered through this phone': 'Os seus SMS no computador, respondidos por este celular',
   'A photo, on the phone': 'Uma foto, no celular',
+  "What an SMS says, on its notice": "O que um SMS diz, no seu aviso",
+  "A notice says only \"New message\" at first. With this on, while this space is open, it shows who wrote and what, with Reply and Mark as read: anyone who sees the phone's screen sees them too. Locked, it says \"New message\" again. Never with a one-time code.": "Um aviso diz no início só “Nova mensagem”. Com isto ligado, enquanto este espaço está aberto, ele mostra quem escreveu e o quê, com Responder e Marcar como lida: quem vê a tela do celular também vê. Bloqueado, volta a dizer “Nova mensagem”. Nunca com um código de uso único.",
+  "Show who and what on notices": "Mostrar quem e o quê nos avisos",
+  "Notices without who and what": "Avisos sem quem nem o quê",
 };

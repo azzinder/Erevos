@@ -124,6 +124,8 @@ export type SmsData = {
   undo: number;
   /** SMS go without accents, Greek in capitals, when that keeps them in the GSM alphabet (lib/sms-count.ts). Off unless turned on. */
   plain: boolean;
+  /** An SMS's notice shows who wrote and what, with Reply and Mark as read, while this space is open (lib/sms-notices.ts). Off unless turned on. */
+  notices: boolean;
   /** Messages to every Erevos contact with a number go by SMS, encrypted, when nothing else takes them. Off unless turned on. */
   smsWay: boolean;
   /** The contacts (identity, hex) whose messages go so, whatever `smsWay` says. */
@@ -166,6 +168,7 @@ export const EMPTY_SMS: SmsData = {
   marks: [],
   undo: 5,
   plain: false,
+  notices: false,
   smsWay: false,
   smsWayFor: [],
   devices: false,
@@ -275,6 +278,7 @@ function checked(value: unknown): SmsData {
     marks: list(v.marks, (m) => (isNumber(m.number) && typeof m.spam === 'boolean' && isTime(m.at) ? { number: m.number, spam: m.spam, at: m.at } : null), MAX_MARKS),
     undo: UNDO_SECONDS.includes(v.undo as number) ? (v.undo as number) : EMPTY_SMS.undo,
     plain: v.plain === true,
+    notices: v.notices === true,
     smsWay: v.smsWay === true,
     smsWayFor: [...new Set((Array.isArray(v.smsWayFor) ? v.smsWayFor : []).filter((id): id is string => isText(id) && /^[0-9a-f]{2,128}$/.test(id)))].slice(-MAX_SMS_WAY),
     devices: v.devices === true,

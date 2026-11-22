@@ -415,7 +415,7 @@ internal object SmsStore {
     } catch (e: Exception) {
       false
     }
-    came(context, mapOf("address" to address), OneTimeCode.find(text), spam)
+    came(context, mapOf("address" to address), OneTimeCode.find(text), spam, text, sim)
   }
 
   // Spam's filter on or off, as the space opened last on this phone says (lib/sms-link.ts): the
@@ -469,6 +469,15 @@ internal object SmsStore {
   // chat, while Erevos shows and is open (lib/background.ts showSmsOnScreen); else none.
   @Volatile private var shown: List<String> = emptyList()
 
+  // Whether the open space shows on an SMS's notice who wrote and what, with Reply and Mark as read
+  // (lib/sms-notices.ts, NoticeReply.kt). In memory only, told while the space is open: locked, or
+  // with Erevos stopped, every notice says only "New message" again.
+  @Volatile private var details = false
+
+  fun setNoticeDetails(on: Boolean) {
+    details = on
+  }
+
   fun showOnScreen(numbers: List<String>) {
     shown = numbers
   }
@@ -503,11 +512,11 @@ internal object SmsStore {
    *  built-in rule (`spam`, BuiltInSpam.kt) gets neither: the app is told so, and plays nothing.
    *  From a number muted in the open space, no notice either; from one with a sound of its own, a
    *  notice without sound (setOwnNotices). */
-  fun came(context: Context, body: Map<String, Any?>, code: String? = null, spam: Boolean = false) {
+  fun came(context: Context, body: Map<String, Any?>, code: String? = null, spam: Boolean = false, text: String? = null, sim: Int = -1) {
     val address = body["address"] as? String
     val here = address != null && onScreen() && shown.any { PhoneNumberUtils.compare(context, it, address) }
     listener?.invoke("onSms", body + ("shown" to here) + (if (spam) mapOf("spam" to true) else emptyMap()))
-    if (!here && !spam && !mutedNow(context, address)) notifyNew(context, code, soundOfItsOwn(context, address))
+    if (!here && !spam && !mutedNow(context, address)) notifyNew(context, code, soundOfItsOwn(context, address), address?.takeIf { text != null }, text, sim)
     Widget.refresh(context)
   }
 
@@ -517,11 +526,13 @@ internal object SmsStore {
     return state.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
   }
 
-  /** A notice that something came, without who sent it or what it says. With a one-time code
+  /** A notice that something came, without who sent it or what it says; with both, and Reply and
+   *  Mark as read, for an SMS from `address` saying `text` while the open space shows them
+   *  (setNoticeDetails), never a code's words. With a one-time code
    *  (`code`), it has Copy code, which works only on an unlocked phone (Android 12 and later ask to
    *  unlock first); the code itself never shows on it. `quiet`: for a conversation with a sound of
    *  its own, or none, which the app plays: the notice makes none. */
-  fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false) {
+  fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false, address: String? = null, text: String? = null, sim: Int = -1) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     if (Build.VERSION.SDK_INT >= 26) {
@@ -547,6 +558,15 @@ internal object SmsStore {
       .setContentTitle(Words.say(context, "New message", "Νέο μήνυμα"))
       .setContentIntent(open)
       .setAutoCancel(true)
+    if (details && address != null && text != null && code == null) {
+      val name = try {
+        contactNames(context, listOf(address))[address]
+      } catch (_: Exception) {
+        null
+      }
+      builder.setContentTitle(name?.takeIf { it.isNotBlank() } ?: address).setContentText(text.take(500)).setStyle(Notification.BigTextStyle().bigText(text.take(500)))
+      for (action in NoticeReply.actions(context, address, sim)) builder.addAction(action)
+    }
     if (code != null) {
       val copy = Intent(context, CopyCodeReceiver::class.java).putExtra(CopyCodeReceiver.EXTRA_CODE, code)
       val copying = PendingIntent.getBroadcast(context, NEW_ID, copy, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)

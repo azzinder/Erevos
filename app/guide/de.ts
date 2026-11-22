@@ -2755,6 +2755,11 @@ Liste.
   entsperren. Nur seine 4 bis 8 Ziffern werden kopiert, nie eine Telefonnummer, ein Betrag, ein Datum oder eine
   Uhrzeit, und Android zeigt keine Vorschau davon. Jede App, die die Zwischenablage liest, kann sie lesen, also füge den
   Code bald ein.
+- **Aus der Mitteilung antworten:** **Einstellungen** → **Telefon und SMS** → **SMS** → **Was eine SMS sagt, in
+  ihrer Mitteilung**, zuerst aus, zeigt in der Mitteilung einer SMS, wer was geschrieben hat, solange dieser Bereich
+  offen ist, mit **Antworten**, das eine einfache SMS über die SIM sendet, auf der sie kam, und **Als gelesen
+  markieren**. Wer den Bildschirm sieht, sieht es; gesperrt oder mit einem anderen offenen Bereich sagt die
+  Mitteilung wieder nur „Neue Nachricht“, und eine mit Einmalcode immer.
 - **Wenn keine SMS erscheinen:** Android 15 und neuer halten die SMS-Berechtigung bei einer aus einem Browser
   installierten App zurück. Tippe unter **Einstellungen** → **Telefon und SMS** → **SMS** → **Erevos als SMS-App** auf
   **SMS erlauben**. Wenn Android es eine eingeschränkte Einstellung nennt, öffne die **App-Info von Erevos**, tippe

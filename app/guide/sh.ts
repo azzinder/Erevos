@@ -2480,6 +2480,11 @@ na jednom popisu.
   novijem dugme na obavijesti prvo traži da otključate telefon. Kopira se samo njegovih 4 do 8 cifara, nikad broj
   telefona, iznos, datum ili vrijeme, a Android ih ne prikazuje u pregledu. Svaka aplikacija koja čita međuspremnik
   može ih pročitati, pa kôd zalijepite što prije.
+- **Odgovor iz obavještenja:** **Postavke** → **Telefon i SMS** → **SMS** → **Šta SMS kaže, u svom obavještenju**, u
+  početku isključeno, pokazuje u obavještenju SMS-a ko je pisao i šta dok je ovaj prostor otvoren, s **Odgovori**,
+  koje šalje običan SMS preko SIM-a na koji je stigao, i **Označi kao pročitano**. Ko vidi ekran vidi i to;
+  zaključano, ili s drugim otvorenim prostorom, obavještenje opet kaže samo „Nova poruka“, a ono s jednokratnim
+  kodom uvijek.
 - **Ako se ne prikazuju SMS poruke:** Android 15 i noviji uskraćuje dozvolu za SMS aplikaciji instaliranoj iz
   preglednika. Pod **Postavke** → **Telefon i SMS** → **SMS** → **Erevos kao SMS aplikacija** dodirnite **Dozvoli
   SMS**. Ako Android kaže da je to ograničena postavka, otvorite **informacije o aplikaciji Erevos**, dodirnite **⋮**

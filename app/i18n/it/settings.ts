@@ -411,4 +411,8 @@ export const settings: Record<string, string> = {
   'Your SMS on your computer, answered through this phone':
     'I tuoi SMS sul computer, con risposta tramite questo telefono',
   'A photo, on the phone': 'Una foto, sul telefono',
+  "What an SMS says, on its notice": "Cosa dice un SMS, nella sua notifica",
+  "A notice says only \"New message\" at first. With this on, while this space is open, it shows who wrote and what, with Reply and Mark as read: anyone who sees the phone's screen sees them too. Locked, it says \"New message\" again. Never with a one-time code.": "Una notifica dice all’inizio solo «Nuovo messaggio». Con questo attivo, finché questo spazio è aperto, mostra chi ha scritto e cosa, con Rispondi e Segna come letto: chi vede lo schermo del telefono li vede anche lui. Bloccato, dice di nuovo «Nuovo messaggio». Mai con un codice monouso.",
+  "Show who and what on notices": "Mostra chi e cosa nelle notifiche",
+  "Notices without who and what": "Notifiche senza chi né cosa",
 };

@@ -102,6 +102,8 @@ export default function SmsSettings() {
   const [undo, setUndo] = useState(5);
   // SMS without accents, Greek in capitals, to cost fewer (lib/sms-count.ts).
   const [plain, setPlain] = useState(false);
+  // Who wrote and what on an SMS's notice, with Reply and Mark as read (lib/sms-notices.ts).
+  const [notices, setNotices] = useState(false);
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -116,6 +118,7 @@ export default function SmsSettings() {
         setHome(opened.state.home);
         setUndo(opened.undo);
         setPlain(opened.plain);
+        setNotices(opened.notices);
       })
       .catch(() => setNote(t('The SMS settings of this space could not open.')));
     const look = () => {
@@ -286,6 +289,12 @@ export default function SmsSettings() {
     setUndo(link.undo);
   }
 
+  async function toggleNotices() {
+    if (!link) return;
+    await link.setNotices(!notices);
+    setNotices(link.notices);
+  }
+
   async function togglePlain() {
     if (!link) return;
     await link.setPlain(!plain);
@@ -408,6 +417,13 @@ export default function SmsSettings() {
             <Text variant="caption" tone="faint">
               {t('With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.')}
             </Text>
+          </Card>
+          <Card>
+            <Text variant="bodyStrong">{t('What an SMS says, on its notice')}</Text>
+            <Text tone="muted">
+              {t('A notice says only "New message" at first. With this on, while this space is open, it shows who wrote and what, with Reply and Mark as read: anyone who sees the phone\'s screen sees them too. Locked, it says "New message" again. Never with a one-time code.')}
+            </Text>
+            <Button title={notices ? t('Notices without who and what') : t('Show who and what on notices')} kind="secondary" onPress={() => void toggleNotices()} />
           </Card>
         </>
       ) : null}

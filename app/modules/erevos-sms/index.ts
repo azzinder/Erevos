@@ -97,6 +97,7 @@ type NativeSms = {
   showOnScreen?(numbers: string[]): void;
   setSpamFilter?(on: boolean): void;
   setOwnNotices?(muted: string[], until: number[], sounds: string[]): void;
+  setNoticeDetails?(on: boolean): void;
   /** `sim` only in a build with MMS (an older one takes two arguments). */
   send(address: string, text: string, sim?: number): Promise<number>;
   sendMms?(address: string, text: string, data: Uint8Array, type: string, sim: number): Promise<number>;
@@ -402,4 +403,14 @@ export function onSmsEvent<Name extends keyof SmsEvents>(name: Name, listener: S
       subscription?.remove();
     },
   };
+}
+
+/** Tells the phone whether an SMS's notice shows who wrote and what, with Reply and Mark as read,
+ *  while the open space says so: in memory only (SmsStore.kt). */
+export function smsNoticeDetails(on: boolean): void {
+  try {
+    own()?.setNoticeDetails?.(on);
+  } catch {
+    // A build from before it: every notice says "New message".
+  }
 }

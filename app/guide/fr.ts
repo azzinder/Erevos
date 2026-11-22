@@ -2729,6 +2729,11 @@ Erevos dans une seule liste.
   le code s’y affiche ; sur Android 12 et plus récent, le bouton de la notification demande d’abord de déverrouiller le
   téléphone. Seuls ses 4 à 8 chiffres sont copiés, jamais un numéro de téléphone, un montant, une date ou une heure, et
   Android n’en montre aucun aperçu. Toute app qui lit le presse-papiers peut les lire, alors colle le code rapidement.
+- **Répondre depuis la notification :** **Réglages** → **Téléphone et SMS** → **SMS** → **Ce que dit un SMS, sur sa
+  notification**, désactivé au début, montre sur la notification d’un SMS qui a écrit et quoi tant que cet espace
+  est ouvert, avec **Répondre**, qui envoie un SMS simple par la SIM d’arrivée, et **Marquer comme lu**. Quiconque
+  voit l’écran le voit ; verrouillé, ou avec un autre espace ouvert, la notification redit seulement « Nouveau
+  message », et celle avec un code à usage unique toujours.
 - **Si aucun SMS ne s’affiche :** Android 15 et plus récent bloque l’autorisation SMS pour une app installée depuis un
   navigateur. Sous **Réglages** → **Téléphone et SMS** → **SMS** → **Erevos comme app SMS**, appuie sur **Autoriser les
   SMS**. Si Android parle d’un paramètre restreint, ouvre les **infos sur l’appli Erevos**, appuie sur **⋮** en haut à

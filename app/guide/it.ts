@@ -2596,6 +2596,11 @@ chat Erevos in un unico elenco.
   codice; su Android 12 e successivi il pulsante della notifica chiede prima di sbloccare il telefono. Vengono copiate
   solo le sue 4–8 cifre, mai un numero di telefono, un importo, una data o un’ora, e Android non ne mostra
   un’anteprima. Qualsiasi app che legge gli appunti può leggerle, quindi incolla presto il codice.
+- **Rispondere dalla notifica:** **Impostazioni** → **Telefono e SMS** → **SMS** → **Cosa dice un SMS, nella sua
+  notifica**, disattivato all’inizio, mostra nella notifica di un SMS chi ha scritto e cosa finché questo spazio è
+  aperto, con **Rispondi**, che invia un SMS semplice dalla SIM su cui è arrivato, e **Segna come letto**. Chi vede
+  lo schermo li vede; bloccato, o con un altro spazio aperto, la notifica dice di nuovo solo «Nuovo messaggio», e
+  una con codice monouso sempre.
 - **Se non appare nessun SMS:** Android 15 e successivi negano il permesso per gli SMS a un’app installata da un
   browser. In **Impostazioni** → **Telefono e SMS** → **SMS** → **Erevos come app per gli SMS**, tocca **Consenti
   SMS**. Se Android lo chiama un’impostazione con restrizioni, apri **Informazioni app** di Erevos, tocca **⋮** in

@@ -2384,6 +2384,10 @@ app**, tap **Make Erevos the SMS app**. The home screen then shows SMS and Erevo
   the notice's button asks to unlock the phone first. Only its 4 to 8 digits are copied, never a phone number, an
   amount, a date or a time, and Android shows no preview of them. Any app that reads the clipboard can read them, so
   paste the code soon.
+- **Answering from the notice:** **Settings** → **Phone and SMS** → **SMS** → **What an SMS says, on its notice**,
+  off at first, shows on an SMS's notice who wrote and what while this space is open, with **Reply**, which sends a
+  plain SMS on the SIM it came on, and **Mark as read**. Anyone who sees the screen sees them; locked, or with
+  another space open, the notice says only "New message" again, and one with a one-time code always does.
 - **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser. Under
   **Settings** → **Phone and SMS** → **SMS** → **Erevos as the SMS app**, tap **Allow SMS**. If Android calls it a
   restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**, and

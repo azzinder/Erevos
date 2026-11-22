@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Answer an SMS from its notice**: **What an SMS says, on its notice**, under the SMS settings, off at first, shows who wrote and what on the notice while the space is open, with **Reply** and **Mark as read**. Locked, it says \"New message\" again. See [SMS](#sms).":
+    "**Απάντηση σε SMS από την ειδοποίηση**: το **Τι λέει ένα SMS, στην ειδοποίησή του**, στις ρυθμίσεις SMS, κλειστό στην αρχή, δείχνει στην ειδοποίηση ποιος έγραψε και τι όσο ο χώρος είναι ανοιχτός, με **Απάντηση** και **Διαβάστηκε**. Κλειδωμένο, λέει πάλι «Νέο μήνυμα». Δες [SMS](#sms).",
   "**What an SMS costs**: as you write a longer SMS, a line over the field says how many SMS it goes as, 70 letters each with Greek small letters, accents or an emoji, 160 without. **Without accents (cheaper)**, under the SMS settings, sends it without accents and Greek in capitals, as the old phones wrote it. See [SMS](#sms).":
     "**Τι κοστίζει ένα SMS**: όταν γράφεις μεγαλύτερο SMS, μια γραμμή πάνω από το πεδίο λέει σε πόσα SMS θα φύγει, 70 χαρακτήρες το καθένα με ελληνικά πεζά, τόνους ή emoji, 160 χωρίς. Το **Χωρίς τόνους (φθηνότερα)**, στις ρυθμίσεις SMS, το στέλνει χωρίς τόνους και τα ελληνικά με κεφαλαία, όπως τα παλιά κινητά. Δες [SMS](#sms).",
   "**Who an unknown number is, without asking anyone**: the call screen of a number that is none of your contacts says its country, place and whether it is a mobile, from the number alone, and warns of spam from a list you download whole under **Phone** → **Settings** → **Spam list**, or numbers you reported in **Recents**. See [Phone](#phone).":

@@ -411,4 +411,8 @@ export const settings: Record<string, string> = {
   'Your SMS on your computer, answered through this phone':
     'Vaše SMS poruke na računaru, s odgovorom preko ovog telefona',
   'A photo, on the phone': 'Fotografija, na telefonu',
+  "What an SMS says, on its notice": "Šta SMS kaže, u svom obavještenju",
+  "A notice says only \"New message\" at first. With this on, while this space is open, it shows who wrote and what, with Reply and Mark as read: anyone who sees the phone's screen sees them too. Locked, it says \"New message\" again. Never with a one-time code.": "Obavještenje u početku kaže samo „Nova poruka“. Kad je ovo uključeno, dok je ovaj prostor otvoren, pokazuje ko je pisao i šta, s Odgovori i Označi kao pročitano: ko god vidi ekran telefona vidi i to. Zaključano, opet kaže „Nova poruka“. Nikad s jednokratnim kodom.",
+  "Show who and what on notices": "Prikaži ko i šta u obavještenjima",
+  "Notices without who and what": "Obavještenja bez ko i šta",
 };

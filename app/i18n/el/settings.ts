@@ -411,4 +411,8 @@ export const settings: Record<string, string> = {
   'Your SMS on your computer, answered through this phone':
     'Τα SMS σου στον υπολογιστή, με απάντηση μέσω αυτού του τηλεφώνου',
   'A photo, on the phone': 'Μια φωτογραφία, στο τηλέφωνο',
+  "What an SMS says, on its notice": "Τι λέει ένα SMS, στην ειδοποίησή του",
+  "A notice says only \"New message\" at first. With this on, while this space is open, it shows who wrote and what, with Reply and Mark as read: anyone who sees the phone's screen sees them too. Locked, it says \"New message\" again. Never with a one-time code.": "Μια ειδοποίηση λέει στην αρχή μόνο «Νέο μήνυμα». Με αυτό ανοιχτό, όσο αυτός ο χώρος είναι ανοιχτός, δείχνει ποιος έγραψε και τι, με «Απάντηση» και «Διαβάστηκε»: όποιος βλέπει την οθόνη του κινητού τα βλέπει κι αυτός. Κλειδωμένο, λέει πάλι «Νέο μήνυμα». Ποτέ με κωδικό μιας χρήσης.",
+  "Show who and what on notices": "Να φαίνεται ποιος και τι στις ειδοποιήσεις",
+  "Notices without who and what": "Ειδοποιήσεις χωρίς ποιος και τι",
 };
