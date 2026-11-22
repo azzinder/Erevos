@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { CameraView, useCameraPermissions, useMicrophonePermissions, type CameraType, type FlashMode } from 'expo-camera';
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { CameraView, useCameraPermissions, useMicrophonePermissions, type CameraType, type FlashMode, type VideoQuality } from 'expo-camera';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Modal, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { keepPicture, keepRecording } from '../lib/collection-camera';
@@ -23,6 +23,15 @@ import { Button, Text } from './ui';
 // soon as it is taken. It closes when Erevos goes to the background, and so with the space.
 
 type Mode = 'photo' | 'video';
+
+// What the owner chose last, kept while Erevos runs (never written anywhere): the video's quality,
+// a silent shutter, the grid and the timer.
+const chosen: { quality: VideoQuality; silent: boolean; grid: boolean; timer: 0 | 3 | 10 } = { quality: '1080p', silent: false, grid: false, timer: 0 };
+const QUALITIES: VideoQuality[] = ['720p', '1080p', '2160p'];
+const QUALITY_NAMES: Record<string, string> = { '720p': 'HD', '1080p': 'Full HD', '2160p': '4K' };
+
+/** The zoom after two fingers moved apart by `grown` points from where they began at `from` (0 to 1 of the camera's most). */
+export const pinchedZoom = (from: number, grown: number) => Math.min(1, Math.max(0, from + grown / 600));
 
 export function ErevosCamera({
   visible,
@@ -50,12 +59,57 @@ export function ErevosCamera({
   const [seconds, setSeconds] = useState(0);
   const [taken, setTaken] = useState(0);
   const [note, setNote] = useState('');
+  const [zoom, setZoom] = useState(0);
+  const [torch, setTorch] = useState(false);
+  const [quality, setQuality] = useState<VideoQuality>(chosen.quality);
+  const [silent, setSilent] = useState(chosen.silent);
+  const [grid, setGrid] = useState(chosen.grid);
+  const [timer, setTimer] = useState<0 | 3 | 10>(chosen.timer);
+  const [counting, setCounting] = useState(0);
+  const [more, setMore] = useState(false);
+  const countdown = useRef<ReturnType<typeof setInterval> | null>(null);
+  chosen.quality = quality;
+  chosen.silent = silent;
+  chosen.grid = grid;
+  chosen.timer = timer;
+
+  // Two fingers zoom: apart, in; together, out.
+  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
+  const zoomNow = useRef(zoom);
+  zoomNow.current = zoom;
+  const fingers = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: (event) => event.nativeEvent.touches.length >= 2,
+        onMoveShouldSetPanResponder: (event) => event.nativeEvent.touches.length >= 2,
+        onPanResponderMove: (event) => {
+          const touches = event.nativeEvent.touches;
+          if (touches.length < 2) {
+            pinch.current = null;
+            return;
+          }
+          const distance = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+          if (!pinch.current) pinch.current = { distance, zoom: zoomNow.current };
+          else setZoom(pinchedZoom(pinch.current.zoom, distance - pinch.current.distance));
+        },
+        onPanResponderRelease: () => {
+          pinch.current = null;
+        },
+        onPanResponderTerminate: () => {
+          pinch.current = null;
+        },
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!visible) return;
     setTaken(0);
     setNote('');
     setReady(false);
+    setZoom(0);
+    setTorch(false);
+    setMore(false);
     if (cameraAllowed && !cameraAllowed.granted && cameraAllowed.canAskAgain) void whilePicking(askCamera);
   }, [visible]);
 
@@ -65,6 +119,7 @@ export function ErevosCamera({
     if (!visible) return;
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active' && !isPicking()) {
+        stopCounting();
         camera.current?.stopRecording();
         onClose();
       }
@@ -79,12 +134,45 @@ export function ErevosCamera({
     return () => clearInterval(timer);
   }, [recording]);
 
+  function stopCounting() {
+    if (countdown.current) clearInterval(countdown.current);
+    countdown.current = null;
+    setCounting(0);
+  }
+
+  // The shutter: at once, or after the timer's seconds, counted down on the screen; a tap while
+  // it counts stops it.
+  function press() {
+    if (counting > 0) {
+      stopCounting();
+      return;
+    }
+    const go = () => void (mode === 'photo' ? shoot() : film());
+    if (timer === 0 || recording) {
+      go();
+      return;
+    }
+    let left = timer;
+    setCounting(left);
+    countdown.current = setInterval(() => {
+      left -= 1;
+      if (left > 0) {
+        setCounting(left);
+        return;
+      }
+      stopCounting();
+      go();
+    }, 1000);
+  }
+
+  useEffect(() => stopCounting, []);
+
   async function shoot() {
     if (!camera.current || !place || busy || !ready) return;
     setBusy(true);
     setNote('');
     try {
-      const picture = await camera.current.takePictureAsync({ pictureRef: true, exif: false });
+      const picture = await camera.current.takePictureAsync({ pictureRef: true, exif: false, shutterSound: !silent });
       const item = await keepPicture(place, folder, picture);
       setTaken((n) => n + 1);
       onAdded(item);
@@ -100,13 +188,13 @@ export function ErevosCamera({
       camera.current.stopRecording();
       return;
     }
+    setNote('');
     if (!micAllowed?.granted) {
       const asked = await whilePicking(askMic);
       if (!asked.granted) {
         setNote(t('Erevos may not use the microphone, so the video has no sound. Allow it in the phone settings for sound.'));
       }
     }
-    setNote('');
     setRecording(true);
     let uri: string | undefined;
     try {
@@ -149,6 +237,9 @@ export function ErevosCamera({
             flash={flash}
             mode={mode === 'photo' ? 'picture' : 'video'}
             mute={micAllowed?.granted !== true}
+            zoom={zoom}
+            enableTorch={mode === 'video' && torch}
+            videoQuality={quality}
             onCameraReady={() => setReady(true)}
             onMountError={(event) => setNote(event.message)}
           />
@@ -161,6 +252,28 @@ export function ErevosCamera({
           </View>
         )}
 
+        {allowed ? (
+          <View style={StyleSheet.absoluteFill} {...fingers.panHandlers}>
+            {grid ? (
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                {[1, 2].map((i) => (
+                  <View key={`v${i}`} style={[styles.gridLine, { left: `${(i * 100) / 3}%`, top: 0, bottom: 0, width: StyleSheet.hairlineWidth }]} />
+                ))}
+                {[1, 2].map((i) => (
+                  <View key={`h${i}`} style={[styles.gridLine, { top: `${(i * 100) / 3}%`, left: 0, right: 0, height: StyleSheet.hairlineWidth }]} />
+                ))}
+              </View>
+            ) : null}
+            {counting > 0 ? (
+              <View pointerEvents="none" style={styles.center}>
+                <Text color="#FFFFFF" style={styles.count}>
+                  {counting}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
           <Pressable onPress={onClose} disabled={recording} accessibilityRole="button" accessibilityLabel={t('Close')} style={styles.pill}>
             <Text color="#FFFFFF">{t('Close')}</Text>
@@ -172,9 +285,36 @@ export function ErevosCamera({
             <Pressable onPress={() => setFlash((f) => (f === 'off' ? 'on' : f === 'on' ? 'auto' : 'off'))} accessibilityRole="button" style={styles.pill}>
               <Text color="#FFFFFF">{flash === 'off' ? t('Flash off') : flash === 'on' ? t('Flash on') : t('Flash auto')}</Text>
             </Pressable>
+          ) : mode === 'video' && facing === 'back' ? (
+            <Pressable onPress={() => setTorch((on) => !on)} accessibilityRole="button" style={styles.pill}>
+              <Text color="#FFFFFF">{torch ? t('Light on') : t('Light off')}</Text>
+            </Pressable>
           ) : (
             <View style={styles.pillRoom} />
           )}
+        </View>
+        <View style={[styles.tools, { top: insets.top + space.sm + 44 }]}>
+          <Pressable onPress={() => setMore((m) => !m)} disabled={recording} accessibilityRole="button" style={styles.pill}>
+            <Text color="#FFFFFF">{more ? t('Fewer') : t('More')}</Text>
+          </Pressable>
+          {more ? (
+            <>
+              <Pressable onPress={() => setTimer((s) => (s === 0 ? 3 : s === 3 ? 10 : 0))} accessibilityRole="button" style={styles.pill}>
+                <Text color="#FFFFFF">{timer === 0 ? t('Timer off') : t('Timer {n} s', { n: timer })}</Text>
+              </Pressable>
+              <Pressable onPress={() => setGrid((on) => !on)} accessibilityRole="button" style={styles.pill}>
+                <Text color="#FFFFFF">{grid ? t('Grid on') : t('Grid off')}</Text>
+              </Pressable>
+              <Pressable onPress={() => setSilent((on) => !on)} accessibilityRole="button" style={styles.pill}>
+                <Text color="#FFFFFF">{silent ? t('Shutter silent') : t('Shutter sound')}</Text>
+              </Pressable>
+              {mode === 'video' ? (
+                <Pressable onPress={() => setQuality((q) => QUALITIES[(QUALITIES.indexOf(q) + 1) % QUALITIES.length])} accessibilityRole="button" style={styles.pill}>
+                  <Text color="#FFFFFF">{QUALITY_NAMES[quality] ?? quality}</Text>
+                </Pressable>
+              ) : null}
+            </>
+          ) : null}
         </View>
 
         <View style={[styles.bottom, { paddingBottom: insets.bottom + space.lg }]}>
@@ -193,9 +333,13 @@ export function ErevosCamera({
             ))}
           </View>
           <View style={styles.controls}>
-            <View style={styles.side} />
+            <Pressable onPress={() => setZoom(0)} disabled={zoom === 0} accessibilityRole="button" accessibilityLabel={t('No zoom')} style={styles.side}>
+              <Text color="#FFFFFF" variant="bodyStrong">
+                {zoom === 0 ? '1×' : `+${Math.round(zoom * 100)}%`}
+              </Text>
+            </Pressable>
             <Pressable
-              onPress={() => void (mode === 'photo' ? shoot() : film())}
+              onPress={press}
               disabled={!allowed || !ready || (busy && !recording)}
               accessibilityRole="button"
               accessibilityLabel={mode === 'photo' ? t('Take a photo') : recording ? t('Stop') : t('Record a video')}
@@ -234,4 +378,7 @@ const styles = StyleSheet.create({
   shutterInside: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF' },
   shutterVideo: { backgroundColor: '#E53935' },
   shutterStop: { width: 28, height: 28, borderRadius: 6 },
+  tools: { position: 'absolute', right: space.md, alignItems: 'flex-end', gap: space.sm },
+  gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.6)' },
+  count: { fontSize: 96, lineHeight: 110, fontWeight: '700' },
 });
