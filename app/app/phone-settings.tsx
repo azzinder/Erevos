@@ -690,6 +690,9 @@ function SpamList({ screens }: { screens: boolean }) {
         </>
       ) : null}
       {note ? <Text tone="muted">{note}</Text> : null}
+      <Text variant="caption" tone="faint">
+        {t('The list, its address, these switches and the numbers you reported stay on this phone outside your spaces, not encrypted, so that a call is checked with Erevos locked too.')}
+      </Text>
     </Card>
   );
 }

@@ -220,4 +220,5 @@ export const phone: Record<string, string> = {
   "Download it again each week": "La télécharger à nouveau chaque semaine",
   "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Avec Erevos déverrouillé, la liste revient de la même adresse quand elle a une semaine, par Tor quand la voie Tor de l’espace est activée.",
   "Tor is off, so the list does not come again: it was switched on with Tor. Switch it off and on again to let it come without Tor.": "Tor est désactivé, donc la liste ne revient pas : elle a été activée avec Tor. Désactive-la puis réactive-la pour qu’elle vienne sans Tor.",
+  "The list, its address, these switches and the numbers you reported stay on this phone outside your spaces, not encrypted, so that a call is checked with Erevos locked too.": "La liste, son adresse, ces boutons et les numéros que tu as signalés restent sur ce téléphone hors de tes espaces, non chiffrés, pour qu’un appel soit vérifié même avec Erevos verrouillé.",
 };

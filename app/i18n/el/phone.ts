@@ -220,4 +220,5 @@ export const phone: Record<string, string> = {
   "Download it again each week": "Νέα λήψη κάθε εβδομάδα",
   "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Με το Erevos ξεκλείδωτο, η λίστα κατεβαίνει ξανά από την ίδια διεύθυνση όταν γίνει μιας εβδομάδας, μέσω Tor όταν ο δρόμος Tor του χώρου είναι ανοιχτός.",
   "Tor is off, so the list does not come again: it was switched on with Tor. Switch it off and on again to let it come without Tor.": "Το Tor είναι κλειστό, οπότε η λίστα δεν κατεβαίνει ξανά: ενεργοποιήθηκε με Tor. Απενεργοποίησέ το και ενεργοποίησέ το ξανά για να κατεβαίνει χωρίς Tor.",
+  "The list, its address, these switches and the numbers you reported stay on this phone outside your spaces, not encrypted, so that a call is checked with Erevos locked too.": "Η λίστα, η διεύθυνσή της, αυτοί οι διακόπτες και οι αριθμοί που ανέφερες μένουν στο κινητό έξω από τους χώρους σου, όχι κρυπτογραφημένα, ώστε μια κλήση να ελέγχεται και με το Erevos κλειδωμένο.",
 };

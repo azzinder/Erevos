@@ -221,4 +221,5 @@ export const phone: Record<string, string> = {
   "Download it again each week": "Preuzimaj je ponovo svake sedmice",
   "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Kad je Erevos otključan, lista ponovo stiže s iste adrese kad je stara sedmicu dana, preko Tora kad je Tor put prostora uključen.",
   "Tor is off, so the list does not come again: it was switched on with Tor. Switch it off and on again to let it come without Tor.": "Tor je isključen, pa lista ne stiže ponovo: uključena je s Torom. Isključite je i ponovo uključite da stiže bez Tora.",
+  "The list, its address, these switches and the numbers you reported stay on this phone outside your spaces, not encrypted, so that a call is checked with Erevos locked too.": "Lista, njena adresa, ovi prekidači i brojevi koje ste prijavili ostaju na ovom telefonu izvan vaših prostora, nešifrovani, da bi se poziv proveravao i dok je Erevos zaključan.",
 };
