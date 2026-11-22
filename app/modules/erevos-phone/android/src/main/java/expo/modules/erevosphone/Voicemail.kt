@@ -9,6 +9,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Build
 import android.provider.VoicemailContract
 import android.telecom.PhoneAccount
 import android.telecom.TelecomManager
@@ -31,12 +32,10 @@ internal object Voicemail {
     val telecom = context.getSystemService(TelecomManager::class.java) ?: return null
     return try {
       val handle = if (account.isNotEmpty()) Sims.find(context, account)?.handle else telecom.getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL)
-      if (handle != null) {
-        telecom.hasVoiceMailNumber(handle)
-      } else {
-        @Suppress("DEPRECATION")
-        context.getSystemService(TelephonyManager::class.java)?.voiceMailNumber?.isNotBlank()
-      }
+      val phone = context.getSystemService(TelephonyManager::class.java) ?: return null
+      // The SIM's own TelephonyManager (API 26) reads that SIM's voicemail number.
+      val sim = if (handle != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) phone.createForPhoneAccountHandle(handle) ?: phone else phone
+      sim.voiceMailNumber?.isNotBlank()
     } catch (_: SecurityException) {
       null
     } catch (_: RuntimeException) {

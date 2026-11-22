@@ -18,6 +18,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- Phone: whether a SIM has a voicemail number is read through that SIM's own telephony service, which every
+  Android has; the Android app of 3.0.0-beta.1 did not build without it.
+- Releases: the Sailfish RPM of a 3.x version, which carries an Epoch, no longer fails after it is built, when
+  the SDK finds no package of that name to check.
 - Every check of a password or PIN (lock screen, search on the home screen, the hidden chats' door, chat PINs, the lock settings) runs one at a time, in a browser across all its tabs too, and counts as wrong before its slow keys are made: tries sent all at once, or cut short, each count (lock/tries.ts countedCheck).
 - A backup file asking more than twice Erevos's own key cost (Argon2id over 64 MiB or 6 passes, PBKDF2 over 1,000,000 rounds) is refused before its password is tried.
 - A restore that cannot write all of its files and keystore entries (a full phone) puts back what the phone held, instead of leaving half of each, and removes the photos and files it had brought.

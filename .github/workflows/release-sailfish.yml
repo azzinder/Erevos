@@ -107,9 +107,7 @@ jobs:
           # The SDK image builds as its own user.
           chmod -R a+rwX .
           for try in 1 2 3; do
-            docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \
-              coderus/sailfishos-platform-sdk-aarch64:5.0.0.43 \
-              bash -lc 'mb2 -t SailfishOS-5.0.0.43-aarch64 build' && break
+            ./build-rpm.sh && break
             [ "$try" = 3 ] && exit 1
             echo "::warning::The SDK build failed; again in 30 s"; sleep 30
           done

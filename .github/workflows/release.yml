@@ -608,9 +608,7 @@ jobs:
           if [ "${EREVOS_VERSION%%.*}" -ge 3 ] && [ "${EREVOS_VERSION%%.*}" != 7 ]; then sed -i 's/^Version:.*/&\nEpoch:      1/' rpm/erevos.spec; fi
           # The SDK image builds as its own user.
           chmod -R a+rwX .
-          docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \
-            coderus/sailfishos-platform-sdk-aarch64:5.0.0.43 \
-            bash -lc 'mb2 -t SailfishOS-5.0.0.43-aarch64 build'
+          ./build-rpm.sh
           ls RPMS/*.aarch64.rpm
       - name: Hand the RPM to the publish job
         env:
