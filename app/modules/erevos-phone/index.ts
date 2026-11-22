@@ -78,7 +78,7 @@ export type Voicemail = {
 /** The spam list (Spam.kt): how many numbers the downloaded list holds, where from and when (ms,
  *  0 for never), how many the owner reported, and whether the call screen warns of them and
  *  whether they ring silently. */
-export type SpamState = { count: number; source: string; at: number; own: number; warn: boolean; silence: boolean };
+export type SpamState = { count: number; source: string; at: number; own: number; warn: boolean; silence: boolean; auto?: boolean };
 
 export type PhoneEvents = {
   /** A call came, was made, or ended: how many are on now. */
@@ -107,6 +107,7 @@ type NativePhone = {
   setSpamList?(text: string, source: string): Promise<number>;
   clearSpamList?(): void;
   setSpamSwitches?(warn: boolean, silence: boolean): void;
+  setSpamAuto?(auto: boolean): void;
   reportSpam?(number: string, spam: boolean): void;
   reportedSpam?(number: string): boolean;
   clearSpamReports?(): void;
@@ -277,6 +278,11 @@ export function clearSpamList(): void {
 
 export function setSpamSwitches(warn: boolean, silence: boolean): void {
   native?.setSpamSwitches?.(warn, silence);
+}
+
+/** Whether the list is downloaded again each week (lib/spam-list.ts refreshSpamList). */
+export function setSpamAuto(auto: boolean): void {
+  native?.setSpamAuto?.(auto);
 }
 
 /** Reports a number as spam on this phone only, or takes it back. */

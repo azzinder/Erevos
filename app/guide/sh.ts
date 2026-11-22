@@ -2786,7 +2786,9 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   liste vidi internet adresu telefona, i Erevos to prvo kaže. Ekran poziva broja s liste prikazuje **Mogući spam**;
   **Spam pozivi bez zvuka** ih pušta da zvone bez zvuka (Android 10 i noviji), nikad poziv kontakta. U **Nedavnim**,
   **Prijavi kao spam** na broju koji nije među vašim kontaktima dodaje ga samo na ovom telefonu, a **Nije spam** ga
-  uklanja; **Zaboravi moje prijave** ih briše. Nijedan broj se nikad nigdje ne traži.
+  uklanja; **Zaboravi moje prijave** ih briše. Nijedan broj se nikad nigdje ne traži. **Preuzimaj je ponovo svake
+  sedmice** je ponovo donosi s iste adrese kad je stara sedmicu dana, s otključanim Erevosom, preko Tora kad je Tor
+  put prostora uključen; isključeno je dok ga ne uključite.
 - **Grupa kontakata na neko vrijeme:** pod **Telefon** → **Postavke**, **Blokiraj grupu kontakata** navodi grupe
   (oznake) kontakata vašeg telefona. **Blokiraj** pored jedne blokira pozive njenih kontakata **Na sat vremena**,
   **Do sutra ujutro** (7:00) ili **Dok ne ukinem blokadu**; red ispod grupe kaže do kada, a **Ukini** to završava

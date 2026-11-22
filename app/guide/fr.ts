@@ -3055,13 +3055,15 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   d’où il vient (son pays et son drapeau, et la ville d’un fixe quand le numéro l’indique) et si c’est un mobile, un
   fixe, un numéro gratuit ou surtaxé : lu à partir du numéro seul, sur le téléphone. Sous **Téléphone** →
   **Réglages**, **Liste de spam** télécharge entière une liste de numéros connus pour le spam depuis l’adresse
-  https:// que tu tapes : un numéro par ligne avec son indicatif de pays, ou le début de numéros suivi de \`*\`, puis
-  le genre d’appels. Erevos n’en a pas à lui ; choisis une liste de confiance. Sans Tor, le serveur de la liste voit
-  l’adresse internet du téléphone, et Erevos le dit d’abord. L’écran d’appel d’un numéro de la liste affiche **Spam
-  possible** ; **Appels de spam en silencieux** les fait sonner sans bruit (Android 10 et plus), jamais ceux d’un
-  contact. Dans **Récents**, **Signaler comme spam** sur un numéro qui n’est pas dans tes contacts l’ajoute sur ce
-  téléphone seulement, et **Pas du spam** l’enlève ; **Oublier mes signalements** les efface. Aucun numéro n’est
-  jamais recherché nulle part.
+  https:// que tu tapes : un numéro par ligne avec son indicatif de pays, ou le début de numéros suivi de \`*\`,
+  puis le genre d’appels. Erevos n’en a pas à lui ; choisis une liste de confiance. Sans Tor, le serveur de la liste
+  voit l’adresse internet du téléphone, et Erevos le dit d’abord. L’écran d’appel d’un numéro de la liste affiche
+  **Spam possible** ; **Appels de spam en silencieux** les fait sonner sans bruit (Android 10 et plus), jamais ceux
+  d’un contact. Dans **Récents**, **Signaler comme spam** sur un numéro qui n’est pas dans tes contacts l’ajoute sur
+  ce téléphone seulement, et **Pas du spam** l’enlève ; **Oublier mes signalements** les efface. Aucun numéro n’est
+  jamais recherché nulle part. **La télécharger à nouveau chaque semaine** la fait revenir de la même adresse quand
+  elle a une semaine, avec Erevos déverrouillé, par Tor quand la voie Tor de l’espace est activée ; c’est désactivé
+  tant que tu ne l’actives pas.
 - **Un groupe de contacts pour un temps :** sous **Téléphone** → **Réglages**, **Bloquer un groupe de contacts** liste
   les groupes (les libellés) des contacts de ton téléphone. **Bloquer** à côté de l’un bloque les appels de ses contacts
   **Pendant une heure**, **Jusqu’à demain matin** (7:00) ou **Jusqu’à ce que je lève le blocage** ; la ligne sous le

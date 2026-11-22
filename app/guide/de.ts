@@ -3088,7 +3088,9 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   Anrufbildschirm einer Nummer darauf zeigt **Möglicher Spam**; **Spam-Anrufe lautlos klingeln lassen** lässt sie
   ohne Ton klingeln (ab Android 10), nie die eines Kontakts. In der **Anrufliste** fügt **Als Spam melden** bei
   einer Nummer, die keiner deiner Kontakte ist, sie nur auf diesem Telefon hinzu, und **Kein Spam** nimmt es zurück;
-  **Meine Meldungen vergessen** löscht sie. Keine Nummer wird je irgendwo nachgeschlagen.
+  **Meine Meldungen vergessen** löscht sie. Keine Nummer wird je irgendwo nachgeschlagen. **Jede Woche neu laden**
+  holt sie von derselben Adresse neu, sobald sie eine Woche alt ist, mit entsperrtem Erevos, über Tor, wenn der
+  Tor-Weg des Bereichs an ist; es ist aus, bis du es einschaltest.
 - **Eine Kontaktgruppe für eine Weile:** Unter **Telefon** → **Einstellungen** listet **Eine Kontaktgruppe
   blockieren** die Gruppen (die Labels) der Kontakte deines Telefons auf. **Blockieren** neben einer blockiert die
   Anrufe ihrer Kontakte **Eine Stunde lang**, **Bis morgen früh** (7:00) oder **Bis ich es aufhebe**; die Zeile unter

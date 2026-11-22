@@ -214,4 +214,9 @@ export const phone: Record<string, string> = {
   "No longer reported as spam.": "N’est plus signalé comme spam.",
   "The list did not come: its server answered {status}.": "La liste n’est pas arrivée : son serveur a répondu {status}.",
   "That file holds no numbers as the list needs them, with their country code.": "Ce fichier ne contient aucun numéro comme la liste les veut, avec leur indicatif de pays.",
+  "Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone.": "Sans Tor, le serveur de la liste voit chaque semaine l’adresse internet de ce téléphone (adresse IP), mais aucun de tes numéros : la liste arrive entière et est comparée sur le téléphone.",
+  "Download each week": "Télécharger chaque semaine",
+  "Stop downloading it each week": "Ne plus la télécharger chaque semaine",
+  "Download it again each week": "La télécharger à nouveau chaque semaine",
+  "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Avec Erevos déverrouillé, la liste revient de la même adresse quand elle a une semaine, par Tor quand la voie Tor de l’espace est activée.",
 };

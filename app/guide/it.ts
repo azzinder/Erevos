@@ -2919,7 +2919,9 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   mostra **Possibile spam**; **Chiamate spam in silenzio** le fa squillare senza suono (Android 10 e successivi),
   mai quelle di un contatto. In **Recenti**, **Segnala come spam** su un numero che non è tra i tuoi contatti lo
   aggiunge solo su questo telefono, e **Non è spam** lo toglie; **Dimentica le mie segnalazioni** le cancella.
-  Nessun numero viene mai cercato da nessuna parte.
+  Nessun numero viene mai cercato da nessuna parte. **Scaricala di nuovo ogni settimana** la riporta dallo stesso
+  indirizzo quando ha una settimana, con Erevos sbloccato, tramite Tor quando la via Tor dello spazio è attiva; è
+  disattivato finché non lo attivi.
 - **Un gruppo di contatti per un po’:** in **Telefono** → **Impostazioni**, **Blocca un gruppo di contatti** elenca i
   gruppi (le etichette) dei contatti del tuo telefono. **Blocca** accanto a uno blocca le chiamate dei suoi contatti
   **Per un’ora**,

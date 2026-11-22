@@ -215,4 +215,9 @@ export const phone: Record<string, string> = {
   "No longer reported as spam.": "Não está mais denunciado como spam.",
   "The list did not come: its server answered {status}.": "A lista não chegou: o servidor dela respondeu {status}.",
   "That file holds no numbers as the list needs them, with their country code.": "Esse arquivo não tem números como a lista precisa, com o código do país.",
+  "Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone.": "Sem Tor, o servidor da lista vê toda semana o endereço de internet deste celular (endereço IP), mas nenhum número seu: a lista vem inteira e é comparada no celular.",
+  "Download each week": "Baixar toda semana",
+  "Stop downloading it each week": "Parar de baixá-la toda semana",
+  "Download it again each week": "Baixá-la de novo toda semana",
+  "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Com o Erevos desbloqueado, a lista vem de novo do mesmo endereço quando tem uma semana, pelo Tor quando o caminho Tor do espaço está ligado.",
 };

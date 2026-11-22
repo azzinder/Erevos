@@ -7,12 +7,13 @@
 // one number a line with its country code (+30 211 000 4455, or 0030…), or the start of numbers
 // followed by * (+30 211 000*), then what kind of calls they are; # starts a note. It goes through
 // Tor when the space's Tor way says so (lib/net-http.ts); without Tor, the list's server sees this
-// phone's internet address, which app/phone-settings.tsx says before it downloads.
+// phone's internet address, which app/phone-settings.tsx says before it downloads, and before the
+// weekly download is switched on.
 
 import { utf8Decode } from './crypto';
 import { t } from './i18n';
 import { netHttp, type Http } from './net-http';
-import { setSpamList } from '../modules/erevos-phone';
+import { setSpamList, spamState } from '../modules/erevos-phone';
 
 /** The largest list taken. */
 export const SPAM_MOST = 20 * 1024 * 1024;
@@ -45,4 +46,28 @@ export async function downloadSpamList(address: string, http: Http = netHttp): P
   const text = utf8Decode(answer.bytes);
   if (spamLines(text) === 0) throw new Error(t('That file holds no numbers as the list needs them, with their country code.'));
   return setSpamList(text, address);
+}
+
+/** How old a list is let to grow before it is downloaded again, when the owner switched that on. */
+export const SPAM_EVERY = 7 * 24 * 60 * 60 * 1000;
+
+// When it was last tried in this run of the app, so a server that does not answer is not asked
+// again each time the Phone opens.
+let tried = 0;
+
+/** Downloads the list again from where it came, when the weekly download is on and the list is a
+ * week old; with Erevos unlocked, as the space's Tor way needs it. Says nothing when it fails: the
+ * list kept stays, and the date under Phone settings shows how old it is. Whether it went. */
+export async function refreshSpamList(now = Date.now(), http: Http = netHttp): Promise<boolean> {
+  const state = spamState();
+  if (!state?.auto || !state.source || state.at <= 0 || now - state.at < SPAM_EVERY || now - tried < SPAM_EVERY / 7) return false;
+  const from = spamAddress(state.source);
+  if (!from) return false;
+  tried = now;
+  try {
+    await downloadSpamList(from, http);
+    return true;
+  } catch {
+    return false;
+  }
 }

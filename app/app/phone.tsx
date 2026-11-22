@@ -45,6 +45,7 @@ import {
 } from '../lib/phone-log';
 import { blockedUntil, liftGroup, liveGroups, rulesFrom, rulesJson, type PhoneRules } from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
+import { refreshSpamList } from '../lib/spam-list';
 import { currentSpace } from '../lock/keys';
 import {
   blockingRules,
@@ -264,6 +265,8 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
       PhoneSims.open(open, key).then(setSims, () => setSims(null));
       // A contact linked to a number since the space opened: its calls show its name too.
       void refreshKnownNames();
+      // The spam list, a week old, comes again when the owner switched that on.
+      void refreshSpamList();
     }
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));

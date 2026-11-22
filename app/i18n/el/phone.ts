@@ -214,4 +214,9 @@ export const phone: Record<string, string> = {
   "No longer reported as spam.": "Δεν αναφέρεται πια ως spam.",
   "The list did not come: its server answered {status}.": "Η λίστα δεν ήρθε: ο server της απάντησε {status}.",
   "That file holds no numbers as the list needs them, with their country code.": "Αυτό το αρχείο δεν έχει αριθμούς όπως τους θέλει η λίστα, με τον κωδικό χώρας τους.",
+  "Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone.": "Χωρίς Tor, ο server της λίστας βλέπει κάθε εβδομάδα τη διεύθυνση internet αυτού του κινητού (διεύθυνση IP), όχι όμως κάποιον αριθμό σου: η λίστα έρχεται ολόκληρη και ελέγχεται πάνω στο κινητό.",
+  "Download each week": "Λήψη κάθε εβδομάδα",
+  "Stop downloading it each week": "Τέλος στη λήψη κάθε εβδομάδα",
+  "Download it again each week": "Νέα λήψη κάθε εβδομάδα",
+  "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Με το Erevos ξεκλείδωτο, η λίστα κατεβαίνει ξανά από την ίδια διεύθυνση όταν γίνει μιας εβδομάδας, μέσω Tor όταν ο δρόμος Tor του χώρου είναι ανοιχτός.",
 };

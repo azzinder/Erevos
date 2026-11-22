@@ -199,6 +199,10 @@ class ErevosPhoneModule : Module() {
       Spam.setSwitches(context(), warn, silence)
     }
 
+    Function("setSpamAuto") { auto: Boolean ->
+      Spam.setAuto(context(), auto)
+    }
+
     Function("reportSpam") { number: String, spam: Boolean ->
       Spam.report(context(), number, spam)
     }

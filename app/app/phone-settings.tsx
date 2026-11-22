@@ -36,6 +36,7 @@ import {
   openCallSettings,
   clearSpamList,
   clearSpamReports,
+  setSpamAuto,
   setSpamSwitches,
   spamReady,
   spamState,
@@ -575,6 +576,19 @@ function SpamList({ screens }: { screens: boolean }) {
     }
   }
 
+  async function weekly(on: boolean) {
+    if (on && !netThroughTor()) {
+      const go = await confirm(
+        t('Your internet address can be seen'),
+        t("Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone."),
+        t('Download each week'),
+      );
+      if (!go) return;
+    }
+    setSpamAuto(on);
+    look();
+  }
+
   async function download() {
     const from = spamAddress(address);
     if (!from) {
@@ -628,6 +642,18 @@ function SpamList({ screens }: { screens: boolean }) {
           ? t('{count} on the list, downloaded {date}.', { count: String(state.count), date: new Date(state.at).toLocaleDateString() })
           : t('No list downloaded yet.')}
       </Text>
+      {state.at > 0 ? (
+        <>
+          <Button
+            title={state.auto ? t('Stop downloading it each week') : t('Download it again each week')}
+            kind="secondary"
+            onPress={() => void weekly(!state.auto)}
+          />
+          <Text variant="caption" tone="faint">
+            {t("With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.")}
+          </Text>
+        </>
+      ) : null}
       {state.at > 0 ? (
         <Button
           title={t('Remove the list')}

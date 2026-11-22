@@ -2678,7 +2678,9 @@ that title, and tapping it opens the Phone's **Settings**.
   internet address, and Erevos says so first. The call screen of a number on it shows **Possible spam**; **Ring spam
   calls silently** lets them ring with no sound (Android 10 and later), never a contact's. In **Recents**, **Report
   as spam** on a number that is none of your contacts adds it on this phone only, and **Not spam** takes it back;
-  **Forget my reports** clears them. No number is ever looked up anywhere.
+  **Forget my reports** clears them. No number is ever looked up anywhere. **Download it again each week** has it
+  come again from the same address when it is a week old, with Erevos unlocked, through Tor when the space's Tor way
+  is on; it is off until you switch it on.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**

@@ -24,6 +24,7 @@ internal object Spam {
   private const val SILENCE = "spam-silence"
   private const val SOURCE = "spam-source"
   private const val AT = "spam-at"
+  private const val AUTO = "spam-auto"
   const val MOST_LINES = 500_000
 
   // The list in memory, read once: whole numbers by their digits, and starts of numbers.
@@ -90,11 +91,17 @@ internal object Spam {
       "own" to own(context).size.toDouble(),
       "warn" to prefs.getBoolean(WARN, true),
       "silence" to prefs.getBoolean(SILENCE, false),
+      "auto" to prefs.getBoolean(AUTO, false),
     )
   }
 
   fun setSwitches(context: Context, warn: Boolean, silence: Boolean) {
     Replies.prefs(context).edit().putBoolean(WARN, warn).putBoolean(SILENCE, silence).apply()
+  }
+
+  /** Whether the list is downloaded again each week, by lib/spam-list.ts with Erevos unlocked; off by default. */
+  fun setAuto(context: Context, auto: Boolean) {
+    Replies.prefs(context).edit().putBoolean(AUTO, auto).apply()
   }
 
   fun warns(context: Context) = Replies.prefs(context).getBoolean(WARN, true)

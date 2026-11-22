@@ -215,4 +215,9 @@ export const phone: Record<string, string> = {
   "No longer reported as spam.": "Više nije prijavljen kao spam.",
   "The list did not come: its server answered {status}.": "Lista nije stigla: njen server je odgovorio {status}.",
   "That file holds no numbers as the list needs them, with their country code.": "Ta datoteka nema brojeve kakve lista traži, s pozivnim brojem zemlje.",
+  "Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone.": "Bez Tora, server liste svake sedmice vidi internet adresu ovog telefona (IP adresu), ali ne i vaše brojeve: lista stiže cijela i upoređuje se na telefonu.",
+  "Download each week": "Preuzimaj svake sedmice",
+  "Stop downloading it each week": "Ne preuzimaj je više svake sedmice",
+  "Download it again each week": "Preuzimaj je ponovo svake sedmice",
+  "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Kad je Erevos otključan, lista ponovo stiže s iste adrese kad je stara sedmicu dana, preko Tora kad je Tor put prostora uključen.",
 };
