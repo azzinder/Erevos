@@ -163,9 +163,10 @@ t('a place’s stars are kept sealed, the space’s and each hidden place’s ap
   await starMessage(hidden, star({ service: 'nostr', account: 'aa', chat: 'bb', id: 'n1', line: 'Κρυφό' }), true);
   assert.deepEqual((await loadStars(space)).map((s) => s.id), ['$one']);
   assert.deepEqual((await loadStars(hidden)).map((s) => s.line), ['Κρυφό']);
-  // Nothing of them shows in the file, nor opens with another key.
+  // Nothing of them shows in the file, nor opens with another key. Looked for whole, as the stars
+  // hold them: a short word alone may be in the sealed text by chance.
   const sealed = files.get(FILE) ?? '';
-  assert.ok(sealed.length > 0 && !sealed.includes('Coffee') && !sealed.includes('room'));
+  assert.ok(sealed.length > 0 && !sealed.includes(JSON.stringify('Coffee at five')) && !sealed.includes(JSON.stringify('!room:example.org')));
   assert.deepEqual(await loadStars({ ...space, key: randomBytes(32) }), []);
   assert.deepEqual(await loadStars(place(hiddenHolder(2))), []);
 });

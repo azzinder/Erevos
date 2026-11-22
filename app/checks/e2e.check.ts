@@ -695,7 +695,8 @@ t('a chat keeps its own look, sealed, until given the space\'s again', async () 
   const again = await E2E.open('space', 0, key);
   assert.equal(again.contacts()[0].look?.style, 'matrix');
   assert.equal(again.contacts()[0].look?.wallpaper, 'stars');
-  assert.ok(!files.get(FILE)!.includes('matrix'));
+  // As the contact holds it, in quotes: a short word alone may be in the sealed text by chance.
+  assert.ok(!files.get(FILE)!.includes(JSON.stringify('matrix')));
   await again.setLook(identity, null);
   assert.equal((await E2E.open('space', 0, key)).contacts()[0].look, null);
   await assert.rejects(again.setLook('00'.repeat(32), null));
