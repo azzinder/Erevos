@@ -8,12 +8,14 @@
 // followed by * (+30 211 000*), then what kind of calls they are; # starts a note. It goes through
 // Tor when the space's Tor way says so (lib/net-http.ts); without Tor, the list's server sees this
 // phone's internet address, which app/phone-settings.tsx says before it downloads, and before the
-// weekly download is switched on.
+// weekly download is switched on. The weekly download goes without Tor only when it was switched on
+// without Tor, after that warning: switched on with Tor, it waits while Tor is off.
 
 import { utf8Decode } from './crypto';
 import { t } from './i18n';
-import { netHttp, type Http } from './net-http';
-import { setSpamList, spamState } from '../modules/erevos-phone';
+import { netHttp, netThroughTor, type Http } from './net-http';
+import { secureDelete, secureGet, secureSet } from './secure';
+import { setSpamAuto, setSpamList, spamState } from '../modules/erevos-phone';
 
 /** The largest list taken. */
 export const SPAM_MOST = 20 * 1024 * 1024;
@@ -55,14 +57,31 @@ export const SPAM_EVERY = 7 * 24 * 60 * 60 * 1000;
 // again each time the Phone opens.
 let tried = 0;
 
+// Set when the weekly download was switched on without Tor, after the warning of the IP address.
+const PLAIN = 'erevos.spam-plain';
+
+/** Switches the weekly download on or off; `withoutTor` when it was switched on after the warning that the list's server sees the IP address. */
+export async function setSpamWeekly(on: boolean, withoutTor: boolean): Promise<void> {
+  setSpamAuto(on);
+  if (on && withoutTor) await secureSet(PLAIN, '1');
+  else await secureDelete(PLAIN);
+}
+
+/** Whether the weekly download may go without Tor: it was switched on without it, after the warning. */
+export async function spamWithoutTor(): Promise<boolean> {
+  return (await secureGet(PLAIN).catch(() => null)) === '1';
+}
+
 /** Downloads the list again from where it came, when the weekly download is on and the list is a
  * week old; with Erevos unlocked, as the space's Tor way needs it. Says nothing when it fails: the
  * list kept stays, and the date under Phone settings shows how old it is. Whether it went. */
-export async function refreshSpamList(now = Date.now(), http: Http = netHttp): Promise<boolean> {
+export async function refreshSpamList(now = Date.now(), http: Http = netHttp, throughTor: () => boolean = netThroughTor): Promise<boolean> {
   const state = spamState();
   if (!state?.auto || !state.source || state.at <= 0 || now - state.at < SPAM_EVERY || now - tried < SPAM_EVERY / 7) return false;
   const from = spamAddress(state.source);
   if (!from) return false;
+  // Tor is off, and the owner never said the list may come without it: it waits.
+  if (!throughTor() && !(await spamWithoutTor())) return false;
   tried = now;
   try {
     await downloadSpamList(from, http);

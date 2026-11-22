@@ -36,7 +36,6 @@ import {
   openCallSettings,
   clearSpamList,
   clearSpamReports,
-  setSpamAuto,
   setSpamSwitches,
   spamReady,
   spamState,
@@ -62,7 +61,7 @@ import { currentSpace } from '../lock/keys';
 import { SPEED_KEYS } from '../lock/phone-data';
 import { confirm } from '../lib/alert';
 import { netThroughTor } from '../lib/net-http';
-import { downloadSpamList, spamAddress } from '../lib/spam-list';
+import { downloadSpamList, setSpamWeekly, spamAddress, spamWithoutTor } from '../lib/spam-list';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -560,9 +559,16 @@ function SpamList({ screens }: { screens: boolean }) {
   const [address, setAddress] = useState(state?.source ?? '');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [plainOk, setPlainOk] = useState(true);
+  useEffect(() => {
+    void spamWithoutTor().then(setPlainOk);
+  }, []);
   if (!state) return null;
 
-  const look = () => setState(spamState());
+  const look = () => {
+    setState(spamState());
+    void spamWithoutTor().then(setPlainOk);
+  };
 
   function switches(warn: boolean, silence: boolean) {
     setSpamSwitches(warn, silence);
@@ -577,7 +583,8 @@ function SpamList({ screens }: { screens: boolean }) {
   }
 
   async function weekly(on: boolean) {
-    if (on && !netThroughTor()) {
+    const withoutTor = on && !netThroughTor();
+    if (withoutTor) {
       const go = await confirm(
         t('Your internet address can be seen'),
         t("Without Tor, the list's server sees this phone's internet address (IP address) each week, though no number of yours: the list comes whole, and is matched on the phone."),
@@ -585,7 +592,7 @@ function SpamList({ screens }: { screens: boolean }) {
       );
       if (!go) return;
     }
-    setSpamAuto(on);
+    await setSpamWeekly(on, withoutTor);
     look();
   }
 
@@ -652,6 +659,11 @@ function SpamList({ screens }: { screens: boolean }) {
           <Text variant="caption" tone="faint">
             {t("With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.")}
           </Text>
+          {state.auto && !plainOk && !netThroughTor() ? (
+            <Text variant="caption" tone="faint">
+              {t('Tor is off, so the list does not come again: it was switched on with Tor. Switch it off and on again to let it come without Tor.')}
+            </Text>
+          ) : null}
         </>
       ) : null}
       {state.at > 0 ? (

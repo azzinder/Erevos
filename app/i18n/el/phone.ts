@@ -219,4 +219,5 @@ export const phone: Record<string, string> = {
   "Stop downloading it each week": "Τέλος στη λήψη κάθε εβδομάδα",
   "Download it again each week": "Νέα λήψη κάθε εβδομάδα",
   "With Erevos unlocked, the list comes again from the same address when it is a week old, through Tor when the space's Tor way is on.": "Με το Erevos ξεκλείδωτο, η λίστα κατεβαίνει ξανά από την ίδια διεύθυνση όταν γίνει μιας εβδομάδας, μέσω Tor όταν ο δρόμος Tor του χώρου είναι ανοιχτός.",
+  "Tor is off, so the list does not come again: it was switched on with Tor. Switch it off and on again to let it come without Tor.": "Το Tor είναι κλειστό, οπότε η λίστα δεν κατεβαίνει ξανά: ενεργοποιήθηκε με Tor. Απενεργοποίησέ το και ενεργοποίησέ το ξανά για να κατεβαίνει χωρίς Tor.",
 };

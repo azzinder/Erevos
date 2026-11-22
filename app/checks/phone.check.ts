@@ -306,26 +306,37 @@ test('a spam list is kept only when it came and holds numbers', async () => {
   assert.equal(spamKept.length, kept + 1);
 });
 
-test('the spam list comes again by itself only when switched on, and a week old', async () => {
-  const { refreshSpamList, SPAM_EVERY } = await import('../lib/spam-list');
+test('the spam list comes again by itself only when switched on, and a week old; without Tor only when switched on without it', async () => {
+  const { refreshSpamList, setSpamWeekly, SPAM_EVERY } = await import('../lib/spam-list');
+  const tor = () => true;
+  const noTor = () => false;
   const { spamKept, spamNow } = await import('./phone-memory');
   const list = async () => ({ status: 200, bytes: new TextEncoder().encode('+30 211 000 4455\n') });
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now() + 100 * day;
   Object.assign(spamNow, { source: 'https://example.org/spam.txt', at: now - SPAM_EVERY - day, auto: false });
   const kept = spamKept.length;
-  assert.equal(await refreshSpamList(now, list), false, 'switched off');
+  assert.equal(await refreshSpamList(now, list, tor), false, 'switched off');
   Object.assign(spamNow, { auto: true, at: now - day });
-  assert.equal(await refreshSpamList(now, list), false, 'a day old');
+  assert.equal(await refreshSpamList(now, list, tor), false, 'a day old');
   Object.assign(spamNow, { at: now - SPAM_EVERY - day });
-  assert.equal(await refreshSpamList(now, list), true);
+  assert.equal(await refreshSpamList(now, list, tor), true);
   assert.equal(spamKept.length, kept + 1);
   // A server that does not answer is asked again a day later, not each time the Phone opens.
   Object.assign(spamNow, { at: now - SPAM_EVERY - day });
   const down = async () => ({ status: 503, bytes: new Uint8Array() });
-  assert.equal(await refreshSpamList(now + 2 * day, down), false);
-  assert.equal(await refreshSpamList(now + 2 * day + 60_000, list), false);
-  assert.equal(await refreshSpamList(now + 3 * day + 60_000, list), true);
+  assert.equal(await refreshSpamList(now + 2 * day, down, tor), false);
+  assert.equal(await refreshSpamList(now + 2 * day + 60_000, list, tor), false);
+  assert.equal(await refreshSpamList(now + 3 * day + 60_000, list, tor), true);
+  // Without Tor only when it was switched on without Tor, after the warning of the IP address.
+  await setSpamWeekly(true, false);
+  Object.assign(spamNow, { at: now - SPAM_EVERY - day });
+  assert.equal(await refreshSpamList(now + 10 * day, list, noTor), false, 'switched on with Tor, Tor now off');
+  assert.equal(await refreshSpamList(now + 10 * day, list, tor), true);
+  await setSpamWeekly(true, true);
+  Object.assign(spamNow, { at: now - SPAM_EVERY - day });
+  assert.equal(await refreshSpamList(now + 20 * day, list, noTor), true, 'switched on without Tor');
+  await setSpamWeekly(false, false);
   Object.assign(spamNow, { auto: false, source: '', at: 0 });
 });
 
