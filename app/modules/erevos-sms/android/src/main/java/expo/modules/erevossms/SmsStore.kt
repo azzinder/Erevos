@@ -573,14 +573,16 @@ internal object SmsStore {
       // In place of the one showing, without a sound again.
       .setOnlyAlertOnce(again)
     detailed = details && address != null && text != null && code == null
-    if (detailed) {
+    val from = address
+    val words = text
+    if (detailed && from != null && words != null) {
       val name = try {
-        contactNames(context, listOf(address))[address]
+        contactNames(context, listOf(from))[from]
       } catch (_: Exception) {
         null
       }
-      builder.setContentTitle(name?.takeIf { it.isNotBlank() } ?: address).setContentText(text.take(500)).setStyle(Notification.BigTextStyle().bigText(text.take(500)))
-      for (action in NoticeReply.actions(context, address, sim)) builder.addAction(action)
+      builder.setContentTitle(name?.takeIf { it.isNotBlank() } ?: from).setContentText(words.take(500)).setStyle(Notification.BigTextStyle().bigText(words.take(500)))
+      for (action in NoticeReply.actions(context, from, sim)) builder.addAction(action)
     }
     if (code != null) {
       val copy = Intent(context, CopyCodeReceiver::class.java).putExtra(CopyCodeReceiver.EXTRA_CODE, code)
