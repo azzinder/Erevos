@@ -22,19 +22,25 @@ import { ROOT } from './words';
 // "## 3.3.2 (2026-10-25)" or "## 4.0.0-rc.1 (…)": the releases, newest first; "## Unreleased" is NEXT.
 const changelog = () => readFileSync(join(ROOT, '..', 'CHANGELOG.md'), 'utf8');
 const releases = () => [...changelog().matchAll(/^## (?!Unreleased$)(\S+)/gm)].map((m) => m[1]);
+// What's new shows the releases from 7.0.0 on: the older ones (2.x to 6.x) had names that the
+// numbering since 7.x takes again (3.0.0), and stay only in CHANGELOG.md.
+const shownReleases = () => {
+  const all = releases();
+  return all.slice(0, all.indexOf('7.0.0') + 1);
+};
 const lines = (changes: Changes) => [...changes.forYou, ...changes.underTheHood];
 
 test('a version for each release of CHANGELOG.md, in its order, by its number alone', () => {
   // After a release, NEXT's words move under its number here, as the CHANGELOG's do.
   assert.deepEqual(
     VERSIONS.map((v) => v.version),
-    releases(),
+    shownReleases(),
   );
   for (const v of VERSIONS) assert.ok(lines(v).length > 0, v.version);
 });
 
 test('each release is named as the release workflow names it, each newer than the one below it', () => {
-  const names = releases();
+  const names = shownReleases();
   for (const [i, name] of names.entries()) {
     assert.match(name, VERSION_NAME);
     if (i > 0) assert.ok(laterThan(names[i - 1], name), `${names[i - 1]} above ${name}`);
@@ -66,6 +72,12 @@ test('what is not out yet shows under the version that runs, once it comes after
   assert.equal(laterThan('4.0.0-rc.1', '3.4.2'), true);
   assert.equal(laterThan('4.0.0-rc.1', '4.0.0'), false);
   assert.equal(laterThan('0.0.1', last), false);
+  assert.equal(laterThan('0.0.1', '3.0.0'), false);
+  // Since 7.x the numbers start again at 3, after every 7.x.
+  assert.equal(laterThan('3.0.0', '7.2.0'), true);
+  assert.equal(laterThan('3.0.0-rc.1', '7.3.0'), true);
+  assert.equal(laterThan('7.2.0', '3.0.0'), false);
+  assert.equal(laterThan('8.0.0', '7.9.9'), true);
   // The plain Erevos, whichever edition this build is: Erevos+ also takes in the plain releases (asPlus, below).
   const shown = whatsNewFor('99.0.0', 'lite');
   const pending = lines(NEXT).length > 0;
@@ -101,4 +113,14 @@ test("Erevos+ tells the plain Erevos's releases under its own next one, as its o
   // With no Erevos+ release after them, the plain ones stay as they are.
   assert.deepEqual(asPlusForCheck([v('7.0.2', ['a']), v('7.0.1', ['b'])]), [v('7.0.2', ['a']), v('7.0.1', ['b'])]);
   assert.deepEqual(asPlusForCheck([v(null, ['n']), v('7.0.1', ['b'])]), [v(null, ['n']), v('7.0.1', ['b'])]);
+});
+
+test('since 7.x, Erevos+ takes in the plain x.0.y and Erevos⁻ x.2.y releases, and lists its own x.1.y', () => {
+  const entry = (version: string) => ({ version, forYou: [`in ${version}`], underTheHood: [] });
+  const list = asPlusForCheck([entry('3.1.0'), entry('3.2.0'), entry('3.0.1'), entry('3.0.0'), entry('7.3.0')]);
+  assert.deepEqual(
+    list.map((v) => v.version),
+    ['3.1.0', '7.3.0'],
+  );
+  assert.deepEqual(list[0].forYou, ['in 3.1.0', 'in 3.2.0', 'in 3.0.1', 'in 3.0.0']);
 });
