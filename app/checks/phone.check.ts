@@ -8,6 +8,8 @@
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
@@ -33,6 +35,7 @@ import {
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import type { LoggedCall, PhoneAccount } from '../modules/erevos-phone';
 import { files } from './files-memory';
+import { ROOT } from './words';
 
 test('what is typed or pasted keeps only what can be called', () => {
   assert.equal(dialNumber('+30 (210) 123-4567'), '+302101234567');
@@ -324,4 +327,9 @@ test('the spam list comes again by itself only when switched on, and a week old'
   assert.equal(await refreshSpamList(now + 2 * day + 60_000, list), false);
   assert.equal(await refreshSpamList(now + 3 * day + 60_000, list), true);
   Object.assign(spamNow, { auto: false, source: '', at: 0 });
+});
+
+test('the phone module asks for the voicemails, which the phone app role gives, or the Voicemail tab stays hidden', () => {
+  const manifest = readFileSync(join(ROOT, 'modules', 'erevos-phone', 'android', 'src', 'main', 'AndroidManifest.xml'), 'utf8');
+  for (const name of ['READ_VOICEMAIL', 'WRITE_VOICEMAIL']) assert.ok(manifest.includes(`"com.android.voicemail.permission.${name}"`), name);
 });
