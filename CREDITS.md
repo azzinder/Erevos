@@ -36,6 +36,7 @@ Makers and licences are as the projects' own packages and files state them.
 | [ZXing](https://github.com/zxing/zxing) | The ZXing authors | Apache-2.0 | Reading a QR code from a photo on Android |
 | [libphonenumber](https://github.com/google/libphonenumber) and its geocoder | Google LLC and the libphonenumber authors | Apache-2.0 | Saying where an unknown caller's number is from, and whether it is a mobile, offline on Android |
 | [AndroidX Media3](https://github.com/androidx/media) (`media3-exoplayer`, `media3-session`, `media3-ui`) | The Android Open Source Project | Apache-2.0 | Playing the Collection's music and videos on Android, with the screen off and on the lock screen |
+| [AndroidX CameraX](https://developer.android.com/jetpack/androidx/releases/camera) (`camera-core`, `camera-video`, `camera-extensions` and the rest) | The Android Open Source Project | Apache-2.0 | Erevos's own camera on Android, with the night, HDR and portrait the phone's maker offers through CameraX Extensions, where it has them |
 | [hls.js](https://github.com/video-dev/hls.js) | The hls.js authors (video-dev) | Apache-2.0 | Playing HLS streams (TV channels, radio) in the desktop app and a browser, where the browser cannot by itself |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | Kazuhiko Arase | MIT | Drawing the QR codes of the donation page |
 | [react-native-svg](https://github.com/react-native-community/react-native-svg) | Horcrux and the React Native community | MIT | Drawing the stickers |
@@ -64,7 +65,7 @@ Every package the lockfiles hold, by part of Erevos, with its version, its licen
 
 ### The app's JavaScript packages
 
-Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 615 packages.
+Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 609 packages.
 
 | Package | Version | Licence |
 | --- | --- | --- |
@@ -235,7 +236,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [@react-native/normalize-colors](https://github.com/react/react-native) | 0.88.1 | MIT |
 | [@react-native/virtualized-lists](https://github.com/react/react-native) | 0.88.1 | MIT |
 | [@sinclair/typebox](https://github.com/sinclairzx81/sinclair-typebox) | 0.27.12 | MIT |
-| [@types/emscripten](https://github.com/DefinitelyTyped/DefinitelyTyped) | 1.41.6 | MIT |
 | [@types/istanbul-lib-coverage](https://github.com/DefinitelyTyped/DefinitelyTyped) | 2.0.6 | MIT |
 | [@types/istanbul-lib-report](https://github.com/DefinitelyTyped/DefinitelyTyped) | 3.0.3 | MIT |
 | [@types/istanbul-reports](https://github.com/DefinitelyTyped/DefinitelyTyped) | 3.0.4 | MIT |
@@ -273,7 +273,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [babel-plugin-transform-flow-enums](https://github.com/facebook/flow) | 0.0.2 | MIT |
 | [babel-preset-expo](https://github.com/expo/expo) | 58.0.26 | MIT |
 | [balanced-match](https://github.com/juliangruber/balanced-match) | 4.0.4 | MIT |
-| [barcode-detector](https://github.com/Sec-ant/barcode-detector) | 3.2.4 | MIT |
 | [base64-js](https://github.com/beatgammit/base64-js) | 1.5.1 | MIT |
 | [baseline-browser-mapping](https://github.com/web-platform-dx/baseline-browser-mapping) | 2.11.34 | Apache-2.0 |
 | [big-integer](https://github.com/peterolson/BigInteger.js) | 1.6.52 | Unlicense |
@@ -356,7 +355,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [expo](https://github.com/expo/expo) | 58.0.26 | MIT |
 | [expo-asset](https://github.com/expo/expo) | 58.0.21 | MIT |
 | [expo-audio](https://github.com/expo/expo) | 58.0.12 | MIT |
-| [expo-camera](https://github.com/expo/expo) | 58.0.14 | MIT |
 | [expo-constants](https://github.com/expo/expo) | 58.0.16 | MIT |
 | [expo-crypto](https://github.com/expo/expo) | 58.0.8 | MIT |
 | [expo-file-system](https://github.com/expo/expo) | 58.0.14 | MIT |
@@ -634,7 +632,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [supports-color](https://github.com/chalk/supports-color) | 8.1.1 | MIT |
 | [supports-hyperlinks](https://github.com/jamestalmage/supports-hyperlinks) | 2.3.0 | MIT |
 | [supports-preserve-symlinks-flag](https://github.com/inspect-js/node-supports-preserve-symlinks-flag) | 1.0.0 | MIT |
-| [tagged-tag](https://github.com/sindresorhus/tagged-tag) | 1.0.0 | MIT |
 | [terminal-link](https://github.com/sindresorhus/terminal-link) | 2.1.1 | MIT |
 | [terser](https://github.com/terser/terser) | 5.51.2 | BSD-2-Clause |
 | [throat](https://github.com/ForbesLindesay/throat) | 5.0.0 | MIT |
@@ -646,7 +643,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [tr46](https://github.com/Sebmaster/tr46.js) | 0.0.3 | MIT |
 | [type-fest](https://github.com/sindresorhus/type-fest) | 0.7.1 | (MIT OR CC0-1.0) |
 | [type-fest](https://github.com/sindresorhus/type-fest) | 0.21.3 | (MIT OR CC0-1.0) |
-| [type-fest](https://github.com/sindresorhus/type-fest) | 5.10.0 | (MIT OR CC0-1.0) |
 | [typescript](https://github.com/microsoft/TypeScript) | 6.0.3 | Apache-2.0 |
 | [ua-parser-js](https://github.com/faisalman/ua-parser-js) | 1.0.41 | MIT |
 | [undici-types](https://github.com/nodejs/undici) | 8.9.0 | MIT |
@@ -682,7 +678,6 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [yallist](https://github.com/isaacs/yallist) | 3.1.1 | ISC |
 | [yargs](https://github.com/yargs/yargs) | 17.7.3 | MIT |
 | [yargs-parser](https://github.com/yargs/yargs-parser) | 21.1.1 | ISC |
-| [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) | 3.1.7 | MIT |
 
 ### The computer app
 
@@ -1466,10 +1461,16 @@ The Android app's Tor bridges are lyrebird, built from these modules (`transport
 
 ### Android libraries
 
-Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 7 libraries.
+Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 13 libraries.
 
 | Library | Version | Licence |
 | --- | --- | --- |
+| [androidx.camera:camera-camera2](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
+| [androidx.camera:camera-core](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
+| [androidx.camera:camera-extensions](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
+| [androidx.camera:camera-lifecycle](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
+| [androidx.camera:camera-video](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
+| [androidx.camera:camera-view](https://developer.android.com/jetpack/androidx/releases/camera) | 1.6.0 | Apache-2.0 |
 | [androidx.media3:media3-exoplayer](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [androidx.media3:media3-exoplayer-hls](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [androidx.media3:media3-session](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |

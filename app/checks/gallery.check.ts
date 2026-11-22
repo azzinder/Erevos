@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
+import { effectFor, pinchedZoom, zoomName, zoomStops } from '../lib/camera-controls';
 import { bytesSource } from '../lib/attachments';
 import { moovHasPlace, photoPlace, tiffHasPlace, videoPlace } from '../lib/media-place';
 import { cleanImage } from '../lib/photo';
@@ -140,12 +141,29 @@ test('the frame stays inside the photo, no smaller than its least, and turns wit
   for (const k of ['x', 'y', 'w', 'h'] as const) assert.ok(Math.abs(back[k] - odd[k]) < 1e-9);
 });
 
-test("what the camera left in the cache goes as Erevos starts: from expo-camera's own folder", () => {
-  const source = (name: string) => readFileSync(join(ROOT, 'node_modules', 'expo-camera', 'android', 'src', 'main', 'java', 'expo', 'modules', 'camera', ...name.split('/')), 'utf8');
+test("what the camera left in the cache goes as Erevos starts: from the camera's own folder", () => {
   const folder = readFileSync(join(ROOT, 'lib', 'camera-cache.ts'), 'utf8').match(/CAMERA_FOLDER = '([^']+)'/)?.[1];
   assert.equal(folder, 'Camera');
-  // Videos and photos both, as expo-camera names its folder.
-  assert.match(source('ExpoCameraView.kt'), /generateOutputFile\(cacheDirectory, "Camera", "\.mp4"\)/);
-  assert.match(source('tasks/ResolveTakenPicture.kt'), /DIRECTORY_NAME = "Camera"/);
+  // The camera (CameraPreview.kt) records its videos there; its photos never touch the storage.
+  const camera = readFileSync(join(ROOT, 'modules', 'erevos-collection', 'android', 'src', 'main', 'java', 'expo', 'modules', 'erevoscollection', 'CameraPreview.kt'), 'utf8');
+  assert.match(camera, /File\(context\.cacheDir, CAMERA_FOLDER\)/);
+  assert.match(camera, /CAMERA_FOLDER = "Camera"/);
   assert.match(readFileSync(join(ROOT, 'app', '_layout.tsx'), 'utf8'), /clearCameraCache\(\)/);
+});
+
+test("the camera's zoom buttons, pinch and effects follow what the phone has", () => {
+  assert.deepEqual(zoomStops(0.5, 30), [0.5, 1, 2, 5]);
+  assert.deepEqual(zoomStops(1, 8), [1, 2, 5]);
+  assert.deepEqual(zoomStops(1, 1), [1]);
+  assert.equal(zoomName(0.5), '0.5×');
+  assert.equal(zoomName(2), '2×');
+  assert.equal(pinchedZoom(1, 100, 200, 0.5, 10), 2);
+  assert.equal(pinchedZoom(1, 100, 10, 0.5, 10), 0.5);
+  assert.equal(pinchedZoom(8, 100, 300, 0.5, 10), 10);
+  assert.equal(effectFor('night', false, ['night', 'hdr']), 'night');
+  assert.equal(effectFor('night', false, ['hdr']), 'none');
+  assert.equal(effectFor('portrait', true, ['bokeh']), 'bokeh');
+  assert.equal(effectFor('photo', true, ['hdr']), 'hdr');
+  assert.equal(effectFor('photo', false, ['hdr']), 'none');
+  assert.equal(effectFor('video', true, ['hdr', 'night']), 'none');
 });

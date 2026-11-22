@@ -104,6 +104,12 @@ const ANDROID_KNOWN = {
   'androidx.media3:media3-exoplayer': { license: 'Apache-2.0', link: 'https://github.com/androidx/media' },
   'androidx.media3:media3-session': { license: 'Apache-2.0', link: 'https://github.com/androidx/media' },
   'androidx.media3:media3-ui': { license: 'Apache-2.0', link: 'https://github.com/androidx/media' },
+  'androidx.camera:camera-core': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
+  'androidx.camera:camera-camera2': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
+  'androidx.camera:camera-lifecycle': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
+  'androidx.camera:camera-video': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
+  'androidx.camera:camera-view': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
+  'androidx.camera:camera-extensions': { license: 'Apache-2.0', link: 'https://developer.android.com/jetpack/androidx/releases/camera' },
 };
 
 /** A package that names its licence nowhere in its package.json or the lock. Element Call's source files

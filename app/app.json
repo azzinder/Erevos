@@ -78,15 +78,6 @@
         }
       ],
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Erevos uses the camera only while its own camera is open in the Collection, or when you tap Camera or Take photo.",
-          "microphonePermission": "Erevos uses the microphone for a video's sound only while its own camera records.",
-          "recordAudioAndroid": true,
-          "barcodeScannerEnabled": false
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "Erevos opens your photos only when you choose one to send.",

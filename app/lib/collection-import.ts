@@ -16,7 +16,7 @@ import { photoSize } from './photo';
 import { pickLinks, pickSource } from './pick-file';
 import { whilePicking } from './picking';
 import { isSharedPhoto, readShared, type SharedFile } from './share-in';
-import { collectionNative } from '../modules/erevos-collection';
+import { cameraView, collectionNative } from '../modules/erevos-collection';
 
 // Bringing photos and files into the Collection (lock/collection-data.ts), on the phone: a photo
 // taken with the camera, a file picked from the phone's files, a photo or file another app shared,
@@ -34,8 +34,8 @@ import { collectionNative } from '../modules/erevos-collection';
 
 /** Whether this device can bring files into the Collection. */
 export const CAN_COLLECT = true;
-/** Whether a photo can be taken with the camera straight into the Collection. */
-export const CAN_TAKE_PHOTO = true;
+/** Whether a photo can be taken with Erevos's own camera straight into the Collection (not in builds before it). */
+export const CAN_TAKE_PHOTO = cameraView() !== null;
 /** Whether many photos and videos can be picked from the gallery at once. */
 export const CAN_PICK_GALLERY = true;
 
