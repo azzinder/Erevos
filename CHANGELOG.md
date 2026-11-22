@@ -6,7 +6,7 @@ and security inside. After 0.1.16 comes 2.0.0.
 Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
 0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
 and 0.1.15 never came out.
-4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). **Not audited.**
+4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+), and What's new in the app starts again there. **Not audited.**
 
 ## Unreleased
 
@@ -14,7 +14,13 @@ On main, not released yet:
 
 ### For you
 
-**Make a backup** says in its card what it does (gathering, encrypting and saving) and how far it is, with a bar, instead of only at the foot of the screen; when the backup is saved, a notice says so (`modules/erevos-device` `Backups.kt`, `lib/backup-notice.ts`), as it can take minutes. Requested by the maintainer.
+### Under the hood
+
+## 3.0.0-beta.1 (2026-11-22)
+
+### For you
+
+- **Make a backup** says in its card what it does (gathering, encrypting and saving) and how far it is, with a bar, instead of only at the foot of the screen; when the backup is saved, a notice says so (`modules/erevos-device` `Backups.kt`, `lib/backup-notice.ts`), as it can take minutes. Requested by the maintainer.
 - The Collection's camera: where the phone's maker offers them through CameraX Extensions, as on a Pixel, **Night** and **Portrait** beside **Photo** and **HDR on** at the top, made on the phone by its own system; a tap focuses and meters there; **Darker** and **Brighter**; zoom buttons for the wide lens (0.5×), 1×, 2× and 5× where the phone has them, and two fingers between; a timer of 3 or 10 seconds, a grid, a silent shutter, the light on while filming, HD, Full HD or 4K, and **HDR video on** (HLG, 10-bit) where the phone films it. Not yet tried on a phone.
 - SMS: **MMS** under SMS settings: fetched at once (on by default) and while roaming (off by default); one not fetched waits in its conversation, and under MMS, with its size and **Fetch (may cost)** (MmsStore keeps the carrier's notice). Not yet tried on a phone.
 - SMS: quick texts, held **+** or **Quick texts** in an SMS conversation: the app's own until the owner adds or removes one, then theirs, kept encrypted with the space's SMS data (components/sms-quick.tsx). Not yet tried on a phone.
@@ -33,6 +39,7 @@ On main, not released yet:
 - **Delete the original from the gallery after importing** deletes more of what it should: a photo or video picked from the phone's storage, whose link Android maps to the gallery's files table, was taken for no photo of the gallery and kept; it is now asked for too. One picked through the photo picker is found in the gallery by its id, and asked for only when its name and size there match (`modules/erevos-collection` `galleryUri`, `pickedInGallery`). When Android still does not say which photo it is, or cannot delete it, the Collection says so under the list instead of nothing (`lib/collection-import.ts`). Reported by the maintainer; not yet tried on a phone.
 - On home, the services button stays under the top bar while the list scrolls (out of the list's header into the fixed part, `app/index.tsx` `servicesBar`); the search, **Ways** and **Invite** still scroll with the list. **Names** (SMS names from the phone's contacts) shows only on the **SMS** part, no longer on **All services**. Reported by the maintainer.
 - On the **SMS** part of the chat list, the button at the bottom is **New SMS** and opens only a new SMS, also with Erevos's own chats on; it opened New chat's Erevos steps there unless Erevos was off (`app/index.tsx` `newChat`). Holding it still opens the hidden chats' PIN. Reported by the maintainer.
+
 ### Under the hood
 - The Collection's camera says what went wrong in the owner's language (not opened, stopped, not ready, the photo or video not taken or not kept): the camera's own English words, from Android, showed before (`cameraTrouble` in `components/erevos-camera.tsx`, `troubleOf` in `lib/camera-controls.ts`). From the review of 8a88072 (Υ1).
 - What the Collection's camera left unencrypted in the app's cache, when Erevos stopped before keeping it (the battery ran out, Android stopped it while recording), is deleted as Erevos starts (`lib/camera-cache.ts`). From the review of b379943f (Τ12).

@@ -22,11 +22,11 @@ import { ROOT } from './words';
 // "## 3.3.2 (2026-10-25)" or "## 4.0.0-rc.1 (…)": the releases, newest first; "## Unreleased" is NEXT.
 const changelog = () => readFileSync(join(ROOT, '..', 'CHANGELOG.md'), 'utf8');
 const releases = () => [...changelog().matchAll(/^## (?!Unreleased$)(\S+)/gm)].map((m) => m[1]);
-// What's new shows the releases from 7.0.0 on: the older ones (2.x to 6.x) had names that the
-// numbering since 7.x takes again (3.0.0), and stay only in CHANGELOG.md.
+// What's new starts again at 3.0.0-beta.1, the first release of the numbering after 7.x: the
+// releases before it (up to 7.2.0-rc.2) stay only in CHANGELOG.md.
 const shownReleases = () => {
   const all = releases();
-  return all.slice(0, all.indexOf('7.0.0') + 1);
+  return all.slice(0, all.indexOf('3.0.0-beta.1') + 1);
 };
 const lines = (changes: Changes) => [...changes.forYou, ...changes.underTheHood];
 
@@ -89,10 +89,9 @@ test('what is not out yet shows under the version that runs, once it comes after
   if (pending) assert.equal(whatsNewFor('0.0.1', 'lite')[0].version, null);
 });
 
-test('plain Erevos keeps the lines that are its own too: the fixed bar, groups that end', () => {
+test('plain Erevos keeps the lines that are its own: SMS, Phone, Collection', () => {
   const all = whatsNewFor(VERSIONS[0].version, 'lite').flatMap((v) => [...v.forYou, ...v.underTheHood]);
-  for (const start of ['**The bar at the top stays**', '**Groups that end**']) assert.ok(all.some((line) => line.startsWith(start)), start);
-  assert.ok(!all.some((line) => line.startsWith('**A simpler field in Matrix and XMPP chats**')));
+  for (const start of ['**Quick texts**', '**Speed dial**', '**Night photos and HDR**']) assert.ok(all.some((line) => line.startsWith(start)), start);
 });
 
 test("its links go to the guide's sections, in every one of its languages", () => {
@@ -123,4 +122,8 @@ test('since 7.x, Erevos+ takes in the plain x.0.y and Erevos⁻ x.2.y releases, 
     ['3.1.0', '7.3.0'],
   );
   assert.deepEqual(list[0].forYou, ['in 3.1.0', 'in 3.2.0', 'in 3.0.1', 'in 3.0.0']);
+  // Their betas and release candidates too.
+  const betas = asPlusForCheck([entry('3.1.0-beta.1'), entry('3.0.0-beta.1'), entry('7.3.0-rc.2')]);
+  assert.deepEqual(betas.map((v) => v.version), ['3.1.0-beta.1', '7.3.0-rc.2']);
+  assert.deepEqual(betas[0].forYou, ['in 3.1.0-beta.1', 'in 3.0.0-beta.1']);
 });
