@@ -29,6 +29,7 @@ On main, not released yet:
 - A restore that cannot write all of its files and keystore entries (a full phone) puts back what the phone held, instead of leaving half of each, and removes the photos and files it had brought.
 - Relay: sign-in with an OpenID provider also checks the ID token's `exp` and, when it names other audiences, `azp`; lending refuses a place or quota while its counts cannot be written to disk.
 - Releases: `npm audit` fails the checks on high advisories too; the web publish on the release computer signs the release's SHA256SUMS too (SHA256SUMS.sig beside the web app, `node pwa/release.mjs verify-sums`), and `deploy/web/publish-sums.sh` signs it again after a package added later (macOS, a missing APK) rewrote it.
+- Checks: a first packet sent again after a restore, once its id is no longer kept, never takes the place of the conversation the chat sends in nor where it sends; one a contact really starts with a clock gone back takes over only once they write in it; and when a first packet counts as old (`staleFirst`), whatever its time or none.
 
 ## 3.0.0-beta.1 (2026-11-22)
 
