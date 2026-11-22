@@ -1326,7 +1326,7 @@ sticker):
   Tocca un’opzione per sceglierla, di nuovo per ritirarla; ogni opzione mostra quanti l’hanno scelta, e chi. I voti
   viaggiano dentro la crittografia, come le reazioni. Un Erevos di prima di questa funzione mostra la domanda e le sue
   opzioni come parole, a cui rispondere a parole.
-- **Richiesta di pagamento** (chiesta da un’altra app, come Fasouli): un importo e per cosa, come scheda. Chi la riceve
+- [~] **Richiesta di pagamento** (chiesta da un’altra app, come Fasouli): un importo e per cosa, come scheda. Chi la riceve
   tocca **Pagato** quando ha pagato, e il tuo telefono lo sa; non si può annullare. Poi **Segna in Fasouli**, su Android,
   la segna incassata lì. Erevos non sposta denaro e non conosce banche: la scheda dice solo cosa è stato chiesto. Solo
   nelle chat con un contatto, mai in quelle nascoste. Un Erevos precedente mostra l’importo come testo.

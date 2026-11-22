@@ -57,6 +57,8 @@ jobs:
           LITE_RELEASES_TOKEN: ${{ secrets.LITE_RELEASES_TOKEN }}
           WANTED: ${{ inputs.version }}
         run: |
+          # With pipefail, a list of releases that could not be read stops here, not only its last step.
+          set -euo pipefail
           if [ "$GITHUB_REF_NAME" != main ]; then
             echo "::error::Erevos Lite is released only from main, not from $GITHUB_REF_NAME"; exit 1
           fi
@@ -71,7 +73,7 @@ jobs:
           order() { sed 's/-/~/' | sort -V | sed 's/~/-/'; }
           published=$(GH_TOKEN=$LITE_RELEASES_TOKEN gh api "repos/$LITE_RELEASES_REPO/releases?per_page=100" \
             --jq '.[] | select(.draft | not) | .tag_name | select(startswith("v")) | ltrimstr("v")' |
-            grep -E '^[1-9][0-9]*\.2\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$' | order) || {
+            { grep -E '^[1-9][0-9]*\.2\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$' || true; } | order) || {
             echo "::error::$LITE_RELEASES_REPO could not be read with LITE_RELEASES_TOKEN"; exit 1; }
           latest=$(tail -n1 <<< "$published")
           if grep -qx -- "$version" <<< "$published"; then
@@ -98,8 +100,10 @@ jobs:
           EREVOS_BUILT: "67 68"
           RELEASES_REPO: azzinder/erevos-releases
         run: |
-          # Every build so far, as release.yml reads them, and Erevos Lite's: one row of numbers for
-          # all three editions, so no two builds ever share one.
+          # Every build so far, as release.yml reads them, Erevos Lite's among them: Erevos and Erevos
+          # Lite never share a number. (Erevos+, built in its own repository, reads Erevos's
+          # download repository, not Erevos Lite's: its package is another, so one number in both
+          # would still install.)
           builds=$(mktemp)
           if ! {
             printf '%s\n' $EREVOS_BUILT &&
@@ -304,19 +308,18 @@ jobs:
           NOTES
           cat notes.md
 
-      - name: Tag the commit built
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v$EREVOS_VERSION" -f sha="$GITHUB_SHA"
-
       - name: Publish to Erevos Lite's download repository
         env:
           GH_TOKEN: ${{ secrets.LITE_RELEASES_TOKEN }}
         run: |
           PRE=""
           if [ "$CHANNEL" = lite-beta ]; then PRE=--prerelease; fi
-          gh release create "v$EREVOS_VERSION" files/* --repo "$LITE_RELEASES_REPO" --title "Erevos Lite $EREVOS_VERSION" --notes-file notes.md --latest="$LATEST" $PRE
+          # Run again after a failure, the release made then gets its files again.
+          if gh release view "v$EREVOS_VERSION" --repo "$LITE_RELEASES_REPO" > /dev/null 2>&1; then
+            gh release upload "v$EREVOS_VERSION" files/* --repo "$LITE_RELEASES_REPO" --clobber
+          else
+            gh release create "v$EREVOS_VERSION" files/* --repo "$LITE_RELEASES_REPO" --title "Erevos Lite $EREVOS_VERSION" --notes-file notes.md --latest="$LATEST" $PRE
+          fi
           # A beta: channel-beta's version.json, which Check for updates reads for the betas, now says it.
           if [ "$CHANNEL" = lite-beta ]; then
             if ! gh release view channel-beta --repo "$LITE_RELEASES_REPO" > /dev/null 2>&1; then
@@ -328,4 +331,18 @@ jobs:
           # The five newest releases stay; channel-beta always.
           gh release list --repo "$LITE_RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '[.[] | select(.tagName | startswith("channel-") | not)][5:][].tagName' |
             xargs -r -n1 gh release delete --repo "$LITE_RELEASES_REPO" --cleanup-tag --yes
+
+      # After it is out, so that a run again after a failure does not stop at a tag already made; a
+      # tag there already on the commit built is left as it is.
+      - name: Tag the commit built
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          there=$(gh api "repos/$GH_REPO/git/ref/tags/v$EREVOS_VERSION" --jq .object.sha 2>/dev/null || true)
+          if [ "$there" = "$GITHUB_SHA" ]; then
+            echo "v$EREVOS_VERSION is on $GITHUB_SHA already."
+          else
+            gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v$EREVOS_VERSION" -f sha="$GITHUB_SHA"
+          fi
           echo "::notice::On the computer with the release key: deploy/web/publish-android.sh $EREVOS_VERSION <user@server>, so Check for updates installs it."

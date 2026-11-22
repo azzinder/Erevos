@@ -95,12 +95,14 @@ jobs:
           # kept for Erevos+'s next build (beta.5 with Messenger's start fixed) before its run names it;
           EREVOS_BUILT: "67 68"
           RELEASES_REPO: azzinder/erevos-releases
+          LITE_RELEASES_REPO: azzinder/erevos-lite-releases
         run: |
           # Every build so far: each published release's, Erevos's and Erevos+'s (its version.json),
           # the builds under way here (their drafts, build-<n>), and Erevos+'s and ErevosGram's
           # (erevosgram.yml, whose runs are named "<version>, build <n>", the unpublished ones too, until
           # Erevos+ moved to azzinder/ErevosPlus), and every release in the public download repository,
-          # where Erevos+'s releases are published from there.
+          # where Erevos+'s releases are published from there, and Erevos Lite's (release-lite.yml),
+          # once its download repository is there.
           # Should any of them not be read, no build: two with one number would not install.
           builds=$(mktemp)
           if ! {
@@ -111,7 +113,12 @@ jobs:
             gh api "repos/$GH_REPO/actions/workflows/erevosgram.yml/runs?per_page=100" --jq '.workflow_runs[].display_title' |
               sed -n 's/.*, build \([1-9][0-9]*\)$/\1/p' &&
             gh api "repos/$RELEASES_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | select(any(.assets[]; .name == "version.json")) | .tag_name' |
-              while read -r tag; do gh release download "$tag" --repo "$RELEASES_REPO" -p version.json -O - | jq -r '.build // empty' || exit 1; done
+              while read -r tag; do gh release download "$tag" --repo "$RELEASES_REPO" -p version.json -O - | jq -r '.build // empty' || exit 1; done &&
+            { lite=$(gh api "repos/$LITE_RELEASES_REPO" --jq .full_name 2>&1) || grep -q 'Not Found' <<< "$lite"; } &&
+            if [ "$lite" = "$LITE_RELEASES_REPO" ]; then
+              gh api "repos/$LITE_RELEASES_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | select(any(.assets[]; .name == "version.json")) | .tag_name' |
+                while read -r tag; do gh release download "$tag" --repo "$LITE_RELEASES_REPO" -p version.json -O - | jq -r '.build // empty' || exit 1; done
+            fi
           } > "$builds"; then
             echo "::error::Not every build so far could be read, so no number is sure for this one: no build."; exit 1
           fi

@@ -38,9 +38,14 @@ and script names the plain Erevos `erevos`.
   (`erevos-phone`, `erevos-sms`) out of the app (`expoAutolinking.exclude` in settings.gradle), so
   neither their code nor the permissions of their manifests (calls, call log, SMS, MMS) are in it.
   Their JavaScript finds no native module, as in a browser. The Collection's native module stays,
-  as chats open files with another app and play videos through it, but the Collection is not offered. The guide leaves out their sections (`EREVOS_SECTIONS`), What's
-  new their lines (`inErevosLite`), the widget their buttons. Chat photos, video calls and the QR
+  as chats open files with another app and play videos through it, but the Collection is not
+  offered. The guide leaves out their sections (`EREVOS_SECTIONS`) and, in the others, what speaks
+  of them (`editionSource` in lib/guide.ts: what links to them or names SMS, and items marked
+  `- [~] `); What's new their lines (`inErevosLite`), under Erevos Lite's own numbers (`asLite`);
+  the widget and Appearance → Launcher icons their icons. Chat photos, video calls and the QR
   scanner keep the camera permission.
+- Erevos Lite has no payment requests of Fasouli's: `erevos://pay` only opens it, and a request a
+  contact sends shows as its words, with no **Paid**.
 - Releases: Erevos Lite has its own workflow (`.github/workflows/release-lite.yml`, by hand, version
   3.2.x) and its own download repository, `azzinder/erevos-lite-releases` (secret
   `LITE_RELEASES_TOKEN`); the release computer signs it with `deploy/web/publish-android.sh`.

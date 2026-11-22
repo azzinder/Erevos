@@ -228,3 +228,32 @@ test('no list marker is left inside a step, an item or a note', () => {
     }
   }
 });
+
+test("Erevos Lite's guide says nothing of what it has not: no link to a section it leaves out, no SMS, no Fasouli's payment requests", () => {
+  for (const lang of GUIDE_LANGS) {
+    const sections = guideFor(lang, 'lite');
+    // Sections, and the headings inside them that have an id of their own ("### … {#id}").
+    const ids = new Set([...sections.map((s) => s.id), ...sections.flatMap((s) => s.blocks.flatMap((b) => (b.kind === 'heading' ? [/\{#([a-z0-9-]+)\}$/.exec(b.text)?.[1] ?? ''] : [])))]);
+    for (const gone of ['sms', 'phone', 'collection', 'modules']) assert.ok(!ids.has(gone), `${lang} ${gone}`);
+    for (const section of sections) {
+      for (const text of section.blocks.flatMap(inlineTexts)) {
+        for (const span of parseInline(text)) if (span.link?.startsWith('#')) assert.ok(ids.has(span.link.slice(1)), `${lang} ${section.id}: ${span.link}`);
+        assert.doesNotMatch(text, /\bSMS\b|\bMMS\b|\[~\]/, `${lang} ${section.id}`);
+      }
+      // Every section it keeps still says something.
+      assert.ok(section.blocks.length > 0, `${lang} ${section.id}`);
+    }
+    // The payment requests are in the plain Erevos's, unmarked.
+    const plain = guideFor(lang, 'erevos').flatMap((s) => s.blocks.flatMap(inlineTexts)).join(' ');
+    assert.match(plain, /Fasouli\)/, lang);
+    assert.doesNotMatch(plain, /\[~\]/, lang);
+    assert.doesNotMatch(sections.flatMap((s) => s.blocks.flatMap(inlineTexts)).join(' '), /Fasouli\)/, lang);
+  }
+});
+
+test('a list item marked [~] is left out of Erevos Lite alone, with what continues it', () => {
+  const source = '- Both\n- [~] Not in Lite\n  goes on\n- Both again';
+  assert.equal(editionSource(source, 'erevos'), '- Both\n- Not in Lite\n  goes on\n- Both again');
+  assert.equal(editionSource(source, 'plus'), '- Both\n- Not in Lite\n  goes on\n- Both again');
+  assert.equal(editionSource(source, 'lite'), '- Both\n- Both again');
+});

@@ -127,3 +127,16 @@ test('since 7.x, Erevos+ takes in the plain x.0.y and Erevos⁻ x.2.y releases, 
   assert.deepEqual(betas.map((v) => v.version), ['3.1.0-beta.1', '7.3.0-rc.2']);
   assert.deepEqual(betas[0].forYou, ['in 3.1.0-beta.1', 'in 3.0.0-beta.1']);
 });
+
+test('Erevos Lite tells what Erevos had until it under its own number, without the Phone, SMS or Collection', () => {
+  // Its first release brings all Erevos had until then, as this version.
+  const first = whatsNewFor('3.2.0-beta.1', 'lite');
+  assert.equal(first[0].version, '3.2.0-beta.1');
+  assert.ok(first.every((v) => v.version === null || /^\d+\.2\./.test(v.version)), JSON.stringify(first.map((v) => v.version)));
+  const all = first.flatMap(lines);
+  // The phone you hold is not the Phone.
+  assert.ok(all.some((line) => line.startsWith('**Erevos, Erevos+ or Erevos Lite**')));
+  for (const line of all) assert.doesNotMatch(line, /\bSMS\b|\bPhone\b|\bCollection\b|\(#(?:sms|phone|collection|modules)\)/, line);
+  // Nothing empty is listed.
+  for (const v of whatsNewFor('0.0.1', 'lite')) assert.ok(lines(v).length > 0, String(v.version));
+});

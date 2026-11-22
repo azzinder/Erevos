@@ -76,7 +76,36 @@ export function whatsNewFor(running: string, edition: Edition = EDITION): (Chang
   const all = [...next, ...VERSIONS];
   if (edition === 'plus') return asPlus(all);
   const kept = edition === 'lite' ? (text: string) => inLite(text) && inErevosLite(text) : inLite;
-  return all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(kept), underTheHood: underTheHood.filter(kept) }));
+  const shown = all.map(({ forYou, underTheHood, ...rest }) => ({ ...rest, forYou: forYou.filter(kept), underTheHood: underTheHood.filter(kept) }));
+  return edition === 'lite' ? asLite(shown, running).filter((v) => v.forYou.length + v.underTheHood.length > 0) : shown;
+}
+
+// Erevos Lite tells its releases (x.2.y, their betas and rcs) as its own: what a release of another
+// edition brought shows under the Lite release that came after it, or, with none yet, under the
+// Lite version that runs (its first release, 3.2.0-beta.1, brings all Erevos had until then). A
+// build of main for testing, with no Lite number, keeps them as they are.
+const LITE_RELEASE = /^(?!7\.)\d+\.2\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/;
+
+export function asLite<T extends Changes & { version: string | null }>(list: T[], running: string): (Changes & { version: string | null })[] {
+  const out: (Changes & { version: string | null })[] = [];
+  let carried: T[] = [];
+  const merged = (entry: Changes & { version: string | null }, from: T[]) => ({
+    ...entry,
+    forYou: [...entry.forYou, ...from.flatMap((x) => x.forYou)],
+    underTheHood: [...entry.underTheHood, ...from.flatMap((x) => x.underTheHood)],
+  });
+  // Oldest first, so what another edition's release brought goes up to the next Lite one.
+  for (const entry of [...list].reverse()) {
+    if (entry.version !== null && !LITE_RELEASE.test(entry.version)) {
+      carried = [entry, ...carried];
+      continue;
+    }
+    out.unshift(merged(entry, carried));
+    carried = [];
+  }
+  if (carried.length === 0) return out;
+  if (LITE_RELEASE.test(running) && !list.some((v) => v.version === running)) return [merged({ version: running, forYou: [], underTheHood: [] }, carried), ...out];
+  return [...carried, ...out];
 }
 
 // Erevos+ tells its releases as its own: a release of the plain Erevos alone (7.0.y after 7.0.0,
@@ -113,5 +142,6 @@ export const inLite = (text: string): boolean => text.startsWith(IN_PLUS) || !PL
 
 // What Erevos Lite shows besides: not what is of the Phone, the SMS, the Collection or its camera,
 // which it has not.
-const EREVOS_ONLY = /\(#(?:phone|sms|collection|modules)\)|\bSMS\b|\bMMS\b|\bthe Phone\b|\bPhone:|\bCollection\b|\bvoicemails?\b|\bspeed dial\b/i;
+// Case counts: the Phone and the Collection are written with a capital, the phone you hold is not.
+const EREVOS_ONLY = /\(#(?:phone|sms|collection|modules)\)|\bSMS\b|\bMMS\b|\bPhone\b|\bCollection\b|\b[Vv]oicemails?\b|\b[Ss]peed dial\b/;
 export const inErevosLite = (text: string): boolean => !EREVOS_ONLY.test(text);

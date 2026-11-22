@@ -60,11 +60,61 @@ function cells(line: string): string[] {
  *   {-text}            only in the plain Erevos
  *   - [+] item         a list item, with the lines that continue it, only in Erevos+
  *   [+] paragraph      a paragraph, note or table row, to the next blank line, only in Erevos+
+ *   - [~] item         a list item, with the lines that continue it, not in Erevos Lite
  *
  * With Erevos+, the marks go and their text stays: the guide reads as if there were none.
  */
 export function editionSource(source: string, edition: 'plus' | 'erevos' | 'lite'): string {
-  const lite = edition !== 'plus';
+  const text = plainSource(source, edition !== 'plus');
+  return edition === 'lite' ? withoutErevosOnly(text) : text.replace(/^(\s*)- \[~\] /gm, '$1- ');
+}
+
+// Erevos Lite has no Phone, no SMS, no Collection and no Modules (guide/index.ts leaves their
+// sections out). In the sections it keeps, what speaks of them goes: each list item (with its
+// sub-items), step, paragraph, note or table row that links to one of their sections, names SMS or
+// MMS, which every language writes so, or names the Collection or the Modules as the language's
+// guide titles them (with a capital, so not a collection of anything else). Headings stay.
+// A list item marked `- [~] ` is not in Erevos Lite either, as the payment requests of Fasouli.
+const EREVOS_ONLY = /\]\(#(?:sms|phone|collection|modules)\)|\bSMS\b|\bMMS\b|^\s*- \[~\] /;
+const NAMED = ['collection', 'modules'];
+
+function withoutErevosOnly(source: string): string {
+  const lines = source.split('\n');
+  // The section titles, less their last two letters, so that "Collection's" or the Greek "Συλλογής" match too.
+  const stems = NAMED.flatMap((id) => {
+    const title = new RegExp(`^##\\s+(.+?)\\s*\\{#${id}\\}`, 'm').exec(source)?.[1];
+    return title && title.length > 5 ? [title.slice(0, -2).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')] : [];
+  });
+  const named = stems.length ? new RegExp(`(?<!\\p{L})(?:${stems.join('|')})`, 'u') : null;
+  const erevosOnly = (text: string) => EREVOS_ONLY.test(text) || (named?.test(text) ?? false);
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '' || line.startsWith('#') || /^\| ?-/.test(line)) {
+      out.push(line);
+      continue;
+    }
+    // The block: a table row alone; an item or step with its more indented lines; else to the
+    // next blank line, a heading or a new item.
+    const item = /^(\s*)(?:- |\d+\. )/.exec(line);
+    let end = i;
+    if (!line.startsWith('| ')) {
+      while (end + 1 < lines.length) {
+        const next = lines[end + 1];
+        if (next.trim() === '' || next.startsWith('#') || next.startsWith('| ')) break;
+        const nextItem = /^(\s*)(?:- |\d+\. )/.exec(next);
+        if (item ? /^(\s*)/.exec(next)![1].length <= item[1].length : nextItem !== null) break;
+        end++;
+      }
+    }
+    const block = lines.slice(i, end + 1);
+    if (!erevosOnly(block.join(' '))) out.push(...block);
+    i = end;
+  }
+  return out.join('\n');
+}
+
+function plainSource(source: string, lite: boolean): string {
   const text = source.replace(/\{([+-])([\s\S]*?)\}/g, (_all, which: string, inner: string) => ((which === '-') === lite ? inner : ''));
   const lines = text.split('\n');
   const out: string[] = [];
