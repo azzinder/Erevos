@@ -56,14 +56,26 @@ edition installed is an update. Another edition's is a move (`app/lib/edition-mo
 2. The edition moved to, at its first start, finds the move through Android: Move.kt's provider
    (`<package>.move`) answers only an app signed with its own key (`checkSignatures`), and Android
    11 and later show the other editions only to an app that names them (`<queries>`). It copies the
-   files, restores the backup and tells the other, which deletes them. A move waits a day.
-3. The phone's SMS and calls stay in Android's own stores; the edition moved to is made the SMS and
-   phone app again, if wanted. The other edition stays until uninstalled.
+   files, restores the backup and tells the other, which deletes them. A move waits a day. An
+   edition set up already asks at its start (`app/_layout.tsx`, `components/moved-out.tsx`), as
+   what it brings takes the place of everything it has; Not now is kept for that move.
+3. From the moment the move is made, the edition moved from opens no space and receives nothing,
+   also in the background (`moved-out.json`, `app/lib/move-state.ts`): only the move shows, with
+   **Call the move off**. Once taken, it offers **Delete everything here** (as the panic wipe) and
+   **Uninstall**. A move not taken within a day goes, and it opens as before.
+4. The phone's SMS and calls stay in Android's own stores; the edition moved to is made the SMS and
+   phone app again, if wanted. Before anything is written, the free room is checked.
 
 What a module the edition moved to does not have stays in its data, unused, and is there again
 after a move back. A build signed with another key (F-Droid's) cannot take a move: Backups does
 the same by hand.
 
 Each edition reads its own releases: Erevos and Erevos+ in `azzinder/erevos-releases` (Erevos+
-under `channel-plus`), Erevos Lite in `azzinder/erevos-lite-releases`. `version.json` says the
+from 3.1.0 under `channel-erevos-plus` and `channel-erevos-plus-beta`, signed as `erevos-plus`:
+`wireOf` in `app/lib/update-channel.ts`), Erevos Lite in `azzinder/erevos-lite-releases`.
+
+The Erevos+ 7.x apps are `app.erevos` and read `channel-plus` and `channel-plus-beta`, where an
+`app.erevos.plus` would install as a second, empty app. Only the bridge goes there: an Erevos+ 3.1.x
+built with `EREVOS_BRIDGE=1`, so still `app.erevos`, which a 7.x takes as an update keeping
+everything, and which then offers the move to `app.erevos.plus` (it reads `erevos-plus`). `version.json` says the
 release's Android app (`package`); for older ones `packageOf` (`app/lib/update-channel.ts`) knows it.

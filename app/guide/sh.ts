@@ -4177,9 +4177,13 @@ Na Androidu, **Ažuriranja** kažu i koje se verzije nude ovom telefonu:
   (svaki prostor, s njegovim kontaktima, porukama i postavkama), a Android instalira drugu aplikaciju pored ove, ako
   već nije tu. Otvorite je u roku od jednog dana: pita da li da donese vaše razgovore i preuzima ih; ništa ne napušta
   telefon. Prostori se zatim otvaraju svojim lozinkama, kao nakon svakog vraćanja. SMS i pozivi telefona ostaju u
-  telefonu: postavite novu aplikaciju kao aplikaciju za SMS i telefon, ako ih koristite. Stara aplikacija ostaje dok
-  je ne deinstalirate; prelazak koji nije preuzet u roku od jednog dana se briše. F-Droid verzija, potpisana drugim
-  ključem, ne može tako preći: koristite [Rezervne kopije](#backup).
+  telefonu: postavite novu aplikaciju kao aplikaciju za SMS i telefon, ako ih koristite. Od trenutka prelaska stara
+  aplikacija ništa ne prima i ne šalje i prikazuje samo prelazak, da tamo ne ostane nijedna poruka koju nova nema;
+  **Otkaži prelazak** je otvara kao prije. Kad ga nova preuzme, stara nudi **Obriši sve ovdje** i **Deinstaliraj**;
+  prelazak koji nije preuzet u roku od jednog dana se briše, a stara aplikacija se otvara kao prije. I nova aplikacija
+  koja je već podešena pita, a ono što donese zamjenjuje sve što ima. Prelazak traži slobodan prostor na telefonu za
+  kopiju svega: Erevos to kaže unaprijed kad ga nema dovoljno. F-Droid verzija, potpisana drugim ključem, ne može tako
+  preći: koristite [Rezervne kopije](#backup).
 - **Beta verzije**: isključeno, nude se samo redovne verzije. Uključeno, i beta verzije (kao **7.0.1-beta.1**): izlaze
   prve, za isprobavanje, i mogu imati problema. Beta ga na početku ima uključenog. Isključite ga da napustite beta
   verzije: sljedeća redovna verzija s brojem builda većim od bete koju imate instalira se preko nje i sve zadržava, bez

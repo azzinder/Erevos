@@ -17,8 +17,9 @@
 //       It signs Erevos's own channel's statement too (android-update-erevos.json), which names
 //       the release; see `channel`.
 //   node pwa/release.mjs channel <folder> <private key file> <channel> <name> <build> <sha256>
-//       Signs the statement of an Android release of a channel (erevos, erevos-beta, plus, lite,
-//       plus-beta, lite-beta: app/lib/update-channel.ts), by its channel, name, build and SHA-256, into
+//       Signs the statement of an Android release of a channel (erevos, erevos-beta, erevos-plus,
+//       erevos-plus-beta, lite, lite-beta; plus and plus-beta for Erevos+ 7.x and its bridge only:
+//       app/lib/update-channel.ts wireOf), by its channel, name, build and SHA-256, into
 //       <folder>/android-update-<channel>.json, which the server serves beside the web app
 //       (deploy/web/publish-android.sh): Check for updates installs a release of that channel only
 //       when it is signed so (app/lib/update-signature.ts).
@@ -94,16 +95,16 @@ async function keygen(file, publicFile = PUBLIC) {
 export const androidStatement = (build, sha256) => `erevos android update v1\nbuild ${build}\nsha256 ${sha256}\n`;
 
 /** The channels an Android release is published in (app/lib/update-channel.ts). */
-export const CHANNELS = ['erevos', 'erevos-beta', 'plus', 'plus-beta', 'lite', 'lite-beta'];
+export const CHANNELS = ['erevos', 'erevos-beta', 'plus', 'plus-beta', 'erevos-plus', 'erevos-plus-beta', 'lite', 'lite-beta'];
 const NAME = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(alpha|beta|rc)\.[1-9]\d*)?$/;
 
 /** What the release key signs for a channel's Android release, as app/lib/update-signature.ts channelStatementOf makes it. */
 export const channelStatement = (channel, name, build, sha256) =>
   `erevos android update v2\nchannel ${channel}\nname ${name}\nbuild ${build}\nsha256 ${sha256}\n`;
-const CHANNEL_STATEMENT = /^erevos android update v2\nchannel (erevos|erevos-beta|plus|plus-beta|lite|lite-beta)\nname ([0-9a-z.-]{1,40})\nbuild [1-9]\d*\nsha256 [0-9a-f]{64}\n$/;
+const CHANNEL_STATEMENT = /^erevos android update v2\nchannel (erevos|erevos-beta|plus|plus-beta|erevos-plus|erevos-plus-beta|lite|lite-beta)\nname ([0-9a-z.-]{1,40})\nbuild [1-9]\d*\nsha256 [0-9a-f]{64}\n$/;
 
 function channelUsage() {
-  fail('usage: node pwa/release.mjs channel <folder> <private key file> <erevos|erevos-beta|plus|plus-beta|lite|lite-beta> <name, e.g. 3.1.0> <build> <sha256, lowercase hex>');
+  fail('usage: node pwa/release.mjs channel <folder> <private key file> <erevos|erevos-beta|plus|plus-beta|erevos-plus|erevos-plus-beta|lite|lite-beta> <name, e.g. 3.1.0> <build> <sha256, lowercase hex>');
 }
 
 function writeChannel(dir, key, channel, name, build, sha256) {

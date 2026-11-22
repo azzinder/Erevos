@@ -4320,9 +4320,13 @@ No Android, **Atualizações** diz também quais versões são oferecidas a este
   criptografada, aqui no telefone (cada espaço, com seus contatos, mensagens e configurações), e o Android instala o
   outro app ao lado deste, se ele ainda não estiver lá. Abra-o dentro de um dia: ele pergunta se deve trazer suas
   conversas e as pega; nada sai do telefone. Os espaços abrem depois com suas senhas, como após qualquer restauração.
-  Os SMS e chamadas do telefone ficam no telefone: torne o novo app o app de SMS e de telefone, se você os usa. O app
-  antigo fica até você desinstalá-lo; uma mudança não feita em um dia é apagada. A versão do F-Droid, assinada com
-  outra chave, não pode mudar assim: use os [Backups](#backup).
+  Os SMS e chamadas do telefone ficam no telefone: torne o novo app o app de SMS e de telefone, se você os usa. Desde
+  que a mudança é feita, o app antigo não recebe nem envia nada e só mostra a mudança, para que não fique lá nenhuma
+  mensagem que o novo não tenha; **Cancelar a mudança** o abre como antes. Quando o novo a pega, o antigo oferece
+  **Apagar tudo aqui** e **Desinstalar**; uma mudança não feita em um dia é apagada, e o app antigo abre como antes.
+  Um app novo já configurado também pergunta, e o que ele traz toma o lugar de tudo o que tem. A mudança precisa de
+  espaço livre no telefone para uma cópia de tudo: o Erevos avisa antes quando não basta. A versão do F-Droid,
+  assinada com outra chave, não pode mudar assim: use os [Backups](#backup).
 - **Versões beta**: desativado, só as versões normais são oferecidas. Ativado, as betas também (como
   **7.0.1-beta.1**): saem antes, para teste, e podem ter problemas. Uma beta vem com ele ativado. Desative para sair
   das betas: a próxima versão normal com número de build maior que a beta que você tem é instalada por cima e mantém

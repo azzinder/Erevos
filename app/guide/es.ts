@@ -4361,9 +4361,13 @@ En Android, **Actualizaciones** dice también qué versiones se ofrecen a este t
   cifrada, aquí en el teléfono (cada espacio, con sus contactos, mensajes y ajustes), y Android instala la otra app
   junto a esta, si no está ya. Ábrela en el plazo de un día: pregunta si traer tus chats y los toma; nada sale del
   teléfono. Los espacios se abren luego con sus contraseñas, como tras cualquier restauración. Los SMS y las llamadas
-  del teléfono se quedan en el teléfono: haz de la nueva app la app de SMS y de teléfono, si los usas. La app antigua
-  se queda hasta que la desinstales; un traslado no tomado en un día se borra. La versión de F-Droid, firmada con otra
-  clave, no puede trasladarse así: usa las [Copias de seguridad](#backup).
+  del teléfono se quedan en el teléfono: haz de la nueva app la app de SMS y de teléfono, si los usas. Desde que se
+  hace el traslado, la app antigua no recibe ni envía nada y solo muestra el traslado, para que no quede allí ningún
+  mensaje que la nueva no tenga; **Cancelar el traslado** la abre como antes. Cuando la nueva lo toma, la antigua
+  ofrece **Borrar todo aquí** y **Desinstalar**; un traslado no tomado en un día se borra, y la app antigua se abre
+  como antes. Una app nueva ya configurada también pregunta, y lo que trae ocupa el lugar de todo lo que tiene. El
+  traslado necesita espacio libre en el teléfono para una copia de todo: Erevos lo dice antes si no alcanza. La
+  versión de F-Droid, firmada con otra clave, no puede trasladarse así: usa las [Copias de seguridad](#backup).
 - **Versiones beta**: desactivado, solo se ofrecen las versiones normales. Activado, también las betas (como
   **7.0.1-beta.1**): salen antes, para probar, y pueden tener problemas. Una beta lo tiene activado al principio.
   Desactívalo para salir de las betas: la próxima versión normal con un número de compilación mayor que la beta que

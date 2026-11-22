@@ -17,7 +17,9 @@
 // `extra.edition` (lib/edition.ts).
 const INSTALL_PACKAGES = 'android.permission.REQUEST_INSTALL_PACKAGES';
 // Each edition's Android package (app/lib/update-channel.ts PACKAGES).
-const PACKAGES = { lite: 'app.erevos', plus: 'app.erevos.plus' };
+// EREVOS_BRIDGE=1 builds Erevos+ as app.erevos: the bridge, which the Erevos+ 7.x apps take as an
+// update and which then moves to app.erevos.plus (lib/update-channel.ts wireOf).
+const PACKAGES = { lite: 'app.erevos', plus: process.env.EREVOS_BRIDGE === '1' ? 'app.erevos' : 'app.erevos.plus' };
 
 module.exports = ({ config }) => {
   const build = Number(process.env.EREVOS_BUILD || 0);

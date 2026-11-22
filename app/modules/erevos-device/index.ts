@@ -81,6 +81,8 @@ type Device = {
   moveClear?(): boolean;
   /** Whether the app `pkg` is installed, however signed. */
   appInstalled?(pkg: string): boolean;
+  /** Opens the edition `pkg` (one of the three, installed): whether it opened. */
+  openApp?(pkg: string): boolean;
   /** The other editions on the phone, signed as this one, whose move waits: each one's package and its move.json. */
   moveSources?(): Promise<{ pkg: string; move: string }[]>;
   /** Copies the file `name` of `pkg`'s move to `path`, a file of this app's own: its size. */

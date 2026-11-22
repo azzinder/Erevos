@@ -10,10 +10,13 @@ import { device } from '../modules/erevos-device';
 import { phoneSettingsForBackup } from './backup-native';
 import { afterRestore, beforeRestore } from './backup-settings';
 import { randomBytes, toHex } from './crypto';
-import { MOVE_WAITS, readMoveNote, type MoveNote } from './move-note';
+import { MOVE_WAITS, moveRoom, readMoveNote, type MoveNote } from './move-note';
+import { announceMovedOut, CAN_MOVE, cancelMove, clearMove, clearStaleMove, MOVE_FILE, movedOut, onMovedOut, outDir, writeMovedOut } from './move-state';
+import { formatSize } from './updates';
+import { t } from './i18n';
 import { INSTALLED_EDITION, PACKAGES, type UpdateEdition } from './update-channel';
 
-export { MOVE_WAITS, readMoveNote, type MoveNote };
+export { announceMovedOut, CAN_MOVE, cancelMove, clearMove, clearStaleMove, movedOut, MOVE_WAITS, onMovedOut, readMoveNote, type MoveNote };
 
 // Moving to another edition on the same phone (docs/editions.md): Erevos, Erevos+ and Erevos Lite
 // are apps of their own, each with its own data, signed with the same key. The one moved from makes
@@ -28,38 +31,55 @@ export { MOVE_WAITS, readMoveNote, type MoveNote };
 // to finds them once it is the SMS or phone app. Without Move.kt (an Erevos from before moves, or
 // one signed with another key, F-Droid's), Backups does the same by hand.
 
-const MOVE_FILE = 'move.json';
 const BACKUP_FILE = 'move.erevos';
 const partName = (n: number) => `move-part-${n}.erevos`;
 
-/** Whether this Erevos can hand over or take a move: on Android, from the build that has Move.kt. */
-export const CAN_MOVE = !!device?.moveOutDir && !!device?.moveSources;
+// The move another edition made for this one that the owner said Not now to, by when it was made.
+const declinedFile = () => new File(Paths.document, 'move-declined.json');
 
-function outDir(): Directory {
-  const path = device?.moveOutDir?.();
-  if (!path) throw new Error('No folder for the move');
-  return new Directory(`file://${path}`);
-}
-
-/** Deletes this app's move for another edition, if any. */
-export function clearMove(): void {
-  device?.moveClear?.();
-}
-
-/** Deletes this app's move once it waited longer than MOVE_WAITS, or is not readable. */
-export function clearStaleMove(now = Date.now()): void {
-  if (!CAN_MOVE) return;
+/** The newest move waiting for this app, set up already, unless the owner said Not now to it. */
+export async function waitingMove(now = Date.now()): Promise<FoundMove | null> {
+  const found = (await findMoves(now).catch(() => []))[0] ?? null;
+  if (!found) return null;
   try {
-    const dir = outDir();
-    const note = new File(dir, MOVE_FILE);
-    if (!note.exists) {
-      if (dir.list().length) clearMove();
-      return;
-    }
-    if (!readMoveNote(note.textSync(), now)) clearMove();
+    const file = declinedFile();
+    if (file.exists && Number(file.textSync()) === found.made) return null;
   } catch {
-    // Looked at again next time.
+    // Asked, then.
   }
+  return found;
+}
+
+/** Not now to `move`: it is not asked about again at the start. */
+export function declineMove(move: FoundMove): void {
+  try {
+    declinedFile().writeSync(String(move.made));
+  } catch {
+    // Asked again next time.
+  }
+}
+
+/** Opens the app of `edition`, when installed: whether it opened. */
+export function openEdition(edition: UpdateEdition): boolean {
+  return device?.openApp?.(PACKAGES[edition]) ?? false;
+}
+
+// The phone's free room, or null when it is not told.
+function freeRoom(): number | null {
+  try {
+    const free = Paths.availableDiskSpace;
+    return typeof free === 'number' && Number.isFinite(free) && free >= 0 ? free : null;
+  } catch {
+    return null;
+  }
+}
+
+/** An error for a move that would not fit, in words: null when it fits, or the phone does not say. */
+export function roomError(size: number): Error | null {
+  const free = freeRoom();
+  const need = moveRoom(size);
+  if (free === null || free >= need) return null;
+  return new Error(t('There is not enough free room on the phone for the move: it needs about {size}, and {free} is free. Delete something large, or move with Backups to a computer.', { size: formatSize(need), free: formatSize(free) }));
 }
 
 /**
@@ -69,12 +89,22 @@ export function clearStaleMove(now = Date.now()): void {
  */
 export async function prepareMove(to: UpdateEdition, progress?: (done: number, all: number) => void): Promise<void> {
   if (!CAN_MOVE) throw new Error('This Erevos cannot hand over a move');
-  clearMove();
+  cancelMove();
+  // Everything this app keeps goes into the move, encrypted, beside it for a while.
+  let size = 0;
+  try {
+    size = new Directory(Paths.document).size ?? 0;
+  } catch {
+    // Not told: the move finds out as it writes.
+  }
+  const full = roomError(size);
+  if (full) throw full;
   const dir = outDir();
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
   const password = toHex(randomBytes(32));
   const key = await backupKey(password);
   const parts: string[] = [];
+  let written = 0;
   try {
     const native = await phoneSettingsForBackup();
     const skip = await openCollectionSkips();
@@ -83,6 +113,7 @@ export async function prepareMove(to: UpdateEdition, progress?: (done: number, a
         const name = partName(parts.length + 1);
         new File(dir, name).writeSync(part);
         parts.push(name);
+        written += part.length;
         return name;
       },
       native,
@@ -90,10 +121,12 @@ export async function prepareMove(to: UpdateEdition, progress?: (done: number, a
       skip,
     });
     new File(dir, BACKUP_FILE).writeSync(bytes);
-    const note: MoveNote = { v: 1, from: INSTALLED_EDITION, to, made: Date.now(), backup: BACKUP_FILE, parts, password };
+    const made = Date.now();
+    const note: MoveNote = { v: 1, from: INSTALLED_EDITION, to, made, backup: BACKUP_FILE, parts, password, size: written + bytes.length };
     new File(dir, MOVE_FILE).writeSync(JSON.stringify(note));
+    writeMovedOut(to, made);
   } catch (error) {
-    clearMove();
+    cancelMove();
     throw error;
   }
 }
@@ -109,7 +142,8 @@ export async function findMoves(now = Date.now()): Promise<FoundMove[]> {
   for (const { pkg, move } of sources) {
     const note = readMoveNote(move, now);
     // Only a move for this edition, from the app it says it is from.
-    if (note && note.to === INSTALLED_EDITION && PACKAGES[note.from] === pkg) found.push({ ...note, pkg });
+    // Erevos+'s bridge is still app.erevos (lib/update-channel.ts wireOf).
+    if (note && note.to === INSTALLED_EDITION && (PACKAGES[note.from] === pkg || (note.from === 'plus' && pkg === PACKAGES.erevos))) found.push({ ...note, pkg });
   }
   return found.sort((a, b) => b.made - a.made);
 }
@@ -120,6 +154,9 @@ export async function findMoves(now = Date.now()): Promise<FoundMove[]> {
  * The caller holds the receiver while it runs and opens Erevos again after (as Backups' restore).
  */
 export async function takeMove(move: FoundMove, progress?: (done: number, all: number) => void): Promise<void> {
+  // Its files are copied here, then restored: twice its size, for a while.
+  const full = roomError(2 * (move.size ?? 0));
+  if (full) throw full;
   const dir = new Directory(Paths.cache, 'move-in');
   if (dir.exists) dir.delete();
   dir.create({ intermediates: true, idempotent: true });

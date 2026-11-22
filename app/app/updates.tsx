@@ -21,7 +21,7 @@ import { readQrPhoto } from '../lib/read-qr';
 import { throughTor } from '../lib/relay';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
 import { latestToldIn, loadNotice, noticeAnew, noticeSeen, onNotice, setNoticeOn, setUpdatesTor, torGet, type Told } from '../lib/release-notice';
-import { CAN_MOVE, clearStaleMove, editionInstalled, ownPackage, prepareMove } from '../lib/edition-move';
+import { announceMovedOut, CAN_MOVE, clearStaleMove, editionInstalled, ownPackage, prepareMove } from '../lib/edition-move';
 import { channelOf, INSTALLED_EDITION, loadChannel, onChannel, PACKAGES, packageOf, setChannel, updateEditionName, type Channel, type UpdateEdition } from '../lib/update-channel';
 import { fetchStatement, releaseSigning, signingOf } from '../lib/update-signature';
 import { buildNumber, channelPage, fetchChannelRelease, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type ChannelRelease, type Release } from '../lib/updates';
@@ -145,18 +145,17 @@ export default function UpdatesScreen() {
     } finally {
       setMoving(null);
     }
-    if (editionInstalled(edition)) {
-      setNote(t('Everything is ready for {edition}, which is on this phone already. Open it within a day: it asks whether to bring your chats from here.', { edition: name }));
-      return;
+    // From here this app receives nothing, and shows only the move (components/moved-out.tsx).
+    if (!editionInstalled(edition)) {
+      if (!installable) {
+        const page = isChannelRelease(release) ? channelPage(release.channel) : RELEASES_PAGE;
+        void Linking.openURL(page).catch(() => undefined);
+      } else {
+        // Should it not install, the move waits all the same: its screen offers the download page, or to call it off.
+        await install(release);
+      }
     }
-    if (!installable) {
-      setNote(t('Everything is ready for {edition}. Install it from its download page, then open it within a day: it asks whether to bring your chats from here.', { edition: name }));
-      const page = isChannelRelease(release) ? channelPage(release.channel) : RELEASES_PAGE;
-      void Linking.openURL(page).catch(() => undefined);
-      return;
-    }
-    if (await install(release))
-      setNote(t('Android shows its installer: tap Install. Then open {edition} within a day: it asks whether to bring your chats from here. This Erevos stays until you uninstall it.', { edition: name }));
+    announceMovedOut();
   }
 
   // Erevos from a phone nearby with no internet (lib/give-app.ts): its QR code names the package's
@@ -245,7 +244,9 @@ export default function UpdatesScreen() {
       setNote(
         channel?.edition === 'plus' && INSTALLED_EDITION !== 'plus'
           ? t('Erevos+ is not out yet, so this phone stays on Erevos for now. Check again later.')
-          : t('No release was found yet.'),
+          : channel?.edition === 'lite' && INSTALLED_EDITION !== 'lite'
+            ? t('Erevos Lite is not out yet, so this phone stays as it is for now. Check again later.')
+            : t('No release was found yet.'),
       );
       return;
     }
@@ -301,6 +302,7 @@ export default function UpdatesScreen() {
           t('This Erevos first makes a copy of everything for it, encrypted, here on the phone: every space, with its contacts, messages and settings. Open {edition} within a day and it asks whether to bring them; nothing leaves the phone.', { edition: name }),
           installable && !editionInstalled(moveTo) ? t('It then downloads ({size}), is checked against the release and Android installs it.', { size: formatSize(found.apk!.size) }) : '',
           t("The phone's SMS and calls stay in the phone: make {edition} the SMS and phone app afterwards, if you use them. This Erevos stays until you uninstall it.", { edition: name }),
+          t('From then on this Erevos receives and sends nothing, so that no message stays here that {edition} does not have, unless you call the move off.', { edition: name }),
         ]
           .filter(Boolean)
           .join('\n\n'),

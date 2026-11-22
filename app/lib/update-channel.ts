@@ -53,6 +53,17 @@ export function packageOf(edition: UpdateEdition, version: string, given?: strin
   return PACKAGES[edition];
 }
 
+/**
+ * The name a channel goes by where it is published: its tag, its statement and the notice's file
+ * (lib/updates.ts, lib/update-signature.ts, lib/release-notice.ts). Erevos+ from 3.1.0 on is an app
+ * of its own (app.erevos.plus), so its releases go where the Erevos+ 7.x apps (app.erevos), which read
+ * plus and plus-beta, never look: erevos-plus and erevos-plus-beta. Under plus and plus-beta goes
+ * only the bridge, an Erevos+ that is still app.erevos and moves to app.erevos.plus (docs/editions.md).
+ */
+export function wireOf(name: ChannelName): string {
+  return name === 'plus' ? 'erevos-plus' : name === 'plus-beta' ? 'erevos-plus-beta' : name;
+}
+
 /** Whether `version` (2.1.0, 7.0.1-beta.2) is a beta or an alpha. The release candidates before 7.0.0 were the regular line, so they are not. */
 export function isTestVersion(version: string): boolean {
   return /-(alpha|beta)\.[1-9]\d*$/.test(version);

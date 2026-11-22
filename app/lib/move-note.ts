@@ -10,8 +10,8 @@ import { UPDATE_EDITIONS, type UpdateEdition } from './update-channel';
 /** How long a move waits for the edition it is for. */
 export const MOVE_WAITS = 24 * 60 * 60 * 1000;
 
-/** What move.json says: from which edition to which, when made, the backup and its parts, and their password. */
-export type MoveNote = { v: 1; from: UpdateEdition; to: UpdateEdition; made: number; backup: string; parts: string[]; password: string };
+/** What move.json says: from which edition to which, when made, the backup and its parts, and their password; `size`, all its files' bytes. */
+export type MoveNote = { v: 1; from: UpdateEdition; to: UpdateEdition; made: number; backup: string; parts: string[]; password: string; size?: number };
 
 /** move.json, checked: null for anything else, or a move made more than MOVE_WAITS ago (or ahead of `now`). */
 export function readMoveNote(text: string, now = Date.now()): MoveNote | null {
@@ -28,5 +28,25 @@ export function readMoveNote(text: string, now = Date.now()): MoveNote | null {
   if (typeof v.made !== 'number' || !(v.made <= now + 60_000 && now - v.made < MOVE_WAITS)) return null;
   if (!name(v.backup) || !Array.isArray(v.parts) || v.parts.length > 100_000 || !v.parts.every(name)) return null;
   if (typeof v.password !== 'string' || !/^[0-9a-f]{64}$/.test(v.password)) return null;
-  return { v: 1, from: v.from, to: v.to, made: v.made, backup: v.backup, parts: v.parts as string[], password: v.password };
+  if (v.size !== undefined && !(typeof v.size === 'number' && Number.isSafeInteger(v.size) && v.size >= 0)) return null;
+  return { v: 1, from: v.from, to: v.to, made: v.made, backup: v.backup, parts: v.parts as string[], password: v.password, ...(v.size !== undefined ? { size: v.size as number } : {}) };
+}
+
+/** What moved-out.json says, in the app moved from: to which edition, when. */
+export type MovedOutNote = { to: UpdateEdition; made: number };
+
+/** moved-out.json, checked: null for anything else. */
+export function readMovedOut(text: string): MovedOutNote | null {
+  try {
+    const v = JSON.parse(text) as Record<string, unknown> | null;
+    if (!v || typeof v.to !== 'string' || !(UPDATE_EDITIONS as readonly string[]).includes(v.to) || typeof v.made !== 'number') return null;
+    return { to: v.to as UpdateEdition, made: v.made };
+  } catch {
+    return null;
+  }
+}
+
+/** The room a move needs on the phone, in bytes, for `size` bytes of data: its copy, and some to spare. */
+export function moveRoom(size: number): number {
+  return Math.ceil(size * 1.2) + 64 * 1024 * 1024;
 }

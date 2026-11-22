@@ -4604,9 +4604,14 @@ Sur Android, **Mises à jour** indique aussi quelles versions sont proposées à
   installe l'autre app à côté de celle-ci, si elle n'y est pas déjà. Ouvre-la dans la journée : elle demande s'il faut
   reprendre tes discussions, et les prend ; rien ne quitte le téléphone. Les espaces s'ouvrent ensuite avec leurs mots
   de passe, comme après toute restauration. Les SMS et appels du téléphone restent dans le téléphone : fais de la
-  nouvelle app l'app SMS et téléphone, si tu t'en sers. L'ancienne app reste jusqu'à ce que tu la désinstalles ; un
-  passage non repris dans la journée est supprimé. La version F-Droid, signée avec une autre clé, ne peut pas passer
-  ainsi : utilise plutôt les [Sauvegardes](#backup).
+  nouvelle app l'app SMS et téléphone, si tu t'en sers. Dès que le passage est fait, l'ancienne app ne reçoit et
+  n'envoie plus rien et ne montre que le passage, pour qu'aucun message n'y reste que la nouvelle n'ait pas ;
+  **Annuler le passage** la rouvre comme avant. Une fois repris par la nouvelle, l'ancienne propose **Tout supprimer
+  ici** et **Désinstaller** ; un passage non repris dans la journée est supprimé, et l'ancienne app s'ouvre comme
+  avant. Une nouvelle app déjà configurée demande aussi, et ce qu'elle reprend prend la place de tout ce qu'elle a. Le
+  passage demande de la place libre sur le téléphone pour une copie de tout : Erevos le dit avant s'il n'y en a pas
+  assez. La version F-Droid, signée avec une autre clé, ne peut pas passer ainsi : utilise plutôt les
+  [Sauvegardes](#backup).
 - **Versions bêta** : désactivé, seules les versions normales sont proposées. Activé, les bêtas aussi (comme
   **7.0.1-beta.1**) : elles sortent d’abord, pour essayer, et peuvent avoir des problèmes. Une bêta l’a activé au
   début. Désactivez-le pour quitter les bêtas : la prochaine version normale avec un numéro de build supérieur à la

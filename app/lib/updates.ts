@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { t } from './i18n';
-import { channelsOf, type Channel, type ChannelName } from './update-channel';
+import { channelsOf, wireOf, type Channel, type ChannelName } from './update-channel';
 import { VERSION_NAME } from './version-name';
 // New versions, as in LPHL FASOULI. Every release (.github/workflows/release.yml) also goes to the
 // public repository RELEASES_REPO, one release per version (tag v2.0.0 and up; v0.1.<build> until
@@ -18,7 +18,7 @@ export const RELEASES_PAGE = `https://github.com/${RELEASES_REPO}/releases/lates
 export const LATEST_URL = `https://github.com/${RELEASES_REPO}/releases/latest/download/version.json`;
 
 // Each channel but Erevos's own (lib/update-channel.ts) has a release of its own in the public
-// repository, under a tag that stays (channel-plus, channel-erevos-beta, channel-plus-beta), whose
+// repository, under a tag that stays (channel-erevos-plus, channel-erevos-beta, channel-erevos-plus-beta: wireOf), whose
 // version.json the release workflow replaces with each release of that channel; Erevos's own is the
 // repository's latest release, as every Erevos before read it. Erevos Lite's are in a repository of
 // their own: its latest release, and channel-beta for its betas.
@@ -43,7 +43,7 @@ export function channelPage(name: ChannelName): string {
 }
 
 // The tag of a channel's release that stays: channel-beta in Erevos Lite's repository, which has no other.
-const channelTag = (name: ChannelName): string => (name === 'lite-beta' ? 'channel-beta' : `channel-${name}`);
+const channelTag = (name: ChannelName): string => (name === 'lite-beta' ? 'channel-beta' : `channel-${wireOf(name)}`);
 
 export interface Release {
   /** 2.0.0 and up, or a test release such as 4.0.0-rc.1; 0.1.<build> until 0.1.16. */

@@ -4616,9 +4616,13 @@ Unter Android sagt **Updates** auch, welche Versionen diesem Telefon angeboten w
   die andere App neben dieser, falls sie nicht schon da ist. Öffne sie innerhalb eines Tages: Sie fragt, ob sie deine
   Chats holen soll, und übernimmt sie; nichts verlässt das Telefon. Die Bereiche öffnen sich dann mit ihren
   Passwörtern, wie nach jeder Wiederherstellung. SMS und Anrufe des Telefons bleiben im Telefon: Mach die neue App zur
-  SMS- und Telefon-App, wenn du sie nutzt. Die alte App bleibt, bis du sie deinstallierst; ein Umzug, der nicht
-  innerhalb eines Tages übernommen wird, wird gelöscht. Der F-Droid-Build, mit einem anderen Schlüssel signiert, kann
-  so nicht umziehen: Nutze stattdessen [Backups](#backup).
+  SMS- und Telefon-App, wenn du sie nutzt. Ab dem Umzug empfängt und sendet die alte App nichts und zeigt nur den
+  Umzug, damit dort keine Nachricht bleibt, die die neue nicht hat; **Umzug absagen** öffnet sie wie vorher. Sobald
+  die neue ihn übernommen hat, bietet die alte **Alles hier löschen** und **Deinstallieren**; ein Umzug, der nicht
+  innerhalb eines Tages übernommen wird, wird gelöscht, und die alte App öffnet sich wie vorher. Auch eine neue App,
+  die schon eingerichtet ist, fragt, und was sie holt, ersetzt alles, was sie hat. Der Umzug braucht freien Platz auf
+  dem Telefon für eine Kopie von allem: Erevos sagt es vorher, wenn er nicht reicht. Der F-Droid-Build, mit einem
+  anderen Schlüssel signiert, kann so nicht umziehen: Nutze stattdessen [Backups](#backup).
 - **Beta-Versionen**: aus, nur reguläre Versionen werden angeboten. An, auch Betas (wie **7.0.1-beta.1**): Sie
   erscheinen zuerst, zum Ausprobieren, und können Probleme haben. Eine Beta hat es anfangs an. Schalte es aus, um die
   Betas zu verlassen: Die nächste reguläre Version mit einer höheren Build-Nummer als deine Beta installiert sich

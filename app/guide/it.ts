@@ -4377,9 +4377,13 @@ Su Android, **Aggiornamenti** dice anche quali versioni sono proposte a questo t
   telefono (ogni spazio, con i suoi contatti, messaggi e impostazioni), e Android installa l'altra app accanto a
   questa, se non c'è già. Aprila entro un giorno: chiede se portare le tue chat e le prende; niente lascia il
   telefono. Gli spazi si aprono poi con le loro password, come dopo ogni ripristino. Gli SMS e le chiamate del
-  telefono restano nel telefono: rendi la nuova app l'app per SMS e telefono, se li usi. La vecchia app resta finché
-  non la disinstalli; un passaggio non preso entro un giorno viene cancellato. La versione F-Droid, firmata con
-  un'altra chiave, non può passare così: usa invece i [Backup](#backup).
+  telefono restano nel telefono: rendi la nuova app l'app per SMS e telefono, se li usi. Da quando il passaggio è
+  fatto, la vecchia app non riceve né invia nulla e mostra solo il passaggio, così nessun messaggio resta lì senza che
+  la nuova lo abbia; **Annulla il passaggio** la riapre come prima. Quando la nuova lo prende, la vecchia offre
+  **Cancella tutto qui** e **Disinstalla**; un passaggio non preso entro un giorno viene cancellato, e la vecchia app
+  si apre come prima. Anche una nuova app già configurata chiede, e ciò che porta prende il posto di tutto ciò che ha.
+  Il passaggio richiede spazio libero sul telefono per una copia di tutto: Erevos lo dice prima se non basta. La
+  versione F-Droid, firmata con un'altra chiave, non può passare così: usa invece i [Backup](#backup).
 - **Versioni beta**: disattivato, sono proposte solo le versioni normali. Attivato, anche le beta (come
   **7.0.1-beta.1**): escono prima, per provare, e possono avere problemi. Una beta lo ha attivato all’inizio.
   Disattivalo per uscire dalle beta: la prossima versione normale con un numero di build più alto della beta che hai si

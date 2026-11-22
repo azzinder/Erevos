@@ -63,7 +63,7 @@ if [ "$name" != "$version" ]; then
 	exit 1
 fi
 case $channel in
-erevos | erevos-beta | plus | plus-beta | lite | lite-beta) ;;
+erevos | erevos-beta | plus | plus-beta | erevos-plus | erevos-plus-beta | lite | lite-beta) ;;
 *)
 	echo "v$version's version.json names no channel (${channel:-none})." >&2
 	exit 1

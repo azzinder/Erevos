@@ -223,6 +223,12 @@ class ErevosDeviceModule : Module() {
       Move.installed(app, pkg)
     }
 
+    // Opens another edition (the one moved to), never any other app.
+    Function("openApp") { pkg: String ->
+      val app = context?.applicationContext ?: return@Function false
+      Move.open(app, pkg)
+    }
+
     AsyncFunction("moveSources") {
       val app = context?.applicationContext ?: return@AsyncFunction emptyList<Map<String, String>>()
       Move.sources(app)

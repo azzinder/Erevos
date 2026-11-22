@@ -7,6 +7,7 @@ package expo.modules.erevosdevice
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.database.MatrixCursor
@@ -104,6 +105,19 @@ internal object Move {
     true
   } catch (_: PackageManager.NameNotFoundException) {
     false
+  }
+
+  /** Opens the edition `pkg`, when it is one of the three and installed: whether it opened. */
+  fun open(context: Context, pkg: String): Boolean {
+    if (pkg == context.packageName || pkg !in PACKAGES) return false
+    val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return false
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    return try {
+      context.startActivity(intent)
+      true
+    } catch (_: Exception) {
+      false
+    }
   }
 
   /** The other editions on the phone, signed as this one, whose move waits: each one's package and move.json. */

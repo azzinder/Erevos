@@ -4004,8 +4004,13 @@ On Android, **Updates** also says which releases are offered to this phone:
   messages and settings), and Android installs the other app beside this one, if it is not there already. Open it
   within a day: it asks whether to bring your chats, and takes them; nothing leaves the phone. The spaces then open
   with their passwords, as after any restore. The phone's SMS and calls stay in the phone: make the new app the SMS
-  and phone app, if you use them. The old app stays until you uninstall it; a move not taken within a day is deleted.
-  The F-Droid build, signed with another key, cannot move this way: use [Backups](#backup) instead.
+  and phone app, if you use them. From the moment the move is made, the old app receives and sends nothing and shows
+  only the move, so that no message stays there that the new one does not have; **Call the move off** opens it as
+  before. Once the new one took it, the old one offers **Delete everything here** and **Uninstall**; a move not taken
+  within a day is deleted, and the old app opens as before. A new app already set up asks too, and what it brings
+  takes the place of everything it has. The move needs free room on the phone for a copy of everything: Erevos says so
+  first when there is not enough. The F-Droid build, signed with another key, cannot move this way: use
+  [Backups](#backup) instead.
 - **Beta versions**: off, only regular versions are offered. On, betas too (such as **7.0.1-beta.1**): they come out
   first, for trying, and may have problems. A beta has it on at first. Turn it off to leave the betas: the next regular
   version with a build number above the beta you have installs over it and keeps everything, with no uninstalling.
