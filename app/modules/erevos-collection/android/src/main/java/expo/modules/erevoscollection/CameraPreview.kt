@@ -190,7 +190,7 @@ class CameraPreview(context: Context, appContext: AppContext) : ExpoView(context
       bind(p)
     } catch (e: Throwable) {
       dirty = true
-      fail(e.message ?: "The camera could not be opened. Another app may be using it.")
+      fail("open", e.message ?: "The camera could not be opened. Another app may be using it.")
     }
   }
 
@@ -204,7 +204,7 @@ class CameraPreview(context: Context, appContext: AppContext) : ExpoView(context
         future.get()
       } catch (e: Throwable) {
         starting = false
-        fail(e.message ?: "The camera could not be opened")
+        fail("open", e.message ?: "The camera could not be opened")
         return@addListener
       }
       val asked = ExtensionsManager.getInstanceAsync(context, p)
@@ -280,7 +280,7 @@ class CameraPreview(context: Context, appContext: AppContext) : ExpoView(context
       }
       state.error?.let { error ->
         if (state.type == CameraState.Type.CLOSED || error.type == CameraState.ErrorType.CRITICAL) {
-          fail("The camera stopped. Another app may be using it.")
+          fail("stopped", "The camera stopped. Another app may be using it.")
         }
       }
     }
@@ -332,8 +332,10 @@ class CameraPreview(context: Context, appContext: AppContext) : ExpoView(context
     cam.cameraControl.enableTorch(torch && mode == "video")
   }
 
-  private fun fail(message: String) {
-    runCatching { onFail(mapOf("message" to message)) }
+  // What went wrong: `kind` ("open" or "stopped") for the words JavaScript shows in the owner's
+  // language (components/erevos-camera.tsx cameraTrouble), `message` in English, for no one but a log.
+  private fun fail(kind: String, message: String) {
+    runCatching { onFail(mapOf("kind" to kind, "message" to message)) }
   }
 
   /** Focuses and meters at a point of the view, in points as JavaScript has them; false where this camera cannot. */

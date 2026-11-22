@@ -174,4 +174,11 @@ export const collectionText: Record<string, string> = {
   "Hold still…": "Fique parado…",
   "Hold still… {n}%": "Fique parado… {n}%",
   "Zoom {n}": "Zoom {n}",
+  "The camera could not be opened. Another app may be using it.": "Não foi possível abrir a câmera. Talvez outro app esteja usando.",
+  "The camera stopped. Another app may be using it.": "A câmera parou. Talvez outro app esteja usando.",
+  "The camera is not ready yet. Try again in a moment.": "A câmera ainda não está pronta. Tente de novo em um instante.",
+  "The photo could not be taken. Try again.": "Não foi possível tirar a foto. Tente de novo.",
+  "The video could not be recorded. Try again.": "Não foi possível gravar o vídeo. Tente de novo.",
+  "The photo could not be kept in the Collection.": "Não foi possível guardar a foto na Coleção.",
+  "The video could not be kept in the Collection.": "Não foi possível guardar o vídeo na Coleção.",
 };

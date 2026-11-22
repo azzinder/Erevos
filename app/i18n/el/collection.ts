@@ -174,4 +174,11 @@ export const collectionText: Record<string, string> = {
   "Hold still…": "Κράτα σταθερά…",
   "Hold still… {n}%": "Κράτα σταθερά… {n}%",
   "Zoom {n}": "Ζουμ {n}",
+  "The camera could not be opened. Another app may be using it.": "Η κάμερα δεν άνοιξε. Ίσως τη χρησιμοποιεί άλλη εφαρμογή.",
+  "The camera stopped. Another app may be using it.": "Η κάμερα σταμάτησε. Ίσως τη χρησιμοποιεί άλλη εφαρμογή.",
+  "The camera is not ready yet. Try again in a moment.": "Η κάμερα δεν είναι ακόμα έτοιμη. Δοκίμασε ξανά σε λίγο.",
+  "The photo could not be taken. Try again.": "Η φωτογραφία δεν τραβήχτηκε. Δοκίμασε ξανά.",
+  "The video could not be recorded. Try again.": "Το βίντεο δεν γράφτηκε. Δοκίμασε ξανά.",
+  "The photo could not be kept in the Collection.": "Η φωτογραφία δεν μπήκε στη Συλλογή.",
+  "The video could not be kept in the Collection.": "Το βίντεο δεν μπήκε στη Συλλογή.",
 };

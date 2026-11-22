@@ -35,3 +35,18 @@ export function effectFor(mode: CameraMode, hdr: boolean, effects: Effect[]): Ef
   if (mode === 'photo' && hdr && effects.includes('hdr')) return 'hdr';
   return 'none';
 }
+
+/** What went wrong with the camera, for the words the owner sees in their language. */
+export type CameraTrouble = 'open' | 'stopped' | 'not-ready' | 'photo' | 'video' | 'keep-photo' | 'keep-video';
+
+/**
+ * The trouble a camera call failed with, by the code the camera gave (CameraPreview.kt rejects with
+ * ERR_CAMERA, ERR_PHOTO or ERR_VIDEO); anything else failed while keeping it in the Collection.
+ */
+export function troubleOf(error: unknown, taking: 'photo' | 'video'): CameraTrouble {
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as { code: unknown }).code) : '';
+  if (code === 'ERR_CAMERA') return 'not-ready';
+  if (code === 'ERR_PHOTO') return 'photo';
+  if (code === 'ERR_VIDEO') return 'video';
+  return taking === 'photo' ? 'keep-photo' : 'keep-video';
+}

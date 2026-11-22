@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Modal, PanResponder, PermissionsAndroid, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { effectFor, pinchedZoom, zoomName, zoomStops, type CameraMode as Mode } from '../lib/camera-controls';
+import { effectFor, pinchedZoom, troubleOf, zoomName, zoomStops, type CameraMode as Mode, type CameraTrouble } from '../lib/camera-controls';
 import { keepPicture, keepRecording } from '../lib/collection-camera';
 import { t } from '../lib/i18n';
 import { isPicking, whilePicking } from '../lib/picking';
@@ -39,6 +39,26 @@ const chosen: { quality: Quality; silent: boolean; grid: boolean; timer: 0 | 3 |
 };
 const QUALITIES: Quality[] = ['720p', '1080p', '2160p'];
 const QUALITY_NAMES: Record<Quality, string> = { '720p': 'HD', '1080p': 'Full HD', '2160p': '4K' };
+
+// What went wrong, in the owner's language: never the camera's own English words.
+function cameraTrouble(trouble: CameraTrouble): string {
+  switch (trouble) {
+    case 'open':
+      return t('The camera could not be opened. Another app may be using it.');
+    case 'stopped':
+      return t('The camera stopped. Another app may be using it.');
+    case 'not-ready':
+      return t('The camera is not ready yet. Try again in a moment.');
+    case 'photo':
+      return t('The photo could not be taken. Try again.');
+    case 'video':
+      return t('The video could not be recorded. Try again.');
+    case 'keep-photo':
+      return t('The photo could not be kept in the Collection.');
+    case 'keep-video':
+      return t('The video could not be kept in the Collection.');
+  }
+}
 
 const NONE: CameraReady = { effects: [], minZoom: 1, maxZoom: 1, exposure: false, exposureMin: 0, exposureMax: 0, exposureStep: 0, hdrVideo: false, flash: false, front: true };
 
@@ -239,7 +259,7 @@ export function ErevosCamera({
       setTaken((n) => n + 1);
       onAdded(item);
     } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      setNote(cameraTrouble(troubleOf(error, 'photo')));
     }
     setProcessing(-1);
     setBusy(false);
@@ -264,7 +284,7 @@ export function ErevosCamera({
     try {
       uri = (await camera.current.record(!mic, silent)).uri;
     } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      setNote(cameraTrouble(troubleOf(error, 'video')));
     }
     setRecording(false);
     if (!uri) return;
@@ -274,7 +294,7 @@ export function ErevosCamera({
       setTaken((n) => n + 1);
       onAdded(item);
     } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      setNote(cameraTrouble(troubleOf(error, 'video')));
     }
     setBusy(false);
   }
@@ -330,7 +350,7 @@ export function ErevosCamera({
               setExposure(0);
               setZoom((z) => Math.min(told.maxZoom, Math.max(told.minZoom, z)));
             }}
-            onFail={(event) => setNote(event.nativeEvent.message)}
+            onFail={(event) => setNote(cameraTrouble(event.nativeEvent.kind === 'stopped' ? 'stopped' : 'open'))}
             onProcessing={(event) => setProcessing(event.nativeEvent.progress)}
           />
         ) : (

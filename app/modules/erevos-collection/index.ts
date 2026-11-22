@@ -190,7 +190,8 @@ export type CameraProps = ViewProps & {
   /** The zoom, as a ratio (CameraReady minZoom to maxZoom). */
   zoom: number;
   onReady?: (event: { nativeEvent: CameraReady }) => void;
-  onFail?: (event: { nativeEvent: { message: string } }) => void;
+  /** The camera could not open, or stopped: `kind` says which; `message` is English, never shown. */
+  onFail?: (event: { nativeEvent: { kind: 'open' | 'stopped'; message: string } }) => void;
   /** How far a night photo has come, 0 to 100. */
   onProcessing?: (event: { nativeEvent: { progress: number } }) => void;
 };

@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { effectFor, pinchedZoom, zoomName, zoomStops } from '../lib/camera-controls';
+import { effectFor, pinchedZoom, troubleOf, zoomName, zoomStops } from '../lib/camera-controls';
 import { bytesSource } from '../lib/attachments';
 import { moovHasPlace, photoPlace, tiffHasPlace, videoPlace } from '../lib/media-place';
 import { cleanImage } from '../lib/photo';
@@ -166,4 +166,12 @@ test("the camera's zoom buttons, pinch and effects follow what the phone has", (
   assert.equal(effectFor('photo', true, ['hdr']), 'hdr');
   assert.equal(effectFor('photo', false, ['hdr']), 'none');
   assert.equal(effectFor('video', true, ['hdr', 'night']), 'none');
+});
+
+test("the camera's troubles are told by their code, so the owner reads them in their language", () => {
+  assert.equal(troubleOf({ code: 'ERR_CAMERA', message: 'The camera is not ready' }, 'photo'), 'not-ready');
+  assert.equal(troubleOf({ code: 'ERR_PHOTO' }, 'photo'), 'photo');
+  assert.equal(troubleOf({ code: 'ERR_VIDEO' }, 'video'), 'video');
+  assert.equal(troubleOf(new Error('Disk full'), 'photo'), 'keep-photo');
+  assert.equal(troubleOf('nothing', 'video'), 'keep-video');
 });
