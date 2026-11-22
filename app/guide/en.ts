@@ -3167,6 +3167,7 @@ automatic backup uses the files of the ones before it too: keep the whole folder
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
    its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
    four words) and tap **Save**. In a browser the backup and its files go to the share sheet, or to the downloads: the first at once, each next one after a tap on **Save**.
+   While it is made, its card says what it does and how far it is; when it is done, a notice says so.
 2. **Automatic backups:** choose **Every 6 hours**, **Every day** or **Every week**, then a folder and a password.
    Erevos makes one while it is open, once the last one is older than that: when a space opens, every 15 minutes, and
    as it goes to the background, before it locks; never with no space open. Each one writes only the photos, files and

@@ -4,6 +4,8 @@
 
 // The German of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/de/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Make a backup** shows what it does and how far it is in its card, with a bar, and a notice says when the backup is done. See [Backups](#backup).":
+    "**Backup erstellen** zeigt in seiner Karte mit einem Balken, was es tut und wie weit es ist, und eine Mitteilung sagt, wann das Backup fertig ist. Siehe [Backups](#backup).",
   "**MMS abroad**: while roaming, an MMS waits for a tap, **Fetch (may cost)**, unless you choose otherwise under **Settings** → **Phone and SMS** → **SMS** → **MMS**. See [SMS](#sms).":
     "**MMS im Ausland**: Beim Roaming wartet eine MMS auf ein Tippen, **Abrufen (kann kosten)**, außer du wählst anders unter **Einstellungen** → **Telefon und SMS** → **SMS** → **MMS**. Siehe [SMS](#sms).",
   "**Quick texts**: hold the **+** in an SMS conversation down for short words you write often, and keep your own. See [SMS](#sms).":

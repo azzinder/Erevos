@@ -202,6 +202,12 @@ class ErevosDeviceModule : Module() {
       Updates.tell(app, name)
     }
 
+    // A backup made by hand is done (Backups.kt): a notice says so, in the app's words.
+    Function("tellBackup") { title: String, text: String, channel: String ->
+      val app = context?.applicationContext ?: return@Function Unit
+      Backups.tell(app, title, text, channel)
+    }
+
     // The panic button (Panic.kt): its settings, the panic app that asked to be the one, and the
     // wipe itself, after which Android stops Erevos.
     Function("panicState") {

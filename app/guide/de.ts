@@ -3656,6 +3656,7 @@ ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen 
 1. **Backup erstellen:** Tippe auf **Backup erstellen**, wähle einen Ordner (auf dem Telefon, einer Speicherkarte oder
    einer Cloud-App, die dort ihre Ordner zeigt; auf einem Computer jeden Ordner), gib zweimal ein Passwort für das
    Backup ein (mindestens 12 Zeichen oder vier Wörter) und tippe auf **Speichern**. In einem Browser gehen das Backup und seine Dateien ins Teilen-Menü oder in die Downloads: die erste sofort, jede nächste nach einem Tippen auf **Speichern**.
+   Während es entsteht, zeigt seine Karte, was es tut und wie weit es ist; ist es fertig, sagt es eine Mitteilung.
 2. **Automatische Backups:** Wähle **Alle 6 Stunden**, **Jeden Tag** oder **Jede Woche**, dann einen Ordner und ein
    Passwort. Erevos macht eines, solange es offen ist, sobald das letzte älter ist: wenn ein Bereich sich öffnet, alle
    15 Minuten und wenn es in den Hintergrund geht, bevor es sich sperrt; nie ohne einen offenen Bereich. Jedes

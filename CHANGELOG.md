@@ -14,6 +14,7 @@ On main, not released yet:
 
 ### For you
 
+**Make a backup** says in its card what it does (gathering, encrypting and saving) and how far it is, with a bar, instead of only at the foot of the screen; when the backup is saved, a notice says so (`modules/erevos-device` `Backups.kt`, `lib/backup-notice.ts`), as it can take minutes. Requested by the maintainer.
 - The Collection's camera: where the phone's maker offers them through CameraX Extensions, as on a Pixel, **Night** and **Portrait** beside **Photo** and **HDR on** at the top, made on the phone by its own system; a tap focuses and meters there; **Darker** and **Brighter**; zoom buttons for the wide lens (0.5×), 1×, 2× and 5× where the phone has them, and two fingers between; a timer of 3 or 10 seconds, a grid, a silent shutter, the light on while filming, HD, Full HD or 4K, and **HDR video on** (HLG, 10-bit) where the phone films it. Not yet tried on a phone.
 - SMS: **MMS** under SMS settings: fetched at once (on by default) and while roaming (off by default); one not fetched waits in its conversation, and under MMS, with its size and **Fetch (may cost)** (MmsStore keeps the carrier's notice). Not yet tried on a phone.
 - SMS: quick texts, held **+** or **Quick texts** in an SMS conversation: the app's own until the owner adds or removes one, then theirs, kept encrypted with the space's SMS data (components/sms-quick.tsx). Not yet tried on a phone.

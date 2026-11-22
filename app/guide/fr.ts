@@ -3627,6 +3627,7 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
 1. **Créer une sauvegarde :** appuie sur **Créer une sauvegarde**, choisis un dossier (sur le téléphone, une carte
    mémoire, ou une app cloud qui y montre ses dossiers ; sur un ordinateur, n’importe quel dossier), tape deux fois un
    mot de passe pour la sauvegarde (au moins 12 caractères, ou quatre mots) et appuie sur **Enregistrer**. Dans un navigateur, la sauvegarde et ses fichiers vont au menu de partage ou dans les téléchargements : le premier tout de suite, chacun des suivants après un appui sur **Enregistrer**.
+   Pendant qu’elle se fait, sa carte dit ce qu’elle fait et où elle en est ; une fois finie, une notification le dit.
 2. **Sauvegardes automatiques :** choisis **Toutes les 6 heures**, **Chaque jour** ou **Chaque semaine**, puis un
    dossier et un mot de passe. Erevos en crée une tant qu’il est ouvert, dès que la dernière est plus ancienne que
    cela : quand un espace s’ouvre, toutes les 15 minutes, et quand il passe en arrière-plan, avant de se verrouiller ;

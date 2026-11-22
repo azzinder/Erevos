@@ -3414,6 +3414,7 @@ pasta toda. Fica em **Configurações** → **Dados e dispositivos** →
 1. **Fazer um backup:** toque em **Fazer um backup**, escolha uma pasta (no celular, num cartão de memória, ou num app
    de nuvem que mostre as pastas dele ali; num computador, qualquer pasta), digite duas vezes uma senha para o backup
    (pelo menos 12 caracteres, ou quatro palavras) e toque em **Salvar**. Num navegador, o backup e os arquivos dele vão para o menu de compartilhamento ou para os downloads: o primeiro na hora, e cada um dos seguintes depois de um toque em **Salvar**.
+   Enquanto é feito, o cartão diz o que faz e quanto falta; quando termina, um aviso diz.
 2. **Backups automáticos:** escolha **A cada 6 horas**, **Todo dia** ou **Toda semana**, depois uma pasta e uma senha.
    O Erevos faz um enquanto está aberto, assim que o último é mais antigo que isso: quando um espaço abre, a cada 15
    minutos e quando vai para o segundo plano, antes de bloquear; nunca sem um espaço aberto. Cada um escreve só as

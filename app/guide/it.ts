@@ -3457,6 +3457,7 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
 1. **Crea un backup:** tocca **Crea un backup**, scegli una cartella (sul telefono, su una scheda di memoria, o in
    un’app cloud che vi mostra le sue cartelle; su un computer, qualsiasi cartella), scrivi due volte una password per
    il backup (almeno 12 caratteri, o quattro parole) e tocca **Salva**. In un browser, il backup e i suoi file vanno al menu di condivisione o nei download: il primo subito, ognuno dei successivi dopo un tocco su **Salva**.
+   Mentre si fa, la sua scheda dice cosa fa e a che punto è; quando ha finito, lo dice una notifica.
 2. **Backup automatici:** scegli **Ogni 6 ore**, **Ogni giorno** o **Ogni settimana**, poi una cartella e una
    password. Erevos ne fa uno mentre è aperto, appena l’ultimo è più vecchio di così: quando si apre uno spazio, ogni
    15 minuti, e quando passa in secondo piano, prima di bloccarsi; mai senza uno spazio aperto. Ognuno scrive solo le

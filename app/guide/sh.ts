@@ -3298,6 +3298,7 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
 1. **Napravi rezervnu kopiju:** dodirnite **Napravi rezervnu kopiju**, izaberite folder (na telefonu, memorijskoj
    kartici ili u aplikaciji za oblak koja tamo prikazuje svoje foldere; na računaru, bilo koji folder), upišite
    lozinku za rezervnu kopiju dvaput (najmanje 12 znakova, ili četiri riječi) i dodirnite **Sačuvaj**. U pregledniku rezervna kopija i njene datoteke idu u meni za dijeljenje ili u preuzimanja: prva odmah, a svaka sljedeća nakon dodira na **Sačuvaj**.
+   Dok se pravi, njena kartica kaže šta radi i dokle je stigla; kad završi, to kaže obavještenje.
 2. **Automatske rezervne kopije:** izaberite **Svakih 6 sati**, **Svaki dan** ili **Svake sedmice**, zatim folder i
    lozinku. Erevos pravi kopiju dok je otvoren, čim je posljednja starija od toga: kad se otvori prostor, svakih 15
    minuta, i kad ode u pozadinu, prije nego što se zaključa; nikad bez otvorenog prostora. Svaka upisuje samo

@@ -3440,6 +3440,7 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
 1. **Hacer una copia de seguridad:** toca **Hacer una copia de seguridad**, elige una carpeta (en el teléfono, una
    tarjeta de memoria, o una app en la nube que muestre ahí sus carpetas; en un ordenador, cualquier carpeta), escribe
    dos veces una contraseña para la copia (al menos 12 caracteres, o cuatro palabras) y toca **Guardar**. En un navegador, la copia y sus archivos van al menú de compartir o a las descargas: el primero enseguida, y cada uno de los siguientes tras un toque en **Guardar**.
+   Mientras se hace, su tarjeta dice qué hace y cuánto lleva; cuando termina, lo dice un aviso.
 2. **Copias automáticas:** elige **Cada 6 horas**, **Cada día** o **Cada semana**, y luego una carpeta y una
    contraseña. Erevos hace una mientras está abierto, en cuanto la última es más antigua que eso: cuando se abre un
    espacio, cada 15 minutos y al pasar a segundo plano, antes de bloquearse; nunca sin un espacio abierto. Cada una

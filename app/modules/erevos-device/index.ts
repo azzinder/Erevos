@@ -71,6 +71,8 @@ type Device = {
   seenReminders?(ids: string[]): void;
   /** A notice says that Erevos `name` is out, and opens Updates (lib/release-notice.ts). Missing in a build before it. */
   tellUpdate?(name: string): void;
+  /** A notice says that a backup made by hand is done: `title`, `text`, in a channel named `channel`, all in the app's words (app/backup.tsx). Missing in a build before it. */
+  tellBackup?(title: string, text: string, channel: string): void;
   /** The panic button's settings (Panic.kt). Null with no app context. Missing in a build before it. */
   panicState?(): PanicState | null;
   /** Whether the trusted panic app may wipe, and whether automatic backups in `folder` (a tree uri) go too. */
