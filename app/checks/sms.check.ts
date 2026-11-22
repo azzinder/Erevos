@@ -485,3 +485,14 @@ test('quick texts are the app\'s own until the owner keeps theirs, each kept onc
   assert.equal(checked({}).quick, null);
   assert.deepEqual(checked({ quick: ['On my way', 'On my way', '', 7, 'x'.repeat(400), 'Later'] }).quick, ['On my way', 'Later']);
 });
+
+test("an MMS video's type is read from its bytes, not its name", async () => {
+  const { videoMimeOf } = await import('../lib/video-type');
+  const box = (brand: string) => new Uint8Array([0, 0, 0, 24, ...'ftyp'.split('').map((c) => c.charCodeAt(0)), ...brand.split('').map((c) => c.charCodeAt(0)), 0, 0, 0, 0]);
+  assert.equal(videoMimeOf(box('3gp4'), 'video/mp4'), 'video/3gpp');
+  assert.equal(videoMimeOf(box('3g2a'), 'video/mp4'), 'video/3gpp2');
+  assert.equal(videoMimeOf(box('isom'), 'video/3gpp'), 'video/mp4');
+  assert.equal(videoMimeOf(box('mp42'), 'video/3gpp'), 'video/mp4');
+  assert.equal(videoMimeOf(new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 1]), 'video/mp4'), 'video/webm');
+  assert.equal(videoMimeOf(new Uint8Array([1, 2, 3]), 'video/3gpp'), 'video/3gpp');
+});

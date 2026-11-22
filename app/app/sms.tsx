@@ -1286,7 +1286,7 @@ function Sms({ tools }: { tools: ReactNode }) {
           >
             <Text variant="bodyStrong">{t('Record a video')}</Text>
             <Text variant="caption" tone="muted">
-              {t('Up to {n} seconds, in the small picture an MMS takes.', { n: String(MMS_VIDEO_SECONDS) })}
+              {t("Up to {n} seconds, in the small picture an MMS takes. The camera app keeps it in the phone's videos too.", { n: String(MMS_VIDEO_SECONDS) })}
             </Text>
           </Pressable>
         ) : null}

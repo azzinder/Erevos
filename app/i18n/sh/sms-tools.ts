@@ -198,7 +198,7 @@ export const smsTools: Record<string, string> = {
   "Send with accents": "Šalji s akcentima",
   "Send without accents": "Šalji bez akcenata",
   "Record a video": "Snimi video",
-  "Up to {n} seconds, in the small picture an MMS takes.": "Do {n} sekundi, u maloj slici koju MMS prima.",
+  "Up to {n} seconds, in the small picture an MMS takes. The camera app keeps it in the phone's videos too.": "Do {n} sekundi, u maloj slici koju MMS prima. Aplikacija kamere ga čuva i u videima telefona.",
   "Video from the phone": "Video s telefona",
   "Only one small enough for an MMS, about {n} KB.": "Samo dovoljno mali za MMS, oko {n} KB.",
   "Play the video": "Pusti video",
@@ -219,4 +219,5 @@ export const smsTools: Record<string, string> = {
   "MMS · {size} KB": "MMS · {size} KB",
   "MMS waiting · {n}": "MMS na čekanju · {n}",
   "It did not come. Try again with mobile data on.": "Nije stigla. Pokušajte ponovo s uključenim mobilnim podacima.",
+  "The camera app recorded it too big for an MMS ({size} KB, at most {most} KB): it does not keep to MMS quality. Record a shorter one.": "Aplikacija kamere ga je snimila prevelikim za MMS ({size} KB, najviše {most} KB): ne drži se MMS kvaliteta. Snimite kraći.",
 };

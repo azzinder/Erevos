@@ -191,7 +191,7 @@ export const smsTools: Record<string, string> = {
   "Send with accents": "Enviar con acentos",
   "Send without accents": "Enviar sin acentos",
   "Record a video": "Grabar un vídeo",
-  "Up to {n} seconds, in the small picture an MMS takes.": "Hasta {n} segundos, en la imagen pequeña que admite un MMS.",
+  "Up to {n} seconds, in the small picture an MMS takes. The camera app keeps it in the phone's videos too.": "Hasta {n} segundos, en la imagen pequeña que admite un MMS. La app de cámara lo guarda también en los vídeos del teléfono.",
   "Video from the phone": "Vídeo del teléfono",
   "Only one small enough for an MMS, about {n} KB.": "Solo uno lo bastante pequeño para un MMS, unos {n} KB.",
   "Play the video": "Reproducir el vídeo",
@@ -212,4 +212,5 @@ export const smsTools: Record<string, string> = {
   "MMS · {size} KB": "MMS · {size} KB",
   "MMS waiting · {n}": "MMS en espera · {n}",
   "It did not come. Try again with mobile data on.": "No llegó. Vuelve a intentarlo con los datos móviles activados.",
+  "The camera app recorded it too big for an MMS ({size} KB, at most {most} KB): it does not keep to MMS quality. Record a shorter one.": "La app de cámara lo grabó demasiado grande para un MMS ({size} KB, como máximo {most} KB): no respeta la calidad MMS. Graba uno más corto.",
 };

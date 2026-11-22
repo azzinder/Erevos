@@ -191,7 +191,7 @@ export const smsTools: Record<string, string> = {
   "Send with accents": "Αποστολή με τόνους",
   "Send without accents": "Αποστολή χωρίς τόνους",
   "Record a video": "Εγγραφή βίντεο",
-  "Up to {n} seconds, in the small picture an MMS takes.": "Έως {n} δευτερόλεπτα, στη μικρή εικόνα που χωράει ένα MMS.",
+  "Up to {n} seconds, in the small picture an MMS takes. The camera app keeps it in the phone's videos too.": "Έως {n} δευτερόλεπτα, στη μικρή εικόνα που χωράει ένα MMS. Μένει και στα βίντεο του κινητού, όπου το κρατά η εφαρμογή κάμερας.",
   "Video from the phone": "Βίντεο από το κινητό",
   "Only one small enough for an MMS, about {n} KB.": "Μόνο ένα αρκετά μικρό για MMS, περίπου {n} KB.",
   "Play the video": "Αναπαραγωγή του βίντεο",
@@ -212,4 +212,5 @@ export const smsTools: Record<string, string> = {
   "MMS · {size} KB": "MMS · {size} KB",
   "MMS waiting · {n}": "MMS σε αναμονή · {n}",
   "It did not come. Try again with mobile data on.": "Δεν ήρθε. Δοκίμασε ξανά με τα δεδομένα κινητής ανοιχτά.",
+  "The camera app recorded it too big for an MMS ({size} KB, at most {most} KB): it does not keep to MMS quality. Record a shorter one.": "Η εφαρμογή κάμερας το έγραψε πολύ μεγάλο για MMS ({size} KB, το πολύ {most} KB): δεν τηρεί την ποιότητα MMS. Γράψε ένα πιο σύντομο.",
 };

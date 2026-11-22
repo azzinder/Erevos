@@ -9,6 +9,7 @@ import { PermissionsAndroid } from 'react-native';
 
 import { t } from './i18n';
 import { MMS_MAX } from './pick-mms-photo';
+import { videoMimeOf } from './video-type';
 
 // A video for an MMS. Erevos does not make a video smaller, so one fits only as the camera records it
 // for an MMS: Android's own way to ask the camera app for a video in MMS quality (low quality, up to
@@ -29,14 +30,21 @@ export function videoMime(name: string): string {
   return 'video/mp4';
 }
 
-// The bytes of the video at `uri`, when they fit in an MMS.
-async function fitting(uri: string, mime: string): Promise<MmsVideo> {
+// The bytes of the video at `uri`, when they fit in an MMS, with the type they are. `recorded`: the
+// camera app recorded it for an MMS and still made it too big.
+async function fitting(uri: string, mime: string, recorded: boolean): Promise<MmsVideo> {
   const file = new File(uri);
+  const tooBig = (size: number) =>
+    new Error(
+      recorded
+        ? t('The camera app recorded it too big for an MMS ({size} KB, at most {most} KB): it does not keep to MMS quality. Record a shorter one.', { size: String(Math.round(size / 1024)), most: String(Math.round(MMS_MAX / 1024)) })
+        : t('This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.', { size: String(Math.round(size / 1024)), most: String(Math.round(MMS_MAX / 1024)) }),
+    );
   const size = file.size ?? 0;
-  if (size > MMS_MAX) throw new Error(t('This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.', { size: String(Math.round(size / 1024)), most: String(Math.round(MMS_MAX / 1024)) }));
+  if (size > MMS_MAX) throw tooBig(size);
   const bytes = await file.bytes();
-  if (bytes.length > MMS_MAX) throw new Error(t('This video is too big for an MMS ({size} KB, at most {most} KB). Record one with Record a video, which asks the camera for MMS quality.', { size: String(Math.round(bytes.length / 1024)), most: String(Math.round(MMS_MAX / 1024)) }));
-  return { bytes, mime };
+  if (bytes.length > MMS_MAX) throw tooBig(bytes.length);
+  return { bytes, mime: videoMimeOf(bytes, mime) };
 }
 
 /** Records a video with the phone's camera app, in MMS quality; null if the owner went back. */
@@ -48,7 +56,7 @@ export async function recordMmsVideo(): Promise<MmsVideo | null> {
     extra: { 'android.intent.extra.videoQuality': 0, 'android.intent.extra.durationLimit': MMS_VIDEO_SECONDS },
   });
   if (result.resultCode !== ResultCode.Success || !result.data) return null;
-  return fitting(result.data, 'video/3gpp');
+  return fitting(result.data, videoMime(result.data), true);
 }
 
 /** A video from the phone's videos, when it is small enough; null if the owner went back. */
@@ -57,7 +65,7 @@ export async function pickMmsVideo(): Promise<MmsVideo | null> {
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;
   try {
-    return await fitting(asset.uri, asset.mimeType || videoMime(asset.fileName ?? asset.uri));
+    return await fitting(asset.uri, asset.mimeType || videoMime(asset.fileName ?? asset.uri), false);
   } finally {
     const copy = new File(asset.uri);
     if (asset.uri.startsWith(Paths.cache.uri) && copy.exists) copy.delete();
