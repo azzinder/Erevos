@@ -111,7 +111,7 @@ class ErevosSmsModule : Module() {
     // The open space's conversations muted (numbers, until when) and with a sound of their own (lib/sms-notices.ts).
     Function("setOwnNotices") { numbers: List<String>, ends: List<Double>, sounds: List<String> -> SmsStore.setOwnNotices(numbers, ends, sounds) }
     // Whether the open space shows who wrote and what on an SMS's notice, with Reply (lib/sms-notices.ts).
-    Function("setNoticeDetails") { on: Boolean -> SmsStore.setNoticeDetails(on) }
+    Function("setNoticeDetails") { on: Boolean -> SmsStore.setNoticeDetails(appContext.reactContext, on) }
     // MMS fetched at once, and while roaming; and those waiting for a tap (MmsStore.kt).
     Function("mmsSwitches") { MmsStore.switches(context()) }
     Function("setMmsSwitches") { auto: Boolean, roaming: Boolean -> MmsStore.setSwitches(context(), auto, roaming) }

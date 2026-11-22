@@ -473,9 +473,21 @@ internal object SmsStore {
   // (lib/sms-notices.ts, NoticeReply.kt). In memory only, told while the space is open: locked, or
   // with Erevos stopped, every notice says only "New message" again.
   @Volatile private var details = false
+  // Whether the notice showing now says who wrote and what.
+  @Volatile private var detailed = false
 
-  fun setNoticeDetails(on: Boolean) {
+  /** Turned off as the space locks: a notice that says who wrote and what says only "New message" again. */
+  fun setNoticeDetails(context: Context?, on: Boolean) {
     details = on
+    if (on || !detailed || context == null) return
+    detailed = false
+    val notifications = context.getSystemService(NotificationManager::class.java) ?: return
+    val showing = try {
+      Build.VERSION.SDK_INT < 23 || notifications.activeNotifications.any { it.id == NEW_ID }
+    } catch (_: Exception) {
+      true
+    }
+    if (showing) notifyNew(context, again = true)
   }
 
   fun showOnScreen(numbers: List<String>) {
@@ -532,7 +544,7 @@ internal object SmsStore {
    *  (`code`), it has Copy code, which works only on an unlocked phone (Android 12 and later ask to
    *  unlock first); the code itself never shows on it. `quiet`: for a conversation with a sound of
    *  its own, or none, which the app plays: the notice makes none. */
-  fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false, address: String? = null, text: String? = null, sim: Int = -1) {
+  fun notifyNew(context: Context, code: String? = null, quiet: Boolean = false, address: String? = null, text: String? = null, sim: Int = -1, again: Boolean = false) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     if (Build.VERSION.SDK_INT >= 26) {
@@ -558,7 +570,10 @@ internal object SmsStore {
       .setContentTitle(Words.say(context, "New message", "Νέο μήνυμα"))
       .setContentIntent(open)
       .setAutoCancel(true)
-    if (details && address != null && text != null && code == null) {
+      // In place of the one showing, without a sound again.
+      .setOnlyAlertOnce(again)
+    detailed = details && address != null && text != null && code == null
+    if (detailed) {
       val name = try {
         contactNames(context, listOf(address))[address]
       } catch (_: Exception) {
