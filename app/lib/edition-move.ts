@@ -3,14 +3,17 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { Directory, File, Paths } from 'expo-file-system';
+import { AppState } from 'react-native';
 
 import { backupKey, backupNative, makeBackup, openBackup, restoreBackup } from '../lock/backup';
 import { openCollectionSkips } from '../lock/collection-data';
 import { device } from '../modules/erevos-device';
+import { phoneStatus, requestDefaultPhone } from '../modules/erevos-phone';
+import { requestDefaultSms, smsStatus } from '../modules/erevos-sms';
 import { phoneSettingsForBackup } from './backup-native';
 import { afterRestore, beforeRestore } from './backup-settings';
 import { randomBytes, toHex } from './crypto';
-import { MOVE_WAITS, moveRoom, readMoveNote, type MoveNote } from './move-note';
+import { MOVE_WAITS, moveFor, moveRoom, readMoveNote, type MoveNote } from './move-note';
 import { announceMovedOut, CAN_MOVE, cancelMove, clearMove, clearStaleMove, MOVE_FILE, movedOut, onMovedOut, outDir, writeMovedOut } from './move-state';
 import { formatSize } from './updates';
 import { t } from './i18n';
@@ -57,6 +60,79 @@ export function declineMove(move: FoundMove): void {
   } catch {
     // Asked again next time.
   }
+}
+
+const DONE_DUE = 'move-done-due.json';
+
+function keepFile(name: string, text: string): void {
+  try {
+    new File(Paths.document, name).writeSync(text);
+  } catch {
+    // Not kept: the other edition's move goes stale after a day, and it asks again then.
+  }
+}
+
+/**
+ * Tells the edition a move was taken from, when that could not be told as it was (takeMove): at
+ * each start, until it hears it, or has no move any more.
+ */
+export async function tellMoveTaken(): Promise<void> {
+  if (!CAN_MOVE) return;
+  try {
+    const file = new File(Paths.document, DONE_DUE);
+    if (!file.exists) return;
+    const pkg = file.textSync().trim();
+    const told = (Object.values(PACKAGES) as string[]).includes(pkg) && (await device!.moveDone!(pkg).catch(() => false));
+    const waits = (await device!.moveSources!().catch(() => [])).some((source) => source.pkg === pkg);
+    if (told || !waits) file.delete();
+  } catch {
+    // Tried again at the next start.
+  }
+}
+
+// Whether this app is the phone's SMS app and its phone app, for the move (MoveNote roles).
+function rolesHere(): { sms: boolean; phone: boolean } {
+  let sms = false;
+  let phone = false;
+  try {
+    sms = smsStatus()?.isDefault === true;
+  } catch {
+    // Not an SMS app here.
+  }
+  try {
+    phone = phoneStatus()?.isDefault === true;
+  } catch {
+    // Not a phone app here.
+  }
+  return { sms, phone };
+}
+
+/**
+ * After a move was taken: Android's questions whether this app should be the SMS app and the phone
+ * app, as the one moved from was; the second once the first is answered and Erevos shows again.
+ */
+function askRoles(move: FoundMove): void {
+  const roles = move.roles;
+  if (!roles) return;
+  const phone = () => {
+    try {
+      if (roles.phone && phoneStatus()?.isDefault === false) requestDefaultPhone();
+    } catch {
+      // This edition has no Phone: its calls stay with the phone's own app.
+    }
+  };
+  try {
+    if (!(roles.sms && smsStatus()?.isDefault === false)) return phone();
+    requestDefaultSms();
+  } catch {
+    return phone();
+  }
+  if (!roles.phone) return;
+  const subscription = AppState.addEventListener('change', (state) => {
+    if (state !== 'active') return;
+    subscription.remove();
+    phone();
+  });
 }
 
 /** Opens the app of `edition`, when installed: whether it opened. */
@@ -122,7 +198,7 @@ export async function prepareMove(to: UpdateEdition, progress?: (done: number, a
     });
     new File(dir, BACKUP_FILE).writeSync(bytes);
     const made = Date.now();
-    const note: MoveNote = { v: 1, from: INSTALLED_EDITION, to, made, backup: BACKUP_FILE, parts, password, size: written + bytes.length };
+    const note: MoveNote = { v: 1, from: INSTALLED_EDITION, to, made, backup: BACKUP_FILE, parts, password, size: written + bytes.length, roles: rolesHere() };
     new File(dir, MOVE_FILE).writeSync(JSON.stringify(note));
     writeMovedOut(to, made);
   } catch (error) {
@@ -141,9 +217,8 @@ export async function findMoves(now = Date.now()): Promise<FoundMove[]> {
   const found: FoundMove[] = [];
   for (const { pkg, move } of sources) {
     const note = readMoveNote(move, now);
-    // Only a move for this edition, from the app it says it is from.
-    // Erevos+'s bridge is still app.erevos (lib/update-channel.ts wireOf).
-    if (note && note.to === INSTALLED_EDITION && (PACKAGES[note.from] === pkg || (note.from === 'plus' && pkg === PACKAGES.erevos))) found.push({ ...note, pkg });
+    // Only a move for this edition, from the app it says it is from (Erevos+'s bridge: app.erevos).
+    if (note && moveFor(note, pkg, INSTALLED_EDITION, ownPackage() || PACKAGES[INSTALLED_EDITION])) found.push({ ...note, pkg });
   }
   return found.sort((a, b) => b.made - a.made);
 }
@@ -182,7 +257,9 @@ export async function takeMove(move: FoundMove, progress?: (done: number, all: n
       progress,
     );
     await afterRestore(backupNative(backup), before);
-    await device!.moveDone!(move.pkg).catch(() => false);
+    // Told now, or at the next start: until then the other edition waits as moved out (lib/move-state.ts).
+    if (!(await device!.moveDone!(move.pkg).catch(() => false))) keepFile(DONE_DUE, move.pkg);
+    askRoles(move);
   } finally {
     if (dir.exists) dir.delete();
   }

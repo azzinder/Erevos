@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { MOVE_WAITS, moveRoom, readMovedOut, readMoveNote } from '../lib/move-note';
+import { MOVE_WAITS, moveFor, moveRoom, readMovedOut, readMoveNote, type MoveNote } from '../lib/move-note';
 import { channelsOf, packageOf, PACKAGES, updateEditionName, updateEditionOf, wireOf } from '../lib/update-channel';
 import { channelPage, channelRepo, channelUrl, LITE_RELEASES_REPO, RELEASES_REPO } from '../lib/updates';
 
@@ -60,7 +60,8 @@ test('a move note is read only whole, for another edition, and within a day', ()
   assert.equal(readMoveNote('not json', now), null);
   assert.equal(readMoveNote('null', now), null);
   assert.equal(read({ v: 2 }), null);
-  assert.equal(read({ to: 'erevos' }), null);
+  assert.equal(read({ from: 'erevos', to: 'erevos' }), null);
+  assert.equal(read({ from: 'lite', to: 'lite' }), null);
   assert.equal(read({ to: 'other' }), null);
   assert.equal(read({ made: now - MOVE_WAITS }), null);
   assert.equal(read({ made: now + 120_000 }), null);
@@ -104,4 +105,39 @@ test('a phone nearby is asked to bring the messages only when this phone has no 
   // The relay answered: its queue full, or a failure of its own.
   assert.equal(needsBridge(new RelayError('full', 2), false), false);
   assert.equal(needsBridge(null, false), false);
+});
+
+test("Erevos+'s bridge (app.erevos) moves to app.erevos.plus, end to end, and nothing else moves to itself", () => {
+  const now = 1_800_000_000_000;
+  const note = (from: string, to: string, roles?: unknown) =>
+    readMoveNote(JSON.stringify({ v: 1, from, to, made: now - 1000, backup: 'move.erevos', parts: [], password: 'ab'.repeat(32), ...(roles !== undefined ? { roles } : {}) }), now);
+  // The bridge is edition plus with the package app.erevos: its move.json says plus to plus.
+  const bridge = note('plus', 'plus') as MoveNote;
+  assert.ok(bridge, 'the bridge reads its own move (else clearStaleMove deletes it)');
+  assert.equal(moveFor(bridge, 'app.erevos', 'plus', 'app.erevos.plus'), true);
+  // Not from app.erevos.plus to itself, nor to the bridge from app.erevos.plus, nor to Erevos.
+  assert.equal(moveFor(bridge, 'app.erevos.plus', 'plus', 'app.erevos.plus'), false);
+  assert.equal(moveFor(bridge, 'app.erevos.plus', 'plus', 'app.erevos'), false);
+  assert.equal(moveFor(bridge, 'app.erevos', 'erevos', 'app.erevos.lite'), false);
+  // The usual moves: from the app the note names, to this edition, never from this app.
+  const toPlus = note('erevos', 'plus') as MoveNote;
+  assert.equal(moveFor(toPlus, 'app.erevos', 'plus', 'app.erevos.plus'), true);
+  assert.equal(moveFor(toPlus, 'app.erevos.lite', 'plus', 'app.erevos.plus'), false);
+  assert.equal(moveFor(toPlus, 'app.erevos', 'lite', 'app.erevos.lite'), false);
+  const toErevos = note('plus', 'erevos') as MoveNote;
+  assert.equal(moveFor(toErevos, 'app.erevos.plus', 'erevos', 'app.erevos'), true);
+  assert.equal(moveFor(toErevos, 'app.erevos', 'erevos', 'app.erevos'), false);
+  // Whether the app moved from was the SMS and phone app goes with the move.
+  assert.deepEqual(note('erevos', 'plus', { sms: true, phone: false })?.roles, { sms: true, phone: false });
+  assert.equal(note('erevos', 'plus', { sms: 'yes', phone: false }), null);
+  assert.equal(note('erevos', 'plus', null), null);
+});
+
+test('a move taken is told to the edition moved from at the next start, should it fail then', () => {
+  const move = readFileSync('lib/edition-move.ts', 'utf8');
+  assert.match(move, /if \(!\(await device!\.moveDone!\(move\.pkg\)\.catch\(\(\) => false\)\)\) keepFile\(DONE_DUE, move\.pkg\)/);
+  const layout = readFileSync('app/_layout.tsx', 'utf8');
+  assert.match(layout, /void tellMoveTaken\(\)/);
+  // Nothing is received while a move is taken before the lock.
+  assert.match(readFileSync('components/moved-out.tsx', 'utf8'), /holdReceiver\(\)\.then/);
 });

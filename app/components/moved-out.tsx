@@ -11,6 +11,7 @@ import { ask } from '../lib/alert';
 import { cancelMove, declineMove, openEdition, takeMove, type FoundMove } from '../lib/edition-move';
 import { t } from '../lib/i18n';
 import { wipeNow } from '../lib/panic';
+import { holdReceiver } from '../lib/receiver';
 import { channelPage } from '../lib/updates';
 import { channelsOf, isTestVersion, updateEditionName, type UpdateEdition } from '../lib/update-channel';
 import { Logo } from '../lock/gate';
@@ -85,6 +86,7 @@ export function MovedOut({ to, taken, onChanged }: { to: UpdateEdition; taken: b
         </Text>
         <Card>
           <Text>{t('{edition} took everything: your chats go on there. This Erevos is no longer needed: delete what it still keeps, then uninstall it.', { edition: name })}</Text>
+          <Text tone="muted">{t("If this Erevos is the phone's SMS or phone app, make {edition} that app instead: until then SMS come here, where only the move shows.", { edition: name })}</Text>
           <Row wrap>
             <Button title={t('Open {edition}', { edition: name })} onPress={open} />
             <Button title={t('Delete everything here')} kind="secondary" onPress={wipe} />
@@ -103,6 +105,7 @@ export function MovedOut({ to, taken, onChanged }: { to: UpdateEdition; taken: b
       <Card>
         <Text>{t('Everything is ready for {edition}. Open it within a day: it asks whether to bring your chats from here.', { edition: name })}</Text>
         <Text tone="muted">{t('Meanwhile this Erevos receives and sends nothing, so that no message stays here that {edition} does not have.', { edition: name })}</Text>
+        <Text tone="muted">{t("If this Erevos is the phone's SMS or phone app, make {edition} that app instead: until then SMS come here, where only the move shows.", { edition: name })}</Text>
         <Row wrap>
           <Button title={t('Open {edition}', { edition: name })} onPress={open} />
           <Button title={t('Download page')} kind="secondary" onPress={() => void Linking.openURL(pageOf(to)).catch(() => undefined)} />
@@ -129,10 +132,15 @@ export function MoveFound({ move, onDone, onLater }: { move: FoundMove; onDone: 
         onPress: () => {
           setError('');
           setTaking(0);
-          takeMove(move, (done, all) => setTaking(Math.floor((done * 100) / Math.max(1, all)))).then(onDone, (e: unknown) => {
-            setTaking(null);
-            setError(t('It could not be brought: {error}. Backups does the same by hand: make one in {edition}, then restore it here.', { error: e instanceof Error ? e.message : String(e), edition: name }));
-          });
+          // Nothing is received while everything here gives way to the move (as Backups' restore).
+          void holdReceiver().then((release) =>
+            takeMove(move, (done, all) => setTaking(Math.floor((done * 100) / Math.max(1, all))))
+              .finally(release)
+              .then(onDone, (e: unknown) => {
+                setTaking(null);
+                setError(t('It could not be brought: {error}. Backups does the same by hand: make one in {edition}, then restore it here.', { error: e instanceof Error ? e.message : String(e), edition: name }));
+              }),
+          );
         },
       },
     ]);

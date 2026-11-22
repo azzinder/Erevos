@@ -54,4 +54,5 @@ export const releaseNotice: Record<string, string> = {
   "It takes the place of everything this Erevos has now: its spaces, chats and settings. Make a backup here first if you want to keep them.": "Prende il posto di tutto ciò che questo Erevos ha ora: spazi, chat e impostazioni. Fai prima un backup qui se vuoi tenerli.",
   "{edition} made everything ready for this app: every space, with its contacts, messages and settings.": "{edition} ha preparato tutto per questa app: ogni spazio, con i suoi contatti, messaggi e impostazioni.",
   "There is not enough free room on the phone for the move: it needs about {size}, and {free} is free. Delete something large, or move with Backups to a computer.": "Non c'è abbastanza spazio libero sul telefono per il passaggio: servono circa {size}, e sono liberi {free}. Cancella qualcosa di grande, o passa con i Backup tramite un computer.",
+  "If this Erevos is the phone's SMS or phone app, make {edition} that app instead: until then SMS come here, where only the move shows.": "Se questo Erevos è l'app per SMS o telefono, rendi invece {edition} quell'app: fino ad allora gli SMS arrivano qui, dove si vede solo il passaggio.",
 };

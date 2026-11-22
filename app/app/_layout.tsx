@@ -86,7 +86,7 @@ import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData, updat
 import { ModuleOff } from '../components/module-off';
 import { Setup, type SetupChoice } from '../components/setup';
 import { MovedOut, MoveFound } from '../components/moved-out';
-import { movedOut, onMovedOut, waitingMove, type FoundMove } from '../lib/edition-move';
+import { movedOut, onMovedOut, tellMoveTaken, waitingMove, type FoundMove } from '../lib/edition-move';
 import type { UpdateEdition } from '../lib/update-channel';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
@@ -275,6 +275,8 @@ export default function RootLayout() {
     await loadModules();
     followModuleIcons();
     const config = await loadLockConfig();
+    // A move taken here whose edition could not be told so then (lib/edition-move.ts).
+    void tellMoveTaken();
     const setUp = config.direct !== null || config.slots.length > 0 || modulesChosen() || !(await firstStart());
     // A move another edition made for this one, set up already: asked first (the first start's setup asks itself).
     const found = setUp && !skipMoveAsk.current ? await waitingMove() : null;
