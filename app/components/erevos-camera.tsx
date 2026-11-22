@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { keepPicture, keepRecording } from '../lib/collection-camera';
 import { t } from '../lib/i18n';
+import { isPicking, whilePicking } from '../lib/picking';
 import { type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import { space } from '../theme/colors';
 import { Button, Text } from './ui';
@@ -55,14 +56,15 @@ export function ErevosCamera({
     setTaken(0);
     setNote('');
     setReady(false);
-    if (cameraAllowed && !cameraAllowed.granted && cameraAllowed.canAskAgain) void askCamera();
+    if (cameraAllowed && !cameraAllowed.granted && cameraAllowed.canAskAgain) void whilePicking(askCamera);
   }, [visible]);
 
-  // Leaving Erevos closes the camera: nothing goes on filming behind the lock.
+  // Leaving Erevos closes the camera: nothing goes on filming behind the lock. Android's question
+  // for the camera or the microphone is not leaving it (whilePicking).
   useEffect(() => {
     if (!visible) return;
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
+      if (state !== 'active' && !isPicking()) {
         camera.current?.stopRecording();
         onClose();
       }
@@ -99,7 +101,7 @@ export function ErevosCamera({
       return;
     }
     if (!micAllowed?.granted) {
-      const asked = await askMic();
+      const asked = await whilePicking(askMic);
       if (!asked.granted) {
         setNote(t('Erevos may not use the microphone, so the video has no sound. Allow it in the phone settings for sound.'));
       }
@@ -155,7 +157,7 @@ export function ErevosCamera({
             <Text color="#FFFFFF" style={styles.centered}>
               {t('Erevos may not use the camera. Allow it in the phone settings to take photos.')}
             </Text>
-            {cameraAllowed?.canAskAgain !== false ? <Button title={t('Allow the camera')} compact onPress={() => void askCamera()} /> : null}
+            {cameraAllowed?.canAskAgain !== false ? <Button title={t('Allow the camera')} compact onPress={() => void whilePicking(askCamera)} /> : null}
           </View>
         )}
 
