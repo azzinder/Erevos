@@ -30,6 +30,9 @@ export function CollectionEdit({ item, onClose, onSave }: { item: CollectionItem
   const [cut, setCut] = useState<Cut>(WHOLE);
   const [saving, setSaving] = useState(false);
   const [room, setRoom] = useState({ w: window.width, h: window.height * 0.6 });
+  // The photo's sides as the image says them once shown: the Collection knows them only for JPEG and
+  // PNG, and a HEIC, WebP, GIF or AVIF would else be taken as square, the frame off the picture.
+  const [shown, setShown] = useState<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
     if (!item) return;
@@ -38,6 +41,7 @@ export function CollectionEdit({ item, onClose, onSave }: { item: CollectionItem
     setTurn(0);
     setCut(WHOLE);
     setFailed(false);
+    setShown(null);
     openItemUri(item)
       .then((opened) => {
         if (!active) {
@@ -57,8 +61,8 @@ export function CollectionEdit({ item, onClose, onSave }: { item: CollectionItem
   }, [item?.id]);
 
   // The photo as shown, turned: its sides fitted into the room there is.
-  const w0 = item?.file.w ?? 1;
-  const h0 = item?.file.h ?? 1;
+  const w0 = item?.file.w || shown?.w || 1;
+  const h0 = item?.file.h || shown?.h || 1;
   const sideways = turn % 2 === 1;
   const shownW = sideways ? h0 : w0;
   const shownH = sideways ? w0 : h0;
@@ -143,6 +147,10 @@ export function CollectionEdit({ item, onClose, onSave }: { item: CollectionItem
                   resizeMode="contain"
                   resizeMethod="resize"
                   onError={() => setFailed(true)}
+                  onLoad={(event) => {
+                    const { width, height } = event.nativeEvent.source;
+                    if (width > 0 && height > 0 && (shown?.w !== width || shown?.h !== height)) setShown({ w: width, h: height });
+                  }}
                   style={{
                     position: 'absolute',
                     width: sideways ? box.h : box.w,
