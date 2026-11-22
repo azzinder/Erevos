@@ -44,6 +44,7 @@ import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { startChatLater } from '../lib/chat-later';
 import { startSmsNotices } from '../lib/sms-notices';
+import { clearCameraCache } from '../lib/camera-cache';
 import { StickerImageHost } from '../lib/sticker-image';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats, shareLastSeen } from '../lib/space-chats';
@@ -156,6 +157,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === 'android') tellShareTexts();
   }, [lang]);
+  // What the Collection's camera left unencrypted in the cache, if Erevos stopped before it was kept.
+  useEffect(() => {
+    if (Platform.OS === 'android') clearCameraCache();
+  }, []);
 
   useEffect(() => {
     phaseRef.current = phase;

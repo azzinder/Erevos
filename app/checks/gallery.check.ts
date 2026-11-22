@@ -6,12 +6,16 @@
 // read from its EXIF, XMP or MP4 boxes; and the sums for turning and cutting a photo (lib/photo-cut.ts).
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { bytesSource } from '../lib/attachments';
 import { moovHasPlace, photoPlace, tiffHasPlace, videoPlace } from '../lib/media-place';
 import { cleanImage } from '../lib/photo';
 import { dragged, editedName, LEAST, turnedCut, WHOLE, wholeCut } from '../lib/photo-cut';
+
+import { ROOT } from './words';
 
 const ascii = (text: string) => Uint8Array.from([...text].map((c) => c.charCodeAt(0)));
 const joined = (...parts: Uint8Array[]) => {
@@ -134,4 +138,14 @@ test('the frame stays inside the photo, no smaller than its least, and turns wit
   const odd = { x: 0.1, y: 0.2, w: 0.3, h: 0.4 };
   const back = turnedCut(turnedCut(turnedCut(turnedCut(odd))));
   for (const k of ['x', 'y', 'w', 'h'] as const) assert.ok(Math.abs(back[k] - odd[k]) < 1e-9);
+});
+
+test("what the camera left in the cache goes as Erevos starts: from expo-camera's own folder", () => {
+  const source = (name: string) => readFileSync(join(ROOT, 'node_modules', 'expo-camera', 'android', 'src', 'main', 'java', 'expo', 'modules', 'camera', ...name.split('/')), 'utf8');
+  const folder = readFileSync(join(ROOT, 'lib', 'camera-cache.ts'), 'utf8').match(/CAMERA_FOLDER = '([^']+)'/)?.[1];
+  assert.equal(folder, 'Camera');
+  // Videos and photos both, as expo-camera names its folder.
+  assert.match(source('ExpoCameraView.kt'), /generateOutputFile\(cacheDirectory, "Camera", "\.mp4"\)/);
+  assert.match(source('tasks/ResolveTakenPicture.kt'), /DIRECTORY_NAME = "Camera"/);
+  assert.match(readFileSync(join(ROOT, 'app', '_layout.tsx'), 'utf8'), /clearCameraCache\(\)/);
 });
