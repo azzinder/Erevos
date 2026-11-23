@@ -8,6 +8,36 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## 3.0.0-rc.1 (2026-11-23)
+
+### For you
+
+- On home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls
+  (`app/index.tsx` `pinned`), so a search or another way out is a tap away from anywhere in the list; the guide says
+  so. Requested by the maintainer.
+- Phone: a SIM call that rings on a locked phone, or with its screen off, wakes the screen itself and keeps it on,
+  bright, while it rings (at most a minute; `CallService` `wake`), as Erevos's own calls already do: on some phones it
+  rang with a black screen that could not be answered. A call that rings while **Call ended** still shows now shows at
+  once. Requested by the maintainer; the cause is not proven (no log), and it is not yet tried on a phone.
+
+### Under the hood
+
+From an AI-assisted code review, each finding checked in the code:
+
+- A restore that cannot delete what the backup did not have, after it wrote everything else, puts the phone back as it
+  was instead of saying it failed with the backup's lock already in place (`lock/backup.ts`, BACKUP-03).
+- Relay: a ticket gives no more places once it expires or is revoked, also on a connection that opened with it before
+  (`lend.rs` `borrow`, LEND-02).
+- Relay: a lent token's queue or file that then fails (the relay full, a write that failed) is given back for the day,
+  so a failure costs no place (`server.rs` `lent_give_back`, `Lend::give_back`, LEND-04).
+- Relay: a message held for later that is taken back, one that went, and a deleted file chunk stay gone after a power
+  cut (the folder is synced after each delete, STORAGE-02).
+- Relay: a message held again for later under an id already held stays with the phone that held it first
+  (SCHEDULE-02).
+- Checks: wrong passwords tried from two browser tabs at once count one at a time, and a lockout reached while checks
+  wait in line holds; what a relay restart keeps of a queue (its owner only in memory, on purpose) and the sender and
+  recipient roles after it.
+
 ## 3.2.0-beta.2 (2026-11-23)
 
 The first release of Erevos Lite, an Android app of its own (`app.erevos.lite`): Erevos's own chats and calls,

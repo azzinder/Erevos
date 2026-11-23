@@ -41,9 +41,13 @@ test('a version for each release of CHANGELOG.md, in its order, by its number al
 
 test('each release is named as the release workflow names it, each newer than the one below it', () => {
   const names = shownReleases();
+  // Newest first by date: a release of Erevos Lite (x.2.y) and one of Erevos (x.0.y) each come after
+  // the last of their own edition, whichever number is higher.
+  const lite = (name: string) => /^\d+\.2\./.test(name);
   for (const [i, name] of names.entries()) {
     assert.match(name, VERSION_NAME);
-    if (i > 0) assert.ok(laterThan(names[i - 1], name), `${names[i - 1]} above ${name}`);
+    const above = names.slice(0, i).reverse().find((other) => lite(other) === lite(name));
+    if (above) assert.ok(laterThan(above, name), `${above} above ${name}`);
   }
 });
 
@@ -132,7 +136,9 @@ test('since 7.x, Erevos+ takes in the plain x.0.y and Erevos⁻ x.2.y releases, 
 
 test('Erevos Lite tells what Erevos had until it under its own number, without the Phone, SMS or Collection', () => {
   // Its first release brings all Erevos had until then, as this version.
-  const first = whatsNewFor('3.2.0-beta.2', 'lite');
+  // As it was at that release: what came after it is not in it.
+  const at = VERSIONS.slice(VERSIONS.findIndex((v) => v.version === '3.2.0-beta.2'));
+  const first = whatsNewOf(at, { forYou: [], underTheHood: [] }, '3.2.0-beta.2', 'lite');
   assert.equal(first[0].version, '3.2.0-beta.2');
   // Its own line, which Erevos and Erevos+ do not show.
   assert.ok(first[0].forYou[0].startsWith('**Erevos Lite**:'), first[0].forYou[0]);

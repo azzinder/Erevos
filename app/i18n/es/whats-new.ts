@@ -4,6 +4,12 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
+    "**Búsqueda y Caminos a la vista**: en el inicio, la búsqueda y la línea **Caminos** se quedan bajo la barra superior con el botón de servicios mientras la lista se desplaza.",
+  "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself, so it can always be answered. See [Phone](#phone).":
+    "**Llamadas con el teléfono bloqueado**: una llamada que suena con el teléfono bloqueado o la pantalla apagada ahora enciende la pantalla sola, para que siempre se pueda contestar. Consulta [Teléfono](#phone).",
+  "From a code review made with the help of AI: a restore that cannot finish leaves the phone as it was, and the relay keeps its lent places, held messages and deletions right, also after a power cut.":
+    "De una revisión de código hecha con ayuda de IA: una restauración que no termina deja el teléfono como estaba, y el relay lleva bien los sitios prestados, los mensajes para más tarde y los borrados, también tras un corte de luz.",
   "**Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own that asks for fewer permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**. See [Updates](#updates).":
     "**Erevos Lite**: los chats, grupos y llamadas propios de Erevos, cifrados de extremo a extremo, en una app propia que pide menos permisos. Se pasa a Erevos o a Erevos+, y ellos a él, en **Actualizaciones**. Ver [Actualizaciones](#updates).",
   "**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock).":
