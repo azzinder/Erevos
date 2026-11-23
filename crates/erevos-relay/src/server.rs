@@ -1138,14 +1138,11 @@ fn respond(
         ));
     }
     let reply = match op[0] {
-        CREATE
-            if !lent_may(shared, access, |lend, nonce| {
-                lend.may_create(nonce, system_now())
-            }) =>
-        {
-            vec![FULL]
-        }
         CREATE => {
+            let now = system_now();
+            if !lent_may(shared, access, |lend, nonce| lend.may_create(nonce, now)) {
+                return Ok(Some(vec![FULL]));
+            }
             let created = shared.store().create_for(owner_of(access));
             match created {
                 Ok(q) => {
@@ -1154,7 +1151,10 @@ fn respond(
                     out.extend_from_slice(&q.sender_id);
                     out
                 }
-                Err(e) => vec![code(e)],
+                Err(e) => {
+                    lent_give_back(shared, access, now, 1, 0);
+                    vec![code(e)]
+                }
             }
         }
         SEND => {
@@ -1354,7 +1354,9 @@ fn respond(
         }
         FILE_PUT => {
             let chunk = read_bytes(r, MAX_CHUNK)?;
-            if !lent_may_put(shared, access, chunk.len()) {
+            let now = system_now();
+            let bytes = chunk.len() as u64;
+            if !lent_may_put(shared, access, now, bytes) {
                 return Ok(Some(vec![FULL]));
             }
             let put = shared.files().put(chunk);
@@ -1364,7 +1366,10 @@ fn respond(
                     out.extend_from_slice(&id);
                     out
                 }
-                Err(e) => vec![file_code(e)],
+                Err(e) => {
+                    lent_give_back(shared, access, now, 0, bytes);
+                    vec![file_code(e)]
+                }
             }
         }
         FILE_GET => {
@@ -1478,7 +1483,9 @@ fn respond(
         FILE_KEEP => {
             let from = read_time(r)?;
             let chunk = read_bytes(r, MAX_CHUNK)?;
-            if !lent_may_put(shared, access, chunk.len()) {
+            let now = system_now();
+            let bytes = chunk.len() as u64;
+            if !lent_may_put(shared, access, now, bytes) {
                 return Ok(Some(vec![FULL]));
             }
             let put = shared.files().put_from(chunk, from);
@@ -1488,7 +1495,10 @@ fn respond(
                     out.extend_from_slice(&id);
                     out
                 }
-                Err(e) => vec![file_code(e)],
+                Err(e) => {
+                    lent_give_back(shared, access, now, 0, bytes);
+                    vec![file_code(e)]
+                }
             }
         }
         CALL_RELAY => match &shared.turn {
@@ -1823,10 +1833,17 @@ fn lent_may(shared: &Shared, access: Access, may: impl FnOnce(&Lend, Nonce) -> b
     }
 }
 
-fn lent_may_put(shared: &Shared, access: Access, bytes: usize) -> bool {
-    lent_may(shared, access, |lend, nonce| {
-        lend.may_put(nonce, system_now(), bytes as u64)
-    })
+fn lent_may_put(shared: &Shared, access: Access, now: u64, bytes: u64) -> bool {
+    lent_may(shared, access, |lend, nonce| lend.may_put(nonce, now, bytes))
+}
+
+/// Gives back to a connection's lent token what `lent_may` counted at `now`
+/// for something that then failed (LEND-04): a queue not made, a file not
+/// kept costs no place of the day.
+fn lent_give_back(shared: &Shared, access: Access, now: u64, queues: u32, bytes: u64) {
+    if let (Access::Lent(nonce), Some(lend)) = (access, shared.lend.get()) {
+        lend.give_back(nonce, now, queues, bytes);
+    }
 }
 
 /// Queues `msg` from `sender`, then wakes the connections waiting for a

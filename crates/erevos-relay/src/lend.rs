@@ -509,6 +509,25 @@ impl Lend {
         self.count(nonce, now, 0, bytes)
     }
 
+    /// Gives back what `may_create` or `may_put` counted at `now` for the
+    /// lent token `nonce`, when what it was counted for then failed (the
+    /// relay full, a file not written): a place is not lost for the day to a
+    /// failure. Nothing once the day it was counted on is over. A failed write
+    /// of the counts leaves them lower in memory only: on disk they stay as
+    /// counted, never less than what was given.
+    pub fn give_back(&self, nonce: Nonce, now: u64, queues: u32, bytes: u64) {
+        let mut counts = self.counts();
+        if counts.day != now / DAY {
+            return;
+        }
+        let Some((made, put)) = counts.made.get_mut(&nonce) else {
+            return;
+        };
+        *made = made.saturating_sub(queues);
+        *put = put.saturating_sub(bytes);
+        let _ = self.save(&counts);
+    }
+
     fn count(&self, nonce: Nonce, now: u64, queues: u32, bytes: u64) -> bool {
         let mut counts = self.counts();
         let before = counts.clone();
@@ -725,6 +744,32 @@ mod tests {
         assert!(lend.may_create(nonce, NOW + DAY));
         assert!(lend.may_put(nonce, NOW + DAY, MAX_FILE_BYTES));
         assert!(!lend.may_put(nonce, NOW + DAY, 1));
+    }
+
+    #[test]
+    fn what_failed_is_given_back_the_same_day() {
+        // LEND-04: a queue not made or a file not kept costs no place of the day.
+        let lend = Lend::new(&RelayKey::generate());
+        let nonce = [9u8; 16];
+        for _ in 0..MAX_QUEUES {
+            assert!(lend.may_create(nonce, NOW));
+        }
+        assert!(!lend.may_create(nonce, NOW));
+        lend.give_back(nonce, NOW, 1, 0);
+        assert!(lend.may_create(nonce, NOW));
+        assert!(!lend.may_create(nonce, NOW));
+        assert!(lend.may_put(nonce, NOW, MAX_FILE_BYTES));
+        lend.give_back(nonce, NOW, 0, 100);
+        assert!(lend.may_put(nonce, NOW, 100));
+        assert!(!lend.may_put(nonce, NOW, 1));
+        // Never below nothing, and never another day's or another token's.
+        lend.give_back([10u8; 16], NOW, 1, 1);
+        assert!(lend.may_create(nonce, NOW + DAY));
+        lend.give_back(nonce, NOW, 5, 0);
+        for _ in 1..MAX_QUEUES {
+            assert!(lend.may_create(nonce, NOW + DAY));
+        }
+        assert!(!lend.may_create(nonce, NOW + DAY));
     }
 
     /// Writes `text` as the file of revoked tickets, and makes sure it reads
