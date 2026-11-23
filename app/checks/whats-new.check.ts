@@ -66,7 +66,9 @@ test('each line once', () => {
 });
 
 test('what is not out yet shows under the version that runs, once it comes after the last release', () => {
-  const last = VERSIONS[0].version;
+  // The plain Erevos's releases: Erevos Lite's (x.2.y) are not among them.
+  const plain = VERSIONS.filter((v) => !/^(?!7\.)\d+\.2\./.test(v.version));
+  const last = plain[0].version;
   assert.equal(laterThan('3.10.0', '3.9.1'), true);
   assert.equal(laterThan('3.3.2', '3.3.2'), false);
   assert.equal(laterThan('4.0.0-rc.1', '3.4.2'), true);
@@ -81,10 +83,10 @@ test('what is not out yet shows under the version that runs, once it comes after
   // The plain Erevos, whichever edition this build is: Erevos+ also takes in the plain releases (asPlus, below).
   const shown = whatsNewFor('99.0.0', 'erevos');
   const pending = lines(NEXT).length > 0;
-  assert.equal(shown.length, VERSIONS.length + (pending ? 1 : 0));
+  assert.equal(shown.length, plain.length + (pending ? 1 : 0));
   if (pending) assert.equal(shown[0].version, '99.0.0');
   // A build of a release: no list of what is to come.
-  assert.deepEqual(whatsNewFor(last, 'erevos').map((v) => v.version), VERSIONS.map((v) => v.version));
+  assert.deepEqual(whatsNewFor(last, 'erevos').map((v) => v.version), plain.map((v) => v.version));
   // A build of main for testing: with no number.
   if (pending) assert.equal(whatsNewFor('0.0.1', 'erevos')[0].version, null);
 });
@@ -130,8 +132,11 @@ test('since 7.x, Erevos+ takes in the plain x.0.y and Erevos⁻ x.2.y releases, 
 
 test('Erevos Lite tells what Erevos had until it under its own number, without the Phone, SMS or Collection', () => {
   // Its first release brings all Erevos had until then, as this version.
-  const first = whatsNewFor('3.2.0-beta.1', 'lite');
-  assert.equal(first[0].version, '3.2.0-beta.1');
+  const first = whatsNewFor('3.2.0-beta.2', 'lite');
+  assert.equal(first[0].version, '3.2.0-beta.2');
+  // Its own line, which Erevos and Erevos+ do not show.
+  assert.ok(first[0].forYou[0].startsWith('**Erevos Lite**:'), first[0].forYou[0]);
+  for (const edition of ['erevos', 'plus'] as const) assert.ok(!whatsNewFor('3.2.0-beta.2', edition).flatMap(lines).some((line) => line.startsWith('**Erevos Lite**:')), edition);
   assert.ok(first.every((v) => v.version === null || /^\d+\.2\./.test(v.version)), JSON.stringify(first.map((v) => v.version)));
   const all = first.flatMap(lines);
   // The phone you hold is not the Phone.

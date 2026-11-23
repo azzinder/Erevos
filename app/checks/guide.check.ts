@@ -293,6 +293,15 @@ test("Erevos Lite's guide keeps what it has: in every language the same parts as
     ['hidden', /\*\*Relay, Nostr and phones nearby:\*\*/],
   ];
   for (const [id, what] of kept) assert.match(text(id), what, `${id}: ${what}`);
+  // It has not the Phone's permission to read the call log: a contact's history is its messages alone.
+  assert.match(text('contacts'), /\*\*History:\*\* a contact's card lists its messages in Erevos, the newest first; tap one to open the chat\./);
+  const gone: [string, RegExp][] = [
+    ['contacts', /Show calls/],
+    ['contacts', /call back/],
+    ['privacy', /\*\*Phone calls\*\*/],
+    ['privacy', /only to show its history/],
+  ];
+  for (const [id, what] of gone) assert.doesNotMatch(text(id), what, `${id}: ${what}`);
 });
 
 test('a list item marked [~] is left out of Erevos Lite alone, with what continues it', () => {

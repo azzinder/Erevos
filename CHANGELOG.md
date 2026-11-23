@@ -6,15 +6,21 @@ and security inside. After 0.1.16 comes 2.0.0.
 Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
 0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
 and 0.1.15 never came out.
-4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+), and What's new in the app starts again there. **Not audited.**
+4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
-## Unreleased
+## 3.2.0-beta.2 (2026-11-23)
 
-On main, not released yet:
+The first release of Erevos Lite, an Android app of its own (`app.erevos.lite`): Erevos's own chats and calls,
+without the Phone, the SMS, the Collection or Fasouli. It is Erevos 3.0.0-beta.2 otherwise, with what is below;
+Erevos and Erevos+ have no release of this number.
+
+### For you
+
+- **Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own, with no Phone, SMS or Collection and none of their permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**.
 
 ### Under the hood
 
-- **Erevos Lite** as an edition of its own (`EREVOS_EDITION=lite`, docs/editions.md): Erevos's own chats and calls alone, the Android app `app.erevos.lite`, versions 3.2.x, released by hand with `.github/workflows/release-lite.yml` to `azzinder/erevos-lite-releases`. The Phone's and the SMS's native modules are left out of its app (`app/plugins/with-edition-modules.js`), and with them every permission of theirs; the Collection is not offered, though its native module stays for opening chat files with another app; its first start has no step for the modules, Settings no Modules, the widget and the launcher icons no Phone or SMS, and its guide and What's new leave them out, What's new under its own 3.2.x numbers. It has no payment requests of Fasouli's either: a request a contact sends shows as its words.
+- **Erevos Lite** as an edition of its own (`EREVOS_EDITION=lite`, docs/editions.md): Erevos's own chats and calls alone, the Android app `app.erevos.lite`, versions 3.2.x, released by hand with `.github/workflows/release-lite.yml` to `azzinder/erevos-lite-releases`. The Phone's and the SMS's native modules are left out of its app (`app/plugins/with-edition-modules.js`), and with them every permission of theirs; the Collection is not offered, though its native module stays for opening chat files with another app; its first start has no step for the modules, Settings no Modules, the widget and the launcher icons no Phone or SMS, and its guide and What's new leave them out, What's new under its own 3.2.x numbers. It has no payment requests of Fasouli's either: a request a contact sends shows as its words. Its guide says only what Lite has, in every language: what only the other editions have is marked in the guide's text (`{~…}`, `[~]`), down to a contact's history, which in Lite is its messages alone, as it may not read the call log.
 - The plain Erevos is built as `EREVOS_EDITION=erevos`: `lite` was its name until 3.0.0 and is Erevos Lite's now. Every workflow says `erevos`; `scripts/reproduce-apk.sh` and `scripts/reproduce-web.sh` still build a commit from before with `lite`, and `reproduce-apk.sh` also checks Erevos Lite's releases.
 
 ## 3.0.0-beta.2 (2026-11-22)

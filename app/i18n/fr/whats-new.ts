@@ -4,6 +4,8 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own that asks for fewer permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**. See [Updates](#updates).":
+    "**Erevos Lite** : les discussions, groupes et appels propres à Erevos, chiffrés de bout en bout, dans une application à part qui demande moins d’autorisations. Il passe à Erevos ou à Erevos+, et eux à lui, sous **Mises à jour**. Voir [Mises à jour](#updates).",
   "**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock).":
     "**Mots de passe courts** : un nouveau mot de passe, ou PIN des discussions cachées, trop court n’est pris qu’après **L’utiliser quand même**. Voir [Verrou par mot de passe](#lock).",
   "Tries of a password or PIN count one at a time, also across a browser's tabs; a restore that cannot finish puts back what the phone had; a release's SHA256SUMS is signed.":

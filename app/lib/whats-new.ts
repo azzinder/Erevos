@@ -28,6 +28,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.2.0-beta.2',
+    forYou: [
+      mark("**Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own that asks for fewer permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**. See [Updates](#updates)."),
+    ],
+    underTheHood: [],
+  },
+  {
     version: '3.0.0-beta.2',
     forYou: [
       mark("**Short passwords**: a new password, or PIN of hidden chats, that is short is taken only after **Use it anyway**. See [Password lock](#lock)."),
@@ -92,7 +99,7 @@ export function whatsNewOf(versions: WhatsNew[], next: Changes, running: string,
 
 // Erevos Lite tells its releases (x.2.y, their betas and rcs) as its own: what a release of another
 // edition brought shows under the Lite release that came after it, or, with none yet, under the
-// Lite version that runs (its first release, 3.2.0-beta.1, brings all Erevos had until then). A
+// Lite version that runs (its first release, 3.2.0-beta.2, brings all Erevos had until then). A
 // build of main for testing, with no Lite number, keeps them as they are. So each release of Erevos
 // Lite has its entry in VERSIONS, as CHANGELOG.md's "## 3.2.x" (release-lite.yml checks it): what
 // came before it then stays under it, not under the next one.
