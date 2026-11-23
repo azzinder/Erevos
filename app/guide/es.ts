@@ -116,6 +116,7 @@ chats fijados y archivados.
   (en verdes con Matrix)}, así que reconoces un chat de un vistazo sin ninguna foto. No es una comprobación de la clave;
   el [número de seguridad](#relay) sí lo es.
 - **La línea bajo la búsqueda** dice si hay un relay configurado y si tu cola está lista. Tócala para configurar uno.
+- **La búsqueda y esa línea se quedan** bajo la barra superior, con el botón de servicios, mientras la lista se desplaza.
 - **Chat conmigo**, siempre el primero de los chats, con una chincheta, guarda tus notas para ti: ver Chat conmigo y
   recordatorios más abajo.
 - [+] **Los chats de Matrix**, una vez que inicias sesión en Matrix, están en la lista con los demás, los más recientes

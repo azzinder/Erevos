@@ -116,6 +116,7 @@ nascoste hanno le proprie chat fissate e archiviate.
   (nei verdi con Matrix)}, così riconosci una chat a colpo d’occhio senza nessuna foto. Non è una verifica della chiave;
   il [codice di sicurezza](#relay) lo è.
 - **La riga sotto la ricerca** dice se è impostato un relay e se la tua coda è pronta. Toccala per impostarne uno.
+- **La ricerca e quella riga restano** sotto la barra in alto, con il pulsante dei servizi, mentre la lista scorre.
 - **Chat con me stesso**, sempre prima tra le chat, con una puntina, contiene le tue note per te stesso: vedi Chat con
   me stesso e promemoria più sotto.
 - [+] **Le chat Matrix**, una volta che hai fatto l’accesso a Matrix, sono nell’elenco con le altre, le più recenti
