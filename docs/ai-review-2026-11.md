@@ -10,7 +10,7 @@ scanning service.
 **What it was not.** An audit, a certification, or a review by a person outside the project.
 
 **What was reviewed.** azzinder/Erevos main `6afe952e` (22 November 2026), then Erevos 3.0.0-beta.2
-(`b49c6bb9`, 23 November) and the 3.0.0-rc.1 line (`f27c8d94`). Mostly static reading, plus some
+(`b49c6bb9`, 22 November) and the 3.0.0-rc.1 line (`f27c8d94`). Mostly static reading, plus some
 tests the review wrote; we ran the Rust and app tests ourselves.
 
 **How findings were handled.** Each one was checked in the code first. Three did not hold as
@@ -22,13 +22,13 @@ received, about 260 KiB at most), and an unpinned Rust version (`rust-toolchain.
 
 | ID | What | Fixed in |
 | --- | --- | --- |
-| LOCK-01 | Wrong-password counter could miss counts with checks in parallel (home search, hidden door, several web tabs) | 3.0.0-beta.1 |
-| BACKUP-01 | A backup from someone else could ask for a very costly key derivation | 3.0.0-beta.1 |
-| BACKUP-02 | A failed restore could leave a mix of old and new data | 3.0.0-beta.1 |
-| OIDC-01/02 | Relay sign-in did not check the ID token's `exp`, nor `azp` when `aud` has several | 3.0.0-beta.1 |
-| LEND-01 | A failed save of lending counters did not stop lending | 3.0.0-beta.1 |
-| CI-01 | High-severity npm advisories did not fail the build | 3.0.0-beta.1 |
-| SUPPLY-02 | SHA256SUMS of the downloads was not signed | 3.0.0-beta.1 |
+| LOCK-01 | Wrong-password counter could miss counts with checks in parallel (home search, hidden door, several web tabs) | 3.0.0-beta.2 |
+| BACKUP-01 | A backup from someone else could ask for a very costly key derivation | 3.0.0-beta.2 |
+| BACKUP-02 | A failed restore could leave a mix of old and new data | 3.0.0-beta.2 |
+| OIDC-01/02 | Relay sign-in did not check the ID token's `exp`, nor `azp` when `aud` has several | 3.0.0-beta.2 |
+| LEND-01 | A failed save of lending counters did not stop lending | 3.0.0-beta.2 |
+| CI-01 | High-severity npm advisories did not fail the build | 3.0.0-beta.2 |
+| SUPPLY-02 | SHA256SUMS of the downloads was not signed | 3.0.0-beta.2 |
 | BACKUP-03 | A failure while cleaning up after a restore could leave things half done | 3.0.0-rc.1 |
 | LEND-02 | After a lent ticket expired, one open connection could borrow without limit | 3.0.0-rc.1 |
 | LEND-04 | Lending quota was charged before the action succeeded | 3.0.0-rc.1 |

@@ -135,10 +135,10 @@ Authorized Security Review. It was a static review, with some tests run. **It is
 certification:** no person outside the project checked the code. The workflows ran only on the
 source we supplied; the VIDOC one does not connect to Vidoc's platform or scanning service.
 
-Every finding was checked against the code before anything changed. Of the 18 that held, 13 are
-fixed and one more is reduced, in Erevos 3.0.0-beta.1 and 3.0.0-rc.1, with tests for the
-code changes. The rest, and what the review did not cover, are listed in
-[docs/ai-review-2026-11.md](docs/ai-review-2026-11.md).
+Every finding was checked against the code before anything changed. Of the 18 that held as problems
+(three more were choices made on purpose), 13 are fixed and one more is reduced, in Erevos
+3.0.0-beta.2 and 3.0.0-rc.1, with tests for the code changes. The rest, and what the review did
+not cover, are listed in [docs/ai-review-2026-11.md](docs/ai-review-2026-11.md).
 
 ## Build it
 

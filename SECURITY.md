@@ -40,5 +40,5 @@ part does, where its cryptography is, how to build and test it, and the places t
 second look.
 
 An AI-assisted review of November 2026, what it found, what was fixed and what it did not cover:
-[docs/ai-review-2026-11.md](docs/ai-review-2026-11.md). It does not change the first line of this
-page.
+[docs/ai-review-2026-11.md](docs/ai-review-2026-11.md). It does not change what this page says
+first: Erevos has not been audited.
