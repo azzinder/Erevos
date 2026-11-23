@@ -472,6 +472,11 @@ impl Lend {
     /// One place on the ticket `nonce`, which expires at `expires`: the lent
     /// token for it, or `None` when the ticket gave all its places.
     pub fn borrow(&self, nonce: Nonce, expires: u64, now: u64) -> Option<String> {
+        // Ticket access is checked at the WebSocket handshake, but a connection
+        // can remain open beyond expiry (or after the operator revokes it).
+        if expires <= now || self.is_revoked(&nonce) {
+            return None;
+        }
         {
             let mut counts = self.counts();
             counts.borrowed.retain(|_, (until, _)| *until > now);
@@ -625,6 +630,35 @@ mod tests {
         // Another ticket gives its own.
         let (nonce, expires) = ticket_pass(&lend, &lend.ticket(NOW));
         assert!(lend.borrow(nonce, expires, NOW).is_some());
+    }
+
+    #[test]
+    fn an_open_ticket_connection_cannot_borrow_after_expiry() {
+        let lend = Lend::new(&RelayKey::generate());
+        let ticket = lend.ticket(NOW);
+        let (nonce, expires) = ticket_pass(&lend, &ticket);
+        assert!(lend.borrow(nonce, expires, expires - 1).is_some());
+        // WebSocket access can still carry the ticket captured at handshake.
+        // Neither expiry nor a cleared daily counter may renew that access.
+        for _ in 0..(MAX_BORROWS + 2) {
+            assert!(lend.borrow(nonce, expires, expires).is_none());
+            assert!(lend.borrow(nonce, expires, expires + DAY).is_none());
+        }
+    }
+
+    #[test]
+    fn an_open_ticket_connection_cannot_borrow_after_revocation() {
+        let state = TempPath::new("counts-revoked");
+        let list = TempPath::new("revoked-open-ticket");
+        let key = RelayKey::generate();
+        let lend = Lend::open(&key, &state.0, Revoked::new(list.0.clone())).unwrap();
+        let ticket = lend.ticket(NOW);
+        let (nonce, expires) = ticket_pass(&lend, &ticket);
+        assert!(lend.borrow(nonce, expires, NOW).is_some());
+        // A pre-existing WebSocket still has Access::Ticket; revocation must
+        // also be enforced at the point of borrowing, not just handshake.
+        write_revoked(&list.0, &format!("{}\n", &ticket[7 + 16..7 + 48]));
+        assert!(lend.borrow(nonce, expires, NOW).is_none());
     }
 
     #[test]
