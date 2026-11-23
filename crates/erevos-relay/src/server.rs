@@ -2334,6 +2334,21 @@ fn call_relay(
     request: Vec<u8>,
     timeout: Duration,
 ) -> Result<Vec<u8>, Cow<'static, str>> {
+    call_relay_via(shared, url, request, timeout, |host, port| {
+        (host, port).to_socket_addrs().map(Iterator::collect)
+    })
+}
+
+/// `call_relay`, with the name looked up by `resolve`: once (`FnOnce`), so a
+/// name that answers differently when asked again (DNS rebinding) changes
+/// nothing. Its own for the checks, which give a lookup of their own.
+fn call_relay_via(
+    shared: &Shared,
+    url: &str,
+    request: Vec<u8>,
+    timeout: Duration,
+    resolve: impl FnOnce(&str, u16) -> io::Result<Vec<SocketAddr>>,
+) -> Result<Vec<u8>, Cow<'static, str>> {
     let uri: tungstenite::http::Uri = url
         .parse()
         .map_err(|_| Cow::Borrowed("not an address it can connect to"))?;
@@ -2350,9 +2365,9 @@ fn call_relay(
     // name is not looked up again, by this or by the WebSocket client. Each is
     // tried in turn, so one that does not answer does not fail the forward.
     let private_peers = shared.limits.private_peers;
-    let addresses: Vec<SocketAddr> = (host, port)
-        .to_socket_addrs()
+    let addresses: Vec<SocketAddr> = resolve(host, port)
         .map_err(|e| io_failed("its name could not be looked up", &e))?
+        .into_iter()
         .filter(|addr| private_peers || peers::global(addr.ip()))
         .collect();
     if addresses.is_empty() {
@@ -4290,6 +4305,68 @@ mod tests {
             forward_request(&format!("ws://{far}/"), &sealed),
         );
         assert_eq!(r, vec![NOT_FOUND]);
+    }
+
+    #[test]
+    fn a_name_is_looked_up_once_and_only_the_addresses_it_passed_are_connected_to() {
+        let shared = |private_peers| {
+            Shared::new(
+                Store::default(),
+                FileStore::default(),
+                None,
+                None,
+                Limits {
+                    private_peers,
+                    ..Limits::default()
+                },
+            )
+        };
+        let asked = std::cell::Cell::new(0);
+        let lookup = |answer: Vec<SocketAddr>| {
+            let asked = &asked;
+            move |host: &str, _port: u16| {
+                assert_eq!(host, "rebind.invalid");
+                asked.set(asked.get() + 1);
+                Ok(answer)
+            }
+        };
+
+        // A name that answers only addresses of this machine and private networks, however they
+        // are written: none is connected to, not even the one where something listens.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        listener.set_nonblocking(true).unwrap();
+        let inside: Vec<SocketAddr> = [
+            "127.0.0.1",
+            "10.0.0.1",
+            "192.168.1.1",
+            "::1",
+            "::ffff:127.0.0.1",
+            "64:ff9b::7f00:1",
+            "2002:7f00:1::1",
+            "fd00::1",
+        ]
+        .iter()
+        .map(|ip| SocketAddr::new(ip.parse().unwrap(), port))
+        .collect();
+        let url = format!("ws://rebind.invalid:{port}{SEALED_PATH}");
+        let why = call_relay_via(&shared(false), &url, vec![SEALED_SEND], Duration::from_secs(5), lookup(inside))
+            .unwrap_err();
+        assert_eq!(why, "no address the relay may connect to");
+        assert_eq!(asked.get(), 1);
+        assert!(listener.accept().is_err(), "a refused address was connected to");
+
+        // Allowed, the connection goes to the address the lookup gave, and the WebSocket client
+        // does not look the name up again: `rebind.invalid` has no address of its own.
+        asked.set(0);
+        let relay = start_ws(None);
+        let url = format!("ws://rebind.invalid:{}{SEALED_PATH}", relay.port());
+        let reply = call_relay_via(&shared(true), &url, vec![SEALED_SEND], Duration::from_secs(5), lookup(vec![relay]));
+        assert_eq!(asked.get(), 1);
+        assert!(
+            !matches!(&reply, Err(why) if why.starts_with("its name") || why.starts_with("it could not be reached") || why.starts_with("its WebSocket did not open")),
+            "{reply:?}"
+        );
     }
 
     #[test]
