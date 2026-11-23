@@ -112,6 +112,7 @@ Its releases are titled **Erevos+ x.y.z** and are never the *Latest* one.
 ## Honest limits
 
 - **Not audited.** The cryptography follows published designs, but no independent expert has checked the code.
+  An [AI-assisted review](#ai-assisted-security-review-november-2026) is not a substitute for one.
 - **Not everything has been tried on real phones.** The newest features among them; the changelog and the guide say which.
 - **A relay sees some things.** Not what you write, but when messages arrive and, unless you turn Tor on, the address
   your phone connects from.
@@ -124,6 +125,20 @@ In plain words: [the servers Erevos talks to](docs/servers.md), what each sees a
 Read more: [threat model](docs/threat-model.md) (who Erevos protects you from, and what each one still learns) ·
 [security review map](docs/security-review.md) · [protocol](docs/protocol.md) · [state diagrams](docs/state-machines.md) · [reporting a problem](SECURITY.md) · the guide's *Transparency* part
 (what the server keeps, for how long, and what has been asked of it).
+
+## AI-assisted security review (November 2026)
+
+In November 2026 the code was reviewed for security with the help of an AI model (ChatGPT), using
+these workflows: VIDOC Security Review (code review and validation of suspected findings),
+Security Advisory Scout (dependency advisories from OSV and NVD, with FIRST EPSS and CISA KEV), and
+Authorized Security Review. It was a static review, with some tests run. **It is not an audit or a
+certification:** no person outside the project checked the code. The workflows ran only on the
+source we supplied; the VIDOC one does not connect to Vidoc's platform or scanning service.
+
+Every finding was checked against the code before anything changed. Of the 18 that held, 13 are
+fixed and one more is reduced, in Erevos 3.0.0-beta.1 and 3.0.0-rc.1, with tests for the
+code changes. The rest, and what the review did not cover, are listed in
+[docs/ai-review-2026-11.md](docs/ai-review-2026-11.md).
 
 ## Build it
 
