@@ -4357,16 +4357,23 @@ mod tests {
         assert!(listener.accept().is_err(), "a refused address was connected to");
 
         // Allowed, the connection goes to the address the lookup gave, and the WebSocket client
-        // does not look the name up again: `rebind.invalid` has no address of its own.
+        // does not look the name up again: `rebind.invalid` has no address of its own. The
+        // relay there takes the sealed send, and its queue has it.
         asked.set(0);
-        let relay = start_ws(None);
+        let key = RelayKey::generate();
+        let public = key.public();
+        let relay = start_ws_with(Some("t"), Some(key));
+        let mut owner = connect_with_token(relay, "", "t");
+        let (recipient, sender) = ws_create(&mut owner);
+        let sealed = seal(&public, &sender, b"rebind").unwrap();
+        let mut request = vec![SEALED_SEND];
+        request.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
+        request.extend_from_slice(&sealed);
         let url = format!("ws://rebind.invalid:{}{SEALED_PATH}", relay.port());
-        let reply = call_relay_via(&shared(true), &url, vec![SEALED_SEND], Duration::from_secs(5), lookup(vec![relay]));
+        let reply = call_relay_via(&shared(true), &url, request, Duration::from_secs(5), lookup(vec![relay]));
         assert_eq!(asked.get(), 1);
-        assert!(
-            !matches!(&reply, Err(why) if why.starts_with("its name") || why.starts_with("it could not be reached") || why.starts_with("its WebSocket did not open")),
-            "{reply:?}"
-        );
+        assert_eq!(reply, Ok(vec![OK]));
+        assert_eq!(ws_receive(&mut owner, &recipient).as_deref(), Some(&b"rebind"[..]));
     }
 
     #[test]
