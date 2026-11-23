@@ -1451,8 +1451,12 @@ fn respond(
             if let Some(mark) = read_mark(r, framed)?.byte() {
                 request.push(mark);
             }
-            let held = shared.held().hold(id, at, request);
-            if let (Ok(()), Access::Phone(phone)) = (&held, access) {
+            // One held already is given again: it stays with the phone that held it first.
+            let (had, held) = {
+                let mut held = shared.held();
+                (held.holds(&id), held.hold(id, at, request))
+            };
+            if let (false, Ok(()), Access::Phone(phone)) = (had, &held, access) {
                 shared.held_by().insert(id, phone);
             }
             shared.held_changed.notify_all();
@@ -4659,6 +4663,31 @@ mod tests {
             ws_call(&mut relay, unlater_request(&[7; 16])),
             vec![NOT_FOUND]
         );
+        let _ = std::fs::remove_file(&list);
+    }
+
+    #[test]
+    fn a_message_held_again_by_another_phone_stays_the_first_ones() {
+        let list = std::env::temp_dir().join(format!("erevos-held-again-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        let (other, other_line) = crate::tokens::new_token("other");
+        std::fs::write(&list, format!("{pixel_line}\n{other_line}\n")).unwrap();
+        let addr = start_ws_tokens(Some("s3cret"), None, Limits::default(), Some(list.clone()));
+        let mut relay = connect_with_token(addr, "", "s3cret");
+        let (recipient, sender) = ws_create(&mut relay);
+        let message = send_request(&sender, b"from the pixel");
+        let held = later_request(system_now() + 2, &[9; 16], &message);
+        let mut ws = connect_with_token(addr, "", &pixel);
+        assert_eq!(ws_call(&mut ws, held.clone()), vec![OK]);
+        // The same id from another phone changes nothing, not even whose it is.
+        let mut theirs = connect_with_token(addr, "", &other);
+        assert_eq!(ws_call(&mut theirs, held), vec![OK]);
+        std::fs::write(&list, format!("{other_line}\n")).unwrap();
+        let file = std::fs::File::options().write(true).open(&list).unwrap();
+        file.set_modified(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2_000_000))
+            .unwrap();
+        thread::sleep(Duration::from_millis(3500));
+        assert_eq!(ws_receive(&mut relay, &recipient), None);
         let _ = std::fs::remove_file(&list);
     }
 
