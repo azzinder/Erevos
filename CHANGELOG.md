@@ -18,7 +18,7 @@ The first release candidate of Erevos Lite: Erevos 3.0.0-rc.1 for Erevos's own c
 
 ### Under the hood
 
-- The guide's new line on the search and the **Ways** staying under the top bar leaves out the services button in Erevos Lite, which has none.
+- The guide's new line on the search and the **Ways** staying under the top bar leaves out the services button in Erevos Lite, which has none, and What's new no longer names that button in its line on them, in any edition.
 
 ## 3.0.0-rc.1 (2026-11-23)
 

@@ -37,7 +37,7 @@ export const VERSIONS: WhatsNew[] = [
   {
     version: '3.0.0-rc.1',
     forYou: [
-      mark("**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls."),
+      mark("**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar while the list scrolls."),
       mark("**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone)."),
     ],
     underTheHood: [
