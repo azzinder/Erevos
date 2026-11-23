@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls.":
+    "**Υποψήφια έκδοση**: το Erevos Lite όπως σκοπεύει να βγει, με ό,τι έφερε το Erevos 3.0.0-rc.1 στις συνομιλίες και τις κλήσεις του.",
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
     "**Αναζήτηση και Δρόμοι πάντα στη θέα**: στην αρχική, η αναζήτηση και η γραμμή **Δρόμοι** μένουν κάτω από την πάνω μπάρα μαζί με το κουμπί υπηρεσιών όσο κυλά η λίστα.",
   "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone).":

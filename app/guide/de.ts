@@ -119,7 +119,7 @@ einmal, um zurückzugehen. Versteckte Chats haben ihre eigenen angehefteten und 
   Prüfung des Schlüssels; das ist die [Sicherheitsnummer](#relay).
 - **Die Zeile unter der Suche** sagt, ob ein Relay eingestellt und deine Warteschlange bereit ist. Tippe darauf, um
   eines einzurichten.
-- **Die Suche und diese Zeile bleiben** unter der oberen Leiste, mit der Dienste-Schaltfläche, während die Liste scrollt.
+- **Die Suche und diese Zeile bleiben** unter der oberen Leiste{~, mit der Dienste-Schaltfläche,|} während die Liste scrollt.
 - **Chat mit mir selbst**, immer als erster in den Chats, mit einer Nadel, enthält deine Notizen an dich selbst: siehe
   „Chat mit mir selbst und Erinnerungen“ weiter unten.
 - [+] **Matrix-Chats** stehen, sobald du dich bei Matrix anmeldest, mit den anderen in der Liste, die neuesten zuerst,

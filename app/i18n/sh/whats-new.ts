@@ -4,6 +4,8 @@
 
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls.":
+    "**Kandidat za izdanje**: Erevos Lite kakav treba da izađe, s onim što je Erevos 3.0.0-rc.1 donio njegovim razgovorima i pozivima.",
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
     "**Pretraga i Putevi uvijek na vidiku**: na početnom ekranu pretraga i linija **Putevi** ostaju ispod gornje trake s dugmetom usluga dok se lista pomiče.",
   "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone).":

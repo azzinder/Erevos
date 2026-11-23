@@ -114,7 +114,7 @@ svoje prikvačene i arhivirane razgovore.
   Matrixom)}, pa razgovor prepoznajete na prvi pogled, bez ikakve fotografije. To nije provjera ključa; to je
   [sigurnosni broj](#relay).
 - **Linija ispod pretrage** kaže je li postavljen relay i je li vaš red spreman. Dodirnite je da ga postavite.
-- **Pretraga i ta linija ostaju** ispod gornje trake, s dugmetom usluga, dok se lista pomiče.
+- **Pretraga i ta linija ostaju** ispod gornje trake{~, s dugmetom usluga,|} dok se lista pomiče.
 - **Razgovor sa sobom**, uvijek prvi među razgovorima, prikvačen, čuva vaše bilješke za sebe: pogledajte Razgovor sa
   sobom i podsjetnici ispod.
 - [+] **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen

@@ -108,7 +108,7 @@ SMS too,} and tap it again to go back. Hidden chats keep their own pinned and ar
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon{+ (in greens under Matrix)}, so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
-- **The search and that line stay** under the top bar, with the services button, while the list scrolls.
+- **The search and that line stay** under the top bar{~, with the services button,|} while the list scrolls.
 - **Chat with myself**, always first in the chats, with a pin, holds your notes to yourself: see Chat with myself and
   reminders below.
 - [+] **Matrix chats**, once you sign in to Matrix, are in the list with the others, newest first, each marked

@@ -28,6 +28,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.2.0-rc.1',
+    forYou: [
+      mark("**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls."),
+    ],
+    underTheHood: [],
+  },
+  {
     version: '3.0.0-rc.1',
     forYou: [
       mark("**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls."),

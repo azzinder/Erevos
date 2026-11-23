@@ -121,7 +121,7 @@ touche-le encore pour revenir. Les discussions masquées ont leurs propres discu
   vérification de la clé ; le [numéro de sécurité](#relay) en est une.
 - **La ligne sous la recherche** dit si un relais est configuré et si ta file d’attente est prête. Appuie dessus pour en
   configurer un.
-- **La recherche et cette ligne restent** sous la barre du haut, avec le bouton des services, pendant que la liste défile.
+- **La recherche et cette ligne restent** sous la barre du haut{~, avec le bouton des services,|} pendant que la liste défile.
 - **Discussion avec moi-même**, toujours la première des discussions, avec une épingle, contient tes notes pour
   toi-même : voir Discussion avec moi-même et rappels ci-dessous.
 - [+] **Les discussions Matrix**, une fois que tu t’es connecté à Matrix, sont dans la liste avec les autres, les plus

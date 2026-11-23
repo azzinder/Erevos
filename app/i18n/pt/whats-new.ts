@@ -4,6 +4,8 @@
 
 // The Portuguese of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/pt/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls.":
+    "**Versão candidata**: o Erevos Lite como deve sair, com o que o Erevos 3.0.0-rc.1 trouxe às suas conversas e chamadas.",
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
     "**Busca e Caminhos sempre à vista**: no início, a busca e a linha **Caminhos** ficam sob a barra superior com o botão de serviços enquanto a lista rola.",
   "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone).":
