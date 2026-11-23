@@ -31,7 +31,7 @@ export const VERSIONS: WhatsNew[] = [
     version: '3.0.0-rc.1',
     forYou: [
       mark("**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls."),
-      mark("**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself, so it can always be answered. See [Phone](#phone)."),
+      mark("**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone)."),
     ],
     underTheHood: [
       mark("From a code review made with the help of AI: a restore that cannot finish leaves the phone as it was, and the relay keeps its lent places, held messages and deletions right, also after a power cut."),

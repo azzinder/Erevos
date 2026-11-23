@@ -6,8 +6,8 @@
 export const whatsNew: Record<string, string> = {
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
     "**Suche und Wege bleiben sichtbar**: Auf dem Startbildschirm bleiben die Suche und die Zeile **Wege** mit der Dienste-Schaltfläche unter der oberen Leiste, während die Liste scrollt.",
-  "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself, so it can always be answered. See [Phone](#phone).":
-    "**Anrufe bei gesperrtem Telefon**: Ein Anruf, der bei gesperrtem Telefon oder ausgeschaltetem Bildschirm klingelt, schaltet den Bildschirm jetzt selbst ein, damit er sich immer annehmen lässt. Siehe [Telefon](#phone).",
+  "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone).":
+    "**Anrufe bei gesperrtem Telefon**: Ein Anruf, der bei gesperrtem Telefon oder ausgeschaltetem Bildschirm klingelt, schaltet den Bildschirm jetzt selbst ein. Siehe [Telefon](#phone).",
   "From a code review made with the help of AI: a restore that cannot finish leaves the phone as it was, and the relay keeps its lent places, held messages and deletions right, also after a power cut.":
     "Aus einer Code-Prüfung mit Hilfe von KI: Eine Wiederherstellung, die nicht fertig wird, lässt das Telefon, wie es war, und das Relay hält geliehene Plätze, Nachrichten für später und Löschungen richtig, auch nach einem Stromausfall.",
   "**Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own that asks for fewer permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**. See [Updates](#updates).":

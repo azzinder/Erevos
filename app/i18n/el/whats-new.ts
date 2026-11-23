@@ -6,8 +6,8 @@
 export const whatsNew: Record<string, string> = {
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar with the services button while the list scrolls.":
     "**Αναζήτηση και Δρόμοι πάντα στη θέα**: στην αρχική, η αναζήτηση και η γραμμή **Δρόμοι** μένουν κάτω από την πάνω μπάρα μαζί με το κουμπί υπηρεσιών όσο κυλά η λίστα.",
-  "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself, so it can always be answered. See [Phone](#phone).":
-    "**Κλήσεις με κλειδωμένο κινητό**: μια κλήση που χτυπά με το κινητό κλειδωμένο ή την οθόνη σβηστή ανάβει πλέον μόνη της την οθόνη, ώστε να απαντιέται πάντα. Δες [Τηλέφωνο](#phone).",
+  "**Calls on a locked phone**: a call that rings with the phone locked or its screen off now turns the screen on by itself. See [Phone](#phone).":
+    "**Κλήσεις με κλειδωμένο κινητό**: μια κλήση που χτυπά με το κινητό κλειδωμένο ή την οθόνη σβηστή ανάβει πλέον μόνη της την οθόνη. Δες [Τηλέφωνο](#phone).",
   "From a code review made with the help of AI: a restore that cannot finish leaves the phone as it was, and the relay keeps its lent places, held messages and deletions right, also after a power cut.":
     "Από έλεγχο κώδικα με τη βοήθεια AI: μια επαναφορά που δεν ολοκληρώνεται αφήνει το κινητό όπως ήταν, και ο relay κρατά σωστά τις δανεικές θέσεις, τα μηνύματα για αργότερα και τις διαγραφές, και μετά από διακοπή ρεύματος.",
   "**Erevos Lite**: Erevos's own chats, groups and calls, end-to-end encrypted, in an app of its own that asks for fewer permissions. It moves to Erevos or Erevos+, and they to it, under **Updates**. See [Updates](#updates).":
