@@ -4,6 +4,8 @@
 
 // The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Release candidate 2**: Erevos Lite with what Erevos 3.0.0-rc.2 brought to its chats: New chat that asks where the other person is, and the fixes with it.":
+    "**Candidata 2**: Erevos Lite con lo que Erevos 3.0.0-rc.2 trajo a sus chats: Chat nuevo, que pregunta dónde está la otra persona, y las correcciones que lo acompañan.",
   "**New chat asks where the other person is**: **Near me** makes two phones side by side each other's contacts with nothing typed, once both show the same six pictures; **Far away** sends an invite with any app; **I have their code** takes 8 digits, a link or a QR code. See [Chat through a relay](#relay).":
     "**Chat nuevo pregunta dónde está la otra persona**: **A mi lado** hace contactos a dos teléfonos que están juntos sin escribir nada, en cuanto los dos muestran las mismas seis imágenes; **Lejos** envía una invitación con cualquier app; **Tengo su código** acepta 8 dígitos, un enlace o un código QR. Ver [Chatear a través de un relay](#relay).",
   "**Camera at a tap**: on Android, **Appearance** → **Launcher icons** → **Camera** gives the Collection's camera an icon of its own among the phone's apps, and holding Erevos's icon down offers **Camera** too. See [Collection](#collection).":

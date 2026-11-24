@@ -8,6 +8,23 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## 3.2.0-rc.2 (2026-11-25)
+
+The second release candidate of Erevos Lite: Erevos 3.0.0-rc.2 for Erevos's own chats and calls, with what is below.
+
+### For you
+
+- What Erevos 3.0.0-rc.2 brought to chats: New chat that asks where the other person is, with **Near me**, **Far
+  away** and **I have their code**; the warning without Tor said once for a network; **Make a backup** showing how
+  far it is again; and **Start when the phone turns on** waiting with a notice in the status bar. The camera's icon,
+  the chat options and the speed dial with Erevos locked are the Collection's, the SMS's and the Phone's, which
+  Erevos Lite has not.
+
+### Under the hood
+
+- Unlocking with a fingerprint or face no longer turns itself off by mistake, and **Near me** pairs with a key the
+  two phones agree on then, as in Erevos 3.0.0-rc.2.
+
 ## 3.0.0-rc.2 (2026-11-25)
 
 ### For you

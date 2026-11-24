@@ -4,6 +4,8 @@
 
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Release candidate 2**: Erevos Lite with what Erevos 3.0.0-rc.2 brought to its chats: New chat that asks where the other person is, and the fixes with it.":
+    "**Υποψήφια έκδοση 2**: το Erevos Lite με ό,τι έφερε το Erevos 3.0.0-rc.2 στις συνομιλίες του: τη Νέα συνομιλία που ρωτά πού είναι ο άλλος, και τις διορθώσεις που ήρθαν μαζί.",
   "**New chat asks where the other person is**: **Near me** makes two phones side by side each other's contacts with nothing typed, once both show the same six pictures; **Far away** sends an invite with any app; **I have their code** takes 8 digits, a link or a QR code. See [Chat through a relay](#relay).":
     "**Η Νέα συνομιλία ρωτά πού είναι ο άλλος**: το **Δίπλα μου** κάνει δύο τηλέφωνα που είναι δίπλα δίπλα επαφές χωρίς να πληκτρολογήσεις τίποτα, μόλις δείξουν και τα δύο τις ίδιες έξι εικόνες· το **Μακριά** στέλνει μια πρόσκληση με όποια εφαρμογή θέλεις· το **Έχω τον κωδικό του** δέχεται 8 ψηφία, έναν σύνδεσμο ή έναν κωδικό QR. Δες [Συνομιλία μέσω relay](#relay).",
   "**Camera at a tap**: on Android, **Appearance** → **Launcher icons** → **Camera** gives the Collection's camera an icon of its own among the phone's apps, and holding Erevos's icon down offers **Camera** too. See [Collection](#collection).":
