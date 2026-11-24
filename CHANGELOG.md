@@ -53,6 +53,12 @@ On main, not released yet:
   opens only where Erevos is already (a relay that lets this phone invite no one) now says so
   (`app/chat.tsx`, `components/new-chat-doors.tsx`, `near-me.tsx`, `their-code.tsx`, `welcome-invite.tsx`). Requested
   by the maintainer.
+- Phone: speed dial can work with Erevos locked, if you choose. Under **Phone** → **Settings** → **Speed dial**,
+  **Let speed dial work with Erevos locked** (off at first, shown only with a password) keeps a copy of that space's
+  speed dial numbers, without their names, on the phone outside the space (`lib/phone-open.ts`), so holding 2 to 9
+  on the Phone opened without the password calls them. One space at a time; the space knows its copy by a random
+  `feed` kept sealed in its own data, so the copy does not say which space it is. Never in a backup. Requested by
+  the maintainer (#37).
 
 ### Under the hood
 - Unlocking with a fingerprint or face no longer turns itself off by mistake. It turned off whenever Erevos checked

@@ -497,22 +497,40 @@ function CallSettings() {
 // Speed dial: the number each of the keys 2 to 9 calls, held down on an empty keypad; sealed in the
 // space (lib/phone-sims.ts).
 function SpeedDials() {
+  const { passwordLock } = useLock();
   const [sims, setSims] = useState<PhoneSims | null>(null);
   const [choosing, setChoosing] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  // Whether this space's speed dial works with Erevos locked too (lib/phone-open.ts).
+  const [whenLocked, setWhenLocked] = useState(false);
   // Bumped when a key changes, to show it.
   const [, setShown] = useState(0);
 
   useEffect(() => {
     try {
       const { space: open, key } = currentSpace();
-      PhoneSims.open(open, key).then(setSims, () => setSims(null));
+      PhoneSims.open(open, key).then(
+        (opened) => {
+          setSims(opened);
+          void opened.feedsLocked().then(setWhenLocked, () => setWhenLocked(false));
+        },
+        () => setSims(null),
+      );
     } catch {
       setSims(null);
     }
   }, []);
 
   if (!sims) return null;
+
+  function changeLocked(next: boolean) {
+    if (!sims) return;
+    setNote('');
+    sims.setFeedsLocked(next).then(
+      () => setWhenLocked(next),
+      (error) => setNote(error instanceof Error ? error.message : String(error)),
+    );
+  }
 
   function pick(number: string, name: string) {
     const key = choosing;
@@ -545,6 +563,20 @@ function SpeedDials() {
           );
         })}
       </Row>
+      {passwordLock ? (
+        <>
+          <Text variant="bodyStrong">{t('Speed dial with Erevos locked')}</Text>
+          <Text tone="muted">
+            {t("Holding 2 to 9 on the Phone opened without the password then calls this space's speed dial numbers with Erevos locked too. For that, a copy of the numbers, without their names, is kept on this phone outside the space's encryption: anyone holding the unlocked phone can call them, and whoever looks into the phone can read them. One space at a time: turned on here, it takes another space's place.")}
+          </Text>
+          {whenLocked ? <Text variant="bodyStrong">{t('Speed dial works with Erevos locked.')}</Text> : null}
+          <Button
+            title={whenLocked ? t('Keep speed dial behind the password') : t('Let speed dial work with Erevos locked')}
+            kind="secondary"
+            onPress={() => changeLocked(!whenLocked)}
+          />
+        </>
+      ) : null}
       {note ? <Text tone="muted">{note}</Text> : null}
       <SpeedDialPick slot={choosing} current={choosing ? sims.speed(choosing) : undefined} onClose={() => setChoosing(null)} onPick={pick} />
     </Card>

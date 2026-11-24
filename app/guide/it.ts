@@ -2943,6 +2943,9 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
   numero ti fa sceglierne uno: scrivi un nome o un numero e tocca il contatto, oppure **Usa** il numero scritto. In
   **Telefono** → **Impostazioni**, **Chiamata rapida** mostra gli otto tasti; toccane uno per cambiarlo o svuotarlo.
   La chiamata rapida è conservata cifrata nello spazio e funziona con Erevos sbloccato.
+  Con una password, **Chiamata rapida anche con Erevos bloccato** (spento all’inizio) la fa funzionare anche nel
+  Telefono aperto senza password: una copia dei numeri, senza i nomi, resta allora sul telefono fuori dallo spazio, e
+  chi tiene il telefono sbloccato può chiamarli. Uno spazio alla volta.
 - **Impostazioni chiamate:** in **Telefono** → **Impostazioni**, **Impostazioni chiamate** apre le schermate di
   Android stesso per ciò che il tuo operatore tiene delle chiamate di ogni SIM: **Inoltro, avviso e il tuo numero**
   e **Numero di segreteria**; con due SIM, tocca prima la SIM. In **Chiedi al tuo operatore**, ogni pulsante compone

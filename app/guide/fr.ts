@@ -3090,6 +3090,9 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   numéro te laisse en choisir un : tape un nom ou un numéro et appuie sur le contact, ou **Utiliser** le numéro
   tapé. Sous **Téléphone** → **Réglages**, **Numérotation rapide** montre les huit touches ; appuie sur une pour la
   changer ou la vider. La numérotation rapide est gardée chiffrée dans l’espace, et marche avec Erevos déverrouillé.
+  Avec un mot de passe, **Numérotation rapide aussi avec Erevos verrouillé** (éteint au début) la fait marcher aussi
+  dans le Téléphone ouvert sans mot de passe : une copie des numéros, sans leurs noms, est alors gardée sur le
+  téléphone hors de l’espace, et qui tient le téléphone déverrouillé peut les appeler. Un espace à la fois.
 - **Réglages d’appel :** sous **Téléphone** → **Réglages**, **Réglages d’appel** ouvre les écrans d’Android lui-même
   pour ce que ton opérateur garde des appels de chaque SIM : **Renvoi, double appel et ton numéro** et **Numéro de
   messagerie vocale** ; avec deux SIM, appuie d’abord sur la SIM. Sous **Demander à ton opérateur**, chaque bouton

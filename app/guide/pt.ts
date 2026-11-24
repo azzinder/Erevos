@@ -2913,6 +2913,9 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   número deixa você escolher um: digite um nome ou um número e toque no contato, ou **Usar** o número digitado. Em
   **Telefone** → **Configurações**, **Discagem rápida** mostra as oito teclas; toque numa para mudá-la ou
   esvaziá-la. A discagem rápida fica criptografada no espaço e funciona com o Erevos desbloqueado.
+  Com uma senha, **Discagem rápida também com o Erevos bloqueado** (desligada no início) faz ela funcionar também no
+  Telefone aberto sem senha: uma cópia dos números, sem os nomes, fica então no celular fora do espaço, e quem segurar
+  o celular desbloqueado pode ligar para eles. Um espaço por vez.
 - **Configurações de chamada:** em **Telefone** → **Configurações**, **Configurações de chamada** abre as telas do
   próprio Android para o que a operadora guarda das chamadas de cada chip: **Encaminhamento, espera e o seu número**
   e **Número do correio de voz**; com dois chips, toque primeiro no chip. Em **Perguntar à operadora**, cada botão

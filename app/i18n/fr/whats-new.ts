@@ -4,6 +4,8 @@
 
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**Speed dial with Erevos locked**: if you turn it on under **Phone** → **Settings**, holding 2 to 9 on the Phone opened without the password calls your speed dial numbers with Erevos locked too. See [Phone](#phone).":
+    "**Numérotation rapide avec Erevos verrouillé** : si tu l’allumes sous **Téléphone** → **Réglages**, maintenir 2 à 9 dans le Téléphone ouvert sans mot de passe appelle tes numéros rapides aussi avec Erevos verrouillé. Voir [Téléphone](#phone).",
   "**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls.":
     "**Version candidate** : Erevos Lite tel qu’il doit sortir, avec ce qu’Erevos 3.0.0-rc.1 a apporté à ses discussions et à ses appels.",
   "**Search and Ways stay in sight**: on home, the search and the **Ways** line stay under the top bar while the list scrolls.":

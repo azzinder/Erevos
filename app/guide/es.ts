@@ -2934,6 +2934,9 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
   sin número te deja elegir uno: escribe un nombre o un número y toca el contacto, o **Usar** el número escrito. En
   **Teléfono** → **Ajustes**, **Marcación rápida** muestra las ocho teclas; toca una para cambiarla o vaciarla. La
   marcación rápida se guarda cifrada en el espacio y funciona con Erevos desbloqueado.
+  Con contraseña, **Marcación rápida también con Erevos bloqueado** (apagado al principio) la hace funcionar también
+  en el Teléfono abierto sin contraseña: una copia de los números, sin sus nombres, queda entonces en el móvil fuera
+  del espacio, y quien tenga el móvil desbloqueado puede llamarlos. Un espacio a la vez.
 - **Ajustes de llamadas:** en **Teléfono** → **Ajustes**, **Ajustes de llamadas** abre las pantallas del propio
   Android para lo que tu compañía guarda de las llamadas de cada SIM: **Desvío, espera y tu número** y **Número del
   buzón de voz**; con dos SIM, toca primero la SIM. En **Preguntar a tu compañía**, cada botón marca el código de la

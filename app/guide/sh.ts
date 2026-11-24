@@ -2806,6 +2806,9 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   izaberete: upišite ime ili broj i dodirnite kontakt, ili **Koristi** upisani broj. Pod **Telefon** → **Postavke**,
   **Brzo biranje** pokazuje osam tipki; dodirnite jednu da je promijenite ili ispraznite. Brzo biranje se čuva
   šifrovano u prostoru i radi kad je Erevos otključan.
+  Uz lozinku, **Brzo biranje i kad je Erevos zaključan** (isprva isključeno) omogućava da radi i u Telefonu otvorenom
+  bez lozinke: kopija brojeva, bez imena, tada stoji na telefonu izvan prostora, pa ih može pozvati svako ko drži
+  otključan telefon. Jedan prostor u isto vrijeme.
 - **Postavke poziva:** pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove vlastite ekrane za
   ono što operater čuva o pozivima svake SIM kartice: **Preusmjeravanje, čekanje i vaš broj** i **Broj govorne
   pošte**; s dvije SIM kartice prvo dodirnite SIM. Pod **Pitaj operatera** svako dugme bira kod mreže (**Provjeri**

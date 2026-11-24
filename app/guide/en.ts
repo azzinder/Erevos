@@ -2699,6 +2699,9 @@ that title, and tapping it opens the Phone's **Settings**.
   choose one: type a name or a number and tap the contact, or **Use** the number typed. Under **Phone** →
   **Settings**, **Speed dial** shows the eight keys; tap one to change it, or **Take it off**. Speed dial is kept
   sealed in the space, and works with Erevos unlocked.
+  With a password, **Let speed dial work with Erevos locked** (off at first) lets it work on the Phone opened without
+  the password too: a copy of the numbers, without their names, is then kept on the phone outside the space, so anyone
+  holding the unlocked phone can call them. One space at a time.
 - **Call settings:** under **Phone** → **Settings**, **Call settings** opens Android's own screens for what your
   phone company keeps of each SIM's calls: **Forwarding, waiting and your number**, and **Voicemail number**; with
   two SIMs, tap the SIM first. Under **Ask your phone company**, each button dials the network's code (**Check**

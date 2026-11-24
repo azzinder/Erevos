@@ -3115,6 +3115,9 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   getippte Nummer mit **verwenden**. Unter **Telefon** → **Einstellungen** zeigt **Kurzwahl** die acht Tasten; tippe
   auf eine, um sie zu ändern oder zu leeren. Die Kurzwahl wird verschlüsselt im Bereich aufbewahrt und funktioniert
   bei entsperrtem Erevos.
+  Mit einem Passwort lässt **Kurzwahl auch bei gesperrtem Erevos** (anfangs aus) sie auch im Telefon funktionieren,
+  das ohne Passwort öffnet: Eine Kopie der Nummern, ohne Namen, liegt dann auf dem Handy außerhalb des Bereichs, und
+  wer das entsperrte Handy hält, kann sie anrufen. Immer nur ein Bereich.
 - **Anrufeinstellungen:** Unter **Telefon** → **Einstellungen** öffnen die **Anrufeinstellungen** die eigenen
   Bildschirme von Android für das, was dein Anbieter von den Anrufen jeder SIM verwaltet: **Umleitung, Anklopfen und
   deine Nummer** und **Mailbox-Nummer**; bei zwei SIMs tippe zuerst die SIM an. Unter **Deinen Anbieter fragen**

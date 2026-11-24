@@ -22,7 +22,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark("**Speed dial with Erevos locked**: if you turn it on under **Phone** → **Settings**, holding 2 to 9 on the Phone opened without the password calls your speed dial numbers with Erevos locked too. See [Phone](#phone)."),
+  ],
   underTheHood: [],
 };
 
