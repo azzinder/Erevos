@@ -1973,6 +1973,9 @@ between.
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
   of its own.
+- **Chat options:** the sliders button beside where you write, or **⋯** at the top, opens them all in one tidy list,
+  in reach however long the chat: **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages
+  under **This chat**, then search, media, a day and export under **Find**.
 - **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the Matrix
   screen lets this space say "New message" when something comes on Matrix while another space is open, as its own
   chats do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**,
@@ -2167,6 +2170,9 @@ bridge sits in between.
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
   of its own.
+- **Chat options:** the sliders button beside where you write, or **⋯** at the top, opens them all in one tidy list,
+  in reach however long the chat: **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages
+  under **This chat**, then search, media, a day and export under **Find**.
 - **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the XMPP
   screen lets this space say "New message" when something comes on XMPP while another space is open, as its own chats
   do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**, which it
@@ -2341,6 +2347,9 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
   of its own.
+- **Chat options:** the sliders button beside where you write, or **⋯** at the top, opens them all in one tidy list,
+  in reach however long the chat: **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages
+  under **This chat**, then search, media, a day and export under **Find**.
 - **Not yet:** files another app encrypts some other way (they show as a file Erevos cannot open).
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
@@ -2534,6 +2543,9 @@ the phone company who talks to whom, which Erevos otherwise hides, so SMS is the
 - **A conversation's own:** under its **Plain SMS** line, a conversation has **Chat look**, as a chat does, and, with
   one number, **Notifications**: mute it for a while or always, or give it a sound of its own, or none. These hold
   while the space is open; with it closed, every SMS notifies as the settings say.
+- **Chat options:** the sliders button beside where you write, or **⋯** at the top, opens them all in one tidy list,
+  in reach however long the chat: **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages
+  under **This chat**, then search, media, a day and export under **Find**.
 - **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
   then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
   SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.

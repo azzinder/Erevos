@@ -2271,6 +2271,9 @@ Element: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
+- **Chat-Optionen:** Die Regler-Taste neben dem Schreibfeld, oder **⋯** oben, öffnet sie alle in einer aufgeräumten
+  Liste, erreichbar, wie lang der Chat auch ist: **Benachrichtigungen**, **Chat-Aussehen**, die PIN, Bildschirmfotos
+  und verschwindende Nachrichten unter **Dieser Chat**, dann Suche, Medien, ein Tag und Export unter **Finden**.
 - **Solange dieser Bereich geschlossen ist:** Auf Android lässt **Neue Nachrichten melden** unter **Solange dieser
   Bereich geschlossen ist** auf dem Matrix-Bildschirm diesen Bereich „Neue Nachricht“ sagen, wenn auf Matrix etwas
   kommt, während ein anderer Bereich offen ist, wie seine eigenen Chats mit **Auch, wenn ein anderer Bereich offen
@@ -2495,6 +2498,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
+- **Chat-Optionen:** Die Regler-Taste neben dem Schreibfeld, oder **⋯** oben, öffnet sie alle in einer aufgeräumten
+  Liste, erreichbar, wie lang der Chat auch ist: **Benachrichtigungen**, **Chat-Aussehen**, die PIN, Bildschirmfotos
+  und verschwindende Nachrichten unter **Dieser Chat**, dann Suche, Medien, ein Tag und Export unter **Finden**.
 - **Solange dieser Bereich geschlossen ist:** Auf Android lässt **Neue Nachrichten melden** unter **Solange dieser
   Bereich geschlossen ist** auf dem XMPP-Bildschirm diesen Bereich „Neue Nachricht“ sagen, wenn auf XMPP etwas kommt,
   während ein anderer Bereich offen ist, wie seine eigenen Chats mit **Auch, wenn ein anderer Bereich offen ist** unter
@@ -2700,6 +2706,9 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
+- **Chat-Optionen:** Die Regler-Taste neben dem Schreibfeld, oder **⋯** oben, öffnet sie alle in einer aufgeräumten
+  Liste, erreichbar, wie lang der Chat auch ist: **Benachrichtigungen**, **Chat-Aussehen**, die PIN, Bildschirmfotos
+  und verschwindende Nachrichten unter **Dieser Chat**, dann Suche, Medien, ein Tag und Export unter **Finden**.
 - **Noch nicht:** Dateien, die eine andere App anders verschlüsselt (sie erscheinen als Datei, die Erevos nicht öffnen
   kann).
 
@@ -2920,6 +2929,9 @@ wenn du ihn wählst.
   Chat, und, mit einer Nummer, **Benachrichtigungen**: Schalte sie für eine Weile oder immer stumm oder gib ihr einen
   eigenen Ton oder keinen. Das gilt, während der Bereich offen ist; ist er geschlossen, benachrichtigt jede SMS so,
   wie es die Einstellungen sagen.
+- **Chat-Optionen:** Die Regler-Taste neben dem Schreibfeld, oder **⋯** oben, öffnet sie alle in einer aufgeräumten
+  Liste, erreichbar, wie lang der Chat auch ist: **Benachrichtigungen**, **Chat-Aussehen**, die PIN, Bildschirmfotos
+  und verschwindende Nachrichten unter **Dieser Chat**, dann Suche, Medien, ein Tag und Export unter **Finden**.
 - **Papierkorb:** Eine gelöschte Unterhaltung wartet 30 Tage im **Papierkorb**, dann löscht Erevos sie aus den SMS des
   Telefons. Bis dahin legt **Zurückholen** sie zurück in die Liste; **Jetzt löschen** und **Papierkorb leeren** löschen
   sofort, endgültig. Eine SMS, die kommt, nachdem die Unterhaltung im Papierkorb gelandet ist, erscheint wieder in der

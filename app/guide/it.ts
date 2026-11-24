@@ -2149,6 +2149,9 @@ sta nel mezzo.
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
   dà alla chat un aspetto suo.
+- **Opzioni della chat:** il pulsante a cursori accanto a dove scrivi, o **⋯** in alto, le apre tutte in un elenco
+  ordinato, a portata per quanto lunga sia la chat: **Notifiche**, **Aspetto della chat**, il PIN, gli screenshot e i
+  messaggi che scompaiono in **Questa chat**, poi ricerca, media, un giorno ed esportazione in **Trova**.
 - **Mentre questo spazio è chiuso:** su Android, **Avvisa dei nuovi messaggi**, in **Mentre questo spazio è chiuso**
   nella schermata di Matrix, lascia che questo spazio dica «New message» quando arriva qualcosa su Matrix mentre è
   aperto un altro spazio, come fanno le sue chat con **Anche mentre è aperto un altro spazio** in **Impostazioni** →
@@ -2359,6 +2362,9 @@ app: nessun ponte sta nel mezzo.
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
   dà alla chat un aspetto suo.
+- **Opzioni della chat:** il pulsante a cursori accanto a dove scrivi, o **⋯** in alto, le apre tutte in un elenco
+  ordinato, a portata per quanto lunga sia la chat: **Notifiche**, **Aspetto della chat**, il PIN, gli screenshot e i
+  messaggi che scompaiono in **Questa chat**, poi ricerca, media, un giorno ed esportazione in **Trova**.
 - **Mentre questo spazio è chiuso:** su Android, **Avvisa dei nuovi messaggi**, in **Mentre questo spazio è chiuso**
   nella schermata di XMPP, lascia che questo spazio dica «New message» quando arriva qualcosa su XMPP mentre è aperto un
   altro spazio, come fanno le sue chat con **Anche mentre è aperto un altro spazio** in **Impostazioni** →
@@ -2547,6 +2553,9 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
   dà alla chat un aspetto suo.
+- **Opzioni della chat:** il pulsante a cursori accanto a dove scrivi, o **⋯** in alto, le apre tutte in un elenco
+  ordinato, a portata per quanto lunga sia la chat: **Notifiche**, **Aspetto della chat**, il PIN, gli screenshot e i
+  messaggi che scompaiono in **Questa chat**, poi ricerca, media, un giorno ed esportazione in **Trova**.
 - **Non ancora:** file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
@@ -2758,6 +2767,9 @@ la scegli tu.
 - **Il proprio di una conversazione:** sotto la riga **SMS normale**, una conversazione ha **Aspetto della chat**,
   come una chat, e, con un solo numero, **Notifiche**: silenziala per un po’ o sempre, o dalle un suono suo, o
   nessuno. Valgono mentre lo spazio è aperto; chiuso, ogni SMS avvisa come dicono le impostazioni.
+- **Opzioni della chat:** il pulsante a cursori accanto a dove scrivi, o **⋯** in alto, le apre tutte in un elenco
+  ordinato, a portata per quanto lunga sia la chat: **Notifiche**, **Aspetto della chat**, il PIN, gli screenshot e i
+  messaggi che scompaiono in **Questa chat**, poi ricerca, media, un giorno ed esportazione in **Trova**.
 - **Cestino:** una conversazione eliminata aspetta nel **Cestino** 30 giorni, poi Erevos la elimina dagli SMS del
   telefono. Fino ad allora **Recupera** la rimette nell’elenco; **Elimina ora** e **Svuota il cestino** eliminano
   subito, per sempre. Un SMS che arriva dopo che è finita nel Cestino la fa riapparire nell’elenco. Solo l’app per gli

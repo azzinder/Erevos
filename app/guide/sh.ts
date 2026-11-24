@@ -2051,6 +2051,9 @@ između.
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
   vlastiti izgled.
+- **Opcije razgovora:** dugme s klizačima pored mjesta gdje pišete, ili **⋯** gore, otvara ih sve u jednoj urednoj
+  listi, uvijek pri ruci koliko god razgovor bio dug: **Obavijesti**, **Izgled razgovora**, PIN, snimke ekrana i
+  poruke koje nestaju pod **Ovaj razgovor**, pa pretraga, mediji, dan i izvoz pod **Pronađi**.
 - **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
   ekranu Matrixa pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na Matrixu dok je otvoren drugi prostor,
   kao što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
@@ -2248,6 +2251,9 @@ aplikacije: nikakav most nije između.
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
   vlastiti izgled.
+- **Opcije razgovora:** dugme s klizačima pored mjesta gdje pišete, ili **⋯** gore, otvara ih sve u jednoj urednoj
+  listi, uvijek pri ruci koliko god razgovor bio dug: **Obavijesti**, **Izgled razgovora**, PIN, snimke ekrana i
+  poruke koje nestaju pod **Ovaj razgovor**, pa pretraga, mediji, dan i izvoz pod **Pronađi**.
 - **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
   ekranu XMPP-a pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na XMPP-u dok je otvoren drugi prostor, kao
   što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
@@ -2430,6 +2436,9 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
   vlastiti izgled.
+- **Opcije razgovora:** dugme s klizačima pored mjesta gdje pišete, ili **⋯** gore, otvara ih sve u jednoj urednoj
+  listi, uvijek pri ruci koliko god razgovor bio dug: **Obavijesti**, **Izgled razgovora**, PIN, snimke ekrana i
+  poruke koje nestaju pod **Ovaj razgovor**, pa pretraga, mediji, dan i izvoz pod **Pronađi**.
 - **Još ne:** datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
@@ -2634,6 +2643,9 @@ operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji 
 - **Ono što je razgovora:** ispod reda **Običan SMS**, razgovor ima **Izgled razgovora**, kao razgovor, i, s jednim
   brojem, **Obavijesti**: utišajte ga na neko vrijeme ili zauvijek, ili mu dajte vlastiti zvuk, ili nijedan. To
   vrijedi dok je prostor otvoren; kad je zatvoren, svaki SMS obavještava kako kažu postavke.
+- **Opcije razgovora:** dugme s klizačima pored mjesta gdje pišete, ili **⋯** gore, otvara ih sve u jednoj urednoj
+  listi, uvijek pri ruci koliko god razgovor bio dug: **Obavijesti**, **Izgled razgovora**, PIN, snimke ekrana i
+  poruke koje nestaju pod **Ovaj razgovor**, pa pretraga, mediji, dan i izvoz pod **Pronađi**.
 - **Otpad:** obrisani razgovor čeka u **Otpad** 30 dana, a zatim ga Erevos briše iz SMS poruka telefona. Do tada ga
   **Vrati** vraća na popis; **Obriši sada** i **Isprazni otpad** brišu odmah, zauvijek. SMS koji stigne nakon što je
   razgovor otišao u otpad ponovo se prikazuje na popisu. Samo SMS aplikacija smije brisati SMS poruke.

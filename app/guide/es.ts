@@ -2135,6 +2135,9 @@ ningún puente se pone en medio.
   propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
   **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
   **Apariencia del chat**, a su lado, da al chat un aspecto propio.
+- **Opciones del chat:** el botón de los deslizadores junto a donde escribes, o **⋯** arriba, las abre todas en una
+  lista ordenada, a mano por largo que sea el chat: **Notificaciones**, **Apariencia del chat**, el PIN, las capturas
+  y los mensajes que desaparecen en **Este chat**, y luego búsqueda, multimedia, un día y exportar en **Buscar**.
 - **Mientras este espacio está cerrado:** en Android, **Avisar de mensajes nuevos**, en **Mientras este espacio está
   cerrado** de la pantalla de Matrix, deja que este espacio diga «Mensaje nuevo» cuando llega algo en Matrix mientras
   otro espacio está abierto, como hacen sus propios chats con **También mientras otro espacio está abierto** en
@@ -2344,6 +2347,9 @@ como esas apps: ningún puente se pone en medio.
   propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
   **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
   **Apariencia del chat**, a su lado, da al chat un aspecto propio.
+- **Opciones del chat:** el botón de los deslizadores junto a donde escribes, o **⋯** arriba, las abre todas en una
+  lista ordenada, a mano por largo que sea el chat: **Notificaciones**, **Apariencia del chat**, el PIN, las capturas
+  y los mensajes que desaparecen en **Este chat**, y luego búsqueda, multimedia, un día y exportar en **Buscar**.
 - **Mientras este espacio está cerrado:** en Android, **Avisar de mensajes nuevos**, en **Mientras este espacio está
   cerrado** de la pantalla de XMPP, deja que este espacio diga «Mensaje nuevo» cuando llega algo en XMPP mientras otro
   espacio está abierto, como hacen sus propios chats con **También mientras otro espacio está abierto** en **Ajustes** →
@@ -2536,6 +2542,9 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
   **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
   **Apariencia del chat**, a su lado, da al chat un aspecto propio.
+- **Opciones del chat:** el botón de los deslizadores junto a donde escribes, o **⋯** arriba, las abre todas en una
+  lista ordenada, a mano por largo que sea el chat: **Notificaciones**, **Apariencia del chat**, el PIN, las capturas
+  y los mensajes que desaparecen en **Este chat**, y luego búsqueda, multimedia, un día y exportar en **Buscar**.
 - **Aún no:** archivos que otra app cifra de otro modo (se muestran como un archivo que Erevos no puede abrir).
 
 **Por qué:** mucha gente está en Nostr y seguirá allí. Así les escribes desde Erevos, aparte y marcado, porque una clave
@@ -2750,6 +2759,9 @@ cuando tú lo eliges.
 - **Lo propio de una conversación:** bajo su línea **SMS normal**, una conversación tiene **Apariencia del chat**,
   como un chat, y, con un número, **Notificaciones**: siléncialo un rato o siempre, o dale un sonido propio, o
   ninguno. Valen mientras el espacio está abierto; con él cerrado, cada SMS avisa como dicen los ajustes.
+- **Opciones del chat:** el botón de los deslizadores junto a donde escribes, o **⋯** arriba, las abre todas en una
+  lista ordenada, a mano por largo que sea el chat: **Notificaciones**, **Apariencia del chat**, el PIN, las capturas
+  y los mensajes que desaparecen en **Este chat**, y luego búsqueda, multimedia, un día y exportar en **Buscar**.
 - **Papelera:** una conversación eliminada espera en la **Papelera** 30 días, y luego Erevos la elimina de los SMS del
   teléfono. Hasta entonces **Recuperar** la devuelve a la lista; **Eliminar ahora** y **Vaciar la papelera** eliminan al
   instante, para siempre. Un SMS que llega después de que fuera a la Papelera aparece de nuevo en la lista. Solo la app

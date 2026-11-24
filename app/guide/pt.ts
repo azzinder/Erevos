@@ -2118,6 +2118,10 @@ fica no meio.
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
   **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
+- **Opções da conversa:** o botão de controles deslizantes ao lado de onde você escreve, ou **⋯** no topo, abre todas
+  numa lista arrumada, sempre à mão por longa que seja a conversa: **Notificações**, **Aparência da conversa**, o PIN,
+  as capturas e as mensagens que desaparecem em **Esta conversa**, e depois pesquisa, mídia, um dia e exportar em
+  **Encontrar**.
 - **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
   fechado** na tela do Matrix, deixa este espaço dizer “Nova mensagem” quando chega algo no Matrix enquanto outro
   espaço está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em
@@ -2325,6 +2329,10 @@ esses apps: nenhuma ponte fica no meio.
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
   **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
+- **Opções da conversa:** o botão de controles deslizantes ao lado de onde você escreve, ou **⋯** no topo, abre todas
+  numa lista arrumada, sempre à mão por longa que seja a conversa: **Notificações**, **Aparência da conversa**, o PIN,
+  as capturas e as mensagens que desaparecem em **Esta conversa**, e depois pesquisa, mídia, um dia e exportar em
+  **Encontrar**.
 - **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
   fechado** na tela do XMPP, deixa este espaço dizer “Nova mensagem” quando chega algo no XMPP enquanto outro espaço
   está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em **Configurações** →
@@ -2513,6 +2521,10 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
   **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
+- **Opções da conversa:** o botão de controles deslizantes ao lado de onde você escreve, ou **⋯** no topo, abre todas
+  numa lista arrumada, sempre à mão por longa que seja a conversa: **Notificações**, **Aparência da conversa**, o PIN,
+  as capturas e as mensagens que desaparecem em **Esta conversa**, e depois pesquisa, mídia, um dia e exportar em
+  **Encontrar**.
 - **Ainda não:** arquivos que outro app criptografa de outro jeito (aparecem como um arquivo que o Erevos não abre).
 
 **Por quê:** muita gente está no Nostr e vai continuar lá. Assim você escreve para elas pelo Erevos, à parte e marcado,
@@ -2725,6 +2737,10 @@ escolhe.
   conversa do Erevos, e, com um número só, **Notificações**: silencie-a por um tempo ou sempre, ou dê a ela um som
   próprio, ou nenhum. Valem enquanto o espaço está aberto; com ele fechado, cada SMS avisa como dizem as
   configurações.
+- **Opções da conversa:** o botão de controles deslizantes ao lado de onde você escreve, ou **⋯** no topo, abre todas
+  numa lista arrumada, sempre à mão por longa que seja a conversa: **Notificações**, **Aparência da conversa**, o PIN,
+  as capturas e as mensagens que desaparecem em **Esta conversa**, e depois pesquisa, mídia, um dia e exportar em
+  **Encontrar**.
 - **Lixeira:** uma conversa apagada espera na **Lixeira** 30 dias, e depois o Erevos a apaga dos SMS do celular. Até
   lá, **Recuperar** a põe de volta na lista; **Apagar agora** e **Esvaziar a lixeira** apagam na hora, de vez. Um SMS
   que chega depois de ela ir para a Lixeira aparece na lista de novo. Só o app de SMS pode apagar SMS.

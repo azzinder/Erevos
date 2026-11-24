@@ -2248,6 +2248,10 @@ Element : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
+- **Options de la discussion :** le bouton à curseurs à côté de là où tu écris, ou **⋯** en haut, les ouvre toutes
+  dans une liste bien rangée, à portée quelle que soit la longueur de la discussion : **Notifications**, **Apparence
+  de la discussion**, le PIN, les captures et les messages éphémères sous **Cette discussion**, puis recherche,
+  médias, un jour et export sous **Trouver**.
 - **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
   fermé** sur l’écran Matrix, laisse cet espace dire « New message » quand quelque chose arrive sur Matrix pendant
   qu’un autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert**
@@ -2471,6 +2475,10 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
+- **Options de la discussion :** le bouton à curseurs à côté de là où tu écris, ou **⋯** en haut, les ouvre toutes
+  dans une liste bien rangée, à portée quelle que soit la longueur de la discussion : **Notifications**, **Apparence
+  de la discussion**, le PIN, les captures et les messages éphémères sous **Cette discussion**, puis recherche,
+  médias, un jour et export sous **Trouver**.
 - **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
   fermé** sur l’écran XMPP, laisse cet espace dire « New message » quand quelque chose arrive sur XMPP pendant qu’un
   autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert** dans
@@ -2675,6 +2683,10 @@ discussions propres à Erevos.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
+- **Options de la discussion :** le bouton à curseurs à côté de là où tu écris, ou **⋯** en haut, les ouvre toutes
+  dans une liste bien rangée, à portée quelle que soit la longueur de la discussion : **Notifications**, **Apparence
+  de la discussion**, le PIN, les captures et les messages éphémères sous **Cette discussion**, puis recherche,
+  médias, un jour et export sous **Trouver**.
 - **Pas encore :** les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier qu’Erevos ne sait
   pas ouvrir).
 
@@ -2897,6 +2909,10 @@ dernier chemin, et seulement quand tu le choisis.
   discussion**, comme une discussion, et, avec un seul numéro, **Notifications** : la mettre en sourdine un moment ou
   toujours, ou lui donner un son à elle, ou aucun. Cela vaut tant que l’espace est ouvert ; fermé, chaque SMS notifie
   comme le disent les réglages.
+- **Options de la discussion :** le bouton à curseurs à côté de là où tu écris, ou **⋯** en haut, les ouvre toutes
+  dans une liste bien rangée, à portée quelle que soit la longueur de la discussion : **Notifications**, **Apparence
+  de la discussion**, le PIN, les captures et les messages éphémères sous **Cette discussion**, puis recherche,
+  médias, un jour et export sous **Trouver**.
 - **Corbeille :** une conversation supprimée attend 30 jours dans la **Corbeille**, puis Erevos la supprime des SMS du
   téléphone. D’ici là, **Récupérer** la remet dans la liste ; **Supprimer maintenant** et **Vider la corbeille**
   suppriment aussitôt, pour de bon. Un SMS qui arrive après qu’elle est partie dans la corbeille s’affiche de nouveau

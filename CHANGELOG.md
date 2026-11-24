@@ -32,6 +32,13 @@ On main, not released yet:
   kept with the phone's other settings, so a backup restored, or a move to another edition, keeps it
   (`lib/background.ts` `syncBootStart`, `lock/backup.ts`).
 
+- Chat options in reach (#44): in chats on Nostr, Matrix and XMPP and in SMS conversations, a sliders button beside
+  where you write opens **Chat options**, one tidy list in place of the rows of buttons above or below the thread:
+  **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages under **This chat**, search, media,
+  a day and export under **Find**, and, on Nostr, the contact's own (public posts, a name, block, remove). Nostr's
+  **+** now holds what goes with a message, as Matrix's does (`components/ui.tsx` `OptionList`). Requested by the
+  maintainer.
+
 ### Under the hood
 - Unlocking with a fingerprint or face no longer turns itself off by mistake. It turned off whenever Erevos checked
   its key while the phone itself was locked (an Erevos call showing over the lock screen, say), or when Android's
