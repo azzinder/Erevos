@@ -38,6 +38,21 @@ On main, not released yet:
   a day and export under **Find**, and, on Nostr, the contact's own (public posts, a name, block, remove). Nostr's
   **+** now holds what goes with a message, as Matrix's does (`components/ui.tsx` `OptionList`). Requested by the
   maintainer.
+- New chat asks one thing (#45): **Where is the other person?** Each answer is a page of its own, and all three end
+  on **You are connected**, with their name to set and **Write a message**. **Near me**: tap it on both phones, and
+  the two find each other over Bluetooth or the Wi-Fi they share; each shows the same six pictures, both tap **Yes,
+  the same**, and you are each other's contacts, with no relay, no internet and nothing typed or scanned. The page
+  looks only while it is open, also with **Look for phones nearby** off, which stays off; under **If it is not
+  found** it keeps the QR code for their camera, the code of 8 digits and, on Android, the app itself for a phone
+  with no Erevos. **Far away**: an invite inside a message ready to send, with **Send with…**, its QR code, how far
+  it has come (ready, waiting, connected) and **Take this invite back**, which closes its link while no phone has
+  taken it; where this phone can make no invite, its contact link goes instead. **I have their code**: the 8 digits,
+  their link or invite pasted, or their QR code. Under these, three rows hold the rest: **My link** (this phone's
+  own QR code and link, a new contact link, a link for a website), **Blocked contacts** and **For advanced users**
+  (the relay's settings, and the switches of **Nearby, with no internet**, which moved there). An invite whose link
+  opens only where Erevos is already (a relay that lets this phone invite no one) now says so
+  (`app/chat.tsx`, `components/new-chat-doors.tsx`, `near-me.tsx`, `their-code.tsx`, `welcome-invite.tsx`). Requested
+  by the maintainer.
 
 ### Under the hood
 - Unlocking with a fingerprint or face no longer turns itself off by mistake. It turned off whenever Erevos checked
@@ -45,6 +60,16 @@ On main, not released yet:
   Keystore did not answer at once: both were taken for a key Android had dropped. Now only a key Android really
   dropped (`KeyPermanentlyInvalidatedException`), or one that does not open what it sealed, turns it off
   (`modules/erevos-biometric`, `lock/biometric.ts`).
+- **Near me** pairs over the links to phones nearby with a key the two phones agree on then (`lib/near-pair.ts`,
+  frames `EVP1:`, which an older Erevos leaves alone). The one that goes first gives the hash of its share before it
+  sees the other's, and opens it only after: neither can choose a share to make the pictures match. The six pictures
+  say 36 bits of the key; a phone makes 40 shares at most while the page stays open and keeps 8 pairings at once, so
+  a phone in between has about one chance in a hundred million of showing both owners the same six. Nothing that
+  names the owner goes before its yes, and then its contact link goes encrypted with that key
+  (`checks/near-pair.check.ts`). Not tried on two real phones yet.
+- The invite of **Far away** can be taken back from the relay while no phone used it (`lib/sms-relay.ts`
+  `takeBackShortInvite`), and a message pasted whole, the invite's words with its link, is read as the link alone
+  (`lib/open-link.ts`).
 
 ## 3.2.0-rc.1 (2026-11-23)
 

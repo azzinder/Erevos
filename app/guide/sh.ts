@@ -138,8 +138,9 @@ svoje prikvačene i arhivirane razgovore.
   a **Fotografije** biraju kako se fotografije i kartice donose. Ispod objave: odgovoriti, ponovo podijeliti, označiti
   da vam se sviđa i podijeliti; ispod Matrix poruke: odgovoriti, reagovati i podijeliti. **Nova objava**, olovka dolje,
   piše javnu objavu, s do četiri fotografije. Pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
-- **Novi razgovor**, na dnu, otvara postavke relaya i dodavanje kontakta. **Podsjeti me**, narandžasto zvono pored
-  njega, piše podsjetnik za vas.
+- **Novi razgovor**, na dnu, pita gdje je druga osoba, **Pored mene**, **Daleko** ili **Imam njegov kod**, i dodaje
+  je; redovi ispod otvaraju vaš vlastiti link, blokirane kontakte i postavke relaya. **Podsjeti me**, narandžasto
+  zvono pored njega, piše podsjetnik za vas.
 - **{~Zelena slušalica i ljubičasta osoba|Ljubičasta osoba}** na vrhu, na Androidu, {~odmah otvaraju ekrane **Telefon** i **Kontakti**, u
   bojama njihovih ikona|odmah otvara ekran **Kontakti**, u boji njegove ikone} na početnom ekranu telefona. {~Nema ih|Nema je} i u meniju pod tri tačke.
 - [~] **Dugme usluga**, ispod gornje trake, gdje ostaje dok se lista pomiče, čim su u Modulima uključena dva dijela s porukama, kaže koji se dio popisa vidi
@@ -215,8 +216,8 @@ Dobar prvi sat:
    niko ko uzme telefon ne bi mogao otvoriti Erevos.
 2. Otvorite **Telefoni u blizini** iz menija na dva telefona koji su blizu jedan drugog i dozvolite ono što Android
    traži.
-3. Dodajte jedno drugo pomoću **Prikaži moj QR kod**, kao u [Razgovor s telefonom u blizini](#nearby), i pošaljite
-   poruku: ide u blizini, šifrirana s kraja na kraj, bez relaya i bez interneta.
+3. Dodajte jedno drugo pomoću **Novi razgovor** → **Pored mene**, na oba telefona, kao u [Razgovor s telefonom u
+   blizini](#nearby), i pošaljite poruku: ide u blizini, šifrirana s kraja na kraj, bez relaya i bez interneta.
 4. Da biste razgovarali s veće udaljenosti, postavite relay kao u [Razgovor preko relaya](#relay).
 
 ### Razgovor sa sobom i podsjetnici
@@ -376,14 +377,15 @@ Dok je prostor otvoren, na bilo kojem ekranu, Erevos traži druge Erevos telefon
 ga telefon ima, Wi-Fi Aware, te na Wi-Fi mreži na kojoj se nalazi, i telefone i računare. Nisu potrebni ni internet,
 ni SIM kartica, ni Wi-Fi mreža. Prenosi poruke vašim kontaktima, šifrirane s kraja na kraj kao i one preko relaya.
 
-Traži tek kad je uključeno **Traži telefone u blizini**, pod **U blizini, bez interneta**, u **Novi razgovor**:
-isključeno je dok ga ne uključiš, na oba telefona, a do tada sve ide preko relaya.
+Traži tek kad je uključeno **Traži telefone u blizini**, pod **Za napredne korisnike** → **U blizini, bez interneta**,
+u **Novi razgovor**: isključeno je dok ga ne uključiš, na oba telefona, a do tada sve ide preko relaya. Samo **Pored
+mene**, u Novom razgovoru, traži i bez toga, dok je njegova stranica otvorena, da bi se dodao kontakt.
 
 1. Otvorite **Telefoni u blizini** iz menija na oba telefona. Prvi put Android traži dozvolu za pronalaženje uređaja u
    blizini (na Androidu 12 i starijem i za lokaciju); dozvolite to, inače se telefoni ne mogu pronaći.
-2. Ako još niste kontakti, dodajte jedno drugo: na jednom telefonu dodirnite **Novi razgovor**, gdje se vidi **Tvoj QR
-   kod**, i skenirajte ga drugim, kao u [Razgovor preko relaya](#relay). Bez relaya kod sadrži samo vaše ključeve, i
-   možete se povezati samo u blizini, dok ga ne budete imali.
+2. Ako još niste kontakti, dodajte jedno drugo: na oba telefona dodirnite **Novi razgovor**, a zatim **Pored mene**, i
+   dodirnite **Da, iste** čim oba pokažu iste slike, kao u [Razgovor preko relaya](#relay). Bez relaya svaki telefon
+   daje samo svoje ključeve, i možete se povezati samo u blizini, dok ga ne budete imali.
 3. Izaberite kontakt, pišite u traci za poruku na dnu i dodirnite strelicu za slanje. Kad telefon te osobe odgovori,
    na vrhu razgovora piše **U blizini**.
 
@@ -401,8 +403,8 @@ isključeno je dok ga ne uključiš, na oba telefona, a do tada sve ide preko re
   druge i komuniciraju direktno, čak i kad ta Wi-Fi mreža nema interneta; isto važi i za desktop aplikaciju. Ako
   Android pita da li da ostane na Wi-Fi mreži bez interneta, ostanite. Svi na toj Wi-Fi mreži mogu vidjeti da je tu
   neka Erevos aplikacija, ali ne i čija. Zaštitni zid (firewall) računara mora propuštati port 47905 (UDP i TCP). Da
-  to zaustavite, isključite **Pronađi Erevos na istoj Wi-Fi mreži** pod **U blizini, bez interneta**, u ekranu **Novi
-  razgovor**.
+  to zaustavite, isključite **Pronađi Erevos na istoj Wi-Fi mreži** pod **Za napredne korisnike** → **U blizini, bez
+  interneta**, u ekranu **Novi razgovor**.
 - **Vlastita Wi-Fi mreža (Android 10 i noviji):** bez zajedničke Wi-Fi mreže, dva Erevos telefona jedan blizu drugog
   prave vlastitu malu Wi-Fi mrežu (Wi-Fi Direct) i komuniciraju preko nje kao na istoj Wi-Fi mreži: brže nego preko
   Bluetootha, a poziv ide preko nje bez interneta. Ništa ne pita; svaki telefon, gdje može, ostaje i na svojoj Wi-Fi
@@ -419,13 +421,13 @@ isključeno je dok ga ne uključiš, na oba telefona, a do tada sve ide preko re
   prikazuje se ponovo. Ako relay nije dostupan, važi kopija iz blizine.
 - **Prenose ih drugi telefoni:** kad relay nije dostupan, a vaš kontakt nije u blizini, Erevos telefoni u blizini
   preuzimaju i vašu poruku, zapečaćenu za relay vašeg kontakta. Svaki je čuva najviše tri dana, predaje je najviše
-  dvama drugim telefonima koje sretne i predaje je tom relayu preko vlastitog relaya čim može; isto radi i vaš. Ne mogu
-  je čitati niti saznati od koga je i za koga: vide samo adresu relaya. Ostaje i kad se Erevos zatvori, zapečaćena na
-  telefonu. Vaše ostaju u vašem prostoru i idu samo dok je on otvoren. Prenošenje za druge je uključeno dok ne
-  isključite **Prenosi poruke za druge** pod **U blizini, bez interneta**, u ekranu **Novi razgovor**, i samo za
-  relaye na internetu preko TLS-a (wss://): nepoznata osoba u blizini nikad ne može natjerati vaš telefon ili vaš
-  relay da se obrate relayu na lokalnoj mreži ili na samom telefonu. Vaše vlastite poruke prenose telefoni u blizini
-  koji to imaju uključeno.
+  dvama drugim telefonima koje sretne i predaje je tom relayu preko vlastitog relaya čim može; isto radi i vaš. Ne
+  mogu je čitati niti saznati od koga je i za koga: vide samo adresu relaya. Ostaje i kad se Erevos zatvori,
+  zapečaćena na telefonu. Vaše ostaju u vašem prostoru i idu samo dok je on otvoren. Prenošenje za druge je uključeno
+  dok ne isključite **Prenosi poruke za druge** pod **Za napredne korisnike** → **U blizini, bez interneta**, u ekranu
+  **Novi razgovor**, i samo za relaye na internetu preko TLS-a (wss://): nepoznata osoba u blizini nikad ne može
+  natjerati vaš telefon ili vaš relay da se obrate relayu na lokalnoj mreži ili na samom telefonu. Vaše vlastite
+  poruke prenose telefoni u blizini koji to imaju uključeno.
 - **Donose ih drugi telefoni:** obrnuto, kad vaš telefon nema internet, Erevos telefon pored njega koji ima internet i
   prenosi za druge uzima ono što vas čeka na vašem relayu i predaje vam to u blizini. Erevos pita jednom za svaki
   takav telefon, i za telefon kontakta, jer neznanac može da prenese poruke kontakta da bi izgledao kao on, i samo dok
@@ -520,50 +522,72 @@ vlastitog relaya** ispod.
 **Zašto:** s redovima i bez naloga nijedan server ne čuva popis ko koga poznaje i nikome ne treba vaš broj telefona ni
 e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš red, a čitate ga samo vi.
 
-1. Na početnom ekranu dodirnite **Novi razgovor**. Dok nešto nedostaje, na vrhu **Kako ste sada povezani** jednostavnim riječima kaže kako
-   vas kontakti dosežu: preko vašeg relaya, preko Nostra bez relaya ili samo u blizini; kad sve radi, ne prikazuje se.
-   S relayem, polje na samom vrhu nalazi kontakt po imenu ili dodaje link zalijepljen u njega, a ispod dolaze **Tvoj QR
-   kod**, iznad njega **Već ima Erevos** i **Nov u Erevosu**, i redovi za **Vaš link za kontakt** i drugo; telefon koji još nema relay počinje s
-   **Počni s pozivnicom**. Vlastite postavke relaya
-   su pod **Za napredne korisnike**, na dnu; **Postavke** → **Relay i mreže** → **Relay** otvara Novi razgovor s tim
-   postavkama otvorenim.
+1. Na početnom ekranu dodirnite **Novi razgovor**. Dok nešto nedostaje, na vrhu **Kako ste sada povezani**
+   jednostavnim riječima kaže kako vas kontakti dosežu: preko vašeg relaya, preko Nostra bez relaya ili samo u
+   blizini; kad sve radi, ne prikazuje se. S relayem, polje na samom vrhu nalazi kontakt po imenu ili dodaje link
+   zalijepljen u njega. Zatim dolazi jedno pitanje, **Gdje je druga osoba?**, a svaki odgovor otvara vlastitu
+   stranicu: **Pored mene**, **Daleko** i **Imam njegov kod**, kao u koracima od 4 do 6 ispod. Tri reda ispod otvaraju
+   ostalo: **Moj link**, **Blokirani kontakti** i **Za napredne korisnike**, gdje su vlastite postavke relaya;
+   **Postavke** → **Relay i mreže** → **Relay** otvara Novi razgovor s tim postavkama otvorenim.
 2. Pod **Za napredne korisnike** upišite adresu u polje **Adresa relaya**: \`ws://<adresa računara>:7879\` za relay na
    vlastitoj mreži ili \`wss://relay.example.org\` za relay na internetu. Dodajte **Token** ako ga relay traži.
 3. Erevos sam pravi vaš red na njemu, nekoliko sekundi kasnije, i kaže **Red na relayu je napravljen**: sve radi, tekstovi, fotografije, glasovne poruke,
    pozivi i grupe, a **Kako ste sada povezani** nestaje, jer ništa ne nedostaje. Ako ne uspije, bilješka kaže zašto; **Napravi moj red na relayu**, ispod adrese, pokušava ponovo.
-4. **Tvoj QR kod** je na samom Novom razgovoru, čim se otvori. Neka ga drugi telefon skenira kamerom, a zatim otvori
-   link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj u razgovore** samo ako ste ga sami
-   skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu, povezanu s kontaktom koji izaberete,
-   čije ime razgovor preuzima.
-   Kod je kratak, pa ga čita svaka kamera. Ko ga skenira, odgovara svojim linkom za kontakt, a zatim mu ovaj telefon prvi piše. Kod je nov svaki put kad se Novi razgovor otvori i vrijedi jednom: ko ga prvi skenira, odmah postaje kontakt; ko ga skenira poslije, ili uzme link koji podijelite, prvo piše zahtjev za poruku. **Veliki QR kod, bez interneta** umjesto toga prikazuje cijeli kod, koji radi u blizini bez interneta, a **Mali QR kod** vraća nazad. **Podijeli**, ispod njega, šalje kratak link koji svaka aplikacija dopušta dodirnuti; na Androidu otvara Erevos, koji pita prije nego ga preuzme. Da biste nekoga dodali njegovim QR kodom za kontakt, vašem telefonu prvo treba relay.
-   Ovaj QR kod radi samo ako oba telefona imaju relay, kao što kartica kaže. Za nekoga ko još nema Erevos, ili čiji
-   telefon nema relay, izaberite umjesto toga **Nov u Erevosu**, iznad: kartica prikazuje **Pozivnica za Erevos**,
-   pozivnicu s kojom se njegov telefon pridružuje vašem relayu, kao u Pozivanje nekoga novog, niže. Novi razgovor
-   prikazuje ono što ste posljednje izabrali.
-   Isto vrijedi za dodir: dok se prikazuje mali kod za kontakt, a NFC je na Androidu uključen, drugi telefon ga uzima
-   ako njegovu poleđinu prislonite uz poleđinu svog. Radi samo dok je Erevos u prvom planu, ne u pozadini, i nikad s
-   velikim QR kodom.
-5. Ako kamera te osobe prikazuje samo tekst, ili je daleko, dodirnite **Podijeli** ispod svog QR koda, ili otvorite
-   **Vaš link za kontakt** i dodirnite **Podijeli moj link za kontakt**, i pošaljite joj ga. Ona ga zalijepi u polje na
-   vrhu **Novog razgovora** i dodirne **Dodaj**.
-6. Ili obrnuto: dodirnite **Skeniraj njegov**, ispod svog QR koda, i snimite QR kod na njenom ekranu, ili dodirnite
-   **Iz fotografije njegovog QR koda** za snimak ekrana ili fotografiju koda koju vam je poslala. Erevos ga čita i odmah
-   je dodaje. Na računaru, na Sailfish OS-u i u web-aplikaciji **Skeniraj njegov** traži fotografiju koda; na iPhoneu
-   nudi i kameru.
-   Skriveni razgovori imaju i jedno i drugo; tamo polje na vrhu prima samo link.
-7. Ili, s nekim pored vas ili na telefonu: dodirnite **Upari se kodom** u **Novi razgovor**. Jedan dodirne **Pokaži
-   kod** i kaže ili pokaže 8 cifara; drugi dodirne **Ukucaj njegov kod** i ukuca ih. Tada svaki telefon ima drugi kao
-   kontakt, kao da je svaki skenirao QR kod drugog. Sam kod nikad ne napušta telefone: dokazuju jedan drugom da ga znaju,
-   a njihovi linkovi za kontakt idu šifrovani ključem koji daje samo isti kod. Sastaju se na javnim Nostr relejima, koji
-   ne vide ni kod ni linkove, a ko pogađa ima 3 pokušaja pre nego što se kod zatvori. Kod važi 10 minuta.
+4. **Pored mene**, za nekoga ko je pored vas: na oba telefona dodirnite **Novi razgovor**, a zatim **Pored mene**. Dva
+   telefona se sama pronađu, preko Bluetootha ili Wi-Fi mreže koju dijele, i svaki prikaže **Pronađen je telefon** sa
+   šest slika. Pogledajte oba ekrana: kad su slike iste, istim redom, svako od vas dodirne **Da, iste**, i postajete
+   kontakti, bez relaya, bez interneta i bez ikakvog kucanja. **Ne, druge** ostavlja taj telefon po strani. Slike
+   nastaju iz ključa koji dva telefona naprave međusobno, pa bi telefon koji bi se našao između njih svakome pokazao
+   druge; svaki telefon daje svoj link za kontakt tek kad njegov vlasnik kaže da, šifriran tim ključem. Stranica traži
+   telefone samo dok je otvorena, i kad je **Traži telefone u blizini** isključeno, a ono ostaje isključeno; u
+   skrivenim razgovorima i u web-aplikaciji ništa ne traži. Pod **Ako se ne pronađe** stranica ima ostale načine za
+   nekoga ko je pored vas: QR kod za njegovu kameru, koji je pozivnica tamo gdje vaš relay dopušta ovom telefonu da
+   poziva, a inače vaš link za kontakt; **Pokaži kod od 8 cifara**, koji druga osoba ukuca kao u koraku 6; **Skeniraj
+   njegov** i **Ukucaj njegov kod**, za njen; i, na Androidu, **Nema Erevos na svom telefonu?**, koje joj daje samu
+   aplikaciju.
+5. **Daleko**, za nekoga ko nije s vama: stranica pravi pozivnicu, jedan link za jednu osobu, unutar poruke spremne za
+   slanje. Dodirnite **Pošalji pomoću…** i izaberite aplikaciju kojom ide (u pregledniku i na računaru, **Kopiraj
+   pozivnicu**), ili **QR kod pozivnice** da je pokažete kao kod. Ta osoba dodirne link: s Erevosom na njenom telefonu
+   otvara se u njemu, a bez njega link prvo pokaže gdje ga može nabaviti. Njen telefon se zatim pridružuje vašem
+   relayu s vlastitim pristupom, bez ikakvog kucanja, i postajete kontakti. Stranica kaže dokle se stiglo, **Pozivnica
+   je spremna**, **Čeka se da je otvori**, **Povezani ste**, a u međuvremenu je možete napustiti: čim se njen telefon
+   pridruži, ona se prikaže u vašim razgovorima. Više o pozivnicama u Pozivanje nekoga novog, niže. Tamo gdje ovaj
+   telefon ne može napraviti pozivnicu, još bez relaya, u skrivenim razgovorima ili na povezanom računaru, stranica
+   umjesto toga daje vaš link za kontakt za slanje: ta osoba ga otvori u Erevosu, ili ga zalijepi pod **Imam njegov
+   kod**.
+6. **Imam njegov kod**, za ono što vam je druga osoba dala. Ukucajte 8 cifara koje njen telefon prikazuje pod **Pored
+   mene** → **Pokaži kod od 8 cifara**, pored vas ili izgovorenih u pozivu: tada svaki telefon ima drugi kao kontakt.
+   Sam kod nikad ne napušta telefone: dokazuju jedan drugom da ga znaju, a njihovi linkovi za kontakt idu šifrirani
+   ključem koji daje samo isti kod. Sastaju se na javnim Nostr relayima, koji ne vide ni kod ni linkove, a ko pogađa
+   ima 3 pokušaja prije nego što se kod zatvori. Kod važi 10 minuta. Ispod cifara zalijepite njen link za kontakt ili
+   pozivnicu u polje i dodirnite **Dodaj**, ili dodirnite **Skeniraj njegov QR kod** i snimite QR kod na njenom
+   ekranu, ili **Iz fotografije njegovog QR koda** za snimak ekrana ili fotografiju koda koju vam je poslala. Erevos
+   ga čita i odmah je dodaje. Na računaru, na Sailfish OS-u i u web-aplikaciji **Skeniraj njegov QR kod** traži
+   fotografiju koda; na iPhoneu nudi i kameru. I skriveni razgovori imaju ovu stranicu.
+7. **Moj link**, u redovima ispod ta tri, je vlastiti QR kod i link za kontakt ovog telefona. Neka drugi telefon
+   skenira kod kamerom, a zatim otvori link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj
+   u razgovore** samo ako ste ga sami skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu,
+   povezanu s kontaktom koji izaberete, čije ime razgovor preuzima. Kod je kratak, pa ga čita svaka kamera. Ko ga
+   skenira, odgovara svojim linkom za kontakt, a zatim mu ovaj telefon prvi piše. Kod je nov svaki put kad se stranica
+   otvori i vrijedi jednom: ko ga prvi skenira, odmah postaje kontakt; ko ga skenira poslije, ili uzme link koji
+   podijelite, prvo piše zahtjev za poruku. **Veliki QR kod, bez interneta** umjesto toga prikazuje cijeli kod, koji
+   radi u blizini bez interneta, a **Mali QR kod** vraća nazad. **Podijeli**, ispod njega, šalje kratak link koji
+   svaka aplikacija dopušta dodirnuti; na Androidu otvara Erevos, koji pita prije nego ga preuzme. Da biste nekoga
+   dodali njegovim QR kodom za kontakt, vašem telefonu prvo treba relay. Ovaj QR kod radi samo ako oba telefona imaju
+   relay, kao što stranica kaže: inače koristite **Pored mene**, ili pozivnicu iz **Daleko**. **Skeniraj njegov** i
+   **Iz fotografije njegovog QR koda**, ispod, čitaju odavde kod drugog telefona. Isto vrijedi za dodir: dok se
+   prikazuje mali kod za kontakt, a NFC je na Androidu uključen, drugi telefon ga uzima ako njegovu poleđinu
+   prislonite uz poleđinu svog. Radi samo dok je Erevos u prvom planu, ne u pozadini, i nikad s velikim QR kodom.
 
-Novi razgovor pojavljuje se na početnom ekranu pod imenom **kontakt** i prvim znakovima ključa te osobe, dok ne dobije
-ime: **Preimenuj** u njegovim detaljima daje mu ga. Odmah nakon što je ovdje dodate, **Poveži s jednim od mojih
-kontakata** ispod obavijesti da je dodana omogućava vam da umjesto toga izaberete jedan od svojih kontakata (**Ne
-sada** to preskače): razgovor preuzima ime tog kontakta, ako nema vlastito, a kartica kontakta prikazuje razgovor.
-Skriveni razgovori nude samo vlastite kontakte, nikad kontakte telefona. Dovoljno je da jedan telefon doda drugi:
-dodavanje linka pokreće šifrirani razgovor i drugom telefonu kaže kako da odgovori, pa on prikaže razgovor sljedeći
-put kad pogleda svoj red, što radi svakih nekoliko sekundi.
+Koji god način izaberete, završava na **Povezani ste**: slika te osobe, **Njegovo ime u tvojim razgovorima**, koje je
+njen telefon možda rekao i koje možete promijeniti, i **Napiši poruku** ili **Dodaj još nekoga**. Novi razgovor
+pojavljuje se na početnom ekranu pod imenom **kontakt** i prvim znakovima ključa te osobe, dok ne dobije ime:
+**Preimenuj** u njegovim detaljima daje mu ga. Odmah nakon što je ovdje dodate, **Poveži s jednim od mojih kontakata**
+ispod obavijesti da je dodana omogućava vam da umjesto toga izaberete jedan od svojih kontakata (**Ne sada** to
+preskače): razgovor preuzima ime tog kontakta, ako nema vlastito, a kartica kontakta prikazuje razgovor. Skriveni
+razgovori nude samo vlastite kontakte, nikad kontakte telefona. Dovoljno je da jedan telefon doda drugi: dodavanje
+linka pokreće šifrirani razgovor i drugom telefonu kaže kako da odgovori, pa on prikaže razgovor sljedeći put kad
+pogleda svoj red, što radi svakih nekoliko sekundi.
 
 **Šta relay vidi od razgovora:** svi vaši kontakti pišu u vaš jedan red. Kad svaki telefon dobije poruku od drugog,
 svaka poruka između njih još jednom se zapečaćuje za telefon kojem ide, ključem koji je taj telefon dao unutar
@@ -611,38 +635,41 @@ ne može napuniti njegovu datoteku tokena.
 Jedan QR kod ili link dovodi nekoga novog: njegov telefon ulazi u Erevos na vašem relayu, s vlastitim pristupom, bez
 ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgovor.
 
-- **Da pozovete:** na početnom ekranu dodirnite **Pozovi** pored retka relaya ili, na **Novom razgovoru**, izaberite
-  **Nov u Erevosu** iznad QR koda. QR kod se prikaže odmah: kad Erevos bude na njenom telefonu, ona ga skenira
-  kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj link. Ispod možete upisati za
-  koga je (ime te osobe u vašim razgovorima) i **Vaše ime, za tu osobu**, ili oba polja ostaviti prazna. Ako je opet
-  otvorite dok je niko nije uzeo i dok joj ostaje bar jedan dan, prikazuje istu pozivnicu, pa ne troši nijednu od 5 na
-  čekanju ni od 10 dnevno; **Pozovite nekog drugog** pravi novu. Pozivnica je za
-  jednu osobu, na 7 dana, ili kraće ako pozivnica za relay ističe ranije. Ko je prvi iskoristi, njegova je, pa je
-  dajte samo toj osobi.
-  Na Android telefonu s uključenim NFC-om možete je dati i dodirom: prislonite poleđinu njenog telefona uz poleđinu
-  svog dok se kod prikazuje, a njen telefon sam otvori link, u Erevosu ako je instaliran, a inače na web stranici
-  Erevosa, koja nudi Erevos. Ako je NFC isključen, na ekranu piše da ga uključite u postavkama Androida.
-- **Da se pridružite:** na telefonu koji još nema relay, **Novi razgovor** počinje s **Počni s pozivnicom**. Dodirnite
-  **Skeniraj njegov QR kod** i snimite pozivnicu na njenom ekranu, ili dodirnite **Iz fotografije njegovog QR koda**, ili
-  zalijepite link u tamošnje polje i dodirnite **Pridruži se**; radi i da je skenirate kamerom i otvorite link u
-  Erevosu. Link otvara **… vas poziva u Erevos**: dodirnite **Pridruži se** samo ako je stigao od te osobe. Erevos uzima
-  vlastiti pristup njenom relayu i red na njemu, dodaje je i kaže **Dobro došli u Erevos**. Njegova prva poruka javlja
-  to njenom telefonu, koji odmah dodaje ovaj kao kontakt, pod imenom koje je ta osoba upisala.
-- **Ostali načini ulaska:** ispod toga, **Za napredne korisnike** otvara ostale, za one koji ih traže: **Prijava preko
-  LPHL** prijavljuje ovaj telefon na LPHL-ov relay s LPHL nalogom, u pregledniku (pogledajte Prijava na relay ispod),
-  a zatim dodajete svoje kontakte putem njihovih pozivnica ili linkova; **Počnite bez relaya**, kao u Bez ikakvog
-  relaya, pod Preko Nostra; i postavke relaya, kao u koracima od 1 do 6 iznad. Pozivnica je najjednostavniji način
-  ulaska, a na relayu pozvani telefon ima samo ime od nasumičnih slova i cifara.
+- **Da pozovete:** na početnom ekranu dodirnite **Pozovi** pored retka relaya ili, u **Novom razgovoru**, dodirnite
+  **Daleko**. Pozivnica se napravi odmah i prikaže unutar poruke spremne za slanje: dodirnite **Pošalji pomoću…** i
+  izaberite aplikaciju, ili dodirnite **QR kod pozivnice** i pustite je da ga skenira kamerom svog telefona. Ispod
+  možete upisati za koga je (ime te osobe u vašim razgovorima) i **Vaše ime, za tu osobu**, ili oba polja ostaviti
+  prazna. Ako je opet otvorite dok je niko nije uzeo i dok joj ostaje bar jedan dan, prikazuje istu pozivnicu, pa ne
+  troši nijednu od 5 na čekanju ni od 10 dnevno; **Pozovite nekog drugog** pravi novu, a **Povuci ovu pozivnicu**
+  zatvara njen link dok je nijedan telefon nije uzeo. Pozivnica je za jednu osobu, na 7 dana, ili kraće ako pozivnica
+  za relay ističe ranije. Ko je prvi iskoristi, njegova je, pa je dajte samo toj osobi. Za nekoga ko je pored vas, i
+  **Pored mene** prikazuje takvu pozivnicu kao QR kod. Na Android telefonu s uključenim NFC-om možete je dati i
+  dodirom: prislonite poleđinu njenog telefona uz poleđinu svog dok se kod prikazuje, a njen telefon sam otvori link,
+  u Erevosu ako je instaliran, a inače na web stranici Erevosa, koja nudi Erevos. Ako je NFC isključen, na stranici
+  piše da ga uključite u postavkama Androida.
+- **Da se pridružite:** dodirnite link koji vam je ta osoba poslala, ili skenirajte pozivnicu kamerom i otvorite link
+  u Erevosu: otvara **… vas poziva u Erevos**, a **Pridruži se** dodirnite samo ako je stigao od te osobe. Unutar
+  Erevosa, i **Imam njegov kod** u **Novom razgovoru** prima pozivnicu: dodirnite **Skeniraj njegov QR kod** i snimite
+  pozivnicu na njenom ekranu, ili **Iz fotografije njegovog QR koda**, ili zalijepite link u tamošnje polje i
+  dodirnite **Dodaj**. Erevos uzima vlastiti pristup njenom relayu i red na njemu, dodaje je i kaže **Dobro došli u
+  Erevos**. Njegova prva poruka javlja to njenom telefonu, koji odmah dodaje ovaj kao kontakt, pod imenom koje je ta
+  osoba upisala.
+- **Ostali načini ulaska:** u **Novom razgovoru**, **Za napredne korisnike** otvara ostale, za one koji ih traže:
+  **Prijava preko LPHL** prijavljuje ovaj telefon na LPHL-ov relay s LPHL nalogom, u pregledniku (pogledajte Prijava
+  na relay ispod), a zatim dodajete svoje kontakte putem njihovih pozivnica ili linkova; **Počnite bez relaya**, kao u
+  Bez ikakvog relaya, pod Preko Nostra; i postavke relaya, kao u koracima od 1 do 3 iznad. Pozivnica je
+  najjednostavniji način ulaska, a na relayu pozvani telefon ima samo ime od nasumičnih slova i cifara.
 - **Drugi relay:** ispod **Prijava preko LPHL**, **Prijava na drugi relay…** prima adresu drugog relaya, kako vam ju
   je dao onaj ko ga vodi, na primjer relay.example.org: kartica se tada prijavljuje tamo, s imenom naloga koje taj relay
   prima, ili kaže da nema prijavu, i tada vam onaj ko ga vodi može dati pozivnicu. **Nazad na** vraća LPHL-ov.
-- **Šta vaš relay mora dozvoliti:** vlastiti pristup je pozivnica na vaš relay (pogledajte Pozivnice na relay ispod), pa
-  dolazi samo s telefona koji ima vlastiti token na relayu koji prima pozivnice. Računa se među vaše pozivnice, pod
-  imenom od nasumičnih slova i cifara, i ostaje čak i kad vaš nestane. Telefon s jednim zajedničkim tokenom relaya prvo
-  ga mijenja za vlastiti (pogledajte Načini ulaska na relay iznad); tamo gdje relay to ne radi, ne pravi pozivnicu: prvo
-  se prijavite na relay (ispod polja **Token**, pod **Za napredne korisnike**) ili uzmite pozivnicu za njega. Kad vaš
-  relay ne prima pozivnice, pozivnica vas ipak čini kontaktima, a telefon te osobe koristi vaš relay samo onako kako to
-  dozvoljava vaš link za kontakt, kao u Bez vlastitog relaya ispod.
+- **Šta vaš relay mora dozvoliti:** vlastiti pristup je pozivnica na vaš relay (pogledajte Pozivnice na relay ispod),
+  pa dolazi samo s telefona koji ima vlastiti token na relayu koji prima pozivnice. Računa se među vaše pozivnice, pod
+  imenom od nasumičnih slova i cifara, i ostaje čak i kad vaš nestane. Telefon s jednim zajedničkim tokenom relaya
+  prvo ga mijenja za vlastiti (pogledajte Načini ulaska na relay iznad); tamo gdje relay to ne radi, ne pravi
+  pozivnicu: prvo se prijavite na relay (ispod polja **Token**, pod **Za napredne korisnike**) ili uzmite pozivnicu za
+  njega. Kad vaš relay ne prima pozivnice, pozivnica vas ipak čini kontaktima, a telefon te osobe koristi vaš relay
+  samo onako kako to dozvoljava vaš link za kontakt, kao u Bez vlastitog relaya ispod. Takva pozivnica se otvara samo
+  na telefonu koji već ima Erevos.
 - **Telefon koji već ima relay** zadržava svoj: pozivnica vas samo dodaje, a odmah ste kontakti svejedno.
 - **Šta se čuva:** vaš telefon čuva tajnu svake pozivnice i ime za tu osobu, zapečaćene u prostoru, dok se ne
   iskoristi ili ne isteknu njenih 7 dana, najviše 20 istovremeno. Od toga na relayu nema ništa osim pozivnice za
@@ -664,15 +691,14 @@ ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgov
 Telefon bez relaya svejedno razgovara preko interneta: kad doda link kontakta čiji relay posuđuje mjesta, uzima mjesto
 na njemu, bez tokena.
 
-- **Kako:** dodajte njegov link kao u koracima 4 i 5, bez ičega pod **Relay**. Erevos kaže da sada imate mjesto na
-  relayu te osobe, posuđeno putem njenog linka, i od tada ga koristi kao vlastiti: vaš vlastiti link ga navodi, pa i
-  drugi tamo dopiru do vas.
+- **Kako:** dodajte njegov link kao u koraku 6, bez ičega pod **Relay**. Erevos kaže da sada imate mjesto na relayu te
+  osobe, posuđeno putem njenog linka, i od tada ga koristi kao vlastiti: vaš vlastiti link ga navodi, pa i drugi tamo
+  dopiru do vas.
 - **Ko posuđuje:** vaš link nosi kartu za mjesto na vašem relayu samo kad uključite **Podijeli mjesto na mom relayu s
-  ovim linkom**, pod **Vaš link za kontakt** u ekranu **Novi razgovor**, i to samo za link koji je tada prikazan:
-  sljedeći put kad se razgovor otvori, ponovo je isključeno. Relayu je potreban ključ za slanje u dva skoka, a
-  posuđuje tek kad onaj ko ga vodi uključi posuđivanje; on može i povući mjesta neke karte. Karta traje 30 dana i daje
-  najviše četiri mjesta. Svako ko vidi link s kartom može s njom uzeti mjesto, pa takav link dajte samo onome kome ste
-  ga namijenili.
+  ovim linkom**, pod **Moj link** u ekranu **Novi razgovor**, i to samo za link koji je tada prikazan: sljedeći put
+  kad se razgovor otvori, ponovo je isključeno. Relayu je potreban ključ za slanje u dva skoka, a posuđuje tek kad
+  onaj ko ga vodi uključi posuđivanje; on može i povući mjesta neke karte. Karta traje 30 dana i daje najviše četiri
+  mjesta. Svako ko vidi link s kartom može s njom uzeti mjesto, pa takav link dajte samo onome kome ste ga namijenili.
 - **Šta posuđeno mjesto ne radi:** poruke kontaktima na drugim relayima idu direktno na njihov relay, koji tada vidi
   adresu vašeg telefona. Ne čuva ništa za kasnije (poruka poslana kasnije čeka na telefonu), ne daje relay za pozive
   (pozivi idu direktno između telefona) i pravi najviše još 4 reda i šalje najviše 50 MB datoteka dnevno. Vaš link ne
@@ -695,12 +721,13 @@ s vlastitim tokenom tog telefona, pa se nijedan token ne upisuje niti prosljeđu
   na relay**, upišite za koga je i dodirnite **Napravi pozivnicu**. Otvara se QR kod: neka ga telefon te osobe
   skenira kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj je. Vrijedi za jedan
   telefon 7 dana, a ko je prvi iskoristi, njegova je, pa je pokažite samo toj osobi.
-- **Da je prihvatite:** link otvara **Pozivnica za relay**, s adresom relaya: dodirnite **Koristi ovaj relay** samo ako
-  je stigla od nekoga koga poznajete. U Erevosu, **Skeniraj njegov** i **Iz fotografije njegovog QR koda** na Novom
-  razgovoru čitaju i pozivnicu, a njen link može se zalijepiti u polje na vrhu. Erevos pravi token za ovaj telefon,
-  čuva ga s adresom relaya samo u ovom prostoru i pravi vaš red na relayu. Ako telefon koristi drugi relay, prvo pita, a
-  kontakti saznaju vaš novi red iz vaše sljedeće poruke. Erevos prima pozivnicu za wss:// relay, ili za ws:// relay samo
-  na kućnoj mreži (kao \`ws://192.168.1.10:7879\`). Skriveni razgovori ne primaju pozivnice.
+- **Da je prihvatite:** link otvara **Pozivnica za relay**, s adresom relaya: dodirnite **Koristi ovaj relay** samo
+  ako je stigla od nekoga koga poznajete. U Erevosu, i **Imam njegov kod** u **Novom razgovoru** prima pozivnicu:
+  pomoću **Skeniraj njegov QR kod**, **Iz fotografije njegovog QR koda**, ili njenog linka zalijepljenog u tamošnje
+  polje. Erevos pravi token za ovaj telefon, čuva ga s adresom relaya samo u ovom prostoru i pravi vaš red na relayu.
+  Ako telefon koristi drugi relay, prvo pita, a kontakti saznaju vaš novi red iz vaše sljedeće poruke. Erevos prima
+  pozivnicu za wss:// relay, ili za ws:// relay samo na kućnoj mreži (kao \`ws://192.168.1.10:7879\`). Skriveni
+  razgovori ne primaju pozivnice.
 - **Vaše pozivnice:** navedene ispod dugmeta, na čekanju ili u upotrebi. **Povuci** povlači pozivnicu koja još čeka, ili
   odmah isključuje telefon koji ju je uzeo, samo njega: telefoni koje je on zatim pozvao zadržavaju svoj.
 - **Njihov ostaje:** telefon koji ste pozvali zadržava svoj red na relayu čak i kad vaš nestane, jer ga je povukao
@@ -1017,7 +1044,7 @@ redove svih vaših kontakata (pogledajte [Na iPhoneu](#iphone)).
 - **Smeće:** kad se vaš red napuni onim što nije ni za koga ovdje, Erevos vam na isti način daje novi red i to kaže,
   najviše jednom dnevno. Kad smeće napuni red koji navodi vaš link za kontakt, umjesto toga dobijate novi link.
   Poplava izmišljenih zahtjeva za razgovor također se računa kao smeće, dok skup pravih ipak stiže.
-- **Novi link za kontakt**, pored **Podijeli moj link za kontakt**, daje vam novi link: linkovi i QR kodovi koje ste
+- **Novi link za kontakt**, pod **Moj link** u **Novom razgovoru**, daje vam novi link: linkovi i QR kodovi koje ste
   ranije dali rade još 14 dana, a zatim više ne. Vaših kontakata se to ne tiče. Ako relay izgubi red koji navodi vaš
   link, na isti način dobijate novi link, ali oni koje ste ranije dali odmah prestaju raditi.
 - **Link za web stranicu**, pored njega, u razgovorima prostora, daje vam link koji možete staviti na web stranicu, npr.
@@ -1863,10 +1890,10 @@ vas, tamo idu i slike, datoteke i glasovne poruke (pogledajte Bez ikakvog relaya
 Telefon bez relaya, bez pozivnice i bez LPHL naloga ipak može početi: njegov link za kontakt i QR kod kažu gdje čita na
 Nostru, i to je dovoljno za razgovor.
 
-- **Da počnete:** u ekranu **Novi razgovor** dodirnite **Počnite bez relaya**, zatim **Prikaži moj QR kod** ili
-  **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda piše vam preko Nostra
-  i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR kod, na isti
-  način.
+- **Da počnete:** u ekranu **Novi razgovor**, pod **Za napredne korisnike**, dodirnite **Počnite bez relaya**, zatim
+  **Prikaži moj QR kod** ili **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda
+  piše vam preko Nostra i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR
+  kod, na isti način.
 - **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva, šifrirane s ostatkom prostora ili skrivenih razgovora za koje su stigli, dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora kako kaže izbor Tora za prostor (izravno s **Ništa**): poslužitelj čuva samo ono što ne može pročitati. Za pozive i grupe potreban je relay, ili drugi telefon u blizini. Skriveni razgovori i tako rade, samo preko Nostra (pogledajte [Skriveni razgovori](#hidden)).
 - **Kad ne stigne:** Nostr relayi čuvaju tekst dva dana. Dok telefon vašeg kontakta ne javi da je stigao, Erevos mu ga
   ponovo daje jednom dnevno, dvije sedmice.
@@ -1891,8 +1918,9 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
 - **Javni Nostr relayi i Nostr serveri datoteka:** vide je, osim ako veza ne ide preko Tora. Uključite **Nostr preko
   Tora** pod **Postavke** → **Relay i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Vidi [Preko
   Nostra](#nostr).
-- **Uparivanje kodom:** dva telefona se sreću na tim istim javnim Nostr relayima, pa bez Nostra preko Tora oni vide
-  adresu, ali ne i kod ni kontakt linkove. Erevos to kaže prije prvog uparivanja.
+- **Kod od 8 cifara**, pod **Pored mene** i **Imam njegov kod**: dva telefona se sreću na tim istim javnim Nostr
+  relayima, pa bez Nostra preko Tora oni vide adresu, ali ne i kod ni linkove za kontakt. Erevos to kaže prije prvog
+  puta.
 
 - **Pozivi:** nikad ne idu preko Tora. Relay za pozive, vaš ili vašeg kontakta, vidi adresu, ali ne i ono što se
   govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži.

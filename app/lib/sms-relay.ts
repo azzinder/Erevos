@@ -294,6 +294,24 @@ export async function shortInviteWaits(secret: string): Promise<boolean> {
   return (await spaceSmsLink()).textInviteWaits(secret);
 }
 
+/**
+ * Takes back a short invite made here that no phone used yet: from the relay, so its link lets no
+ * one in any more, and forgotten here. False when a phone has used it already: that one may still
+ * answer, and is left to.
+ */
+export async function takeBackShortInvite(short: ShortInvite): Promise<boolean> {
+  const data = await loadCurrentSpaceData();
+  if (!data.url) return false;
+  const relay: Relay = { url: data.url, token: data.token || undefined };
+  const id = inviteId(short.invite.code);
+  const listed = await listInvites(relay);
+  const it = listed?.find((l) => l.id === id);
+  if (it && it.used > 0) return false;
+  if (it) await takeBackInvite(relay, id);
+  await (await spaceSmsLink()).settleTextInvite(short.secret, true);
+  return true;
+}
+
 async function shortInvite(number: string, name: string, days: number): Promise<ShortInvite> {
   const data = await loadCurrentSpaceData();
   if (!data.url || !data.ownQueue) throw new Error(t('An invite by SMS needs a relay: your phone has none yet.'));
