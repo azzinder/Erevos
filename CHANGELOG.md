@@ -8,11 +8,10 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
-## Unreleased
-
-On main, not released yet:
+## 3.0.0-rc.2 (2026-11-25)
 
 ### For you
+
 - Erevos's camera at a tap (Android; not in Erevos Lite, which has no camera). **Appearance** → **Launcher icons** →
   **Camera** → **Put the Camera among the phone's apps** adds an icon of its own, off at first, in any of the six
   colours, and holding Erevos's icon down offers **Camera** too. Both open the Collection's camera, behind Erevos's
@@ -26,12 +25,10 @@ On main, not released yet:
 - **Make a backup** shows how far it is again when you leave the backups screen, or Erevos, and come back, and then
   how it ended (`lib/backup-making.ts`, `app/backup.tsx`).
 - **Start when the phone turns on**: with no space set to tell of messages while closed, Erevos no longer stops
-  without a word: the quiet **Locked** notice stays, and a tap on it opens Erevos for the password. While it waits
-  for those spaces, its notice now shows in the status bar too (a channel of its own, **Waiting since the phone
-  turned on**). The choice is now
-  kept with the phone's other settings, so a backup restored, or a move to another edition, keeps it
-  (`lib/background.ts` `syncBootStart`, `lock/backup.ts`).
-
+  without a word: the quiet **Locked** notice stays, and a tap on it opens Erevos for the password. While it waits for
+  those spaces, its notice now shows in the status bar too (a channel of its own, **Waiting since the phone turned
+  on**). The choice is now kept with the phone's other settings, so a backup restored, or a move to another edition,
+  keeps it (`lib/background.ts` `syncBootStart`, `lock/backup.ts`).
 - Chat options in reach (#44): in chats on Nostr, Matrix and XMPP and in SMS conversations, a sliders button beside
   where you write opens **Chat options**, one tidy list in place of the rows of buttons above or below the thread:
   **Notifications**, **Chat look**, the PIN, screenshots and disappearing messages under **This chat**, search, media,
@@ -61,6 +58,7 @@ On main, not released yet:
   the maintainer (#37).
 
 ### Under the hood
+
 - Unlocking with a fingerprint or face no longer turns itself off by mistake. It turned off whenever Erevos checked
   its key while the phone itself was locked (an Erevos call showing over the lock screen, say), or when Android's
   Keystore did not answer at once: both were taken for a key Android had dropped. Now only a key Android really

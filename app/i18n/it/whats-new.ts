@@ -4,6 +4,24 @@
 
 // The Italian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/it/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**New chat asks where the other person is**: **Near me** makes two phones side by side each other's contacts with nothing typed, once both show the same six pictures; **Far away** sends an invite with any app; **I have their code** takes 8 digits, a link or a QR code. See [Chat through a relay](#relay).":
+    "**Nuova chat chiede dov’è l’altra persona**: **Accanto a me** rende contatti due telefoni vicini senza digitare nulla, appena entrambi mostrano le stesse sei immagini; **Lontano** invia un invito con qualsiasi app; **Ho il suo codice** accetta 8 cifre, un link o un codice QR. Vedi [Chat tramite un relay](#relay).",
+  "**Camera at a tap**: on Android, **Appearance** → **Launcher icons** → **Camera** gives the Collection's camera an icon of its own among the phone's apps, and holding Erevos's icon down offers **Camera** too. See [Collection](#collection).":
+    "**La fotocamera con un tocco**: su Android, **Aspetto** → **Icone del launcher** → **Fotocamera** dà alla fotocamera della Raccolta un’icona tutta sua tra le app del telefono, e tenendo premuta l’icona di Erevos viene offerta anche **Fotocamera**. Vedi [Raccolta](#collection).",
+  "**Chat options in SMS conversations**: a sliders button beside where you write opens **Chat options**, one tidy list in place of the rows of buttons: notifications, the chat's look, search, media and more.":
+    "**Opzioni della chat nelle conversazioni SMS**: un pulsante con i cursori accanto a dove scrivi apre **Opzioni della chat**, un elenco ordinato al posto delle file di pulsanti: notifiche, aspetto della chat, ricerca, media e altro.",
+  "**Chat options in Nostr, Matrix and XMPP chats**: the same sliders button beside where you write, with the contact's own options on Nostr; Nostr's **+** now holds what goes with a message.":
+    "**Opzioni della chat nelle chat Nostr, Matrix e XMPP**: lo stesso pulsante con i cursori accanto a dove scrivi, con le opzioni del contatto stesso su Nostr; il **+** di Nostr ora contiene ciò che accompagna un messaggio.",
+  "**The warning without Tor comes once**: that your internet address can be seen is now said once for a whole network, not in every chat; after that a quiet line above where you write says it, with **Through Tor for this chat**.":
+    "**L’avviso senza Tor arriva una volta**: che il tuo indirizzo internet si può vedere viene ora detto una volta per tutta la rete, non in ogni chat; poi lo dice una riga discreta sopra dove scrivi, con **Tramite Tor per questa chat**.",
+  "**Start when the phone turns on**: after the phone restarts, Erevos now waits with a notice in the status bar and no longer stops without a word; a tap on the notice opens it for the password.":
+    "**Avvia all’accensione del telefono**: dopo un riavvio del telefono, Erevos ora attende con una notifica nella barra di stato e non si ferma più senza dire nulla; un tocco sulla notifica lo apre per la password.",
+  "**Backup progress stays in sight**: **Make a backup** shows how far it is again when you leave the screen, or Erevos, and come back, and then how it ended.":
+    "**L’avanzamento del backup resta in vista**: **Crea un backup** mostra di nuovo a che punto è quando lasci la schermata, o Erevos, e torni, e poi com’è finito.",
+  "Unlocking with a fingerprint or face no longer turns itself off by mistake, when Erevos checked its key while the phone itself was locked or Android answered late.":
+    "Lo sblocco con impronta o volto non si disattiva più da solo per errore, quando Erevos controllava la sua chiave mentre il telefono stesso era bloccato o Android tardava a rispondere.",
+  "**Near me** shows six pictures made from a key the two phones agree on then: a phone in between would show each of you different ones, and each phone gives its contact link only once its owner says the pictures are the same.":
+    "**Accanto a me** mostra sei immagini ricavate da una chiave su cui i due telefoni si accordano in quel momento: un telefono in mezzo ne mostrerebbe a ciascuno di diverse, e ogni telefono dà il suo link di contatto solo dopo che il suo proprietario ha detto che le immagini sono le stesse.",
   "**Speed dial with Erevos locked**: if you turn it on under **Phone** → **Settings**, holding 2 to 9 on the Phone opened without the password calls your speed dial numbers with Erevos locked too. See [Phone](#phone).":
     "**Chiamata rapida con Erevos bloccato**: se la attivi in **Telefono** → **Impostazioni**, tenere premuto da 2 a 9 nel Telefono aperto senza password chiama i tuoi numeri di chiamata rapida anche con Erevos bloccato. Vedi [Telefono](#phone).",
   "**Release candidate**: Erevos Lite as it is meant to come out, with what Erevos 3.0.0-rc.1 brought to its chats and calls.":
