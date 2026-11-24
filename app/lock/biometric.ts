@@ -23,7 +23,9 @@ import { opensSpace } from './space-data';
 // not the first space's key, or Android has dropped its key, it turns itself off, the same way in
 // both cases, and the password opens Erevos.
 
-export type KeyState = 'none' | 'valid' | 'invalidated';
+// 'unknown': it cannot be told now (the phone itself is locked, as when an Erevos call shows over
+// its lock screen, or the Keystore did not answer). That never turns it off.
+export type KeyState = 'none' | 'valid' | 'invalidated' | 'unknown';
 
 /** What the Keystore key sealed: its IV and the sealed data, base64. */
 export interface Sealed {
@@ -41,7 +43,7 @@ export interface BiometricPrompt {
 export interface BiometricSealer {
   /** Android 11 or later, with a strong fingerprint or face set up. */
   available(): boolean;
-  /** Whether the Keystore key is there, and still works. */
+  /** Whether the Keystore key is there, and still works, or 'unknown' when that cannot be told now. */
   keyState(): KeyState;
   /** Makes a new Keystore key, asks for a fingerprint or face and seals `data` (base64). */
   seal(data: string, prompt: BiometricPrompt): Promise<Sealed>;
@@ -77,7 +79,8 @@ function parse(raw: string | null): Sealed | null {
 /** Whether a fingerprint or face can open Erevos: shown the same in every space. */
 export async function biometricOn(sealer: BiometricSealer): Promise<boolean> {
   if (!sealer.available() || !parse(await secureGet(ENTRY))) return false;
-  if (sealer.keyState() === 'valid' && isPasswordLocked(await loadLockConfig())) return true;
+  const state = sealer.keyState();
+  if ((state === 'valid' || state === 'unknown') && isPasswordLocked(await loadLockConfig())) return true;
   // Android dropped the key, or the lock is off: it is off too.
   await turnOffBiometric(sealer);
   return false;

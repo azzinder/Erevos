@@ -1487,7 +1487,8 @@ computer non ce l’hanno.
   chiave sul telefono. Allora gli spazi con **Anche mentre è aperto un altro spazio** dicono già «New message», o
   quanti ne sono arrivati, mai quale spazio, né chi o cosa, e una notifica silenziosa dice «Locked». Le chiamate non
   squillano, e nient’altro arriva, finché non apri uno spazio; gli spazi che passano da Tor non dicono nulla fino ad
-  allora. Se non c’è nessuno spazio così, o con **Nessun avviso**, si ferma subito. Solo su Android.
+  allora. Se non c’è nessuno spazio così, o con **Nessun avviso**, solo una notifica silenziosa dice che è bloccato, e
+  toccarla apre Erevos. Solo su Android.
 
   **Perché:** dopo un riavvio Erevos non poteva dirti che dei messaggi aspettano finché non ti capitava di aprirlo.
   Senza la tua password non può comunque leggerli, quindi non dice più di quanto dice uno spazio chiuso.
@@ -2008,7 +2009,9 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
 
 Erevos avvisa una volta prima di ciascuno di questi casi, con il titolo **Il tuo indirizzo internet può essere
 visto**, un pulsante **Guida** che apre questa sezione e, dove può, un pulsante che lo risolve, come **Tramite Tor per
-questa chat**. **Vai avanti** prosegue; per una chat viene detto una volta e non di nuovo per quella chat.
+questa chat**. **Vai avanti** prosegue. Per ciò che invii, viene detto una volta per tutta la rete, non in ogni chat:
+dopo, una chat o un gruppo che va senza Tor mostra solo una riga discreta sopra dove scrivi, **Senza Tor: i relay
+vedono il tuo indirizzo internet.**, con **Tramite Tor per questa chat** e **Guida** accanto.
 
 Dopo la guida torna la stessa domanda, e quello che stavi inviando, come un messaggio vocale o un file, la aspetta.
 Una chiamata che squilla qui lo dice sotto la chiamata, e rispondere va avanti. Le chat nascoste tengono ciò che è

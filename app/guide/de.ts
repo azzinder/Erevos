@@ -1584,7 +1584,8 @@ Versteckte Chats und Computer haben das nicht.
   anderer Bereich offen ist** schon „New message“ oder wie viele kamen, nie welcher Bereich, auch nicht von wem oder
   was, und eine stille Benachrichtigung sagt „Locked“. Anrufe klingeln nicht, und nichts anderes kommt, bis du einen
   Bereich öffnest; Bereiche, die über Tor gehen, sagen bis dahin nichts. Gibt es keinen solchen Bereich, oder mit
-  **Keine Benachrichtigung**, hält es sofort an. Nur auf Android.
+  **Keine Benachrichtigung**, sagt nur eine stille Benachrichtigung,
+  dass es gesperrt ist, und ein Tippen darauf öffnet Erevos. Nur auf Android.
 
   **Warum:** Nach einem Neustart konnte Erevos dir nicht sagen, dass Nachrichten warten, bis du es zufällig öffnetest.
   Ohne dein Passwort kann es sie trotzdem nicht lesen, also sagt es nicht mehr, als ein geschlossener Bereich sagt.
@@ -2123,7 +2124,9 @@ Tor.
 
 Erevos warnt vor jedem davon einmal, mit dem Titel **Deine Internetadresse kann gesehen werden**, einem Knopf
 **Anleitung**, der diesen Abschnitt öffnet, und, wo es geht, einem Knopf, der es behebt, etwa **Über Tor für diesen
-Chat**. Mit **Weiter** geht es weiter; für einen Chat wird es einmal gesagt und für diesen Chat nicht wieder.
+Chat**. Mit **Weiter** geht es weiter. Für das, was du sendest, wird es einmal für das ganze Netz gesagt, nicht in
+jedem Chat: danach zeigt ein Chat oder eine Gruppe ohne Tor nur eine leise Zeile über dem Schreibfeld, **Ohne Tor: Die
+Relays sehen deine Internetadresse.**, mit **Über Tor für diesen Chat** und **Anleitung** daneben.
 
 Nach der Anleitung kommt dieselbe Frage wieder, und was du gerade sendest, etwa eine Sprachnachricht oder eine Datei,
 wartet darauf. Ein Anruf, der hier klingelt, sagt es unter dem Anruf, und Annehmen geht weiter. Versteckte Chats

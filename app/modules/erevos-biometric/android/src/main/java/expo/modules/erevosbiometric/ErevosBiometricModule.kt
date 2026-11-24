@@ -5,11 +5,13 @@
 package expo.modules.erevosbiometric
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
 import android.os.CancellationSignal
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
@@ -18,6 +20,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -44,24 +47,28 @@ class ErevosBiometricModule : Module() {
       }
     }
 
-    // "none" with no key, "invalidated" once Android has dropped it, else "valid". Starting a
-    // cipher needs no fingerprint, and tells whether the key still works.
+    // "none" with no key, "invalidated" once Android has dropped it, "valid" while it works, and
+    // "unknown" when that cannot be told now: while the phone itself is locked (an Erevos call
+    // shows over the lock screen, and the key works only on an unlocked phone), or when the
+    // Keystore did not answer. Only "none" and "invalidated" turn unlocking off (lock/biometric.ts).
+    // Starting a cipher needs no fingerprint, and tells whether the key still works.
     Function("keyState") {
-      val key = try {
-        storedKey()
-      } catch (e: GeneralSecurityException) {
-        null
-      }
-      if (key == null) {
-        "none"
-      } else {
-        try {
-          Cipher.getInstance(TRANSFORMATION).init(Cipher.ENCRYPT_MODE, key)
-          "valid"
-        } catch (e: GeneralSecurityException) {
-          // KeyPermanentlyInvalidatedException, or a key that no longer works at all.
-          "invalidated"
+      val context = appContext.reactContext
+      val locked = context?.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
+      try {
+        val key = storedKey()
+        when {
+          key == null -> "none"
+          locked -> "unknown"
+          else -> {
+            Cipher.getInstance(TRANSFORMATION).init(Cipher.ENCRYPT_MODE, key)
+            "valid"
+          }
         }
+      } catch (e: KeyPermanentlyInvalidatedException) {
+        "invalidated"
+      } catch (e: GeneralSecurityException) {
+        "unknown"
       }
     }
 
@@ -81,8 +88,9 @@ class ErevosBiometricModule : Module() {
     }
 
     // Asks for a fingerprint or face and opens what `seal` gave: resolves with the data, base64.
-    // Rejects with "invalidated" when the key is gone or no longer opens it, "cancelled" when the
-    // prompt was closed, and "failed" with Android's own words otherwise.
+    // Rejects with "invalidated" when the key is gone, Android dropped it, or it does not open what
+    // was sealed, "cancelled" when the prompt was closed, and "failed" with Android's own words
+    // otherwise (the phone itself locked, the Keystore busy): only "invalidated" turns it off.
     AsyncFunction("open") { iv: String, data: String, title: String, cancel: String, promise: Promise ->
       val cipher = try {
         val key = storedKey()
@@ -93,8 +101,12 @@ class ErevosBiometricModule : Module() {
         Cipher.getInstance(TRANSFORMATION).apply {
           init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, Base64.decode(iv, Base64.NO_WRAP)))
         }
-      } catch (e: Exception) {
+      } catch (e: KeyPermanentlyInvalidatedException) {
         promise.reject("invalidated", e.message, e)
+        return@AsyncFunction
+      } catch (e: Exception) {
+        // The phone is locked, or the Keystore did not answer: not a reason to turn it off.
+        promise.reject("failed", e.message, e)
         return@AsyncFunction
       }
       authenticate(cipher, title, cancel, promise) { done -> encode(done.doFinal(Base64.decode(data, Base64.NO_WRAP))) }
@@ -140,8 +152,10 @@ class ErevosBiometricModule : Module() {
             val done = result.cryptoObject?.cipher ?: cipher
             try {
               promise.resolve(use(done))
-            } catch (e: GeneralSecurityException) {
+            } catch (e: AEADBadTagException) {
               // The data was not sealed by this key.
+              promise.reject("invalidated", e.message, e)
+            } catch (e: KeyPermanentlyInvalidatedException) {
               promise.reject("invalidated", e.message, e)
             } catch (e: Exception) {
               promise.reject("failed", e.message, e)

@@ -1364,7 +1364,8 @@ call goes over the phone company's network and is not encrypted{~, as a plain SM
   without its password, as Erevos keeps no key on the phone. Then the spaces set to **Also while another space is open**
   already say "New message", or how many came, never which space, nor who or what, and a quiet notice says "Locked".
   Calls do not ring, and nothing else comes, until you open a space; spaces that go through Tor say nothing until then.
-  With no such space, or with **No notice**, it stops at once. Android only.
+  With no such space, or with **No notice**, only a quiet notice says it is locked, and a tap
+  on it opens Erevos. Android only.
 
   **Why:** after a restart Erevos could not tell you that messages wait until you happened to open it. Without your
   password it still cannot read them, so it says no more than a closed space does.
@@ -1843,7 +1844,9 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
 
 Erevos warns once before each of these, with the title **Your internet address can be seen**, a **Guide** button that
 opens this section and, where it can, a button that fixes it, such as **Through Tor for this chat**. **Go on** goes
-on; for a chat it is said once, and not again for that chat.
+on. For what you send, it is said once for the whole network, not in each chat: after that, a chat or group that goes
+without Tor shows only a quiet line above where you write, **Without Tor: the relays see your internet address.**,
+with **Through Tor for this chat** and **Guide** beside it.
 
 After the guide, the same question comes back, and what you were sending, such as a voice message or a file, waits
 for it. A call that rings here says it under the call, and answering goes on. Hidden chats keep what was said with

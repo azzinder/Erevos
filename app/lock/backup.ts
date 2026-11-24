@@ -185,7 +185,7 @@ const HEARD = [...Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.watch.${
 // The phone's own settings, the same in every space, that go with its owner to another phone: the
 // language (lib/i18n.ts), the modules on (lib/modules.ts), vibrate on touch (lib/haptics.ts), the
 // number on the icon (lib/icon-number.ts), ringing and the messages' notice in the background
-// (lib/background.ts), the battery mode (lib/battery-mode.ts), keeping the screen private
+// and starting as the phone turns on (lib/background.ts), the battery mode (lib/battery-mode.ts), keeping the screen private
 // (lib/screen-privacy.ts), the photos' quality (lib/photo-quality.ts), carrying for phones nearby,
 // the same Wi-Fi, Wi-Fi Direct and Wi-Fi Aware (lib/nearby-links.ts), the LoRa radio, which is the
 // owner's and not the phone's (lib/radio.ts), whether the Phone opens without the password
@@ -198,6 +198,7 @@ const SETTINGS = [
   'erevos.icon-number',
   'erevos.ring-background',
   'erevos.message-notices',
+  'erevos.boot-start',
   'erevos.battery',
   'erevos.screen-private',
   'erevos.photo-quality',

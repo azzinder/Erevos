@@ -201,7 +201,7 @@ import {
 import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, lookNow, openNearby, shownPace, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrOwnTor, nostrReady, readNostr } from '../lib/nostr';
 import { netThroughTor } from '../lib/net-http';
-import { callIpWarning, ipGate } from '../components/ip-warning';
+import { callIpWarning, ipGate, IpQuiet } from '../components/ip-warning';
 import type { IpKeep } from '../lib/ip-warning';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
@@ -8286,6 +8286,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             />
             <TextButton title={t('Not now')} onPress={() => setConnecting(null)} />
           </Row>
+        ) : null}
+        {selectedContact && !isTorChat(selectedContact) && !throughTor() ? (
+          <IpQuiet fix={canTor() ? { label: t('Through Tor for this chat'), run: () => changeTor(selectedContact, true) } : undefined} />
         ) : null}
         {selectedContact ? (
           <View style={styles.dock}>

@@ -1427,7 +1427,8 @@ Skriveni razgovori i računari to nemaju.
   otvoriti bez svoje lozinke, jer Erevos ne čuva nijedan ključ na telefonu. Tada prostori s **I dok je otvoren drugi
   prostor** već kažu „New message“, ili koliko ih je stiglo, nikad koji prostor, ni od koga ni što, a tiha obavijest
   kaže „Locked“. Pozivi ne zvone, i ništa drugo ne stiže, dok ne otvorite neki prostor; prostori koji idu preko Tora
-  do tada ne kažu ništa. Ako takvog prostora nema, ili s **Bez obavijesti**, odmah se zaustavlja. Samo na Androidu.
+  do tada ne kažu ništa. Ako takvog prostora nema, ili s **Bez obavijesti**, samo tiha obavijest kaže da je
+  zaključano, a dodir na nju otvara Erevos. Samo na Androidu.
 
   **Zašto:** nakon ponovnog pokretanja Erevos vam nije mogao reći da poruke čekaju dok ga slučajno ne otvorite. Bez
   vaše lozinke ih i dalje ne može pročitati, pa ne kaže ništa više od onoga što kaže zatvoren prostor.
@@ -1919,7 +1920,9 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
 
 Erevos upozorava jednom prije svakog od ovih slučajeva, s naslovom **Vaša IP adresa može biti vidljiva**, dugmetom
 **Vodič** koje otvara ovaj odjeljak i, gdje može, dugmetom koje to popravlja, poput **Preko Tora za ovaj razgovor**.
-**Nastavi** ide dalje; za razgovor se kaže jednom i ne ponavlja se za taj razgovor.
+**Nastavi** ide dalje. Za ono što šaljete, kaže se jednom za cijelu mrežu, ne u svakom razgovoru: poslije toga
+razgovor ili grupa bez Tora pokazuje samo diskretan red iznad mjesta gdje pišete, **Bez Tora: relayi vide tvoju
+internet adresu.**, s **Preko Tora za ovaj razgovor** i **Vodič** pored njega.
 
 Nakon vodiča isto pitanje se vraća, a ono što ste slali, poput glasovne poruke ili datoteke, čeka na njega. Poziv
 koji ovdje zvoni to kaže ispod poziva, a javljanje ide dalje. Skriveni razgovori čuvaju ono što je rečeno kod sebe,

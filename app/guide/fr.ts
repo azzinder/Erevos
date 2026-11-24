@@ -1566,7 +1566,8 @@ chiffré{~, pas plus qu’un SMS ordinaire}. Les discussions masquées et les or
   téléphone. Alors les espaces réglés sur **Aussi quand un autre espace est ouvert** disent déjà « New message », ou
   combien sont arrivés, jamais quel espace, ni qui ou quoi, et une notification discrète dit « Locked ». Les appels ne
   sonnent pas, et rien d’autre n’arrive, tant que tu n’ouvres pas un espace ; les espaces qui passent par Tor ne
-  disent rien jusque-là. S’il n’y a aucun espace de ce genre, ou avec **Pas de notification**, il s’arrête aussitôt.
+  disent rien jusque-là. S’il n’y a aucun espace de ce genre, ou avec **Pas de notification**,
+  seule une notification discrète dit qu’il est verrouillé, et un appui dessus ouvre Erevos.
   Android seulement.
 
   **Pourquoi :** après un redémarrage, Erevos ne pouvait pas te dire que des messages attendent avant que tu ne
@@ -2101,8 +2102,10 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
 
 Erevos prévient une fois avant chacun de ces cas, avec le titre **Ton adresse internet peut être vue**, un bouton
 **Guide** qui ouvre cette section et, quand c’est possible, un bouton qui y remédie, comme **Par Tor pour cette
-discussion**. **Continuer** poursuit ; pour une discussion, c’est dit une fois, et pas de nouveau pour cette
-discussion.
+discussion**. **Continuer** poursuit. Pour ce que tu envoies, c’est dit une fois pour tout le réseau, pas dans chaque
+discussion : ensuite, une discussion ou un groupe qui passe sans Tor montre seulement une ligne discrète au-dessus de
+là où tu écris, **Sans Tor : les relais voient ton adresse internet.**, avec **Par Tor pour cette discussion** et
+**Guide** à côté.
 
 Après le guide, la même question revient, et ce que tu envoyais, comme un message vocal ou un fichier, l’attend. Un
 appel qui sonne ici le dit sous l’appel, et répondre continue. Les discussions masquées gardent ce qui a été dit avec

@@ -119,6 +119,7 @@ import { canFindLeftovers } from "../lib/leftovers";
 import { LeftoversCard } from "../components/leftovers";
 import { device as phoneDevice } from "../modules/erevos-device";
 import { tellBackupMade } from "../lib/backup-notice";
+import { setBackupMadeNote, setBackupMaking, useBackupMaking } from "../lib/backup-making";
 
 // Backups of everything Erevos keeps on the phone or computer (lock/backup.ts): made by hand into a folder the
 // owner picks, made by themselves every 6 hours, day or week (lib/backup-folder.ts), and put back. Every
@@ -209,9 +210,11 @@ export default function Backups() {
   const [failed, setFailed] = useState(false);
   // A backup made by hand into a folder, as it goes: what it does now, and how far (0–100) when
   // that is known; and whether the note is about it, said in its own card.
-  const [making, setMaking] = useState<{ step: string; percent: number | null } | null>(null);
-  const [noteAtMake, setNoteAtMake] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // A backup into a folder, made here: kept outside the screen (lib/backup-making.ts), so coming
+  // back to it while one is made shows how far it is, and then how it ended.
+  const { making, note: madeNote } = useBackupMaking();
+  const [busyHere, setBusy] = useState(false);
+  const busy = busyHere || making !== null;
   const [space, setSpace] = useState<SpaceRow[] | null>(null);
   const [measuring, setMeasuring] = useState(false);
   // A folder or file picker is open: a second tap opens no second one.
@@ -273,9 +276,14 @@ export default function Backups() {
   }
 
   function say(text: string, bad = false, atMake = false) {
+    if (atMake) {
+      setBackupMadeNote(text ? { text, bad } : null);
+      setNote("");
+      return;
+    }
+    setBackupMadeNote(null);
     setNote(text);
     setFailed(bad);
-    setNoteAtMake(atMake);
   }
 
   async function chooseFolder(): Promise<string | null> {
@@ -631,7 +639,7 @@ export default function Backups() {
       if (percent === shownPercent.current) return;
       shownPercent.current = percent;
       if (making && inCard) {
-        setMaking({
+        setBackupMaking({
           step: t("Encrypting photos, files and voice messages…"),
           percent,
         });
@@ -766,7 +774,7 @@ export default function Backups() {
       setBusy(true);
       say("", false, true);
       try {
-        setMaking({
+        setBackupMaking({
           step: t("Gathering chats, contacts, SMS, calls and settings…"),
           percent: null,
         });
@@ -774,7 +782,7 @@ export default function Backups() {
         const phoneCalls = await phoneCallsForBackup();
         const native = await phoneSettingsForBackup();
         const skip = await openCollectionSkips();
-        setMaking({ step: t("Encrypting and saving…"), percent: null });
+        setBackupMaking({ step: t("Encrypting and saving…"), percent: null });
         const { name, size, parts, where } = await writeBackup(
           asking.folder,
           (part) =>
@@ -807,7 +815,7 @@ export default function Backups() {
       } catch (error) {
         say(errorText(error), true, true);
       } finally {
-        setMaking(null);
+        setBackupMaking(null);
         setBusy(false);
       }
     } else if (asking.kind === "cloud") {
@@ -1067,12 +1075,12 @@ export default function Backups() {
             </Text>
           </View>
         ) : null}
-        {noteAtMake && note && !making ? (
+        {madeNote && !making ? (
           <Text
             variant="label"
-            color={failed ? colors.danger : colors.success}
+            color={madeNote.bad ? colors.danger : colors.success}
           >
-            {note}
+            {madeNote.text}
           </Text>
         ) : null}
       </Card>
@@ -1608,7 +1616,7 @@ export default function Backups() {
         </Row>
       </Card>
 
-      {note && !noteAtMake ? (
+      {note ? (
         <Text variant="label" color={failed ? colors.danger : colors.success}>
           {note}
         </Text>

@@ -1470,7 +1470,7 @@ SMS comum não é}. As conversas ocultas e os computadores não têm isso.
   espaços com **Também enquanto outro espaço está aberto** já dizem "New message", ou quantas chegaram, nunca qual
   espaço, nem quem ou o quê, e um aviso discreto diz "Locked". As chamadas não tocam, e nada mais chega, até você
   abrir um espaço; os espaços que passam pelo Tor não dizem nada até lá. Sem nenhum espaço assim, ou com **Sem
-  aviso**, ele para na hora. Só no Android.
+  aviso**, só um aviso discreto diz que está bloqueado, e um toque nele abre o Erevos. Só no Android.
 
   **Por quê:** depois de um reinício o Erevos não podia avisar que há mensagens esperando até você por acaso abri-lo.
   Sem a sua senha ele continua sem poder lê-las, então não diz mais do que um espaço fechado diz.
@@ -1978,7 +1978,9 @@ usa. Não mostra o que você escreve. Quem se conecta ao seu celular o vê, a me
 
 O Erevos avisa uma vez antes de cada um desses casos, com o título **Seu endereço de internet pode ser visto**, um
 botão **Guia** que abre esta seção e, onde pode, um botão que resolve, como **Pelo Tor para esta conversa**.
-**Prosseguir** segue em frente; para uma conversa isso é dito uma vez e não de novo para essa conversa.
+**Prosseguir** segue em frente. Para o que você envia, isso é dito uma vez para toda a rede, não em cada conversa:
+depois, uma conversa ou grupo que vai sem Tor mostra só uma linha discreta acima de onde você escreve, **Sem Tor: os
+relays veem o teu endereço de internet.**, com **Pelo Tor para esta conversa** e **Guia** ao lado.
 
 Depois do guia, a mesma pergunta volta, e o que você estava enviando, como uma mensagem de voz ou um arquivo, espera
 por ela. Uma chamada que toca aqui diz isso embaixo da chamada, e atender segue em frente. As conversas ocultas

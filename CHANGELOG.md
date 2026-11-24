@@ -19,6 +19,25 @@ On main, not released yet:
   password and the Collection's (`modules/erevos-collection` `CameraOpenActivity`, `erevos://collection?camera=1`,
   `app/collection.tsx`). Neither shows while the Collection is off or the calculator stands in place of Erevos
   (`modules/erevos-icons` `applyCamera`, `applyShortcut`; `lib/module-icons.ts`). Requested by the maintainer.
+- The warning that your internet address can be seen before you send without Tor now comes once for the whole
+  network, not in every chat. After that a chat or group that goes without Tor shows only a quiet line above where
+  you write, **Without Tor: the relays see your internet address.**, with **Through Tor for this chat** and
+  **Guide** (`lib/ip-warning.ts` `ipKey`, `components/ip-warning.tsx` `IpQuiet`). Requested by the maintainer.
+- **Make a backup** shows how far it is again when you leave the backups screen, or Erevos, and come back, and then
+  how it ended (`lib/backup-making.ts`, `app/backup.tsx`).
+- **Start when the phone turns on**: with no space set to tell of messages while closed, Erevos no longer stops
+  without a word: the quiet **Locked** notice stays, and a tap on it opens Erevos for the password. While it waits
+  for those spaces, its notice now shows in the status bar too (a channel of its own, **Waiting since the phone
+  turned on**). The choice is now
+  kept with the phone's other settings, so a backup restored, or a move to another edition, keeps it
+  (`lib/background.ts` `syncBootStart`, `lock/backup.ts`).
+
+### Under the hood
+- Unlocking with a fingerprint or face no longer turns itself off by mistake. It turned off whenever Erevos checked
+  its key while the phone itself was locked (an Erevos call showing over the lock screen, say), or when Android's
+  Keystore did not answer at once: both were taken for a key Android had dropped. Now only a key Android really
+  dropped (`KeyPermanentlyInvalidatedException`), or one that does not open what it sealed, turns it off
+  (`modules/erevos-biometric`, `lock/biometric.ts`).
 
 ## 3.2.0-rc.1 (2026-11-23)
 

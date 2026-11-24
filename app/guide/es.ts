@@ -1481,7 +1481,8 @@ que un SMS normal}. Los chats ocultos y los ordenadores no la tienen.
   teléfono. Entonces los espacios con **También mientras otro espacio está abierto** ya dicen «New message», o cuántos
   llegaron, nunca qué espacio, ni quién o qué, y un aviso discreto dice «Locked». Las llamadas no suenan, y nada más
   llega, hasta que abras un espacio; los espacios que van por Tor no dicen nada hasta entonces. Si no hay ningún
-  espacio así, o con **Sin aviso**, se detiene enseguida. Solo en Android.
+  espacio así, o con **Sin aviso**, solo un aviso discreto dice que está bloqueado, y al tocarlo se abre
+  Erevos. Solo en Android.
 
   **Por qué:** tras un reinicio, Erevos no podía decirte que había mensajes esperando hasta que por casualidad lo
   abrías. Sin tu contraseña sigue sin poder leerlos, así que no dice más de lo que dice un espacio cerrado.
@@ -1994,7 +1995,9 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
 
 Erevos avisa una vez antes de cada uno de ellos, con el título **Tu dirección de internet puede verse**, un botón
 **Guía** que abre esta sección y, donde puede, un botón que lo arregla, como **Por Tor para este chat**. **Seguir**
-continúa; para un chat se dice una vez y no se repite para ese chat.
+continúa. Para lo que envías, se dice una vez para toda la red, no en cada chat: después, un chat o grupo que va sin
+Tor muestra solo una línea discreta encima de donde escribes, **Sin Tor: los relays ven tu dirección de internet.**,
+con **Por Tor para este chat** y **Guía** al lado.
 
 Después de la guía vuelve la misma pregunta, y lo que estabas enviando, como un mensaje de voz o un archivo, la
 espera. Una llamada que suena aquí lo dice debajo de la llamada, y contestar sigue adelante. Los chats ocultos guardan

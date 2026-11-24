@@ -42,10 +42,13 @@ class FakePhone implements BiometricSealer {
   key: Uint8Array | null = null;
   dropped = false;
   closePrompt = false;
+  // The phone itself locked, as when an Erevos call shows over its lock screen: the key cannot be
+  // used then, and Android says so in its own words, not as a dropped key.
+  phoneLocked = false;
   // Everything ever given to seal, to see what was sealed.
   sealed: string[] = [];
   available = () => true;
-  keyState = (): KeyState => (this.key ? (this.dropped ? 'invalidated' : 'valid') : 'none');
+  keyState = (): KeyState => (this.key ? (this.dropped ? 'invalidated' : this.phoneLocked ? 'unknown' : 'valid') : 'none');
   async seal(data: string) {
     this.key = randomBytes(32);
     this.dropped = false;
@@ -55,6 +58,7 @@ class FakePhone implements BiometricSealer {
   }
   async open({ data }: { iv: string; data: string }) {
     if (!this.key || this.dropped) throw new BiometricError('invalidated');
+    if (this.phoneLocked) throw new BiometricError('failed', 'Unlock the phone');
     if (this.closePrompt) throw new BiometricError('cancelled');
     try {
       return decryptText(this.key, data);
@@ -149,6 +153,20 @@ test('when Android drops its key, as fingerprints change, it is off, the same as
   phone.dropped = true;
   assert.equal(await biometricOn(phone), false);
   assert.equal(store.get(ENTRY), undefined);
+});
+
+test('while the phone itself is locked, it stays on, and works again once the phone is unlocked', async () => {
+  await locked();
+  const phone = new FakePhone();
+  await turnOnBiometric(phone, 0, 'real-1111', PROMPT);
+  phone.phoneLocked = true;
+  assert.equal(await biometricOn(phone), true);
+  await assert.rejects(unlockWithBiometric(phone, PROMPT), (e) => e instanceof BiometricError && e.reason === 'failed');
+  assert.notEqual(store.get(ENTRY), undefined);
+  assert.notEqual(phone.key, null);
+  phone.phoneLocked = false;
+  assert.equal(await biometricOn(phone), true);
+  assert.deepEqual(opened(await unlockWithBiometric(phone, PROMPT)), { space: 0, key: toHex(real) });
 });
 
 test('closing the prompt changes nothing when unlocking, and leaves it off when turning on', async () => {

@@ -35,8 +35,13 @@ export const biometricSealer: BiometricSealer = {
     }
   },
   keyState: () => {
-    const state = native?.keyState();
-    return state === 'valid' || state === 'invalidated' ? (state as KeyState) : 'none';
+    let state: string | undefined;
+    try {
+      state = native?.keyState();
+    } catch {
+      return 'unknown';
+    }
+    return state === 'valid' || state === 'invalidated' || state === 'unknown' ? (state as KeyState) : 'none';
   },
   async seal(data, { title, cancel }) {
     if (!native) throw new BiometricError('failed', 'Not on this phone');
