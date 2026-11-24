@@ -4,6 +4,8 @@
 
 // The Italian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/it/index.ts).
 export const whatsNew: Record<string, string> = {
+  "**QR codes and invites with SMS invites off**: a contact QR code or an invite link you take yourself now works also with the invites by SMS turned off under **Find Erevos on a number**; until now nothing happened then.":
+    "**Codici QR e inviti con gli inviti via SMS disattivati**: un codice QR di contatto o un link d’invito che accetti tu stesso ora funziona anche con gli inviti via SMS disattivati in **Scopri Erevos dietro un numero**; finora non succedeva nulla.",
   "**Release candidate 2**: Erevos Lite with what Erevos 3.0.0-rc.2 brought to its chats: New chat that asks where the other person is, and the fixes with it.":
     "**Release candidate 2**: Erevos Lite con ciò che Erevos 3.0.0-rc.2 ha portato alle sue chat: Nuova chat, che chiede dov’è l’altra persona, e le correzioni che la accompagnano.",
   "**New chat asks where the other person is**: **Near me** makes two phones side by side each other's contacts with nothing typed, once both show the same six pictures; **Far away** sends an invite with any app; **I have their code** takes 8 digits, a link or a QR code. See [Chat through a relay](#relay).":

@@ -73,6 +73,10 @@ The second release candidate of Erevos Lite: Erevos 3.0.0-rc.2 for Erevos's own 
   on the Phone opened without the password calls them. One space at a time; the space knows its copy by a random
   `feed` kept sealed in its own data, so the copy does not say which space it is. Never in a backup. Requested by
   the maintainer (#37).
+- A contact QR code or an invite link you take yourself is answered also with the invites by SMS turned off (**Turn
+  invites off**, under **Find Erevos on a number**). Turned off, the phone answered no invite at all, so the other
+  phone never heard back and nothing happened; now only what came by SMS waits for the switch (`lib/sms-relay.ts`
+  `invitesDue`, #35). Requested by the maintainer.
 
 ### Under the hood
 
