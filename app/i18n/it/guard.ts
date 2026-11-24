@@ -41,4 +41,10 @@ export const guard: Record<string, string> = {
     "Fatto. Entro pochi secondi l’icona di Erevos lascia le app del telefono e la calcolatrice prende il suo posto: da ora apri Erevos da lì.",
   "Erevos's icon is back among the phone's apps.": "L’icona di Erevos è di nuovo tra le app del telefono.",
   "Hide Erevos's icon behind a calculator that works": "Nascondi l’icona di Erevos dietro una calcolatrice che funziona",
+  "Erevos's camera at a tap, behind Erevos's password and the Collection's, as from the Collection. Holding Erevos's icon down also offers Camera. Neither shows while the Collection is off or the calculator stands in place of Erevos.":
+    "La fotocamera di Erevos con un tocco, dietro la password di Erevos e quella della Raccolta, come dalla Raccolta. Tenendo premuta l’icona di Erevos compare anche Fotocamera. Nessuno dei due si vede finché la Raccolta è spenta o la calcolatrice sta al posto di Erevos.",
+  "Put the Camera among the phone's apps":
+    "Metti la Fotocamera tra le app del telefono",
+  "Take the Camera off the phone's apps":
+    "Togli la Fotocamera dalle app del telefono",
 };

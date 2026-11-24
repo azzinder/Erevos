@@ -4188,6 +4188,12 @@ Text immer gut lesbar ist, auch auf Glas.
   oder dunkel. Jedes Tippen öffnet, was sein Symbol nennt, auch wenn Erevos gerade ein anderes davon zeigte. Die Farbe
   gehört dem Telefon, nicht jedem Bereich, da die Symbole erscheinen, bevor Erevos entsperrt ist. Nach einer Änderung
   nehmen manche Launcher das Symbol vom Startbildschirm: Füge es aus der App-Liste wieder hinzu.
+- [~] **Kamera** (Android, unter **Startbildschirm-Symbole**): die Kamera von Erevos mit einem Tippen. **Kamera unter die
+  Apps des Telefons legen** fügt ein eigenes Symbol hinzu (zuerst orange, in jeder Farbe), und hältst du das Symbol von
+  Erevos gedrückt, bietet es auch **Kamera** an, das sich auch auf den Startbildschirm ziehen lässt. Beides öffnet die
+  Kamera der Sammlung, hinter dem Passwort von Erevos und dem der Sammlung, und was sie aufnimmt, kommt direkt in die
+  Sammlung. Beides zeigt sich nicht, solange die Sammlung in **Module** aus ist oder der Rechner an der Stelle von Erevos
+  steht.
 - **Punkte und Zahlen auf den Symbolen** (Android): Android gibt den Punkt oder die Zahl einer Meldung der App, nicht
   einem ihrer Symbole. Auf den meisten Launchern, etwa denen von Pixel und GrapheneOS, dem von Samsung, dem von Xiaomi
   und Kvaesitso, zeigt sich daher jede Meldung von Erevos (eine Nachricht, {~eine SMS, |}ein Anruf, ein Geburtstag) gleich

@@ -3954,6 +3954,11 @@ para que el texto siempre se lea bien, también sobre cristal.
   abre lo que nombra su icono, también cuando Erevos mostraba otro de ellos. El color es del teléfono, no de cada
   espacio, ya que los iconos se ven antes de desbloquear Erevos. Después de un cambio, algunos lanzadores quitan el icono
   de la pantalla de inicio: vuelve a añadirlo desde la lista de apps.
+- [~] **Cámara** (Android, en **Iconos del lanzador**): la cámara de Erevos con un toque. **Poner la Cámara entre las apps
+  del teléfono** añade un icono propio (naranja al principio, en cualquier color), y si mantienes pulsado el icono de
+  Erevos también ofrece **Cámara**, que puedes arrastrar a la pantalla de inicio. Ambos abren la cámara de la Colección,
+  tras la contraseña de Erevos y la de la Colección, y lo que toma va directo a la Colección. Ninguno se muestra
+  mientras la Colección está desactivada en **Módulos** o la calculadora ocupa el lugar de Erevos.
 - **Puntos y números en los iconos** (Android): Android da el punto o el número de un aviso a la app, no a uno de sus
   iconos, así que en la mayoría de los lanzadores, como los de los Pixel y GrapheneOS, el de Samsung, el de Xiaomi y
   Kvaesitso, cada aviso de Erevos (un mensaje, {~un SMS, |}una llamada, un cumpleaños) aparece igual en los iconos Erevos{~,

@@ -41,4 +41,10 @@ export const guard: Record<string, string> = {
     "Gotovo. Za nekoliko sekundi ikona Erevosa nestaje s aplikacija telefona, a kalkulator preuzima njeno mjesto: odsad otvarajte Erevos iz njega.",
   "Erevos's icon is back among the phone's apps.": "Ikona Erevosa je ponovo među aplikacijama telefona.",
   "Hide Erevos's icon behind a calculator that works": "Sakrij ikonu Erevosa iza kalkulatora koji radi",
+  "Erevos's camera at a tap, behind Erevos's password and the Collection's, as from the Collection. Holding Erevos's icon down also offers Camera. Neither shows while the Collection is off or the calculator stands in place of Erevos.":
+    "Kamera Erevosa jednim dodirom, iza lozinke Erevosa i Zbirke, kao iz Zbirke. Kad držite ikonu Erevosa, nudi i Kameru. Nijedno se ne vidi dok je Zbirka isključena ili dok kalkulator stoji umjesto Erevosa.",
+  "Put the Camera among the phone's apps":
+    "Stavi Kameru među aplikacije telefona",
+  "Take the Camera off the phone's apps":
+    "Skloni Kameru iz aplikacija telefona",
 };

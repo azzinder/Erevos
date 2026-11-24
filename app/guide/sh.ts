@@ -3795,6 +3795,11 @@ tekst uvijek bio dobro čitljiv, i na staklu.
   otvara ono što njegova ikona navodi, i kad je Erevos prikazivao neku drugu od njih. Boja pripada telefonu, a ne
   svakom prostoru, jer se ikone prikazuju prije nego što se Erevos otključa. Nakon promjene neki pokretači uklanjaju
   ikonu s početnog ekrana: ponovo je dodajte s popisa aplikacija.
+- [~] **Kamera** (Android, pod **Ikone u pokretaču**): kamera Erevosa jednim dodirom. **Stavi Kameru među aplikacije
+  telefona** dodaje posebnu ikonu (narandžastu na početku, u bilo kojoj boji), a kad držite ikonu Erevosa, nudi i
+  **Kameru**, koju možete prevući i na početni ekran. Oboje otvara kameru Zbirke, iza lozinke Erevosa i Zbirke, a ono
+  što snimi ide pravo u Zbirku. Nijedno se ne vidi dok je Zbirka isključena u **Moduli** ili dok kalkulator stoji
+  umjesto Erevosa.
 - **Tačke i brojevi na ikonama** (Android): Android daje tačku ili broj obavijesti aplikaciji, a ne jednoj od njenih
   ikona, pa na većini pokretača, poput onih na Pixelu i GrapheneOS-u, Samsungovog, Xiaomijevog i Kvaesitsa, svaka
   obavijest Erevosa (poruka, {~SMS, |}poziv, rođendan) izgleda jednako na ikonama Erevos{~, Telefon, SMS i| i} Kontakti; tu

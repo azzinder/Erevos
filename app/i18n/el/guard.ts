@@ -41,4 +41,10 @@ export const guard: Record<string, string> = {
     "Έγινε. Σε λίγα δευτερόλεπτα το εικονίδιο του Erevos φεύγει από τις εφαρμογές του κινητού και τη θέση του παίρνει η αριθμομηχανή: από εδώ και πέρα άνοιγε το Erevos από αυτήν.",
   "Erevos's icon is back among the phone's apps.": "Το εικονίδιο του Erevos γύρισε στις εφαρμογές του κινητού.",
   "Hide Erevos's icon behind a calculator that works": "Κρύψε το εικονίδιο του Erevos πίσω από μια αριθμομηχανή που δουλεύει",
+  "Erevos's camera at a tap, behind Erevos's password and the Collection's, as from the Collection. Holding Erevos's icon down also offers Camera. Neither shows while the Collection is off or the calculator stands in place of Erevos.":
+    "Η κάμερα του Erevos με ένα πάτημα, πίσω από τον κωδικό του Erevos και της Συλλογής, όπως και από τη Συλλογή. Κρατώντας πατημένο το εικονίδιο του Erevos εμφανίζεται επίσης η Κάμερα. Κανένα από τα δύο δεν φαίνεται όσο η Συλλογή είναι κλειστή ή η αριθμομηχανή στέκεται στη θέση του Erevos.",
+  "Put the Camera among the phone's apps":
+    "Βάλε την Κάμερα στις εφαρμογές του κινητού",
+  "Take the Camera off the phone's apps":
+    "Βγάλε την Κάμερα από τις εφαρμογές του κινητού",
 };

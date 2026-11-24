@@ -4177,6 +4177,12 @@ pour que le texte se lise toujours bien, sur le verre aussi.
   La couleur est celle du téléphone, pas de chaque espace, car les icônes s’affichent avant qu’Erevos soit déverrouillé.
   Après un changement, certains lanceurs retirent l’icône de l’écran d’accueil : ajoute-la de nouveau depuis la liste
   des applis.
+- [~] **Appareil photo** (Android, sous **Icônes du lanceur**) : l’appareil photo d’Erevos d’un geste. **Mettre
+  l’Appareil photo parmi les applications du téléphone** ajoute une icône à part (orange d’abord, de la couleur voulue),
+  et un appui long sur l’icône d’Erevos propose aussi **Appareil photo**, qu’on peut glisser sur l’écran d’accueil. Les
+  deux ouvrent l’appareil photo de la Collection, derrière le mot de passe d’Erevos et celui de la Collection, et ce
+  qu’il prend va droit dans la Collection. Aucun des deux ne s’affiche tant que la Collection est désactivée dans
+  **Modules** ou que la calculatrice tient la place d’Erevos.
 - **Points et nombres sur les icônes** (Android) : Android donne le point ou le nombre d’une notification à l’appli,
   pas à l’une de ses icônes ; sur la plupart des lanceurs, comme ceux des Pixel et de GrapheneOS, celui de Samsung,
   celui de Xiaomi et Kvaesitso, chaque notification d’Erevos (un message, {~un SMS, |}un appel, un anniversaire) s’affiche

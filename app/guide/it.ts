@@ -3968,6 +3968,11 @@ perché il testo si legga sempre bene, anche sul vetro.
   quello che la sua icona nomina, anche quando Erevos mostrava un’altra di esse. Il colore è del telefono, non di ogni
   spazio, perché le icone appaiono prima che Erevos sia sbloccato. Dopo una modifica alcuni launcher tolgono l’icona
   dalla schermata Home: aggiungila di nuovo dall’elenco delle app.
+- [~] **Fotocamera** (Android, sotto **Icone del launcher**): la fotocamera di Erevos con un tocco. **Metti la Fotocamera
+  tra le app del telefono** aggiunge un’icona tutta sua (arancione all’inizio, nel colore che vuoi), e tenendo premuta
+  l’icona di Erevos compare anche **Fotocamera**, che si può trascinare nella schermata Home. Entrambe aprono la
+  fotocamera della Raccolta, dietro la password di Erevos e quella della Raccolta, e ciò che scatta va dritto nella
+  Raccolta. Nessuna delle due si vede finché la Raccolta è spenta in **Moduli** o la calcolatrice sta al posto di Erevos.
 - **Punti e numeri sulle icone** (Android): Android dà il punto o il numero di una notifica all’app, non a una delle
   sue icone, quindi nella maggior parte dei launcher, come quelli dei Pixel e di GrapheneOS, quello di Samsung, quello
   di Xiaomi e Kvaesitso, ogni notifica di Erevos (un messaggio, {~un SMS, |}una chiamata, un compleanno) appare uguale

@@ -3634,6 +3634,11 @@ always reads well, on glass too.
   names, also when Erevos showed another of them. The colour is the phone's, not each space's, as the icons show
   before Erevos is unlocked. After a change some launchers take the icon off the home screen: add it again from the
   list of apps.
+- [~] **Camera** (Android, under **Launcher icons**): Erevos's camera at a tap. **Put the Camera among the phone's apps**
+  adds an icon of its own (orange at first, in any colour), and holding Erevos's icon down offers **Camera** too, which
+  can also be dragged to the home screen. Either opens the Collection's camera, behind Erevos's password and the
+  Collection's, and what it takes goes straight into the Collection. Neither shows while the Collection is off in
+  **Modules** or the calculator stands in place of Erevos.
 - **Dots and numbers on the icons** (Android): Android gives a notice's dot or number to the app, not to one of its
   icons, so on most launchers, such as those of Pixel and GrapheneOS, Samsung's, Xiaomi's and Kvaesitso, each notice
   of Erevos (a message, {~an SMS, |}a call, a birthday) shows on the Erevos{~, Phone, SMS and| and} Contacts icons alike; Erevos

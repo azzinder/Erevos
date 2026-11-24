@@ -8,6 +8,18 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## Unreleased
+
+On main, not released yet:
+
+### For you
+- Erevos's camera at a tap (Android; not in Erevos Lite, which has no camera). **Appearance** → **Launcher icons** →
+  **Camera** → **Put the Camera among the phone's apps** adds an icon of its own, off at first, in any of the six
+  colours, and holding Erevos's icon down offers **Camera** too. Both open the Collection's camera, behind Erevos's
+  password and the Collection's (`modules/erevos-collection` `CameraOpenActivity`, `erevos://collection?camera=1`,
+  `app/collection.tsx`). Neither shows while the Collection is off or the calculator stands in place of Erevos
+  (`modules/erevos-icons` `applyCamera`, `applyShortcut`; `lib/module-icons.ts`). Requested by the maintainer.
+
 ## 3.2.0-rc.1 (2026-11-23)
 
 The first release candidate of Erevos Lite: Erevos 3.0.0-rc.1 for Erevos's own chats and calls, with what is below.
