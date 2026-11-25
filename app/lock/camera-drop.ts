@@ -30,9 +30,18 @@ import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 // every space, as it is read with Erevos locked). Its secret is made from the space's key
 // (dropSecret), so it is nowhere on the phone, and only that space's password gives it. As the
 // space opens, its notes are opened, what they name goes into its Collection, and the notes go
-// (lib/collection-camera.ts takeDrops). A note another space's key does not open stays as it is,
+// (lib/camera-drops.ts takeDrops). A note another space's key does not open stays as it is,
 // for its own space: what was taken for one space never shows in another, whichever password is
 // given next.
+//
+// What stays shows, though not in Erevos: while something waits for a space, its note and its
+// chunks lie in Erevos's folder, and another space that opens leaves them there. Whoever is shown
+// that other space and can read the folder (a forensic tool) can tell from them that there is a
+// space they were not shown. The guide says so, with the switch below as the way out. Nothing in
+// Erevos's own screens shows them: the search for leftovers counts every note's chunks as named
+// (lib/leftovers.ts idsOfDrops), so it neither shows nor deletes them. When the first space removes
+// its second password or turns its lock off, no other space opens any more, and the notes its key
+// does not open go with their chunks (discardOthersDrops).
 //
 // A note says in the clear only the ids of its chunks and how many each file has, which the
 // chunks' own names say anyway: so its chunks can go with a note that nothing will open any more.
@@ -227,6 +236,33 @@ export async function discardDrop(name: string): Promise<void> {
   const note = await read(name);
   for (const file of note?.files ?? []) await deleteChunks(file.id, file.count).catch(() => undefined);
   if (NOTE.test(name)) await deleteFile(name);
+}
+
+/**
+ * Every note the key of the space open now does not open goes, with the chunks it names: for when
+ * no other space opens any more, so nothing would ever open them (lib/camera-drops.ts
+ * dropsOfClosedSpaces). A note that does not read as one stays as it is. How many went.
+ */
+export async function discardOthersDrops(spaceKey: Uint8Array): Promise<number> {
+  if (!canDrop()) return 0;
+  let gone = 0;
+  for (const name of await waitingDrops()) {
+    const note = await read(name);
+    if (!note) continue;
+    const secret = dropSecret(spaceKey);
+    let mine = true;
+    try {
+      (await sealOpen(secret, note.sealed)).message.fill(0);
+    } catch {
+      mine = false;
+    } finally {
+      secret.fill(0);
+    }
+    if (mine) continue;
+    await discardDrop(name);
+    gone++;
+  }
+  return gone;
 }
 
 /**

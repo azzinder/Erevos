@@ -395,4 +395,14 @@ note   = { v: 1, files: [{ id, count }...], sealed: relaySeal(D_pub, mark, JSON 
   for its own space. The switch `erevos.camera-open` is the phone's, the same in every space; a
   backup restored deletes the notes with their chunks, and `D_pub`.
 
+  What waits is not hidden from whoever reads Erevos's folder. A note is a file of its own, and
+  says in the clear the ids of its chunks: while one waits for a space, another space that opens
+  leaves it and its chunks where they are, so someone shown that other space who also reads the
+  folder can tell that there is a space they were not shown. Nothing in the app shows it; the
+  search for leftovers counts every note's chunks as named, so it neither shows nor deletes them.
+  The guide says so, and that the switch is the way out. When the first space removes its second
+  password or turns its lock off, no other space opens any more, and the notes its `d` does not
+  open are deleted with their chunks. From any other space, and when a second password is set
+  again, a note that does not open may be for a space that still opens, so it stays.
+
 The flows are drawn in [state-machines.md](state-machines.md).

@@ -2864,3 +2864,20 @@ t('the backup screen says of a backup made by hand its size in all, when it bega
   assert.match(screen, /\{madeNote\?\.checked && !making \? \(\n\s+<CheckLine/);
 });
 
+t('a backup sent to the server by hand says before it starts that all of it goes each time, and about how much', async () => {
+  // Its key is its own, even with the same password: no part of an earlier one can be named again.
+  const [one, two] = [await backupKey('the same password', undefined, 1000, null), await backupKey('the same password', undefined, 1000, null)];
+  assert.notDeepEqual(one.key, two.key);
+  const screen = readFileSync(join(import.meta.dirname, '..', 'app', 'backup.tsx'), 'utf8');
+  // So it is sent with no book of earlier parts, as automatic backups have (lib/backup-folder.ts).
+  assert.match(screen, /const sent = await sendToCloud\(\n\s+cloud,\n\s+async \(parts\) => \{[\s\S]{0,500}?\n\s+\},\n\s+KEEP,\n\s+\);/);
+  // Its password sheet says it, with about how much where the phone measures it, and how many the server keeps.
+  assert.match(screen, /sheet\?\.kind === "cloud"\n\s+\? \[\n\s+byHandText\(whole\),\n\s+t\("The server keeps the \{n\} newest whole\.", \{ n: KEEP \}\),/);
+  assert.match(screen, /if \(askingKind !== "cloud"\) return;[\s\S]{0,200}wholeBackupAtMost\(\)/);
+  assert.match(screen, /"A backup sent by hand goes whole each time, with every photo and file: up to about \{size\} now\.",\n\s+\{ size: spaceText\(bytes\) \},/);
+  // The server's card says it too where backups go there only by hand.
+  assert.match(screen, /"Send a backup there now and then; the server keeps the \{n\} newest\.",[\s\S]{0,120}byHandText\(null\),/);
+  // Automatic backups are pointed at only where there are any.
+  assert.match(screen, /CAN_AUTO_BACKUP\n\s+\? t\("With automatic backups on, only what is new goes each time\."\)/);
+});
+

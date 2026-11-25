@@ -15,7 +15,7 @@ import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
 import { bytesSource, readFile as readKept } from '../lib/attachments';
-import { keepDropped, takeDrops } from '../lib/camera-drops';
+import { dropsOfClosedSpaces, keepDropped, takeDrops } from '../lib/camera-drops';
 import { relaySeal, sealPublic, setCore, type Core } from '../lib/core';
 import { randomBytes, toBase64, toHex, utf8Encode } from '../lib/crypto';
 import { forgetPendingChunks } from '../lib/pending-chunks';
@@ -25,6 +25,7 @@ import {
   CAMERA_OPEN_KEY,
   cameraOpensLocked,
   discardDrops,
+  discardOthersDrops,
   DROP_PREFIX,
   dropKey,
   dropSecret,
@@ -266,6 +267,52 @@ test('a restore takes away what waits, with its chunks, and whom the camera take
   assert.match(backup, /const NEVER_KEPT = \['erevos\.phone-speed', CAMERA_DROP_KEY\];/);
   assert.match(backup, /const STAYS_UNSAID = \[CAMERA_OPEN_KEY\];/);
   assert.match(backup, /await discardDrops\(\)\.catch\(\(\) => undefined\);/);
+});
+
+test('when the first space closes the others for good, what waited for them goes with its chunks, and its own stays', { skip: !coreReady }, async () => {
+  const { first, second } = await phone();
+  const third: CollectionPlace = { holder: 'space', space: 2, key: randomBytes(32) };
+  const take = async (place: CollectionPlace, name: string) => {
+    await publishDropKey(place.key);
+    await keepDropped((await dropKey())!, bytesSource(photo(3000)), { name, mime: 'image/jpeg', kind: 'photo' }, photo(200));
+  };
+  await take(first, 'mine.jpg');
+  await take(second, 'theirs.jpg');
+  await take(third, 'further.jpg');
+  assert.equal((await waitingDrops()).length, 3);
+  assert.equal(chunks().length, 6);
+  // A note that does not read as one is no one's to delete.
+  const torn = `${DROP_PREFIX}${'a7'.repeat(16)}`;
+  files.set(torn, '{"v":1,"files":[');
+
+  // From any space but the first, a note it does not open may be for a space before it: nothing goes.
+  assert.equal(await dropsOfClosedSpaces(1, second.key), 0);
+  assert.equal(await dropsOfClosedSpaces(2, third.key), 0);
+  assert.equal((await waitingDrops()).length, 4);
+  assert.equal(chunks().length, 6);
+
+  // The first space removed its second password, or turned its lock off: only its own waits on.
+  assert.equal(await dropsOfClosedSpaces(0, first.key), 2);
+  assert.equal((await waitingDrops()).length, 2);
+  assert.equal(chunks().length, 2);
+  assert.equal(files.has(torn), true);
+  assert.equal(await takeDrops(first), 1);
+  assert.deepEqual((await loadCollection(first)).items.map((item) => item.file.name), ['mine.jpg']);
+  assert.ok((await loadCollection(first)).items[0].thumb);
+  // Nothing of the others' is left to take, whichever opens.
+  assert.equal(await takeDrops(second), 0);
+  assert.equal(await discardOthersDrops(first.key), 0);
+  assert.deepEqual(await waitingDrops(), [torn]);
+});
+
+test('the lock screen settings call it as the second password goes or the lock is turned off, and the camera follows the lock', () => {
+  const security = read('../app/security.tsx');
+  assert.match(security, /await removePasswordLock\(space, currentSpace\(\)\.key\);\s*\/\/[^\n]*\n\s*await dropsOfClosedSpaces\(space, currentSpace\(\)\.key\)\.catch\(\(\) => undefined\);/);
+  assert.match(security, /await removeSecondPassword\(space, currentSpace\(\)\.key\);\s*await dropsOfClosedSpaces\(space, currentSpace\(\)\.key\)\.catch\(\(\) => undefined\);/);
+  // Only from the first space: elsewhere a note may be for a space that still opens.
+  assert.match(read('../lib/camera-drops.ts'), /return space === 0 \? discardOthersDrops\(spaceKey\) : 0;/);
+  // The lock turned on or off in the open space: the camera takes for it at once, or for none.
+  assert.match(read('../app/_layout.tsx'), /setPasswordLock: \(on\) => \{\s*setPhase\(\(p\) => \(p\.kind === 'open' \? \{ \.\.\.p, passwordLock: on \} : p\)\);[\s\S]{0,300}cameraFollows\(on\);\s*\},/);
 });
 
 test('a file of the Collection and one the locked camera keeps may have as many chunks', () => {

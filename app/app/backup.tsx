@@ -117,7 +117,12 @@ import { phoneStatus } from "../modules/erevos-phone";
 import { lostAt, markLost, restoredFromOther } from "../lock/restored";
 import { importPhoneSms, smsStatus } from "../modules/erevos-sms";
 import { useTheme } from "../theme/context";
-import { measureAppSpace, spaceText, type SpaceRow } from "../lib/app-space";
+import {
+  measureAppSpace,
+  spaceText,
+  wholeBackupAtMost,
+  type SpaceRow,
+} from "../lib/app-space";
 import { canFindLeftovers } from "../lib/leftovers";
 import { LeftoversCard } from "../components/leftovers";
 import { device as phoneDevice } from "../modules/erevos-device";
@@ -227,6 +232,25 @@ export default function Backups() {
   const busy = busyHere || making !== null;
   const [space, setSpace] = useState<SpaceRow[] | null>(null);
   const [measuring, setMeasuring] = useState(false);
+  // A backup sent to the server by hand has a password of its own, so a key of its own: it can
+  // name no part of an earlier one, and every part goes again. Its password sheet says so before
+  // it starts, with about how much that is where the phone can measure it.
+  const [whole, setWhole] = useState<number | null>(null);
+  const askingKind = asking?.kind;
+  useEffect(() => {
+    if (askingKind !== "cloud") return;
+    let live = true;
+    setWhole(null);
+    void wholeBackupAtMost().then(
+      (bytes) => {
+        if (live) setWhole(bytes);
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [askingKind]);
   // A folder or file picker is open: a second tap opens no second one.
   const picking = useRef(false);
   // Whether backups hold the phone's SMS and MMS, and its calls and blocked numbers.
@@ -1467,10 +1491,13 @@ export default function Backups() {
                         "Each automatic backup goes there too, and the server keeps the {n} newest.",
                         { n: KEEP },
                       )
-                    : t(
-                        "Send a backup there now and then; the server keeps the {n} newest.",
-                        { n: KEEP },
-                      )}
+                    : [
+                        t(
+                          "Send a backup there now and then; the server keeps the {n} newest.",
+                          { n: KEEP },
+                        ),
+                        byHandText(null),
+                      ].join(" ")}
                 </Text>
                 <TorSwitch
                   on={cloud.tor === true}
@@ -1807,10 +1834,20 @@ export default function Backups() {
         }
         repeat={sheet?.kind !== "open"}
         least={MIN_BACKUP_PASSWORD}
-        hint={t(
-          "A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.",
-          { n: MIN_BACKUP_PASSWORD },
-        )}
+        hint={[
+          t(
+            "A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.",
+            { n: MIN_BACKUP_PASSWORD },
+          ),
+          sheet?.kind === "cloud"
+            ? [
+                byHandText(whole),
+                t("The server keeps the {n} newest whole.", { n: KEEP }),
+              ].join(" ")
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")}
         submitLabel={sheet?.kind === "open" ? t("Open") : t("Save")}
         onClose={() => setAsking(null)}
         onSubmit={submit}
@@ -1820,6 +1857,24 @@ export default function Backups() {
 }
 
 const hint = { fontSize: 14, lineHeight: 20 };
+
+// What a backup sent to the server by hand costs, said before it starts: all of it goes each
+// time (`bytes`: about how much, when measured), where automatic backups send only what is new.
+function byHandText(bytes: number | null): string {
+  return [
+    bytes
+      ? t(
+          "A backup sent by hand goes whole each time, with every photo and file: up to about {size} now.",
+          { size: spaceText(bytes) },
+        )
+      : t("A backup sent by hand goes whole each time, with every photo and file."),
+    CAN_AUTO_BACKUP
+      ? t("With automatic backups on, only what is new goes each time.")
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 // What the last check of a place found (lib/backup-check.ts).
 function CheckLine({

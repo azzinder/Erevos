@@ -231,4 +231,12 @@ export const cloudBackup: Record<string, string> = {
   "A backup of {total} in all went to {server}.": "Ένα αντίγραφο {total} συνολικά πήγε στο {server}.",
   "{name} and {n} file beside it, {total} in all, are saved in {folder}.": "Το {name} και {n} αρχείο δίπλα του, {total} συνολικά, αποθηκεύτηκαν στο {folder}.",
   "{name} and {n} files beside it, {total} in all, are saved in {folder}.": "Το {name} και {n} αρχεία δίπλα του, {total} συνολικά, αποθηκεύτηκαν στο {folder}.",
+  "A backup sent by hand goes whole each time, with every photo and file: up to about {size} now.":
+    "Ένα αντίγραφο που στέλνεται με το χέρι πηγαίνει ολόκληρο κάθε φορά, με κάθε φωτογραφία και αρχείο: έως περίπου {size} τώρα.",
+  "A backup sent by hand goes whole each time, with every photo and file.":
+    "Ένα αντίγραφο που στέλνεται με το χέρι πηγαίνει ολόκληρο κάθε φορά, με κάθε φωτογραφία και αρχείο.",
+  "With automatic backups on, only what is new goes each time.":
+    "Με τα αυτόματα αντίγραφα ανοιχτά, πηγαίνει κάθε φορά μόνο ό,τι είναι νέο.",
+  "The server keeps the {n} newest whole.":
+    "Ο server κρατά τα {n} πιο πρόσφατα ολόκληρα.",
 };

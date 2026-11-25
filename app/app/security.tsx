@@ -12,6 +12,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { loadBatteryMode, saveBatteryMode, type BatteryMode } from '../lib/battery-mode';
+import { dropsOfClosedSpaces } from '../lib/camera-drops';
 import { doorIsOpen, followDoor, setDoorOpen } from '../lib/closed-notices';
 import { DESKTOP } from '../lib/desktop';
 import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
@@ -136,6 +137,8 @@ export default function Security() {
     const ok = await confirm(t('Turn off the lock'), t('Erevos will open without a password. The second password stops working too.'));
     if (!ok) return;
     await removePasswordLock(space, currentSpace().key);
+    // What the locked camera took for the spaces that no longer open goes (lib/camera-drops.ts).
+    await dropsOfClosedSpaces(space, currentSpace().key).catch(() => undefined);
     await turnOffBiometric(biometricSealer);
     setPasswordLock(false);
     await reload();
@@ -149,6 +152,7 @@ export default function Security() {
     );
     if (!ok) return;
     await removeSecondPassword(space, currentSpace().key);
+    await dropsOfClosedSpaces(space, currentSpace().key).catch(() => undefined);
     await reload();
     setNote(t('Saved.'));
   }

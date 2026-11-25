@@ -229,4 +229,12 @@ export const cloudBackup: Record<string, string> = {
   "A backup of {total} in all went to {server}.": "Um backup de {total} no total foi enviado para {server}.",
   "{name} and {n} file beside it, {total} in all, are saved in {folder}.": "{name} e {n} arquivo ao lado, {total} no total, estão salvos em {folder}.",
   "{name} and {n} files beside it, {total} in all, are saved in {folder}.": "{name} e {n} arquivos ao lado, {total} no total, estão salvos em {folder}.",
+  "A backup sent by hand goes whole each time, with every photo and file: up to about {size} now.":
+    "Um backup enviado à mão vai inteiro a cada vez, com cada foto e arquivo: até cerca de {size} agora.",
+  "A backup sent by hand goes whole each time, with every photo and file.":
+    "Um backup enviado à mão vai inteiro a cada vez, com cada foto e arquivo.",
+  "With automatic backups on, only what is new goes each time.":
+    "Com os backups automáticos ativados, a cada vez só vai o que é novo.",
+  "The server keeps the {n} newest whole.":
+    "O servidor guarda inteiros os {n} mais recentes.",
 };

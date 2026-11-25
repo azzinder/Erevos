@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { cleanFileName, cleanMime, deleteChunks, type FileKind, type FileRef } from '../lock/attachment-files';
-import { discardDrop, forgetDrop, keepDrop, openDrop, waitingDrops, type Dropped } from '../lock/camera-drop';
+import { discardDrop, discardOthersDrops, forgetDrop, keepDrop, openDrop, waitingDrops, type Dropped } from '../lock/camera-drop';
 import {
   addTakenToCollection,
   CollectionFileDamagedError,
@@ -92,4 +92,17 @@ export function takeDrops(place: CollectionPlace): Promise<number> {
     });
   taking = run;
   return run;
+}
+
+/**
+ * The spaces past `space` stopped opening: the space open now (its key is `spaceKey`) removed its
+ * second password, or turned its lock off (lock/config.ts removeSecondPassword, removePasswordLock).
+ * What the locked camera took for them would wait for ever, as files that show a space was there.
+ * In the first space every note its key does not open is theirs, so those go, with their chunks.
+ * In any other space such a note may as well be for a space before it, which still opens, and
+ * nothing tells the two apart: they stay. So do they when a second password is set again, which
+ * replaces one space and leaves those past it to their own passwords. How many went.
+ */
+export async function dropsOfClosedSpaces(space: number, spaceKey: Uint8Array): Promise<number> {
+  return space === 0 ? discardOthersDrops(spaceKey) : 0;
 }

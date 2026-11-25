@@ -36,18 +36,25 @@ and 0.1.15 never came out.
   icon open Erevos's camera at once, with Erevos locked. What it takes, photos and videos, is encrypted as it is taken
   and shows only after the password of the space opened last, in its Collection, which takes it in as it opens; the
   camera says how many it took, and opens nothing else, not even what it just took (`lock/camera-drop.ts`,
-  `lib/camera-drops.ts`, `lib/collection-camera.ts` `takeDrops`, `components/erevos-camera.tsx`,
+  `lib/camera-drops.ts` `takeDrops`, `lib/collection-camera.ts`, `components/erevos-camera.tsx`,
   `modules/erevos-collection` `CameraOpenActivity`). **Open the camera without the password**, in the Collection's
   settings, is on unless turned off, the phone's own, the same in every space; off, the icon waits for the password as
   before, and the **Launcher icons** card says which (`components/launcher-icons.tsx`). What waits is in no backup: a
-  backup restored deletes it. Not in Erevos Lite, which has no camera. Requested by the maintainer.
+  backup restored deletes it. The search for leftovers counts what waits as named, whichever places were opened in it,
+  so it is never taken for one (`lib/leftovers.ts` `idsOfDrops`); and when the first space removes its second password
+  or turns its lock off, what still waited for the spaces that stop opening is deleted (`lib/camera-drops.ts`
+  `dropsOfClosedSpaces`). The guide says that what waits lies on the phone as files, which can show someone who reads
+  the phone that there is a space they were not shown, and that the switch is the way out. Not in Erevos Lite, which
+  has no camera. Requested by the maintainer.
 - Backups to a server by hand (#58): **Make a backup** offers **To a server (WebDAV)** beside **Into a folder**, also
   with automatic backups off and in the web app, and adds a server as **Add a server** does. Once one is set, the
   button reads **To** and the server's name and sends a backup there now, with a password typed each time, or, with
   automatic backups on, one of them, with their password, and none into the folder (`app/backup.tsx`,
   `lib/backup-folder.ts` `runAutoBackup` `serverOnly`). Turning automatic backups off now keeps the server, for the
-  backups sent by hand, with those already there; **Stop sending** forgets it (`stopAutoBackup`). Requested by the
-  maintainer.
+  backups sent by hand, with those already there; **Stop sending** forgets it (`stopAutoBackup`). A backup sent with a
+  password of its own has a key of its own, so every part of it goes each time: the sheet that asks for its password
+  says so before it starts, with about how much that is where the phone can measure it, and that the server keeps the
+  3 newest whole (`lib/app-space.ts` `wholeBackupAtMost`). Requested by the maintainer.
 - Clear numbers for a backup (#67): once one is made, its card says how big it is in all, with the files beside it,
   when it began and when it ended (the time in its name is when it began), and what is not in it: Erevos itself and
   what it keeps only for a while, the Collection's files that are whole on its server, which a restore fetches from

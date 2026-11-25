@@ -229,4 +229,12 @@ export const cloudBackup: Record<string, string> = {
   "A backup of {total} in all went to {server}.": "Rezervna kopija od ukupno {total} poslana je na {server}.",
   "{name} and {n} file beside it, {total} in all, are saved in {folder}.": "{name} i {n} datoteka pored nje, ukupno {total}, sačuvani su u {folder}.",
   "{name} and {n} files beside it, {total} in all, are saved in {folder}.": "{name} i {n} datoteka pored nje, ukupno {total}, sačuvani su u {folder}. | {name} i {n} datoteke pored nje, ukupno {total}, sačuvani su u {folder}. | {name} i {n} datoteka pored nje, ukupno {total}, sačuvani su u {folder}.",
+  "A backup sent by hand goes whole each time, with every photo and file: up to about {size} now.":
+    "Rezervna kopija poslana ručno ide cijela svaki put, sa svakom fotografijom i datotekom: sada do oko {size}.",
+  "A backup sent by hand goes whole each time, with every photo and file.":
+    "Rezervna kopija poslana ručno ide cijela svaki put, sa svakom fotografijom i datotekom.",
+  "With automatic backups on, only what is new goes each time.":
+    "S uključenim automatskim kopijama svaki put ide samo ono što je novo.",
+  "The server keeps the {n} newest whole.":
+    "Server čuva {n} najnovije cijele.",
 };

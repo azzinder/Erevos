@@ -654,7 +654,12 @@ export default function RootLayout() {
     () => ({
       space: phase.kind === 'open' ? phase.space : 0,
       passwordLock: phase.kind === 'open' && phase.passwordLock,
-      setPasswordLock: (on) => setPhase((p) => (p.kind === 'open' ? { ...p, passwordLock: on } : p)),
+      setPasswordLock: (on) => {
+        setPhase((p) => (p.kind === 'open' ? { ...p, passwordLock: on } : p));
+        // The lock was turned on or off in the open space: the locked camera takes for it from
+        // now on, or for none, without waiting for the space to open again.
+        cameraFollows(on);
+      },
       lockNow: () => {
         relock().catch(fail);
       },
