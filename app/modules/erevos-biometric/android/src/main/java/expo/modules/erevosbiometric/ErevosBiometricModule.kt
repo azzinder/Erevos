@@ -50,11 +50,11 @@ class ErevosBiometricModule : Module() {
     // "none" with no key, "invalidated" once Android has dropped it, "valid" while it works, and
     // "unknown" when that cannot be told now: while the phone itself is locked (an Erevos call
     // shows over the lock screen, and the key works only on an unlocked phone), or when the
-    // Keystore did not answer. Only "none" and "invalidated" turn unlocking off (lock/biometric.ts).
+    // Keystore did not answer. Only "none" and "invalidated" turn unlocking off here; a key that
+    // stays "unknown" because it is broken is found out when it is used (open, below).
     // Starting a cipher needs no fingerprint, and tells whether the key still works.
     Function("keyState") {
-      val context = appContext.reactContext
-      val locked = context?.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
+      val locked = phoneLocked()
       try {
         val key = storedKey()
         when {
@@ -89,8 +89,11 @@ class ErevosBiometricModule : Module() {
 
     // Asks for a fingerprint or face and opens what `seal` gave: resolves with the data, base64.
     // Rejects with "invalidated" when the key is gone, Android dropped it, or it does not open what
-    // was sealed, "cancelled" when the prompt was closed, and "failed" with Android's own words
-    // otherwise (the phone itself locked, the Keystore busy): only "invalidated" turns it off.
+    // was sealed, and "cancelled" when the prompt was closed. Otherwise with Android's own words:
+    // "unusable" when the key could not be used on an unlocked phone (the Keystore did not answer,
+    // or the key is broken in a way Android does not call invalidated), and "failed" for the rest
+    // (the phone itself locked, the prompt saying no). "invalidated" turns unlocking off at once,
+    // "unusable" only after a few in a row (lock/biometric.ts): a broken key never gets better.
     AsyncFunction("open") { iv: String, data: String, title: String, cancel: String, promise: Promise ->
       val cipher = try {
         val key = storedKey()
@@ -105,8 +108,9 @@ class ErevosBiometricModule : Module() {
         promise.reject("invalidated", e.message, e)
         return@AsyncFunction
       } catch (e: Exception) {
-        // The phone is locked, or the Keystore did not answer: not a reason to turn it off.
-        promise.reject("failed", e.message, e)
+        // The phone is locked: the key works only on an unlocked phone, so this says nothing of it.
+        // Unlocked: the Keystore did not answer, or the key is broken.
+        promise.reject(if (phoneLocked()) "failed" else "unusable", e.message, e)
         return@AsyncFunction
       }
       authenticate(cipher, title, cancel, promise) { done -> encode(done.doFinal(Base64.decode(data, Base64.NO_WRAP))) }
@@ -158,7 +162,8 @@ class ErevosBiometricModule : Module() {
             } catch (e: KeyPermanentlyInvalidatedException) {
               promise.reject("invalidated", e.message, e)
             } catch (e: Exception) {
-              promise.reject("failed", e.message, e)
+              // The check passed and the key still did not do its work.
+              promise.reject(if (phoneLocked()) "failed" else "unusable", e.message, e)
             }
           }
         }
@@ -178,6 +183,10 @@ class ErevosBiometricModule : Module() {
       }
     }
   }
+
+  // Whether the phone itself is locked now: the key works only on an unlocked phone.
+  private fun phoneLocked(): Boolean =
+    appContext.reactContext?.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
 
   private fun storedKey(): SecretKey? {
     val store = KeyStore.getInstance(KEYSTORE).apply { load(null) }

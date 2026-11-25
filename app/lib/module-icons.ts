@@ -17,8 +17,13 @@ let following = false;
 
 /** Puts the icons as the modules are now, and again each time one is turned on or off. */
 export function followModuleIcons(): void {
-  // Erevos Lite has no Phone, SMS or Camera icons at all (lib/edition.ts): nothing to put.
-  if (!inEdition('phone')) return;
+  // Erevos Lite has no Phone, SMS or Camera icons at all (lib/edition.ts): nothing to put. Its app
+  // has no Camera to show (plugins/with-edition-modules.js); should one be there all the same, it
+  // is told the Collection is off, so neither its icon nor its shortcut shows.
+  if (!inEdition('phone')) {
+    if (!inEdition('collection')) setCameraAllowed(false);
+    return;
+  }
   const apply = () => {
     setLauncherShown('phone', moduleOn('phone'));
     setLauncherShown('sms', moduleOn('sms'));

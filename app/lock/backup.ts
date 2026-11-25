@@ -216,6 +216,11 @@ const CLOUD = 'erevos.backup-cloud';
 const LORA = 'erevos.lora';
 // The keystore entries a backup holds from PARTS on: restoring one deletes those it does not hold.
 const LATER_KEYS = [PANIC_KEY, ...SETTINGS, AUTO, CLOUD];
+// The keystore entries no backup holds and every restore deletes: the copy of one space's speed
+// dial numbers that the Phone calls with Erevos locked (lib/phone-open.ts). The spaces are the
+// backup's from then on, and the one that kept the copy may not be among them: nothing could take
+// it away then. A space that kept it turns it on again.
+const NEVER_KEPT = ['erevos.phone-speed'];
 
 // The sealed files that are text; voice messages' sounds, pictures and stickers' pictures are
 // bytes. A file not on the phone is left out, so the backup of a phone that keeps no contacts, or
@@ -970,6 +975,7 @@ export async function restoreBackup(
   for (const name of [...(await listFiles(AVATAR)), ...(await listFiles(PAGE))]) if (!keep.has(name)) gone.push({ kind: KIND_BYTES, name, value: await readBytes(name) });
   const heard = HEARD.some((name) => keep.has(name));
   for (const name of [...KEYS, ...(parts ? LATER_KEYS : []), ...(heard ? HEARD : [])]) if (!keep.has(name)) gone.push({ kind: KIND_KEY, name, value: await secureGet(name) });
+  for (const name of NEVER_KEPT) gone.push({ kind: KIND_KEY, name, value: await secureGet(name) });
   try {
     for (const entry of entries) {
       if (entry.kind === KIND_TEXT) await writeFile(entry.name, utf8Decode(entry.data));

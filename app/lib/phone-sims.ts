@@ -9,7 +9,7 @@
 import { loadPhoneData, MAX_SIMS, savePhoneData, type PhoneData, type SpeedDial } from '../lock/phone-data';
 import type { PhoneAccount } from '../modules/erevos-phone';
 import { randomBytes, toHex } from './crypto';
-import { lockedSpeedDials, setLockedSpeedDials } from './phone-open';
+import { lockedSpeedIs, setLockedSpeedDials } from './phone-open';
 import { plainNumber, sameNumber } from './sms-invite';
 
 export class PhoneSims {
@@ -63,9 +63,8 @@ export class PhoneSims {
   }
 
   /** Whether speed dial works with Erevos locked with this space's numbers (lib/phone-open.ts). */
-  async feedsLocked(): Promise<boolean> {
-    if (!this.data.lockedFeed) return false;
-    return (await lockedSpeedDials())?.feed === this.data.lockedFeed;
+  feedsLocked(): Promise<boolean> {
+    return lockedSpeedIs(this.data.lockedFeed);
   }
 
   /** Lets this space's speed dial work with Erevos locked, with a copy of its numbers outside the

@@ -2805,10 +2805,12 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
 - **Brzo biranje:** s praznom tastaturom zadržite tipku od 2 do 9 da pozovete njen broj. Tipka bez broja vam da da
   izaberete: upišite ime ili broj i dodirnite kontakt, ili **Koristi** upisani broj. Pod **Telefon** → **Postavke**,
   **Brzo biranje** pokazuje osam tipki; dodirnite jednu da je promijenite ili ispraznite. Brzo biranje se čuva
-  šifrovano u prostoru i radi kad je Erevos otključan.
-  Uz lozinku, **Brzo biranje i kad je Erevos zaključan** (isprva isključeno) omogućava da radi i u Telefonu otvorenom
-  bez lozinke: kopija brojeva, bez imena, tada stoji na telefonu izvan prostora, pa ih može pozvati svako ko drži
-  otključan telefon. Jedan prostor u isto vrijeme.
+  šifrovano u prostoru i radi kad je Erevos otključan. Dok se Telefon otvara bez lozinke, **Brzo biranje i kad je
+  Erevos zaključan** (isprva isključeno) omogućava da radi i tamo: kopija brojeva, bez imena, tada stoji na telefonu
+  izvan prostora, pa ih može pozvati svako ko drži otključan telefon. Jedan prostor u isto vrijeme. Može pokazati da
+  prostor postoji: ko vidi neki drugi vaš prostor nalazi da tipke pozivaju brojeve koji nisu iz tog prostora. Kopija
+  se briše kad se Telefon vrati iza lozinke, kad se vrati rezervna kopija, kad se isključi zaključavanje i kad se
+  druga lozinka ukloni ili ponovo postavi dok je otvoren drugi prostor; tada ga ponovo uključite.
 - **Postavke poziva:** pod **Telefon** → **Postavke**, **Postavke poziva** otvaraju Androidove vlastite ekrane za
   ono što operater čuva o pozivima svake SIM kartice: **Preusmjeravanje, čekanje i vaš broj** i **Broj govorne
   pošte**; s dvije SIM kartice prvo dodirnite SIM. Pod **Pitaj operatera** svako dugme bira kod mreže (**Provjeri**
@@ -3080,8 +3082,9 @@ Isključeno je dok to ne uključite.
   desiti, držite ovo isključenim: tada mu treba lozinka, a vi mu možete dati drugu.
 - **Kako se čuva:** ključ prvog prostora zapečaćen je ključem u sigurnom hardveru telefona (Android Keystore) koji
   radi samo odmah nakon jake provjere otiska prsta ili lica, jednom za svaku upotrebu. Dodavanje ili uklanjanje otiska
-  prsta ili lica tjera Android da odbaci taj ključ: tada se ovo isključuje, i ponovo ga uključujete. Ništa ne napušta
-  telefon.
+  prsta ili lica tjera Android da odbaci taj ključ: tada se ovo isključuje, i ponovo ga uključujete. Ključ koji
+  prestane raditi na neki drugi način također ovo isključuje, nakon tri pokušaja zaredom u kojima se nije mogao
+  upotrijebiti. Ništa ne napušta telefon.
 - **Koje lice:** lice se računa samo tamo gdje Android ocjenjuje svoje otključavanje licem kao jako, kao na Pixelu 8 i
   novijim; drugdje je to otisak prsta.
 - **Pogrešne lozinke** se broje kao i prije: otisak prsta ne mijenja broj.

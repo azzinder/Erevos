@@ -23,7 +23,7 @@ import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 import { PasswordSheet } from './PasswordSheet';
 import { Button, Card, Row, SectionTitle, Text } from './ui';
-import { EDITION, editionName } from '../lib/edition';
+import { EDITION, editionName, inEdition } from '../lib/edition';
 
 // Appearance → Launcher icons: the colour of each of Erevos's icons in the phone's apps (Erevos,
 // Phone, SMS, Contacts, Camera), each drawn in every colour to pick from. Android only, and the
@@ -93,6 +93,8 @@ export function LauncherIcons({ titled = true }: { titled?: boolean }) {
   const [chosen, setChosen] = useState(launcherColors);
   const [cameraOn, setCameraOn] = useState(cameraIconOn);
   if (!chosen) return null;
+  // An icon this app has; the Camera's only where the Collection is part of the edition, never in Erevos Lite.
+  const shown = (icon: LauncherIcon) => chosen[icon] !== undefined && (icon !== 'camera' || inEdition('collection'));
 
   function toggleCamera() {
     if (cameraOn === null) return;
@@ -110,7 +112,7 @@ export function LauncherIcons({ titled = true }: { titled?: boolean }) {
       <Text variant="caption" tone="muted" style={styles.hint}>
         {t("The color of each icon among the phone's apps. It is the phone's, not each space's, as the icons show before Erevos is unlocked.")}
       </Text>
-      {LAUNCHER_ICONS.filter((icon) => chosen[icon] !== undefined).map((icon) => (
+      {LAUNCHER_ICONS.filter(shown).map((icon) => (
         <Card key={icon}>
           <Text variant="bodyStrong">{t(ICON_LABELS[icon])}</Text>
           <View style={styles.row}>

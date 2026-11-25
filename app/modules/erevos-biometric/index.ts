@@ -19,11 +19,11 @@ type Native = {
 
 const native = requireOptionalNativeModule<Native>('ErevosBiometric');
 
-// The module's rejections carry "cancelled", "invalidated" or "failed" as their code.
+// The module's rejections carry "cancelled", "invalidated", "unusable" or "failed" as their code.
 function reason(e: unknown): BiometricError {
   const code = (e as { code?: unknown } | null)?.code;
   const message = e instanceof Error ? e.message : String(e);
-  return new BiometricError(code === 'cancelled' || code === 'invalidated' ? code : 'failed', message);
+  return new BiometricError(code === 'cancelled' || code === 'invalidated' || code === 'unusable' ? code : 'failed', message);
 }
 
 export const biometricSealer: BiometricSealer = {

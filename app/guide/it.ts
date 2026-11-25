@@ -2942,10 +2942,13 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
 - **Chiamata rapida:** a tastierino vuoto, tieni premuto un tasto da 2 a 9 per chiamarne il numero. Un tasto senza
   numero ti fa sceglierne uno: scrivi un nome o un numero e tocca il contatto, oppure **Usa** il numero scritto. In
   **Telefono** → **Impostazioni**, **Chiamata rapida** mostra gli otto tasti; toccane uno per cambiarlo o svuotarlo.
-  La chiamata rapida è conservata cifrata nello spazio e funziona con Erevos sbloccato.
-  Con una password, **Chiamata rapida anche con Erevos bloccato** (spento all’inizio) la fa funzionare anche nel
-  Telefono aperto senza password: una copia dei numeri, senza i nomi, resta allora sul telefono fuori dallo spazio, e
-  chi tiene il telefono sbloccato può chiamarli. Uno spazio alla volta.
+  La chiamata rapida è conservata cifrata nello spazio e funziona con Erevos sbloccato. Finché il Telefono si apre
+  senza password, **Chiamata rapida anche con Erevos bloccato** (spento all’inizio) la fa funzionare anche lì: una
+  copia dei numeri, senza i nomi, resta allora sul telefono fuori dallo spazio, e chi tiene il telefono sbloccato può
+  chiamarli. Uno spazio alla volta. Può mostrare che lo spazio esiste: chi vede un altro tuo spazio trova che i tasti
+  chiamano numeri che non sono di quello spazio. La copia viene cancellata quando il Telefono torna dietro la
+  password, quando si ripristina un backup, quando si disattiva il blocco e quando una seconda password viene rimossa
+  o impostata di nuovo con un altro spazio aperto; riattivala allora.
 - **Impostazioni chiamate:** in **Telefono** → **Impostazioni**, **Impostazioni chiamate** apre le schermate di
   Android stesso per ciò che il tuo operatore tiene delle chiamate di ogni SIM: **Inoltro, avviso e il tuo numero**
   e **Numero di segreteria**; con due SIM, tocca prima la SIM. In **Chiedi al tuo operatore**, ogni pulsante compone
@@ -3230,7 +3233,8 @@ anche così. È disattivato finché non lo attivi.
 - **Come è conservata:** la chiave del primo spazio è sigillata da una chiave nell’hardware sicuro del telefono
   (l’Android Keystore) che funziona solo subito dopo un controllo forte dell’impronta o del volto, una volta per ogni
   uso. Aggiungere o rimuovere un’impronta o un volto fa scartare ad Android quella chiave: allora è disattivata, e la
-  riattivi. Niente lascia il telefono.
+  riattivi. Anche una chiave che smette di funzionare in altro modo porta alla disattivazione, dopo tre tentativi di
+  fila in cui non si è potuta usare. Niente lascia il telefono.
 - **Quale volto:** un volto conta solo dove Android considera forte il suo sblocco con il volto, come sul Pixel 8 e
   successivi; altrove vale l’impronta.
 - **Le password sbagliate** vengono contate come prima: un’impronta non cambia il conteggio.

@@ -309,8 +309,8 @@ export default function ChatScreen() {
   // hidden chats opened from the home screen's search (their key handed over in memory), or New
   // chat (`setup=1`, which shows the same as with no contact), with For advanced users, the relay's
   // own settings, open (`setup=relay`), its phones nearby open (`setup=nearby`, from Ways and the
-  // home screen's Nearby phones while they are off), or with Invite someone's QR code (`setup=invite`, the home
-  // screen's Invite). `at`:
+  // home screen's Nearby phones while they are off), with Invite someone's QR code (`setup=invite`, the home
+  // screen's Invite), or on I have their code (`setup=code`, First steps' I have an invite). `at`:
   // the tag of a message to go to, starred or found. A call to start with the contact comes only
   // from a tap in Erevos (lib/call-handoff.ts), never from the address, which any app or web page
   // can open.
@@ -424,6 +424,7 @@ export default function ChatScreen() {
               relaySettings={setup === 'relay'}
               nearbyOpen={setup === 'nearby'}
               inviteNow={setup === 'invite'}
+              codeNow={setup === 'code'}
               shown={!hiddenKey}
               onLook={setChatLook}
             />
@@ -475,7 +476,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, nearbyOpen = false, inviteNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, nearbyOpen = false, inviteNow = false, codeNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -491,6 +492,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   nearbyOpen?: boolean;
   /** Opens with Invite someone's QR code showing (the home screen's Invite), when this phone can invite. */
   inviteNow?: boolean;
+  /** Opens on I have their code: an invite or a link to scan, paste or type (First steps' I have an invite). */
+  codeNow?: boolean;
   shown: boolean;
   /** Hidden chats run only for a call answered with no PIN (ChatScreen): its screen shows no name, and they close as it ends. */
   callOnly?: boolean;
@@ -615,9 +618,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // With no chat open, New chat's pages (components/new-chat-doors.tsx): its first one asks where
   // the other person is, and each answer, and each of the three small buttons under them, is a
   // page of its own. Opened from elsewhere on one of them (the relay's settings, the phones nearby,
-  // the home screen's Invite), Back leaves New chat as it came, not for its first page.
-  const [door, setDoor] = useState<Door>(relaySettings || nearbyOpen ? 'advanced' : inviteNow ? 'far' : 'root');
-  const doorFromOutside = useRef(relaySettings || nearbyOpen || inviteNow);
+  // the home screen's Invite, First steps' I have an invite), Back leaves New chat as it came, not
+  // for its first page.
+  const [door, setDoor] = useState<Door>(relaySettings || nearbyOpen ? 'advanced' : inviteNow ? 'far' : codeNow ? 'code' : 'root');
+  const doorFromOutside = useRef(relaySettings || nearbyOpen || inviteNow || codeNow);
   const doorNow = useRef(door);
   doorNow.current = door;
   // You are connected, where the doors end: who was just added.
@@ -5717,9 +5721,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // Whether the text was a link Erevos takes: alone, or in a message pasted whole. `said`: the name
-  // the other phone gave itself beside the link (Near me), for a link that names no one.
-  function addContact(pasted = contactDraft, said = ''): boolean {
+  // Whether the text was a link Erevos takes: alone, or in a message pasted whole.
+  function addContact(pasted = contactDraft): boolean {
     const text = pastedLink(pasted);
     const welcome = parseWelcome(text);
     if (welcome) {
@@ -5743,6 +5746,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       else void takeTextInvite(byText, byText.name);
       return true;
     }
+    return addContactLink(text);
+  }
+
+  // Their contact link, and nothing else, adds them as a contact of these chats. `said`: the name
+  // the other phone gave itself beside the link (Near me), for a link that names no one.
+  function addContactLink(text: string, said = ''): boolean {
     const code = parseContact(text);
     if (!code) {
       setNote(t('That is not an Erevos contact link.'));
@@ -5753,6 +5762,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const name = contactLinkName(text) || said;
     void acceptContact(code, name ? { place: contactsPlace, name } : undefined, true);
     return true;
+  }
+
+  // What a pairing hands over, by Near me's pictures or by the code of 8 digits: the other phone's
+  // contact link, read as one and as nothing else. Its owner said yes to a contact, so an invite to
+  // a relay or a welcome in its place, which a link pasted by hand may be (addContact), is not
+  // taken: this phone would join a relay, or take a line there, that no one asked it about.
+  function addPaired(link: string, said = ''): boolean {
+    return addContactLink(link.trim(), said);
   }
 
   // The name typed on You are connected, for the contact just added: theirs in these chats from then on.
@@ -7812,7 +7829,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 search={HAS_LINKS && !hiddenKey}
                 held={!nearbyOn}
                 own={() => (ownLink ? { link: ownLink, name: linkE2E?.invitedAs() ?? '' } : null)}
-                onJoined={(end) => void addContact(end.link, end.name)}
+                onJoined={(end) => void addPaired(end.link, end.name)}
                 qr={
                   canWelcome && !nearPlain ? (
                     // An invite, which anyone's camera reads and which works with or without Erevos on their phone;
@@ -7843,7 +7860,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 }
                 ownLink={ownLink}
                 canCode={canPairWithCode()}
-                onCodeLink={(link) => void addContact(link)}
+                onCodeLink={(link) => void addPaired(link)}
                 onScan={() => void addFromQr(CAN_TAKE_PHOTOS ? 'camera' : 'photos')}
                 onType={() => openDoor('code')}
                 onGive={CAN_GIVE && !hiddenKey ? () => router.push('/give-app') : undefined}
@@ -7856,7 +7873,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   shown={shown}
                   ownLink={ownLink}
                   canCode={canPairWithCode()}
-                  onLink={(link) => void addContact(link)}
+                  onLink={(link) => void addPaired(link)}
                   draft={contactDraft}
                   onDraft={setContactDraft}
                   onAdd={() => addContact()}

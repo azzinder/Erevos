@@ -3087,12 +3087,16 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
   **Supprimer ce message vocal**. **Appeler la messagerie vocale** en haut l’appelle. Erevos les lit depuis le
   stockage d’Android et n’en garde aucune copie ; Erevos verrouillé, l’onglet ne s’affiche pas.
 - **Numérotation rapide :** clavier vide, maintiens une touche de 2 à 9 pour appeler son numéro. Une touche sans
-  numéro te laisse en choisir un : tape un nom ou un numéro et appuie sur le contact, ou **Utiliser** le numéro
-  tapé. Sous **Téléphone** → **Réglages**, **Numérotation rapide** montre les huit touches ; appuie sur une pour la
-  changer ou la vider. La numérotation rapide est gardée chiffrée dans l’espace, et marche avec Erevos déverrouillé.
-  Avec un mot de passe, **Numérotation rapide aussi avec Erevos verrouillé** (éteint au début) la fait marcher aussi
-  dans le Téléphone ouvert sans mot de passe : une copie des numéros, sans leurs noms, est alors gardée sur le
-  téléphone hors de l’espace, et qui tient le téléphone déverrouillé peut les appeler. Un espace à la fois.
+  numéro te laisse en choisir un : tape un nom ou un numéro et appuie sur le contact, ou **Utiliser** le numéro tapé.
+  Sous **Téléphone** → **Réglages**, **Numérotation rapide** montre les huit touches ; appuie sur une pour la changer
+  ou la vider. La numérotation rapide est gardée chiffrée dans l’espace, et marche avec Erevos déverrouillé. Tant que
+  le Téléphone s’ouvre sans mot de passe, **Numérotation rapide aussi avec Erevos verrouillé** (éteint au début) la
+  fait marcher là aussi : une copie des numéros, sans leurs noms, est alors gardée sur le téléphone hors de l’espace,
+  et qui tient le téléphone déverrouillé peut les appeler. Un espace à la fois. Elle peut montrer que l’espace
+  existe : qui voit un autre de tes espaces trouve que les touches appellent des numéros qui ne sont pas de cet
+  espace-là. La copie est supprimée quand le Téléphone repasse derrière le mot de passe, quand une sauvegarde est
+  restaurée, quand le verrou est désactivé, et quand un second mot de passe est supprimé ou défini de nouveau alors
+  qu’un autre espace est ouvert ; rallume-la alors.
 - **Réglages d’appel :** sous **Téléphone** → **Réglages**, **Réglages d’appel** ouvre les écrans d’Android lui-même
   pour ce que ton opérateur garde des appels de chaque SIM : **Renvoi, double appel et ton numéro** et **Numéro de
   messagerie vocale** ; avec deux SIM, appuie d’abord sur la SIM. Sous **Demander à ton opérateur**, chaque bouton
@@ -3386,7 +3390,8 @@ peut aussi s’ouvrir avec. C’est désactivé tant que tu ne l’actives pas.
 - **Comment c’est gardé :** la clé du premier espace est scellée par une clé dans le matériel sécurisé du téléphone
   (l’Android Keystore) qui ne fonctionne que juste après une vérification forte de l’empreinte ou du visage, une fois
   pour chaque utilisation. Ajouter ou retirer une empreinte ou un visage fait abandonner cette clé par Android : c’est
-  alors désactivé, et tu l’actives de nouveau. Rien ne quitte le téléphone.
+  alors désactivé, et tu l’actives de nouveau. Une clé qui cesse de fonctionner d’une autre façon le désactive aussi,
+  après trois essais de suite où elle n’a pas pu servir. Rien ne quitte le téléphone.
 - **Quel visage :** un visage ne compte que là où Android classe son déverrouillage par le visage comme fort, comme sur
   le Pixel 8 et plus récent ; ailleurs, c’est l’empreinte.
 - **Les mots de passe erronés** sont comptés comme avant : une empreinte ne change pas le compte.

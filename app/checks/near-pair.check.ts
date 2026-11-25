@@ -7,10 +7,12 @@
 // owners said yes. Also what a phone in between, a lost frame and a forgotten pairing do.
 
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 
+import { contactLink, parseContact } from '../lib/contact-code';
 import { pairCore, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { Nearby } from '../lib/nearby';
@@ -29,6 +31,8 @@ import {
   type NearEnd,
   type NearMessage,
 } from '../lib/near-pair';
+import { inviteLink, parseInvite } from '../lib/relay-invite';
+import { parseWelcome, welcomeLink } from '../lib/welcome';
 
 const N1 = '01'.repeat(16);
 const N2 = '02'.repeat(16);
@@ -529,4 +533,33 @@ test('closing the screen tells the phones nearby, and a yes still on its way arr
   await ending;
   assert.equal(over, true);
   await Promise.all([b.stop(), d.stop()]);
+});
+
+// The owners said yes to a contact. A link pasted by hand may also be an invite to a relay or a
+// welcome, which a phone with no relay takes at once (app/chat.tsx addContact): not from a pairing.
+test('what a pairing hands over is taken as a contact link only, never as an invite to a relay or a welcome', () => {
+  const contact = contactLink({ senderHex: 'ab'.repeat(24), relayUrl: 'wss://relay.example', key: 'k'.repeat(43) });
+  const invite = inviteLink({ relayUrl: 'wss://relay.example', code: 'cd'.repeat(32) });
+  const welcome = welcomeLink(contact, { code: 'cd'.repeat(32), hi: 'ef'.repeat(16), name: 'Anna' });
+  assert.ok(parseContact(contact) && parseInvite(invite) && parseWelcome(welcome));
+  // The reader the pairings use reads neither, however they are wrapped.
+  for (const other of [invite, welcome, ` ${invite}\n`, `${welcome} `]) assert.equal(parseContact(other), null);
+
+  // The screens: the pictures' link and both ends of the code of 8 digits go the contact's way.
+  const chat = readFileSync(join(import.meta.dirname, '..', 'app', 'chat.tsx'), 'utf8');
+  for (const taken of [
+    'onJoined={(end) => void addPaired(end.link, end.name)}',
+    'onCodeLink={(link) => void addPaired(link)}',
+    'onLink={(link) => void addPaired(link)}',
+  ]) {
+    assert.ok(chat.includes(taken), taken);
+  }
+  const [contactAt, pairedAt] = [chat.indexOf('  function addContactLink('), chat.indexOf('  function addPaired(')];
+  assert.ok(contactAt > 0 && pairedAt > contactAt);
+  const paired = chat.slice(pairedAt, chat.indexOf('\n  }\n', pairedAt));
+  assert.ok(paired.includes('return addContactLink(link.trim(), said);'));
+  // And that way reads a contact link, and takes nothing else.
+  const way = chat.slice(contactAt, pairedAt);
+  assert.ok(way.includes('const code = parseContact(text);'));
+  assert.ok(!/parseInvite|parseWelcome|parseTextInvite|joinRelay|takeWelcome|takeTextInvite|pastedLink/.test(way));
 });

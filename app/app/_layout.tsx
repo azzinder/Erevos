@@ -16,6 +16,7 @@ import { SwipeBack } from '../components/swipe-back';
 import { Button, Text } from '../components/ui';
 import { startBackground, syncBootStart } from '../lib/background';
 import { CHECK_MS as BACKUP_CHECK_MS, checkAutoBackup, runAutoBackup } from '../lib/backup-folder';
+import { forgetBackupMaking } from '../lib/backup-making';
 import { currentCall } from '../lib/call';
 import { endCall, onCallChange } from '../lib/calls';
 import { forgetOffered } from '../lib/contact-code';
@@ -1001,6 +1002,7 @@ function closeSpace(): void {
   forgetOpenedQueues();
   forgetWelcome();
   forgetTextInvite();
+  forgetBackupMaking();
   leaveTor();
   setNostr(null);
   setRelayStopped(false);

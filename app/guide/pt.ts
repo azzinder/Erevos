@@ -2911,11 +2911,14 @@ de você digitá-la, a menos que o Telefone abra sem ela (veja A senha do Erevos
   Android e não guarda cópia; com o Erevos bloqueado a aba não aparece.
 - **Discagem rápida:** com o teclado vazio, segure uma tecla de 2 a 9 para ligar para o número dela. Uma tecla sem
   número deixa você escolher um: digite um nome ou um número e toque no contato, ou **Usar** o número digitado. Em
-  **Telefone** → **Configurações**, **Discagem rápida** mostra as oito teclas; toque numa para mudá-la ou
-  esvaziá-la. A discagem rápida fica criptografada no espaço e funciona com o Erevos desbloqueado.
-  Com uma senha, **Discagem rápida também com o Erevos bloqueado** (desligada no início) faz ela funcionar também no
-  Telefone aberto sem senha: uma cópia dos números, sem os nomes, fica então no celular fora do espaço, e quem segurar
-  o celular desbloqueado pode ligar para eles. Um espaço por vez.
+  **Telefone** → **Configurações**, **Discagem rápida** mostra as oito teclas; toque numa para mudá-la ou esvaziá-la.
+  A discagem rápida fica criptografada no espaço e funciona com o Erevos desbloqueado. Enquanto o Telefone abre sem
+  senha, **Discagem rápida também com o Erevos bloqueado** (desligada no início) faz ela funcionar ali também: uma
+  cópia dos números, sem os nomes, fica então no celular fora do espaço, e quem segurar o celular desbloqueado pode
+  ligar para eles. Um espaço por vez. Ela pode mostrar que o espaço existe: quem vir outro espaço seu encontra as
+  teclas ligando para números que não são daquele espaço. A cópia é apagada quando o Telefone volta a ficar protegido
+  pela senha, quando um backup é restaurado, quando o bloqueio é desativado e quando uma segunda senha é removida ou
+  definida de novo com outro espaço aberto; ligue-a de novo então.
 - **Configurações de chamada:** em **Telefone** → **Configurações**, **Configurações de chamada** abre as telas do
   próprio Android para o que a operadora guarda das chamadas de cada chip: **Encaminhamento, espera e o seu número**
   e **Número do correio de voz**; com dois chips, toque primeiro no chip. Em **Perguntar à operadora**, cada botão
@@ -3189,7 +3192,8 @@ também pode abrir com eles. Fica desativado a menos que você o ative.
 - **Como é guardada:** a chave do primeiro espaço é selada por uma chave no hardware seguro do celular (o Android
   Keystore) que só funciona logo depois de uma verificação forte de impressão digital ou rosto, uma vez para cada uso.
   Adicionar ou remover uma impressão digital ou um rosto faz o Android descartar essa chave: ela fica então
-  desativada, e você a ativa de novo. Nada sai do celular.
+  desativada, e você a ativa de novo. Uma chave que para de funcionar de outro jeito também leva à desativação, depois
+  de três tentativas seguidas em que não pôde ser usada. Nada sai do celular.
 - **Que rosto:** um rosto só conta onde o Android classifica o desbloqueio facial dele como forte, como no Pixel 8 e
   posteriores; nos outros, é a impressão digital.
 - **As senhas erradas** são contadas como antes: uma impressão digital não muda a contagem.

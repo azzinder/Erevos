@@ -2696,12 +2696,15 @@ that title, and tapping it opens the Phone's **Settings**.
   the row offers **Call back**, **Send an SMS** and **Delete this voicemail**. **Call the voicemail** at the top
   calls it. Erevos plays them from Android's store and keeps no copy; with Erevos locked the tab does not show.
 - **Speed dial:** on an empty keypad, hold a key from 2 to 9 to call the number on it. A key with none offers to
-  choose one: type a name or a number and tap the contact, or **Use** the number typed. Under **Phone** →
-  **Settings**, **Speed dial** shows the eight keys; tap one to change it, or **Take it off**. Speed dial is kept
-  sealed in the space, and works with Erevos unlocked.
-  With a password, **Let speed dial work with Erevos locked** (off at first) lets it work on the Phone opened without
-  the password too: a copy of the numbers, without their names, is then kept on the phone outside the space, so anyone
-  holding the unlocked phone can call them. One space at a time.
+  choose one: type a name or a number and tap the contact, or **Use** the number typed. Under
+  **Phone** → **Settings**, **Speed dial** shows the eight keys; tap one to change it, or **Take it off**. Speed dial
+  is kept sealed in the space, and works with Erevos unlocked. While the Phone opens without the password, **Let speed
+  dial work with Erevos locked** (off at first) lets it work there too: a copy of the numbers, without their names, is
+  then kept on the phone outside the space, so anyone holding the unlocked phone can call them. One space at a time.
+  It can show that the space exists: someone shown another space of yours finds the keys calling numbers that are not
+  that space's. The copy is deleted when the Phone goes back behind the password, when a backup is restored, when the
+  lock is turned off, and when a second password is removed or set again while another space is open; turn it on again
+  then.
 - **Call settings:** under **Phone** → **Settings**, **Call settings** opens Android's own screens for what your
   phone company keeps of each SIM's calls: **Forwarding, waiting and your number**, and **Voicemail number**; with
   two SIMs, tap the SIM first. Under **Ask your phone company**, each button dials the network's code (**Check**
@@ -2954,9 +2957,9 @@ is off unless you turn it on.
 - **Under pressure:** someone who holds you can press your finger to the phone, or hold it to your face. If that may
   happen, keep it off: then they need a password, and you can give them the second one.
 - **How it is kept:** the first space's key is sealed by a key in the phone's secure hardware (the Android Keystore)
-  that works only right after a strong fingerprint or face check, once for each use. Adding or removing a
-  fingerprint or face makes Android drop that key: it is then off, and you turn it on again. Nothing leaves the
-  phone.
+  that works only right after a strong fingerprint or face check, once for each use. Adding or removing a fingerprint
+  or face makes Android drop that key: it is then off, and you turn it on again. A key that stops working in some
+  other way turns it off too, after three tries in a row in which the key could not be used. Nothing leaves the phone.
 - **Which face:** a face counts only where Android rates its face unlock as strong, as on the Pixel 8 and later;
   elsewhere it is the fingerprint.
 - **Wrong passwords** are counted as before: a fingerprint does not change the count.

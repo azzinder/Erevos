@@ -2933,10 +2933,13 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
 - **Marcación rápida:** con el teclado vacío, mantén pulsada una tecla del 2 al 9 para llamar a su número. Una tecla
   sin número te deja elegir uno: escribe un nombre o un número y toca el contacto, o **Usar** el número escrito. En
   **Teléfono** → **Ajustes**, **Marcación rápida** muestra las ocho teclas; toca una para cambiarla o vaciarla. La
-  marcación rápida se guarda cifrada en el espacio y funciona con Erevos desbloqueado.
-  Con contraseña, **Marcación rápida también con Erevos bloqueado** (apagado al principio) la hace funcionar también
-  en el Teléfono abierto sin contraseña: una copia de los números, sin sus nombres, queda entonces en el móvil fuera
-  del espacio, y quien tenga el móvil desbloqueado puede llamarlos. Un espacio a la vez.
+  marcación rápida se guarda cifrada en el espacio y funciona con Erevos desbloqueado. Mientras el Teléfono se abre
+  sin contraseña, **Marcación rápida también con Erevos bloqueado** (apagado al principio) la hace funcionar también
+  ahí: una copia de los números, sin sus nombres, queda entonces en el móvil fuera del espacio, y quien tenga el móvil
+  desbloqueado puede llamarlos. Un espacio a la vez. Puede mostrar que el espacio existe: quien vea otro espacio tuyo
+  encuentra que las teclas llaman a números que no son de ese espacio. La copia se borra cuando el Teléfono vuelve
+  tras la contraseña, cuando se restaura una copia de seguridad, cuando se desactiva el bloqueo y cuando se quita o se
+  pone de nuevo una segunda contraseña con otro espacio abierto; actívala entonces otra vez.
 - **Ajustes de llamadas:** en **Teléfono** → **Ajustes**, **Ajustes de llamadas** abre las pantallas del propio
   Android para lo que tu compañía guarda de las llamadas de cada SIM: **Desvío, espera y tu número** y **Número del
   buzón de voz**; con dos SIM, toca primero la SIM. En **Preguntar a tu compañía**, cada botón marca el código de la
@@ -3213,8 +3216,9 @@ abrirse con ella. Está desactivado salvo que lo actives.
   eso puede pasar, déjalo desactivado: así necesitan una contraseña, y puedes darles la segunda.
 - **Cómo se guarda:** la clave del primer espacio está sellada por una clave del hardware seguro del teléfono (el
   Android Keystore) que solo funciona justo después de una comprobación fuerte de huella o cara, una vez por cada uso.
-  Añadir o quitar una huella o una cara hace que Android descarte esa clave: entonces queda desactivado, y lo vuelves a
-  activar. Nada sale del teléfono.
+  Añadir o quitar una huella o una cara hace que Android descarte esa clave: entonces queda desactivado, y lo vuelves
+  a activar. Una clave que deja de funcionar de otro modo también lo desactiva, tras tres intentos seguidos en los que
+  no se pudo usar. Nada sale del teléfono.
 - **Qué cara:** una cara solo cuenta donde Android califica su desbloqueo facial como fuerte, como en el Pixel 8 y
   posteriores; en los demás, es la huella.
 - **Las contraseñas incorrectas** se cuentan como antes: una huella no cambia el contador.

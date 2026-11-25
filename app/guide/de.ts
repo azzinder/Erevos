@@ -3110,14 +3110,17 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
   spielt sie ab, **■** hält sie an; ein Tippen auf die Zeile bietet **Zurückrufen**, **SMS senden** und
   **Sprachnachricht löschen**. **Mailbox anrufen** oben ruft sie an. Erevos spielt sie aus dem Speicher von Android
   ab und behält keine Kopie; bei gesperrtem Erevos erscheint der Tab nicht.
-- **Kurzwahl:** Halte bei leerer Wähltastatur eine Taste von 2 bis 9, um ihre Nummer anzurufen. Eine Taste ohne
-  Nummer lässt dich eine wählen: Gib einen Namen oder eine Nummer ein und tippe auf den Kontakt, oder nimm die
-  getippte Nummer mit **verwenden**. Unter **Telefon** → **Einstellungen** zeigt **Kurzwahl** die acht Tasten; tippe
-  auf eine, um sie zu ändern oder zu leeren. Die Kurzwahl wird verschlüsselt im Bereich aufbewahrt und funktioniert
-  bei entsperrtem Erevos.
-  Mit einem Passwort lässt **Kurzwahl auch bei gesperrtem Erevos** (anfangs aus) sie auch im Telefon funktionieren,
-  das ohne Passwort öffnet: Eine Kopie der Nummern, ohne Namen, liegt dann auf dem Handy außerhalb des Bereichs, und
-  wer das entsperrte Handy hält, kann sie anrufen. Immer nur ein Bereich.
+- **Kurzwahl:** Halte bei leerer Wähltastatur eine Taste von 2 bis 9, um ihre Nummer anzurufen. Eine Taste ohne Nummer
+  lässt dich eine wählen: Gib einen Namen oder eine Nummer ein und tippe auf den Kontakt, oder nimm die getippte
+  Nummer mit **verwenden**. Unter **Telefon** → **Einstellungen** zeigt **Kurzwahl** die acht Tasten; tippe auf eine,
+  um sie zu ändern oder zu leeren. Die Kurzwahl wird verschlüsselt im Bereich aufbewahrt und funktioniert bei
+  entsperrtem Erevos. Solange das Telefon ohne Passwort öffnet, lässt **Kurzwahl auch bei gesperrtem Erevos** (anfangs
+  aus) sie auch dort funktionieren: Eine Kopie der Nummern, ohne Namen, liegt dann auf dem Handy außerhalb des
+  Bereichs, und wer das entsperrte Handy hält, kann sie anrufen. Immer nur ein Bereich. Sie kann zeigen, dass es den
+  Bereich gibt: Wer einen anderen Bereich von dir sieht, findet, dass die Tasten Nummern anrufen, die nicht zu jenem
+  Bereich gehören. Die Kopie wird gelöscht, wenn das Telefon wieder hinter das Passwort kommt, wenn ein Backup
+  wiederhergestellt wird, wenn die Sperre ausgeschaltet wird und wenn ein zweites Passwort entfernt oder neu
+  festgelegt wird, während ein anderer Bereich offen ist; schalte sie dann wieder ein.
 - **Anrufeinstellungen:** Unter **Telefon** → **Einstellungen** öffnen die **Anrufeinstellungen** die eigenen
   Bildschirme von Android für das, was dein Anbieter von den Anrufen jeder SIM verwaltet: **Umleitung, Anklopfen und
   deine Nummer** und **Mailbox-Nummer**; bei zwei SIMs tippe zuerst die SIM an. Unter **Deinen Anbieter fragen**
@@ -3417,7 +3420,9 @@ sich Erevos auch damit öffnen. Es ist aus, solange du es nicht einschaltest.
 - **Wie es aufbewahrt wird:** Der Schlüssel des ersten Bereichs ist mit einem Schlüssel in der sicheren Hardware des
   Telefons (dem Android Keystore) versiegelt, der nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung
   funktioniert, einmal für jede Nutzung. Einen Fingerabdruck oder ein Gesicht hinzuzufügen oder zu entfernen, lässt
-  Android diesen Schlüssel verwerfen: Es ist dann aus, und du schaltest es wieder ein. Nichts verlässt das Telefon.
+  Android diesen Schlüssel verwerfen: Es ist dann aus, und du schaltest es wieder ein. Ein Schlüssel, der auf andere
+  Weise nicht mehr funktioniert, schaltet es ebenfalls aus, nach drei Versuchen in Folge, bei denen er sich nicht
+  benutzen ließ. Nichts verlässt das Telefon.
 - **Welches Gesicht:** Ein Gesicht zählt nur, wo Android seine Gesichtsentsperrung als stark einstuft, etwa auf dem
   Pixel 8 und neuer; anderswo ist es der Fingerabdruck.
 - **Falsche Passwörter** werden wie bisher gezählt: Ein Fingerabdruck ändert die Zählung nicht.

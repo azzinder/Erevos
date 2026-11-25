@@ -11,6 +11,8 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // turned on.
 
 const KEY = 'erevos.phone-open';
+// The copy of one space's speed dial numbers, below.
+const SPEED_KEY = 'erevos.phone-speed';
 
 /** Whether the Phone opens without the password. */
 export async function phoneOpensLocked(): Promise<boolean> {
@@ -21,8 +23,10 @@ export async function phoneOpensLocked(): Promise<boolean> {
   }
 }
 
-/** Lets the Phone open without the password, or keeps it behind it again. */
+/** Lets the Phone open without the password, or keeps it behind it again: the copy of a space's
+ *  speed dial numbers (below) goes first then, as nothing reads it any more. */
 export async function setPhoneOpensLocked(on: boolean): Promise<void> {
+  if (!on) await secureDelete(SPEED_KEY);
   await secureSet(KEY, on ? 'yes' : 'no');
 }
 
@@ -33,8 +37,13 @@ export async function setPhoneOpensLocked(on: boolean): Promise<void> {
 // that space holds the same `feed` sealed in its own data (lock/phone-data.ts), and only a space
 // whose `feed` matches writes the copy (lib/phone-sims.ts). The numbers only, no names; never in a
 // backup.
-
-const SPEED_KEY = 'erevos.phone-speed';
+//
+// The copy lies outside the spaces' encryption, and only the space that keeps it can take it away,
+// so it never outlives what it is for. It is there only while the Phone opens without the password
+// (above): going back behind it deletes the copy, and none is written meanwhile. Restoring a backup
+// deletes it (lock/backup.ts), as the spaces are then the backup's; turning the lock off deletes it,
+// and so does a password that stops opening its spaces, unless the space open then is the one that
+// keeps it (lock/config.ts). A space whose copy went that way turns it on again.
 
 /** The copy: each key from 2 to 9 with its number. */
 export type LockedSpeed = { feed: string; keys: { key: string; number: string }[] };
@@ -66,8 +75,14 @@ export async function lockedSpeedDials(): Promise<LockedSpeed | null> {
   }
 }
 
-/** Keeps the copy, or with null takes it away: speed dial then works with Erevos unlocked only. */
+/** Whether the copy is the one kept by the space whose sealed `feed` this is ('' for none). */
+export async function lockedSpeedIs(feed: string): Promise<boolean> {
+  return !!feed && (await lockedSpeedDials())?.feed === feed;
+}
+
+/** Keeps the copy, or with null takes it away: speed dial then works with Erevos unlocked only.
+ *  With the Phone behind the password nothing would read it, so none is kept then either. */
 export async function setLockedSpeedDials(value: LockedSpeed | null): Promise<void> {
-  if (value === null) await secureDelete(SPEED_KEY);
+  if (value === null || !(await phoneOpensLocked())) await secureDelete(SPEED_KEY);
   else await secureSet(SPEED_KEY, JSON.stringify({ feed: value.feed, keys: value.keys.map(({ key, number }) => ({ key, number })) }));
 }
