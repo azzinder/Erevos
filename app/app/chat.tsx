@@ -57,7 +57,7 @@ import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { ConnectStatus, MyQrCard, WayCard } from '../components/connect-cards';
+import { ConnectStatus, MyQrCard, QrTile, WayCard } from '../components/connect-cards';
 import { Doors, Joined, Rest, type Door } from '../components/new-chat-doors';
 import { NearMe } from '../components/near-me';
 import { canPairWithCode, TheirCode } from '../components/their-code';
@@ -7845,8 +7845,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       onNote={setNote}
                     />
                   ) : ownLink ? (
-                    <>
-                      <QrCode text={ownLink} size={200} />
+                    // A small tile beside what it is for; tapped, it shows large, with what it is under it.
+                    <QrTile text={ownLink} shown={shown}>
                       <Text variant="caption" tone="muted" style={styles.centered}>
                         {t('They scan it with the camera, and you are each other’s contacts at once.')}
                       </Text>
@@ -7855,7 +7855,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           {t('With no relay, messages go through Nostr, or nearby.')}
                         </Text>
                       ) : null}
-                    </>
+                    </QrTile>
                   ) : null
                 }
                 ownLink={ownLink}

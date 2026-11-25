@@ -419,7 +419,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   const [sign, setSign] = useState(false);
   const [allowed, setAllowed] = useState(backgroundState);
   const [battery, setBattery] = useState<BatteryMode>('normal');
-  // Whether Erevos starts by itself as the phone turns on (lib/background.ts): the phone's choice.
+  // Whether Erevos starts by itself as the phone turns on (lib/background.ts): the phone's choice, on until turned off.
   const [boot, setBoot] = useState(loadBootStart);
 
   useEffect(() => {
@@ -536,16 +536,19 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
           ) : null}
         </>
       ) : null}
-      {on && notices && canStartAtBoot ? (
+      {/* Where Erevos receives in the background it starts by itself, until turned off here (lib/boot-choice.ts). */}
+      {on && canStartAtBoot ? (
         <>
           <Row wrap>
             <Chip label={t('Start when the phone turns on')} selected={boot} onPress={() => chooseBoot(true)} />
             <Chip label={t('Wait until I open it')} selected={!boot} onPress={() => chooseBoot(false)} />
           </Row>
           <Text variant="caption" tone="muted" style={hint}>
-            {boot
-              ? t('After the phone turns on, or Erevos is updated, Erevos starts by itself, with no space open: the spaces set to say a message came also while another is open already say "New message", never which space, nor who or what. Everything else waits for a password, as Erevos keeps no key on the phone. Meanwhile a quiet notice says "Locked". Spaces that go through Tor say nothing until a space is open. With no such space, only a quiet notice says it is locked, and a tap on it opens Erevos.')
-              : t('After the phone turns on, Erevos waits until you open it.')}
+            {!boot
+              ? t('After the phone turns on, Erevos waits until you open it.')
+              : notices
+                ? t('After the phone turns on, or Erevos is updated, Erevos starts by itself, with no space open: the spaces set to say a message came also while another is open already say "New message", never which space, nor who or what. Everything else waits for a password, as Erevos keeps no key on the phone. Meanwhile a quiet notice says "Locked". Spaces that go through Tor say nothing until a space is open. With no such space, only a quiet notice says it is locked, and a tap on it opens Erevos.')
+                : t('After the phone turns on, or Erevos is updated, Erevos starts by itself, with no space open, and a quiet notice says it is locked: a tap on it opens Erevos. Nothing comes until a space is open.')}
           </Text>
         </>
       ) : null}

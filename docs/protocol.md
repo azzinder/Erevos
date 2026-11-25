@@ -377,5 +377,22 @@ key    = Seal_A( Seal_K( hex(spaceKey) ) )
   search forgets after 15 minutes and waits at most 5 minutes.
 - **Sealed files.** Each space's data is one sealed value per slot, every value the same size.
   History is 16 KB pages mixed for all holders, behind a 64 KB page index.
+- **The locked camera** (`camera-drop.ts`). With the password lock, the camera opens with Erevos
+  locked and takes for the space opened last. A photo or video goes into chunks as a Collection
+  file does, under a random file key. That key, with the file's name, type, size and time, is
+  sealed as in 7.3 to `D_pub`, with the 24 bytes that carry the sender id there holding the mark
+  `"erevos camera drop v1"` padded with zeros, in a note `erevos-drop-<16 random bytes, hex>`
+  beside the chunks. A note is taken only with that mark.
+
+```text
+d      = HKDF-SHA256(ikm = spaceKey, salt = none, info = "erevos camera drop v1", 32)
+D_pub  = X25519 public key of d    (keystore entry erevos.camera-drop, never in a backup)
+note   = { v: 1, files: [{ id, count }...], sealed: relaySeal(D_pub, mark, JSON { file, thumb, at }) }
+```
+
+  `d` is made again as the space opens and is kept nowhere, so the locked camera holds no key
+  that opens anything, not even what it just took. A note the open space's `d` does not open stays
+  for its own space. The switch `erevos.camera-open` is the phone's, the same in every space; a
+  backup restored deletes the notes with their chunks, and `D_pub`.
 
 The flows are drawn in [state-machines.md](state-machines.md).
