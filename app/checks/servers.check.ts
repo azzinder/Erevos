@@ -8,7 +8,8 @@
 // and invites by SMS on any web server are read when pasted or scanned, while only the build's own
 // server and LPHL's open a screen by themselves. And what the owner types in the app for servers
 // of their own: a relay's address in plain words (lib/own-server.ts) and a web folder for the
-// models (lib/models-server.ts).
+// models (lib/models-server.ts). And that the screens offer them where the words say they do
+// (app/chat.tsx, app/first-steps.tsx, components/own-server.tsx, the models' sheets).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -166,4 +167,49 @@ test('a web folder for the models is https, with one slash at its end', () => {
   assert.equal(modelsFolder('https://cloud.example.org'), 'https://cloud.example.org/');
   for (const wrong of ['', 'http://cloud.example.org/models', 'ftp://cloud.example.org', 'https://user:pass@cloud.example.org/models', 'cloud.example.org/models?x=1', 'cloud.example.org/models#x', 'cloud example.org', 'localhost/models'])
     assert.equal(modelsFolder(wrong), null, wrong);
+});
+
+test('a phone with no relay yet is offered every way to begin on one page, in plain words', () => {
+  const read = (file: string) => readFileSync(join(import.meta.dirname, file), 'utf8');
+  const chat = read('../app/chat.tsx');
+  // New chat, for a phone with no relay yet: I have no invite opens the page For advanced users opens.
+  assert.ok(chat.includes("...(newcomer ? [{ title: t('I have no invite'), onPress: () => openDoor('advanced') }] : []),"));
+  // That page, in order: what a server is, an account at a server, a server of one's own, none.
+  const order = [
+    '<ServerChoice none={!!ownLink} />',
+    '<RelaySignIn url={signInAt}',
+    "t('My account is at another server…')",
+    "<OwnServerCard open={way === 'server'}",
+    "title={t('Start without a server')}",
+  ];
+  const at = order.map((piece) => chat.indexOf(piece));
+  assert.ok(at.every((place) => place > 0), `${at}`);
+  assert.deepEqual([...at].sort((a, b) => a - b), at);
+  assert.ok(chat.includes('onUse={joinOwnServer} />'));
+  // A server of one's own is tried before anything is kept: a mistyped one leaves the phone as it was.
+  const joining = chat.slice(chat.indexOf('async function joinOwnServer('), chat.indexOf('async function ownLine('));
+  assert.ok(joining.includes('const url = ownServerAddress(typed);'));
+  const tried = joining.indexOf('await createQueue({ url, token: token || undefined })');
+  assert.ok(tried > 0);
+  for (const kept of ['setRelayUrl(url)', 'setRelayToken(token)', 'setOwnQueue(']) assert.ok(joining.indexOf(kept) > tried, kept);
+  // The first start names both ways in, and the one with no invite opens that page (setup=relay).
+  const first = read('../app/first-steps.tsx');
+  assert.ok(first.includes("{t('I have an invite')}") && first.includes("{t('I have no invite')}"));
+  assert.ok(first.includes("router.push('/chat?setup=relay')"));
+  assert.ok(chat.includes("relaySettings={setup === 'relay'}") && chat.includes("useState<Door>(relaySettings || nearbyOpen ? 'advanced'"));
+  // Whoever has neither an account nor a server is told which way is theirs, where that way is offered.
+  const own = read('../components/own-server.tsx');
+  assert.ok(own.includes('{none ? ('));
+  assert.ok(own.includes("t('If you have neither an account nor a server, start without a server: it needs nothing, and you can add one later.')"));
+});
+
+test('the sheets that download a model say from where, and take a web folder of one\'s own', () => {
+  const read = (file: string) => readFileSync(join(import.meta.dirname, file), 'utf8');
+  for (const sheet of ['dictate-sheet', 'translate-sheet', 'speech-sheet']) {
+    const code = read(`../components/${sheet}.tsx`);
+    assert.ok(code.includes('<ModelsServer />'), sheet);
+    assert.ok(code.includes('useModelsHost()'), sheet);
+  }
+  // Each download asks where the models come from as it starts.
+  for (const lib of ['speech', 'translate']) assert.ok(read(`../lib/${lib}.ts`).includes('(await loadModelsServer()) + '), lib);
 });

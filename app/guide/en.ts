@@ -504,8 +504,9 @@ email to reach you: whoever has your contact link can write to your queue, and o
    works it is not shown. With a relay, a field at the top finds a contact by name or adds a link pasted into it. Then
    comes one question, **Where is the other person?**, and each answer opens a page of its own: **Near me**, **Far
    away** and **I have their code**, as in 4 to 6 below. Three small buttons under them open the rest: **My link**,
-   **Blocked contacts** and **For advanced users**, where the relay's own settings are; **Settings** → **Relay and
-   networks** → **Relay** opens New chat with them open.
+   **Blocked contacts** and **For advanced users**, where the relay's own settings are, and a phone with no relay yet
+   has one more, **I have no invite**, which opens the same page; **Settings** → **Relay and networks** → **Relay**
+   opens New chat with them open.
 2. Under **For advanced users**, type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Erevos makes your queue on it by itself, a few seconds later, and says **Relay queue created**: everything works, texts,

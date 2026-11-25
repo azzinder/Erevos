@@ -18,6 +18,7 @@ export const ownServerText: Record<string, string> = {
   "A web folder, yours or your group’s, that holds the same files under the same names. Erevos checks every file after the download and refuses one that was changed. That server, not {host}, then sees your IP address.": "Ένας φάκελος web, δικός σου ή της ομάδας σου, που έχει τα ίδια αρχεία με τα ίδια ονόματα. Το Erevos ελέγχει κάθε αρχείο μετά τη λήψη και απορρίπτει όποιο έχει αλλάξει. Τότε τη διεύθυνση IP σου τη βλέπει εκείνος ο server, όχι το {host}.",
   "Where your messages wait": "Πού περιμένουν τα μηνύματά σου",
   "A server (Erevos calls it a relay) keeps your messages, encrypted, until the other phone takes them. It cannot read them. Choose how to start: you can change it any time, here.": "Ένας server (το Erevos τον λέει relay) κρατά τα μηνύματά σου, κρυπτογραφημένα, μέχρι να τα πάρει το άλλο τηλέφωνο. Δεν μπορεί να τα διαβάσει. Διάλεξε πώς θα ξεκινήσεις: το αλλάζεις όποτε θέλεις, εδώ.",
+  "If you have neither an account nor a server, start without a server: it needs nothing, and you can add one later.": "Αν δεν έχεις ούτε λογαριασμό ούτε server, ξεκίνα χωρίς server: δεν χρειάζεται τίποτα, και προσθέτεις έναν αργότερα.",
   "I have a server of my own": "Έχω δικό μου server",
   "Yours, or one of your family, group or workplace. You type its address and the code you were given.": "Δικός σου, ή της οικογένειας, της ομάδας ή της δουλειάς σου. Γράφεις τη διεύθυνσή του και τον κωδικό που σου δώσανε.",
   "Server address": "Διεύθυνση του server",

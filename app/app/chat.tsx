@@ -8020,7 +8020,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 {newcomer ? (
                   <>
                     {/* A phone with no relay yet: the other ways in than an invite, for whoever looks for them. */}
-                    <ServerChoice />
+                    <ServerChoice none={!!ownLink} />
                     <RelaySignIn url={signInAt} token="" onToken={(token, name) => void tookToken(signInAt, token, name, true)} onNote={setNote} card />
                     {otherRelay === null ? (
                       <Row wrap>

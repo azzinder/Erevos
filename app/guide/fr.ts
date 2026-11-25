@@ -569,8 +569,9 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    en haut trouve un contact par son nom ou ajoute un lien collé dedans. Vient ensuite une question, **Où est l’autre
    personne ?**, et chaque réponse ouvre une page à elle : **À côté de moi**, **Loin** et **J’ai son code**, comme aux
    étapes 4 à 6 ci-dessous. Trois petits boutons en dessous ouvrent le reste : **Mon lien**, **Contacts bloqués** et
-   **Pour les utilisateurs avancés**, où sont les réglages propres du relais ; **Réglages** → **Relais et réseaux** →
-   **Relais** ouvre Nouvelle discussion avec ceux-ci ouverts.
+   **Pour les utilisateurs avancés**, où sont les réglages propres du relais, et un téléphone qui n’a pas encore de
+   relais en a un de plus, **Je n’ai pas d’invitation**, qui ouvre la même page ; **Réglages** → **Relais et réseaux**
+   → **Relais** ouvre Nouvelle discussion avec ceux-ci ouverts.
 2. Sous **Pour les utilisateurs avancés**, tape l’**Adresse du relais** : \`ws://<adresse de l’ordinateur>:7879\` pour
    un relais sur ton propre réseau, ou \`wss://relay.example.org\` pour un relais sur internet. Ajoute le **Jeton** si
    le relais en demande un.

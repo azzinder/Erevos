@@ -56,9 +56,13 @@ export function webLinkHref(url: string): string {
   return /^[A-Za-z0-9_%.~+=&-]+$/.test(data) ? `/contact?${data}` : '';
 }
 
-// An Erevos link wherever it stands in a text: its own kind (erevos://...), or one of its two pages,
-// on any web server.
-const LINK_IN = /(?:erevos:\/\/[a-z-]+\?|https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?\/[ci]\/?#)[^\s<>"'«»]+/i;
+// An Erevos link wherever it stands in a text: its own kind (erevos://...), or one of its two pages
+// on this build's web server or LPHL's. Only a text with neither is read for the same pages on any
+// other web server, so an address of that shape which is not Erevos's, earlier in the text, does
+// not stand in the link's way.
+const REST = `[^\\s<>"'«»]+`;
+const LINK_IN = new RegExp(`(?:erevos:\\/\\/[a-z-]+\\?|(?:${[...new Set([WEB_ORIGIN, LPHL_WEB])].map(escaped).join('|')})\\/[ci]\\/?#)${REST}`, 'i');
+const LINK_ELSEWHERE = new RegExp(`https:\\/\\/[a-z0-9.-]+(?::[0-9]{1,5})?\\/[ci]\\/?#${REST}`, 'i');
 
 /**
  * What was pasted where a link is asked for, as the link in it: a whole message someone sent, with
@@ -66,7 +70,7 @@ const LINK_IN = /(?:erevos:\/\/[a-z-]+\?|https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?\/
  * sentence. Text with no Erevos link in it comes back as it is, trimmed.
  */
 export function pastedLink(text: string): string {
-  const found = LINK_IN.exec(text);
+  const found = LINK_IN.exec(text) ?? LINK_ELSEWHERE.exec(text);
   if (!found) return text.trim();
   let end = found[0].length;
   while (end > 0 && '.,;:!?)]'.includes(found[0][end - 1])) end -= 1;

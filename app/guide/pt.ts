@@ -538,8 +538,8 @@ a lê.
    adiciona um link colado nele. Depois vem uma pergunta, **Onde está a outra pessoa?**, e cada resposta abre uma
    página própria: **Ao meu lado**, **Longe** e **Tenho o código dele**, como de 4 a 6 abaixo. Três botões pequenos
    embaixo abrem o resto: **Meu link**, **Contatos bloqueados** e **Para usuários avançados**, onde ficam as
-   configurações do próprio relay; **Configurações** → **Relay e redes** → **Relay** abre Nova conversa com elas
-   abertas.
+   configurações do próprio relay, e um celular que ainda não tem relay tem mais um, **Não tenho convite**, que abre a
+   mesma página; **Configurações** → **Relay e redes** → **Relay** abre Nova conversa com elas abertas.
 2. Em **Para usuários avançados**, digite o **Endereço do relay**: \`ws://<endereço do computador>:7879\` para um relay
    na sua própria rede, ou \`wss://relay.example.org\` para um na internet. Adicione o **Token** se o relay pedir um.
 3. O Erevos cria a sua fila nele sozinho, alguns segundos depois, e diz **Fila no relay criada**: tudo funciona, textos, fotos, mensagens de voz,

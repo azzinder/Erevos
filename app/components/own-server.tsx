@@ -12,14 +12,20 @@ import { useColors } from '../theme/context';
 
 // For a phone with no relay yet (New chat, For advanced users): what a server is, in one line, over
 // the ways to start that follow it, which stand as equals: an account at a server (LPHL's, or another), a server
-// of one's own, or none.
-export function ServerChoice() {
+// of one's own, or none. Where starting with none is offered below (`none`), a line says that it is
+// the way for whoever has neither, so nobody is left choosing between things they do not have.
+export function ServerChoice({ none = false }: { none?: boolean }) {
   return (
     <>
       <Text variant="bodyStrong">{t('Where your messages wait')}</Text>
       <Text variant="caption" tone="muted">
         {t('A server (Erevos calls it a relay) keeps your messages, encrypted, until the other phone takes them. It cannot read them. Choose how to start: you can change it any time, here.')}
       </Text>
+      {none ? (
+        <Text variant="caption" tone="muted">
+          {t('If you have neither an account nor a server, start without a server: it needs nothing, and you can add one later.')}
+        </Text>
+      ) : null}
     </>
   );
 }

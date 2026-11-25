@@ -81,6 +81,27 @@ and 0.1.15 never came out.
   `components/panel-close.ts`, `components/composer.tsx` `ComposerPanel`). The panel says "encrypted" only where what
   is sent is end-to-end encrypted. In a short conversation the field now stays at the bottom of the screen, as in
   Erevos's own chats (`components/network-thread.tsx`). Requested by the maintainer.
+- Servers of one's own from the first start (#71): a phone with no relay yet is asked where its messages wait, in
+  plain words. **I have no invite**, at the first start and among the small buttons of **New chat**, opens the page
+  **For advanced users** opens, which on such a phone begins with **Where your messages wait**: what a server is, in
+  one line, and under it every way to begin, as equals. An account at a server (**Sign in with LPHL**, or **My account
+  is at another server…**); **I have a server of my own**, which takes the server's address, typed as it was given,
+  and its code, and tries them at once, keeping nothing unless the server answered; or **Start without a server**,
+  which a line says is the way for whoever has neither (`components/own-server.tsx`, `lib/own-server.ts`
+  `ownServerAddress`, `app/chat.tsx` `joinOwnServer`, `app/first-steps.tsx`). **Start without a relay** is now **Start
+  without a server**, and **Sign in at another relay…** is **My account is at another server…**. Requested by the
+  maintainer.
+- The speech and translation models from a web folder of one's own (#71): where Erevos asks to download a model,
+  **Download from another server…** takes the address of a web folder that holds the same files under the same names,
+  and **Back to the usual server** returns to the one Erevos comes with. The core still checks every file against the
+  hash it knows and refuses one that differs; what changes is which server sees the phone's IP address as it
+  downloads, and the sheet says so (`components/models-server.tsx`, `lib/models-server.ts`, `lib/speech.ts`,
+  `lib/translate.ts`). The folder is the phone's own, the same in every space, and in no backup. Requested by the
+  maintainer.
+- The guide has **Erevos on your own servers**, in its 8 languages (#71): for messages, calls, backups, the
+  Collection, the models and no server at all, where each is set in the app, and what still reaches LPHL.
+  `docs/servers.md` and its Greek say the same beside the list of every server Erevos talks to. Requested by the
+  maintainer.
 
 ### Under the hood
 
@@ -104,6 +125,18 @@ and 0.1.15 never came out.
   ChaCha20-Poly1305) for the public key of the space opened last, which is kept outside every space as it is read
   while locked. Its secret is made from the space's key, so only that space's password gives it, and a note another
   space's key does not open stays for its own space (`lock/camera-drop.ts`, `docs/protocol.md`).
+- LPHL's addresses are in one place (#71; `lib/servers.ts` `LPHL_RELAY`, `LPHL_WEB`), and whoever builds Erevos for a
+  community can name its own instead with two settings of the build: `EREVOS_WEB_ORIGIN`, the web server with the
+  contact and invite pages and the models, which Android then opens in Erevos, and `EREVOS_START_RELAY`, the relay a
+  phone with no relay yet is offered to sign in at (`app.config.js`, which refuses one not shaped as an origin or a
+  relay). Two things stay LPHL's in every build: an invite by SMS with no relay in it names LPHL's relay, so every
+  build reads it alike, and Erevos's own release notices stay on LPHL's server, as they go with its release key, asked
+  only by phones whose relay is LPHL's (`lib/release-notice.ts` `mayAsk`, `lib/update-signature.ts`).
+- A contact page and an invite by SMS are read when pasted or scanned whatever web server they are on (#71;
+  `lib/servers.ts` `pageLink`, `lib/contact-code.ts`, `lib/text-invite.ts`, `lib/open-link.ts`); only the build's own
+  server and LPHL's open a screen by themselves. What follows # never reaches the server, and the screen it opens asks
+  before anything is taken, as before. The pages name the server they are served from (`pwa/c/contact.js`,
+  `pwa/i/invite.js`).
 
 ## 3.2.0-rc.2 (2026-11-25)
 

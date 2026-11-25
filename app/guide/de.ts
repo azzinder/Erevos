@@ -572,7 +572,8 @@ schreiben, und nur du liest sie.
    fügt einen dort eingefügten Link hinzu. Dann kommt eine Frage, **Wo ist die andere Person?**, und jede Antwort
    öffnet eine eigene Seite: **Neben mir**, **Weit weg** und **Ich habe ihren Code**, wie in 4 bis 6 unten. Drei
    kleine Tasten darunter öffnen den Rest: **Mein Link**, **Blockierte Kontakte** und **Für Fortgeschrittene**, wo die
-   eigenen Einstellungen des Relays sind; **Einstellungen** → **Relay und Netze** → **Relay** öffnet „Neuer Chat“ mit
+   eigenen Einstellungen des Relays sind, und ein Telefon, das noch kein Relay hat, hat eine weitere, **Ich habe keine
+   Einladung**, die dieselbe Seite öffnet; **Einstellungen** → **Relay und Netze** → **Relay** öffnet „Neuer Chat“ mit
    ihnen geöffnet.
 2. Gib unter **Für Fortgeschrittene** die **Relay-Adresse** ein: \`ws://<Adresse des Computers>:7879\` für ein Relay in
    deinem eigenen Netz oder \`wss://relay.example.org\` für eines im Internet. Füge das **Token** hinzu, wenn das Relay

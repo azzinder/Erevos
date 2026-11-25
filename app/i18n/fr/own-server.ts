@@ -18,6 +18,7 @@ export const ownServerText: Record<string, string> = {
   "A web folder, yours or your group’s, that holds the same files under the same names. Erevos checks every file after the download and refuses one that was changed. That server, not {host}, then sees your IP address.": "Un dossier web, le tien ou celui de ton groupe, qui contient les mêmes fichiers sous les mêmes noms. Erevos vérifie chaque fichier après le téléchargement et refuse celui qui a été modifié. C’est alors ce serveur, et non {host}, qui voit ton adresse IP.",
   "Where your messages wait": "Où tes messages attendent",
   "A server (Erevos calls it a relay) keeps your messages, encrypted, until the other phone takes them. It cannot read them. Choose how to start: you can change it any time, here.": "Un serveur (Erevos l’appelle un relais) garde tes messages, chiffrés, jusqu’à ce que l’autre téléphone les prenne. Il ne peut pas les lire. Choisis comment commencer : tu peux le changer quand tu veux, ici.",
+  "If you have neither an account nor a server, start without a server: it needs nothing, and you can add one later.": "Si tu n’as ni compte ni serveur, commence sans serveur : il ne faut rien, et tu pourras en ajouter un plus tard.",
   "I have a server of my own": "J’ai mon propre serveur",
   "Yours, or one of your family, group or workplace. You type its address and the code you were given.": "Le tien, ou celui de ta famille, de ton groupe ou de ton travail. Tu écris son adresse et le code qu’on t’a donné.",
   "Server address": "Adresse du serveur",

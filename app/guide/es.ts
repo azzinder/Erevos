@@ -540,7 +540,8 @@ de teléfono ni tu email para contactarte: quien tenga tu enlace de contacto pue
    nombre o añade un enlace pegado en él. Luego viene una pregunta, **¿Dónde está la otra persona?**, y cada respuesta
    abre una página propia: **A mi lado**, **Lejos** y **Tengo su código**, como en los pasos 4 a 6 de abajo. Tres
    botones pequeños debajo abren lo demás: **Mi enlace**, **Contactos bloqueados** y **Para usuarios avanzados**,
-   donde están los ajustes propios del relay; **Ajustes** → **Relay y redes** → **Relay** abre Chat nuevo con ellos
+   donde están los ajustes propios del relay, y un teléfono que aún no tiene relay tiene uno más, **No tengo
+   invitación**, que abre la misma página; **Ajustes** → **Relay y redes** → **Relay** abre Chat nuevo con ellos
    abiertos.
 2. En **Para usuarios avanzados**, escribe la **Dirección del relay**: \`ws://<dirección del ordenador>:7879\` para un
    relay en tu propia red, o \`wss://relay.example.org\` para uno en internet. Añade el **Token** si el relay lo pide.

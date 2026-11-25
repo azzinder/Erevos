@@ -32,6 +32,8 @@ export const NEXT: Changes = {
     mark("**New chat, as it was meant to look**: **Near me**, **Far away** and **I have their code** are three large buttons, with **My link**, **Blocked contacts** and **For advanced users** small under them; the QR code for someone beside you shows small, and large at a tap, and an invite's link shows short on the page, though what is sent is always the whole link. See [Chat through a relay](#relay)."),
     mark("**SMS conversations like Erevos's own chats**: **+** opens under the field as in them, with **Send later** among the rest, and in a short conversation the field stays at the bottom. See [SMS](#sms)."),
     mark("**Nostr, Matrix and XMPP chats like Erevos's own**: **+** opens under the field as in them, with **Disappearing message** and **Send later**, and in a short chat the field stays at the bottom."),
+    mark("**Your own server from the first start**: on a phone with no relay yet, **I have no invite**, at the first start and on **New chat**, opens one screen that says where your messages wait and offers every way to begin: an account at a server such as LPHL, **I have a server of my own**, with its address and the code you were given, or **Start without a server**. See [Erevos on your own servers](#own-servers)."),
+    mark("**Speech and translation models from a server of yours**: where Erevos asks to download them, **Download from another server…** takes a web folder of yours that holds the same files; Erevos checks every file and refuses one that was changed. See [Erevos on your own servers](#own-servers)."),
   ],
   underTheHood: [
     mark("The home screen no longer says, for a few seconds after the password on a phone with many chats, that there is no relay yet: the line waits until it knows."),
@@ -39,6 +41,9 @@ export const NEXT: Changes = {
     mark("After each copy of the Collection to its WebDAV server, Erevos lists the folder again: a piece that is not there whole goes again with the next copy."),
     mark("On Android, the lock's 30 seconds are counted on a clock that changing the phone's date and time does not move."),
     mark("What the camera takes with Erevos locked is encrypted for the Collection of the space opened last, with a key of its own: the locked camera keeps no key that opens anything."),
+    mark("A contact link made for a website is read when pasted or scanned whatever web server its page is on; until now, only from LPHL's."),
+    mark("An invite by SMS is read the same way, whatever web server its page is on."),
+    mark("LPHL's addresses are now in one place in the code: a community that builds Erevos for itself can name its own web server and first relay instead."),
   ],
 };
 

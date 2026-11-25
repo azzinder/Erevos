@@ -528,7 +528,8 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    zalijepljen u njega. Zatim dolazi jedno pitanje, **Gdje je druga osoba?**, a svaki odgovor otvara vlastitu
    stranicu: **Pored mene**, **Daleko** i **Imam njegov kod**, kao u koracima od 4 do 6 ispod. Tri mala dugmeta ispod
    otvaraju ostalo: **Moj link**, **Blokirani kontakti** i **Za napredne korisnike**, gdje su vlastite postavke
-   relaya; **Postavke** → **Relay i mreže** → **Relay** otvara Novi razgovor s tim postavkama otvorenim.
+   relaya, a telefon koji još nema relay ima još jedno, **Nemam pozivnicu**, koje otvara istu stranicu; **Postavke** →
+   **Relay i mreže** → **Relay** otvara Novi razgovor s tim postavkama otvorenim.
 2. Pod **Za napredne korisnike** upišite adresu u polje **Adresa relaya**: \`ws://<adresa računara>:7879\` za relay na
    vlastitoj mreži ili \`wss://relay.example.org\` za relay na internetu. Dodajte **Token** ako ga relay traži.
 3. Erevos sam pravi vaš red na njemu, nekoliko sekundi kasnije, i kaže **Red na relayu je napravljen**: sve radi, tekstovi, fotografije, glasovne poruke,
@@ -660,7 +661,7 @@ ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgov
   na relay ispod), a zatim dodajete svoje kontakte putem njihovih pozivnica ili linkova; **Počnite bez servera**, kao u
   Bez ikakvog relaya, pod Preko Nostra; i postavke relaya, kao u koracima od 1 do 3 iznad. Pozivnica je
   najjednostavniji način ulaska, a na relayu pozvani telefon ima samo ime od nasumičnih slova i cifara.
-- **Vlastiti server:** na istom ekranu, pod **Gdje čekaju vaše poruke**, **Imam vlastiti server** prima adresu relaya koji je tvoj, ili tvoje porodice, grupe ili posla, i kod koji si za njega dobio (token relaya; ostavi prazno ako ga relay nema). **Poveži** ga odmah isproba, i ništa se ne čuva ako server ne odgovori. Dok ovaj telefon još nema relay, i **Nemam pozivnicu** u **Novom razgovoru** otvara ovaj ekran.
+- **Vlastiti server:** na istom ekranu, pod **Gdje čekaju vaše poruke**, **Imam vlastiti server** prima adresu relaya koji je vaš, ili vaše porodice, grupe ili posla, i kod koji ste za njega dobili (token relaya; ostavite prazno ako ga relay nema). **Poveži** ga odmah isproba, i ništa se ne čuva ako server ne odgovori. Dok ovaj telefon još nema relay, i **Nemam pozivnicu** u **Novom razgovoru** otvara ovaj ekran.
 - **Drugi relay:** ispod **Prijava preko LPHL**, **Moj račun je na drugom serveru…** prima adresu drugog relaya, kako vam ju
   je dao onaj ko ga vodi, na primjer relay.example.org: kartica se tada prijavljuje tamo, s imenom naloga koje taj relay
   prima, ili kaže da nema prijavu, i tada vam onaj ko ga vodi može dati pozivnicu. **Nazad na** vraća LPHL-ov.
@@ -1690,18 +1691,18 @@ Svaki put je šifriran s kraja na kraj: nijedan relay ni telefon između ne mož
 
 ## Erevos na vlastitim serverima {#own-servers}
 
-Erevosu nisu potrebni serveri onoga ko ga pravi. LPHL-ovi su samo ono što nudi prvo: za svaku stvar ispod možeš koristiti svoj, iz aplikacije, bez instaliranja ičega drugog na telefon.
+Erevosu nisu potrebni serveri onoga ko ga pravi. LPHL-ovi su samo ono što nudi prvo: za svaku stvar ispod možete koristiti svoj, iz aplikacije, bez instaliranja ičega drugog na telefon.
 
-- **Poruke, fotografije i datoteke:** čekaju, šifrirane s kraja na kraj, na malom serveru koji se zove relay. Da koristiš svoj, ili svoje grupe: u **Novom razgovoru**, **Nemam pozivnicu**, zatim **Imam vlastiti server**, i upiši njegovu adresu i kod koji si dobio. Kasnije su to dvoje adresa relaya i token pod **Za napredne korisnike**.
-- **Pozivi:** ništa više za podesiti. Relay za pozive dolazi s tvojim relayem, pa s vlastitim relayem i tvoji pozivi idu preko tvog servera.
-- **Rezervne kopije:** u **Rezervnim kopijama**, **I na server** šalje svaku kopiju, šifriranu, u folder na serveru koji izabereš, na primjer tvoj Nextcloud. Pogledaj [Rezervne kopije](#backup).
-- [~] **Zbirka:** u njenim podešavanjima, **I na WebDAV serveru** čuva njene šifrirane datoteke na serveru koji izabereš. Pogledaj [Zbirka](#collection).
-- **Modeli za govor i prevođenje:** tamo gdje Erevos traži da ih preuzme, **Preuzmi s drugog servera…** prima tvoj web folder s istim datotekama. Erevos provjerava svaku datoteku i odbija onu koja je izmijenjena.
-- **Bez ikakvog servera:** **Počnite bez servera**, na istom ekranu. Tekstovi tada idu preko javnih Nostr relaya, ili direktno između telefona koji su blizu. Pogledaj [Bez ikakvog relaya](#nostr).
+- **Poruke, fotografije i datoteke:** čekaju, šifrirane s kraja na kraj, na malom serveru koji se zove relay. Da koristite svoj, ili svoje grupe: u **Novom razgovoru**, **Nemam pozivnicu**, zatim **Imam vlastiti server**, i upišite njegovu adresu i kod koji ste dobili. Kasnije su to dvoje adresa relaya i token pod **Za napredne korisnike**.
+- **Pozivi:** ništa više za podesiti. Relay za pozive dolazi s vašim relayem, pa s vlastitim relayem i vaši pozivi idu preko vašeg servera.
+- **Rezervne kopije:** pod **Rezervne kopije**, **I na server** šalje svaku kopiju, šifriranu, u folder na serveru koji izaberete, na primjer vaš Nextcloud. Pogledajte [Rezervne kopije](#backup).
+- [~] **Zbirka:** u njenim postavkama, **I na WebDAV serveru** čuva njene šifrirane datoteke na serveru koji izaberete. Pogledajte [Zbirka](#collection).
+- **Modeli za govor i prevođenje:** tamo gdje Erevos traži da ih preuzme, **Preuzmi s drugog servera…** prima vaš web folder s istim datotekama. Erevos provjerava svaku datoteku i odbija onu koja je izmijenjena.
+- **Bez ikakvog servera:** **Počnite bez servera**, na istom ekranu. Tekstovi tada idu preko javnih Nostr relaya, ili direktno između telefona koji su blizu. Pogledajte [Bez ikakvog relaya](#nostr).
 
-**Šta još stiže do LPHL-a:** samo telefon čiji je relay LPHL-ov pita LPHL-ov web server, jednom dnevno, je li izašla nova verzija (pogledaj [Obavijest kad izađe nova verzija](#updates)); **Provjeri ažuriranja** pita GitHub. {~Link za kontakt za web stranicu i pozivnica SMS-om otvaraju|Link za kontakt za web stranicu otvara} stranicu na LPHL-ovom web serveru, koji ne dobija ništa od onoga što link kaže: taj dio nikad ne napušta telefon. Iste stranice na drugom serveru također se čitaju, kad ih zalijepiš ili skeniraš.
+**Šta još stiže do LPHL-a:** samo telefon čiji je relay LPHL-ov pita LPHL-ov web server, jednom dnevno, je li izašla nova verzija (pogledajte [Obavijest kad izađe nova verzija](#updates)); **Provjeri ažuriranja** pita GitHub. {~Link za kontakt za web stranicu i pozivnica SMS-om otvaraju|Link za kontakt za web stranicu otvara} stranicu na LPHL-ovom web serveru, koji ne dobija ništa od onoga što link kaže: taj dio nikad ne napušta telefon. Iste stranice na drugom serveru također se čitaju, kad ih zalijepite ili skenirate.
 
-**Da sam postaviš relay:** pogledaj [Vlastiti relay](#own-relay), odmah ispod.
+**Da sami postavite relay:** pogledajte [Vlastiti relay](#own-relay), odmah ispod.
 
 ## Vlastiti relay {#own-relay}
 

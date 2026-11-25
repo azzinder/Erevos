@@ -540,7 +540,8 @@ solo tu la leggi.
    vicino; quando tutto funziona, non viene mostrato. Con un relay, un campo in cima trova un contatto per nome o
    aggiunge un link incollato lì. Poi viene una domanda, **Dov’è l’altra persona?**, e ogni risposta apre una pagina a
    sé: **Accanto a me**, **Lontano** e **Ho il suo codice**, come in 4–6 sotto. Tre piccoli pulsanti sotto aprono il
-   resto: **Il mio link**, **Contatti bloccati** e **Per utenti esperti**, dove sono le impostazioni del relay stesso;
+   resto: **Il mio link**, **Contatti bloccati** e **Per utenti esperti**, dove sono le impostazioni del relay stesso,
+   e un telefono che non ha ancora un relay ne ha uno in più, **Non ho un invito**, che apre la stessa pagina;
    **Impostazioni** → **Relay e reti** → **Relay** apre Nuova chat con queste impostazioni aperte.
 2. In **Per utenti esperti**, scrivi l’**Indirizzo del relay**: \`ws://<indirizzo del computer>:7879\` per un relay sulla tua
    rete, o \`wss://relay.example.org\` per uno su internet. Aggiungi il **Token** se il relay lo richiede.
