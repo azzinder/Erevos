@@ -8,6 +8,25 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## 3.2.0-rc.3 (2026-11-25)
+
+The third release candidate of Erevos Lite: Erevos 3.0.0-rc.3 for Erevos's own chats and calls, with what is below.
+
+### For you
+
+- What Erevos 3.0.0-rc.3 brought to chats: Erevos starts by itself after the phone turns on, unless **Wait until I
+  open it** is chosen; nothing of a space shows before its password; **Make a backup** sends to a server (WebDAV) by
+  hand too, and says how big the backup is, when it began and ended, and what is not in it; New chat as the mockups
+  drew it; and a first start that asks where your messages wait, with **I have a server of my own** and **Start
+  without a server**. The camera before the password, the Collection's server and the + panel of the SMS are the
+  Collection's and the SMS's, which Erevos Lite has not.
+
+### Under the hood
+
+- Home no longer says for a few seconds that there is no relay yet; each backup made by hand is checked as it is made;
+  the lock's 30 seconds are counted on the clock nobody can set; and a contact link made for a website is read
+  whatever web server its page is on, as in Erevos 3.0.0-rc.3.
+
 ## 3.0.0-rc.3 (2026-11-25)
 
 ### For you

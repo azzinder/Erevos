@@ -28,6 +28,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.2.0-rc.3',
+    forYou: [
+      mark("**Release candidate 3**: Erevos Lite with what Erevos 3.0.0-rc.3 brought to its chats: it starts by itself after the phone turns on, shows nothing of a space before its password, sends backups to your own server by hand too, and can begin with a server of your own."),
+    ],
+    underTheHood: [],
+  },
+  {
     version: '3.0.0-rc.3',
     forYou: [
       mark("**Erevos starts by itself after the phone turns on**: where it receives in the background, it now does so unless you choose **Wait until I open it**, under **Settings** → **Notifications** → **In the background**; until now, only once you turned it on there. Before you open a space it reads no message and rings for no call: the spaces set to **Also while another space is open** say only that something came. See [Chat through a relay](#relay)."),
