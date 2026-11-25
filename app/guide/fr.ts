@@ -713,10 +713,11 @@ lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans
 - **Les autres façons d’entrer :** dans **Nouvelle discussion**, **Pour les utilisateurs avancés** ouvre les autres,
   pour qui les cherche : **Se connecter avec LPHL** connecte ce téléphone au relais de LPHL avec un compte LPHL, dans
   le navigateur (voir Se connecter au relais ci-dessous), puis tu ajoutes tes contacts par leurs invitations ou leurs
-  liens ; **Commencer sans relais**, comme dans Sans aucun relais, sous Par Nostr ; et les réglages du relais, comme
+  liens ; **Commencer sans serveur**, comme dans Sans aucun relais, sous Par Nostr ; et les réglages du relais, comme
   aux étapes 1 à 3 ci-dessus. Une invitation est la façon la plus simple d’entrer, et sur le relais un téléphone
   invité n’a qu’un nom de lettres et de chiffres au hasard.
-- **Un autre relais :** sous **Se connecter avec LPHL**, **Se connecter à un autre relais…** prend l’adresse d’un autre
+- **Ton propre serveur :** sur le même écran, sous **Où tes messages attendent**, **J’ai mon propre serveur** prend l’adresse d’un relais qui est le tien, ou celui de ta famille, de ton groupe ou de ton travail, et le code qu’on t’a donné pour lui (le jeton du relais ; laisse-le vide si le relais n’en a pas). **Connecter** l’essaie tout de suite, et rien n’est gardé si le serveur ne répond pas. Tant que ce téléphone n’a pas encore de relais, **Je n’ai pas d’invitation** dans **Nouvelle discussion** ouvre aussi cet écran.
+- **Un autre relais :** sous **Se connecter avec LPHL**, **Mon compte est sur un autre serveur…** prend l’adresse d’un autre
   relais, telle que son responsable te l’a donnée, par exemple relay.example.org : la carte s’y connecte alors, au nom
   des comptes que ce relais accepte, ou dit qu’il ne propose pas de connexion, et son responsable peut alors te donner
   une invitation. **Revenir à** ramène celui de LPHL.
@@ -1859,6 +1860,21 @@ envoies.
 | **Non envoyé. Le relais n’a plus la file d’attente de ce contact.** | Demande-lui de t’écrire, ou son nouveau lien de contact. |
 | **Cette version ne peut pas chiffrer, donc les discussions par le relais sont désactivées.** | Recompile l’app : cette version est plus ancienne que son chiffrement. |
 
+## Erevos sur tes propres serveurs {#own-servers}
+
+Erevos n’a pas besoin des serveurs de celui qui le fait. Ceux de LPHL sont seulement ce qu’il propose d’abord : pour chaque chose ci-dessous tu peux utiliser le tien, depuis l’app, sans rien installer d’autre sur le téléphone.
+
+- **Messages, photos et fichiers :** ils attendent, chiffrés de bout en bout, sur un petit serveur appelé relais. Pour utiliser le tien, ou celui de ton groupe : dans **Nouvelle discussion**, **Je n’ai pas d’invitation**, puis **J’ai mon propre serveur**, et écris son adresse et le code qu’on t’a donné. Plus tard, ces deux-là sont l’adresse du relais et le jeton sous **Pour les utilisateurs avancés**.
+- **Appels :** rien de plus à régler. Le relais d’appels vient avec ton relais : avec ton propre relais, tes appels passent donc aussi par ton serveur.
+- **Sauvegardes :** dans **Sauvegardes**, **Aussi vers un serveur** envoie chaque sauvegarde, chiffrée, dans un dossier sur un serveur de ton choix, comme ton propre Nextcloud. Voir [Sauvegardes](#backup).
+- [~] **La Collection :** dans ses réglages, **Aussi sur un serveur WebDAV** garde ses fichiers chiffrés sur un serveur de ton choix. Voir [Collection](#collection).
+- **Modèles de voix et de traduction :** là où Erevos demande à les télécharger, **Télécharger depuis un autre serveur…** prend un dossier web à toi qui contient les mêmes fichiers. Erevos vérifie chaque fichier et refuse celui qui a été modifié.
+- **Aucun serveur :** **Commencer sans serveur**, sur le même écran. Les textes passent alors par des relais Nostr publics, ou directement entre des téléphones proches. Voir [Sans aucun relais](#nostr).
+
+**Ce qui atteint encore LPHL :** seul un téléphone dont le relais est celui de LPHL demande au serveur web de LPHL, une fois par jour, si une nouvelle version est sortie (voir [Prévenu quand une nouvelle version sort](#updates)) ; **Rechercher des mises à jour** demande à GitHub. {~Un lien de contact pour un site web et une invitation par SMS ouvrent|Un lien de contact pour un site web ouvre} une page sur le serveur web de LPHL, qui ne reçoit rien de ce que dit le lien : cette partie ne quitte jamais le téléphone. Les mêmes pages sur un autre serveur sont lues aussi, quand tu les colles ou les scannes.
+
+**Pour installer un relais toi-même :** voir [Faire tourner ton propre relais](#own-relay), juste après.
+
 ## Faire tourner ton propre relais {#own-relay}
 
 Un relais que tu fais tourner toi-même est le plus sûr, car celui qui fait tourner un relais voit qui s’y connecte. Le
@@ -2079,8 +2095,7 @@ relais).
 Un téléphone sans relais, sans invitation et sans compte LPHL peut quand même commencer : son lien de contact et son
 code QR disent où il lit sur Nostr, et cela suffit pour parler.
 
-- **Pour commencer :** dans **Nouvelle discussion**, sous **Pour les utilisateurs avancés**, appuie sur **Commencer
-  sans relais**, puis sur **Afficher mon code QR** ou **Partager mon lien de contact**, et donne-le à quelqu’un qui
+- **Pour commencer :** dans **Nouvelle discussion**, sous **Pour les utilisateurs avancés**, appuie sur **Commencer sans serveur**, puis sur **Afficher mon code QR** ou **Partager mon lien de contact**, et donne-le à quelqu’un qui
   utilise Erevos. Celui qui l’ajoute t’écrit par Nostr, et apparaît comme une demande de message, que tu acceptes. Tu
   peux aussi ajouter son lien ou son code QR, de la même façon.
 - **Ce qui passe :** les textes, stickers, réactions, modifications, et les marques qu’un message est arrivé ou a été lu, tout par Nostr ; et les photos, fichiers et messages vocaux. Un message vocal passe en wraps comme un texte. Une photo jusqu’à 3 Mo passe en morceaux de 32 Ko, un wrap chacun, envoyés avant le message qui la propose ; l’autre téléphone les garde, chiffrés avec le reste de l’espace ou des discussions masquées pour lesquels ils sont venus, jusqu’à ce que tous soient arrivés, quatre jours au plus. Une photo plus grande, une vidéo ou tout autre fichier, jusqu’à 20 Mo, passe en un seul blob, chiffré sur le téléphone, vers un serveur de fichiers Blossom (blossom.primal.net, blossom.band ou nostr.download), via Tor comme le dit le choix Tor de l’espace (en direct avec **Rien**) : le serveur ne garde que ce qu’il ne peut pas lire. Les appels et les groupes ont besoin d’un relais, ou de l’autre téléphone à proximité. Les discussions masquées fonctionnent ainsi aussi, par Nostr seulement (voir [Discussions masquées](#hidden)).

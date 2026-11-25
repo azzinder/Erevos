@@ -629,10 +629,15 @@ nothing, and you are each other's contacts at once, with no message request.
   phone, which adds this one as a contact at once, named as they typed.
 - **The other ways in:** on **New chat**, **For advanced users** opens the rest, for whoever looks for them: **Sign in
   with LPHL** signs this phone in to LPHL's relay with an LPHL account, in the browser (see Signing in to the relay
-  below), and then you add your contacts by their invites or links; **Start without a relay**, as in With no relay at
+  below), and then you add your contacts by their invites or links; **Start without a server**, as in With no relay at
   all, under Through Nostr; and the relay settings, as in 1 to 3 above. An invite is the simplest way in, and on the
   relay an invited phone has only a name of random letters and digits.
-- **Another relay:** under **Sign in with LPHL**, **Sign in at another relay…** takes the address of another relay,
+- **A server of your own:** on the same screen, under **Where your messages wait**, **I have a server of my own**
+  takes the address of a relay that is yours, or your family's, group's or workplace's, and the code you were given
+  for it (the relay's token; leave it empty if the relay has none). **Connect** tries it at once, and nothing is kept
+  if the server does not answer. While this phone has no relay yet, **I have no invite** on **New chat** opens this
+  screen too.
+- **Another relay:** under **Sign in with LPHL**, **My account is at another server…** takes the address of another relay,
   as its operator gave it, such as relay.example.org: the card then signs in there, named after the accounts that relay
   takes, or says it offers no sign-in, and then its operator can give you an invite. **Back to** brings LPHL's back.
 - **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below),
@@ -1613,6 +1618,32 @@ Every path is end-to-end encrypted: no relay and no phone in between can read wh
 | **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
 | **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
+## Erevos on your own servers {#own-servers}
+
+Erevos does not need its maker's servers. LPHL's are only what it offers first: you can use your own for each thing
+below, from inside the app, with nothing else to install on the phone.
+
+- **Messages, photos and files:** they wait, end-to-end encrypted, on a small server called a relay. To use yours, or
+  your group's: on **New chat**, **I have no invite**, then **I have a server of my own**, and type its address and
+  the code you were given. Later, the same two are the relay address and the token under **For advanced users**.
+- **Calls:** nothing more to set. The call relay comes with your relay, so with your own relay your calls go through
+  your own server too.
+- **Backups:** on **Backups**, **To a server too** sends each backup, encrypted, to a folder on a server you choose,
+  such as your own Nextcloud. See [Backups](#backup).
+- [~] **The Collection:** in its settings, **Also on a WebDAV server** keeps its encrypted files on a server you
+  choose. See [Collection](#collection).
+- **Speech and translation models:** where Erevos asks to download them, **Download from another server…** takes a
+  web folder of yours that holds the same files. Erevos checks every file and refuses one that was changed.
+- **No server at all:** **Start without a server** on the same screen. Texts then go through public Nostr relays, or
+  straight between phones that are near. See [With no relay at all](#nostr).
+
+**What still reaches LPHL:** only a phone whose relay is LPHL's asks LPHL's web server, once a day, whether a new
+version is out (see [Told when a new version is out](#updates)); **Check for updates** asks GitHub. {~A contact
+link made for a website and an invite by SMS open|A contact link made for a website opens} a page on LPHL's web server, which gets nothing of what the link
+says: that part never leaves the phone. The same pages on another server are read too, when you paste or scan them.
+
+**To set up a relay yourself:** see [Running your own relay](#own-relay), next.
+
 ## Running your own relay {#own-relay}
 
 A relay you run yourself is the safest one, since whoever runs a relay sees who connects to it. The source code
@@ -1816,7 +1847,7 @@ you, pictures, files and voice messages go there too (see With no relay at all).
 A phone with no relay, no invite and no LPHL account can still begin: its contact link and QR code say where it reads
 on Nostr, and that is enough to talk.
 
-- **To begin:** on **New chat**, under **For advanced users**, tap **Start without a relay**, then **Show my QR code**
+- **To begin:** on **New chat**, under **For advanced users**, tap **Start without a server**, then **Show my QR code**
   or **Share my contact link**, and give it to someone who uses Erevos. Who adds it writes to you through Nostr, and
   shows as a message request, which you accept. You can add their link or QR code too, the same way.
 - **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr; and photos, files and voice messages too. A voice message goes in wraps like a text. A photo up to 3 MB goes in pieces of 32 KB, a wrap each, sent before the message that offers it; the other phone keeps them, encrypted with the rest of the space or the hidden chats they came for, until all have come, four days at most. A larger photo, a video or any other file, up to 20 MB, goes as one blob, encrypted on the phone, to a Blossom file server (blossom.primal.net, blossom.band or nostr.download), through Tor as the space's Tor choice says (straight with **Nothing**): the server keeps only what it cannot read. Calls and groups need a relay, or the other phone nearby. Hidden chats work so too, through Nostr only (see [Hidden chats](#hidden)).

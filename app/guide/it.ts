@@ -675,10 +675,11 @@ tutto suo, senza scrivere nulla, e siete subito l’uno contatto dell’altro, s
   primo messaggio lo dice al suo telefono, che aggiunge subito questo come contatto, con il nome che ha scritto.
 - **Gli altri modi per entrare:** in **Nuova chat**, **Per utenti esperti** apre gli altri, per chi li cerca: **Accedi
   con LPHL** fa accedere questo telefono al relay di LPHL con un account LPHL, nel browser (vedi Accedere al relay più
-  sotto), e poi aggiungi i tuoi contatti con i loro inviti o link; **Inizia senza relay**, come in Senza nessun relay,
+  sotto), e poi aggiungi i tuoi contatti con i loro inviti o link; **Inizia senza server**, come in Senza nessun relay,
   in Tramite Nostr; e le impostazioni del relay, come in 1–3 sopra. Un invito è il modo più semplice per entrare, e
   sul relay un telefono invitato ha solo un nome di lettere e cifre a caso.
-- **Un altro relay:** sotto **Accedi con LPHL**, **Accedi a un altro relay…** prende l’indirizzo di un altro relay,
+- **Un server tuo:** nella stessa schermata, sotto **Dove aspettano i tuoi messaggi**, **Ho un server mio** prende l’indirizzo di un relay che è tuo, o della tua famiglia, del tuo gruppo o del tuo lavoro, e il codice che ti hanno dato per esso (il token del relay; lascialo vuoto se il relay non ne ha). **Connetti** lo prova subito, e non viene tenuto nulla se il server non risponde. Finché questo telefono non ha ancora un relay, anche **Non ho un invito** in **Nuova chat** apre questa schermata.
+- **Un altro relay:** sotto **Accedi con LPHL**, **Il mio account è su un altro server…** prende l’indirizzo di un altro relay,
   come te l’ha dato chi lo gestisce, ad esempio relay.example.org: la scheda accede allora lì, col nome degli account
   che quel relay accetta, o dice che non offre l’accesso, e allora chi lo gestisce può darti un invito. **Torna a**
   riporta quello di LPHL.
@@ -1769,6 +1770,21 @@ Ogni strada è crittografata end-to-end: nessun relay e nessun telefono nel mezz
 | **Non inviato. Il relay non ha più la coda di questo contatto.** | Chiedigli di scriverti, o il suo nuovo link di contatto. |
 | **Questa versione non può crittografare, quindi le chat tramite il relay sono disattivate.** | Ricompila l’app: questa versione è più vecchia della sua crittografia. |
 
+## Erevos sui tuoi server {#own-servers}
+
+Erevos non ha bisogno dei server di chi lo fa. Quelli di LPHL sono solo ciò che propone per primi: per ognuna delle cose qui sotto puoi usare il tuo, dall’app, senza installare altro sul telefono.
+
+- **Messaggi, foto e file:** aspettano, cifrati end-to-end, su un piccolo server chiamato relay. Per usare il tuo, o quello del tuo gruppo: in **Nuova chat**, **Non ho un invito**, poi **Ho un server mio**, e scrivi il suo indirizzo e il codice che ti hanno dato. Più tardi, quei due sono l’indirizzo del relay e il token sotto **Per utenti esperti**.
+- **Chiamate:** niente altro da impostare. Il relay delle chiamate arriva con il tuo relay: con un relay tuo anche le chiamate passano dal tuo server.
+- **Backup:** in **Backup**, **Anche su un server** manda ogni backup, cifrato, in una cartella su un server che scegli tu, come il tuo Nextcloud. Vedi [Backup](#backup).
+- [~] **La Raccolta:** nelle sue impostazioni, **Anche su un server WebDAV** tiene i suoi file cifrati su un server che scegli tu. Vedi [Raccolta](#collection).
+- **Modelli vocali e di traduzione:** dove Erevos chiede di scaricarli, **Scarica da un altro server…** prende una tua cartella web con gli stessi file. Erevos controlla ogni file e rifiuta quello che è stato modificato.
+- **Nessun server:** **Inizia senza server**, nella stessa schermata. I testi passano allora da relay Nostr pubblici, o direttamente tra telefoni vicini. Vedi [Senza nessun relay](#nostr).
+
+**Che cosa arriva ancora a LPHL:** solo un telefono il cui relay è quello di LPHL chiede al server web di LPHL, una volta al giorno, se è uscita una nuova versione (vedi [Avvisato quando esce una nuova versione](#updates)); **Cerca aggiornamenti** chiede a GitHub. {~Un link di contatto per un sito web e un invito via SMS aprono|Un link di contatto per un sito web apre} una pagina sul server web di LPHL, che non riceve nulla di ciò che dice il link: quella parte non lascia mai il telefono. Le stesse pagine su un altro server vengono lette anch’esse, quando le incolli o le scansioni.
+
+**Per installare un relay da te:** vedi [Gestire un relay tuo](#own-relay), subito dopo.
+
 ## Gestire un relay tuo {#own-relay}
 
 Un relay che gestisci tu stesso è il più sicuro, perché chi gestisce un relay vede chi vi si collega. Il codice
@@ -1987,7 +2003,7 @@ Senza alcun relay).
 Un telefono senza relay, senza invito e senza account LPHL può comunque iniziare: il suo link di contatto e il suo
 codice QR dicono dove legge su Nostr, e basta questo per parlare.
 
-- **Per iniziare:** in **Nuova chat**, in **Per utenti esperti**, tocca **Inizia senza relay**, poi **Mostra il mio
+- **Per iniziare:** in **Nuova chat**, in **Per utenti esperti**, tocca **Inizia senza server**, poi **Mostra il mio
   codice QR** o **Condividi il mio link di contatto**, e dallo a qualcuno che usa Erevos. Chi lo aggiunge ti scrive
   tramite Nostr, e appare come richiesta di messaggio, che accetti. Puoi anche aggiungere il suo link o codice QR,
   allo stesso modo.

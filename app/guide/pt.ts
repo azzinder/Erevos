@@ -673,10 +673,10 @@ nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
   hora, com o nome que ela digitou.
 - **As outras formas de entrar:** em **Nova conversa**, **Para usuários avançados** abre as demais, para quem as
   procura: **Entrar com LPHL** faz o login deste celular no relay do LPHL com uma conta LPHL, no navegador (veja
-  Entrar no relay abaixo), e depois você adiciona os seus contatos pelos convites ou links deles; **Começar sem
-  relay**, como em Sem nenhum relay, em Pelo Nostr; e as configurações do relay, como de 1 a 3 acima. Um convite é a
+  Entrar no relay abaixo), e depois você adiciona os seus contatos pelos convites ou links deles; **Começar sem servidor**, como em Sem nenhum relay, em Pelo Nostr; e as configurações do relay, como de 1 a 3 acima. Um convite é a
   forma mais simples de entrar, e no relay um celular convidado tem só um nome de letras e números ao acaso.
-- **Outro relay:** embaixo de **Entrar com LPHL**, **Entrar em outro relay…** recebe o endereço de outro relay, como
+- **Um servidor seu:** na mesma tela, em **Onde suas mensagens esperam**, **Tenho um servidor meu** recebe o endereço de um relay que é seu, ou da sua família, do seu grupo ou do seu trabalho, e o código que você recebeu para ele (o token do relay; deixe vazio se o relay não tiver). **Conectar** testa na hora, e nada é guardado se o servidor não responder. Enquanto este celular ainda não tem relay, **Não tenho convite** em **Nova conversa** também abre esta tela.
+- **Outro relay:** embaixo de **Entrar com LPHL**, **Minha conta está em outro servidor…** recebe o endereço de outro relay, como
   quem cuida dele te passou, por exemplo relay.example.org: o cartão então faz o login lá, com o nome das contas que
   esse relay aceita, ou diz que não oferece login, e aí quem cuida dele pode te dar um convite. **Voltar para** traz de
   volta o do LPHL.
@@ -1746,6 +1746,21 @@ Todo caminho é criptografado de ponta a ponta: nenhum relay e nenhum celular no
 | **Não enviada. O relay não tem mais a fila deste contato.** | Peça que ele escreva para você, ou peça o novo link de contato dele. |
 | **Esta versão não consegue criptografar, então as conversas pelo relay estão desativadas.** | Compile o app de novo: esta versão é mais antiga que a criptografia dele. |
 
+## O Erevos nos seus próprios servidores {#own-servers}
+
+O Erevos não precisa dos servidores de quem o faz. Os do LPHL são só o que ele oferece primeiro: para cada coisa abaixo você pode usar o seu, pelo app, sem instalar mais nada no celular.
+
+- **Mensagens, fotos e arquivos:** esperam, com criptografia de ponta a ponta, num servidor pequeno chamado relay. Para usar o seu, ou o do seu grupo: em **Nova conversa**, **Não tenho convite**, depois **Tenho um servidor meu**, e digite o endereço dele e o código que você recebeu. Mais tarde, esses dois são o endereço do relay e o token em **Para usuários avançados**.
+- **Chamadas:** nada mais para ajustar. O relay de chamadas vem com o seu relay: com um relay seu, suas chamadas também passam pelo seu servidor.
+- **Backups:** em **Backups**, **Também para um servidor** envia cada backup, criptografado, para uma pasta num servidor que você escolhe, como o seu Nextcloud. Veja [Backups](#backup).
+- [~] **A Coleção:** nas configurações dela, **Também num servidor WebDAV** guarda os arquivos criptografados dela num servidor que você escolhe. Veja [Coleção](#collection).
+- **Modelos de voz e de tradução:** onde o Erevos pede para baixá-los, **Baixar de outro servidor…** recebe uma pasta web sua com os mesmos arquivos. O Erevos confere cada arquivo e recusa o que foi alterado.
+- **Nenhum servidor:** **Começar sem servidor**, na mesma tela. Os textos vão então por relays públicos do Nostr, ou direto entre celulares que estão perto. Veja [Sem nenhum relay](#nostr).
+
+**O que ainda chega ao LPHL:** só um celular cujo relay é o do LPHL pergunta ao servidor web do LPHL, uma vez por dia, se saiu uma versão nova (veja [Aviso quando sai uma versão nova](#updates)); **Procurar atualizações** pergunta ao GitHub. {~Um link de contato para um site e um convite por SMS abrem|Um link de contato para um site abre} uma página no servidor web do LPHL, que não recebe nada do que o link diz: essa parte nunca sai do celular. As mesmas páginas em outro servidor também são lidas, quando você cola ou escaneia.
+
+**Para montar um relay você mesmo:** veja [Rodar o seu próprio relay](#own-relay), logo a seguir.
+
 ## Rodar o seu próprio relay {#own-relay}
 
 Um relay que você mesmo roda é o mais seguro, pois quem roda um relay vê quem se conecta a ele. O código-fonte tem
@@ -1957,7 +1972,7 @@ horário dela. Sem relay entre vocês, imagens, arquivos e mensagens de voz vão
 Um celular sem relay, sem convite e sem conta LPHL ainda pode começar: o link de contato e o código QR dele dizem onde
 ele lê no Nostr, e isso basta para conversar.
 
-- **Para começar:** em **Nova conversa**, em **Para usuários avançados**, toque em **Começar sem relay**, depois em
+- **Para começar:** em **Nova conversa**, em **Para usuários avançados**, toque em **Começar sem servidor**, depois em
   **Mostrar meu código QR** ou **Compartilhar meu link de contato**, e dê para alguém que usa o Erevos. Quem o
   adiciona escreve para você pelo Nostr, e aparece como solicitação de mensagem, que você aceita. Você também pode
   adicionar o link ou o código QR da pessoa, do mesmo jeito.
