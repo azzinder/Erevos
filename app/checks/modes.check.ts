@@ -5,7 +5,8 @@
 // The three modes (lib/modes.ts): SPEED, ANONYMOUS and INVISIBLE, read from what a space keeps and
 // written by choosing one; the first start's words for them, at the top of Settings; and INVISIBLE's
 // calls: none starts, none rings, and one going on ends (lib/calls.ts, lib/group-calls.ts,
-// lib/matrix-calls.ts), with a line in the chat that says why.
+// lib/matrix-calls.ts; XMPP's go through the first two), with a line in the chat that says why; a
+// closed hidden place's does not ring with no name either (XMPP's: checks/xmpp-calls.check.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -213,6 +214,20 @@ test("in INVISIBLE a group's call does not ring, keeps one line, and still shows
   assert.equal(shownGroupCall(), null, 'nothing rings');
   assert.deepEqual(lines, ['📞 Missed group video call, in INVISIBLE']);
   assert.equal(groupCallGoingOn(GROUP)?.id, start.id, 'its screen still shows the call, and joining says why not');
+});
+
+test("in INVISIBLE a closed hidden place's call rings not even with no name: kept at once as missed, saying why", () => {
+  // Erevos's own (lib/place-receiver.ts), read here: in INVISIBLE its relay is read only through Tor.
+  const receiver = read('lib/place-receiver.ts');
+  const offer = receiver.slice(receiver.indexOf("if (call.kind === 'offer') {"));
+  const off = offer.indexOf('} else if (callsOff()) {');
+  assert.ok(off > 0 && off < offer.indexOf('ringListeners.forEach('), 'asked before it rings');
+  assert.match(offer.slice(off, off + 300), /missed\(received, CALLS_OFF_LINE\);/);
+  // Matrix's alike (lib/matrix-calls.ts), before the place rings.
+  const matrix = read('lib/matrix-calls.ts');
+  const closed = matrix.slice(matrix.indexOf('function onClosedEvent('));
+  const at = closed.indexOf('if (callsOff()) return rangOff(rung, ring.until, state);');
+  assert.ok(at > 0 && at < closed.indexOf('placeNetworkRang('), 'Matrix: before it rings');
 });
 
 test('choosing INVISIBLE ends a call going on, and a group call, as no call goes through Tor', async () => {

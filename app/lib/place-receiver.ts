@@ -16,6 +16,7 @@ import { toBase64Url, type Received } from './e2e';
 import { sendCopies } from './fanout';
 import { isGroupPacket } from './groups';
 import { hiddenRinging, setHiddenRinging } from './hidden-ring';
+import { callsOff, CALLS_OFF_LINE } from './modes';
 import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrReaderOf, sendNostrAgain } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
@@ -572,10 +573,10 @@ async function heard(run: Run, chats: SpaceChats, received: Extract<Received, { 
   const call = received.call;
   if (call && !received.twice) {
     const held = calls.get(pocket) ?? [];
-    const missed = (offer: Extract<Received, { kind: 'message' }>) => {
+    const missed = (offer: Extract<Received, { kind: 'message' }>, why = '') => {
       const video = offer.call?.kind === 'offer' && offer.call.video;
       const timer = chats.e2e.contacts().find((contact) => contact.identity === offer.identity)?.timer ?? 0;
-      void chats.history.add(callLineMessage(`${CONTACT_PREFIX}${offer.identity}`, false, video ? 'Missed video call' : 'Missed voice call', timer)).catch(() => undefined);
+      void chats.history.add(callLineMessage(`${CONTACT_PREFIX}${offer.identity}`, false, `${video ? 'Missed video call' : 'Missed voice call'}${why}`, timer)).catch(() => undefined);
     };
     const drop = (id: string) => {
       const left = (calls.get(pocket) ?? []).filter((h) => {
@@ -592,6 +593,10 @@ async function heard(run: Run, chats: SpaceChats, received: Extract<Received, { 
       // Made while the place was closed and no look took it: it has stopped ringing on their side.
       if (received.request || offerMissed(call.at)) {
         if (!received.request) missed(received);
+      } else if (callsOff()) {
+        // INVISIBLE (lib/modes.ts): it rings not even with no name, as it could not be answered.
+        // Kept as missed at once, its line says why.
+        missed(received, CALLS_OFF_LINE);
       } else {
         const entry: Held = { received, timer: null };
         entry.timer = setTimeout(

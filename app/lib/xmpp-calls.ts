@@ -8,6 +8,7 @@ import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './c
 import { hiddenRinging, setHiddenRinging } from './hidden-ring';
 import { t } from './i18n';
 import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpToJingle, setupOf, type Role } from './jingle-sdp';
+import { callsOff, CALLS_OFF_LINE } from './modes';
 import { placeNetworkRang } from './network-notices';
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
@@ -595,11 +596,13 @@ export function takeHeldXmppCall(id: string): boolean {
 }
 
 // It rings with no name, from a contact of the account, while it is fresh (`live`, not from the
-// archive, and not yet a minute old); else it is kept as missed.
+// archive, and not yet a minute old); else it is kept as missed. In INVISIBLE (lib/modes.ts) it
+// does not ring at all, as it could not be answered: kept as missed at once, its line says why.
 function hold(closed: XmppClosedPlace, state: XmppState, s: Session, at: number, live = true): void {
   if (held.has(s.id)) return;
-  if (!rtcNow || !live || !mayRing(state, s.jid) || Date.now() - at >= OFFER_FRESH_MS) {
-    void closed.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}`, `call-${s.id}`, at).catch(() => undefined);
+  const stale = !rtcNow || !live || !mayRing(state, s.jid) || Date.now() - at >= OFFER_FRESH_MS;
+  if (stale || callsOff()) {
+    void closed.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}${stale ? '' : CALLS_OFF_LINE}`, `call-${s.id}`, at).catch(() => undefined);
     return;
   }
   const h: Held = { s, state, closed, at, timer: null };
