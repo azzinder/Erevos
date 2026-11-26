@@ -46,6 +46,15 @@
 // made before and the code typed from the page (claimSignIn, lib/relay-signin.ts), giving the relay
 // only the new token's SHA-256. The relay drops the sign-in after 5 wrong codes.
 //
+// Open places (crates/erevos-relay/src/open.rs): a relay may give a place to any phone that asks,
+// with no invite and no sign-in, so a new phone has a relay from its first start (takeOpenPlace).
+// The phone makes a token for itself and gives the relay only its SHA-256, on the /join path, as
+// for an invite; the relay adds a line named `open-` and 8 hex characters for it. The relay gives
+// only so many in all, a day, and a day to phones from one address, and each place may do only so
+// much a day: make queues, move file bytes, take credentials for the call relay. An open place
+// invites no one, lends no places and has no coupons signed, and its line goes when its token is
+// not used for some time (60 days, unless whoever runs the relay sets otherwise).
+//
 // Marks: a send may say what it carries (Mark), for a web app's notice while it is closed
 // (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, word between
 // phones, which pushes nothing, or a call that rings, which pushes, counts as no message, and has
@@ -130,6 +139,7 @@ const COUPON_KEYS = 35;
 const COUPON_REDEEM = 36;
 const ACK = 37;
 const PAIR = 38;
+const OPEN = 39;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -149,6 +159,10 @@ const WRONG = 5;
 // For a push address only: the push service said it is gone (crates/erevos-relay/src/push.rs). An
 // older relay never says it.
 const EXPIRED = 6;
+// For an open place only (takeOpenPlace): the relay gave all the open places it gives a day, or all
+// it gives a day to phones from this phone's address.
+const DAY_FULL = 7;
+const ADDRESS_FULL = 8;
 
 // Same limit as the relay's MAX_MESSAGE.
 const MAX_MESSAGE = 64 * 1024;
@@ -1931,6 +1945,66 @@ export async function redeemInvite(url: string, code: string): Promise<{ token: 
   return { token, name: utf8Decode(reply.slice(1)) };
 }
 
+/** Why a relay gave no open place (takeOpenPlace): it gives none, or is from before them ('off');
+ *  it gave all it gives ('full'), all it gives a day ('day'), or all it gives a day to phones from
+ *  this phone's address ('address'). */
+export type OpenPlaceRefusal = 'off' | 'full' | 'day' | 'address';
+
+// What each refusal says. A screen that shows one says it in its own words, from openPlaceRefusal.
+const OPEN_REFUSED: Record<OpenPlaceRefusal, string> = {
+  off: 'open place: the server gives none',
+  full: 'open place: the server gave all it gives',
+  day: 'open place: the server gave all it gives today',
+  address: 'open place: the server gave all it gives today to phones from this address',
+};
+
+/** What takeOpenPlace throws when the relay gives no open place: `refusal` says why. */
+export class OpenPlaceRefusedError extends RelayError {
+  readonly refusal: OpenPlaceRefusal;
+
+  constructor(refusal: OpenPlaceRefusal, status: number) {
+    super(OPEN_REFUSED[refusal], status);
+    this.refusal = refusal;
+  }
+}
+
+/** Why the relay gave no open place, when `error` is what takeOpenPlace threw for that; null for
+ *  any other error, such as a relay that cannot be reached, which may give one later. */
+export function openPlaceRefusal(error: unknown): OpenPlaceRefusal | null {
+  return error instanceof OpenPlaceRefusedError ? error.refusal : null;
+}
+
+/**
+ * Takes an open place on the relay at `url` (crates/erevos-relay/src/open.rs), one it gives a phone
+ * that asks, with no invite: makes a token of this phone's own and has the relay add a line for it,
+ * from the /join path, which needs no token. Returns the token, for where the relay's token goes,
+ * and the name on its line there (`open-` and 8 hex characters). Each call makes a new token, as
+ * the relay adds no line for a token it has one for. Throws an OpenPlaceRefusedError (see
+ * openPlaceRefusal) when the relay gives no place; a RelayError when it could not add the line
+ * (FAILED), or cannot be reached.
+ */
+export async function takeOpenPlace(url: string): Promise<{ token: string; name: string }> {
+  const relay = relayPath(url, '/join');
+  const token = newPhoneToken();
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(OPEN, ...sha256Bytes(utf8Encode(token))));
+  } catch (error) {
+    // The /join path takes no KEY. SIGN_IN changes nothing, and a relay answers it there whether it
+    // signs phones in or not.
+    if (await fromBefore(relay, error, Uint8Array.of(SIGN_IN))) throw new OpenPlaceRefusedError('off', NOT_FOUND);
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) throw new OpenPlaceRefusedError('off', NOT_FOUND);
+  if (reply[0] === FULL) throw new OpenPlaceRefusedError('full', FULL);
+  if (reply[0] === DAY_FULL) throw new OpenPlaceRefusedError('day', DAY_FULL);
+  if (reply[0] === ADDRESS_FULL) throw new OpenPlaceRefusedError('address', ADDRESS_FULL);
+  check(reply, 'open place');
+  const name = utf8Decode(reply.slice(1));
+  if (!/^open-[0-9a-z]+$/i.test(name)) throw new RelayError('open place: unexpected reply');
+  return { token, name };
+}
+
 /**
  * Trades the relay's one token in `relay`, which every phone may have, for a line of this phone's
  * own there (crates/erevos-relay, OWN): makes a token of this phone's own and has the relay add a
@@ -2128,10 +2202,11 @@ export async function claimSignIn(
 }
 
 // A relay from before a request closes the connection, as for any it does not know: then one that
-// answers a plain request is from before it. Throws what failed when that relay cannot be reached.
-async function fromBefore(relay: Relay, error: unknown): Promise<boolean> {
+// answers a plain request (`plain`, KEY unless another is given) is from before it. Throws what
+// failed when that relay cannot be reached.
+async function fromBefore(relay: Relay, error: unknown, plain = Uint8Array.of(KEY)): Promise<boolean> {
   if (!(error instanceof RelayUnreachableError)) return false;
-  await request(relay, Uint8Array.of(KEY)).catch(() => {
+  await request(relay, plain).catch(() => {
     throw error;
   });
   return true;

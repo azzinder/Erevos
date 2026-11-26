@@ -1024,8 +1024,9 @@ struct Incoming {
 /// from: `peer`, unless that is this machine, a proxy in front of the relay,
 /// which puts the address it took the request from last in
 /// `X-Forwarded-For` (Apache adds it after any the request came with, Caddy
-/// sets it), so that one is taken.
-fn client(peer: IpAddr, forwarded_for: &str) -> IpAddr {
+/// sets it), so that one is taken. An open place is counted by the same
+/// address (see `open.rs`).
+pub(crate) fn client(peer: IpAddr, forwarded_for: &str) -> IpAddr {
     let forwarded = forwarded_for.rsplit(',').next().and_then(|last| {
         let last = last.trim();
         last.parse::<IpAddr>()
@@ -1038,9 +1039,10 @@ fn client(peer: IpAddr, forwarded_for: &str) -> IpAddr {
     }
 }
 
-/// The address `ip` counts as for `MAX_STARTS`: an IPv6 address as its /64,
-/// which one machine may have whole.
-fn counted_as(ip: IpAddr) -> IpAddr {
+/// The address `ip` counts as for `MAX_STARTS`, and for the open places one
+/// address may take (see `open.rs`): an IPv6 address as its /64, which one
+/// machine may have whole.
+pub(crate) fn counted_as(ip: IpAddr) -> IpAddr {
     match ip {
         IpAddr::V6(v6) => match v6.to_ipv4_mapped() {
             Some(v4) => IpAddr::V4(v4),

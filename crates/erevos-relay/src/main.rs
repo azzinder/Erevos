@@ -87,6 +87,30 @@
 //! signed here are told it, and a space of theirs with no home relay takes it
 //! as its home relay by itself, only through Tor (see `coupons.rs`).
 //!
+//! Set `EREVOS_RELAY_OPEN=on` beside `EREVOS_RELAY_TOKENS` to give a phone
+//! with no place here one by itself, as the app asks at first start (see
+//! `open.rs`): an open place, a line the relay adds to the file, named
+//! `open-` and 8 hex digits. It gives at most `EREVOS_RELAY_OPEN_PLACES` at
+//! once (1000 unless set), `EREVOS_RELAY_OPEN_DAY` a day (100 unless set),
+//! and `EREVOS_RELAY_OPEN_PER_ADDRESS` a day to one address (3 unless set),
+//! the address counted in memory only, by a keyed hash, never written or
+//! logged. Behind a proxy on this machine, the proxy must set
+//! `X-Forwarded-For`, as for signing in, or all phones count as one address.
+//! Each open place may make `EREVOS_RELAY_OPEN_QUEUES` queues (20 unless
+//! set), put or fetch `EREVOS_RELAY_OPEN_FILES_MB` megabytes of files
+//! through the relay (50 unless set) and take credentials for the call relay
+//! `EREVOS_RELAY_OPEN_CALLS` times (30 unless set) a day, but may not
+//! invite, lend or have coupons signed. One whose token connects on none of
+//! `EREVOS_RELAY_OPEN_UNUSED_DAYS` days (60 unless set) is taken out of the
+//! file. Days are UTC days. What is counted is kept in `<file>.open`. With
+//! the setting off, or set to anything but `on`, no new ones are given, and
+//! lines named `open-…` stay open places, with these limits. The relay does
+//! not start with it on and no `EREVOS_RELAY_TOKENS`. Off unless set.
+//! `erevos-relay open-places` says, from the file and `<file>.open` alone,
+//! how many open places there are, how many were made today and in the last
+//! 7 days, and how many were used (their token connected, or they were made)
+//! today and in the last 7 and 30 days.
+//!
 //! Each connection has a thread of its own, so the relay takes at most
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
 //! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
@@ -213,6 +237,7 @@ mod lend;
 mod lock;
 mod matrix_push;
 mod oidc;
+mod open;
 mod pages;
 mod peers;
 mod push;
@@ -255,6 +280,80 @@ fn number(name: &str, default: u64, least: u64) -> Option<u64> {
         },
         _ => Some(default),
     }
+}
+
+/// The limits of open places, from their settings (see `open.rs`). `None`,
+/// after saying why, when one is set to anything but a whole number of at
+/// least what it may be.
+fn open_limits() -> Option<open::Limits> {
+    let places = number("EREVOS_RELAY_OPEN_PLACES", open::DEFAULT_PLACES, 1)?;
+    let day = number("EREVOS_RELAY_OPEN_DAY", open::DEFAULT_DAY, 1)?;
+    let per_address = number("EREVOS_RELAY_OPEN_PER_ADDRESS", open::DEFAULT_PER_ADDRESS, 1)?;
+    let unused_days = number("EREVOS_RELAY_OPEN_UNUSED_DAYS", open::DEFAULT_UNUSED_DAYS, 1)?;
+    let files_mb = number("EREVOS_RELAY_OPEN_FILES_MB", open::DEFAULT_FILES_MB, 0)?;
+    let calls = number("EREVOS_RELAY_OPEN_CALLS", open::DEFAULT_CALLS, 0)?;
+    let queues = number("EREVOS_RELAY_OPEN_QUEUES", open::DEFAULT_QUEUES, 1)?;
+    let at_most = |n: u64| u32::try_from(n).unwrap_or(u32::MAX);
+    Some(open::Limits {
+        places: places.try_into().unwrap_or(usize::MAX),
+        day: at_most(day),
+        per_address: at_most(per_address),
+        unused_days,
+        file_bytes: files_mb.saturating_mul(1 << 20),
+        calls: at_most(calls),
+        queues: at_most(queues),
+    })
+}
+
+/// `erevos-relay open-places`: how many open places the file of tokens
+/// (`EREVOS_RELAY_TOKENS`) holds, how many of them were made today and in the
+/// last 7 days, and how many were used (their token connected, or they were
+/// made) today and in the last 7 and 30 days (UTC days, today among them),
+/// from that file and `<file>.open` alone (see `open.rs`). It names no place,
+/// token or address. It reads only, so the relay may run meanwhile.
+fn open_places() -> ExitCode {
+    let Some(path) = env::var("EREVOS_RELAY_TOKENS")
+        .ok()
+        .filter(|path| !path.is_empty())
+    else {
+        elog!("erevos-relay: open-places needs EREVOS_RELAY_TOKENS set to the file of tokens the relay uses");
+        return ExitCode::FAILURE;
+    };
+    let text = match fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
+        Err(e) => {
+            elog!("erevos-relay: cannot read the file of tokens {path}: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let counts = format!("{path}.open");
+    let kept = match fs::read(&counts) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => None,
+        Err(e) => {
+            elog!("erevos-relay: cannot read the counts of open places {counts}: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let Some(tally) = open::tally(&text, kept.as_deref(), now) else {
+        elog!("erevos-relay: {counts} is not a file of counts of open places");
+        return ExitCode::FAILURE;
+    };
+    println!("Open places in {path}: {}", tally.places);
+    println!(
+        "Made today: {}; in the last 7 days: {}",
+        tally.made_today, tally.made_week
+    );
+    println!(
+        "Used today: {}; in the last 7 days: {}; in the last 30 days: {}",
+        tally.used_today, tally.used_week, tally.used_month
+    );
+    println!("(UTC days, today among them. A place counts as used on the day it was made too.)");
+    ExitCode::SUCCESS
 }
 
 /// Reads the relay key from `path`, or makes one there if the file does not exist.
@@ -505,6 +604,9 @@ fn main() -> ExitCode {
     }
     if env::args().nth(1).as_deref() == Some("downgrade-journal") {
         return downgrade_journal(env::args().nth(2));
+    }
+    if env::args().nth(1).as_deref() == Some("open-places") {
+        return open_places();
     }
     // Before any thread starts, so that every one has them blocked.
     let signals = stop::block();
@@ -789,6 +891,49 @@ fn main() -> ExitCode {
         // Read now, so how many it holds, and a line it cannot read, is said at start.
         tokens.count();
         let _ = store.tokens.set(tokens);
+    }
+    let open_setting = env::var("EREVOS_RELAY_OPEN").ok();
+    let giving = open::wanted(open_setting.as_deref());
+    let Some(open_limits) = open_limits() else {
+        return ExitCode::FAILURE;
+    };
+    match &phones {
+        Some(path) => {
+            // Lines named open-… are open places whatever the setting, so they are counted always.
+            let kept = format!("{path}.open");
+            match open::OpenPlaces::open(giving, open_limits, Path::new(&kept)) {
+                Ok(open) => {
+                    let limits = open.limits();
+                    if open.on() {
+                        elog!(
+                            "erevos-relay: a phone with no place here takes an open place by itself, {} at most at once, {} a day, {} a day to one address; each may make {} queues, move {} MB of files through the relay and take credentials for calls {} times a day, and goes when unused for {} days; counted in {kept}",
+                            limits.places,
+                            limits.day,
+                            limits.per_address,
+                            limits.queues,
+                            limits.file_bytes >> 20,
+                            limits.calls,
+                            limits.unused_days
+                        );
+                    } else {
+                        elog!("erevos-relay: no EREVOS_RELAY_OPEN=on set, no open places are given; those in the file, if any, keep their limits, counted in {kept}");
+                    }
+                    let _ = store.open.set(open);
+                }
+                Err(e) => {
+                    elog!("erevos-relay: cannot read the counts of open places {kept}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        None if giving => {
+            elog!("erevos-relay: EREVOS_RELAY_OPEN=on needs EREVOS_RELAY_TOKENS, the file the relay adds the open places' lines to");
+            return ExitCode::FAILURE;
+        }
+        None => {}
+    }
+    if let Some(other) = open_setting.as_deref().filter(|v| !matches!(*v, "" | "on" | "off")) {
+        elog!("erevos-relay: EREVOS_RELAY_OPEN is {other:?}, not on, so no open places are given");
     }
     let kept_invites = phones.as_ref().map(|path| format!("{path}.invites"));
     match (&kept_invites, inviting) {
