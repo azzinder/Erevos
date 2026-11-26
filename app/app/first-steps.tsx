@@ -38,6 +38,7 @@ import { CAN_AUTO_BACKUP } from '../lib/backup-place';
 import { canTor } from '../lib/core';
 import { findMoves, takeMove, type FoundMove } from '../lib/edition-move';
 import { startSteps, stepAt, TILES, type StartStep, type Tile as TileColour } from '../lib/first-start';
+import { CAN_DRIVE } from '../lib/google-drive-ids';
 import { t } from '../lib/i18n';
 import { MODE_NAMES, MODES, type Mode } from '../lib/modes';
 import { modulesHere, type Module } from '../lib/modules';
@@ -605,7 +606,8 @@ export default function FirstSteps() {
   const backups: { id: BackupChoice; tile: TileColour; icon: IconName; title: string; line: string; badge?: boolean }[] = [
     { id: 'device', tile: 'teal', icon: 'phoneD', title: t('On this device'), line: t('In a folder you choose') },
     { id: 'webdav', tile: 'blue', icon: 'srv', title: 'WebDAV', line: t('Nextcloud, ownCloud and others') },
-    ...(Platform.OS === 'android' ? [{ id: 'drive' as const, tile: 'green' as const, icon: 'drive' as const, title: 'Google Drive', line: t('Handy, but tied to your account'), badge: true }] : []),
+    // Only where this app has its client ID of Google's (lib/google-drive-ids.ts): on Android, once given.
+    ...(CAN_DRIVE ? [{ id: 'drive' as const, tile: 'green' as const, icon: 'drive' as const, title: 'Google Drive', line: t('Handy, but tied to your account'), badge: true }] : []),
   ];
   return (
     <>
@@ -760,6 +762,8 @@ export default function FirstSteps() {
           [
             ['teal', 'lock', t('The backups leave **encrypted**. Google cannot read them.')],
             ['rose', 'eye', t('But Google **knows who you are**. It sees that you use Erevos, when you make a backup and how big it is, and may hand that over if asked.')],
+            // In INVISIBLE, that signing in is in the browser, outside Tor.
+            ...(mode === 'invisible' ? [['violet', 'ghost', t('This space is INVISIBLE, but signing in happens **in your browser, outside Erevos**, not through Tor: Google sees your internet address then.')] as const] : []),
             ['blue', 'srv', t('For more privacy, choose **this device** or **WebDAV**.')],
           ] as const
         ).map(([tile, icon, text]) => (

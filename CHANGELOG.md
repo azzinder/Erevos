@@ -91,6 +91,15 @@ and 0.1.15 never came out.
 - **Automatic backups only to a server**: automatic backups can now go to a WebDAV server with no folder on the device.
   The first start's **WebDAV** sets them up so, and **Backups** shows them as **Only to** that server, with a folder on
   the device optional, for one more copy close at hand. Stopping that server stops them too.
+- **Automatic backups to Google Drive**: on Android, automatic backups can now go to your Google Drive too, encrypted as
+  to a server, into a folder named Erevos that Erevos makes there, and with no folder on the phone and no server, only
+  there. **Backups** offers it beside WebDAV, under **To Google Drive too**, and the first start's **Google Drive** sets
+  it up. Each time, before signing in with Google, Erevos says that Google cannot read the backups but knows who you
+  are, sees when one comes and how big it is, and may hand that over if asked; in INVISIBLE also that signing in happens
+  in the browser, outside Erevos, not through Tor. **Restore from Google Drive** lists the backups there and puts one
+  back, with its photos, files and voice messages. **Stop sending** takes Erevos's access back at Google; the backups
+  there stay. It shows only once a build has Erevos's own client ID from Google for its edition: until then nothing of
+  Google Drive shows.
 
 ### Under the hood
 
@@ -188,6 +197,20 @@ and 0.1.15 never came out.
   knows the first start's welcome by **Get started** (`desktop/main.js`).
 - Automatic backups with no folder and a WebDAV server go only to that server: `runAutoBackup` already sent them so, and
   `app/backup.tsx` now sets them up that way, says so, and stops them with the server.
+- Google Drive (`lib/google-drive.ts`) signs in with OAuth 2.0 for an app on the phone, with PKCE (S256), no client
+  secret and only the `drive.file` scope, so Erevos reaches only the files it made there. Google's page opens in the
+  phone's browser (`Linking.openURL`) and comes back to `<package>:/oauth2redirect`: an intent filter of each edition's
+  package as a scheme (`app.config.js`), mapped to `app/oauth2redirect.tsx` (`lib/open-link.ts`). The state and the PKCE
+  verifier wait in the keystore (`erevos.drive-sign-in`), sealed with a key the open space's own gives, 10 minutes at
+  most, and are taken at the first answer, so a code goes once. The refresh token is kept as the WebDAV password is
+  (`erevos.backup-drive`, outside the spaces and in backups, sealed with their password), access tokens only in memory,
+  asked for again when one runs out or Google refuses it (401), and **Stop sending** revokes it at
+  `oauth2.googleapis.com/revoke`. Each edition's Android OAuth client ID goes in `lib/google-drive-ids.ts`, empty for
+  now: `CAN_DRIVE` is false, and nothing of Google Drive shows. Files go as multipart uploads, those above 5 MB as
+  resumable ones, through the same HTTP layer as backups to a server, so the space's Tor way applies; through Tor, whose
+  answers carry no headers, a large one goes as a multipart upload too. Backups there are sent, checked after each, kept
+  and deleted as on a server: `sendBare` sends to either place, a `BarePlace` (`lib/backup-cloud.ts`,
+  `lib/backup-folder.ts`, `lib/backup-check.ts`, `lib/backup-ledger.ts`).
 
 ## 3.2.0-rc.3 (2026-11-25)
 

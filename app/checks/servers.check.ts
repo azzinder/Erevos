@@ -64,13 +64,15 @@ test('the build settings name the pages, the relay and the server Android opens 
     const plain = appConfig({ config: APP_JSON });
     assert.equal(plain.extra.webOrigin, undefined);
     assert.equal(plain.extra.startRelay, undefined);
-    assert.deepEqual(plain.android.intentFilters, APP_JSON.android.intentFilters);
+    // app.json's, and last the one Google's sign-in comes back by, the app's package as a scheme.
+    assert.deepEqual(plain.android.intentFilters.slice(0, -1), APP_JSON.android.intentFilters);
+    assert.deepEqual(plain.android.intentFilters.at(-1), { action: 'VIEW', category: ['BROWSABLE', 'DEFAULT'], data: [{ scheme: 'app.erevos.plus' }] });
     process.env.EREVOS_WEB_ORIGIN = COMMUNITY;
     process.env.EREVOS_START_RELAY = 'wss://relay.community.example';
     const own = appConfig({ config: APP_JSON });
     assert.equal(own.extra.webOrigin, COMMUNITY);
     assert.equal(own.extra.startRelay, 'wss://relay.community.example');
-    const hosts = own.android.intentFilters.flatMap((filter) => filter.data.map((data) => data.host));
+    const hosts = own.android.intentFilters.flatMap((filter) => filter.data.flatMap((data) => (data.host ? [data.host] : [])));
     assert.ok(hosts.length >= 4);
     assert.ok(hosts.every((host) => host === 'erevos.community.example'), hosts.join());
     process.env.EREVOS_WEB_ORIGIN = 'https://erevos.community.example/c';

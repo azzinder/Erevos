@@ -71,6 +71,8 @@ export const setupText: Record<string, string> = {
   'But Google **knows who you are**. It sees that you use Erevos, when you make a backup and how big it is, and may hand that over if asked.':
     'Pero Google **sabe quién eres**. Ve que usas Erevos, cuándo haces una copia y qué tamaño tiene, y puede entregarlo si se lo piden.',
   'For more privacy, choose **this device** or **WebDAV**.': 'Para más privacidad, elige **este dispositivo** o **WebDAV**.',
+  "This space is INVISIBLE, but signing in happens **in your browser, outside Erevos**, not through Tor: Google sees your internet address then.":
+    "Este espacio está en INVISIBLE, pero el inicio de sesión ocurre **en tu navegador, fuera de Erevos**, no por Tor: Google ve entonces tu dirección de internet.",
   'I understand, sign in with Google': 'Entendido, iniciar sesión con Google',
   'Step {n} of {m}': 'Paso {n} de {m}',
   '{ok} of {all} allowed': '{ok} de {all} permitidos',

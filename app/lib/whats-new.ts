@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { EDITION, type Edition } from './edition';
+import { CAN_DRIVE } from './google-drive-ids';
 import { mark } from './i18n';
 import { laterThan } from './version-name';
 
@@ -14,7 +15,8 @@ import { laterThan } from './version-name';
 // [links](#guide-section) are written as in the guide. NEXT is what is on main and not out yet: it
 // shows under the number of the version that runs. After a release its two lists move into a new
 // entry of VERSIONS under the release's number; checks/whats-new.check.ts holds VERSIONS to the
-// releases of CHANGELOG.md.
+// releases of CHANGELOG.md. A line about Google Drive shows only where Erevos can use it
+// (lib/google-drive-ids.ts).
 
 /** What changed, in its two kinds. */
 export type Changes = { forYou: string[]; underTheHood: string[] };
@@ -33,6 +35,7 @@ export const NEXT: Changes = {
     mark("**A new first start**: five short steps, in each edition's own colours: your name if you like, what you will use, how visible you are, every permission in five groups with **Allow all**, a password with tips for a stronger one, and where automatic backups go. Then **They are beside me** or **They are far away** adds your first person. See [Getting started](#start)."),
     mark("**LPHL's server, by itself**: a new phone needs no invite and no account: at the first start Erevos takes a place for your messages on LPHL's free server by itself, with nothing to type. Such a place is for your own chats, with limits for each day, and goes when its phone has not connected for 60 days. See [Chat through a server](#relay)."),
     mark("**Automatic backups only to a server**: they can now go to a WebDAV server with no folder on this device; a folder there is optional, for one more copy close at hand. See [Backups](#backup)."),
+    mark("**Automatic backups to Google Drive**: on Android they can now go to your Google Drive too, encrypted, into a folder named Erevos, or only there. Erevos first says what Google then knows: your account, when a backup comes and how big it is. Sign in with Google under **Backups** or at the first start; **Restore from Google Drive** brings one back. See [Backups](#backup)."),
   ],
   underTheHood: [
     mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),
@@ -164,12 +167,26 @@ export const VERSIONS: WhatsNew[] = [
  * comes after the last release, else (a build of main for testing) with no number, then every
  * release.
  */
-export function whatsNewFor(running: string, edition: Edition = EDITION): (Changes & { version: string | null })[] {
-  return whatsNewOf(VERSIONS, NEXT, running, edition);
+export function whatsNewFor(running: string, edition: Edition = EDITION, drive = CAN_DRIVE): (Changes & { version: string | null })[] {
+  return whatsNewOf(VERSIONS, NEXT, running, edition, drive);
 }
 
+// A line about Google Drive, which shows only where Erevos can use it (`drive`).
+const DRIVE_LINE = /\bGoogle Drive\b/;
+
 /** whatsNewFor, of any list of releases and what is not out yet: for the checks. */
-export function whatsNewOf(versions: WhatsNew[], next: Changes, running: string, edition: Edition): (Changes & { version: string | null })[] {
+export function whatsNewOf(versions: WhatsNew[], next: Changes, running: string, edition: Edition, drive = CAN_DRIVE): (Changes & { version: string | null })[] {
+  if (!drive) {
+    const shown = (text: string) => !DRIVE_LINE.test(text);
+    const without = (changes: Changes): Changes => ({ forYou: changes.forYou.filter(shown), underTheHood: changes.underTheHood.filter(shown) });
+    return whatsNewOf(
+      versions.map((v) => ({ ...v, ...without(v) })),
+      without(next),
+      running,
+      edition,
+      true,
+    );
+  }
   // A release of Erevos Lite (x.2.y) is told only in Erevos Lite: what it brought of Erevos's own is
   // told in Erevos's releases already.
   const lite = (v: { version: string | null }) => v.version !== null && LITE_RELEASE.test(v.version);

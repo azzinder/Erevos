@@ -251,4 +251,49 @@ export const cloudBackup: Record<string, string> = {
     "Γίνεται όσο το Erevos είναι ανοιχτό, και όταν πηγαίνει στο παρασκήνιο, μόλις το τελευταίο είναι παλαιότερο από αυτό. Ένας φάκελος και σε {device} κρατά ένα ακόμα αντίγραφο κοντά σου.",
   "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.":
     "Σταματούν και τα αυτόματα αντίγραφα, αφού δεν έχουν φάκελο σε {device}. Όσα είναι ήδη στον server μένουν εκεί μέχρι να τα σβήσεις.",
+  // Το Google Drive (lib/google-drive.ts).
+  "Not sent to Google Drive. {error}": "Δεν στάλθηκε στο Google Drive. {error}",
+  "Sent a backup to Google Drive.": "Στάλθηκε αντίγραφο στο Google Drive.",
+  "Automatic backups will go only to the folder and Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Τα αυτόματα αντίγραφα θα πηγαίνουν από τώρα μόνο στον φάκελο και στο Google Drive. Όσα είναι ήδη στον server μένουν εκεί μέχρι να τα σβήσεις.",
+  "Automatic backups will go only to Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Τα αυτόματα αντίγραφα θα πηγαίνουν από τώρα μόνο στο Google Drive. Όσα είναι ήδη στον server μένουν εκεί μέχρι να τα σβήσεις.",
+  "Automatic backups stop too, as they have no folder on {device}. Those already in your Google Drive stay there until you delete them.":
+    "Σταματούν και τα αυτόματα αντίγραφα, αφού δεν έχουν φάκελο σε {device}. Όσα είναι ήδη στο Google Drive σου μένουν εκεί μέχρι να τα σβήσεις.",
+  "Google takes back Erevos's access to your Google Drive, and Erevos forgets the sign-in here. The backups already there stay until you delete them.":
+    "Η Google παίρνει πίσω την πρόσβαση του Erevos στο Google Drive σου, και το Erevos ξεχνά εδώ τη σύνδεση. Τα αντίγραφα που είναι ήδη εκεί μένουν μέχρι να τα σβήσεις.",
+  "Stop sending to Google Drive": "Τέλος η αποστολή στο Google Drive",
+  "Backups no longer go to Google Drive.": "Τα αντίγραφα δεν πηγαίνουν πια στο Google Drive.",
+  "Backups no longer go to Google Drive, but Google could not be reached to take back Erevos's access: you can take it back in your Google account's security settings.":
+    "Τα αντίγραφα δεν πηγαίνουν πια στο Google Drive, αλλά η Google δεν βρέθηκε για να πάρει πίσω την πρόσβαση του Erevos: μπορείς να την πάρεις πίσω εσύ, στις ρυθμίσεις ασφαλείας του λογαριασμού σου στη Google.",
+  "There is no Erevos backup in that Google Drive.": "Δεν υπάρχει αντίγραφο του Erevos σε αυτό το Google Drive.",
+  "Only to {server} and Google Drive": "Μόνο στο {server} και στο Google Drive",
+  "Only to Google Drive": "Μόνο στο Google Drive",
+  "To Google Drive too": "Και στο Google Drive",
+  "To Google Drive": "Στο Google Drive",
+  "Each automatic backup goes there too, into the folder named Erevos, which keeps the {n} newest.":
+    "Κάθε αυτόματο αντίγραφο πηγαίνει και εκεί, στον φάκελο με το όνομα Erevos, που κρατά τα {n} πιο πρόσφατα.",
+  "Automatic backups are off, so none goes there. Turn them on to send one every day.":
+    "Τα αυτόματα αντίγραφα είναι απενεργοποιημένα, οπότε δεν πηγαίνει κανένα εκεί. Ενεργοποίησέ τα για να στέλνεται ένα κάθε μέρα.",
+  "Turn on automatic backups": "Ενεργοποίηση αυτόματων αντιγράφων",
+  "Sign in with Google again": "Νέα σύνδεση με Google",
+  "Each automatic backup can also go to your Google Drive, into a folder named Erevos that Erevos makes there. Google gets random bytes under a random name and cannot open them, but it knows your account, when one comes and how big it is. Nothing goes until you sign in with Google.":
+    "Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και στο Google Drive σου, σε έναν φάκελο με το όνομα Erevos που φτιάχνει εκεί το Erevos. Η Google παίρνει τυχαία bytes με τυχαίο όνομα και δεν μπορεί να τα ανοίξει, αλλά ξέρει τον λογαριασμό σου, πότε έρχεται ένα και πόσο μεγάλο είναι. Τίποτα δεν στέλνεται μέχρι να συνδεθείς με τη Google.",
+  "Sign in with Google": "Σύνδεση με Google",
+  "Google Drive is checked as a server is.": "Το Google Drive ελέγχεται όπως ένας server.",
+  "Restore from Google Drive": "Επαναφορά από Google Drive",
+  "Backups in Google Drive, newest first. Choose one, then type its password.":
+    "Αντίγραφα στο Google Drive, τα νεότερα πρώτα. Διάλεξε ένα και μετά γράψε τον κωδικό του.",
+  "Google Drive is not in this build of Erevos.": "Το Google Drive δεν υπάρχει σε αυτή την έκδοση του Erevos.",
+  "Google no longer lets Erevos into your Google Drive. Sign in with Google again.":
+    "Η Google δεν αφήνει πια το Erevos στο Google Drive σου. Συνδέσου ξανά με τη Google.",
+  "Google Drive answered {status}.": "Το Google Drive απάντησε {status}.",
+  "Your Google Drive has no room left for it.": "Το Google Drive σου δεν έχει άλλο χώρο γι’ αυτό.",
+  "That file is not in your Google Drive any more.": "Αυτό το αρχείο δεν είναι πια στο Google Drive σου.",
+  "This sign-in is not one Erevos started here, or it is more than {minutes} minutes old. Start it again.":
+    "Αυτή τη σύνδεση δεν την ξεκίνησε εδώ το Erevos, ή έχουν περάσει πάνω από {minutes} λεπτά. Ξεκίνα την ξανά.",
+  "You did not allow it at Google, so nothing changed.": "Δεν το επέτρεψες στη Google, οπότε δεν άλλαξε τίποτα.",
+  "Google did not take the sign-in: {error}. Start it again.": "Η Google δεν δέχτηκε τη σύνδεση: {error}. Ξεκίνα την ξανά.",
+  "Erevos was not allowed to keep files in your Google Drive. Sign in again and allow it.":
+    "Το Erevos δεν πήρε άδεια να κρατά αρχεία στο Google Drive σου. Συνδέσου ξανά και επίτρεψέ το.",
 };

@@ -250,4 +250,49 @@ export const cloudBackup: Record<string, string> = {
     "Se hace mientras Erevos está abierto, y al pasar a segundo plano, cuando la última es más antigua. Una carpeta en {device} además guarda una copia más a mano.",
   "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.":
     "También se detienen las copias automáticas, porque no tienen carpeta en {device}. Las que ya están en el servidor se quedan allí hasta que las borres.",
+  // Google Drive (lib/google-drive.ts).
+  "Not sent to Google Drive. {error}": "No enviado a Google Drive. {error}",
+  "Sent a backup to Google Drive.": "Copia enviada a Google Drive.",
+  "Automatic backups will go only to the folder and Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Desde ahora las copias automáticas irán solo a la carpeta y a Google Drive. Las que ya están en el servidor se quedan allí hasta que las borres.",
+  "Automatic backups will go only to Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Desde ahora las copias automáticas irán solo a Google Drive. Las que ya están en el servidor se quedan allí hasta que las borres.",
+  "Automatic backups stop too, as they have no folder on {device}. Those already in your Google Drive stay there until you delete them.":
+    "También se detienen las copias automáticas, porque no tienen carpeta en {device}. Las que ya están en tu Google Drive se quedan allí hasta que las borres.",
+  "Google takes back Erevos's access to your Google Drive, and Erevos forgets the sign-in here. The backups already there stay until you delete them.":
+    "Google retira el acceso de Erevos a tu Google Drive, y Erevos olvida aquí el inicio de sesión. Las copias que ya están allí se quedan hasta que las borres.",
+  "Stop sending to Google Drive": "Dejar de enviar a Google Drive",
+  "Backups no longer go to Google Drive.": "Las copias ya no van a Google Drive.",
+  "Backups no longer go to Google Drive, but Google could not be reached to take back Erevos's access: you can take it back in your Google account's security settings.":
+    "Las copias ya no van a Google Drive, pero no se pudo llegar a Google para retirar el acceso de Erevos: puedes retirarlo tú en los ajustes de seguridad de tu cuenta de Google.",
+  "There is no Erevos backup in that Google Drive.": "No hay ninguna copia de seguridad de Erevos en ese Google Drive.",
+  "Only to {server} and Google Drive": "Solo a {server} y a Google Drive",
+  "Only to Google Drive": "Solo a Google Drive",
+  "To Google Drive too": "También a Google Drive",
+  "To Google Drive": "A Google Drive",
+  "Each automatic backup goes there too, into the folder named Erevos, which keeps the {n} newest.":
+    "Cada copia automática va también allí, a la carpeta llamada Erevos, que guarda las {n} más recientes.",
+  "Automatic backups are off, so none goes there. Turn them on to send one every day.":
+    "Las copias automáticas están desactivadas, así que no va ninguna allí. Actívalas para enviar una cada día.",
+  "Turn on automatic backups": "Activar las copias automáticas",
+  "Sign in with Google again": "Volver a iniciar sesión con Google",
+  "Each automatic backup can also go to your Google Drive, into a folder named Erevos that Erevos makes there. Google gets random bytes under a random name and cannot open them, but it knows your account, when one comes and how big it is. Nothing goes until you sign in with Google.":
+    "Cada copia automática puede ir también a tu Google Drive, a una carpeta llamada Erevos que Erevos crea allí. Google recibe bytes aleatorios con un nombre aleatorio y no puede abrirlos, pero conoce tu cuenta, cuándo llega una y cuánto ocupa. No se envía nada hasta que inicies sesión con Google.",
+  "Sign in with Google": "Iniciar sesión con Google",
+  "Google Drive is checked as a server is.": "Google Drive se comprueba como un servidor.",
+  "Restore from Google Drive": "Restaurar desde Google Drive",
+  "Backups in Google Drive, newest first. Choose one, then type its password.":
+    "Copias en Google Drive, las más recientes primero. Elige una y luego escribe su contraseña.",
+  "Google Drive is not in this build of Erevos.": "Google Drive no está en esta versión de Erevos.",
+  "Google no longer lets Erevos into your Google Drive. Sign in with Google again.":
+    "Google ya no deja entrar a Erevos en tu Google Drive. Vuelve a iniciar sesión con Google.",
+  "Google Drive answered {status}.": "Google Drive respondió {status}.",
+  "Your Google Drive has no room left for it.": "Tu Google Drive no tiene más espacio para ella.",
+  "That file is not in your Google Drive any more.": "Ese archivo ya no está en tu Google Drive.",
+  "This sign-in is not one Erevos started here, or it is more than {minutes} minutes old. Start it again.":
+    "Este inicio de sesión no lo empezó Erevos aquí, o tiene más de {minutes} minutos. Empieza de nuevo.",
+  "You did not allow it at Google, so nothing changed.": "No lo permitiste en Google, así que no cambió nada.",
+  "Google did not take the sign-in: {error}. Start it again.": "Google no aceptó el inicio de sesión: {error}. Empieza de nuevo.",
+  "Erevos was not allowed to keep files in your Google Drive. Sign in again and allow it.":
+    "Erevos no recibió permiso para guardar archivos en tu Google Drive. Vuelve a iniciar sesión y permítelo.",
 };

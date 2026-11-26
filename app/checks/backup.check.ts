@@ -2954,7 +2954,7 @@ t('the server stays when automatic backups stop, and Make a backup sends one the
     await stopAutoBackup();
     assert.equal(await loadAutoBackup(), null);
     assert.equal((await loadCloudBackup())?.names.length, onServer + 1);
-    assert.deepEqual(await loadChecks(), { folder: null, server: null });
+    assert.deepEqual(await loadChecks(), { folder: null, server: null, drive: null });
   } finally {
     setCloudHttp(null);
     await stopCloudBackup();

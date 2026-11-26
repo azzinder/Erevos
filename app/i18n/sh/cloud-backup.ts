@@ -249,4 +249,49 @@ export const cloudBackup: Record<string, string> = {
     "Pravi se dok je Erevos otvoren, i kad ode u pozadinu, čim je posljednja starija od toga. Folder i na {device} čuva još jednu kopiju pri ruci.",
   "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.":
     "Zaustavljaju se i automatske rezervne kopije, jer nemaju folder na {device}. One koje su već na serveru ostaju tamo dok ih ne obrišete.",
+  // Google Drive (lib/google-drive.ts).
+  "Not sent to Google Drive. {error}": "Nije poslano na Google Drive. {error}",
+  "Sent a backup to Google Drive.": "Rezervna kopija poslana na Google Drive.",
+  "Automatic backups will go only to the folder and Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Automatske rezervne kopije od sada idu samo u folder i na Google Drive. One koje su već na serveru ostaju tamo dok ih ne obrišete.",
+  "Automatic backups will go only to Google Drive from now on. Those already on the server stay there until you delete them.":
+    "Automatske rezervne kopije od sada idu samo na Google Drive. One koje su već na serveru ostaju tamo dok ih ne obrišete.",
+  "Automatic backups stop too, as they have no folder on {device}. Those already in your Google Drive stay there until you delete them.":
+    "Zaustavljaju se i automatske rezervne kopije, jer nemaju folder na {device}. One koje su već na vašem Google Driveu ostaju tamo dok ih ne obrišete.",
+  "Google takes back Erevos's access to your Google Drive, and Erevos forgets the sign-in here. The backups already there stay until you delete them.":
+    "Google oduzima Erevosu pristup vašem Google Driveu, a Erevos ovdje zaboravlja prijavu. Rezervne kopije koje su već tamo ostaju dok ih ne obrišete.",
+  "Stop sending to Google Drive": "Prestani slati na Google Drive",
+  "Backups no longer go to Google Drive.": "Rezervne kopije više ne idu na Google Drive.",
+  "Backups no longer go to Google Drive, but Google could not be reached to take back Erevos's access: you can take it back in your Google account's security settings.":
+    "Rezervne kopije više ne idu na Google Drive, ali Google nije bio dostupan da oduzme Erevosu pristup: možete ga sami oduzeti u sigurnosnim postavkama svog Google računa.",
+  "There is no Erevos backup in that Google Drive.": "Na tom Google Driveu nema Erevos rezervne kopije.",
+  "Only to {server} and Google Drive": "Samo na {server} i Google Drive",
+  "Only to Google Drive": "Samo na Google Drive",
+  "To Google Drive too": "I na Google Drive",
+  "To Google Drive": "Na Google Drive",
+  "Each automatic backup goes there too, into the folder named Erevos, which keeps the {n} newest.":
+    "Svaka automatska rezervna kopija ide i tamo, u folder po imenu Erevos, koji čuva {n} najnovije.",
+  "Automatic backups are off, so none goes there. Turn them on to send one every day.":
+    "Automatske rezervne kopije su isključene, pa tamo ne ide nijedna. Uključite ih da se šalje jedna svaki dan.",
+  "Turn on automatic backups": "Uključite automatske rezervne kopije",
+  "Sign in with Google again": "Ponovo se prijavite na Google",
+  "Each automatic backup can also go to your Google Drive, into a folder named Erevos that Erevos makes there. Google gets random bytes under a random name and cannot open them, but it knows your account, when one comes and how big it is. Nothing goes until you sign in with Google.":
+    "Svaka automatska rezervna kopija može ići i na vaš Google Drive, u folder po imenu Erevos koji Erevos tamo napravi. Google dobija nasumične bajtove pod nasumičnim imenom i ne može ih otvoriti, ali zna vaš račun, kad jedna stigne i koliko je velika. Ništa ne ide dok se ne prijavite na Google.",
+  "Sign in with Google": "Prijavite se na Google",
+  "Google Drive is checked as a server is.": "Google Drive se provjerava kao server.",
+  "Restore from Google Drive": "Vrati s Google Drivea",
+  "Backups in Google Drive, newest first. Choose one, then type its password.":
+    "Rezervne kopije na Google Driveu, najnovije prve. Izaberite jednu, pa upišite njenu lozinku.",
+  "Google Drive is not in this build of Erevos.": "Google Drive nije u ovoj verziji Erevosa.",
+  "Google no longer lets Erevos into your Google Drive. Sign in with Google again.":
+    "Google više ne pušta Erevos na vaš Google Drive. Ponovo se prijavite na Google.",
+  "Google Drive answered {status}.": "Google Drive je odgovorio {status}.",
+  "Your Google Drive has no room left for it.": "Vaš Google Drive nema više mjesta za nju.",
+  "That file is not in your Google Drive any more.": "Te datoteke više nema na vašem Google Driveu.",
+  "This sign-in is not one Erevos started here, or it is more than {minutes} minutes old. Start it again.":
+    "Ovu prijavu nije ovdje pokrenuo Erevos, ili je starija od {minutes} minuta. Počnite ponovo.",
+  "You did not allow it at Google, so nothing changed.": "Niste to dopustili kod Googlea, pa se ništa nije promijenilo.",
+  "Google did not take the sign-in: {error}. Start it again.": "Google nije prihvatio prijavu: {error}. Počnite ponovo.",
+  "Erevos was not allowed to keep files in your Google Drive. Sign in again and allow it.":
+    "Erevos nije dobio dopuštenje da čuva datoteke na vašem Google Driveu. Ponovo se prijavite i dopustite to.",
 };
