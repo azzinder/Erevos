@@ -59,10 +59,10 @@ for nothing, and finds a way through whatever is there: the internet, Wi-Fi, Blu
 |---|---|
 | **No identity to give away** | No phone number, no email, no user name. You add people with a QR code or a link, or they invite you. |
 | **End-to-end encrypted** | PQXDH and the double ratchet for chats, MLS for groups, new keys every 30 days, safety numbers to compare. |
-| **Less for anyone to see** | A separate relay queue for each contact, fixed message sizes, and Tor if you turn it on (it is off by default, as it makes messages slower). |
+| **Less for anyone to see** | A separate server queue for each contact, fixed message sizes, and Tor if you turn it on (it is off by default, as it makes messages slower). |
 | **Hidden spaces** | A second password opens a second, separate Erevos that nothing reveals. Hidden chats, a panic button and a panic password are built in. |
 | **Works without internet** | Phones nearby talk over Bluetooth LE, Wi-Fi Aware, Wi-Fi Direct, the same Wi-Fi or a hotspot, or a LoRa radio. |
-| **Your own relay** | Run your own server (the program comes with Erevos), use your community's, or start with no relay at all. |
+| **Your own server** | Run your own (the program comes with Erevos), use your community's, or start with no server at all. |
 | **Calls and groups** | End-to-end encrypted voice and video, group calls (voice up to 8, video up to 4), voice messages, photos, files and polls. |
 | **A Collection of your own** | Photos, videos, music and files in an encrypted place, with a player, a slideshow and internet radio. |
 | **Phone, SMS and contacts** | On Android Erevos can be your phone, SMS and contacts app too, with the SMS and contacts icons unlocking only themselves. |
@@ -71,7 +71,7 @@ for nothing, and finds a way through whatever is there: the internet, Wi-Fi, Blu
 ## Who it is for
 
 For anyone who wants to talk with the people close to them without handing over a phone number: friends and
-families, groups and communities that would rather run their own relay, and people whose internet is down
+families, groups and communities that would rather run their own server, and people whose internet is down
 or blocked and who need a way to reach each other nearby.
 
 Want your Telegram, Messenger, Signal, Session, Matrix and XMPP chats in the same app? That is
@@ -114,7 +114,7 @@ Its releases are titled **Erevos+ x.y.z** and are never the *Latest* one.
 - **Not audited.** The cryptography follows published designs, but no independent expert has checked the code.
   An [AI-assisted review](#ai-assisted-security-review-november-2026) is not a substitute for one.
 - **Not everything has been tried on real phones.** The newest features among them; the changelog and the guide say which.
-- **A relay sees some things.** Not what you write, but when messages arrive and, unless you turn Tor on, the address
+- **A server sees some things.** Not what you write, but when messages arrive and, unless you turn Tor on, the address
   your phone connects from.
 - **SMS are not private.** When Erevos is your SMS app, your carrier sees SMS as with any app.
 

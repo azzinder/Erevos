@@ -923,7 +923,7 @@ function smoke(win) {
   const look = async () => {
     const text = await win.webContents.executeJavaScript('document.body ? document.body.innerText : ""').catch(() => '');
     const core = await win.webContents.executeJavaScript('!!globalThis.erevosCore').catch(() => false);
-    if (/Erevos/.test(text) && /relay|password|setting up erevos/i.test(text)) {
+    if (/Erevos/.test(text) && /server|password|setting up erevos/i.test(text)) {
       smokeDone(`SMOKE OK core=${core} secrets=${secretStore()}\n${text.slice(0, 400)}`, core ? 0 : 2);
     } else if (Date.now() - started > 60_000) {
       smokeDone(`SMOKE FAILED: no first screen after 60 s\n${text.slice(0, 400)}`, 1);

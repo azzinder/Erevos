@@ -100,7 +100,7 @@ function socketLink(url: string): Promise<NostrLink> {
       woken();
     };
     const timer = setTimeout(() => {
-      end(new Error(t('The Nostr relay did not answer.')));
+      end(new Error(t('The Nostr server did not answer.')));
       socket.close();
     }, OPEN_WAIT);
     const link: NostrLink = {
@@ -127,7 +127,7 @@ function socketLink(url: string): Promise<NostrLink> {
         return null;
       },
       close() {
-        end(new Error(t('The connection to the Nostr relay ended.')));
+        end(new Error(t('The connection to the Nostr server ended.')));
         try {
           socket.close();
         } catch {
@@ -150,8 +150,8 @@ function socketLink(url: string): Promise<NostrLink> {
       frames.push(said);
       woken();
     };
-    socket.onclose = () => end(new Error(t('The connection to the Nostr relay ended.')));
-    socket.onerror = () => end(new Error(t('Could not reach the Nostr relay.')));
+    socket.onclose = () => end(new Error(t('The connection to the Nostr server ended.')));
+    socket.onerror = () => end(new Error(t('Could not reach the Nostr server.')));
   });
 }
 
@@ -265,7 +265,7 @@ export class NostrRelay {
   }
 
   close(): void {
-    this.end(new Error(t('The connection to the Nostr relay ended.')));
+    this.end(new Error(t('The connection to the Nostr server ended.')));
   }
 
   private take(frame: unknown[]): void {
@@ -327,7 +327,7 @@ export class NostrRelay {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         this.oks.delete(id);
-        resolve({ ok: false, why: t('The Nostr relay did not answer.') });
+        resolve({ ok: false, why: t('The Nostr server did not answer.') });
       }, ANSWER_WAIT);
       this.oks.set(id, {
         done: (ok, why) => {

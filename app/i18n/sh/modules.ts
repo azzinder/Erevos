@@ -20,7 +20,7 @@ export const modulesText: Record<string, string> = {
   "{module} is off": "{module} je isključen",
   "This part of Erevos is off on this phone, so this screen does not open. Nothing of it is deleted: it is all there again once you turn it on in Settings → General → Modules.": "Ovaj dio Erevosa je isključen na ovom telefonu, pa se ovaj ekran ne otvara. Ništa od njega se ne briše: sve je opet tu čim ga uključite u Postavke → Općenito → Moduli.",
   "Open Modules": "Otvori module",
-  "Erevos's own chats, groups and calls, end-to-end encrypted, through the relay, Nostr, phones nearby or LoRa. No account and no phone number. Hidden chats are part of it.": "Vlastiti razgovori, grupe i pozivi Erevosa, šifrirani s kraja na kraj, preko relaya, Nostra, obližnjih telefona ili LoRa. Bez računa i bez broja telefona. Skriveni razgovori su dio toga.",
+  "Erevos's own chats, groups and calls, end-to-end encrypted, through the server, Nostr, phones nearby or LoRa. No account and no phone number. Hidden chats are part of it.": "Vlastiti razgovori, grupe i pozivi Erevosa, šifrirani s kraja na kraj, preko servera, Nostra, obližnjih telefona ili LoRa. Bez računa i bez broja telefona. Skriveni razgovori su dio toga.",
   "Erevos as the phone app: the keypad, the calls and the favourites, and every call on its own screen.": "Erevos kao aplikacija za telefon: tastatura, pozivi i favoriti, i svaki poziv na vlastitom ekranu.",
   "Erevos as the SMS app: the SMS in the same list as the chats.": "Erevos kao aplikacija za SMS: SMS-ovi na istom popisu kao razgovori.",
   "Chats with other Nostr apps, and the public posts of those you follow.": "Razgovori s drugim Nostr aplikacijama i javne objave onih koje pratite.",

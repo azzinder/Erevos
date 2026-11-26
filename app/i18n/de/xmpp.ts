@@ -45,7 +45,7 @@ export const xmpp: Record<string, string> = {
   "not encrypted": "nicht verschlüsselt",
   "Chat with people on XMPP, who use Conversations, Monal, Gajim, Dino or another XMPP app. Messages are encrypted with OMEMO, but these chats are not anonymous: the XMPP server sees who talks with whom, and when.": "Chatte mit Menschen auf XMPP, die Conversations, Monal, Gajim, Dino oder eine andere XMPP-App nutzen. Nachrichten werden mit OMEMO verschlüsselt, aber diese Chats sind nicht anonym: Der XMPP-Server sieht, wer mit wem spricht und wann.",
   "Through Tor: the XMPP server does not see your address.": "Über Tor: Der XMPP-Server sieht deine Adresse nicht.",
-  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Relay and networks → Tor.": "Gerade nicht über Tor: Der XMPP-Server sieht deine Adresse. Tor findest du unter Einstellungen → Relay und Netze → Tor.",
+  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Server and networks → Tor.": "Gerade nicht über Tor: Der XMPP-Server sieht deine Adresse. Tor findest du unter Einstellungen → Server und Netze → Tor.",
   "XMPP address": "XMPP-Adresse",
   "Only when the server is not the one in your address, or cannot be found. A name, name:port or a wss:// address.": "Nur wenn der Server nicht der in deiner Adresse ist oder nicht gefunden wird. Ein Name, Name:Port oder eine wss://-Adresse.",
   "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.": "Erevos meldet sich als neues Gerät des Kontos an und hält die Anmeldung nur in diesem Bereich verschlüsselt.",
@@ -135,12 +135,12 @@ export const xmpp: Record<string, string> = {
   "This group server does not let a group be renamed.": "Dieser Gruppenserver erlaubt kein Umbenennen einer Gruppe.",
   "To leave the group, use Leave the group.": "Um die Gruppe zu verlassen, nutze „Gruppe verlassen“.",
   "This person is not a member of the group.": "Diese Person ist kein Mitglied der Gruppe.",
-  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's relay of each message while no app of the account is on: the XMPP server learns the relay's name, and the relay when messages come.":
-    "Ist ein anderer Bereich offen, sagt dieser „Neue Nachricht“, wenn auf XMPP etwas kommt, nie was, von wem oder in welchem Chat, und ein Anruf klingelt nicht. Dafür meldet der XMPP-Server dem Relay dieses Bereichs jede Nachricht, solange keine App des Kontos an ist: Der XMPP-Server erfährt den Namen des Relays, und das Relay, wann Nachrichten kommen.",
+  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's own server of each message while no app of the account is on: the XMPP server learns that server's name, and that server when messages come.":
+    "Ist ein anderer Bereich offen, sagt dieser „Neue Nachricht“, wenn auf XMPP etwas kommt, nie was, von wem oder in welchem Chat, und ein Anruf klingelt nicht. Dafür meldet der XMPP-Server dem eigenen Server dieses Bereichs jede Nachricht, solange keine App des Kontos an ist: Der XMPP-Server erfährt den Namen dieses Servers, und dieser, wann Nachrichten kommen.",
   "Closed, this space hears nothing from XMPP: what came shows when it opens.":
     "Geschlossen hört dieser Bereich nichts von XMPP: Was kam, zeigt sich, wenn er sich öffnet.",
-  "Your relay does not take XMPP notices yet: it needs updating.":
-    "Dein Relay nimmt noch keine XMPP-Meldungen an: Es braucht ein Update.",
+  "Your server does not take XMPP notices yet: it needs updating.":
+    "Dein Server nimmt noch keine XMPP-Meldungen an: Er braucht ein Update.",
   "Your XMPP server does not send notices to apps that are away.":
     "Dein XMPP-Server schickt keine Meldungen an Apps, die gerade nicht laufen.",
 };

@@ -187,9 +187,9 @@ test('the guide links only to sections that exist, the same ones in every langua
 
 test('the guide says plainly what is end-to-end encrypted, and that nothing is audited', () => {
   const about = (sections: typeof el) => sections.find((s) => s.id === 'about')!.blocks.flatMap(blockTexts).join(' ');
-  assert.match(about(en), /Messages are end-to-end encrypted, through a relay and nearby alike/);
+  assert.match(about(en), /Messages are end-to-end encrypted, through a server and nearby alike/);
   assert.match(about(en), /nothing has been audited/);
-  assert.match(about(el), /Τα μηνύματα είναι κρυπτογραφημένα από άκρη σε άκρη, μέσω relay και από κοντά/);
+  assert.match(about(el), /Τα μηνύματα είναι κρυπτογραφημένα από άκρη σε άκρη, μέσω server και από κοντά/);
   assert.match(about(el), /τίποτα δεν έχει ελεγχθεί/);
   // Nowhere does either still say the nearby link is plain.
   for (const sections of [en, el]) {
@@ -290,7 +290,7 @@ test("Erevos Lite's guide keeps what it has: in every language the same parts as
     ['contacts', /\*\*History:\*\*/],
     ['backup', /\*\*What takes room:\*\*/],
     ['backup', /\*\*What never comes back:\*\*/],
-    ['hidden', /\*\*Relay, Nostr and phones nearby:\*\*/],
+    ['hidden', /\*\*Server, Nostr and phones nearby:\*\*/],
   ];
   for (const [id, what] of kept) assert.match(text(id), what, `${id}: ${what}`);
   // It has not the Phone's permission to read the call log: a contact's history is its messages alone.

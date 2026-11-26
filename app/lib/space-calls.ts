@@ -50,7 +50,7 @@ async function where(own: { url: string; token?: string }) {
 async function settings() {
   const data = await loadCurrentSpaceData();
   const url = data.url.trim();
-  if (!url || !data.ownQueue) throw new Error(t('Calls are set up through the relay. Type its address in Relay first.'));
+  if (!url || !data.ownQueue) throw new Error(t('Calls are set up through the server. Type its address in Server first.'));
   const own = { url, token: data.token.trim() || undefined };
   return { own, sends: relayFor(url, data.token, data.via, data.viaToken) ?? own, senderHex: data.ownQueue.senderHex };
 }

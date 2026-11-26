@@ -266,7 +266,7 @@ export function usePublicActions(names: Record<string, string>, shown: boolean, 
 
   async function takeBack(event: NostrEvent) {
     setMenu(null);
-    if (!(await confirm(t('Take back this post?'), t('The relays that keep it are asked to drop it. Copies that others made may stay.'), t('Take back')))) return;
+    if (!(await confirm(t('Take back this post?'), t('The servers that keep it are asked to drop it. Copies that others made may stay.'), t('Take back')))) return;
     try {
       await nostrDmTakeBack(event);
       posted?.();
@@ -633,7 +633,7 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
       if (!older) setWhy(page.posts.length ? [] : page.report ? (page.report.checked > 0 ? [] : sayFollowsReport(page.report, me)) : page.follows ? sayFeedReport(page) : []);
       setNames((known) => ({ ...(older ? known : {}), ...page.names }));
       setFeed({ posts: morePosts(before.posts, page.posts), until: page.until, older: page.older });
-      if (!page.answered) setSaid(t('No relay answered. Try again in a while.'));
+      if (!page.answered) setSaid(t('No server answered. Try again in a while.'));
     } catch (error) {
       if (at === showing.current) setSaid(errorText(error));
     } finally {
@@ -690,8 +690,8 @@ export function usePublicFeed(account: NostrAccount, matrixOn: boolean, shown: b
       {canTor() && nostrOn ? (
         <Text variant="caption" tone="faint">
           {nostrChatsThroughTor()
-            ? t('Through Tor: the Nostr relays do not see your address.')
-            : t('Not through Tor now: the Nostr relays see your address. Tor is under Settings → Relay and networks → Tor.')}
+            ? t('Through Tor: the Nostr servers do not see your address.')
+            : t('Not through Tor now: the Nostr servers see your address. Tor is under Settings → Server and networks → Tor.')}
         </Text>
       ) : null}
       <Row wrap style={{ paddingTop: space.xs }}>
@@ -1038,7 +1038,7 @@ function PollBox({ poll, event, atOnce }: { poll: NonNullable<FeedPost['poll']>;
       // Just voted: so it shows, whether or not the relays asked have the vote yet.
       setCount(voted ? withMyVote(got, poll, voted) : got);
       setPicked([]);
-      if (!got.answered) setSaid(t('No relay answered. Try again in a while.'));
+      if (!got.answered) setSaid(t('No server answered. Try again in a while.'));
     } catch (error) {
       setSaid(errorText(error));
     } finally {

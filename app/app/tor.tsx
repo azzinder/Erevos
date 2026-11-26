@@ -144,7 +144,7 @@ export default function TorScreen() {
   async function checkConnection() {
     setNote('');
     if (!on) {
-      setNote(t('Tor is off for this space: messages go straight to the relay.'));
+      setNote(t('Tor is off for this space: messages go straight to the server.'));
       return;
     }
     setChecking(true);
@@ -174,7 +174,7 @@ export default function TorScreen() {
         <Text variant="bodyStrong">{t('What goes through Tor')}</Text>
         <Text tone="muted">
           {t(
-            "Through Tor, this space reaches its relays through the Tor network. The relay then does not see this phone's internet address, and the phone company or the Wi-Fi sees only that Tor is used, not which relay. Messages come and go slower, and the first start of Tor takes a while.",
+            "Through Tor, this space reaches its servers through the Tor network. The server then does not see this phone's internet address, and the phone company or the Wi-Fi sees only that Tor is used, not which server. Messages come and go slower, and the first start of Tor takes a while.",
           )}
         </Text>
         <Row wrap>
@@ -186,16 +186,16 @@ export default function TorScreen() {
           <Text tone="muted">
             {way === 'messages'
               ? t(
-                  "What you write goes through Tor, and what tells your contacts something, as that a message was read. Pictures, files and voice messages go straight, which is faster: for them the relay sees this phone's internet address. While Tor starts, or cannot connect, messages go straight too, so they never wait for it.",
+                  "What you write goes through Tor, and what tells your contacts something, as that a message was read. Pictures, files and voice messages go straight, which is faster: for them the server sees this phone's internet address. While Tor starts, or cannot connect, messages go straight too, so they never wait for it.",
                 )
               : way === 'all'
-                ? t('Everything goes through Tor, files too, and nothing goes to a relay without it: when Tor cannot reach the relay, the message waits.')
-                : t("Nothing goes through Tor, the way a new space starts: messages go fastest, and the relay and the Nostr relays see this phone's internet address.")}
+                ? t('Everything goes through Tor, files too, and nothing goes to a server without it: when Tor cannot reach the server, the message waits.')
+                : t("Nothing goes through Tor, the way a new space starts: messages go fastest, and the server and the Nostr servers see this phone's internet address.")}
           </Text>
         ) : null}
         <Text tone="muted">
           {t(
-            'Calls do not go through Tor: their sound and picture go straight between the phones, or through the call relay. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
+            'Calls do not go through Tor: their sound and picture go straight between the phones, or through the call server. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
           )}
         </Text>
       </Card>
@@ -286,7 +286,7 @@ export default function TorScreen() {
         ) : null}
         <Text variant="caption" tone="muted">
           {way === 'messages'
-            ? t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the relay without Tor until one does.')
+            ? t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the server without Tor until one does.')
             : t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.')}
         </Text>
       </Card>

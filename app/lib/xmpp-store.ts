@@ -342,7 +342,7 @@ export async function xmppSetPush(on: boolean): Promise<void> {
   if (on === !!was) return;
   const relay = await spaceRelayOf(it.space, it.key);
   if (on) {
-    if (!relay) throw new Error(t('This space has no queue at a relay yet: it can say nothing while closed.'));
+    if (!relay) throw new Error(t('This space has no queue at a server yet: it can say nothing while closed.'));
     const push = await startXmppPush(it.state, online(it), relay);
     await changeAccount(it, async () => {
       if (it.state) it.state.push = push;

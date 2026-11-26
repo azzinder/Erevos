@@ -45,7 +45,7 @@ export const xmpp: Record<string, string> = {
   "not encrypted": "nije šifrovano",
   "Chat with people on XMPP, who use Conversations, Monal, Gajim, Dino or another XMPP app. Messages are encrypted with OMEMO, but these chats are not anonymous: the XMPP server sees who talks with whom, and when.": "Razgovarajte s ljudima na XMPP-u, koji koriste Conversations, Monal, Gajim, Dino ili drugu XMPP aplikaciju. Poruke se šifriraju OMEMO-om, ali ovi razgovori nisu anonimni: XMPP server vidi ko s kim razgovara, i kada.",
   "Through Tor: the XMPP server does not see your address.": "Preko Tora: XMPP server ne vidi vašu adresu.",
-  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Relay and networks → Tor.": "Trenutno ne preko Tora: XMPP server vidi vašu adresu. Tor je u Postavke → Relay i mreže → Tor.",
+  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Server and networks → Tor.": "Trenutno ne preko Tora: XMPP server vidi vašu adresu. Tor je u Postavke → Server i mreže → Tor.",
   "XMPP address": "XMPP adresa",
   "Only when the server is not the one in your address, or cannot be found. A name, name:port or a wss:// address.": "Samo kad server nije onaj iz vaše adrese ili se ne može naći. Ime, ime:port ili wss:// adresa.",
   "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.": "Erevos se prijavljuje kao novi uređaj računa i drži prijavu šifrovanom samo u ovom prostoru.",
@@ -135,12 +135,12 @@ export const xmpp: Record<string, string> = {
   "This group server does not let a group be renamed.": "Ovaj grupni server ne dopušta preimenovanje grupe.",
   "To leave the group, use Leave the group.": "Za izlazak iz grupe koristite „Napusti grupu“.",
   "This person is not a member of the group.": "Ta osoba nije član grupe.",
-  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's relay of each message while no app of the account is on: the XMPP server learns the relay's name, and the relay when messages come.":
-    "Dok je otvoren drugi prostor, ovaj kaže „Nova poruka“ kad nešto stigne na XMPP-u, nikad šta, od koga ni u kojem razgovoru, a poziv ne zvoni. Za to XMPP server javlja relayu ovog prostora svaku poruku dok nijedna aplikacija računa nije uključena: XMPP server saznaje ime relaya, a relay kad stižu poruke.",
+  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's own server of each message while no app of the account is on: the XMPP server learns that server's name, and that server when messages come.":
+    "Dok je otvoren drugi prostor, ovaj kaže „Nova poruka“ kad nešto stigne na XMPP-u, nikad šta, od koga ni u kojem razgovoru, a poziv ne zvoni. Za to XMPP server javlja vlastitom serveru ovog prostora svaku poruku dok nijedna aplikacija računa nije uključena: XMPP server saznaje ime tog servera, a taj server kad stižu poruke.",
   "Closed, this space hears nothing from XMPP: what came shows when it opens.":
     "Zatvoren, ovaj prostor ne čuje ništa s XMPP-a: ono što je stiglo vidi se kad se otvori.",
-  "Your relay does not take XMPP notices yet: it needs updating.":
-    "Vaš relay još ne prima XMPP obavijesti: treba ga ažurirati.",
+  "Your server does not take XMPP notices yet: it needs updating.":
+    "Vaš server još ne prima XMPP obavijesti: treba ga ažurirati.",
   "Your XMPP server does not send notices to apps that are away.":
     "Vaš XMPP server ne šalje obavijesti aplikacijama koje nisu uključene.",
 };

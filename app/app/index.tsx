@@ -719,7 +719,7 @@ function Home() {
   const hits = useMemo(() => (query.trim().length >= 2 ? searchMessages(searched.messages, query, 50) : []), [searched, query]);
   const nameOf = (peer: string) => searched.names.get(peer) ?? shownName({ identity: peer.replace(/^contact:/, ''), name: '' });
 
-  const relayText = relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
+  const relayText = relay === 'no-queue' ? t('Server set · no queue yet') : t('No server yet · tap to set one');
   // The ways out of the space, for the line under the top bar (lib/ways-read.ts); Tor covers others and has no dot.
   const waysRead = useWays(WAYS_EVERY);
   const waysWaiting = waysRead?.waiting ?? 0;
@@ -1213,7 +1213,7 @@ function Home() {
           <View style={styles.settingsText}>
             <Text variant="bodyStrong">{lang() === 'en' ? 'Settings' : `${t('Settings')} · Settings`}</Text>
             <Text variant="caption" tone="muted">
-              {t('Language, appearance, privacy, the relay and more')}
+              {t('Language, appearance, privacy, the server and more')}
             </Text>
           </View>
         </Pressable>

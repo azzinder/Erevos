@@ -45,7 +45,7 @@ export const xmpp: Record<string, string> = {
   "not encrypted": "χωρίς κρυπτογράφηση",
   "Chat with people on XMPP, who use Conversations, Monal, Gajim, Dino or another XMPP app. Messages are encrypted with OMEMO, but these chats are not anonymous: the XMPP server sees who talks with whom, and when.": "Συνομίλησε με ανθρώπους στο XMPP, που χρησιμοποιούν το Conversations, το Monal, το Gajim, το Dino ή άλλη εφαρμογή XMPP. Τα μηνύματα κρυπτογραφούνται με OMEMO, αλλά αυτές οι συνομιλίες δεν είναι ανώνυμες: ο server XMPP βλέπει ποιος μιλά με ποιον, και πότε.",
   "Through Tor: the XMPP server does not see your address.": "Μέσω Tor: ο server XMPP δεν βλέπει τη διεύθυνσή σου.",
-  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Relay and networks → Tor.": "Όχι μέσω Tor τώρα: ο server XMPP βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Relay και δίκτυα → Tor.",
+  "Not through Tor now: the XMPP server sees your address. Tor is under Settings → Server and networks → Tor.": "Όχι μέσω Tor τώρα: ο server XMPP βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Server και δίκτυα → Tor.",
   "XMPP address": "Διεύθυνση XMPP",
   "Only when the server is not the one in your address, or cannot be found. A name, name:port or a wss:// address.": "Μόνο όταν ο server δεν είναι αυτός της διεύθυνσής σου ή δεν βρίσκεται. Ένα όνομα, όνομα:θύρα ή διεύθυνση wss://.",
   "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.": "Το Erevos συνδέεται ως νέα συσκευή του λογαριασμού και κρατά τη σύνδεση κρυπτογραφημένη μόνο σε αυτόν τον χώρο.",
@@ -135,12 +135,12 @@ export const xmpp: Record<string, string> = {
   "This group server does not let a group be renamed.": "Ο server ομάδων δεν αφήνει να μετονομαστεί μια ομάδα.",
   "To leave the group, use Leave the group.": "Για να φύγεις από την ομάδα, χρησιμοποίησε το «Αποχώρηση από την ομάδα».",
   "This person is not a member of the group.": "Αυτό το άτομο δεν είναι μέλος της ομάδας.",
-  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's relay of each message while no app of the account is on: the XMPP server learns the relay's name, and the relay when messages come.":
-    "Όσο είναι ανοιχτός άλλος χώρος, αυτός λέει «Νέο μήνυμα» όταν έρχεται κάτι στο XMPP, ποτέ τι, από ποιον ή σε ποια συνομιλία, και μια κλήση δεν χτυπά. Γι’ αυτό ο server του XMPP ειδοποιεί το relay αυτού του χώρου για κάθε μήνυμα, όσο καμία εφαρμογή του λογαριασμού δεν είναι ανοιχτή: ο server του XMPP μαθαίνει το όνομα του relay, και το relay πότε έρχονται μηνύματα.",
+  "While another space is open, this one says \"New message\" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space's own server of each message while no app of the account is on: the XMPP server learns that server's name, and that server when messages come.":
+    "Όσο είναι ανοιχτός άλλος χώρος, αυτός λέει «Νέο μήνυμα» όταν έρχεται κάτι στο XMPP, ποτέ τι, από ποιον ή σε ποια συνομιλία, και μια κλήση δεν χτυπά. Γι’ αυτό ο server του XMPP ειδοποιεί τον server που έχει αυτός ο χώρος για κάθε μήνυμα, όσο καμία εφαρμογή του λογαριασμού δεν είναι ανοιχτή: ο server του XMPP μαθαίνει το όνομα εκείνου του server, κι εκείνος πότε έρχονται μηνύματα.",
   "Closed, this space hears nothing from XMPP: what came shows when it opens.":
     "Κλειστός, αυτός ο χώρος δεν ακούει τίποτα από το XMPP: όσα ήρθαν φαίνονται όταν ανοίξει.",
-  "Your relay does not take XMPP notices yet: it needs updating.":
-    "Το relay σου δεν δέχεται ακόμα ειδοποιήσεις του XMPP: χρειάζεται ενημέρωση.",
+  "Your server does not take XMPP notices yet: it needs updating.":
+    "Ο server σου δεν δέχεται ακόμα ειδοποιήσεις του XMPP: χρειάζεται ενημέρωση.",
   "Your XMPP server does not send notices to apps that are away.":
     "Ο server του XMPP δεν στέλνει ειδοποιήσεις σε εφαρμογές που λείπουν.",
 };

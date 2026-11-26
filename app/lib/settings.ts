@@ -174,15 +174,15 @@ export const SETTINGS: SettingsGroup[] = [
   },
   {
     id: 'ways',
-    title: mark('Relay and networks'),
+    title: mark('Server and networks'),
     icon: 'signal',
     items: [
       // Every way out at a glance, how each is now, and what of the space's own waits to go (app/ways.tsx).
       { id: 'ways-now', title: mark('Ways'), detail: mark('How your messages go out now, and what waits'), href: '/ways', when: uses('erevos') },
-      { id: 'relay', title: mark('Relay'), detail: mark('Your relay: its address, its token and invites'), href: '/chat?setup=relay', when: uses('erevos') },
-      { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay', when: uses('erevos') },
-      { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: off, unless changed'), href: '/tor', when: phoneUses('erevos', 'nostr') },
-      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through public Nostr relays: on, unless changed'), href: '/nostr', when: phoneUses('erevos') },
+      { id: 'relay', title: mark('Server'), detail: mark('Your server: its address, its token and invites'), href: '/chat?setup=relay', when: uses('erevos') },
+      { id: 'home-relay', title: mark('Home server'), detail: mark('A second server contacts write to while yours is down'), href: '/home-relay', when: uses('erevos') },
+      { id: 'tor', title: mark('Tor'), detail: mark('Reach the servers through Tor: off, unless changed'), href: '/tor', when: phoneUses('erevos', 'nostr') },
+      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through public Nostr servers: on, unless changed'), href: '/nostr', when: phoneUses('erevos') },
       { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix', when: uses('matrix') },
       { id: 'xmpp', title: mark('XMPP'), detail: mark('Chats with people on XMPP: encrypted, not anonymous'), href: '/xmpp', when: uses('xmpp') },
       { id: 'nostr-chats', title: mark('Nostr chats'), detail: mark('Chats with people on other Nostr apps: encrypted, not anonymous'), href: '/nostr-chats', when: uses('nostr') },
@@ -236,7 +236,7 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('For testing'),
     icon: 'stopwatch',
     items: [
-      { id: 'relay-test', title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay', when: uses('erevos') },
+      { id: 'relay-test', title: mark('Server test'), detail: mark('For testing a server'), href: '/relay', when: uses('erevos') },
       { id: 'radio-test', title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', when: phoneUses('erevos') },
     ],
   },

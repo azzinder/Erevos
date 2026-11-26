@@ -386,9 +386,9 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
     try {
       const relay = await groupsAt.calls.callRelay();
       const direct = t(
-        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call relay, none does.",
+        "Your server has no call server beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call server, none does.",
       );
-      if (!relay && !(await confirm(t('Call without a call relay?'), direct, t('Call')))) return;
+      if (!relay && !(await confirm(t('Call without a call server?'), direct, t('Call')))) return;
       if (going) await joinGroupCall(groupsAt.calls, id, relay, rtc);
       else await startGroupCall(groupsAt.calls, id, video, relay, rtc);
     } catch (error) {

@@ -565,7 +565,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
 
       {answered ? <Quote name={whoOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {vanish.on ? (
-        <VanishStrip seconds={vanish.seconds} note={t('Their app and the relays that honour its time (NIP-40) delete it then; others keep it.')} onChoose={vanish.choose} onClose={vanish.off} />
+        <VanishStrip seconds={vanish.seconds} note={t('Their app and the servers that honour its time (NIP-40) delete it then; others keep it.')} onChoose={vanish.choose} onClose={vanish.off} />
       ) : null}
       <MentionChips text={draft} members={nameable} onPick={(member) => setDraft(withMention(draft, member.name))} />
       <Row>
@@ -643,7 +643,7 @@ function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
             {guard.buttons}
             <ChatTimer
               seconds={timerOf(chat)}
-              note={t('New messages, sent or received, go from this phone that long after they were sent. Yours carry that time, so their app and the relays delete them then (NIP-40); those that do not honour it keep them. Messages already here stay.')}
+              note={t('New messages, sent or received, go from this phone that long after they were sent. Yours carry that time, so their app and the servers delete them then (NIP-40); those that do not honour it keep them. Messages already here stay.')}
               onChoose={(after) => void nostrDmAct(async (s) => setTimerIn(s, key, after)).catch(fail)}
               onChosen={() => setMore(false)}
             />

@@ -518,7 +518,7 @@ export default function Backups() {
   async function lostPhone() {
     say("");
     const told = t(
-      "Every space and its hidden chats move to new relay queues as each next opens here, and your contacts and groups are told quietly. The old queues are read here until each contact writes to the new ones, 14 days at most. The contact links and QR codes you gave before work for 14 days, then no more. What comes through Nostr, XMPP or Matrix still reaches the old phone.",
+      "Every space and its hidden chats move to new server queues as each next opens here, and your contacts and groups are told quietly. The old queues are read here until each contact writes to the new ones, 14 days at most. The contact links and QR codes you gave before work for 14 days, then no more. What comes through Nostr, XMPP or Matrix still reaches the old phone.",
     );
     if (
       !(await confirm(t("The old phone was lost"), told, t("Move the queues")))
@@ -1789,13 +1789,13 @@ export default function Backups() {
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {t(
-            "A phone that was lost or stolen and is still on keeps reading the relay queues it knew, so messages sent to them may reach it and never come here. This moves every space, with its hidden chats, to new relay queues, each as it next opens here.",
+            "A phone that was lost or stolen and is still on keeps reading the server queues it knew, so messages sent to them may reach it and never come here. This moves every space, with its hidden chats, to new server queues, each as it next opens here.",
           )}
         </Text>
         {lost?.at ? (
           <Text variant="caption" style={hint}>
             {t(
-              "The old phone was said lost on {date}. Every space and its hidden chats move to new relay queues as each next opens here.",
+              "The old phone was said lost on {date}. Every space and its hidden chats move to new server queues as each next opens here.",
               { date: new Date(lost.at).toLocaleDateString(locale()) },
             )}
           </Text>

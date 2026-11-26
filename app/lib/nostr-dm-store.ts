@@ -837,9 +837,9 @@ export type NostrFollowsReport = {
 export function sayFollowsReport(report: NostrFollowsReport, key: string): string[] {
   const said = [
     !report.relays.some((r) => r.how === 'all')
-      ? t('No relay answered. Try again in a while.')
+      ? t('No server answered. Try again in a while.')
       : report.lists === 0
-        ? t('No list of people you follow was found on your relays.')
+        ? t('No list of people you follow was found on your servers.')
         : report.checked === 0
           ? t('Lists of people you follow were found, but none passed the signature check.')
           : t('Your newest list of people you follow has no one in it.'),
@@ -871,8 +871,8 @@ function sayRelays(relays: NostrFollowsReport['relays']): string[] {
 export function sayFeedReport(page: Pick<NostrFeedPage, 'follows' | 'came' | 'relays'>): string[] {
   const first =
     page.came > 0
-      ? plural(page.came, '{n} post came from the relays, but none could be shown.', '{n} posts came from the relays, but none could be shown.')
-      : plural(page.follows, 'You follow {n} person, but no relay sent a post of theirs.', 'You follow {n} people, but no relay sent a post of theirs.');
+      ? plural(page.came, '{n} post came from the servers, but none could be shown.', '{n} posts came from the servers, but none could be shown.')
+      : plural(page.follows, 'You follow {n} person, but no server sent a post of theirs.', 'You follow {n} people, but no server sent a post of theirs.');
   return [first, ...sayRelays(page.relays)];
 }
 
@@ -891,7 +891,7 @@ async function reach(it: Live, url: string): Promise<NostrRelay> {
     return await Promise.race([
       outTo(it, url),
       new Promise<never>((_, fail) => {
-        late = setTimeout(() => fail(new Error(t('The Nostr relay did not answer.'))), FOLLOWS_REACH_WAIT);
+        late = setTimeout(() => fail(new Error(t('The Nostr server did not answer.'))), FOLLOWS_REACH_WAIT);
       }),
     ]);
   } finally {
@@ -1228,7 +1228,7 @@ async function postPublic(kind: number, tags: string[][], content: string, about
   const where = [...new Set([...(ours.length ? ours : PUBLIC_RELAYS), ...theirs, ...also].map((url) => url.replace(/\/+$/, '')))];
   const event = await signed(state, kind, tags, content);
   const took = await publish(it, where, event);
-  if (!took) throw new Error(t('No Nostr relay took it. Try again in a while.'));
+  if (!took) throw new Error(t('No Nostr server took it. Try again in a while.'));
   return event;
 }
 
@@ -1469,7 +1469,7 @@ async function sendTo(
       if (told) delete chat.subjectOwed;
     });
   }
-  if (!took) throw new Error(t('None of their relays took the message. Try again later.'));
+  if (!took) throw new Error(t('None of their servers took the message. Try again later.'));
   return made.id;
 }
 

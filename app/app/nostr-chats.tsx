@@ -105,7 +105,7 @@ export default function NostrChatsScreen() {
 
   const about = (
     <Text tone="muted">
-      {t('Chat with people on other Nostr apps, such as Damus, Amethyst, Primal or 0xchat, one to one or in groups. Messages are encrypted as NIP-17 asks: relays see whom a message is for, but not who wrote it nor what it says. These chats are not anonymous: your Nostr key is the same to everyone you write to.')}
+      {t('Chat with people on other Nostr apps, such as Damus, Amethyst, Primal or 0xchat, one to one or in groups. Messages are encrypted as NIP-17 asks: servers see whom a message is for, but not who wrote it nor what it says. These chats are not anonymous: your Nostr key is the same to everyone you write to.')}
     </Text>
   );
 
@@ -113,8 +113,8 @@ export default function NostrChatsScreen() {
   const tor = canTor() ? (
     <Text variant="caption" tone="muted">
       {nostrChatsThroughTor()
-        ? t('Through Tor: the Nostr relays do not see your address.')
-        : t('Not through Tor now: the Nostr relays see your address. Tor is under Settings → Relay and networks → Tor.')}
+        ? t('Through Tor: the Nostr servers do not see your address.')
+        : t('Not through Tor now: the Nostr servers see your address. Tor is under Settings → Server and networks → Tor.')}
     </Text>
   ) : null;
 
@@ -161,8 +161,8 @@ export default function NostrChatsScreen() {
           />
           <Text variant="caption" tone="faint">
             {place
-              ? t('It is kept encrypted in these hidden chats only. Erevos then reads the messages its relays still keep. The other app keeps working with it too.')
-              : t('It is kept encrypted in this space only. Erevos then reads the messages its relays still keep. The other app keeps working with it too.')}
+              ? t('It is kept encrypted in these hidden chats only. Erevos then reads the messages its servers still keep. The other app keeps working with it too.')
+              : t('It is kept encrypted in this space only. Erevos then reads the messages its servers still keep. The other app keeps working with it too.')}
           </Text>
         </Card>
         {tor}
@@ -182,11 +182,11 @@ export default function NostrChatsScreen() {
       {own}
       <Text variant="caption" tone="muted">
         {reading > 0
-          ? t('Reading {n} of the {all} relays where your messages arrive.', { n: reading, all: state.inbox.length })
+          ? t('Reading {n} of the {all} servers where your messages arrive.', { n: reading, all: state.inbox.length })
           : problem || t('Connecting…')}
       </Text>
       <Text variant="caption" tone="muted">
-        {t('Not anonymous: your key is the same to everyone you write to, and the relays where your messages arrive see when you read them.')}
+        {t('Not anonymous: your key is the same to everyone you write to, and the servers where your messages arrive see when you read them.')}
       </Text>
       {tor}
 
@@ -326,7 +326,7 @@ function InboxCard({ state, busy, run, where }: { state: NostrDmState; busy: boo
     <>
       <SectionTitle title={t('Where your messages arrive')} />
       <Card>
-        <Text tone="muted">{t('Other Nostr apps send your messages to these relays, and Erevos reads them there. Up to three.')}</Text>
+        <Text tone="muted">{t('Other Nostr apps send your messages to these servers, and Erevos reads them there. Up to three.')}</Text>
         {state.inbox.map((relay) => (
           <Row key={relay}>
             <Text style={{ flex: 1, fontFamily: 'monospace' }} numberOfLines={1}>
@@ -339,7 +339,7 @@ function InboxCard({ state, busy, run, where }: { state: NostrDmState; busy: boo
         ))}
         {state.inbox.length < INBOX_MOST ? (
           <Row>
-            <Input style={{ flex: 1 }} value={adding} onChangeText={setAdding} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="wss://relay.example.org" accessibilityLabel={t('A relay to add')} />
+            <Input style={{ flex: 1 }} value={adding} onChangeText={setAdding} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="wss://relay.example.org" accessibilityLabel={t('A server to add')} />
             <Button
               title={t('Add')}
               compact
@@ -450,7 +450,7 @@ function FollowsCard({ me, busy, run, open }: { me: string; busy: boolean; run: 
         </>
       ) : null}
       <Text variant="caption" tone="faint">
-        {t("Your follow list is public on Nostr, so reading it tells the relays nothing new. It goes as this space's Tor way says. No profile pictures are loaded.")}
+        {t("Your follow list is public on Nostr, so reading it tells the servers nothing new. It goes as this space's Tor way says. No profile pictures are loaded.")}
       </Text>
     </Card>
   );

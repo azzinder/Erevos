@@ -121,7 +121,7 @@ export function IpQuiet({ fix }: { fix?: IpFix }) {
   return (
     <Row wrap style={{ alignItems: 'center', gap: 4 }}>
       <Text variant="caption" tone="faint">
-        {t('Without Tor: the relays see your internet address.')}
+        {t('Without Tor: the servers see your internet address.')}
       </Text>
       {fix ? <TextButton title={fix.label} onPress={() => void fix.run()} /> : null}
       <TextButton title={t('Guide')} onPress={() => openGuideLink(IP_GUIDE)} />

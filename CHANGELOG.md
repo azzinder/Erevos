@@ -8,6 +8,21 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## Unreleased
+
+### For you
+
+- **Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, in all its
+  languages, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.
+
+### Under the hood
+
+- The words people read say server where they said relay, in the app's texts of every language, in the guide, and on
+  the server's own sign-in page once a server runs this version (`crates/erevos-relay/src/pages.rs`); the names in the
+  code, in the links to the guide's sections and in the server's own program and settings stay as they were
+  (`lib/relay.ts`, `#relay`, `erevos-relay`, `EREVOS_RELAY_…`). The computer app's start check looks for "server" on
+  the first screen (`desktop/main.js`).
+
 ## 3.2.0-rc.3 (2026-11-25)
 
 The third release candidate of Erevos Lite: Erevos 3.0.0-rc.3 for Erevos's own chats and calls, with what is below.

@@ -146,7 +146,7 @@ export default function MatrixScreen() {
     <Text variant="caption" tone="muted">
       {matrixThroughTor()
         ? t('Through Tor: the Matrix server does not see your address.')
-        : t('Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.')}
+        : t('Not through Tor now: the Matrix server sees your address. Tor is under Settings → Server and networks → Tor.')}
     </Text>
   ) : null;
 
@@ -460,7 +460,7 @@ function ClosedPush({ busy, run }: { busy: boolean; run: (work: () => Promise<un
         </Row>
         <Text variant="caption" tone="muted">
           {on
-            ? t('While another space is open, this one says "New message" when something comes on Matrix, never what, from whom or in which chat, and a call does not ring. For it the Matrix server tells this space\'s relay of each message, with no words in it: the Matrix server learns the relay\'s address, and the relay when messages come.')
+            ? t('While another space is open, this one says "New message" when something comes on Matrix, never what, from whom or in which chat, and a call does not ring. For it the Matrix server tells this space\'s own server of each message, with no words in it: the Matrix server learns that server\'s address, and that server when messages come.')
             : t('Closed, this space hears nothing from Matrix: what came shows when it opens.')}
         </Text>
         {on && door === false ? (
