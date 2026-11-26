@@ -10,8 +10,8 @@ import { throughTor, type TorWay } from './relay';
 // the top of Settings (components/mode-picker.tsx), each space its own.
 //
 // SPEED: the servers and the contacts see it. Direct connections (lib/direct.ts) are on: Erevos asks
-// nothing before what shows the address, and a call goes straight between the two phones when no
-// call relay is between them, the fastest way.
+// nothing before what shows the address, and a call goes straight between the two phones, the
+// fastest way, through the call relay only where it cannot.
 // ANONYMOUS: only the servers see it, never the contacts. Direct connections are off: each warning is
 // said once, before (lib/ip-warning.ts), and calls go through a call relay, or between two phones on
 // the same network, as before Direct connections.

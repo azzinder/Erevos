@@ -1546,9 +1546,11 @@ Versteckte Chats und Computer haben das nicht.
 - **Ende-zu-Ende-verschlüsselt:** Der Anruf wird mit Nachrichten über den Server aufgebaut, oder über Nostr, wenn kein
   Server zwischen euch ist, verschlüsselt wie der Rest. Diese tragen den Schlüssel, der den Anruf selbst verschlüsselt,
   sodass niemand dazwischen mithören kann, nicht einmal der Anruf-Server unten.
-- **Über den Anruf-Server:** Ein mit dem Bausatz in \`deploy/relay\` eingerichteter Server hat einen Anruf-Server daneben.
-  Der Anruf geht darüber, sodass keines der Telefone die IP-Adresse des anderen erfährt. Über WLAN oder mobile Daten,
-  überall.
+- **Über den Anruf-Server:** Ein mit dem Bausatz in \`deploy/relay\` eingerichteter Server hat einen Anruf-Server
+  daneben. Mit **ANONYMOUS** geht der Anruf darüber, sodass das Telefon deines Kontakts deine IP-Adresse nicht erfährt.
+  Mit **SPEED** geht der Anruf direkt von Telefon zu Telefon, wo es geht, auf dem schnellsten Weg, und über den
+  Anruf-Server, wo es nicht geht; das Telefon deines Kontakts sieht deine Adresse in beiden Fällen. Über WLAN oder
+  mobile Daten, überall.
 - **Ohne Anruf-Server** (zum Beispiel ein Server auf deinem eigenen Computer, oder gar kein Server): Mit **SPEED** geht
   der Anruf direkt von Telefon zu Telefon über das Internet, ohne vorherige Frage. Jedes Telefon sieht dann die
   Internetadresse des anderen, und ein Hilfsserver sagt jedem Telefon seine eigene. Manche Netze, vor allem
@@ -1893,7 +1895,7 @@ Jeder Weg ist Ende-zu-Ende-verschlüsselt: Kein Server und kein Telefon dazwisch
 Erevos braucht die Server seines Machers nicht. Die von LPHL sind nur das, was es zuerst anbietet: Für alles Folgende kannst du deinen eigenen nehmen, in der App, ohne etwas anderes auf dem Telefon zu installieren.
 
 - **Nachrichten, Fotos und Dateien:** Sie warten, Ende-zu-Ende-verschlüsselt, auf einem kleinen Server. Um deinen oder den deiner Gruppe zu nutzen: unter **Neuer Chat** auf **Ich habe keine Einladung**, dann **Ich habe einen eigenen Server**, und gib seine Adresse und den Code ein, den du bekommen hast. Später sind dieselben beiden die Serveradresse und das Token unter **Für Fortgeschrittene**.
-- **Anrufe:** nichts weiter einzustellen. Der Anruf-Server kommt mit deinem Server, mit einem eigenen Server laufen also auch deine Anrufe über deinen eigenen Server.
+- **Anrufe:** nichts weiter einzustellen. Der Anruf-Server kommt mit deinem Server, mit einem eigenen Server geht also auch ein Anruf über deinen eigenen Server, wo er nicht direkt von Telefon zu Telefon geht (siehe [Wie sichtbar bist du?](#direct)).
 - **Backups:** Unter **Backups** schickt **Auch auf einen Server** jedes Backup verschlüsselt in einen Ordner auf einem Server deiner Wahl, etwa deine eigene Nextcloud. Siehe [Backups](#backup).
 - [~] **Die Sammlung:** In ihren Einstellungen hält **Auch auf einem WebDAV-Server** ihre verschlüsselten Dateien auf einem Server deiner Wahl. Siehe [Sammlung](#collection).
 - **Sprach- und Übersetzungsmodelle:** Wo Erevos sie herunterladen möchte, nimmt **Von einem anderen Server herunterladen…** einen eigenen Webordner mit denselben Dateien. Erevos prüft jede Datei und lehnt eine veränderte ab.
@@ -2157,8 +2159,10 @@ sie ändern**, darunter, öffnet ihren Bildschirm, der sagt, was dieser Abschnit
 Ende-zu-Ende-verschlüsselt.
 
 - **SPEED:** Die Server und deine Kontakte sehen deine Adresse. Erevos fragt vor den folgenden Dingen nicht nach: Es tut
-  sie sofort. Anrufe und Videoanrufe gehen direkt von Telefon zu Telefon, auf dem schnellsten Weg, auch dann, wenn kein
-  Server zwischen euch beiden ist: Der Anruf wird dann über Nostr aufgebaut.
+  sie sofort. Anrufe und Videoanrufe mit einem Kontakt gehen direkt von Telefon zu Telefon, wo es geht, auf dem
+  schnellsten Weg, und über einen Anruf-Server, wo es nicht geht; ist kein Server zwischen euch beiden, wird der Anruf
+  über Nostr aufgebaut. Gruppenanrufe gehen nicht direkt über das Internet, sondern über den Anruf-Server oder
+  zwischen Telefonen im selben WLAN.
 - **ANONYMOUS:** Nur der Server sieht sie, nie deine Kontakte. Vor jedem der folgenden Dinge sagt Erevos einmal, wer die
   Adresse sehen würde, und du wählst, ob du weitermachst (siehe [Wer deine Internetadresse sieht](#ip)). Anrufe gehen
   nur über einen Anruf-Server, der die Adresse jedes Telefons vor dem anderen verbirgt, oder zwischen zwei Telefonen im
@@ -2176,8 +2180,7 @@ Ende-zu-Ende-verschlüsselt.
 
 - Die Server, die tragen, was du sendest, und deine Anrufe: deiner, der deines Kontakts, und einer, zu dem ein Kontakt
   dich einlädt.
-- Das Telefon deines Kontakts, in einem Anruf, der direkt von Telefon zu Telefon geht, und die Hilfsserver, die jedem
-  Telefon seine eigene Adresse sagen.
+- Das Telefon deines Kontakts, in einem Anruf, und die Hilfsserver, die jedem Telefon seine eigene Adresse sagen.
 - Ein Server, den dein Kontakt für eine Datei gewählt hat.
 - Die öffentlichen Nostr-Server, wenn sich zwei Telefone mit einem Code aus 8 Ziffern koppeln.
 - [~] Ein Radiosender oder ein TV-Sender der Sammlung, solange er läuft.
@@ -2188,8 +2191,6 @@ Keiner von ihnen sieht, was du schreibst oder sagst: Das bleibt Ende-zu-Ende-ver
 **Was keiner von ihnen ändert:**
 
 - Versteckte Chats und Chats, die auf **Über Tor** gestellt sind, verbinden sich nie direkt und fragen weiterhin nach.
-- Mit einem eigenen Anruf-Server gehen deine Anrufe weiterhin darüber, sodass das andere Telefon deine Adresse nicht
-  sieht.
 - Erevos fragt weiterhin, bevor es einen Web-Link öffnet oder die Vorschau eines Links zeigt, und bevor es die
   Nachrichten eines Telefons neben diesem von einem Server holt, den dieses Telefon nicht nutzt.
 - Tor, auf seinem eigenen Bildschirm ausgeschaltet, lässt den Bereich auf **ANONYMOUS**: Nichts verbindet sich direkt,
@@ -2197,9 +2198,9 @@ Keiner von ihnen sieht, was du schreibst oder sagst: Das bleibt Ende-zu-Ende-ver
 
 **Gut zu wissen:**
 
-- **Ein direkter Anruf kommt nicht immer zustande:** Manche Netze, vor allem Mobilfunknetze, lassen nichts von außen
-  herein. Der Anrufbildschirm sagt dann **Der Anruf kam nicht direkt zustande**, und der Chat behält diese Zeile. Über
-  einen Anruf-Server kommt ein Anruf aus jedem Netz zustande.
+- **Ein Anruf geht nicht immer direkt:** Manche Netze, vor allem Mobilfunknetze, lassen nichts von außen herein. Er geht
+  dann über einen Anruf-Server, über den ein Anruf aus jedem Netz zustande kommt. Hat keiner von euch beiden einen
+  Anruf-Server, sagt der Anrufbildschirm **Der Anruf kam nicht direkt zustande**, und der Chat behält diese Zeile.
 - **Ein älteres Erevos** klingelt bei einem solchen Anruf und kann sich dann nicht verbinden.
 - **Ein Telefon ohne Server** hört einen solchen Anruf nur, solange Erevos auf Nostr liest, was es auf Android tut:
   Schläft es, um den Akku zu schonen, kann es einen verpassen.
@@ -2231,8 +2232,9 @@ Tor.
 
 - **Anrufe:** Sie gehen nie über Tor, daher hat **INVISIBLE** keine. Der Anruf-Server, deiner oder der deines Kontakts,
   sieht die Adresse, aber nicht, was gesagt wird. Ein Anruf zwischen Telefonen in der Nähe im selben Netz bleibt in
-  diesem Netz. Ohne Anruf-Server zwischen euch und mit **SPEED** geht der Anruf direkt von Telefon zu Telefon: Das
-  Telefon deines Kontakts sieht die Adresse, und ebenso die Hilfsserver, die jedem Telefon seine eigene sagen.
+  diesem Netz. Mit **SPEED** geht der Anruf direkt von Telefon zu Telefon, wo es geht, und über den Anruf-Server, wo es
+  nicht geht: Das Telefon deines Kontakts sieht die Adresse in beiden Fällen, und ebenso die Hilfsserver, die jedem
+  Telefon seine eigene sagen.
 
 - **Eine Datei auf einem Server, den dein Kontakt gewählt hat:** Der Server sieht die Adresse, wenn dein Telefon die
   Datei holt. Tor verbirgt sie.
@@ -4988,7 +4990,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Fingerabdruck oder Gesicht (Android)** | Aus, solange nicht eingeschaltet. Öffnet nur den Bereich des ersten Passworts: sein Schlüssel im Android Keystore versiegelt, nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung nutzbar und verworfen, wenn diese sich ändern. Jemand, der dich festhält, kann deinen Finger benutzen. | |
 | **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos – Ready for calls and messages“ (nicht auf dem Sperrbildschirm), „Incoming call“ oder „Incoming video call“ – „Open Erevos to answer“, und „New message“ oder wie viele kamen; wenn Android oder das Passwort es beendet, „Closed by Android“ oder „Locked“ – „Open it to receive calls and messages again“; eine Erinnerung, „Reminder“ oder wie viele; eine neue Version, „Erevos X is out“. Nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |
 | **Widget{~ und Telefon} (Android)** | Das Widget zeigt, sobald es hinzugefügt ist, wie viele {~verpasste Anrufe, ungelesene SMS und |}neue Nachrichten es gibt, nie wer oder was.{~ Das Telefon öffnet sich nur ohne Passwort, wenn du es erlaubst: Dann sieht jeder, der das entsperrte Telefon in der Hand hat, die Anrufe und Favoriten, die Android führt, nur mit den Namen aus den Kontakten des Telefons.} | |
-| **Anrufe** | Ende-zu-Ende-verschlüsselt (DTLS-SRTP, sein Schlüssel im verschlüsselten Chat gesendet). Über den Anruf-Server sieht keines der Telefone die IP-Adresse des anderen; der Server, auf dem er läuft, sieht beide, wann und wie lange, und wie viel durchgeht. Ohne Anruf-Server sieht jedes Telefon die Adresse des anderen: im selben WLAN, oder über das Internet mit **SPEED**, und dann sehen sie auch die Hilfsserver. Mit **INVISIBLE** gibt es keine Anrufe. Die Server sehen, wann ein Anruf zu klingeln beginnt. | Klingeln in der Web-App, wenn geschlossen. Anrufe über Bluetooth (das Walkie-Talkie funktioniert dort). |
+| **Anrufe** | Ende-zu-Ende-verschlüsselt (DTLS-SRTP, sein Schlüssel im verschlüsselten Chat gesendet). Mit **ANONYMOUS** über den Anruf-Server: Das Telefon deines Kontakts sieht deine IP-Adresse nicht; der Server, auf dem er läuft, sieht beide, wann und wie lange, und wie viel durchgeht. Mit **SPEED** direkt von Telefon zu Telefon, wo es geht, sonst über den Anruf-Server: Das Telefon deines Kontakts sieht deine Adresse in beiden Fällen, und ebenso die Hilfsserver. Im selben WLAN sieht jedes Telefon die Adresse des anderen. Mit **INVISIBLE** gibt es keine Anrufe. Die Server sehen, wann ein Anruf zu klingeln beginnt. | Klingeln in der Web-App, wenn geschlossen. Anrufe über Bluetooth (das Walkie-Talkie funktioniert dort). |
 | **Gruppenchats** | Ende-zu-Ende-verschlüsselt mit MLS (RFC 9420); herausgenommene Mitglieder lesen danach nichts mehr. Die Kopie jedes Mitglieds wird für sich versiegelt, sodass Server nicht erkennen können, wer in einer Gruppe ist; jeder Server sieht trotzdem eine Nachricht in einer Warteschlange ankommen. Mitglieder sehen die Schlüssel und Serveradressen der anderen. Fotos, Dateien und Sprachnachrichten gehen über den Dateispeicher des Servers des Absenders, wie an einen Kontakt, und bleiben dort 14 Tage. Nicht geprüft. | |
 | **Gruppenanrufe** | Sprache und Video, Ende-zu-Ende-verschlüsselt zwischen je zwei Telefonen im Anruf (DTLS-SRTP, seine Schlüssel in der Verschlüsselung der Gruppe gesendet). Über den Anruf-Server sieht kein Telefon die IP-Adresse eines anderen; der Server, auf dem er läuft, sieht die jedes Telefons, wann und wie lange, und wie viel durchgeht. Jedes Mitglied, im Anruf oder nicht, erfährt, wer darin ist. Die Server sehen, wann einer beginnt. | Video mit mehr als vier Personen, über einen Server; mehr als acht Personen. |
 | **Öffentliche Gruppen** | Wie Gruppenchats, und jeder mit dem Link kann um Beitritt bitten und ab dem Hereinlassen lesen. Anfragen kommen beim Server des Inhabers an, versiegelt für das Telefon des Inhabers: Der Server sieht wie viele und wann, nicht von wem. Mitglieder sehen die gewählten Namen der anderen, nur für diese Gruppe gemachte Schlüssel, Serveradressen und Absender-IDs der Warteschlangen. Nicht geprüft. | |

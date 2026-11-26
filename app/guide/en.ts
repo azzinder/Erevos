@@ -1337,8 +1337,10 @@ call goes over the phone company's network and is not encrypted{~, as a plain SM
 - **End-to-end encrypted:** the call is set up with messages through the server, or through Nostr when no server is
   between you, encrypted like the rest. Those carry the key that encrypts the call itself, so no one in between can
   listen, not even the call server below.
-- **Through the call server:** a server set up with the kit in \`deploy/relay\` has a call server beside it. The call
-  goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
+- **Through the call server:** a server set up with the kit in \`deploy/relay\` has a call server beside it. With
+  **ANONYMOUS**, the call goes through it, so your contact's phone does not learn your IP address. With **SPEED**, the
+  call goes straight from phone to phone where it can, the fastest way, and through the call server where it cannot;
+  your contact's phone sees your address either way. Over Wi-Fi or mobile data, anywhere.
 - **Without a call server** (a server on your own computer, for example, or no server at all): with **SPEED**, the
   call goes straight from phone to phone over the internet, with no question first. Each phone then sees the other's
   internet address, and a helper server tells each phone its own. Some networks, mobile ones above all, let nothing in
@@ -1636,8 +1638,8 @@ below, from inside the app, with nothing else to install on the phone.
 - **Messages, photos and files:** they wait, end-to-end encrypted, on a small server. To use yours, or
   your group's: on **New chat**, **I have no invite**, then **I have a server of my own**, and type its address and
   the code you were given. Later, the same two are the server address and the token under **For advanced users**.
-- **Calls:** nothing more to set. The call server comes with your server, so with your own server your calls go through
-  your own server too.
+- **Calls:** nothing more to set. The call server comes with your server, so with your own server a call goes through
+  your own server too, where it does not go straight from phone to phone (see [How visible are you?](#direct)).
 - **Backups:** on **Backups**, **To a server too** sends each backup, encrypted, to a folder on a server you choose,
   such as your own Nextcloud. See [Backups](#backup).
 - [~] **The Collection:** in its settings, **Also on a WebDAV server** keeps its encrypted files on a server you
@@ -1883,8 +1885,10 @@ and a space is on **SPEED** until you choose another, unless Tor is on in it. **
 their screen, which says what this section says. Messages are end-to-end encrypted with all three.
 
 - **SPEED:** the servers and your contacts see your address. Erevos does not ask before the things below: it does
-  them at once. Calls and video calls go straight from phone to phone, the fastest way, even when no server is between
-  you two: the call is then set up through Nostr.
+  them at once. Calls and video calls with a contact go straight from phone to phone where they can, the fastest way,
+  and through a call server where they cannot; with no server between you two, the call is set up through Nostr.
+  Group calls do not go straight over the internet: they go through the call server, or between phones on the same
+  Wi-Fi.
 - **ANONYMOUS:** only the server sees it, never your contacts. Before each of the things below, Erevos says once who
   would see the address, and you choose whether to go on (see [Who sees your internet address](#ip)). Calls go only
   through a call server, which hides each phone's address from the other, or between two phones on the same Wi-Fi. A
@@ -1900,8 +1904,7 @@ their screen, which says what this section says. Messages are end-to-end encrypt
 **Who sees your internet address with SPEED:**
 
 - The servers that carry what you send and your calls: yours, your contact's, and one a contact invites you to.
-- Your contact's phone, in a call that goes straight from phone to phone, and the helper servers, which tell each phone
-  its own address.
+- Your contact's phone, in a call, and the helper servers, which tell each phone its own address.
 - A server your contact chose for a file.
 - The public Nostr servers, when two phones pair by a code of 8 digits.
 - [~] A radio station or a TV channel of the Collection, while it plays.
@@ -1912,7 +1915,6 @@ None of them sees what you write or say: that stays end-to-end encrypted.
 **What none of them changes:**
 
 - Hidden chats, and chats set to **Through Tor**, never connect directly and still ask.
-- With a call server of your own, your calls still go through it, so the other phone does not see your address.
 - Erevos still asks before it opens a web link or shows a link's preview, and before it brings the messages of a phone
   beside this one from a server this phone does not use.
 - Tor turned off on its own screen leaves the space on **ANONYMOUS**: nothing connects directly until you choose
@@ -1920,9 +1922,9 @@ None of them sees what you write or say: that stays end-to-end encrypted.
 
 **Good to know:**
 
-- **A direct call cannot always connect:** some networks, mobile ones above all, let nothing in from outside. The call
-  screen then says **The call could not connect directly**, and the chat keeps that line. Through a call server, a call
-  connects from any network.
+- **A call cannot always go straight:** some networks, mobile ones above all, let nothing in from outside. It then goes
+  through a call server, which connects from any network. Where neither of you has a call server, the call screen says
+  **The call could not connect directly**, and the chat keeps that line.
 - **An older Erevos** rings for such a call, and then cannot connect.
 - **A phone with no server** hears such a call only while Erevos reads on Nostr, which it does on Android: left to sleep
   to spare the battery, it may miss one.
@@ -1950,9 +1952,9 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
   before the first one.
 
 - **Calls:** they never go through Tor, so **INVISIBLE** has none. The call server, yours or your contact's, sees the
-  address, though not what is said. A call between phones nearby on the same network stays on that network. With no
-  call server between you and **SPEED** chosen, the call goes straight from phone to phone: your contact's phone sees
-  the address, and so do the helper servers that tell each phone its own.
+  address, though not what is said. A call between phones nearby on the same network stays on that network. With
+  **SPEED** chosen, the call goes straight from phone to phone where it can, and through the call server where it
+  cannot: your contact's phone sees the address either way, and so do the helper servers that tell each phone its own.
 
 - **A file on a server your contact chose:** the server sees the address when your phone fetches the file. Tor hides
   it.
@@ -4352,7 +4354,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget{~ and Phone} (Android)** | The widget, once added, shows how many {~missed calls, unread SMS and |}new messages there are, never who or what.{~ The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only.} | |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call server, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call server, each phone sees the other's address: on the same Wi-Fi, or over the internet with **SPEED**, and then the helper servers see it too. With **INVISIBLE** there are no calls. The servers see when a call starts ringing. | Ringing in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). With **ANONYMOUS**, through the call server: your contact's phone does not see your IP address; the server running it sees both phones', when and how long, and how much passes. With **SPEED**, straight from phone to phone where it can, else through the call server: your contact's phone sees your address either way, and so do the helper servers. On the same Wi-Fi, each phone sees the other's address. With **INVISIBLE** there are no calls. The servers see when a call starts ringing. | Ringing in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so servers cannot tell who is in a group; each server still sees a message reach a queue. Members see each other's keys and server addresses. Photos, files and voice messages go through the sender's server's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call server, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The servers see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's server sealed for the owner's phone: the server sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, server addresses and queue sender ids. Not audited. | |

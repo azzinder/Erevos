@@ -1395,8 +1395,10 @@ Skriveni razgovori i računari to nemaju.
 - **Šifrirano s kraja na kraj:** poziv se uspostavlja porukama preko servera, ili preko Nostra kad nema servera između
   vas, šifriranim kao i ostale. One nose ključ koji šifrira sam poziv, pa niko između ne može prisluškivati, čak ni
   server za pozive opisan ispod.
-- **Preko servera za pozive:** server postavljen kompletom iz \`deploy/relay\` ima uz sebe server za pozive. Poziv ide
-  preko njega, pa nijedan telefon ne saznaje IP adresu drugog. Preko Wi-Fi mreže ili mobilnih podataka, bilo gdje.
+- **Preko servera za pozive:** server postavljen kompletom iz \`deploy/relay\` ima uz sebe server za pozive. Sa
+  **ANONYMOUS** poziv ide preko njega, pa telefon vašeg kontakta ne saznaje vašu IP adresu. Sa **SPEED** poziv ide
+  direktno s telefona na telefon gdje može, najbrže moguće, a preko servera za pozive gdje ne može; telefon vašeg
+  kontakta vidi vašu adresu u oba slučaja. Preko Wi-Fi mreže ili mobilnih podataka, bilo gdje.
 - **Bez servera za pozive** (server na vašem vlastitom računaru, na primjer, ili bez ikakvog servera): sa **SPEED**
   poziv ide direktno s telefona na telefon preko interneta, bez pitanja prije. Svaki telefon tada vidi internet adresu
   drugog, a pomoćni server svakom kaže njegovu. Neke mreže, naročito mobilne, ne puštaju ništa izvana: ekran poziva tada
@@ -1704,7 +1706,7 @@ Svaki put je šifriran s kraja na kraj: nijedan server ni telefon između ne mo�
 Erevosu nisu potrebni serveri onoga ko ga pravi. LPHL-ovi su samo ono što nudi prvo: za svaku stvar ispod možete koristiti svoj, iz aplikacije, bez instaliranja ičega drugog na telefon.
 
 - **Poruke, fotografije i datoteke:** čekaju, šifrirane s kraja na kraj, na malom serveru. Da koristite svoj, ili svoje grupe: u **Novom razgovoru**, **Nemam pozivnicu**, zatim **Imam vlastiti server**, i upišite njegovu adresu i kod koji ste dobili. Kasnije su to dvoje adresa servera i token pod **Za napredne korisnike**.
-- **Pozivi:** ništa više za podesiti. Server za pozive dolazi s vašim serverom, pa s vlastitim serverom i vaši pozivi idu preko vašeg servera.
+- **Pozivi:** ništa više za podesiti. Server za pozive dolazi s vašim serverom, pa s vlastitim serverom poziv također ide preko vašeg servera, gdje ne ide direktno s telefona na telefon (pogledajte [Koliko ste vidljivi?](#direct)).
 - **Rezervne kopije:** pod **Rezervne kopije**, **I na server** šalje svaku kopiju, šifriranu, u folder na serveru koji izaberete, na primjer vaš Nextcloud. Pogledajte [Rezervne kopije](#backup).
 - [~] **Zbirka:** u njenim postavkama, **I na WebDAV serveru** čuva njene šifrirane datoteke na serveru koji izaberete. Pogledajte [Zbirka](#collection).
 - **Modeli za govor i prevođenje:** tamo gdje Erevos traži da ih preuzme, **Preuzmi s drugog servera…** prima vaš web folder s istim datotekama. Erevos provjerava svaku datoteku i odbija onu koja je izmijenjena.
@@ -1949,8 +1951,9 @@ na **SPEED** dok ne izaberete drugi, osim ako je u njemu uključen Tor. **Šta s
 ekran, koji kaže ono što kaže ovaj odjeljak. Poruke su šifrirane s kraja na kraj u sva tri.
 
 - **SPEED:** serveri i vaši kontakti vide vašu adresu. Erevos ne pita prije onoga što slijedi: radi to odmah. Pozivi i
-  video pozivi idu direktno s telefona na telefon, najbrže moguće, čak i kad između vas dvoje nema servera: poziv se
-  tada uspostavlja preko Nostra.
+  video pozivi s kontaktom idu direktno s telefona na telefon gdje mogu, najbrže moguće, a preko servera za pozive gdje
+  ne mogu; kad između vas dvoje nema servera, poziv se uspostavlja preko Nostra. Grupni pozivi ne idu direktno preko
+  interneta: idu preko servera za pozive, ili između telefona na istoj Wi-Fi mreži.
 - **ANONYMOUS:** vidi je samo server, nikad vaši kontakti. Prije svakog od slučajeva koji slijede Erevos jednom kaže ko
   bi vidio adresu, a vi birate hoćete li nastaviti (pogledajte [Ko vidi vašu IP adresu](#ip)). Pozivi idu samo preko
   servera za pozive, koji skriva adresu svakog telefona od drugog, ili između dva telefona na istoj Wi-Fi mreži. Poziv
@@ -1965,8 +1968,7 @@ ekran, koji kaže ono što kaže ovaj odjeljak. Poruke su šifrirane s kraja na 
 **Ko vidi vašu internet adresu sa SPEED:**
 
 - Serveri koji nose ono što šaljete i vaše pozive: vaš, vašeg kontakta i onaj na koji vas kontakt pozove.
-- Telefon vašeg kontakta, u pozivu koji ide direktno s telefona na telefon, i pomoćni serveri, koji svakom telefonu kažu
-  njegovu vlastitu adresu.
+- Telefon vašeg kontakta, u pozivu, i pomoćni serveri, koji svakom telefonu kažu njegovu vlastitu adresu.
 - Server koji je vaš kontakt izabrao za datoteku.
 - Javni Nostr serveri, kad se dva telefona upare kodom od 8 cifara.
 - [~] Radio stanica ili TV kanal iz Zbirke, dok se pušta.
@@ -1977,7 +1979,6 @@ Nijedan od njih ne vidi šta pišete ili govorite: to ostaje šifrirano s kraja 
 **Šta ne mijenja nijedan od njih:**
 
 - Skriveni razgovori, i razgovori postavljeni na **Preko Tora**, nikad se ne spajaju direktno, a i dalje pitaju.
-- S vlastitim serverom za pozive, vaši pozivi i dalje idu preko njega, pa drugi telefon ne vidi vašu adresu.
 - Erevos i dalje pita prije nego otvori web link ili pokaže pregled linka, i prije nego donese poruke telefona pored
   ovog sa servera koji ovaj telefon ne koristi.
 - Tor isključen na svom ekranu ostavlja prostor na **ANONYMOUS**: ništa se ne spaja direktno dok ponovo ne izaberete
@@ -1985,9 +1986,9 @@ Nijedan od njih ne vidi šta pišete ili govorite: to ostaje šifrirano s kraja 
 
 **Dobro je znati:**
 
-- **Direktan poziv se ne uspostavlja uvijek:** neke mreže, naročito mobilne, ne puštaju ništa izvana. Ekran poziva tada
-  kaže **Poziv se nije uspostavio direktno**, a razgovor zadržava taj red. Preko servera za pozive poziv se uspostavlja
-  iz bilo koje mreže.
+- **Poziv ne ide uvijek direktno:** neke mreže, naročito mobilne, ne puštaju ništa izvana. Tada ide preko servera za
+  pozive, preko kojeg se poziv uspostavlja iz bilo koje mreže. Kada nijedno od vas nema server za pozive, ekran poziva
+  kaže **Poziv se nije uspostavio direktno**, a razgovor zadržava taj red.
 - **Stariji Erevos** zvoni za takav poziv, a zatim se ne može povezati.
 - **Telefon bez servera** čuje takav poziv samo dok Erevos čita na Nostru, što na Androidu radi: ako se pusti da spava
   radi štednje baterije, može ga propustiti.
@@ -2015,9 +2016,9 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
   puta.
 
 - **Pozivi:** nikad ne idu preko Tora, pa ih **INVISIBLE** nema. Server za pozive, vaš ili vašeg kontakta, vidi adresu,
-  ali ne i ono što se govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži. Bez servera za pozive
-  između vas i sa **SPEED** poziv ide direktno s telefona na telefon: telefon vašeg kontakta vidi adresu, a tako i
-  pomoćni serveri koji svakom telefonu kažu njegovu.
+  ali ne i ono što se govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži. Sa **SPEED** poziv ide
+  direktno s telefona na telefon gdje može, a preko servera za pozive gdje ne može: telefon vašeg kontakta vidi adresu u
+  oba slučaja, a tako i pomoćni serveri koji svakom telefonu kažu njegovu.
 
 - **Datoteka na serveru koji je odabrao vaš kontakt:** server vidi adresu kad vaš telefon preuzima datoteku. Tor je
   sakriva.
@@ -4513,7 +4514,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
 | **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |
 | **Widget{~ i Telefon} (Android)** | Widget, kad se doda, prikazuje koliko ima {~propuštenih poziva, nepročitanih SMS poruka i |}novih poruka, nikad od koga ni šta.{~ Telefon se otvara bez lozinke samo ako to dozvolite: tada svako ko drži otključan telefon vidi pozive i favorite koje Android čuva, samo s imenima iz kontakata telefona.} | |
-| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko servera za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez servera za pozive svaki telefon vidi adresu drugog: na istoj Wi-Fi mreži, ili preko interneta sa **SPEED**, kada je vide i pomoćni serveri. Sa **INVISIBLE** nema poziva. Serveri vide kada poziv počinje zvoniti. | Zvonjenje u web-aplikaciji dok je zatvorena. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
+| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Sa **ANONYMOUS**, preko servera za pozive: telefon vašeg kontakta ne vidi vašu IP adresu; server na kojem on radi vidi adresu oba telefona, kada i koliko dugo, i koliko prolazi. Sa **SPEED**, direktno s telefona na telefon gdje može, inače preko servera za pozive: telefon vašeg kontakta vidi vašu adresu u oba slučaja, a vide je i pomoćni serveri. Na istoj Wi-Fi mreži svaki telefon vidi adresu drugog. Sa **INVISIBLE** nema poziva. Serveri vide kada poziv počinje zvoniti. | Zvonjenje u web-aplikaciji dok je zatvorena. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
 | **Grupni razgovori** | Šifrirani s kraja na kraj pomoću MLS-a (RFC 9420); uklonjeni članovi nakon toga ništa ne čitaju. Kopija svakog člana zapečaćena je zasebno, pa serveri ne mogu saznati ko je u grupi; svaki server ipak vidi da poruka stiže u red. Članovi vide ključeve i adrese servera jedni drugih. Fotografije, datoteke i glasovne poruke idu preko pohrane datoteka servera pošiljaoca, kao i kontaktu, i ostaju tamo 14 dana. Nije nezavisno provjereno. | |
 | **Grupni pozivi** | Glasovni i video, šifrirani s kraja na kraj između svaka dva telefona u pozivu (DTLS-SRTP, čiji se ključevi šalju u šifriranju grupe). Preko servera za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi adresu svakog telefona, kada i koliko dugo, i koliko prolazi. Svaki član, u pozivu ili ne, saznaje ko je u njemu. Serveri vide kada poziv počinje. | Video s više od četiri osobe, preko servera; više od osam osoba. |
 | **Javne grupe** | Kao grupni razgovori, a svako ko ima link može zatražiti ulazak i čitati od trenutka kad ga puste. Zahtjevi stižu na server vlasnika zapečaćeni za telefon vlasnika: server vidi koliko ih je i kada, ali ne i od koga. Članovi vide izabrana imena jedni drugih, ključeve napravljene samo za tu grupu, adrese servera i identifikatore pošiljaoca redova. Nije nezavisno provjereno. | |

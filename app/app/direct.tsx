@@ -119,10 +119,12 @@ export default function DirectScreen() {
       <SectionTitle title={MODE_NAMES.speed} />
       <Card>
         <Text>{t('Erevos does not ask before the things below: it does them at once.')}</Text>
+        <Text>{t('A call or video call with a contact goes straight from phone to phone where it can, the fastest way, and through a call server where it cannot.')}</Text>
         <Text>{t('Calls and video calls work with a contact when no server is between you two, too: the call is set up through Nostr and goes straight from phone to phone.')}</Text>
+        <Text tone="muted">{t('Group calls do not go straight over the internet: they go through the call server, or between phones on the same Wi-Fi.')}</Text>
         <Text variant="bodyStrong">{t('Who sees your internet address then')}</Text>
         <Text tone="muted">{t("The servers that carry what you send and your calls: yours, your contact's, and one a contact invites you to.")}</Text>
-        <Text tone="muted">{t("Your contact's phone, in a call that goes straight from phone to phone, and the helper servers, which tell each phone its own address.")}</Text>
+        <Text tone="muted">{t("Your contact's phone, in a call, and the helper servers, which tell each phone its own address.")}</Text>
         <Text tone="muted">{t('A server your contact chose for a file.')}</Text>
         <Text tone="muted">{t('The public Nostr servers, when two phones pair by a code of 8 digits.')}</Text>
         {modules.has('collection') ? <Text tone="muted">{t('A radio station or a TV channel of the Collection, while it plays.')}</Text> : null}
@@ -150,13 +152,12 @@ export default function DirectScreen() {
       <Card>
         <Text tone="muted">{t('Messages stay end-to-end encrypted in all three: no server, and no one on the way, reads them.')}</Text>
         <Text tone="muted">{t('Hidden chats, and chats set to "Through Tor", never connect directly and still ask.')}</Text>
-        <Text tone="muted">{t('With a call server of your own, your calls still go through it, so the other phone does not see your address.')}</Text>
         <Text tone="muted">{t("Erevos still asks before it opens a web link or shows a link's preview, and before it brings the messages of a phone beside this one from a server this phone does not use.")}</Text>
       </Card>
 
       <SectionTitle title={t('Good to know')} />
       <Card>
-        <Text tone="muted">{t('A direct call cannot always connect: some networks, mobile ones above all, let nothing in from outside. Erevos then says that the call could not connect directly. Through a call server, a call connects from any network.')}</Text>
+        <Text tone="muted">{t('A call cannot always go straight: some networks, mobile ones above all, let nothing in from outside. It then goes through a call server, which connects from any network. Where neither of you has a call server, Erevos says that the call could not connect directly.')}</Text>
         <Text tone="muted">{t('An Erevos older than this one rings for such a call, and then cannot connect.')}</Text>
         <Text tone="muted">{t('A phone with no server hears such a call only while Erevos reads on Nostr: left to sleep to spare the battery, it may miss one.')}</Text>
       </Card>

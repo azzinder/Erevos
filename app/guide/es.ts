@@ -1444,9 +1444,11 @@ que un SMS normal}. Los chats ocultos y los ordenadores no la tienen.
 - **Cifrado de extremo a extremo:** la llamada se establece con mensajes por el servidor, o por Nostr cuando no hay
   servidor entre vosotros, cifrados como el resto. Estos llevan la clave que cifra la propia llamada, así que nadie
   entre medias puede escuchar, ni siquiera el servidor de llamadas de más abajo.
-- **Por el servidor de llamadas:** un servidor configurado con el kit de \`deploy/relay\` tiene un servidor de llamadas al lado.
-  La llamada va a través de él, así que ningún teléfono conoce la dirección IP del otro. Por Wi-Fi o datos móviles, en
-  cualquier sitio.
+- **Por el servidor de llamadas:** un servidor configurado con el kit de \`deploy/relay\` tiene un servidor de llamadas
+  al lado. Con **ANONYMOUS**, la llamada va a través de él, así que el teléfono de tu contacto no conoce tu dirección
+  IP. Con **SPEED**, la llamada va directamente de teléfono a teléfono donde puede, la forma más rápida, y por el
+  servidor de llamadas donde no puede; el teléfono de tu contacto ve tu dirección en ambos casos. Por Wi-Fi o datos
+  móviles, en cualquier sitio.
 - **Sin servidor de llamadas** (un servidor en tu propio ordenador, por ejemplo, o sin ningún servidor): con **SPEED**,
   la llamada va directamente de teléfono a teléfono por internet, sin preguntar antes. Cada teléfono ve entonces la
   dirección de internet del otro, y un servidor auxiliar le dice a cada uno la suya. Algunas redes, sobre todo las
@@ -1774,7 +1776,7 @@ envías.
 Erevos no necesita los servidores de quien lo hace. Los de LPHL son solo los que ofrece primero: para cada cosa de abajo puedes usar el tuyo, desde la app, sin instalar nada más en el teléfono.
 
 - **Mensajes, fotos y archivos:** esperan, cifrados de extremo a extremo, en un servidor pequeño. Para usar el tuyo, o el de tu grupo: en **Chat nuevo**, **No tengo invitación**, luego **Tengo un servidor propio**, y escribe su dirección y el código que te dieron. Más tarde, esos dos son la dirección del servidor y el token en **Para usuarios avanzados**.
-- **Llamadas:** nada más que ajustar. El servidor de llamadas viene con tu servidor, así que con un servidor propio tus llamadas pasan también por tu servidor.
+- **Llamadas:** nada más que ajustar. El servidor de llamadas viene con tu servidor, así que con un servidor propio una llamada pasa también por tu servidor, donde no va directamente de teléfono a teléfono (ver [¿Cuánto se te ve?](#direct)).
 - **Copias de seguridad:** en **Copias de seguridad**, **También a un servidor** envía cada copia, cifrada, a una carpeta en un servidor que eliges, como tu propio Nextcloud. Ver [Copias de seguridad](#backup).
 - [~] **La Colección:** en sus ajustes, **También en un servidor WebDAV** guarda sus archivos cifrados en un servidor que eliges. Ver [Colección](#collection).
 - **Modelos de voz y de traducción:** donde Erevos pide descargarlos, **Descargar de otro servidor…** toma una carpeta web tuya que tiene los mismos archivos. Erevos comprueba cada archivo y rechaza el que haya cambiado.
@@ -2024,8 +2026,10 @@ y un espacio está en **SPEED** hasta que eliges otra, salvo que tenga Tor activ
 pantalla, que dice lo que dice esta sección. Los mensajes están cifrados de extremo a extremo con las tres.
 
 - **SPEED:** los servidores y tus contactos ven tu dirección. Erevos no pregunta antes de lo que sigue: lo hace de
-  inmediato. Las llamadas y videollamadas van directamente de teléfono a teléfono, la forma más rápida, aunque no haya
-  servidor entre vosotros dos: la llamada se establece entonces por Nostr.
+  inmediato. Las llamadas y videollamadas con un contacto van directamente de teléfono a teléfono donde pueden, la forma
+  más rápida, y por un servidor de llamadas donde no pueden; si no hay servidor entre vosotros dos, la llamada se
+  establece por Nostr. Las llamadas de grupo no van directamente por internet: van por el servidor de llamadas, o entre
+  teléfonos en la misma Wi-Fi.
 - **ANONYMOUS:** solo la ve el servidor, nunca tus contactos. Antes de cada una de las cosas que siguen, Erevos dice una
   vez quién vería la dirección, y eliges si seguir (ver [Quién ve tu dirección de internet](#ip)). Las llamadas van solo
   por un servidor de llamadas, que oculta la dirección de cada teléfono al otro, o entre dos teléfonos en la misma
@@ -2043,8 +2047,8 @@ pantalla, que dice lo que dice esta sección. Los mensajes están cifrados de ex
 
 - Los servidores que llevan lo que envías y tus llamadas: el tuyo, el de tu contacto, y uno al que te invita un
   contacto.
-- El teléfono de tu contacto, en una llamada que va directamente de teléfono a teléfono, y los servidores auxiliares,
-  que dicen a cada teléfono su propia dirección.
+- El teléfono de tu contacto, en una llamada, y los servidores auxiliares, que dicen a cada teléfono su propia
+  dirección.
 - Un servidor que eligió tu contacto para un archivo.
 - Los servidores públicos de Nostr, cuando dos teléfonos se emparejan con un código de 8 dígitos.
 - [~] Una emisora de radio o un canal de TV de la Colección, mientras se reproduce.
@@ -2055,7 +2059,6 @@ Ninguno de ellos ve lo que escribes o dices: eso sigue cifrado de extremo a extr
 **Lo que no cambia ninguna de ellas:**
 
 - Los chats ocultos, y los chats puestos en **Por Tor**, nunca se conectan directamente y siguen preguntando.
-- Con un servidor de llamadas propio, tus llamadas siguen yendo por él, así que el otro teléfono no ve tu dirección.
 - Erevos sigue preguntando antes de abrir un enlace web o de mostrar la vista previa de un enlace, y antes de traer los
   mensajes de un teléfono a su lado desde un servidor que este teléfono no usa.
 - Tor desactivado en su propia pantalla deja el espacio en **ANONYMOUS**: nada se conecta directamente hasta que eliges
@@ -2063,9 +2066,10 @@ Ninguno de ellos ve lo que escribes o dices: eso sigue cifrado de extremo a extr
 
 **Conviene saber:**
 
-- **Una llamada directa no siempre conecta:** algunas redes, sobre todo las móviles, no dejan entrar nada desde fuera.
-  La pantalla de la llamada dice entonces **La llamada no se pudo conectar directamente**, y el chat guarda esa línea.
-  Con un servidor de llamadas, una llamada conecta desde cualquier red.
+- **Una llamada no siempre puede ir directa:** algunas redes, sobre todo las móviles, no dejan entrar nada desde fuera.
+  Entonces va por un servidor de llamadas, con el que una llamada conecta desde cualquier red. Cuando ninguno de los dos
+  tiene un servidor de llamadas, la pantalla de la llamada dice **La llamada no se pudo conectar directamente**, y el
+  chat guarda esa línea.
 - **Un Erevos más antiguo** suena con una llamada así, y luego no puede conectar.
 - **Un teléfono sin servidor** oye una llamada así solo mientras Erevos lee en Nostr, algo que hace en Android: si se
   deja dormir para ahorrar batería, puede perder alguna.
@@ -2096,9 +2100,9 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
 
 - **Las llamadas:** nunca van por Tor, así que **INVISIBLE** no tiene ninguna. El servidor de llamadas, el tuyo o el de
   tu contacto, ve la dirección, aunque no lo que se dice. Una llamada entre teléfonos cercanos en la misma red se queda
-  en esa red. Sin servidor de llamadas entre vosotros y con **SPEED** elegido, la llamada va directamente de teléfono a
-  teléfono: el teléfono de tu contacto ve la dirección, y también los servidores auxiliares que dicen a cada teléfono la
-  suya.
+  en esa red. Con **SPEED** elegido, la llamada va directamente de teléfono a teléfono donde puede, y por el servidor de
+  llamadas donde no puede: el teléfono de tu contacto ve la dirección en ambos casos, y también los servidores
+  auxiliares que dicen a cada teléfono la suya.
 
 - **Un archivo en un servidor que eligió tu contacto:** el servidor ve la dirección cuando tu teléfono descarga el
   archivo. Tor la oculta.
@@ -4721,7 +4725,7 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Huella o cara (Android)** | Desactivado salvo que se active. Solo abre el espacio de la primera contraseña: su clave sellada en el Android Keystore, utilizable solo justo después de una comprobación fuerte de huella o cara, y descartada cuando estas cambian. Alguien que te retenga puede usar tu dedo. | |
 | **Avisos (Android)** | En segundo plano: «Erevos – Ready for calls and messages» (no en la pantalla de bloqueo), «Incoming call» o «Incoming video call» – «Open Erevos to answer», y «New message» o cuántos llegaron; cuando Android o la contraseña lo detienen, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un recordatorio, «Reminder» o cuántos; una versión nueva, «Erevos X is out». Nunca quién ni qué. En un teléfono bloqueado, el de los mensajes solo dice «Erevos». Los chats ocultos que pueden decirlo muestran el mismo aviso, contado con el resto: quien lo vea y no encuentre nada nuevo puede suponer que hay más. Como app de teléfono, el aviso de una llamada telefónica nombra a quien llama, también sobre la pantalla de bloqueo, como el de cualquier app de teléfono, pero nunca con un nombre que solo conozcan los chats ocultos: una llamada de uno de sus contactos muestra el número. | |
 | **Widget{~ y Teléfono} (Android)** | El widget, una vez añadido, muestra {~cuántas llamadas perdidas, SMS sin leer y mensajes nuevos hay|cuántos mensajes nuevos hay}, nunca de quién ni qué.{~ El Teléfono se abre sin la contraseña solo si lo permites: entonces cualquiera que tenga el teléfono desbloqueado ve las llamadas y los favoritos que guarda Android, solo con los nombres de los contactos del teléfono.} | |
-| **Llamadas** | Cifradas de extremo a extremo (DTLS-SRTP, con su clave enviada en el chat cifrado). A través del servidor de llamadas, ningún teléfono ve la dirección IP del otro; el servidor que lo ejecuta ve las dos, cuándo y cuánto tiempo, y cuánto pasa. Sin servidor de llamadas, cada teléfono ve la dirección del otro: en la misma Wi-Fi, o por internet con **SPEED**, y entonces también la ven los servidores auxiliares. Con **INVISIBLE** no hay llamadas. Los servidores ven cuándo empieza a sonar una llamada. | Que suene en la app web estando cerrada. Llamadas por Bluetooth (ahí funciona el walkie-talkie). |
+| **Llamadas** | Cifradas de extremo a extremo (DTLS-SRTP, con su clave enviada en el chat cifrado). Con **ANONYMOUS**, por el servidor de llamadas: el teléfono de tu contacto no ve tu dirección IP; el servidor que lo ejecuta ve la de los dos teléfonos, cuándo y cuánto tiempo, y cuánto pasa. Con **SPEED**, directamente de teléfono a teléfono donde puede, y si no por el servidor de llamadas: el teléfono de tu contacto ve tu dirección en ambos casos, y también la ven los servidores auxiliares. En la misma Wi-Fi, cada teléfono ve la dirección del otro. Con **INVISIBLE** no hay llamadas. Los servidores ven cuándo empieza a sonar una llamada. | Que suene en la app web estando cerrada. Llamadas por Bluetooth (ahí funciona el walkie-talkie). |
 | **Chats de grupo** | Cifrados de extremo a extremo con MLS (RFC 9420); los miembros sacados no leen nada después. La copia de cada miembro se sella aparte, así que los servidores no pueden saber quién está en un grupo; cada servidor sigue viendo que un mensaje llega a una cola. Los miembros ven las claves y las direcciones de servidor de los demás. Las fotos, los archivos y los mensajes de voz van por el almacén de archivos del servidor de quien los envía, como a un contacto, y se quedan ahí 14 días. Sin auditar. | |
 | **Llamadas de grupo** | Voz y vídeo, cifrados de extremo a extremo entre cada dos teléfonos de la llamada (DTLS-SRTP, con sus claves enviadas en el cifrado del grupo). A través del servidor de llamadas, ningún teléfono ve la dirección IP de otro; el servidor que lo ejecuta ve la de cada teléfono, cuándo y cuánto tiempo, y cuánto pasa. Cada miembro, esté en la llamada o no, sabe quién está en ella. Los servidores ven cuándo empieza una. | Vídeo con más de cuatro personas, a través de un servidor; más de ocho personas. |
 | **Grupos públicos** | Como los chats de grupo, y cualquiera con el enlace puede pedir unirse y leer desde que se le deja entrar. Las peticiones llegan al servidor del propietario selladas para el teléfono del propietario: el servidor ve cuántas y cuándo, no de quién. Los miembros ven los nombres elegidos de los demás, claves hechas solo para ese grupo, direcciones de servidor y sender ids de las colas. Sin auditar. | |

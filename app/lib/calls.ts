@@ -48,10 +48,10 @@ export type CallPlace = {
   me?(): Promise<string>;
   /**
    * With Direct connections on (lib/direct.ts), the helper servers a call with this contact asks when
-   * it goes straight between the two phones over the internet, in groups (lib/call.ts
-   * CallOptions.open); null when it may not go so: the switch is off, something of the space goes
-   * through Tor, or their chat goes only through Tor. A place without it (hidden chats, XMPP) never
-   * calls so.
+   * it goes straight between the two phones over the internet, through the call relay too where it
+   * cannot, in groups (lib/call.ts CallOptions.open); null when it may not go so: the switch is off,
+   * something of the space goes through Tor, or their chat goes only through Tor. A place without it
+   * (hidden chats, XMPP) never calls so.
    */
   direct?(identity: string): Promise<string[][] | null>;
   /** Whether a call signal can go to the contact from here now: through the relay, to their phone nearby, or, with Direct connections on, through Nostr. A place without it is taken to. */
@@ -147,11 +147,11 @@ function events(place: CallPlace, identity: string) {
   };
 }
 
-/** Calls a contact. `open`: with no call relay, straight over the internet, with these helper servers (CallPlace.direct). Throws if a call is already in progress, or calls are off (INVISIBLE). */
+/** Calls a contact. `open`: straight over the internet, with these helper servers (CallPlace.direct), through the call relay too where it cannot go straight. Throws if a call is already in progress, or calls are off (INVISIBLE). */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc, open: string[][] | null = null): Call {
   if (callsOff()) throw new Error(callsOffNote());
   if (currentGroupCall() || elsewhere() || otherCallOn()) throw new Error(t('There is a call already.'));
-  const call = Call.start({ peer, video, relay, open: relay ? null : open, rtc, events: events(place, identityOf(peer)) });
+  const call = Call.start({ peer, video, relay, open, rtc, events: events(place, identityOf(peer)) });
   shown = { call, place };
   changed();
   return call;
@@ -222,9 +222,10 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   // An offer still to come (XMPP's calls ring first) answers through our call relay, if there is one.
   const callRelay = await place.callRelay().catch(() => null);
   const relay = signal.sdp ? relayToAnswer(signal.sdp, callRelay) : callRelay;
-  // With no call relay to answer through, and Direct connections on here: straight between the two
-  // phones over the internet, unless their offer says only its own network, answered there as before.
-  const open = !relay && signal.sdp && offersBeyond(signal.sdp) ? ((await place.direct?.(identity).catch(() => null)) ?? null) : null;
+  // With Direct connections on here (SPEED): straight between the two phones over the internet,
+  // through our call relay too where it cannot go straight, unless their offer says only its own
+  // network, answered there as before.
+  const open = signal.sdp && offersBeyond(signal.sdp) ? ((await place.direct?.(identity).catch(() => null)) ?? null) : null;
   // They hung up while the call relay was asked.
   if (endedAlready(peer, signal.id)) {
     place.line(peer, false, `Missed ${kind}`, signal.id);

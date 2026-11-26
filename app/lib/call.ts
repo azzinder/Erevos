@@ -15,11 +15,14 @@ import { t } from './i18n';
 // the call goes only through it: each phone offers only call relay addresses, so neither learns the
 // other's IP address. Without one, the phones can only reach each other on the same network, and
 // then each sees the other's address there; the chat says so before such a call. With Direct
-// connections on (lib/direct.ts, the space's switch, on unless turned off), a phone with no call
-// relay calls straight over the internet instead (CallOptions.open): it says every address it has,
-// its internet address too, as a helper server tells it (STUN), and takes every address of theirs,
-// so each of the two sees the other's; a side that has a call relay still goes only through it, and
-// only the other's address shows.
+// connections on (lib/direct.ts: SPEED, lib/modes.ts), a phone calls straight over the internet
+// instead (CallOptions.open): it says every address it has, its internet address too, as a helper
+// server tells it (STUN), and takes every address of theirs, so each of the two sees the other's.
+// With a call relay too, it says the relay's addresses beside its own: WebRTC tries every way at
+// once, and keeps the straight one where it works, so the call goes through the relay only where
+// it cannot go straight (his word, 2026-11-26: straight first, the server if that fails). A side
+// with Direct connections off still goes only through its call relay, and only the other's address
+// shows.
 //
 // A call that rings is answered with the camera or with voice only. While it goes on, either side
 // may send a new description of it (reoffer), sealed as the offer is: video added to a voice call,
@@ -195,14 +198,15 @@ export type CallEvents = {
 export type CallOptions = {
   peer: string;
   video: boolean;
-  /** The call relay, or null to call directly: on the same network, unless `open`. */
+  /** The call relay, or null with none: then directly, on the same network, unless `open`. */
   relay: CallRelay | null;
   /**
-   * With no call relay: the helper servers (STUN, lib/direct.ts callHelpers) asked for this phone's
-   * internet address, for a call straight between the two phones over the internet, where each sees
-   * the other's address. In groups: those of the first are asked, and those of the next only when
-   * none of the ones before answered (answeringHelpers), so a reserve sees the address only then.
-   * No group: no helper is asked. Null or left out, as before it: only on the same network.
+   * The helper servers (STUN, lib/direct.ts callHelpers) asked for this phone's internet address,
+   * for a call straight between the two phones over the internet, where each sees the other's
+   * address: with a call relay too, straight where it can, through the relay where it cannot. In
+   * groups: those of the first are asked, and those of the next only when none of the ones before
+   * answered (answeringHelpers), so a reserve sees the address only then. No group: no helper is
+   * asked. Null or left out: only through the call relay, or with none on the same network only.
    */
   open?: string[][] | null;
   rtc: Rtc;
@@ -282,10 +286,17 @@ export function theirStream(shown: Stream | null, came: Stream, track?: Track): 
   return shown;
 }
 
-/** The connection set-up for a call: through the call relay only, or direct: on the same network, or, with `open` (CallOptions.open), over the internet, asking its helper servers for this phone's address there. */
+/**
+ * The connection set-up for a call: through the call relay only; or, with `open` (CallOptions.open),
+ * every way, over the internet too, asking its helper servers for this phone's address there, and
+ * through the call relay where there is one, the way WebRTC keeps only when no other works; or,
+ * with neither, direct on the same network.
+ */
 export function connectionConfig(relay: CallRelay | null, open: string[] | null = null): ConnectionConfig {
-  if (relay) return { iceServers: [{ urls: relay.urls, username: relay.username, credential: relay.credential }], iceTransportPolicy: 'relay' };
-  return { iceServers: open?.length ? [{ urls: open }] : [], iceTransportPolicy: 'all' };
+  const helpers = open?.length ? [{ urls: open }] : [];
+  if (!relay) return { iceServers: helpers, iceTransportPolicy: 'all' };
+  const turn = { urls: relay.urls, username: relay.username, credential: relay.credential };
+  return open ? { iceServers: [...helpers, turn], iceTransportPolicy: 'all' } : { iceServers: [turn], iceTransportPolicy: 'relay' };
 }
 
 // An address on this network only: private IPv4, link-local, loopback, unique-local IPv6, or a
@@ -352,9 +363,11 @@ export function fittingSdp(sdp: string): string {
 
 /** A connection's session description once the addresses to try are in it, or after GATHER_MS
  *  with those found by then. `direct`: with no call relay, only its addresses on this network.
- *  `open`: with no call relay either, but straight over the internet (CallOptions.open): every
- *  address it has, soon after the first a helper server told, or after OPEN_WAIT_MS with none. */
-export function describedSdp(connection: Connection, direct = false, open = false): Promise<string> {
+ *  `open`: straight over the internet (CallOptions.open): every address it has, soon after the
+ *  first a helper server told, or after OPEN_WAIT_MS with none; with a call relay too (`relayed`),
+ *  soon after the first address it relays, as through a call relay only, so that the call can go
+ *  through it where it cannot go straight. */
+export function describedSdp(connection: Connection, direct = false, open = false, relayed = false): Promise<string> {
   return new Promise((resolve, reject) => {
     const done = () => {
       clearTimeout(timer);
@@ -363,7 +376,7 @@ export function describedSdp(connection: Connection, direct = false, open = fals
       if (!sdp || sdp.length > MAX_SDP) reject(new Error('No session description to send.'));
       else resolve(sdp);
     };
-    let timer = setTimeout(done, open ? OPEN_WAIT_MS : GATHER_MS);
+    let timer = setTimeout(done, open && !relayed ? OPEN_WAIT_MS : GATHER_MS);
     // «Complete» with no address in it yet is not taken: WebRTC 155 on Android says it before it
     // has seen the phone's networks (found on a Pixel, 2026-11-18), and its addresses come a moment
     // later. Sent without them, the other side has nothing to try, and both stay at «Connecting».
@@ -382,8 +395,10 @@ export function describedSdp(connection: Connection, direct = false, open = fals
         // Through a call relay: soon after the first address it relays over UDP, not after every one.
         // Direct on one network: soon after an address there, should «complete» have come already.
         // Straight over the internet: soon after the first address a helper server told, over UDP; a
-        // helper that does not answer is not waited for longer than OPEN_WAIT_MS.
-        const enough = direct ? connection.iceGatheringState === 'complete' : open ? / udp .* typ srflx/i.test(candidate.candidate) : / udp .* typ relay/i.test(candidate.candidate);
+        // helper that does not answer is not waited for longer than OPEN_WAIT_MS. With a call relay
+        // too: soon after the first address it relays, with the moment more of straight over the
+        // internet for one a helper told, which mostly came already.
+        const enough = direct ? connection.iceGatheringState === 'complete' : open && !relayed ? / udp .* typ srflx/i.test(candidate.candidate) : / udp .* typ relay/i.test(candidate.candidate);
         if (!enough) return;
         soon = true;
         clearTimeout(timer);
@@ -465,7 +480,8 @@ export function offersBeyond(offer: string): boolean {
 /** The call relay to answer an offer with: none when the offer has no call relay address and
  *  offers only addresses on its own network, as from a phone with no internet on the same Wi-Fi,
  *  where only a direct connection can work. One with no call relay but an internet address is
- *  answered through ours all the same: a direct connection would show each side's address. */
+ *  answered through ours all the same: a direct connection would show each side's address, which
+ *  only Direct connections let it do, straight too (lib/calls.ts callSignal). */
 export function relayToAnswer(offer: string, relay: CallRelay | null): CallRelay | null {
   return offersBeyond(offer) ? relay : null;
 }
@@ -596,7 +612,7 @@ export class Call {
     return (await this.connection?.getStats?.().catch(() => null)) ?? null;
   }
 
-  /** Whether the call goes through a call relay, which sees this phone's internet address: not one straight between two phones on the same network. */
+  /** Whether the call has a call relay to go through, which sees this phone's internet address: only through it, or, straight over the internet too (CallOptions.open), where it cannot go straight. */
   get throughRelay(): boolean {
     return this.options.relay !== null;
   }
@@ -618,7 +634,7 @@ export class Call {
 
   // Our description of the call, with the addresses to try as its way says them.
   private ourSdp(connection: Connection): Promise<string> {
-    return describedSdp(connection, this.nearOnly, this.direct);
+    return describedSdp(connection, this.nearOnly, !!this.options.open, this.throughRelay);
   }
 
   /** Whether our camera is on its way to them: not in a call answered with voice only, until it is turned on. */
@@ -1022,9 +1038,9 @@ export class Call {
 
   // The microphone, and the camera when `camera`, and the connection carrying them.
   private async connect(camera: boolean): Promise<Connection> {
-    // Straight over the internet: which helper servers answer is asked meanwhile, a reserve only
-    // when those before it do not (answeringHelpers).
-    const asked = this.options.relay === null && this.options.open ? answeringHelpers(this.options.rtc, this.options.open) : null;
+    // Straight over the internet, with a call relay or not: which helper servers answer is asked
+    // meanwhile, a reserve only when those before it do not (answeringHelpers).
+    const asked = this.options.open ? answeringHelpers(this.options.rtc, this.options.open) : null;
     const local = await this.options.rtc.media({ audio: true, video: camera });
     if (this.state === 'ended') {
       local.getTracks().forEach((track) => track.stop());

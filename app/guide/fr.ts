@@ -1527,9 +1527,11 @@ chiffré{~, pas plus qu’un SMS ordinaire}. Les discussions masquées et les or
 - **Chiffré de bout en bout :** l’appel est établi par des messages via le serveur, ou par Nostr quand aucun serveur
   n’est entre vous, chiffrés comme le reste. Ceux-ci portent la clé qui chiffre l’appel lui-même, si bien que personne
   entre les deux ne peut écouter, pas même le serveur d’appel ci-dessous.
-- **Par le serveur d’appel :** un serveur installé avec le kit dans \`deploy/relay\` a un serveur d’appel à côté. L’appel
-  passe par lui, si bien qu’aucun téléphone n’apprend l’adresse IP de l’autre. Par Wi-Fi ou données mobiles, n’importe
-  où.
+- **Par le serveur d’appel :** un serveur installé avec le kit dans \`deploy/relay\` a un serveur d’appel à côté. Avec
+  **ANONYMOUS**, l’appel passe par lui, si bien que le téléphone de ton contact n’apprend pas ton adresse IP. Avec
+  **SPEED**, l’appel passe directement de téléphone à téléphone là où c’est possible, le plus vite, et par le serveur
+  d’appel là où ça ne l’est pas ; le téléphone de ton contact voit ton adresse dans les deux cas. Par Wi-Fi ou données
+  mobiles, n’importe où.
 - **Sans serveur d’appel** (un serveur sur ton propre ordinateur, par exemple, ou aucun serveur) : avec **SPEED**,
   l’appel passe directement de téléphone à téléphone par internet, sans question d’abord. Chaque téléphone voit alors
   l’adresse internet de l’autre, et un serveur auxiliaire dit à chacun la sienne. Certains réseaux, surtout mobiles, ne
@@ -1874,7 +1876,7 @@ envoies.
 Erevos n’a pas besoin des serveurs de celui qui le fait. Ceux de LPHL sont seulement ce qu’il propose d’abord : pour chaque chose ci-dessous tu peux utiliser le tien, depuis l’app, sans rien installer d’autre sur le téléphone.
 
 - **Messages, photos et fichiers :** ils attendent, chiffrés de bout en bout, sur un petit serveur. Pour utiliser le tien, ou celui de ton groupe : dans **Nouvelle discussion**, **Je n’ai pas d’invitation**, puis **J’ai mon propre serveur**, et écris son adresse et le code qu’on t’a donné. Plus tard, ces deux-là sont l’adresse du serveur et le jeton sous **Pour les utilisateurs avancés**.
-- **Appels :** rien de plus à régler. Le serveur d’appels vient avec ton serveur : avec ton propre serveur, tes appels passent donc aussi par ton serveur.
+- **Appels :** rien de plus à régler. Le serveur d’appels vient avec ton serveur : avec ton propre serveur, un appel passe donc aussi par ton serveur, là où il ne passe pas directement de téléphone à téléphone (voir [À quel point es-tu visible ?](#direct)).
 - **Sauvegardes :** dans **Sauvegardes**, **Aussi vers un serveur** envoie chaque sauvegarde, chiffrée, dans un dossier sur un serveur de ton choix, comme ton propre Nextcloud. Voir [Sauvegardes](#backup).
 - [~] **La Collection :** dans ses réglages, **Aussi sur un serveur WebDAV** garde ses fichiers chiffrés sur un serveur de ton choix. Voir [Collection](#collection).
 - **Modèles de voix et de traduction :** là où Erevos demande à les télécharger, **Télécharger depuis un autre serveur…** prend un dossier web à toi qui contient les mêmes fichiers. Erevos vérifie chaque fichier et refuse celui qui a été modifié.
@@ -2133,8 +2135,10 @@ que ça change**, en dessous, ouvre leur écran, qui dit ce que dit cette sectio
 bout avec les trois.
 
 - **SPEED :** les serveurs et tes contacts voient ton adresse. Erevos ne demande pas avant ce qui suit : il le fait tout
-  de suite. Les appels et les appels vidéo passent directement de téléphone à téléphone, le plus vite possible, même
-  quand aucun serveur n’est entre vous deux : l’appel est alors établi par Nostr.
+  de suite. Les appels et les appels vidéo avec un contact passent directement de téléphone à téléphone là où c’est
+  possible, le plus vite, et par un serveur d’appel là où ça ne l’est pas ; quand aucun serveur n’est entre vous deux,
+  l’appel est établi par Nostr. Les appels de groupe ne passent pas directement par internet : ils passent par le
+  serveur d’appel, ou entre téléphones sur le même Wi-Fi.
 - **ANONYMOUS :** seul le serveur la voit, jamais tes contacts. Avant chacun des cas qui suivent, Erevos dit une fois
   qui verrait l’adresse, et tu choisis de continuer ou non (voir [Qui voit ton adresse internet](#ip)). Les appels
   passent seulement par un serveur d’appel, qui cache l’adresse de chaque téléphone à l’autre, ou entre deux téléphones
@@ -2152,8 +2156,8 @@ bout avec les trois.
 
 - Les serveurs qui portent ce que tu envoies et tes appels : le tien, celui de ton contact, et celui auquel un contact
   t’invite.
-- Le téléphone de ton contact, dans un appel qui passe directement de téléphone à téléphone, et les serveurs
-  auxiliaires, qui disent à chaque téléphone sa propre adresse.
+- Le téléphone de ton contact, dans un appel, et les serveurs auxiliaires, qui disent à chaque téléphone sa propre
+  adresse.
 - Un serveur que ton contact a choisi pour un fichier.
 - Les serveurs Nostr publics, quand deux téléphones s’associent par un code de 8 chiffres.
 - [~] Une station de radio ou une chaîne de télé de la Collection, pendant la lecture.
@@ -2165,8 +2169,6 @@ Aucun d’eux ne voit ce que tu écris ou dis : cela reste chiffré de bout en b
 
 - Les discussions masquées, et les discussions réglées sur **Par Tor**, ne se connectent jamais directement et demandent
   toujours.
-- Avec ton propre serveur d’appel, tes appels passent toujours par lui, si bien que l’autre téléphone ne voit pas ton
-  adresse.
 - Erevos demande toujours avant d’ouvrir un lien web ou d’afficher l’aperçu d’un lien, et avant de faire venir les
   messages d’un téléphone à côté de celui-ci depuis un serveur que ce téléphone n’utilise pas.
 - Tor désactivé sur son propre écran laisse l’espace en **ANONYMOUS** : rien ne se connecte directement jusqu’à ce que
@@ -2174,9 +2176,10 @@ Aucun d’eux ne voit ce que tu écris ou dis : cela reste chiffré de bout en b
 
 **Bon à savoir :**
 
-- **Un appel direct n’aboutit pas toujours :** certains réseaux, surtout mobiles, ne laissent rien entrer de
-  l’extérieur. L’écran d’appel dit alors **L’appel n’a pas pu aboutir directement**, et la discussion garde cette ligne.
-  Par un serveur d’appel, un appel aboutit depuis n’importe quel réseau.
+- **Un appel ne peut pas toujours passer directement :** certains réseaux, surtout mobiles, ne laissent rien entrer de
+  l’extérieur. Il passe alors par un serveur d’appel, par lequel un appel aboutit depuis n’importe quel réseau. Quand
+  aucun de vous deux n’a de serveur d’appel, l’écran d’appel dit **L’appel n’a pas pu aboutir directement**, et la
+  discussion garde cette ligne.
 - **Un Erevos plus ancien** sonne pour un tel appel, puis ne peut pas se connecter.
 - **Un téléphone sans serveur** entend un tel appel seulement tant qu’Erevos lit sur Nostr, ce qu’il fait sur Android :
   laissé en veille pour ménager la batterie, il peut en manquer un.
@@ -2207,9 +2210,9 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
 
 - **Les appels :** ils ne passent jamais par Tor, donc **INVISIBLE** n’en a pas. Le serveur d’appel, le tien ou celui de
   ton contact, voit l’adresse, mais pas ce qui se dit. Un appel entre téléphones proches sur le même réseau reste sur ce
-  réseau. Sans serveur d’appel entre vous et avec **SPEED** choisi, l’appel passe directement de téléphone à téléphone :
-  le téléphone de ton contact voit l’adresse, tout comme les serveurs auxiliaires qui disent à chaque téléphone la
-  sienne.
+  réseau. Avec **SPEED** choisi, l’appel passe directement de téléphone à téléphone là où c’est possible, et par le
+  serveur d’appel là où ça ne l’est pas : le téléphone de ton contact voit l’adresse dans les deux cas, tout comme les
+  serveurs auxiliaires qui disent à chaque téléphone la sienne.
 
 - **Un fichier sur un serveur que ton contact a choisi :** le serveur voit l’adresse quand ton téléphone récupère le
   fichier. Tor la cache.
@@ -4977,7 +4980,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Empreinte digitale ou visage (Android)** | Désactivé sauf si tu l’actives. N’ouvre que l’espace du premier mot de passe : sa clé est scellée dans l’Android Keystore, utilisable seulement juste après une vérification forte de l’empreinte ou du visage, et abandonnée quand ils changent. Quelqu’un qui te retient peut utiliser ton doigt. | |
 | **Notifications (Android)** | En arrière-plan : « Erevos – Ready for calls and messages » (pas sur l’écran de verrouillage), « Incoming call » ou « Incoming video call » – « Open Erevos to answer », et « New message » ou combien sont arrivés ; quand Android ou le mot de passe l’arrête, « Closed by Android » ou « Locked » – « Open it to receive calls and messages again » ; un rappel, « Reminder » ou combien ; une nouvelle version, « Erevos X is out ». Jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |
 | **Widget{~ et Téléphone} (Android)** | Le widget, une fois ajouté, montre combien il y a {~d’appels manqués, de SMS non lus et |}de nouveaux messages, jamais qui ni quoi.{~ Le Téléphone s’ouvre sans le mot de passe seulement si tu le permets : alors quiconque tient le téléphone déverrouillé voit les appels et les favoris qu’Android garde, avec les noms des contacts du téléphone seulement.} | |
-| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le serveur d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans serveur d’appel, chaque téléphone voit l’adresse de l’autre : sur le même Wi-Fi, ou par internet avec **SPEED**, et alors les serveurs auxiliaires la voient aussi. Avec **INVISIBLE**, il n’y a pas d’appels. Les serveurs voient quand un appel commence à sonner. | La sonnerie dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
+| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Avec **ANONYMOUS**, par le serveur d’appel : le téléphone de ton contact ne voit pas ton adresse IP ; le serveur qui le fait tourner voit celle des deux téléphones, quand et combien de temps, et combien passe. Avec **SPEED**, directement de téléphone à téléphone là où c’est possible, sinon par le serveur d’appel : le téléphone de ton contact voit ton adresse dans les deux cas, et les serveurs auxiliaires aussi. Sur le même Wi-Fi, chaque téléphone voit l’adresse de l’autre. Avec **INVISIBLE**, il n’y a pas d’appels. Les serveurs voient quand un appel commence à sonner. | La sonnerie dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
 | **Discussions de groupe** | Chiffrées de bout en bout avec MLS (RFC 9420) ; les membres retirés ne lisent plus rien ensuite. La copie de chaque membre est scellée à part, donc les serveurs ne peuvent pas savoir qui est dans un groupe ; chaque serveur voit quand même un message atteindre une file d’attente. Les membres voient les clés et les adresses de serveur les uns des autres. Les photos, fichiers et messages vocaux passent par le stockage de fichiers du serveur de l’expéditeur, comme vers un contact, et y restent 14 jours. Pas audité. | |
 | **Appels de groupe** | Voix et vidéo, chiffrées de bout en bout entre chaque paire de téléphones de l’appel (DTLS-SRTP, ses clés envoyées dans le chiffrement du groupe). Par le serveur d’appel, aucun téléphone ne voit l’adresse IP d’un autre ; le serveur qui le fait tourner voit celle de chaque téléphone, quand et combien de temps, et combien passe. Chaque membre, dans l’appel ou non, apprend qui y est. Les serveurs voient quand un appel commence. | La vidéo à plus de quatre personnes, par un serveur ; plus de huit personnes. |
 | **Groupes publics** | Comme les discussions de groupe, et quiconque a le lien peut demander à rejoindre et lire à partir du moment où il est admis. Les demandes arrivent au serveur du propriétaire scellées pour le téléphone du propriétaire : le serveur voit combien et quand, pas de qui. Les membres voient les noms choisis, les clés faites pour ce seul groupe, les adresses de serveur et les identifiants d’expéditeur de file d’attente les uns des autres. Pas audité. | |

@@ -11,10 +11,11 @@ import { LPHL_HELPER, LPHL_RELAY, PUBLIC_HELPERS, START_RELAY } from './servers'
 // top of Settings), keeps on (SpaceData.direct); on unless another mode is chosen.
 //
 // On, Erevos does what shows this phone's internet address (its IP address) without asking first:
-// the warnings it covers (QUIET) are not said, and a call to a contact with no call relay to go
-// through is set up all the same, through Nostr when no relay is between the two (lib/space-calls.ts),
-// and goes straight between the two phones over the internet (lib/call.ts, CallOptions.open). Each
-// phone then sees the other's address, and so do the helper servers asked for it (callHelpers).
+// the warnings it covers (QUIET) are not said, and a call to a contact goes straight between the
+// two phones over the internet, through the call relay only where it cannot go straight (lib/call.ts,
+// CallOptions.open), and is made with no call relay too, set up through Nostr when no relay is
+// between the two (lib/space-calls.ts). Each phone then sees the other's address, and so do the
+// helper servers asked for it (callHelpers).
 //
 // Off (ANONYMOUS), everything is as before it: each warning is said once, before; calls go only
 // through a call relay, or between two phones on the same network; and nothing of a call goes through

@@ -6,7 +6,9 @@
 // open and wherever anything of the space goes through Tor; the warnings it covers, and those it
 // never does; the helper servers of a call straight between two phones, the one beside the relay
 // first and the public ones only as a reserve; and such a call itself (lib/call.ts, lib/calls.ts):
-// which helpers it asks, what it says of itself, what rings, and how it says that it could not connect.
+// which helpers it asks, what it says of itself, what rings, and how it says that it could not connect;
+// with a call relay too, every way at once, so that it goes straight where it can and through the
+// relay where it cannot, while with the switch off a call relay is the only way.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -15,7 +17,7 @@ import { join } from 'node:path';
 import { afterEach, test } from 'node:test';
 
 import './secure-memory';
-import { answeringHelpers, askHelpers, Call, connectionConfig, currentCall, describedSdp, fittingSdp, offersBeyond, OPEN_GRACE_MS, OPEN_WAIT_MS, type Rtc } from '../lib/call';
+import { answeringHelpers, askHelpers, Call, connectionConfig, currentCall, describedSdp, fittingSdp, GATHER_MS, offersBeyond, OPEN_GRACE_MS, OPEN_WAIT_MS, type Rtc } from '../lib/call';
 import { MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { shownLine } from '../lib/call-lines';
 import { callSignal, closeCall, endedLine, shownCall, startCall, type CallPlace } from '../lib/calls';
@@ -258,12 +260,18 @@ test('the reserve is asked only when none of the first answers', async () => {
   assert.deepEqual(await answeringHelpers(old, [[A], [P]], 30), [A]);
 });
 
-test('straight over the internet a call says every address, asks only helpers, and a call relay comes first', () => {
+test('straight over the internet a call says every address and asks only helpers; with a call relay too, every way, the relay beside them', () => {
   assert.deepEqual(connectionConfig(null, [A, P]), { iceServers: [{ urls: [A, P] }], iceTransportPolicy: 'all' });
   assert.deepEqual(connectionConfig(null, []), { iceServers: [], iceTransportPolicy: 'all' });
   assert.deepEqual(connectionConfig(null), { iceServers: [], iceTransportPolicy: 'all' });
   const turn = { urls: ['turn:relay.example.org:3478'], username: '1', credential: 'c' };
-  assert.deepEqual(connectionConfig(turn, [A]), { iceServers: [turn], iceTransportPolicy: 'relay' }, 'with a call relay, only through it');
+  // Straight first, the server if that fails (his word): WebRTC tries every way at once and keeps the
+  // call relay's only when no other works. With no helper answering, still every way.
+  assert.deepEqual(connectionConfig(turn, [A]), { iceServers: [{ urls: [A] }, turn], iceTransportPolicy: 'all' });
+  assert.deepEqual(connectionConfig(turn, []), { iceServers: [turn], iceTransportPolicy: 'all' });
+  // Not straight (Direct connections off, hidden chats, a chat through Tor): only through the call relay.
+  assert.deepEqual(connectionConfig(turn), { iceServers: [turn], iceTransportPolicy: 'relay' });
+  assert.deepEqual(connectionConfig(turn, null), { iceServers: [turn], iceTransportPolicy: 'relay' });
 
   const line = (address: string, typ: string, transport = 'udp') => `a=candidate:1 1 ${transport} 2122260223 ${address} 50000 typ ${typ}`;
   // An offer reaches beyond its own network when it says a call relay's address, or one of its own on the internet.
@@ -313,6 +321,32 @@ test('straight over the internet, the description goes soon after the first addr
   assert.ok(Date.now() - from >= OPEN_WAIT_MS - 100 && Date.now() - from < OPEN_WAIT_MS + 1500);
 });
 
+test('with a call relay too, the description waits for an address the relay gives, and goes soon after with every address', async () => {
+  const listeners = new Map<string, ((event?: unknown) => void)[]>();
+  const connection = {
+    iceGatheringState: 'gathering',
+    connectionState: 'new',
+    localDescription: { sdp: 'v=0\r\na=candidate:1 1 udp 1 192.168.1.20 50001 typ host\r\na=candidate:2 1 udp 1 203.0.113.9 50001 typ srflx\r\na=candidate:3 1 udp 1 198.51.100.5 50002 typ relay\r\n' },
+    addEventListener(type: string, listener: (event?: unknown) => void) {
+      listeners.set(type, [...(listeners.get(type) ?? []), listener]);
+    },
+  } as unknown as Parameters<typeof describedSdp>[0];
+  const fire = (candidate: string) => listeners.get('icecandidate')!.forEach((l) => l({ candidate: { candidate } }));
+  const began = Date.now();
+  let sent = '';
+  const sdp = describedSdp(connection, false, true, true).then((given) => (sent = given));
+  // An address a helper told is not enough here: without the call relay's, the call could not go
+  // through it where it cannot go straight.
+  fire('candidate:2 1 udp 1 203.0.113.9 50001 typ srflx');
+  await settle(OPEN_GRACE_MS + 200);
+  assert.equal(sent, '', 'the call relay is waited for');
+  fire('candidate:3 1 udp 1 198.51.100.5 50002 typ relay');
+  await sdp;
+  for (const typ of ['host', 'srflx', 'relay']) assert.match(sent, new RegExp(`typ ${typ}`), typ);
+  const took = Date.now() - began;
+  assert.ok(took >= 2 * OPEN_GRACE_MS + 150 && took < GATHER_MS, `${took} ms`);
+});
+
 function ours() {
   const sent: CallSignal[] = [];
   return { sent, events: { onChange: () => undefined, send: async (signal: CallSignal) => void sent.push(signal) } };
@@ -353,18 +387,33 @@ test('a call with no call relay and Direct connections on asks the first helpers
   }
 });
 
-test('a call that connected, one through a call relay, and one on the same network only do not say they failed directly', async () => {
+test('a call that connected, one with a call relay, and one on the same network only do not say they failed directly', async () => {
   const turn = { urls: ['turn:relay.example.org:3478'], username: '1', credential: 'c' };
-  // Through a call relay, whatever helpers were given: they are not asked, and the call is not direct.
+  // Through a call relay only, with Direct connections off: no helper is asked, and the call is not direct.
   const relayed = helperRtc([A]);
-  const call = Call.start({ peer: 'contact:a', video: false, relay: turn, open: [[A]], rtc: relayed.rtc, events: ours().events });
+  const call = Call.start({ peer: 'contact:a', video: false, relay: turn, rtc: relayed.rtc, events: ours().events });
   assert.equal(call.direct, false);
   await settle();
   assert.deepEqual(relayed.asked, [turn.urls]);
+  assert.equal(relayed.connections[0].config.iceTransportPolicy, 'relay');
   relayed.connections[0].connectionState = 'failed';
   relayed.connections[0].emit('connectionstatechange');
   assert.equal(call.failedDirect, false);
   assert.equal(endedLine(call), 'Voice call, could not connect');
+
+  // With a call relay and Direct connections on: the first helpers are asked, the call goes every
+  // way, the relay beside them; it is not straight only, so one that could not connect says no more.
+  const both = helperRtc([A]);
+  const either = Call.start({ peer: 'contact:a', video: false, relay: turn, open: [[A], [P]], rtc: both.rtc, events: ours().events });
+  assert.equal(either.direct, false);
+  assert.equal(either.throughRelay, true);
+  await settle(80);
+  assert.deepEqual(both.asked, [[A], [A, ...turn.urls]], 'never the reserve');
+  assert.deepEqual(both.connections[1].config, { iceServers: [{ urls: [A] }, turn], iceTransportPolicy: 'all' });
+  both.connections[1].connectionState = 'failed';
+  both.connections[1].emit('connectionstatechange');
+  assert.equal(either.failedDirect, false);
+  assert.equal(endedLine(either), 'Voice call, could not connect');
 
   // On the same network only, as with the switch off: no helper is asked.
   const near = helperRtc([A]);
@@ -441,16 +490,35 @@ test('a call that rings here with no call relay is answered straight over the in
     closeCall(call);
   }
 
-  // With a call relay here, the call goes through it whatever the switch says: their phone does not see this one's address.
+  // With a call relay here and Direct connections on: every way, the relay beside the helpers, so
+  // the call goes straight where it can and through the relay where it cannot.
   const turn = { urls: ['turn:relay.example.org:3478'], username: '1', credential: 'c' };
-  const relayed = helperRtc([A]);
+  const both = helperRtc([A]);
   const withRelay = place({ callRelay: async () => turn, direct: async () => [[A]] });
-  await callSignal(withRelay.calls, 'contact:a', offer(BEYOND, '3333333333333333'), false, relayed.rtc);
-  const through = shownCall()!.call;
-  assert.equal(through.direct, false);
-  assert.equal(through.throughRelay, true);
-  await through.answer();
-  assert.deepEqual(relayed.asked, [turn.urls]);
+  await callSignal(withRelay.calls, 'contact:a', offer(BEYOND, '3333333333333333'), false, both.rtc);
+  const either = shownCall()!.call;
+  assert.equal(either.direct, false, 'not straight only: the relay is there too');
+  assert.equal(either.throughRelay, true);
+  await either.answer();
+  assert.deepEqual(both.asked, [[A], [A, ...turn.urls]]);
+  assert.deepEqual(both.connections[1].config, { iceServers: [{ urls: [A] }, turn], iceTransportPolicy: 'all' });
+  assert.deepEqual(both.connections[1].remote, { type: 'offer', sdp: BEYOND }, 'their internet address is taken too');
+  either.hangUp();
+  closeCall(either);
+
+  // With the switch off, or a place with no direct calls (hidden chats): only through the call relay,
+  // so their phone does not see this one's address.
+  for (const [i, off] of [place({ callRelay: async () => turn, direct: async () => null }), place({ callRelay: async () => turn })].entries()) {
+    const relayed = helperRtc([A]);
+    await callSignal(off.calls, 'contact:a', offer(BEYOND, `${5 + i}`.repeat(16)), false, relayed.rtc);
+    const through = shownCall()!.call;
+    assert.equal(through.throughRelay, true);
+    await through.answer();
+    assert.deepEqual(relayed.asked, [turn.urls]);
+    assert.equal(relayed.connections[0].config.iceTransportPolicy, 'relay');
+    through.hangUp();
+    closeCall(through);
+  }
 });
 
 test('a call that could not be answered back does not ring: it is a missed call, and the chat is told why', async () => {
@@ -474,17 +542,20 @@ test('a call that could not be answered back does not ring: it is a missed call,
   }
 });
 
-test('startCall takes the helpers only where there is no call relay', async () => {
+test('startCall takes the helpers with a call relay too: straight where it can, through the relay where it cannot', async () => {
   const turn = { urls: ['turn:relay.example.org:3478'], username: '1', credential: 'c' };
   const open = helperRtc([A]);
   const direct = startCall(place().calls, 'contact:a', false, null, open.rtc, [[A]]);
   assert.equal(direct.direct, true);
   direct.hangUp();
   closeCall(direct);
-  const relayed = startCall(place().calls, 'contact:a', false, turn, open.rtc, [[A]]);
-  assert.equal(relayed.direct, false);
-  relayed.hangUp();
-  closeCall(relayed);
+  const both = helperRtc([A]);
+  const either = startCall(place().calls, 'contact:a', false, turn, both.rtc, [[A]]);
+  assert.equal(either.direct, false);
+  await settle(80);
+  assert.deepEqual(both.connections.at(-1)!.config, { iceServers: [{ urls: [A] }, turn], iceTransportPolicy: 'all' });
+  either.hangUp();
+  closeCall(either);
   const near = startCall(place().calls, 'contact:a', false, null, open.rtc);
   assert.equal(near.direct, false);
 });

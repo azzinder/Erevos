@@ -1454,8 +1454,10 @@ computer non ce l’hanno.
   nessun server tra voi, crittografati come gli altri. Questi portano la chiave che crittografa la chiamata stessa, così
   nessuno nel mezzo può ascoltare, nemmeno il server per le chiamate qui sotto.
 - **Tramite il server per le chiamate:** un server configurato con il kit in \`deploy/relay\` ha accanto un server per
-  le chiamate. La chiamata passa da lì, così nessuno dei due telefoni conosce l’indirizzo IP dell’altro. Via Wi-Fi o
-  dati mobili, ovunque.
+  le chiamate. Con **ANONYMOUS**, la chiamata passa da lì, così il telefono del tuo contatto non conosce il tuo
+  indirizzo IP. Con **SPEED**, la chiamata va diretta da telefono a telefono dove può, nel modo più veloce, e tramite il
+  server per le chiamate dove non può; il telefono del tuo contatto vede il tuo indirizzo in entrambi i casi. Via Wi-Fi
+  o dati mobili, ovunque.
 - **Senza un server per le chiamate** (un server sul tuo computer, per esempio, o nessun server): con **SPEED**, la
   chiamata va diretta da telefono a telefono via internet, senza chiedere prima. Ogni telefono vede allora l’indirizzo
   internet dell’altro, e un server di supporto dice a ciascuno il proprio. Alcune reti, soprattutto quelle mobili, non
@@ -1784,7 +1786,7 @@ Ogni strada è crittografata end-to-end: nessun server e nessun telefono nel mez
 Erevos non ha bisogno dei server di chi lo fa. Quelli di LPHL sono solo ciò che propone per primi: per ognuna delle cose qui sotto puoi usare il tuo, dall’app, senza installare altro sul telefono.
 
 - **Messaggi, foto e file:** aspettano, cifrati end-to-end, su un piccolo server. Per usare il tuo, o quello del tuo gruppo: in **Nuova chat**, **Non ho un invito**, poi **Ho un server mio**, e scrivi il suo indirizzo e il codice che ti hanno dato. Più tardi, quei due sono l’indirizzo del server e il token sotto **Per utenti esperti**.
-- **Chiamate:** niente altro da impostare. Il server delle chiamate arriva con il tuo server: con un server tuo anche le chiamate passano dal tuo server.
+- **Chiamate:** niente altro da impostare. Il server delle chiamate arriva con il tuo server: con un server tuo una chiamata passa anche dal tuo server, dove non va diretta da telefono a telefono (vedi [Quanto sei visibile?](#direct)).
 - **Backup:** in **Backup**, **Anche su un server** manda ogni backup, cifrato, in una cartella su un server che scegli tu, come il tuo Nextcloud. Vedi [Backup](#backup).
 - [~] **La Raccolta:** nelle sue impostazioni, **Anche su un server WebDAV** tiene i suoi file cifrati su un server che scegli tu. Vedi [Raccolta](#collection).
 - **Modelli vocali e di traduzione:** dove Erevos chiede di scaricarli, **Scarica da un altro server…** prende una tua cartella web con gli stessi file. Erevos controlla ogni file e rifiuta quello che è stato modificato.
@@ -2040,8 +2042,10 @@ cambia**, sotto, apre la loro schermata, che dice ciò che dice questa sezione. 
 con tutte e tre.
 
 - **SPEED:** i server e i tuoi contatti vedono il tuo indirizzo. Erevos non chiede prima di ciò che segue: lo fa subito.
-  Le chiamate e le videochiamate vanno dirette da telefono a telefono, nel modo più veloce, anche quando non c’è nessun
-  server tra voi due: la chiamata si avvia allora tramite Nostr.
+  Le chiamate e le videochiamate con un contatto vanno dirette da telefono a telefono dove possono, nel modo più veloce,
+  e tramite un server per le chiamate dove non possono; se non c’è nessun server tra voi due, la chiamata si avvia
+  tramite Nostr. Le chiamate di gruppo non vanno dirette su internet: passano dal server per le chiamate, o tra telefoni
+  sulla stessa rete Wi-Fi.
 - **ANONYMOUS:** lo vede solo il server, mai i tuoi contatti. Prima di ciascuno dei casi che seguono, Erevos dice una
   volta chi vedrebbe l’indirizzo, e scegli se andare avanti (vedi [Chi vede il tuo indirizzo internet](#ip)). Le
   chiamate passano solo da un server delle chiamate, che nasconde l’indirizzo di ogni telefono all’altro, o tra due
@@ -2059,8 +2063,8 @@ con tutte e tre.
 
 - I server che portano ciò che invii e le tue chiamate: il tuo, quello del tuo contatto, e uno a cui un contatto ti
   invita.
-- Il telefono del tuo contatto, in una chiamata che va diretta da telefono a telefono, e i server di supporto, che
-  dicono a ogni telefono il proprio indirizzo.
+- Il telefono del tuo contatto, in una chiamata, e i server di supporto, che dicono a ogni telefono il proprio
+  indirizzo.
 - Un server scelto dal tuo contatto per un file.
 - I server Nostr pubblici, quando due telefoni si abbinano con un codice di 8 cifre.
 - [~] Una stazione radio o un canale TV della Raccolta, mentre va in onda.
@@ -2071,8 +2075,6 @@ Nessuno di essi vede ciò che scrivi o dici: resta crittografato end-to-end.
 **Cosa non cambia nessuna delle tre:**
 
 - Le chat nascoste, e le chat impostate su **Tramite Tor**, non si collegano mai direttamente e continuano a chiedere.
-- Con un tuo server delle chiamate, le tue chiamate continuano a passare da lì, così l’altro telefono non vede il tuo
-  indirizzo.
 - Erevos continua a chiedere prima di aprire un link web o di mostrare l’anteprima di un link, e prima di portare i
   messaggi di un telefono accanto a questo da un server che questo telefono non usa.
 - Tor spento nella sua schermata lascia lo spazio in **ANONYMOUS**: niente si collega direttamente finché non scegli di
@@ -2080,9 +2082,10 @@ Nessuno di essi vede ciò che scrivi o dici: resta crittografato end-to-end.
 
 **Da sapere:**
 
-- **Una chiamata diretta non sempre si collega:** alcune reti, soprattutto quelle mobili, non lasciano entrare nulla da
-  fuori. La schermata della chiamata dice allora **Impossibile collegare direttamente la chiamata**, e la chat conserva
-  quella riga. Tramite un server delle chiamate, una chiamata si collega da qualsiasi rete.
+- **Una chiamata non sempre può andare diretta:** alcune reti, soprattutto quelle mobili, non lasciano entrare nulla da
+  fuori. Passa allora da un server per le chiamate, tramite il quale una chiamata si collega da qualsiasi rete. Quando
+  nessuno dei due ha un server per le chiamate, la schermata della chiamata dice **Impossibile collegare direttamente la
+  chiamata**, e la chat conserva quella riga.
 - **Un Erevos più vecchio** squilla per una chiamata così, e poi non riesce a collegarsi.
 - **Un telefono senza server** sente una chiamata così solo finché Erevos legge su Nostr, cosa che fa su Android: se lo
   lasci dormire per risparmiare batteria, può perderne una.
@@ -2113,9 +2116,9 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
 
 - **Le chiamate:** non passano mai da Tor, quindi **INVISIBLE** non ne ha. Il server delle chiamate, il tuo o quello del
   tuo contatto, vede l’indirizzo, ma non quello che si dice. Una chiamata tra telefoni vicini sulla stessa rete resta su
-  quella rete. Senza un server per le chiamate tra voi e con **SPEED** scelto, la chiamata va diretta da telefono a
-  telefono: il telefono del tuo contatto vede l’indirizzo, e così pure i server di supporto che dicono a ogni telefono
-  il proprio.
+  quella rete. Con **SPEED** scelto, la chiamata va diretta da telefono a telefono dove può, e tramite il server delle
+  chiamate dove non può: il telefono del tuo contatto vede l’indirizzo in entrambi i casi, e così pure i server di
+  supporto che dicono a ogni telefono il proprio.
 
 - **Un file su un server scelto dal tuo contatto:** il server vede l’indirizzo quando il tuo telefono scarica il file.
   Tor lo nasconde.
@@ -4737,7 +4740,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Impronta o volto (Android)** | Disattivato finché non lo attivi. Apre solo lo spazio della prima password: la sua chiave è sigillata nell’Android Keystore, utilizzabile solo subito dopo un controllo forte dell’impronta o del volto, e scartata quando questi cambiano. Qualcuno che ti trattiene può usare il tuo dito. | |
 | **Notifiche (Android)** | In background: «Erevos – Ready for calls and messages» (non sulla schermata di blocco), «Incoming call» o «Incoming video call» – «Open Erevos to answer», e «New message» o quanti ne sono arrivati; quando Android o la password lo fermano, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un promemoria, «Reminder» o quanti; una nuova versione, «Erevos X is out». Mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |
 | **Widget{~ e Telefono} (Android)** | Il widget, una volta aggiunto, mostra quant{~e chiamate perse, SMS non letti e |i }nuovi messaggi ci sono, mai chi o cosa.{~ Il Telefono si apre senza password solo se lo permetti: allora chiunque abbia in mano il telefono sbloccato vede le chiamate e i preferiti che Android conserva, con i soli nomi dei contatti del telefono.} | |
-| **Chiamate** | Crittografate end-to-end (DTLS-SRTP, con la chiave inviata nella chat crittografata). Tramite il server delle chiamate, nessuno dei due telefoni vede l’indirizzo IP dell’altro; il server che lo fa funzionare li vede entrambi, quando e per quanto tempo, e quanto passa. Senza un server delle chiamate, ogni telefono vede l’indirizzo dell’altro: sulla stessa rete Wi-Fi, o via internet con **SPEED**, e allora lo vedono anche i server di supporto. Con **INVISIBLE** non ci sono chiamate. I server vedono quando una chiamata inizia a squillare. | Squillo nella web app da chiusa. Chiamate via Bluetooth (lì funziona il walkie-talkie). |
+| **Chiamate** | Crittografate end-to-end (DTLS-SRTP, con la chiave inviata nella chat crittografata). Con **ANONYMOUS**, tramite il server delle chiamate: il telefono del tuo contatto non vede il tuo indirizzo IP; il server che lo fa funzionare vede quello di entrambi i telefoni, quando e per quanto tempo, e quanto passa. Con **SPEED**, diretta da telefono a telefono dove può, altrimenti tramite il server delle chiamate: il telefono del tuo contatto vede il tuo indirizzo in entrambi i casi, e così anche i server di supporto. Sulla stessa rete Wi-Fi, ogni telefono vede l’indirizzo dell’altro. Con **INVISIBLE** non ci sono chiamate. I server vedono quando una chiamata inizia a squillare. | Squillo nella web app da chiusa. Chiamate via Bluetooth (lì funziona il walkie-talkie). |
 | **Chat di gruppo** | Crittografate end-to-end con MLS (RFC 9420); i membri rimossi non leggono più nulla dopo. La copia di ogni membro è sigillata a parte, quindi i server non possono capire chi fa parte di un gruppo; ogni server vede comunque un messaggio arrivare a una coda. I membri vedono le chiavi e gli indirizzi dei server gli uni degli altri. Foto, file e messaggi vocali passano dall’archivio di file del server di chi invia, come verso un contatto, e restano lì 14 giorni. Non sottoposte ad audit. | |
 | **Chiamate di gruppo** | Voce e video, crittografati end-to-end tra ogni coppia di telefoni nella chiamata (DTLS-SRTP, con le chiavi inviate nella crittografia del gruppo). Tramite il server delle chiamate, nessun telefono vede l’indirizzo IP di un altro; il server che lo fa funzionare vede quello di ogni telefono, quando e per quanto tempo, e quanto passa. Ogni membro, nella chiamata o no, sa chi ne fa parte. I server vedono quando ne inizia una. | Video con più di quattro persone, tramite un server; più di otto persone. |
 | **Gruppi pubblici** | Come le chat di gruppo, e chiunque abbia il link può chiedere di entrare e leggere da quando viene fatto entrare. Le richieste arrivano al server del proprietario sigillate per il telefono del proprietario: il server vede quante e quando, non da chi. I membri vedono gli uni degli altri i nomi scelti, le chiavi create solo per quel gruppo, gli indirizzi dei server e gli ID mittente delle code. Non sottoposti ad audit. | |

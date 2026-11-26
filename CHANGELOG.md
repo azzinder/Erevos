@@ -31,6 +31,10 @@ and 0.1.15 never came out.
   Nextcloud's only when those do not answer; on the screen of the three, servers of your own or none, and **Check
   now**. Where a network lets nothing in from outside, the call says **The call could not connect directly**, and what
   helps. With ANONYMOUS such a call does not ring: the chat shows it as missed, and why.
+- **SPEED calls with a call server** (#73): a call or video call with a contact goes straight from phone to phone where
+  it can, the fastest way, and through the call server where it cannot, with no wait between: both ways are tried at
+  once. The contact's phone sees your address either way. Group calls, hidden chats and chats set to **Through Tor**
+  still never go straight over the internet.
 - **New chat says what works with no server** (#72): **Messages only, for now** (texts, photos, files and voice
   messages) or, with SPEED, **Messages and calls, for now**, in place of **Texts only, for now**.
 - **Who came in with your invite** (#72): when a contact takes the invite to your server that your phone sent them by
@@ -53,6 +57,12 @@ and 0.1.15 never came out.
 - Calls have a third way beside the call server and the same network: straight over the internet, with the helper
   servers asked in groups, the reserve only when the first group is silent for 1.2 seconds (`lib/call.ts`). Their
   signals go encrypted through Nostr when no server is between the two phones (`lib/space-calls.ts`, `lib/calls.ts`).
+- With SPEED and a call relay, a call says the relay's addresses beside its own and those the helper servers tell
+  (`iceTransportPolicy` `all`, the helper servers listed before the relay), so WebRTC keeps the straight way where it
+  works and the relay where it does not; its description goes soon after the first address the relay gives, as through
+  a relay only, and a call that never connects keeps the plain "could not connect" line (`lib/call.ts`
+  `connectionConfig`, `describedSdp`; `lib/calls.ts`; `app/chat.tsx`). With SPEED off, the call relay stays the only
+  way.
 - LPHL's helper server is its call server, on the port that server listens on there, 3480 (`lib/servers.ts`).
 - A contact keeps the id of the invite sent them by itself, when their phone came in with it and when that place was
   taken back; the server is asked about it once, only while they read on it (`lib/invite-place.ts`, `app/chat.tsx`).

@@ -3785,9 +3785,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }
       }
     }
-    // No call relay: straight between the two phones. With Direct connections on, over the internet
-    // too, with nothing asked; else only on the same Wi-Fi, asked first.
-    const open = relay ? null : helpers;
+    // With Direct connections on (SPEED): straight between the two phones over the internet, with
+    // nothing asked, and through the call relay too where it cannot go straight. With neither, only
+    // on the same Wi-Fi, asked first.
+    const open = helpers;
     if (!relay && !open && !(await callDirectly())) return;
     try {
       beginCall(callPlace, peer, video, relay, rtc, open);
