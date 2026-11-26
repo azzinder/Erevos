@@ -108,6 +108,12 @@ export const parts: Record<string, string> = {
   'the downloads folder': 'le dossier Téléchargements',
   'Not saved: the share sheet was closed.': 'Non enregistré : le menu de partage a été fermé.',
   'That folder is not there any more. Choose it again.': 'Ce dossier n’existe plus. Choisis-le de nouveau.',
+  // A backup that a folder did not take, in plain words (lib/backup-place.ts folderTrouble).
+  'The app this folder belongs to made no file in it. Choose a folder on the phone instead, or try again later.':
+    'L’appli à laquelle ce dossier appartient n’y a créé aucun fichier. Choisis plutôt un dossier sur le téléphone, ou réessaie plus tard.',
+  'Erevos may no longer write in this folder. Choose it again.': 'Erevos n’a peut-être plus le droit d’écrire dans ce dossier. Choisis-le de nouveau.',
+  'There is no room left in this folder. Make room, or choose another one.': 'Il n’y a plus de place dans ce dossier. Fais de la place, ou choisis-en un autre.',
+  'The backup could not be written in this folder: {reason}': 'La sauvegarde n’a pas pu être enregistrée dans ce dossier : {reason}',
   'Ready to save.': 'Prêt à enregistrer.',
   Original: 'Original',
   'Original: the photo as it was, full size, with only its place, phone and time taken out.':

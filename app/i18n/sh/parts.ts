@@ -108,6 +108,12 @@ export const parts: Record<string, string> = {
   'the downloads folder': 'folderu za preuzimanja',
   'Not saved: the share sheet was closed.': 'Nije sačuvano: prozor za dijeljenje je zatvoren.',
   'That folder is not there any more. Choose it again.': 'Taj folder više ne postoji. Ponovo ga izaberite.',
+  // A backup that a folder did not take, in plain words (lib/backup-place.ts folderTrouble).
+  'The app this folder belongs to made no file in it. Choose a folder on the phone instead, or try again later.':
+    'Aplikacija kojoj ovaj folder pripada nije napravila datoteku u njemu. Umjesto toga izaberite folder na telefonu ili pokušajte ponovo kasnije.',
+  'Erevos may no longer write in this folder. Choose it again.': 'Erevos možda više ne može pisati u ovaj folder. Ponovo ga izaberite.',
+  'There is no room left in this folder. Make room, or choose another one.': 'U ovom folderu nema više prostora. Oslobodite prostor ili izaberite drugi.',
+  'The backup could not be written in this folder: {reason}': 'Rezervna kopija nije mogla biti sačuvana u ovom folderu: {reason}',
   'Ready to save.': 'Spremno za čuvanje.',
   Original: 'Original',
   'Original: the photo as it was, full size, with only its place, phone and time taken out.':

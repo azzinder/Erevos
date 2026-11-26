@@ -108,6 +108,12 @@ export const parts: Record<string, string> = {
   'the downloads folder': 'φάκελο λήψεων',
   'Not saved: the share sheet was closed.': 'Δεν αποθηκεύτηκε: το παράθυρο κοινοποίησης έκλεισε.',
   'That folder is not there any more. Choose it again.': 'Αυτός ο φάκελος δεν υπάρχει πια. Διάλεξέ τον ξανά.',
+  // A backup that a folder did not take, in plain words (lib/backup-place.ts folderTrouble).
+  'The app this folder belongs to made no file in it. Choose a folder on the phone instead, or try again later.':
+    'Η εφαρμογή στην οποία ανήκει αυτός ο φάκελος δεν έφτιαξε το αρχείο. Διάλεξε καλύτερα έναν φάκελο στο τηλέφωνο, ή δοκίμασε ξανά αργότερα.',
+  'Erevos may no longer write in this folder. Choose it again.': 'Το Erevos δεν έχει πια άδεια να γράφει σε αυτόν τον φάκελο. Διάλεξέ τον ξανά.',
+  'There is no room left in this folder. Make room, or choose another one.': 'Δεν έχει μείνει χώρος σε αυτόν τον φάκελο. Κάνε χώρο ή διάλεξε άλλον.',
+  'The backup could not be written in this folder: {reason}': 'Το αντίγραφο δεν γράφτηκε σε αυτόν τον φάκελο: {reason}',
   'Ready to save.': 'Έτοιμο για αποθήκευση.',
   Original: 'Αρχική',
   'Original: the photo as it was, full size, with only its place, phone and time taken out.':

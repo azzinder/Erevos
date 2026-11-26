@@ -41,7 +41,7 @@ const folderWrite = async (folder: string, name: string, bytes: Uint8Array): Pro
   if (!there) throw new Error('That folder is not there any more.');
   let free = name;
   for (let n = 1; there.has(free); n++) free = `${name} (${n})`;
-  if (writes.failAt > 0 && --writes.failAt === 0) throw new Error('No room left.');
+  if (writes.failAt > 0 && --writes.failAt === 0) throw new Error(writes.said);
   there.set(free, bytes.slice());
   return { name: free, uri: uriOf(folder, free) };
 };

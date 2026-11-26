@@ -1696,6 +1696,23 @@ t('into a folder on the phone: the parts as they are made, then the backup; the 
     writes.failAt = 0;
     assert.deepEqual([...folder.keys()].sort(), before, `at write ${failAt}`);
   }
+  // What Android says when a folder takes no file is said in plain words, with what to do (#75):
+  // never Expo's function or Java's error. None of its files stay either.
+  const rejected = (cause: string) => `Call to function 'ErevosDevice.folderWrite' has been rejected.\n→ Caused by: ${cause}`;
+  for (const [said, plain] of [
+    [rejected('java.lang.IllegalStateException: The folder made no file.'), /^The app this folder belongs to made no file in it\. Choose a folder on the phone instead, or try again later\.$/],
+    [rejected('java.lang.SecurityException: Permission Denial: writing com.android.externalstorage.ExternalStorageProvider uri content://x'), /^Erevos may no longer write in this folder\. Choose it again\.$/],
+    [rejected('java.io.IOException: write failed: ENOSPC (No space left on device)'), /^There is no room left in this folder\. Make room, or choose another one\.$/],
+    [rejected('java.io.FileNotFoundException: Missing file for primary:Backups at /storage/emulated/0/Backups'), /^That folder is not there any more\. Choose it again\.$/],
+    [rejected('java.lang.IllegalStateException: The file could not be written.'), /^The backup could not be written in this folder: The file could not be written\.$/],
+  ] as const) {
+    writes.failAt = 1;
+    writes.said = said;
+    await assert.rejects(writeBackup(uri, (parts) => makeBackup(key, { parts }), day(5), 3), (error: Error) => plain.test(error.message));
+    writes.failAt = 0;
+    assert.deepEqual([...folder.keys()].sort(), before, said);
+  }
+  writes.said = 'No room left.';
   // A folder gone says so.
   await assert.rejects(writeBackup('content://gone', (parts) => makeBackup(key, { parts }), day(6), 3), /not there/);
   // All through the folder functions, off the thread the screen answers on (Folders.kt): never a

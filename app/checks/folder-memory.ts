@@ -4,9 +4,10 @@
 
 // expo-file-system's folders, as lib/backup-place.ts uses them, for checks under Node: folders by
 // their uri, each with its files' bytes, in memory. A file made with a name taken gets another, as
-// Android's folders give it; `writes.failAt` makes that write from now fail, as a full memory card.
+// Android's folders give it; `writes.failAt` makes that write from now fail, as a full memory card,
+// with `writes.said` as what Android says.
 export const folders = new Map<string, Map<string, Uint8Array>>();
-export const writes = { failAt: 0 };
+export const writes = { failAt: 0, said: 'No room left.' };
 // How often a folder was listed or written in through these, as a build before the folder functions
 // of modules/erevos-device does (checks/device-memory.ts).
 export const looks = { count: 0 };
@@ -47,7 +48,7 @@ export class File {
   }
 
   writeSync(bytes: Uint8Array): void {
-    if (writes.failAt > 0 && --writes.failAt === 0) throw new Error('No room left.');
+    if (writes.failAt > 0 && --writes.failAt === 0) throw new Error(writes.said);
     inFolder(this.folder).set(this.name, bytes.slice());
   }
 

@@ -50,6 +50,9 @@ and 0.1.15 never came out.
   straight, while Erevos is open: the Nostr servers see that device's internet address, as your server does, never who
   wrote to whom. With everything through Tor, or **Nostr through Tor** on, as a phone's backup may bring them, Erevos
   reaches no Nostr server there, and the **Nostr** screen says so.
+- **A backup that a folder does not take says why** (#75): **Make a backup** and the automatic backups now say in
+  plain words why Android did not let the backup into the folder, and what to do (choose it again, make room, or
+  choose a folder on the phone), in place of Android's own error, which named a function of the app.
 
 ### Under the hood
 
@@ -98,6 +101,9 @@ and 0.1.15 never came out.
   them into text. `canNostr` says Nostr works there, `canNostrTor` whether Tor reaches it (Android). The Nostr setting
   shows everywhere (`lib/settings.ts`), its Tor switch only where there is Tor, or while it is on (`app/nostr.tsx`). A
   linked device still reads nothing there. The check runs it on the WebAssembly core as the web app sets it up.
+- What Android says when a file cannot be made or written in a backup's folder is put in plain words by
+  `folderTrouble` (`lib/backup-place.ts`), from the error under Expo's own line; the checks fail a write the ways
+  Android does.
 
 ## 3.2.0-rc.3 (2026-11-25)
 
