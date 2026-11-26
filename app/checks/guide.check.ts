@@ -16,7 +16,7 @@ import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
 import { SH } from '../i18n/sh/index';
-import { blockTexts, editionSource, parseGuide, parseInline, searchGuide, type GuideBlock } from '../lib/guide';
+import { blockTexts, editionSource, parseGuide, parseInline, searchGuide, sectionAt, type GuideBlock } from '../lib/guide';
 import { LANGS } from '../lib/i18n';
 
 const WORDS: Record<string, Record<string, string>> = { de: DE, el: EL, es: ES, fr: FR, it: IT, pt: PT, sh: SH };
@@ -85,6 +85,17 @@ test('the guide format reads sections, blocks and lines that continue', () => {
   ]);
 });
 
+test('a heading with an id of its own shows without it, and a link to it opens its section', () => {
+  const sections = parseGuide('## First {#first}\n\nText.\n\n## Second {#second}\n\n### Inside {#inside}\n\nMore.');
+  assert.deepEqual<GuideBlock>(sections[1].blocks[0], { kind: 'heading', text: 'Inside', id: 'inside' });
+  assert.deepEqual(['first', 'second', 'inside', 'nowhere'].map((id) => sectionAt(sections, id)), [0, 1, 1, -1]);
+  for (const lang of GUIDE_LANGS) {
+    for (const section of guideFor(lang, 'plus')) {
+      for (const text of section.blocks.flatMap(blockTexts)) assert.doesNotMatch(text, /\{#/, `${lang} ${section.id}`);
+    }
+  }
+});
+
 /** The shape of a block, without its words: the same in every language. */
 function shape(block: GuideBlock): string {
   switch (block.kind) {
@@ -94,6 +105,8 @@ function shape(block: GuideBlock): string {
       return `steps:${block.items.length}`;
     case 'table':
       return `table:${block.head.length}x${block.rows.length}:${block.rows.map((r) => r.length).join(',')}`;
+    case 'heading':
+      return block.id ? `heading#${block.id}` : 'heading';
     default:
       return block.kind;
   }
@@ -166,7 +179,8 @@ test('the marks of the editions: Erevos+ reads the text without them, the plain 
 });
 
 test('the guide links only to sections that exist, the same ones in every language, and leaves no mark unread', () => {
-  const ids = new Set(en.map((s) => s.id));
+  // Sections, and the headings inside them that have an id of their own ("### … {#id}").
+  const ids = new Set([...en.map((s) => s.id), ...en.flatMap((s) => s.blocks.flatMap((b) => (b.kind === 'heading' && b.id ? [b.id] : [])))]);
   const unread: string[] = [];
   for (const [lang, sections] of all) {
     for (const section of sections) {
@@ -233,7 +247,7 @@ test("Erevos Lite's guide says nothing of what it has not: no link to a section 
   for (const lang of GUIDE_LANGS) {
     const sections = guideFor(lang, 'lite');
     // Sections, and the headings inside them that have an id of their own ("### … {#id}").
-    const ids = new Set([...sections.map((s) => s.id), ...sections.flatMap((s) => s.blocks.flatMap((b) => (b.kind === 'heading' ? [/\{#([a-z0-9-]+)\}$/.exec(b.text)?.[1] ?? ''] : [])))]);
+    const ids = new Set([...sections.map((s) => s.id), ...sections.flatMap((s) => s.blocks.flatMap((b) => (b.kind === 'heading' && b.id ? [b.id] : [])))]);
     for (const gone of ['sms', 'phone', 'collection', 'modules']) assert.ok(!ids.has(gone), `${lang} ${gone}`);
     // The Collection and the Modules as this language's guide titles them.
     const titled = (id: string) => new RegExp(`^##\\s+(.+?)\\s*\\{#${id}\\}`, 'm').exec(GUIDE_SOURCES[lang])![1];

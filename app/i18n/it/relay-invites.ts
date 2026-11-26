@@ -5,7 +5,7 @@
 // The Italian of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
 // and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
-// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx, lib/call-lines.ts)
 // (i18n/it/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this server lets in only so many phones by invite.': 'Nessun invito per ora: puoi averne al massimo 5 in attesa insieme e farne 10 al giorno, e questo server fa entrare solo un numero limitato di telefoni su invito.',
@@ -26,6 +26,8 @@ export const relayInvites: Record<string, string> = {
   'Its QR code no longer lets a phone in.': 'Il suo codice QR non farà più entrare nessun telefono.',
   'Taken back.': 'Ritirato.',
   'That invite was gone already.': 'Quell’invito non c’era già più.',
+  '{who} came onto your server with your invite.': '{who} ha raggiunto il tuo server con il tuo invito.',
+  'You took back the place {who} had on your server.': 'Hai ritirato il posto di {who} sul tuo server.',
   'Who is it for?': 'Per chi è?',
   'Maria': 'Maria',
   'Make the invite': 'Crea l’invito',

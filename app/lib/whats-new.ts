@@ -25,6 +25,8 @@ export const NEXT: Changes = {
   forYou: [
     mark("**Direct connections**: one switch at the top of **Settings**, on unless you turn it off, for everything that shows your phone's internet address to someone else. On, Erevos no longer asks before those things, and calls work with a contact even with no server between you two, straight from phone to phone. Off, it asks as before. It never changes Tor, and while Tor is on it stays off. See [Direct connections](#direct)."),
     mark("**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on."),
+    mark("**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line."),
+    mark("**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works."),
   ],
   underTheHood: [
     mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),

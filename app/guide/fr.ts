@@ -799,7 +799,9 @@ ce serveur, avec un jeton propre à ce téléphone, si bien qu’aucun jeton n�
   masquées n’acceptent pas d’invitations.
 - **Tes invitations :** listées sous le bouton, en attente ou utilisées. **Reprendre** reprend une invitation encore en
   attente, ou coupe aussitôt le téléphone qui l’a prise, lui seul : les téléphones qu’il a invités à son tour gardent le
-  leur.
+  leur. Celle que ton téléphone a envoyée tout seul à un contact sans serveur (voir [Sans aucun serveur](#nostr-only)) en
+  fait partie : une fois que son téléphone a rejoint le serveur avec elle, la discussion avec ce contact le dit,
+  seulement sur ton téléphone, avec **Reprendre** sous cette ligne tant qu’il est là.
 - **Le leur reste :** un téléphone que tu as invité garde sa ligne sur le serveur même quand la tienne disparaît, parce
   que le téléphone qui t’a invité l’a reprise, que le compte avec lequel tu t’es connecté ne peut plus utiliser le
   serveur, ou que son opérateur l’a retirée, et de même les téléphones qu’il a invités. Seules tes invitations encore en
@@ -2112,9 +2114,10 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
   une invitation à celui-ci, une fois, dans la discussion, que vous vous soyez rencontrés par Nostr ou à proximité, par
   Bluetooth, Wi-Fi ou un code QR. Ton téléphone la prend tout seul (avec les **Connexions directes** désactivées, il
   demande d’abord, car son serveur voit alors ton adresse internet), et à partir de là les groupes fonctionnent aussi, et
-  les appels aboutissent depuis n’importe quel réseau, avec tout le monde. Elle compte comme l’une de ses invitations.
-  Quelqu’un dont tu n’as pas accepté la demande de message ne choisit aucun serveur pour toi : son invitation attend que
-  tu l’acceptes, une semaine au plus.
+  les appels aboutissent depuis n’importe quel réseau, avec tout le monde. Elle compte comme l’une de ses invitations,
+  et dès que tu as rejoint son serveur, sa discussion avec toi le dit, avec **Reprendre** sous cette ligne. Quelqu’un
+  dont tu n’as pas accepté la demande de message ne choisit aucun serveur pour toi : son invitation attend que tu
+  l’acceptes, une semaine au plus.
 - **Un Erevos plus ancien** ne lit pas la partie Nostr d’un lien : il te joint à proximité seulement, jusqu’à ce que tu
   aies un serveur.
 

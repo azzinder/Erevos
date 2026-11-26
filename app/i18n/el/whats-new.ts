@@ -130,6 +130,10 @@ export const whatsNew: Record<string, string> = {
     "**Απευθείας συνδέσεις**: ένας διακόπτης στην κορυφή των **Ρυθμίσεων**, ανοιχτός αν δεν τον κλείσεις, για ό,τι δείχνει τη διεύθυνση internet του τηλεφώνου σου σε κάποιον άλλον. Ανοιχτός, το Erevos δεν ρωτά πια πριν από αυτά, και οι κλήσεις δουλεύουν με μια επαφή ακόμα κι όταν δεν υπάρχει server ανάμεσά σας, απευθείας από τηλέφωνο σε τηλέφωνο. Κλειστός, ρωτά όπως πριν. Δεν αλλάζει ποτέ το Tor, και όσο το Tor είναι ανοιχτό μένει κλειστός. Δες [Απευθείας συνδέσεις](#direct).",
   "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
     "**Η Νέα συνομιλία λέει τι δουλεύει χωρίς server**: μηνύματα, φωτογραφίες, αρχεία και φωνητικά μηνύματα, και κλήσεις επίσης όσο οι **Απευθείας συνδέσεις** είναι ανοιχτές.",
+  "**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line.":
+    "**Ποιος μπήκε με την πρόσκλησή σου**: όταν μια επαφή πάρει την πρόσκληση που της έστειλε μόνο του το τηλέφωνό σου, η συνομιλία μαζί της το λέει, μόνο σε αυτό το τηλέφωνο, με την **Ανάκληση** κάτω από εκείνη τη γραμμή.",
+  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
+    "**Server, σε απλά λόγια**: το Erevos λέει πλέον server, σε κάθε οθόνη, σε κάθε ειδοποίηση και στον οδηγό, γι’ αυτό που κρατά τα μηνύματά σου, κρυπτογραφημένα, μέχρι να τα πάρει το άλλο τηλέφωνο. Δεν αλλάζει τίποτα στο πώς δουλεύει.",
   "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
     "Μια κλήση χωρίς server ανάμεσα στα δύο τηλέφωνα στήνεται μέσω Nostr, κρυπτογραφημένη από άκρη σε άκρη όπως ένα μήνυμα, και οι δημόσιοι βοηθητικοί servers ρωτιούνται μόνο όταν δεν απαντά αυτός του LPHL.",
   // 7.0.0-rc.7

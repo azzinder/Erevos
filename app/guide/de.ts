@@ -804,7 +804,9 @@ lassen, mit einem eigenen Token dieses Telefons, sodass kein Token eingetippt od
   Einladungen an.
 - **Deine Einladungen:** unter der Taste aufgelistet, offen oder in Gebrauch. **Zurücknehmen** nimmt eine noch offene
   zurück oder sperrt das Telefon, das sie genommen hat, sofort aus, nur dieses: Die Telefone, die es wiederum eingeladen
-  hat, behalten ihren Zugang.
+  hat, behalten ihren Zugang. Eine, die dein Telefon von selbst an einen Kontakt ohne Server geschickt hat (siehe [Ganz
+  ohne Server](#nostr-only)), gehört dazu: Sobald sein Telefon damit hereingekommen ist, sagt es der Chat mit ihm, nur
+  auf deinem Telefon, mit **Zurücknehmen** unter dieser Zeile, solange er dort ist.
 - **Ihrer bleibt:** Ein Telefon, das du eingeladen hast, behält seine Zeile auf dem Server, auch wenn deine verschwindet,
   weil das Telefon, das dich eingeladen hat, sie zurückgenommen hat, das Konto, mit dem du dich angemeldet hast, den
   Server nicht mehr nutzen darf oder sein Betreiber sie herausgenommen hat, und ebenso die Telefone, die es eingeladen
@@ -2137,8 +2139,9 @@ wo es auf Nostr liest, und das genügt, um zu reden.
   selbst einmal eine Einladung dazu, im Chat, ob ihr euch zuerst über Nostr oder in der Nähe getroffen habt, über
   Bluetooth, WLAN oder einen QR-Code. Dein Telefon nimmt sie von selbst an (mit ausgeschalteten **Direktverbindungen**
   fragt es zuerst, da sein Server dann deine Internetadresse sieht), und ab dann funktionieren auch Gruppen, und Anrufe
-  kommen aus jedem Netz zustande, mit allen. Sie zählt als eine seiner Einladungen. Jemand, dessen Nachrichtenanfrage du
-  nicht angenommen hast, wählt keinen Server für dich: Seine Einladung wartet, bis du ihn annimmst, höchstens eine Woche.
+  kommen aus jedem Netz zustande, mit allen. Sie zählt als eine seiner Einladungen, und sobald du drin bist, sagt es
+  sein Chat mit dir, mit **Zurücknehmen** unter dieser Zeile. Jemand, dessen Nachrichtenanfrage du nicht angenommen
+  hast, wählt keinen Server für dich: Seine Einladung wartet, bis du ihn annimmst, höchstens eine Woche.
 - **Ein älteres Erevos** liest den Nostr-Teil eines Links nicht: Es erreicht dich nur in der Nähe, bis du einen Server
   hast.
 

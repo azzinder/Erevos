@@ -735,7 +735,10 @@ s vlastitim tokenom tog telefona, pa se nijedan token ne upisuje niti prosljeđu
   pozivnicu za wss:// server, ili za ws:// server samo na kućnoj mreži (kao \`ws://192.168.1.10:7879\`). Skriveni
   razgovori ne primaju pozivnice.
 - **Vaše pozivnice:** navedene ispod dugmeta, na čekanju ili u upotrebi. **Povuci** povlači pozivnicu koja još čeka, ili
-  odmah isključuje telefon koji ju je uzeo, samo njega: telefoni koje je on zatim pozvao zadržavaju svoj.
+  odmah isključuje telefon koji ju je uzeo, samo njega: telefoni koje je on zatim pozvao zadržavaju svoj. Pozivnica koju
+  je vaš telefon sam poslao kontaktu bez servera (pogledajte [Bez ikakvog servera](#nostr-only)) jedna je od ovih: kad je
+  njegov telefon ušao s njom, razgovor s tim kontaktom to kaže, samo na vašem telefonu, s **Povuci** ispod te linije dok
+  je on tamo.
 - **Njihov ostaje:** telefon koji ste pozvali zadržava svoj red na serveru čak i kad vaš nestane, jer ga je povukao
   telefon koji vas je pozvao, nalog s kojim ste se prijavili više ne smije koristiti server, ili vas je operater uklonio,
   a isto tako i telefoni koje je on pozvao. Samo vaše pozivnice koje još čekaju tada više nikoga ne puštaju.
@@ -1931,8 +1934,9 @@ Nostru, i to je dovoljno za razgovor.
   za njega, jednom, u razgovoru, bilo da ste se prvi put sreli preko Nostra ili u blizini, preko Bluetootha, Wi-Fi mreže
   ili QR koda. Vaš telefon je sam prihvata (s isključenim **Direktnim vezama** prvo pita, jer njegov server tada vidi
   vašu internet adresu), i od tada rade i grupe, a pozivi se uspostavljaju iz bilo koje mreže, sa svima. Računa se kao
-  jedna od njegovih pozivnica. Neko čiji zahtjev za razgovor niste prihvatili ne bira server za vas: njegova pozivnica
-  čeka dok ga ne prihvatite, najviše sedmicu.
+  jedna od njegovih pozivnica, a kad ste unutra, njegov razgovor s vama to kaže, s **Povuci** ispod te linije. Neko čiji
+  zahtjev za razgovor niste prihvatili ne bira server za vas: njegova pozivnica čeka dok ga ne prihvatite, najviše
+  sedmicu.
 - **Stariji Erevos** ne čita Nostr dio linka: dopire do vas samo u blizini, dok ne budete imali server.
 
 **Zašto:** Nostr je samo način ulaska. Nikome ne treba pozivnica da počne, a kad jedno od vas ima server, on prenosi

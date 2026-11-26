@@ -244,7 +244,13 @@ export function callClock(ms: number): string {
   return hours ? `${hours}:${two(minutes % 60)}:${two(seconds % 60)}` : `${minutes}:${two(seconds % 60)}`;
 }
 
+/** A line the chat keeps as it is, not sent (lib/call-lines.ts): no marks, and it disappears with
+ *  the chat's timer. */
+export function keptLineMessage(peer: string, mine: boolean, text: string, timer: number, at = Date.now()): Message {
+  return { peer, text, mine, at, tag: newTag(), until: timer ? at + timer * 1000 : 0, lasts: 0, mark: 2 };
+}
+
 /** A call's line as the chat keeps it: no marks, and it disappears with the chat's timer. */
 export function callLineMessage(peer: string, mine: boolean, text: string, timer: number, at = Date.now()): Message {
-  return { peer, text: `${CALL_LINE}${text}`, mine, at, tag: newTag(), until: timer ? at + timer * 1000 : 0, lasts: 0, mark: 2 };
+  return keptLineMessage(peer, mine, `${CALL_LINE}${text}`, timer, at);
 }

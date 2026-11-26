@@ -130,6 +130,10 @@ export const whatsNew: Record<string, string> = {
     "**Direktne veze**: prekidač na vrhu **Postavki**, uključen dok ga ne isključite, za sve što pokazuje internet adresu vašeg telefona nekom drugom. Uključen, Erevos više ne pita prije tih stvari, a pozivi rade s kontaktom i kad između vas dvoje nema servera, direktno s telefona na telefon. Isključen, pita kao prije. Nikad ne mijenja Tor, a dok je Tor uključen ostaje isključen. Pogledajte [Direktne veze](#direct).",
   "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
     "**Novi razgovor kaže šta radi bez servera**: poruke, fotografije, datoteke i glasovne poruke, a i pozivi dok su **Direktne veze** uključene.",
+  "**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line.":
+    "**Ko je ušao s vašom pozivnicom**: kad kontakt uzme pozivnicu koju mu je vaš telefon sam poslao, razgovor s tim kontaktom to kaže, samo na ovom telefonu, s **Povuci** ispod te linije.",
+  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
+    "**Server, jednostavnim riječima**: Erevos sada kaže server, na svakom ekranu, u svakom obavještenju i u vodiču, za ono što čuva vaše poruke, šifrirane, dok ih drugi telefon ne preuzme. U načinu rada ništa se ne mijenja.",
   "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
     "Poziv bez servera između dva telefona uspostavlja se preko Nostra, šifriran s kraja na kraj kao poruka, a javni pomoćni serveri se pitaju samo kad onaj od LPHL-a ne odgovori.",
   // 7.0.0-rc.7

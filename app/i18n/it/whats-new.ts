@@ -130,6 +130,10 @@ export const whatsNew: Record<string, string> = {
     "**Connessioni dirette**: un interruttore in alto nelle **Impostazioni**, attivo a meno che tu non lo disattivi, per tutto ciò che mostra l’indirizzo internet del tuo telefono a qualcun altro. Attivo, Erevos non chiede più prima di quei casi, e le chiamate funzionano con un contatto anche senza un server tra voi due, dirette da telefono a telefono. Disattivato, chiede come prima. Non cambia mai Tor, e finché Tor è attivo resta disattivato. Vedi [Connessioni dirette](#direct).",
   "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
     "**Nuova chat dice cosa funziona senza server**: messaggi, foto, file e messaggi vocali, e anche le chiamate finché le **Connessioni dirette** sono attive.",
+  "**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line.":
+    "**Chi è entrato con il tuo invito**: quando un contatto prende l’invito che il tuo telefono gli ha mandato da solo, la chat con quel contatto lo dice, solo su questo telefono, con **Ritira** sotto quella riga.",
+  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
+    "**Server, in parole semplici**: ora Erevos dice server, in ogni schermata, in ogni notifica e nella guida, per ciò che conserva i tuoi messaggi, cifrati, finché l’altro telefono li prende. Non cambia nulla nel modo in cui funziona.",
   "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
     "Una chiamata senza server tra i due telefoni si avvia tramite Nostr, crittografata end-to-end come un messaggio, e i server di supporto pubblici vengono interrogati solo quando quello di LPHL non risponde.",
   // 7.0.0-rc.7

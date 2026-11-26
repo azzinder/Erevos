@@ -5,7 +5,7 @@
 // The Serbo-Croatian of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
 // and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
-// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx, lib/call-lines.ts)
 // (i18n/sh/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this server lets in only so many phones by invite.': 'Sada nema pozivnice: smijete imati najviše 5 na čekanju odjednom i napraviti 10 dnevno, a ovaj server pozivnicom prima samo ograničen broj telefona.',
@@ -26,6 +26,8 @@ export const relayInvites: Record<string, string> = {
   'Its QR code no longer lets a phone in.': 'Njen QR kod više neće puštati nijedan telefon.',
   'Taken back.': 'Povučeno.',
   'That invite was gone already.': 'Te pozivnice već nije bilo.',
+  '{who} came onto your server with your invite.': 'Uz vašu pozivnicu, {who} je sada na vašem serveru.',
+  'You took back the place {who} had on your server.': 'Povukli ste mjesto za {who} na vašem serveru.',
   'Who is it for?': 'Za koga je?',
   'Maria': 'Marija',
   'Make the invite': 'Napravi pozivnicu',

@@ -5,7 +5,7 @@
 // The German of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
 // and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
-// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx, lib/call-lines.ts)
 // (i18n/de/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this server lets in only so many phones by invite.': 'Gerade keine Einladung: Du kannst höchstens 5 offene auf einmal haben und 10 am Tag machen, und dieser Server lässt nur begrenzt viele Telefone per Einladung herein.',
@@ -26,6 +26,8 @@ export const relayInvites: Record<string, string> = {
   'Its QR code no longer lets a phone in.': 'Ihr QR-Code lässt dann kein Telefon mehr herein.',
   'Taken back.': 'Zurückgenommen.',
   'That invite was gone already.': 'Diese Einladung gab es schon nicht mehr.',
+  '{who} came onto your server with your invite.': '{who} ist mit deiner Einladung auf deinen Server gekommen.',
+  'You took back the place {who} had on your server.': 'Du hast den Platz von {who} auf deinem Server zurückgenommen.',
   'Who is it for?': 'Für wen ist sie?',
   'Maria': 'Maria',
   'Make the invite': 'Einladung machen',

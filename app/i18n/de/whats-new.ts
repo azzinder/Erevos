@@ -130,6 +130,10 @@ export const whatsNew: Record<string, string> = {
     "**Direktverbindungen**: ein Schalter oben in den **Einstellungen**, an, solange du ihn nicht ausschaltest, für alles, was die Internetadresse deines Telefons jemand anderem zeigt. An, fragt Erevos vor diesen Dingen nicht mehr, und Anrufe funktionieren mit einem Kontakt auch ohne Server zwischen euch beiden, direkt von Telefon zu Telefon. Aus, fragt es wie bisher. Er ändert nie Tor, und solange Tor an ist, bleibt er aus. Siehe [Direktverbindungen](#direct).",
   "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
     "**Neuer Chat sagt, was ohne Server geht**: Nachrichten, Fotos, Dateien und Sprachnachrichten, und Anrufe auch, solange **Direktverbindungen** an sind.",
+  "**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line.":
+    "**Wer mit deiner Einladung hereingekommen ist**: Wenn ein Kontakt die Einladung annimmt, die dein Telefon ihm von selbst geschickt hat, sagt es der Chat mit ihm, nur auf diesem Telefon, mit **Zurücknehmen** unter dieser Zeile.",
+  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
+    "**Server, in einfachen Worten**: Erevos sagt jetzt Server, auf jedem Bildschirm, in jeder Mitteilung und in der Anleitung, für das, was deine Nachrichten verschlüsselt aufbewahrt, bis das andere Telefon sie abholt. An der Funktionsweise ändert sich nichts.",
   "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
     "Ein Anruf ohne Server zwischen den beiden Telefonen wird über Nostr aufgebaut, Ende-zu-Ende-verschlüsselt wie eine Nachricht, und die öffentlichen Hilfsserver werden nur gefragt, wenn der von LPHL nicht antwortet.",
   // 7.0.0-rc.7

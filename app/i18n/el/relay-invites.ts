@@ -5,7 +5,7 @@
 // The Greek of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
 // and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
-// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx, lib/call-lines.ts)
 // (i18n/el/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this server lets in only so many phones by invite.': 'Καμία πρόσκληση τώρα: μπορείς να έχεις έως 5 σε αναμονή μαζί και να φτιάχνεις 10 τη μέρα, και αυτός ο server δέχεται με πρόσκληση μόνο μέχρι ένα όριο τηλεφώνων.',
@@ -26,6 +26,8 @@ export const relayInvites: Record<string, string> = {
   'Its QR code no longer lets a phone in.': 'Ο κωδικός QR της δεν θα αφήνει πια κανένα τηλέφωνο να μπει.',
   'Taken back.': 'Ανακλήθηκε.',
   'That invite was gone already.': 'Αυτή η πρόσκληση δεν υπήρχε πια.',
+  '{who} came onto your server with your invite.': '{who} μπήκε στον server σου με την πρόσκλησή σου.',
+  'You took back the place {who} had on your server.': 'Ανακάλεσες τη θέση για {who} στον server σου.',
   'Who is it for?': 'Για ποιον είναι;',
   'Maria': 'Μαρία',
   'Make the invite': 'Δημιουργία πρόσκλησης',

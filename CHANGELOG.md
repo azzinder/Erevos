@@ -28,6 +28,10 @@ and 0.1.15 never came out.
   and what helps. With the switch off such a call does not ring: the chat shows it as missed, and why.
 - **New chat says what works with no server** (#72): **Messages only, for now** (texts, photos, files and voice
   messages) or, with Direct connections on, **Messages and calls, for now**, in place of **Texts only, for now**.
+- **Who came in with your invite** (#72): when a contact takes the invite to your server that your phone sent them by
+  itself, their chat says so, on your phone only, with **Take back** under that line while they are there.
+- **Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, in all its
+  languages, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.
 
 ### Under the hood
 
@@ -38,6 +42,16 @@ and 0.1.15 never came out.
   servers asked in groups, the reserve only when the first group is silent for 1.2 seconds (`lib/call.ts`). Their
   signals go encrypted through Nostr when no server is between the two phones (`lib/space-calls.ts`, `lib/calls.ts`).
 - LPHL's helper server is its call server, on the port that server listens on there, 3480 (`lib/servers.ts`).
+- A contact keeps the id of the invite sent them by itself, when their phone came in with it and when that place was
+  taken back; the server is asked about it once, only while they read on it (`lib/invite-place.ts`, `app/chat.tsx`).
+- The guide: a link to a part inside a section, such as **Erevos, Erevos+ or Erevos Lite, and betas** from its first
+  page, opens that section instead of saying it was not found, and the titles of those parts no longer show their
+  `{#…}` (`lib/guide.ts`, `app/guide/[id].tsx`).
+- The words people read say server where they said relay, in the app's texts of every language, in the guide, and on
+  the server's own sign-in page once a server runs this version (`crates/erevos-relay/src/pages.rs`); the names in the
+  code, in the links to the guide's sections and in the server's own program and settings stay as they were
+  (`lib/relay.ts`, `#relay`, `erevos-relay`, `EREVOS_RELAY_…`). The computer app's start check looks for "server" on
+  the first screen (`desktop/main.js`).
 
 ## 3.2.0-rc.3 (2026-11-25)
 

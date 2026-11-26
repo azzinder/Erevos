@@ -130,6 +130,10 @@ export const whatsNew: Record<string, string> = {
     "**Conexões diretas**: um interruptor no alto das **Configurações**, ligado a menos que você o desligue, para tudo o que mostra o endereço de internet do seu celular a outra pessoa. Ligado, o Erevos não pergunta mais antes dessas coisas, e as chamadas funcionam com um contato mesmo sem servidor entre vocês dois, direto de celular para celular. Desligado, ele pergunta como antes. Ele nunca muda o Tor, e enquanto o Tor está ligado ele fica desligado. Veja [Conexões diretas](#direct).",
   "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
     "**Nova conversa diz o que funciona sem servidor**: mensagens, fotos, arquivos e mensagens de voz, e chamadas também enquanto as **Conexões diretas** estiverem ligadas.",
+  "**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line.":
+    "**Quem entrou com o seu convite**: quando um contato pega o convite que o seu celular enviou sozinho a ele, a conversa com esse contato avisa, só neste celular, com **Revogar** abaixo dessa linha.",
+  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
+    "**Servidor, em palavras simples**: o Erevos agora diz servidor, em cada tela, em cada notificação e no guia, para o que guarda suas mensagens, criptografadas, até o outro telefone pegá-las. Nada muda no funcionamento.",
   "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
     "Uma chamada sem servidor entre os dois celulares é estabelecida pelo Nostr, criptografada de ponta a ponta como uma mensagem, e os servidores auxiliares públicos só são consultados quando o do LPHL não responde.",
   // 7.0.0-rc.7

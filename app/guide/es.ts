@@ -757,7 +757,10 @@ token propio de ese teléfono, así que no se escribe ni se pasa ningún token.
   mensaje. Erevos acepta una invitación a un servidor wss://, o a uno ws:// solo en una red doméstica (como
   \`ws://192.168.1.10:7879\`). Los chats ocultos no aceptan invitaciones.
 - **Tus invitaciones:** listadas bajo el botón, pendientes o en uso. **Retirar** retira una todavía pendiente, o corta
-  al instante el teléfono que la usó, solo ese: los teléfonos que este invitó a su vez conservan su acceso.
+  al instante el teléfono que la usó, solo ese: los teléfonos que este invitó a su vez conservan su acceso. Una que tu
+  teléfono envió por sí solo a un contacto sin servidor (ver [Sin ningún servidor](#nostr-only)) es una de ellas: una vez que
+  su teléfono ha entrado con ella, el chat con ese contacto lo dice, solo en tu teléfono, con **Retirar** debajo de esa
+  línea mientras siga ahí.
 - **El suyo se queda:** un teléfono que invitaste conserva su línea en el servidor aunque la tuya desaparezca, porque el
   teléfono que te invitó la retiró, la cuenta con la que iniciaste sesión ya no puede usar el servidor, o quien lo gestiona
   la sacó, y lo mismo los teléfonos que este invitó. Solo tus invitaciones aún pendientes ya no dejan entrar a nadie.
@@ -2006,9 +2009,9 @@ dicen dónde lee en Nostr, y eso basta para hablar.
   invitación a él por sí solo, una vez, en el chat, tanto si os conocisteis por Nostr como de cerca, por Bluetooth,
   Wi-Fi o un código QR. Tu teléfono la acepta por sí solo (con las **Conexiones directas** desactivadas pregunta antes,
   pues su servidor ve entonces tu dirección de internet), y a partir de entonces los grupos también funcionan, y las
-  llamadas conectan desde cualquier red, con todos. Cuenta como una de sus invitaciones. Alguien cuya solicitud de
-  mensaje no has aceptado no elige ningún servidor por ti: su invitación espera hasta que lo aceptes, una semana como
-  mucho.
+  llamadas conectan desde cualquier red, con todos. Cuenta como una de sus invitaciones, y cuando ya estás dentro, su
+  chat contigo lo dice, con **Retirar** debajo de esa línea. Alguien cuya solicitud de mensaje no has aceptado no elige
+  ningún servidor por ti: su invitación espera hasta que lo aceptes, una semana como mucho.
 - **Un Erevos más antiguo** no lee la parte de Nostr de un enlace: solo te contacta de cerca, hasta que tengas un servidor.
 
 **Por qué:** Nostr es solo la forma de entrar. Nadie necesita una invitación para empezar, y en cuanto uno de vosotros

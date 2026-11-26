@@ -20,8 +20,8 @@ import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { inMatrixCall, onMatrixCallChange } from '../lib/matrix-calls';
 import { callPermissions } from '../lib/call-permissions';
-import { callLineMessage, callSignal, endCallsOf, onCallChange, startCall as beginCall, type CallPlace } from '../lib/calls';
-import { shownLine } from '../lib/call-lines';
+import { callLineMessage, callSignal, endCallsOf, keptLineMessage, onCallChange, startCall as beginCall, type CallPlace } from '../lib/calls';
+import { inviteLine, isInviteCame, shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
 import { canChangeVoice, clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
@@ -104,7 +104,7 @@ import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { cameAt, canPick, laterLabel, showsAt } from '../lib/later';
 import { inTurn, SAFETY_HOURS, safetyDue, stopSafety } from '../lib/safety';
-import { ask, choose } from '../lib/alert';
+import { ask, choose, confirm } from '../lib/alert';
 import { fasouliPaidLink, payAmount, takePay, type Pay } from '../lib/pay';
 import { contactLink, contactLinkName, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
@@ -188,6 +188,7 @@ import {
   isLentToken,
   isQueueNotFound,
   lendTicket,
+  listInvites,
   makeInvite,
   receiveMessage,
   redeemInvite,
@@ -195,6 +196,7 @@ import {
   RelayUnreachableError,
   sameRelay,
   sendMessage,
+  takeBackInvite,
   takeOwnLine,
   throughTor,
   ticketExpires,
@@ -214,7 +216,7 @@ import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } 
 import { onPiece } from '../lib/nostr-pieces';
 import { useNfcShare } from '../lib/nfc-share';
 import { answerInvites, answerTextInvite, contactCard, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
-import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
+import { inviteId, onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, setTellOpen, spaceChats, type SpaceChats } from '../lib/space-chats';
 import { placeChats, setPlaceLastSeen, setPlaceTellOpen } from '../lib/place-chats';
 import { myNameAt, setMyNameAt } from '../lib/my-name';
@@ -2391,6 +2393,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         await sendReceipts(sends);
         await sendKeys(sends);
         await relayOffers.current(own, sends);
+        await invitesCame.current(own).catch(() => undefined);
         // Imported chats shared, going and coming in rounds (lib/share-rounds.ts).
         shareDrive.current(own);
         // Texts that went through Nostr, not said to have come in time, through the relay as well.
@@ -2493,12 +2496,58 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const made = await makeInvite(own, await e2e.lineFor(name));
         if (!made) return;
         await sendToContact(sends, identity, '', { more: { ri: { r: own.url, c: made.code } } }, true);
-        await e2e.relayInviteSent(identity);
+        await e2e.relayInviteSent(identity, Date.now(), inviteId(made.code));
       } catch {
         // Tried again the next time Erevos opens.
       }
     }
   };
+
+  // Of the contacts sent such an invite, each whose phone came onto this phone's relay with it:
+  // said once in their chat, on this phone only, with Take back under that line while they are
+  // there (his word, 11-25). The relay is asked only while one of them reads on it and was not said
+  // yet (lib/invite-place.ts invitesToSettle); one it does not list as used is forgotten.
+  const invitesCame = useRef((_own: Relay) => Promise.resolve());
+  invitesCame.current = async (own) => {
+    if (!e2e || hiddenKey) return;
+    const due = e2e.invitesToSettle(own.url);
+    if (due.length === 0) return;
+    // Not answered now: asked again on the next look. Null: this phone cannot invite there (now).
+    const listed = await listInvites(own).catch(() => undefined);
+    if (listed === undefined) return;
+    for (const { identity, id } of due) {
+      const came = !!listed?.some((invite) => invite.id === id && invite.used > 0);
+      await e2e.relayInviteSettled(identity, came);
+      const peer = `${CONTACT_PREFIX}${identity}`;
+      if (came) latest.current.line(keptLineMessage(peer, false, inviteLine('came', label(peer, e2e.contacts())), 0));
+    }
+  };
+
+  // Takes back the place on this phone's relay that the contact of the chat open came onto with
+  // its invite (lib/invite-place.ts holdsPlace), as Your invites does: their phone can no longer use
+  // the relay, and the phones it invited keep theirs.
+  async function takeBackPlace() {
+    const identity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
+    const own = ownRelay();
+    const id = own && e2e ? e2e.heldPlace(identity, own.url) : null;
+    if (!e2e || !own || !id) return;
+    const peer = `${CONTACT_PREFIX}${identity}`;
+    const name = label(peer, e2e.contacts());
+    const sure = await confirm(
+      t("Take back {name}'s access?", { name }),
+      t('Their phone can no longer use this server from now on. The phones it invited keep theirs.'),
+      t('Take back'),
+    );
+    if (!sure) return;
+    try {
+      const done = await takeBackInvite(own, id);
+      await e2e.relayPlaceTakenBack(identity);
+      if (done) latest.current.line(keptLineMessage(peer, true, inviteLine('back', name), 0));
+      else setNote(t('That invite was gone already.'));
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
 
   // With no relay queue, what goes through Nostr to the contacts it is the only way to (lib/nostr-chats.ts
   // nostrOnlyWay), while Tor is ready: what waited, the marks that messages came and were read, new
@@ -5943,6 +5992,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     choose: (message) => !message.sending && selection.toggle(message.id),
     saveCard: (card) => saveCard(card, !!hiddenKey),
     thread: openThread,
+    takeBack: () => void takeBackPlace(),
   };
   // The SMS with their number, among the messages by time (lib/sms-chat.ts): never in hidden chats.
   const smsWith = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
@@ -6470,6 +6520,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const faceChips = findTyped && !draftIsLink ? chips.filter((peer) => (contactName(peer, shownContacts) ?? '').toLowerCase().includes(findTyped.toLowerCase())) : chips;
 
   const selectedName = selected ? label(selected, shownContacts) : '';
+  // Whether the contact of the chat open came onto this phone's relay with its invite and is there
+  // still: Take back shows under the line that says so (lib/invite-place.ts holdsPlace).
+  const placeHeld = !hiddenKey && !!selectedIdentity && !!e2e?.heldPlace(selectedIdentity, relayUrl);
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
   const selectedNearby = !!selectedIdentity && (hiddenKey ? !!nearHeard.current?.isNear(selectedIdentity) : nearby.isNear(selectedIdentity));
   const selectedTyping = !!selected && !selectedHidden && (typing[selected] ?? 0) > Date.now();
@@ -8412,6 +8465,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   choosing={selection.on}
                   chosen={selection.on && selection.chosen.has(message.id)}
                   answers={threadRoot ? 0 : (threadAnswers.get(message.tag) ?? 0)}
+                  holds={placeHeld && isInviteCame(message.text)}
                   styles={styles}
                   b={b}
                   colors={colors}

@@ -707,7 +707,9 @@ that phone's own, so no token is typed or passed on.
   server, it asks first, and contacts learn your new queue from your next message. Erevos takes an invite to a wss://
   server, or to a ws:// one on a home network only (such as \`ws://192.168.1.10:7879\`). Hidden chats take no invites.
 - **Your invites:** listed under the button, waiting or in use. **Take back** takes back one still waiting, or cuts off
-  the phone that took it at once, only that one: the phones it invited keep theirs.
+  the phone that took it at once, only that one: the phones it invited keep theirs. One your phone sent by itself to a
+  contact with no server (see [With no server at all](#nostr-only)) is one of these: once their phone came in with it,
+  their chat says so, on your phone only, with **Take back** under that line while they are there.
 - **Theirs to keep:** a phone you invited keeps its line on the server even once yours goes, because the phone that
   invited you took it back, the account you signed in with may no longer use the server, or its operator took it out, and
   so do the phones it invited. Only your invites still waiting then let no one in.
@@ -1866,8 +1868,9 @@ on Nostr, and that is enough to talk.
   by itself, once, in the chat, whether you first met through Nostr or nearby, over Bluetooth, Wi-Fi or a QR code. Your
   phone takes it by itself (with **Direct connections** off it asks first, as their server then sees your internet
   address), and from then on groups work too, and calls connect from any network, with everyone. It counts as one of
-  their invites. Someone whose message request you have not accepted chooses no server for you: their invite waits until
-  you accept them, a week at most.
+  their invites, and once you are in, their chat with you says so, with **Take back** under that line. Someone whose
+  message request you have not accepted chooses no server for you: their invite waits until you accept them, a week at
+  most.
 - **An older Erevos** does not read the Nostr part of a link: it reaches you nearby only, until you have a server.
 
 **Why:** Nostr is only the way in. No one needs an invite to begin, and once one of you has a server, it carries what

@@ -752,7 +752,10 @@ próprio desse celular, para que nenhum token seja digitado ou repassado.
   pela sua próxima mensagem. O Erevos aceita um convite para um servidor wss://, ou para um ws:// só numa rede doméstica
   (como \`ws://192.168.1.10:7879\`). As conversas ocultas não aceitam convites.
 - **Seus convites:** listados abaixo do botão, aguardando ou em uso. **Revogar** revoga um que ainda está aguardando, ou
-  corta na hora o celular que o pegou, só ele: os celulares que ele convidou por sua vez ficam com o deles.
+  corta na hora o celular que o pegou, só ele: os celulares que ele convidou por sua vez ficam com o deles. O que o seu
+  celular enviou sozinho a um contato sem servidor (veja [Sem nenhum servidor](#nostr-only)) também é um deles: depois que o
+  celular dele entrar com esse convite, a conversa com esse contato avisa, só no seu celular, com **Revogar** abaixo
+  dessa linha enquanto ele estiver lá.
 - **O deles fica:** um celular que você convidou fica com a linha dele no servidor mesmo quando a sua cai, porque o celular
   que convidou você a revogou, a conta com que você entrou não pode mais usar o servidor, ou o operador dele a tirou, e o
   mesmo vale para os celulares que ele convidou. Só os seus convites ainda aguardando não deixam mais ninguém entrar.
@@ -1990,8 +1993,9 @@ ele lê no Nostr, e isso basta para conversar.
   para esse servidor sozinho, uma vez, na conversa, quer vocês tenham se conhecido pelo Nostr ou por perto, por Bluetooth,
   Wi-Fi ou um código QR. O seu celular o aceita sozinho (com as **Conexões diretas** desligadas ele pergunta antes, pois
   o servidor dele então vê o seu endereço de internet), e a partir daí os grupos também funcionam, e as chamadas conectam
-  de qualquer rede, com todo mundo. Conta como um dos convites dele. Alguém cuja solicitação de mensagem você não
-  aceitou não escolhe nenhum servidor para você: o convite dele espera até você aceitá-lo, uma semana no máximo.
+  de qualquer rede, com todo mundo. Conta como um dos convites dele, e depois que você entrar, a conversa dele com você
+  avisa, com **Revogar** abaixo dessa linha. Alguém cuja solicitação de mensagem você não aceitou não escolhe nenhum
+  servidor para você: o convite dele espera até você aceitá-lo, uma semana no máximo.
 - **Um Erevos mais antigo** não lê a parte do Nostr de um link: ele só alcança você por perto, até você ter um servidor.
 
 **Por quê:** o Nostr é só a porta de entrada. Ninguém precisa de convite para começar, e assim que um de vocês tem um
