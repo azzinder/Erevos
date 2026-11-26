@@ -190,7 +190,8 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'relay', title: mark('Server'), detail: mark('Your server: its address, its token and invites'), href: '/chat?setup=relay', when: uses('erevos') },
       { id: 'home-relay', title: mark('Home server'), detail: mark('A second server contacts write to while yours is down'), href: '/home-relay', when: uses('erevos') },
       { id: 'tor', title: mark('Tor'), detail: mark('Reach the servers through Tor: off, unless changed'), href: '/tor', when: phoneUses('erevos', 'nostr') },
-      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through public Nostr servers: on, unless changed'), href: '/nostr', when: phoneUses('erevos') },
+      // Also where there is no Tor: Nostr is reached straight there (lib/nostr.ts).
+      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through public Nostr servers: on, unless changed'), href: '/nostr', when: uses('erevos') },
       { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix', when: uses('matrix') },
       { id: 'xmpp', title: mark('XMPP'), detail: mark('Chats with people on XMPP: encrypted, not anonymous'), href: '/xmpp', when: uses('xmpp') },
       { id: 'nostr-chats', title: mark('Nostr chats'), detail: mark('Chats with people on other Nostr apps: encrypted, not anonymous'), href: '/nostr-chats', when: uses('nostr') },

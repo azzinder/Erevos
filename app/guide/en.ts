@@ -279,7 +279,7 @@ phone's own settings do. In the other languages it is named in that language and
 - **A group** opens the list of its settings, and a setting opens its screen. A setting with parts, such as {~**SMS**|**Backups**},
   lists them, and each part opens alone.
 - **Only what works here shows:** on a computer, on Sailfish OS and in the web app there is no {~**Phone and SMS**,
-  |}Tor, Nostr or LoRa, and a group with nothing to set here does not show.
+  |}Tor or LoRa, and a group with nothing to set here does not show.
 - [~] **Only the modules on show:** the settings of a module that is off, such as {+**Matrix** or }**Phone and SMS**, do not
   show either: see [Modules](#modules).
 
@@ -289,7 +289,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android), **Widget** (Android) and **Vibrate on touch** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
 | **Privacy and security** | **How visible are you?** (SPEED, ANONYMOUS or INVISIBLE: who sees your internet address, and how calls go), **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [How visible are you?](#direct), [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
-| **Server and networks** | **Ways**, **Server** (it opens **New chat** with **For advanced users** open), **Home server**, **Tor** (Android), **Nostr** (Android){+,}{- and} **LoRa radio** (Android){+, **Matrix**, **XMPP** and **Nostr chats**}. See [Chat through a server](#relay), [Home server](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr){+,}{- and} [Over a LoRa radio](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)}. |
+| **Server and networks** | **Ways**, **Server** (it opens **New chat** with **For advanced users** open), **Home server**, **Tor** (Android), **Nostr**{+,}{- and} **LoRa radio** (Android){+, **Matrix**, **XMPP** and **Nostr chats**}. See [Chat through a server](#relay), [Home server](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr){+,}{- and} [Over a LoRa radio](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)}. |
 [~] | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
 | **For testing** | **Server test** and **Radio test** (Android). See [The test screens](#tests). |
@@ -1827,7 +1827,7 @@ choice, and its own Nostr servers.
   says. See [Who sees your internet address](#ip).
 - **The servers:** relay.damus.io, nos.lol and relay.primal.net unless you change them; you can add your own, five at
   most. Your contacts are told the servers you read on, and write to you there; one that takes a text is enough.
-- **What stays on your server:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your server when one is between you; with no server between you they go through Nostr too (see With no server at all), and so does what sets up a call, with **SPEED**.
+- **What stays on your server:** calls, reactions, and the marks that a message came or was read; and what you write to contacts whose Erevos does not read on Nostr. Pictures, files and voice messages go through your server when one is between you; with no server between you they go through Nostr too (see With no server at all), and so does what sets up a call, with **SPEED**.
 - **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
   server took it. From now on it also says **Went through the server**, **Came through the server**, **Went to their phone
   nearby**, **Came from a phone nearby** or **Went over LoRa**; a message from before says nothing. The note under the
@@ -1836,7 +1836,10 @@ choice, and its own Nostr servers.
 - **What the servers did last:** the **Nostr** screen shows, for each server, whether it took the last text it was given
   and how many seconds after, or why not, and whether your phone reads on it. It is kept on this phone only, until
   Erevos closes. A text never waits for the Nostr servers while your servers take it.
-- **On Android only,** as Tor is.
+- **On a computer, in the web app and on Sailfish OS:** there is no Tor there, so Erevos reaches the Nostr servers
+  straight, as it reaches your server, and they see that device's IP address; it reads there while Erevos is open.
+  With **Everything** for the space, or **Nostr through Tor** on, as a phone's backup may bring them, it reaches none
+  there, and the **Nostr** screen says so.
 
 **Why:** the Nostr servers are public, so when Tor is on for the space Erevos reaches them through Tor, and they never
 learn where your phone is; with **Nothing** it reaches them straight. Only texts go there, as the backup of your
@@ -1926,8 +1929,8 @@ None of them sees what you write or say: that stays end-to-end encrypted.
   through a call server, which connects from any network. Where neither of you has a call server, the call screen says
   **The call could not connect directly**, and the chat keeps that line.
 - **An older Erevos** rings for such a call, and then cannot connect.
-- **A phone with no server** hears such a call only while Erevos reads on Nostr, which it does on Android: left to sleep
-  to spare the battery, it may miss one.
+- **With no server,** Erevos hears such a call only while it reads on Nostr: on Android, left to sleep to spare the
+  battery, it may miss one; on a computer, in the web app and on Sailfish OS, it reads there only while it is open.
 - **Helper servers, for advanced users:** to call straight from phone to phone, each phone asks a helper server what its
   own internet address is. The helper sees that address, once a call, and nothing of the call itself. Unless you choose
   otherwise, Erevos asks the one beside your server and the one beside LPHL's first, and two public ones, Cloudflare's
@@ -1945,8 +1948,9 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
   one chat's **Details**. See [How visible are you?](#direct) and [Through Tor](#tor).
 
 - **The public Nostr servers and the Nostr file servers:** they see it unless the connection goes through Tor. Turn on
-  **Nostr through Tor** under **Settings** → **Server and networks** → **Nostr**, or **Through Tor** for one chat. See
-  [Through Nostr](#nostr).
+  **Nostr through Tor** under **Settings** → **Server and networks** → **Nostr**, or **Through Tor** for one chat. On a
+  computer, in the web app and on Sailfish OS there is no Tor: there only **Texts through Nostr** turned **Off** hides
+  it from them. See [Through Nostr](#nostr).
 - **A code of 8 digits**, under **Near me** and **I have their code**: the two phones meet on those same public Nostr
   servers, so without Nostr through Tor they see the address, though not the code or the contact links. Erevos says so
   before the first one.

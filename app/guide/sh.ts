@@ -293,7 +293,7 @@ kraj među njima kao vaši razgovori: server ih prenosi samo šifrirane.
 - **Grupa** otvara popis svojih postavki, a postavka otvara svoj ekran. Postavka s dijelovima, kao {~**SMS**|**Rezervne kopije**}, navodi ih,
   i svaki dio se otvara zasebno.
 - **Prikazuje se samo ono što ovdje radi:** na računaru, na Sailfish OS-u i u web-aplikaciji nema {~**Telefon i SMS**,
-  |}Tora, Nostra ni LoRa, a grupa u kojoj ovdje nema šta da se podesi ne prikazuje se.
+  |}Tora ni LoRa, a grupa u kojoj ovdje nema šta da se podesi ne prikazuje se.
 - [~] **Samo uključeni moduli:** postavke isključenog modula, kao što su {+**Matrix** ili }**Telefon i SMS**, također se
   ne prikazuju: pogledajte [Moduli](#modules).
 
@@ -303,7 +303,7 @@ kraj među njima kao vaši razgovori: server ih prenosi samo šifrirane.
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android), **Widget** (Android) i **Vibracija na dodir** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
 | **Privatnost i sigurnost** | **Koliko ste vidljivi?** (SPEED, ANONYMOUS ili INVISIBLE: ko vidi vašu internet adresu, i kako idu pozivi), **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Koliko ste vidljivi?](#direct), [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
-| **Server i mreže** | **Putevi**, **Server** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni server**, **Tor** (Android), **Nostr** (Android){+,}{- i} **LoRa radio** (Android){+, **Matrix**, **XMPP** i **Nostr razgovori**}. Pogledajte [Razgovor preko servera](#relay), [Kućni server](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr){+,}{- i} [Preko LoRa radija](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)}. |
+| **Server i mreže** | **Putevi**, **Server** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni server**, **Tor** (Android), **Nostr**{+,}{- i} **LoRa radio** (Android){+, **Matrix**, **XMPP** i **Nostr razgovori**}. Pogledajte [Razgovor preko servera](#relay), [Kućni server](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr){+,}{- i} [Preko LoRa radija](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)}. |
 [~] | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test servera** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
@@ -1891,7 +1891,7 @@ vlastiti izbor i vlastite Nostr servere.
   [Ko vidi vašu IP adresu](#ip).
 - **Serveri:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju serveri na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
-- **Šta ostaje na vašem serveru:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg servera kad je jedan između vas; bez servera između vas idu i preko Nostra (pogledajte Bez ikakvog servera), a tako i ono što uspostavlja poziv, sa **SPEED**.
+- **Šta ostaje na vašem serveru:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima čiji Erevos ne čita na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg servera kad je jedan između vas; bez servera između vas idu i preko Nostra (pogledajte Bez ikakvog servera), a tako i ono što uspostavlja poziv, sa **SPEED**.
 - **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko Nostra**
   kad ju je preuzeo neki Nostr server. Od sada kaže i **Poslano preko servera**, **Stiglo preko servera**, **Poslano na
   njihov obližnji telefon**, **Stiglo s obližnjeg telefona** ili **Poslano preko LoRa**; starija poruka ne kaže ništa. I
@@ -1900,7 +1900,10 @@ vlastiti izbor i vlastite Nostr servere.
 - **Što su serveri zadnje učinili:** ekran **Nostr** za svaki server pokazuje je li preuzeo posljednji tekst koji je dobio
   i koliko sekundi nakon toga, ili zašto nije, te čita li vaš telefon na njemu. Čuva se samo na ovom telefonu, dok se
   Erevos ne zatvori. Tekst nikad ne čeka Nostr servere dok ga vaši serveri preuzimaju.
-- **Samo na Androidu,** kao i Tor.
+- **Na računaru, u web-aplikaciji i na Sailfish OS-u:** tamo nema Tora, pa Erevos do Nostr servera dolazi izravno,
+  kao i do vašeg servera, i oni vide IP adresu tog uređaja; tamo čita dok je Erevos otvoren. Sa **Sve** za prostor, ili
+  s uključenim **Nostr preko Tora**, kako ga može donijeti rezervna kopija s telefona, ne dolazi ni do jednog tamo, i
+  ekran **Nostr** to kaže.
 
 **Zašto:** Nostr serveri su javni, pa Erevos do njih, kad je Tor uključen za prostor, dolazi preko Tora, i oni nikad ne
 saznaju gdje je vaš telefon; s **Ništa** dolazi do njih izravno. Tamo idu samo tekstovi, kao rezerva vaših servera:
@@ -1990,8 +1993,8 @@ Nijedan od njih ne vidi šta pišete ili govorite: to ostaje šifrirano s kraja 
   pozive, preko kojeg se poziv uspostavlja iz bilo koje mreže. Kada nijedno od vas nema server za pozive, ekran poziva
   kaže **Poziv se nije uspostavio direktno**, a razgovor zadržava taj red.
 - **Stariji Erevos** zvoni za takav poziv, a zatim se ne može povezati.
-- **Telefon bez servera** čuje takav poziv samo dok Erevos čita na Nostru, što na Androidu radi: ako se pusti da spava
-  radi štednje baterije, može ga propustiti.
+- **Bez servera** Erevos čuje takav poziv samo dok čita na Nostru: na Androidu, ako se pusti da spava radi štednje
+  baterije, može ga propustiti; na računaru, u web-aplikaciji i na Sailfish OS-u tamo čita samo dok je otvoren.
 - **Pomoćni serveri, za napredne korisnike:** za poziv direktno s telefona na telefon, svaki telefon pita pomoćni server
   koja je njegova vlastita internet adresa. Pomoćni server vidi tu adresu, jednom po pozivu, i ništa od samog poziva.
   Ako ne izaberete drugačije, Erevos prvo pita onaj pored vašeg servera i onaj pored LPHL-ovog servera, a dva javna,
@@ -2009,8 +2012,9 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
   jednog razgovora. Pogledajte [Koliko ste vidljivi?](#direct) i [Preko Tora](#tor).
 
 - **Javni Nostr serveri i Nostr serveri datoteka:** vide je, osim ako veza ne ide preko Tora. Uključite **Nostr preko
-  Tora** pod **Postavke** → **Server i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Vidi [Preko
-  Nostra](#nostr).
+  Tora** pod **Postavke** → **Server i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Na
+  računaru, u web-aplikaciji i na Sailfish OS-u nema Tora: tamo je krije od njih samo **Tekstovi preko Nostra** na
+  **Isključeno**. Vidi [Preko Nostra](#nostr).
 - **Kod od 8 cifara**, pod **Pored mene** i **Imam njegov kod**: dva telefona se sreću na tim istim javnim Nostr
   serverima, pa bez Nostra preko Tora oni vide adresu, ali ne i kod ni linkove za kontakt. Erevos to kaže prije prvog
   puta.

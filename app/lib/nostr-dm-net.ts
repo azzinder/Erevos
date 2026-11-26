@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { canNostr, canTorHttp, nostrCore, torHttp } from './core';
+import { canNostrTor, canTorHttp, nostrCore, torHttp } from './core';
 import { utf8Decode } from './crypto';
 import { t } from './i18n';
 import { fetchCapped } from './net-http';
@@ -163,7 +163,7 @@ export function openNostrStraight(url: string): Promise<NostrLink> {
 
 /** Whether the relays are reached through Tor now: on Android, while the space's Tor way says so. */
 export function nostrChatsThroughTor(): boolean {
-  return canNostr() && torFor(false);
+  return canNostrTor() && torFor(false);
 }
 
 /** A connection to the relay at `url`: through Tor when the space's way says so and Tor is ready,

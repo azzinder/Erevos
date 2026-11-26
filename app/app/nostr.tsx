@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
-import { canNostr } from '../lib/core';
+import { canNostr, canNostrTor } from '../lib/core';
 import { setDirect } from '../lib/direct';
 import { t } from '../lib/i18n';
 import { modeSaid } from '../lib/modes';
@@ -17,7 +17,9 @@ import { loadCurrentSpaceData, NOSTR_RELAYS, updateCurrentSpaceData, type NostrS
 // Whether the space's texts go through Nostr (lib/nostr.ts), on unless changed; whether Nostr goes
 // through Tor by its own switch, off unless turned on, besides the space's Tor way; the Nostr
 // relays it reads on: the first three unless changed, and any of one's own; and what each relay
-// did last since Erevos started, so a test shows where a text went and why.
+// did last since Erevos started, so a test shows where a text went and why. Where there is no Tor
+// (the web app, the computer app, Sailfish OS's), Nostr is reached straight, and the switch shows
+// only while it is on, as a phone's backup may bring it, to turn it off.
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -107,6 +109,8 @@ export default function NostrScreen() {
 
   const relays = setting?.relays ?? [];
   const firsts = relays.join(' ') === NOSTR_RELAYS.join(' ');
+  // This build reaches Nostr through Tor: on Android. Elsewhere only straight (lib/nostr.ts).
+  const torHere = canNostrTor();
   const shown = [...relays, ...[...states.keys()].filter((url) => !relays.includes(url))];
 
   return (
@@ -123,12 +127,16 @@ export default function NostrScreen() {
           <Chip label={t('On')} selected={setting?.on === true} onPress={() => setting && void keep({ ...setting, on: true })} />
           <Chip label={t('Off')} selected={setting?.on === false} onPress={() => setting && void keep({ ...setting, on: false })} />
         </Row>
-        <Text variant="bodyStrong">{t('Nostr through Tor')}</Text>
-        <Row wrap>
-          <Chip label={t('On')} selected={setting?.tor === true} onPress={() => setting && void keep({ ...setting, tor: true })} />
-          <Chip label={t('Off')} selected={setting !== null && setting.tor !== true} onPress={() => setting && void keep(withoutTor(setting))} />
-        </Row>
-        {tor && setting ? (
+        {torHere || setting?.tor === true ? (
+          <>
+            <Text variant="bodyStrong">{t('Nostr through Tor')}</Text>
+            <Row wrap>
+              {torHere ? <Chip label={t('On')} selected={setting?.tor === true} onPress={() => setting && void keep({ ...setting, tor: true })} /> : null}
+              <Chip label={t('Off')} selected={setting !== null && setting.tor !== true} onPress={() => setting && void keep(withoutTor(setting))} />
+            </Row>
+          </>
+        ) : null}
+        {tor && setting && torHere ? (
           <Text tone="muted">
             {tor !== 'off'
               ? t("Tor is on for this space, so Erevos reaches the Nostr servers through Tor: they do not see this phone's internet address.")
@@ -137,7 +145,16 @@ export default function NostrScreen() {
                 : t("Tor is off for this space, so Erevos reaches the Nostr servers straight: they see this phone's internet address, as your server does, but still neither who wrote a text nor to whom.")}
           </Text>
         ) : null}
-        <Text tone="muted">{t('A chat set to "Through Tor" reaches the Nostr servers only through Tor, whatever this switch says.')}</Text>
+        {tor && setting && !torHere ? (
+          <Text tone="muted">
+            {setting.tor === true
+              ? t('Nostr through Tor is on, and this device has no Tor: Erevos reaches no Nostr server here. Turn it off to reach them straight.')
+              : tor === 'all'
+                ? t('This space sends everything through Tor, which this device does not have: Erevos reaches no Nostr server here. Choose SPEED or ANONYMOUS at the top of Settings to reach them straight.')
+                : t('This device has no Tor, so Erevos reaches the Nostr servers straight: they see its internet address, as your server does, but still neither who wrote a text nor to whom.')}
+          </Text>
+        ) : null}
+        {torHere ? <Text tone="muted">{t('A chat set to "Through Tor" reaches the Nostr servers only through Tor, whatever this switch says.')}</Text> : null}
         <Text tone="muted">
           {t(
             "A text that went through Nostr goes through your server again should your contact's phone not say within five minutes that it came, and they see it once. While Tor starts, or when no Nostr server takes it either, it waits and goes again, as any message does.",
@@ -145,7 +162,7 @@ export default function NostrScreen() {
         </Text>
         <Text tone="muted">
           {t(
-            'Pictures, files, voice messages, calls, reactions, and the marks that a message came or was read go through your server, as before. So does what you write to contacts on an iPhone or a computer, which do not read on Nostr.',
+            'Pictures, files, voice messages, calls, reactions, and the marks that a message came or was read go through your server, as before.',
           )}
         </Text>
         <Text tone="muted">

@@ -45,6 +45,11 @@ and 0.1.15 never came out.
   the key it opens is now made in the phone's secure area, not in its separate security chip. Where it is on already,
   turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**, for the new
   key.
+- **Nostr on a computer, in the web app and on Sailfish OS**: texts there now go through the public Nostr servers too
+  when your servers do not take them, as on Android, and with no server at all. There is no Tor there, so they go
+  straight, while Erevos is open: the Nostr servers see that device's internet address, as your server does, never who
+  wrote to whom. With everything through Tor, or **Nostr through Tor** on, as a phone's backup may bring them, Erevos
+  reaches no Nostr server there, and the **Nostr** screen says so.
 
 ### Under the hood
 
@@ -84,6 +89,15 @@ and 0.1.15 never came out.
   is dropped when fingerprints or faces change. The token that lets a use happen comes from the TEE in both cases, and
   StrongBox takes it on a key the two share, so for a key that one use opens StrongBox added no safety. A key made in
   StrongBox before keeps working there until unlocking is turned off and on again.
+- Where the core has no Tor (the web app, the computer app and Sailfish OS's: `lib/crypto-setup.ts`
+  `setNostrStraight`), the Nostr relays are reached straight over WebSocket with the core's wraps (`lib/nostr.ts`
+  `nostrStraight`, `lib/nostr-dm-net.ts` `openNostrStraight`, `lib/core.ts` `nostrSeal`), with the space's Tor way
+  Nothing or Messages, as its requests to the servers go then; with Everything, with Nostr's own Tor switch on, and for
+  a chat that goes only through Tor, on none, never straight. The WebAssembly core gives and takes an event as its
+  bytes, Android's as text: the guarded core says so (`Core.eventsAsBytes`, `lib/core-guard.ts`), and `nostrSeal` turns
+  them into text. `canNostr` says Nostr works there, `canNostrTor` whether Tor reaches it (Android). The Nostr setting
+  shows everywhere (`lib/settings.ts`), its Tor switch only where there is Tor, or while it is on (`app/nostr.tsx`). A
+  linked device still reads nothing there. The check runs it on the WebAssembly core as the web app sets it up.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

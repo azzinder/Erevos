@@ -746,7 +746,7 @@ function laterThan(before = 0): number {
 
 // A Nostr key for a contact (lib/nostr.ts), hex.
 async function newNostrKey(): Promise<NostrKey> {
-  const nostr = core.nostrCore();
+  const nostr = core.nostrSeal();
   const secret = await nostr.nostrSecret();
   return { s: toHex(secret), p: toHex(await nostr.nostrPublic(secret)) };
 }
