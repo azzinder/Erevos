@@ -263,7 +263,6 @@ function finish(call: MatrixCall, state?: MatrixState): void {
   changed();
 }
 
-/** Busy with another call: Erevos's own, a group's, or a Matrix one. */
 // The rooms whose call did not ring here as calls were off (lib/modes.ts), until when it would have
 // rung: the older ring sent beside the newer one keeps no second line.
 const rangWhileOff = new Map<string, number>();
@@ -280,6 +279,7 @@ function rangOff(rung: MatrixCall, until: number, state: MatrixState): boolean {
   return true;
 }
 
+/** Busy with another call: Erevos's own, a group's, or a Matrix one. */
 function busy(): boolean {
   return !!currentCall() || !!currentGroupCall() || inMatrixCall();
 }
@@ -556,9 +556,15 @@ export function hangUpMatrixCall(): void {
 }
 
 // INVISIBLE chosen, or everything of the space sent through Tor on its screen: a call on, or one
-// that rings, ends, as no call goes through Tor (lib/modes.ts).
+// that rings, ends, as no call goes through Tor (lib/modes.ts). One that rings with no name for a
+// closed place stops, kept as missed at once, its line says why.
 onTorWay(() => {
-  if (callsOff()) hangUpMatrixCall();
+  if (!callsOff()) return;
+  hangUpMatrixCall();
+  for (const h of [...held.values()]) {
+    rangWhileOff.set(h.call.roomId, h.until);
+    letGo(h, 'off');
+  }
 });
 
 /** A message from Element Call's window. */

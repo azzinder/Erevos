@@ -10,7 +10,7 @@ import { t } from './i18n';
 import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpToJingle, setupOf, type Role } from './jingle-sdp';
 import { callsOff, CALLS_OFF_LINE } from './modes';
 import { placeNetworkRang } from './network-notices';
-import type { CallRelay } from './relay';
+import { onTorWay, type CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
 import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
 import { watchXmppGroupCalls } from './xmpp-muji';
@@ -621,6 +621,12 @@ function letGo(h: Held, text: string | null, mine = false): void {
   const ringing = hiddenRinging();
   if (ringing?.space === where && ringing.pocket === pocket && ![...held.values()].some((o) => o.closed.space === where && o.closed.pocket === pocket)) setHiddenRinging(null);
 }
+
+// INVISIBLE chosen (lib/modes.ts): a closed place's call that rings with no name stops, as it could
+// not be answered, kept as missed at once, its line says why.
+onTorWay(() => {
+  if (callsOff()) for (const h of [...held.values()]) letGo(h, `Missed ${kindOf(h.s.video)}${CALLS_OFF_LINE}`);
+});
 
 // Its place opened, its account the open one's now: what still rings rings there.
 function promote(): void {

@@ -4,9 +4,11 @@
 
 // The three modes (lib/modes.ts): SPEED, ANONYMOUS and INVISIBLE, read from what a space keeps and
 // written by choosing one; the first start's words for them, at the top of Settings; and INVISIBLE's
-// calls: none starts, none rings, and one going on ends (lib/calls.ts, lib/group-calls.ts,
-// lib/matrix-calls.ts; XMPP's go through the first two), with a line in the chat that says why; a
-// closed hidden place's does not ring with no name either (XMPP's: checks/xmpp-calls.check.ts).
+// calls: none starts, none rings, not even one chosen while the call relay is asked, and one going
+// on ends (lib/calls.ts, lib/group-calls.ts, lib/matrix-calls.ts; XMPP's go through the first two),
+// with a line in the chat that says why; a closed hidden place's does not ring with no name either,
+// and one that rings so stops as INVISIBLE is chosen (lib/hidden-ring-notices.ts here; what held
+// it, in checks/place-receiver.check.ts, xmpp-calls.check.ts and matrix-calls.check.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -22,11 +24,14 @@ import { directNow, setDirect } from '../lib/direct';
 import { closeGroupCall, endGroupCall, groupCallGoingOn, groupCallSignal, joinGroupCall, shownGroupCall, startGroupCall, type GroupCallPlace } from '../lib/group-calls';
 import { setLang, t } from '../lib/i18n';
 import { EL } from '../i18n/el/index';
+import { hiddenRinging, setHiddenRinging } from '../lib/hidden-ring';
+import { startHiddenRinging } from '../lib/hidden-ring-notices';
 import { matrixCallLine, startMatrixCall } from '../lib/matrix-calls';
 import { callsOff, callsOffNote, MODE_NAMES, MODES, modeChange, modeNow, modeOf, modeSaid, type Mode } from '../lib/modes';
 import { setNostr } from '../lib/nostr';
 import { setThroughTor, type TorWay } from '../lib/relay';
 import { searchSettings, type SettingsPlace } from '../lib/settings';
+import { newSpaceKey, setCurrentSpace } from '../lock/keys';
 import { fakeRtc } from './fake-rtc';
 
 const APP = join(import.meta.dirname, '..');
@@ -216,6 +221,38 @@ test("in INVISIBLE a group's call does not ring, keeps one line, and still shows
   assert.equal(groupCallGoingOn(GROUP)?.id, start.id, 'its screen still shows the call, and joining says why not');
 });
 
+test('INVISIBLE chosen while the call relay is asked: the call does not ring either, one line says why', async () => {
+  await setLang('en');
+  const { rtc, connections } = fakeRtc();
+  // A contact's call.
+  const here = place({ callRelay: async () => (setThroughTor('all'), null) });
+  const said = await callSignal(here.calls, 'contact:a', offer('aaaabbbbccccdddd'), false, rtc);
+  assert.match(said ?? '', /^Anna tried to call\. In INVISIBLE no call rings/);
+  assert.equal(shownCall(), null, 'nothing rings');
+  assert.equal(connections.length, 0);
+  assert.deepEqual(here.lines, [{ peer: 'contact:a', mine: false, text: 'Missed voice call, in INVISIBLE' }]);
+  assert.deepEqual(here.sent, [], 'the caller is told nothing');
+  // A group's call.
+  setThroughTor('off');
+  let flip = false;
+  const lines: string[] = [];
+  const group: GroupCallPlace = { send: async () => undefined, callRelay: async () => (flip && setThroughTor('all'), null), me: async () => '11'.repeat(32), line: (_group, text) => void lines.push(text) };
+  const GROUP = 'ef'.repeat(16);
+  flip = true;
+  await groupCallSignal(group, GROUP, '22'.repeat(32), { id: 'ab'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
+  assert.equal(shownGroupCall(), null, 'nothing rings');
+  assert.deepEqual(lines, ['📞 Missed group call, in INVISIBLE']);
+  // Two started one at once, and this phone would join the other's: it does not either.
+  setThroughTor('off');
+  flip = false;
+  const ours = await startGroupCall(group, GROUP, false, null, rtc);
+  flip = true;
+  await groupCallSignal(group, GROUP, '33'.repeat(32), { id: '00'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
+  assert.equal(ours.state, 'ended');
+  assert.equal(shownGroupCall(), null, 'not joined');
+  assert.equal(lines.at(-1), '📞 Missed group call, in INVISIBLE');
+});
+
 test("in INVISIBLE a closed hidden place's call rings not even with no name: kept at once as missed, saying why", () => {
   // Erevos's own (lib/place-receiver.ts), read here: in INVISIBLE its relay is read only through Tor.
   const receiver = read('lib/place-receiver.ts');
@@ -228,6 +265,25 @@ test("in INVISIBLE a closed hidden place's call rings not even with no name: kep
   const closed = matrix.slice(matrix.indexOf('function onClosedEvent('));
   const at = closed.indexOf('if (callsOff()) return rangOff(rung, ring.until, state);');
   assert.ok(at > 0 && at < closed.indexOf('placeNetworkRang('), 'Matrix: before it rings');
+  // A place's ring queue (lib/hidden-ring-notices.ts) is drained, not rung: its offer, read as the
+  // place opens, is kept as missed there.
+  assert.match(read('lib/hidden-ring-notices.ts'), /if \(mayRing\(pocket\) && !receivesPocket\(space, pocket\) && !callsOff\(\)\) ring\(space, pocket, cameAt\);/);
+});
+
+test('a hidden call that rings with no name stops as INVISIBLE is chosen, whatever brought it', () => {
+  setCurrentSpace(0, newSpaceKey());
+  const stop = startHiddenRinging(() => assert.fail('nothing rings here'));
+  try {
+    setHiddenRinging({ space: 0, pocket: 1, at: Date.now() });
+    setThroughTor('messages');
+    assert.ok(hiddenRinging(), 'Tor for messages only leaves it be');
+    setThroughTor('all');
+    assert.equal(hiddenRinging(), null);
+  } finally {
+    stop();
+    setHiddenRinging(null);
+    setCurrentSpace(null);
+  }
 });
 
 test('choosing INVISIBLE ends a call going on, and a group call, as no call goes through Tor', async () => {

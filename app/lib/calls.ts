@@ -196,15 +196,17 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   }
   // INVISIBLE (lib/modes.ts): no call rings, as a call would show this phone's internet address. The
-  // caller's phone is told nothing, and rings until no one answers.
-  if (callsOff()) {
+  // caller's phone is told nothing, and rings until no one answers. Asked again before it would ring,
+  // as INVISIBLE may be chosen while the call relay is asked.
+  const invisible = () => {
     const key = callKey(peer, signal.id);
     if (quietBefore.has(key)) return null;
     quietBefore.add(key);
     if (quietBefore.size > QUIET_KEPT) quietBefore.delete(quietBefore.values().next().value as string);
     place.line(peer, false, `Missed ${kind}${CALLS_OFF_LINE}`, signal.id);
     return t('{name} tried to call. In INVISIBLE no call rings, as a call would show your internet address. To take calls, choose ANONYMOUS or SPEED at the top of Settings.', { name: place.name(peer) });
-  }
+  };
+  if (callsOff()) return invisible();
   const busy = () => {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`, signal.id);
@@ -228,6 +230,8 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     place.line(peer, false, `Missed ${kind}`, signal.id);
     return null;
   }
+  // INVISIBLE chosen while the call relay was asked.
+  if (callsOff()) return invisible();
   // Another call came, or started, while the call relay was asked (offers of one look are read
   // together). The same offer again, through another way, says nothing: a busy with its id would
   // end the call it rings for.

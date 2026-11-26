@@ -173,15 +173,16 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     return;
   }
   // INVISIBLE (lib/modes.ts): no call rings, as a call would show this phone's internet address. The
-  // group's screen still shows the call going on, and joining it says why it cannot be.
-  if (callsOff()) {
+  // group's screen still shows the call going on, and joining it says why it cannot be. Asked again
+  // after the call relay is asked, as INVISIBLE may be chosen meanwhile.
+  const invisible = () => {
     const key = `${group} ${signal.id}`;
     if (quietBefore.has(key)) return;
     quietBefore.add(key);
     if (quietBefore.size > QUIET_KEPT) quietBefore.delete(quietBefore.values().next().value as string);
     place.line(group, `${CALL_LINE}Missed ${kind}${CALLS_OFF_LINE}`);
-    return;
-  }
+  };
+  if (callsOff()) return invisible();
   // Two started a call in the group at once: the one with the lower id goes on, and the other's
   // phone joins it, if no one is in its own yet.
   if (ours && ours.group === group && ours.state === 'in' && ours.peers().length === 0 && signal.id < ours.id) {
@@ -190,6 +191,8 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     ours.hangUp();
     const relay = await place.callRelay().catch(() => null);
     const me = await place.me(group);
+    // INVISIBLE chosen meanwhile.
+    if (callsOff()) return invisible();
     show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, relayAlways: place.relayAlways, bothWays: place.bothWays, events: events(place, group) }), place);
     return;
   }
@@ -204,6 +207,8 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     place.line(group, `${CALL_LINE}Missed ${kind}`);
     return;
   }
+  // INVISIBLE chosen while the call relay was asked.
+  if (callsOff()) return invisible();
   const ringing = GroupCall.incoming(signal.id, from, { group, video: signal.video, me, relay, rtc, relayAlways: place.relayAlways, bothWays: place.bothWays, events: events(place, group) });
   if (ringing) show(ringing, place);
 }

@@ -717,18 +717,25 @@ test("a call to a closed hidden place's own account that receives rings with no 
     other.connection.close();
 
     // In INVISIBLE (lib/modes.ts) no call rings, here or in the closed place, not even with no
-    // name: each is kept at once as missed, its line saying why, and Bob is told nothing.
+    // name: each is kept at once as missed, its line saying why, and Bob is told nothing. One that
+    // rings with no name as it is chosen rings no more, kept so too.
     const ringings = () => bob.got.filter((s) => s.name === 'message' && child(s, 'ringing', JMI)).length;
+    await bob.connection.send(jmi(CAT, 'propose', 'p5', el('description', { xmlns: RTP, media: 'audio' })));
+    await both();
+    assert.equal(rang.length, 4);
+    setHiddenRinging({ space: 5, pocket: 2, at: Date.now() });
     const before = ringings();
     setThroughTor('all');
-    await bob.connection.send(jmi(CAT, 'propose', 'p5', el('description', { xmlns: RTP, media: 'audio' })));
-    await bob.connection.send(jmi(ANN, 'propose', 'p6', el('description', { xmlns: RTP, media: 'audio' }), el('description', { xmlns: RTP, media: 'video' })));
+    assert.equal(hiddenRinging(), null);
+    assert.deepEqual(calls(cat, BOB).at(-1), ['call-p5', false, '📞 Missed voice call, in INVISIBLE']);
+    await bob.connection.send(jmi(CAT, 'propose', 'p6', el('description', { xmlns: RTP, media: 'audio' })));
+    await bob.connection.send(jmi(ANN, 'propose', 'p7', el('description', { xmlns: RTP, media: 'audio' }), el('description', { xmlns: RTP, media: 'video' })));
     await both();
     assert.equal(shownCall(), null);
-    assert.equal(rang.length, 3);
+    assert.equal(rang.length, 4);
     assert.equal(ringings(), before);
-    assert.deepEqual(calls(cat, BOB).at(-1), ['call-p5', false, '📞 Missed voice call, in INVISIBLE']);
-    assert.deepEqual(calls(ann, BOB), [['call-p6', false, '📞 Missed video call, in INVISIBLE']]);
+    assert.deepEqual(calls(cat, BOB).at(-1), ['call-p6', false, '📞 Missed voice call, in INVISIBLE']);
+    assert.deepEqual(calls(ann, BOB), [['call-p7', false, '📞 Missed video call, in INVISIBLE']]);
     assert.equal(xmppCallSessions(), 0);
   } finally {
     setThroughTor('off');

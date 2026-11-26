@@ -20,9 +20,9 @@ and 0.1.15 never came out.
   sees it, never your contacts; Erevos asks before each of those, as before, and calls go through a call server or on
   the same Wi-Fi. **INVISIBLE**: no one sees it; everything of the space goes through Tor, files and Nostr too, and
   there are no voice or video calls: trying one says why, no call rings, not even in hidden chats (the chat shows it
-  as missed, in INVISIBLE), and a call going on ends when INVISIBLE is chosen. A space is on SPEED until another is
-  chosen, unless Tor is on in it. The Tor and Nostr screens move it too, and say so: everything through Tor is
-  INVISIBLE, Tor for messages only or Nostr through Tor is ANONYMOUS. Hidden chats and chats set to **Through Tor**
+  as missed, in INVISIBLE), and a call going on or ringing ends when INVISIBLE is chosen. A space is on SPEED until
+  another is chosen, unless Tor is on in it. The Tor and Nostr screens move it too, and say so: everything through Tor
+  is INVISIBLE, Tor for messages only or Nostr through Tor is ANONYMOUS. Hidden chats and chats set to **Through Tor**
   still ask, and so do a web link, a link's preview, and bringing the messages of a phone beside this one from a
   server it does not use. **What it changes**, under them, says who sees the address with each.
 - **Calls with no server between you** (#73): with SPEED, a call or video call with a contact who shares no server
@@ -46,9 +46,10 @@ and 0.1.15 never came out.
 - The mode is not kept by itself: it is read from `direct`, the Tor way and Nostr's own Tor switch (INVISIBLE is the
   Tor way `all`, SPEED is `direct` with nothing through Tor), and choosing one writes them (`lib/modes.ts`,
   `components/mode-picker.tsx`). With the Tor way `all`, a call is refused where it starts or rings, Erevos's own,
-  group, XMPP and Matrix alike, and the Tor way turning to `all` ends a call going on (`lib/calls.ts`,
-  `lib/group-calls.ts`, `lib/matrix-calls.ts`); a closed hidden place keeps such a call as missed at once, with no
-  ring (`lib/place-receiver.ts`, `lib/xmpp-calls.ts`).
+  group, XMPP and Matrix alike, asked again after the call relay is, and the Tor way turning to `all` ends a call
+  going on or ringing (`lib/calls.ts`, `lib/group-calls.ts`, `lib/matrix-calls.ts`); a closed hidden place keeps such
+  a call as missed at once, with no ring, and one that rings with no name as the way turns stops, kept so too
+  (`lib/place-receiver.ts`, `lib/xmpp-calls.ts`, `lib/matrix-calls.ts`, `lib/hidden-ring-notices.ts`).
 - Calls have a third way beside the call server and the same network: straight over the internet, with the helper
   servers asked in groups, the reserve only when the first group is silent for 1.2 seconds (`lib/call.ts`). Their
   signals go encrypted through Nostr when no server is between the two phones (`lib/space-calls.ts`, `lib/calls.ts`).
