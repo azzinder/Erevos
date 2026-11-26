@@ -80,6 +80,8 @@ export const setupText: Record<string, string> = {
   'Encrypted photos and files': 'Κρυπτογραφημένες φωτογραφίες και αρχεία',
   'Move it here': 'Μεταφορά',
   'Get started': 'Ξεκίνα',
+  'On, as on the other phone': 'Ενεργός, όπως στο άλλο τηλέφωνο',
+  'The fingerprint or face stays with each phone: turn it on again on this one.': 'Το δακτυλικό αποτύπωμα ή το πρόσωπο μένει σε κάθε τηλέφωνο: άνοιξέ το ξανά σε αυτό.',
   'Welcome to {app}': 'Καλώς ήρθες στο {app}',
   'You talk with whoever you want. No one else listens.': 'Μιλάς με όποιον θέλεις. Κανείς άλλος δεν ακούει.',
   'No number, email or account': 'Χωρίς αριθμό, email ή λογαριασμό',

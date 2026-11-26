@@ -79,6 +79,8 @@ export const setupText: Record<string, string> = {
   'Encrypted photos and files': 'Foto e file cifrati',
   'Move it here': 'Portalo qui',
   'Get started': 'Inizia',
+  'On, as on the other phone': 'Attiva, come sull’altro telefono',
+  'The fingerprint or face stays with each phone: turn it on again on this one.': 'L’impronta o il volto restano su ogni telefono: riattivali su questo.',
   'Welcome to {app}': 'Benvenuto in {app}',
   'You talk with whoever you want. No one else listens.': 'Parli con chi vuoi. Nessun altro ascolta.',
   'No number, email or account': 'Niente numero, email o account',

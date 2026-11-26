@@ -172,7 +172,7 @@ export default function FirstSteps() {
   const [move, setMove] = useState<FoundMove | null>(null);
   const [taking, setTaking] = useState<number | null>(null);
   const [moveError, setMoveError] = useState('');
-  const { closeNow, space, setPasswordLock } = useLock();
+  const { closeNow, space, setPasswordLock, passwordLock } = useLock();
   const modules = after?.modules ?? [];
   const key = modules.join(',');
   // How visible: the mode now, the one chosen, and what went wrong choosing it.
@@ -583,6 +583,9 @@ export default function FirstSteps() {
   }
 
   // Keep it safe.
+  // A lock this screen did not turn on was there before it: a backup restored brings its own. Then
+  // the card only says so, and the fingerprint, which stays with each phone, is set where Settings sets it.
+  const lockedBefore = passwordLock && !locked;
   const strength = passwordOn ? strengthOf(password) : null;
   const strengthLook = strength === 'strong' ? { share: 1, color: look.ok, text: t('Strong') } : strength === 'fair' ? { share: 0.66, color: TILES.gold[0], text: t('Fair') } : { share: 0.33, color: look.warn, text: t('Weak') };
   const field = {
@@ -620,74 +623,99 @@ export default function FirstSteps() {
             </L>
           </View>
         </View>
-        <Glass style={{ paddingVertical: 12, paddingHorizontal: 14, gap: 9 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Tile tile="gold" icon="key" />
-            <View style={{ flex: 1 }}>
-              <L size={15} weight="700">
-                {t('A password for Erevos')}
-              </L>
-            </View>
-            <StartToggle on={passwordOn} label={t('A password for Erevos')} onChange={(on) => !locked && setPasswordOn(on)} />
-          </View>
-          {passwordOn ? (
-            <>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!locked}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder={t('Password')}
-                placeholderTextColor={look.faint}
-                accessibilityLabel={t('Password')}
-                style={[field, noOutline]}
-              />
-              <TextInput
-                value={again}
-                onChangeText={setAgain}
-                secureTextEntry
-                editable={!locked}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder={t('The password again')}
-                placeholderTextColor={look.faint}
-                accessibilityLabel={t('The password again')}
-                style={[field, noOutline]}
-              />
-              {strength ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: look.line, overflow: 'hidden' }}>
-                    <View style={{ width: `${strengthLook.share * 100}%`, height: 6, backgroundColor: strengthLook.color }} />
-                  </View>
-                  <L size={12} weight="800" tone={strengthLook.color}>
-                    {strengthLook.text}
-                  </L>
-                </View>
-              ) : null}
-              <View style={{ padding: 11, paddingVertical: 9, borderRadius: 14, backgroundColor: tint(look.ok, 0.08), gap: 3 }}>
-                <L size={13} weight="700">
-                  {t('For a stronger password')}
+        {lockedBefore ? (
+          <Glass style={{ paddingVertical: 12, paddingHorizontal: 14, gap: 9 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Tile tile="gold" icon="key" />
+              <View style={{ flex: 1 }}>
+                <L size={15} weight="700">
+                  {t('A password for Erevos')}
                 </L>
-                <Bolded text={`✓ ${t('4 or more random words, such as {example}', { example: `**${t('moon-ladder-orange-7')}**` })}`} size={12.5} />
-                <Bolded text={`✓ ${t('Not a name, a birthday or 1234')}`} size={12.5} />
-                <Bolded text={`✓ ${t('Not the same as the phone’s PIN or another password')}`} size={12.5} />
-                <Bolded text={`✓ ${t('Write it down somewhere safe: if you forget it, it cannot be recovered')}`} size={12.5} />
+                <L size={12.5} tone="ok" line={17}>
+                  {t('On, as on the other phone')}
+                </L>
               </View>
-              {biometricSealer.available() ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 2 }}>
-                  <View style={{ flex: 1 }}>
-                    <L size={14} weight="600">
-                      {t('With your fingerprint or face too')}
+              <StartToggle on />
+            </View>
+            {biometricSealer.available() ? (
+              <>
+                <L size={12.5} tone="muted" line={17}>
+                  {t('The fingerprint or face stays with each phone: turn it on again on this one.')}
+                </L>
+                <GhostButton title={t('Lock and second password')} height={44} onPress={() => router.push('/security?part=lock')} />
+              </>
+            ) : null}
+          </Glass>
+        ) : (
+          <Glass style={{ paddingVertical: 12, paddingHorizontal: 14, gap: 9 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Tile tile="gold" icon="key" />
+              <View style={{ flex: 1 }}>
+                <L size={15} weight="700">
+                  {t('A password for Erevos')}
+                </L>
+              </View>
+              <StartToggle on={passwordOn} label={t('A password for Erevos')} onChange={(on) => !locked && setPasswordOn(on)} />
+            </View>
+            {passwordOn ? (
+              <>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!locked}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder={t('Password')}
+                  placeholderTextColor={look.faint}
+                  accessibilityLabel={t('Password')}
+                  style={[field, noOutline]}
+                />
+                <TextInput
+                  value={again}
+                  onChangeText={setAgain}
+                  secureTextEntry
+                  editable={!locked}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder={t('The password again')}
+                  placeholderTextColor={look.faint}
+                  accessibilityLabel={t('The password again')}
+                  style={[field, noOutline]}
+                />
+                {strength ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: look.line, overflow: 'hidden' }}>
+                      <View style={{ width: `${strengthLook.share * 100}%`, height: 6, backgroundColor: strengthLook.color }} />
+                    </View>
+                    <L size={12} weight="800" tone={strengthLook.color}>
+                      {strengthLook.text}
                     </L>
                   </View>
-                  <StartToggle on={fingerprint} label={t('With your fingerprint or face too')} onChange={setFingerprint} />
+                ) : null}
+                <View style={{ padding: 11, paddingVertical: 9, borderRadius: 14, backgroundColor: tint(look.ok, 0.08), gap: 3 }}>
+                  <L size={13} weight="700">
+                    {t('For a stronger password')}
+                  </L>
+                  <Bolded text={`✓ ${t('4 or more random words, such as {example}', { example: `**${t('moon-ladder-orange-7')}**` })}`} size={12.5} />
+                  <Bolded text={`✓ ${t('Not a name, a birthday or 1234')}`} size={12.5} />
+                  <Bolded text={`✓ ${t('Not the same as the phone’s PIN or another password')}`} size={12.5} />
+                  <Bolded text={`✓ ${t('Write it down somewhere safe: if you forget it, it cannot be recovered')}`} size={12.5} />
                 </View>
-              ) : null}
-            </>
-          ) : null}
-        </Glass>
+                {biometricSealer.available() ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 2 }}>
+                    <View style={{ flex: 1 }}>
+                      <L size={14} weight="600">
+                        {t('With your fingerprint or face too')}
+                      </L>
+                    </View>
+                    <StartToggle on={fingerprint} label={t('With your fingerprint or face too')} onChange={setFingerprint} />
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+          </Glass>
+        )}
         {CAN_AUTO_BACKUP ? (
           <>
             <L size={12} weight="800" tone="muted" style={{ letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 2 }}>

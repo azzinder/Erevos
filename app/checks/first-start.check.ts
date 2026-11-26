@@ -136,3 +136,13 @@ test('on the web, the icons in the tiles are drawn over their gradient and the h
   const bold = between(look, 'export function Bolded(', '\n}\n');
   assert.ok(bold.includes("style={{ ...own, fontWeight: '700' }}"));
 });
+
+test('after a restore the lock the backup brought shows as on, and the fingerprint is set where Settings sets it', () => {
+  assert.ok(steps.includes('const lockedBefore = passwordLock && !locked;'));
+  const card = between(steps, '{lockedBefore ? (', ') : (');
+  assert.ok(card.includes("t('On, as on the other phone')") && card.includes("router.push('/security?part=lock')"));
+  assert.ok(!card.includes('<TextInput'));
+  // Done sets a lock only from the fields, so one already on is left as it is.
+  const done = between(steps, 'async function done()', "if (step === 'mode')");
+  assert.ok(done.includes('if (passwordOn && !locked) {'));
+});
