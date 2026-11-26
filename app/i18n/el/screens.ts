@@ -323,7 +323,7 @@ export const screens: Record<string, string> = {
   'They are far away': 'Είναι μακριά',
   'Send them a link': 'Στείλε του έναν σύνδεσμο',
   'LPHL’s server gave no place. {why}': 'Ο server του LPHL δεν έδωσε θέση. {why}',
-  'Erevos could not reach it: {error}': 'Το Erevos δεν μπόρεσε να το φτάσει: {error}',
+  'Erevos could not reach it now. It tries again by itself each time Erevos opens.': 'Το Erevos δεν μπόρεσε να τον φτάσει τώρα. Ξαναδοκιμάζει μόνο του κάθε φορά που ανοίγει το Erevos.',
   'Another server': 'Άλλος server',
   'No server yet. LPHL’s is free, and gives you a place by itself.': 'Ακόμα κανένας server. Ο server του LPHL είναι δωρεάν και σου δίνει θέση μόνος του.',
   'Use LPHL’s server': 'Χρήση του server του LPHL',

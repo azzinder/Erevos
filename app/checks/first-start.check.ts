@@ -125,6 +125,12 @@ test("LPHL's open server is wanted for a new start unless the invite brings a se
   assert.ok(index.includes('const stopServer = onFirstServer(() => {'));
   // The place's own queue is one that Forget me gathers (checks/forget-me.check.ts).
   assert.ok(read('lib/server-queues.ts').includes("'lib/open-place.ts': ['own'],"));
+  // It is taken with the relay's OPEN (lib/relay.ts, checks/open-place.check.ts), its refusals told apart,
+  // and a failure is said in plain words, with no error of the network's.
+  const place = read('lib/open-place.ts');
+  assert.ok(place.includes('({ token } = await takeOpenPlace(LPHL_RELAY));') && place.includes('const why = openPlaceRefusal(error);'));
+  assert.ok(!place.includes('setOpenTaker'));
+  assert.ok(home.includes("t('Erevos could not reach it now. It tries again by itself each time Erevos opens.')") && !home.includes('server.error'));
 });
 
 test('on the web, the icons in the tiles are drawn over their gradient and the highlighted words keep the title size', () => {

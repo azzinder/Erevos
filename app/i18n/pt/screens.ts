@@ -323,7 +323,7 @@ export const screens: Record<string, string> = {
   'They are far away': 'Está longe',
   'Send them a link': 'Envie um link',
   'LPHL’s server gave no place. {why}': 'O servidor da LPHL não deu uma vaga. {why}',
-  'Erevos could not reach it: {error}': 'O Erevos não conseguiu alcançá-lo: {error}',
+  'Erevos could not reach it now. It tries again by itself each time Erevos opens.': 'O Erevos não conseguiu alcançá-lo agora. Ele tenta de novo sozinho toda vez que o Erevos abre.',
   'Another server': 'Outro servidor',
   'No server yet. LPHL’s is free, and gives you a place by itself.': 'Ainda sem servidor. O do LPHL é grátis e dá um lugar a você sozinho.',
   'Use LPHL’s server': 'Usar o servidor do LPHL',

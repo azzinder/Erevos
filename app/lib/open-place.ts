@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadSpaceData, updateSpaceData } from '../lock/space-data';
 import { placeChanged } from './receiver';
-import { createQueue, toHex } from './relay';
+import { createQueue, openPlaceRefusal, takeOpenPlace, toHex, type OpenPlaceRefusal } from './relay';
 import { ownToken } from './relay-signin';
 import { secureDelete, secureGet, secureSet } from './secure';
 import { LPHL_RELAY } from './servers';
@@ -26,7 +26,7 @@ import { loadSetupAfter } from './setup-after';
 
 /** Why the open server gave no place (lib/relay.ts openPlaceRefusal): it gives none, every place is
  *  taken, today's new places are, or this address had its share today. */
-export type OpenRefusal = 'off' | 'full' | 'day' | 'address';
+export type OpenRefusal = OpenPlaceRefusal;
 
 /** What the first space's server is, as the first start and the home screen say it. */
 export type FirstServer =
@@ -37,18 +37,8 @@ export type FirstServer =
   | { kind: 'refused'; why: OpenRefusal }
   | { kind: 'failed'; error: string };
 
-/** Takes a place on the open server at `url`: a token of the phone's own there, and its name. */
-export type OpenTaker = (url: string) => Promise<{ token: string; name: string }>;
-
-/** Tells why `error`, thrown by an OpenTaker, came: a refusal of the server's, or null for another failure. */
-export type OpenRefusalOf = (error: unknown) => OpenRefusal | null;
-
 const WANTED = 'erevos.open-place';
 
-let taker: OpenTaker = async () => {
-  throw new Error('This build cannot take a place on an open server yet.');
-};
-let refusalOf: OpenRefusalOf = () => null;
 let state: FirstServer = { kind: 'none' };
 let taking: Promise<FirstServer> | null = null;
 const listeners = new Set<() => void>();
@@ -57,12 +47,6 @@ function set(next: FirstServer): FirstServer {
   state = next;
   for (const listener of listeners) listener();
   return next;
-}
-
-/** How a place is taken, and its refusals told apart (lib/relay.ts; checks give their own). */
-export function setOpenTaker(take: OpenTaker, why: OpenRefusalOf): void {
-  taker = take;
-  refusalOf = why;
 }
 
 /** The first start's setup chose Erevos's own chats: the space `space` (the first, 0, at the first
@@ -130,9 +114,9 @@ export function takeFirstServer(): Promise<FirstServer> {
       let token = url ? data.token.trim() : '';
       if (!token) {
         try {
-          ({ token } = await taker(LPHL_RELAY));
+          ({ token } = await takeOpenPlace(LPHL_RELAY));
         } catch (error) {
-          const why = refusalOf(error);
+          const why = openPlaceRefusal(error);
           return set(why ? { kind: 'refused', why } : { kind: 'failed', error: error instanceof Error ? error.message : String(error) });
         }
         // The token is kept at once: the server has its line now, and a queue made later still finds it.

@@ -73,6 +73,15 @@ and 0.1.15 never came out.
   **They are far away**, with a line for a permission still missing. The first start no longer asks whether you have
   an invite: one that Erevos was opened with still opens once the steps are done, and the ways in with an account at a
   server, or a server of your own, are under **Another server (for advanced users)** on the mode's step.
+- **LPHL's server, by itself** (#74): a new phone needs no invite and no account any more. At the first start, once you
+  choose how visible you are, Erevos takes a place for your messages on LPHL's server by itself and makes your queue
+  there, with nothing to type; the phone makes its token itself, and the server gets only its SHA-256. Such a place is
+  for your own chats: it cannot invite or lend places, and each day it may make 20 queues, move 50 MB of files through
+  the server and take what a call through the server needs 30 times. The server gives 1000 at most, 100 a day and 3 a
+  day to one internet address, which it counts only for the day, in memory, and takes out a place whose phone has not
+  connected for 60 days. When it gives none, the home screen says why, with **Try again** and **Another server**, and
+  Erevos tries again each time it opens; a space with no server and no chats yet offers **Use LPHL’s server**. An invite
+  Erevos was first opened with that brings a server of its own, a server at someone's home say, is used instead.
 - **Automatic backups only to a server**: automatic backups can now go to a WebDAV server with no folder on the device.
   The first start's **WebDAV** sets them up so, and **Backups** shows them as **Only to** that server, with a folder on
   the device optional, for one more copy close at hand. Stopping that server stops them too.
@@ -143,6 +152,22 @@ and 0.1.15 never came out.
   Backups with the choice (`/backup?start=device` or `webdav`); the meter is `strengthOf` (`lib/password-strength.ts`).
   The steps left are kept as before (`lib/setup-after.ts`), so they show again when Erevos closes before **Done**. The
   Photos permission is not asked: the Collection takes photos and files through Android's own picker, which needs none.
+- Open places (`crates/erevos-relay/src/open.rs`): with `EREVOS_RELAY_OPEN=on` and a file of phones' tokens, the request
+  `OPEN` (39) on `/join`, with the SHA-256 of a token the phone made, adds a line for it named `open-` and 8 random hex
+  digits, with the day it was made, and answers its name; or `NOT_FOUND` (none given), `FULL`, `DAY_FULL` (7),
+  `ADDRESS_FULL` (8) or `FAILED`. `EREVOS_RELAY_OPEN_PLACES` (1000), `_DAY` (100), `_PER_ADDRESS` (3), `_UNUSED_DAYS`
+  (60), `_FILES_MB` (50), `_CALLS` (30) and `_QUEUES` (20) set the limits, each checked at start. An address counts as
+  an HMAC under a secret drawn at start, an IPv6 one by its /64, in memory and for the day only; what each place used
+  that day, and the places given, are counted in `<file of tokens>.open`, written whole. An open place's token uses its
+  own queues and files, sends for later, pushes and the call relay within its day; `INVITE`, `INVITES`, `UNINVITE`,
+  `LEND`, `COUPON_KEY`, `COUPON_SIGN` and `PAIR` answer it `NOT_FOUND`, and `OWN`, `BORROW` and the requests of `/join`
+  close its connection. The hourly look takes out a line whose token connected on none of the set days, one with no
+  record counted from the first look that sees it; `erevos-relay open-places` counts them from the two files. A name
+  typed for an invite or given by a provider never starts with `open-`.
+- The app takes such a place with `takeOpenPlace`, and tells its refusals with `openPlaceRefusal` (`lib/relay.ts`). The
+  first space wants one from the first start's setup on and takes it once the mode is chosen, or as a space opens once
+  the steps are done (`lib/open-place.ts`); an invite that brings a server of its own is told by `bringsServer`
+  (`lib/invite-server.ts`).
 - Automatic backups with no folder and a WebDAV server go only to that server: `runAutoBackup` already sent them so, and
   `app/backup.tsx` now sets them up that way, says so, and stops them with the server.
 

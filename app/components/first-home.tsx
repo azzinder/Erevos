@@ -144,7 +144,7 @@ export function FirstHome() {
       {server.kind === 'refused' || server.kind === 'failed' ? (
         <Card style={{ alignSelf: 'stretch' }}>
           <Text variant="caption" color={colors.warning}>
-            {server.kind === 'refused' ? t('LPHL’s server gave no place. {why}', { why: refusalText(server.why) }) : t('LPHL’s server gave no place. {why}', { why: t('Erevos could not reach it: {error}', { error: server.error }) })}
+            {server.kind === 'refused' ? t('LPHL’s server gave no place. {why}', { why: refusalText(server.why) }) : t('LPHL’s server gave no place. {why}', { why: t('Erevos could not reach it now. It tries again by itself each time Erevos opens.') })}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             <Button title={t('Try again')} compact onPress={() => void takeFirstServer()} />
