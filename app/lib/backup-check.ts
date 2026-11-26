@@ -175,6 +175,9 @@ export async function checkBackup(
   }
   if (!bytes)
     return { ...checked, error: t("The backup itself is not there.") };
+  // Empty, as another app's folder gives a file back before that app sent it to its server (#75).
+  if (bytes.length === 0)
+    return { ...checked, error: t("The backup itself is still empty there.") };
   let parts;
   try {
     parts = (await openBackupWithKey(bytes, key)).parts;

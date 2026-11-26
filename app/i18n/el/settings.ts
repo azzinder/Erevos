@@ -432,6 +432,12 @@ export const settings: Record<string, string> = {
   'Nor the Collection’s files that are whole on its WebDAV server: a restore fetches them from there.': 'Ούτε τα αρχεία της Συλλογής που είναι ολόκληρα στον server WebDAV της: η επαναφορά τα φέρνει από εκεί.',
   'Nor the Collection you keep out of backups.': 'Ούτε η Συλλογή που κρατάς έξω από τα αντίγραφα.',
   'Checking the backup…': 'Έλεγχος του αντιγράφου…',
+  // A check that waits for another app's folder, and Check again (#75).
+  "Not all there yet: the folder's app may still be sending it to its server. Checking again in {seconds} seconds…":
+    'Δεν είναι ακόμα όλο εκεί: η εφαρμογή του φακέλου μπορεί να το στέλνει ακόμα στον server της. Νέος έλεγχος σε {seconds} δευτερόλεπτα…',
+  'Check again': 'Έλεγχος ξανά',
+  'This folder belongs to another app, which may still be sending the backup to its server: check again in a few minutes.':
+    'Αυτός ο φάκελος ανήκει σε άλλη εφαρμογή, που μπορεί να στέλνει ακόμα το αντίγραφο στον server της: έλεγξε ξανά σε λίγα λεπτά.',
   'Saved {name} in {folder}: {total}.': 'Αποθηκεύτηκε το {name} στο {folder}: {total}.',
   'Keep its password: nothing opens the backup without it.': 'Κράτα τον κωδικό του: τίποτα δεν ανοίγει το αντίγραφο χωρίς αυτόν.',
   'Into a folder': 'Σε φάκελο',

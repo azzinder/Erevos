@@ -175,6 +175,8 @@ export const cloudBackup: Record<string, string> = {
     "Ostaci",
   "The backup itself is not there.":
     "Same rezervne kopije nema.",
+  "The backup itself is still empty there.":
+    "Sama rezervna kopija tamo je još prazna.",
   "It is not made with the automatic backups’ password, so it cannot be checked here.":
     "Nije napravljena lozinkom automatskih kopija, pa se ovdje ne može provjeriti.",
   "The backup itself is damaged: {error}":

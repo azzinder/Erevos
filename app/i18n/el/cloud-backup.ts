@@ -177,6 +177,8 @@ export const cloudBackup: Record<string, string> = {
     "Υπολείμματα",
   "The backup itself is not there.":
     "Το ίδιο το αντίγραφο δεν είναι εκεί.",
+  "The backup itself is still empty there.":
+    "Το ίδιο το αντίγραφο είναι ακόμα άδειο εκεί.",
   "It is not made with the automatic backups’ password, so it cannot be checked here.":
     "Δεν έγινε με τον κωδικό των αυτόματων αντιγράφων, οπότε δεν ελέγχεται εδώ.",
   "The backup itself is damaged: {error}":

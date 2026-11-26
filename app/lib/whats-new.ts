@@ -29,6 +29,7 @@ export const NEXT: Changes = {
     mark("**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works."),
     mark("**Fingerprint or face, at once**: Android asks for the finger or face without a moment's wait, as its key is now kept in the phone's secure area, not in its separate security chip. Where it is on already, turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**. See [Password lock](#lock)."),
     mark("**Nostr on a computer, in the web app and on Sailfish OS**: texts there now go through the public Nostr servers too when your servers do not take them, as on Android, and with no server at all. There is no Tor there, so they go straight: the Nostr servers see that device's internet address. See [Through Nostr](#nostr)."),
+    mark("**Backups into a cloud app's folder**: when Android does not let a backup into a folder, Erevos now says why, in plain words, and what to do. In a cloud app's folder, such as DAVx5's, the check after a backup waits for that app to send it to its server, and **Check again** under it looks once more. See [Backups](#backup)."),
   ],
   underTheHood: [
     mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),

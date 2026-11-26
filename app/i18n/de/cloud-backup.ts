@@ -175,6 +175,8 @@ export const cloudBackup: Record<string, string> = {
     "Reste",
   "The backup itself is not there.":
     "Das Backup selbst ist nicht da.",
+  "The backup itself is still empty there.":
+    "Das Backup selbst ist dort noch leer.",
   "It is not made with the automatic backups’ password, so it cannot be checked here.":
     "Es ist nicht mit dem Passwort der automatischen Backups gemacht und kann hier nicht geprüft werden.",
   "The backup itself is damaged: {error}":

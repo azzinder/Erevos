@@ -432,6 +432,12 @@ export const settings: Record<string, string> = {
   'Nor the Collection’s files that are whole on its WebDAV server: a restore fetches them from there.': 'Ni datoteke Zbirke koje su cijele na njenom WebDAV serveru: vraćanje ih preuzima odande.',
   'Nor the Collection you keep out of backups.': 'Ni Zbirka koju držite izvan rezervnih kopija.',
   'Checking the backup…': 'Provjera rezervne kopije…',
+  // A check that waits for another app's folder, and Check again (#75).
+  "Not all there yet: the folder's app may still be sending it to its server. Checking again in {seconds} seconds…":
+    'Još nije sve tu: aplikacija mape možda je još šalje na svoj server. Ponovna provjera za {seconds} sekundi…',
+  'Check again': 'Provjeri ponovo',
+  "This folder belongs to another app, which may still be sending the backup to its server: check again in a few minutes.":
+    'Ova mapa pripada drugoj aplikaciji, koja možda još šalje rezervnu kopiju na svoj server: provjeri ponovo za nekoliko minuta.',
   'Saved {name} in {folder}: {total}.': 'Datoteka {name} sačuvana je u {folder}: {total}.',
   'Keep its password: nothing opens the backup without it.': 'Čuvajte njenu lozinku: bez nje ništa ne otvara rezervnu kopiju.',
   'Into a folder': 'U folder',

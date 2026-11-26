@@ -53,6 +53,11 @@ and 0.1.15 never came out.
 - **A backup that a folder does not take says why** (#75): **Make a backup** and the automatic backups now say in
   plain words why Android did not let the backup into the folder, and what to do (choose it again, make room, or
   choose a folder on the phone), in place of Android's own error, which named a function of the app.
+- **A backup in a cloud app's folder is checked once it is there** (#75): such a folder, as DAVx5's for a WebDAV
+  server, takes the backup at once and sends it to its server after, and the check right after it found it empty or
+  short. The check now looks again a few times over about four minutes, and says so as it waits, before it says what
+  it found; under it, **Check again** looks once more, while the space stays open. Automatic backups into such a folder
+  wait the same way, and a check that finds the backup empty says that.
 
 ### Under the hood
 
@@ -104,6 +109,13 @@ and 0.1.15 never came out.
 - What Android says when a file cannot be made or written in a backup's folder is put in plain words by
   `folderTrouble` (`lib/backup-place.ts`), from the error under Expo's own line; the checks fail a write the ways
   Android does.
+- The check right after a backup into a folder kept by another app than Android's own storage (`folderOfAnotherApp`:
+  the tree's authority is neither the phone's storage nor Downloads) looks again after 15, 30, 45, 60 and 90 seconds
+  while it does not find the backup whole (`lib/backup-folder.ts` `settled`), for automatic backups and those made by
+  hand; **Check again** looks once (`checkMadeBackup` `once`, `app/backup.tsx`), with the key the backup was made with,
+  kept only in the screen's note while the space is open (`lib/backup-making.ts`). DAVx5 makes each file empty on its
+  server first and uploads it once written, and reads it back empty until then: an empty backup says so
+  (`lib/backup-check.ts`). The checks run it in a DAVx5 folder whose backup comes whole only after a wait.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

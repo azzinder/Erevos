@@ -435,6 +435,12 @@ export const settings: Record<string, string> = {
   'Nor the Collection’s files that are whole on its WebDAV server: a restore fetches them from there.': 'Tampoco los archivos de la Colección que están enteros en su servidor WebDAV: al restaurar se traen de allí.',
   'Nor the Collection you keep out of backups.': 'Tampoco la Colección que dejas fuera de las copias.',
   'Checking the backup…': 'Comprobando la copia…',
+  // A check that waits for another app's folder, and Check again (#75).
+  "Not all there yet: the folder's app may still be sending it to its server. Checking again in {seconds} seconds…":
+    'Aún no está todo: la app de la carpeta puede que todavía lo esté enviando a su servidor. Se comprobará de nuevo en {seconds} segundos…',
+  'Check again': 'Comprobar de nuevo',
+  "This folder belongs to another app, which may still be sending the backup to its server: check again in a few minutes.":
+    'Esta carpeta pertenece a otra app, que puede que todavía esté enviando la copia a su servidor: vuelve a comprobar en unos minutos.',
   'Saved {name} in {folder}: {total}.': '{name} guardado en {folder}: {total}.',
   'Keep its password: nothing opens the backup without it.': 'Guarda su contraseña: nada abre la copia sin ella.',
   'Into a folder': 'En una carpeta',

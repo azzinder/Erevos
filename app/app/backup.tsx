@@ -61,6 +61,7 @@ import {
   checkFolderFully,
   checkMadeBackup,
   checkSentBackup,
+  folderOfAnotherApp,
   runAutoBackup,
   startAutoBackup,
   stopAutoBackup,
@@ -311,10 +312,11 @@ export default function Backups() {
   }
 
   // `made`: said of a backup made by hand, in its own card, while its space stays open
-  // (lib/backup-making.ts), with what the check right after it found (`checked`).
-  function say(text: string, bad = false, made: BackupTold | null = null, checked?: MadeNote["checked"]) {
+  // (lib/backup-making.ts), with what the check right after it found (`checked`), and how to
+  // check it again (`again`).
+  function say(text: string, bad = false, made: BackupTold | null = null, checked?: MadeNote["checked"], again?: MadeNote["again"]) {
     if (made) {
-      made.note(text ? { text, bad, ...(checked ? { checked } : {}) } : null);
+      made.note(text ? { text, bad, ...(checked ? { checked } : {}), ...(again ? { again } : {}) } : null);
       setNote("");
       return;
     }
@@ -372,6 +374,21 @@ export default function Backups() {
     if (!folder) return;
     await changeAutoBackup({ folder });
     await backUpNow();
+  }
+
+  // Check again, under what the check of a backup made by hand found: the same backup, once more,
+  // its progress shown as a backup's is.
+  async function checkMadeAgain() {
+    const note = madeNote;
+    if (!note?.again || !note.checked) return;
+    const told = beginBackupMaking();
+    told.making({ step: t("Checking the backup…"), percent: null });
+    try {
+      const checked = await note.again();
+      told.note(checked ? { ...note, checked: { ...note.checked, checked } } : note);
+    } finally {
+      told.making(null);
+    }
   }
 
   async function checkNow() {
@@ -893,9 +910,19 @@ export default function Backups() {
         );
         const end = Date.now();
         const folder = where ?? folderLabel(asking.folder);
-        // Read back from the folder as it lies there, where its files can be listed.
+        // Read back from the folder as it lies there, where its files can be listed: in another
+        // app's folder, again a few times while that app may still be sending it on.
         made.making({ step: t("Checking the backup…"), percent: null });
-        const checked = await checkMadeBackup(asking.folder, name, key);
+        const target = asking.folder;
+        const checked = await checkMadeBackup(target, name, key, Date.now(), {
+          waiting: (ms) =>
+            made.making({
+              step: t("Not all there yet: the folder's app may still be sending it to its server. Checking again in {seconds} seconds…", {
+                seconds: Math.round(ms / 1000),
+              }),
+              percent: null,
+            }),
+        });
         say(
           [
             parts > 0
@@ -919,7 +946,8 @@ export default function Backups() {
             .join("\n"),
           false,
           made,
-          checked ? { where: folder, checked } : undefined,
+          checked ? { where: folder, checked, later: folderOfAnotherApp(target) } : undefined,
+          () => checkMadeBackup(target, name, key, Date.now(), { once: true }),
         );
         // The phone's notice names the backup too: not once the space that made it has closed.
         if (made.kept()) tellBackupMade(name, spaceText(size + partsSize), folder, parts);
@@ -1003,6 +1031,7 @@ export default function Backups() {
           false,
           made,
           checked ? { where: cloudLabel(sent), checked } : undefined,
+          () => checkSentBackup(sent, named, size),
         );
         if (made.kept()) tellBackupSent(cloudLabel(sent), total);
       } catch (error) {
@@ -1297,7 +1326,19 @@ export default function Backups() {
           <CheckLine
             where={madeNote.checked.where}
             checked={madeNote.checked.checked}
+            later={madeNote.checked.later}
           />
+        ) : null}
+        {madeNote?.checked && madeNote.again && !making && !checkedWhole(madeNote.checked.checked) ? (
+          <Row wrap>
+            <Button
+              title={t("Check again")}
+              kind="secondary"
+              compact
+              onPress={() => void checkMadeAgain()}
+              disabled={busy}
+            />
+          </Row>
         ) : null}
       </Card>
 
@@ -1588,6 +1629,7 @@ export default function Backups() {
               <CheckLine
                 where={folderLabel(auto.folder)}
                 checked={checks.folder}
+                later={folderOfAnotherApp(auto.folder)}
               />
             ) : null}
             {cloud ? (
@@ -1876,13 +1918,17 @@ function byHandText(bytes: number | null): string {
     .join(" ");
 }
 
-// What the last check of a place found (lib/backup-check.ts).
+// What the last check of a place found (lib/backup-check.ts). `later`: the folder is another
+// app's, which may still have been sending the backup on to its server (lib/backup-folder.ts
+// folderOfAnotherApp), so a check that did not find it whole says to look again.
 function CheckLine({
   where,
   checked,
+  later = false,
 }: {
   where: string;
   checked: Checked | null;
+  later?: boolean;
 }) {
   const { colors } = useTheme();
   if (!checked)
@@ -1928,6 +1974,9 @@ function CheckLine({
     >
       {whole ? "✓ " : "⚠ "}
       {text}
+      {!whole && later
+        ? ` ${t("This folder belongs to another app, which may still be sending the backup to its server: check again in a few minutes.")}`
+        : ""}
     </Text>
   );
 }
