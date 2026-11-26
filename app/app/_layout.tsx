@@ -24,6 +24,7 @@ import { forgetOffered } from '../lib/contact-code';
 import { armCurtain, awayClock, awayLong, CURTAIN_END, curtainBack, curtainDown, liftCurtain, lowerCurtain, type CurtainBack } from '../lib/curtain';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
+import { directOf, setDirect } from '../lib/direct';
 import { endGroupCall } from '../lib/group-calls';
 import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '../lib/hidden-ring';
 import { tellShareTexts } from '../lib/share-texts';
@@ -240,6 +241,11 @@ export default function RootLayout() {
         () => callAudio?.networkKind?.() ?? 'other',
         (bridges) => updateSpaceData(space, spaceKey, { bridges }).then(() => undefined),
       );
+      // Direct connections (lib/direct.ts), on unless turned off: off, and kept off, in a space where
+      // anything goes through Tor, so that turning Tor off later connects nothing directly unasked.
+      const direct = directOf(data);
+      setDirect(direct);
+      if (direct !== data.direct) updateSpaceData(space, spaceKey, { direct }).catch(() => undefined);
       applyTor(data.tor, data.bridges).catch(() => undefined);
       // Its texts go through Nostr unless it says not, the way its Tor way says (lib/nostr.ts).
       setNostr(nostrOf(data.nostr), data.nostr.tor === true);
@@ -1202,6 +1208,8 @@ function closeSpace(): void {
   forgetBackupMaking();
   leaveTor();
   setNostr(null);
+  // With no space open nothing connects directly unasked (lib/direct.ts).
+  setDirect(false);
   setRelayStopped(false);
   stopReleases();
   forgetRelayLine();

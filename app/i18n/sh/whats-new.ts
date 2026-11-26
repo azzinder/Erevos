@@ -126,8 +126,12 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
-  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
-    "**Server, jednostavnim riječima**: Erevos sada kaže server, na svakom ekranu, u svakom obavještenju i u vodiču, za ono što čuva vaše poruke, šifrirane, dok ih drugi telefon ne preuzme. U načinu rada ništa se ne mijenja.",
+  "**Direct connections**: one switch at the top of **Settings**, on unless you turn it off, for everything that shows your phone's internet address to someone else. On, Erevos no longer asks before those things, and calls work with a contact even with no server between you two, straight from phone to phone. Off, it asks as before. It never changes Tor, and while Tor is on it stays off. See [Direct connections](#direct).":
+    "**Direktne veze**: prekidač na vrhu **Postavki**, uključen dok ga ne isključite, za sve što pokazuje internet adresu vašeg telefona nekom drugom. Uključen, Erevos više ne pita prije tih stvari, a pozivi rade s kontaktom i kad između vas dvoje nema servera, direktno s telefona na telefon. Isključen, pita kao prije. Nikad ne mijenja Tor, a dok je Tor uključen ostaje isključen. Pogledajte [Direktne veze](#direct).",
+  "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
+    "**Novi razgovor kaže šta radi bez servera**: poruke, fotografije, datoteke i glasovne poruke, a i pozivi dok su **Direktne veze** uključene.",
+  "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
+    "Poziv bez servera između dva telefona uspostavlja se preko Nostra, šifriran s kraja na kraj kao poruka, a javni pomoćni serveri se pitaju samo kad onaj od LPHL-a ne odgovori.",
   // 7.0.0-rc.7
   // 7.0.0-rc.6
   // 7.0.0-rc.5

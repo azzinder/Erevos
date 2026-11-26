@@ -18,7 +18,15 @@ const MISSED: Record<string, string> = {
   'group call': mark('Missed group call'),
   'group video call': mark('Missed group video call'),
 };
-const ENDINGS: string[] = [mark('turned down'), mark('could not connect'), mark('they were in another call'), mark('not answered'), mark('answered on another device')];
+const ENDINGS: string[] = [
+  mark('turned down'),
+  mark('could not connect'),
+  // A call straight between the two phones, with no call relay (lib/direct.ts).
+  mark('could not connect directly'),
+  mark('they were in another call'),
+  mark('not answered'),
+  mark('answered on another device'),
+];
 
 const KEY_PREFIX = '🔑 ';
 const KEY_LINES = {

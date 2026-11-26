@@ -12,8 +12,6 @@ export const connect: Record<string, string> = {
   "Only nearby, for now": "Μόνο από κοντά, προς το παρόν",
   "Getting ready": "Ετοιμάζεται",
   "Erevos is making the place where your contacts write to you. If this stays, check the address under For advanced users.": "Το Erevos φτιάχνει το σημείο όπου σου γράφουν οι επαφές σου. Αν αυτό δεν φύγει, έλεγξε τη διεύθυνση στο «Για προχωρημένους».",
-  "Texts only, for now": "Μόνο κείμενα, προς το παρόν",
-  "Your contacts reach you with texts, stickers and reactions. For photos, voice messages, calls and groups, ask someone who uses Erevos for an invite and tap I have their code.": "Οι επαφές σου σε βρίσκουν με κείμενα, αυτοκόλλητα και αντιδράσεις. Για φωτογραφίες, φωνητικά μηνύματα, κλήσεις και ομάδες, ζήτα μια πρόσκληση από κάποιον που έχει Erevos και πάτησε «Έχω τον κωδικό του».",
   "Your contacts reach you only when near, over Wi-Fi or Bluetooth. To be reached from anywhere, ask someone who uses Erevos for an invite and tap I have their code.": "Οι επαφές σου σε βρίσκουν μόνο όταν είστε κοντά, μέσω Wi-Fi ή Bluetooth. Για να σε βρίσκουν από παντού, ζήτα μια πρόσκληση από κάποιον που έχει Erevos και πάτησε «Έχω τον κωδικό του».",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Αυτή η συσκευή είναι συνδεδεμένη με το τηλέφωνό σου: έχει τις επαφές του, και ο σύνδεσμος επαφής σου είναι αυτός του τηλεφώνου.",
   "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Αυτές οι κρυφές συνομιλίες είναι συνδεδεμένες με τις ίδιες κρυφές συνομιλίες του τηλεφώνου σου: έχουν τις επαφές τους, και ο σύνδεσμος επαφής τους είναι αυτός του τηλεφώνου.",

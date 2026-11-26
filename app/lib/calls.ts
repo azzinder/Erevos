@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { Call, currentCall, OFFER_FRESH_MS, offerMissed, otherCallOn, relayToAnswer, type Rtc } from './call';
+import { Call, currentCall, OFFER_FRESH_MS, offerMissed, offersBeyond, otherCallOn, relayToAnswer, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
@@ -45,6 +45,18 @@ export type CallPlace = {
   bothWays?: boolean;
   /** Which of the account's devices this is, as contacts know it: its endpoint (hex) on a linked device, '' on the phone. */
   me?(): Promise<string>;
+  /**
+   * With Direct connections on (lib/direct.ts), the helper servers a call with this contact asks when
+   * it goes straight between the two phones over the internet, in groups (lib/call.ts
+   * CallOptions.open); null when it may not go so: the switch is off, something of the space goes
+   * through Tor, or their chat goes only through Tor. A place without it (hidden chats, XMPP) never
+   * calls so.
+   */
+  direct?(identity: string): Promise<string[][] | null>;
+  /** Whether a call signal can go to the contact from here now: through the relay, to their phone nearby, or, with Direct connections on, through Nostr. A place without it is taken to. */
+  reaches?(identity: string): Promise<boolean>;
+  /** Whether the chat with the contact is set to go only through Tor: a call's warning is then said whatever Direct connections says. */
+  torChat?(identity: string): Promise<boolean>;
 };
 
 /** A peer's identity: what comes after `contact:`, or after `xmpp:` for an XMPP address. */
@@ -110,7 +122,7 @@ export function endedLine(ended: Call, now = Date.now()): string {
   if (ended.connectedAt) return `${kind}, ${callClock(now - ended.connectedAt)}`;
   if (ended.ended?.elsewhere) return reason === 'decline' ? `${kind}, turned down` : `${kind}, answered on another device`;
   if (reason === 'decline') return `${kind}, turned down`;
-  if (reason === 'failed') return `${kind}, could not connect`;
+  if (reason === 'failed') return ended.direct ? `${kind}, could not connect directly` : `${kind}, could not connect`;
   if (ended.outgoing) return reason === 'busy' ? `${kind}, they were in another call` : `${kind}, not answered`;
   return `Missed ${kind.toLowerCase()}`;
 }
@@ -130,10 +142,10 @@ function events(place: CallPlace, identity: string) {
   };
 }
 
-/** Calls a contact. Throws if a call is already in progress. */
-export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
+/** Calls a contact. `open`: with no call relay, straight over the internet, with these helper servers (CallPlace.direct). Throws if a call is already in progress. */
+export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc, open: string[][] | null = null): Call {
   if (currentGroupCall() || elsewhere() || otherCallOn()) throw new Error(t('There is a call already.'));
-  const call = Call.start({ peer, video, relay, rtc, events: events(place, identityOf(peer)) });
+  const call = Call.start({ peer, video, relay, open: relay ? null : open, rtc, events: events(place, identityOf(peer)) });
   shown = { call, place };
   changed();
   return call;
@@ -183,9 +195,18 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   };
   if (ours || currentGroupCall() || elsewhere(signal.id) || otherCallOn()) return busy();
+  // No way back to them from here: their call came through Nostr, with no relay between the two,
+  // and Direct connections is off here. It could not be answered, so it does not ring.
+  if (place.reaches && !(await place.reaches(identity).catch(() => true))) {
+    place.line(peer, false, `Missed ${kind}`, signal.id);
+    return t('{name} tried to call, with no server between you two. To take such calls, turn on Direct connections in Settings.', { name: place.name(peer) });
+  }
   // An offer still to come (XMPP's calls ring first) answers through our call relay, if there is one.
   const callRelay = await place.callRelay().catch(() => null);
   const relay = signal.sdp ? relayToAnswer(signal.sdp, callRelay) : callRelay;
+  // With no call relay to answer through, and Direct connections on here: straight between the two
+  // phones over the internet, unless their offer says only its own network, answered there as before.
+  const open = !relay && signal.sdp && offersBeyond(signal.sdp) ? ((await place.direct?.(identity).catch(() => null)) ?? null) : null;
   // They hung up while the call relay was asked.
   if (endedAlready(peer, signal.id)) {
     place.line(peer, false, `Missed ${kind}`, signal.id);
@@ -197,7 +218,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   const now = currentCall();
   if (now?.id === signal.id) return null;
   if (now || currentGroupCall() || elsewhere(signal.id) || otherCallOn()) return busy();
-  const ringing = Call.incoming(signal, { peer, relay, rtc, events: events(place, identity) });
+  const ringing = Call.incoming(signal, { peer, relay, open, rtc, events: events(place, identity) });
   if (!ringing) return null;
   shown = { call: ringing, place };
   changed();

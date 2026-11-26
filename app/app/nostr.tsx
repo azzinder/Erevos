@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { canNostr } from '../lib/core';
+import { setDirect } from '../lib/direct';
 import { t } from '../lib/i18n';
 import { nostrOf, nostrStates, onNostrStates, setNostr, type NostrRelayState } from '../lib/nostr';
 import type { TorWay } from '../lib/relay';
@@ -71,10 +72,14 @@ export default function NostrScreen() {
   async function keep(next: NostrSetting, said = '') {
     setNote('');
     try {
-      await updateCurrentSpaceData({ nostr: next });
+      // Nostr through Tor on: Direct connections goes off with it, and stays off until the owner
+      // turns it on again (lib/direct.ts), as with the space's Tor way.
+      const direct = next.tor === true && setting?.tor !== true && (await loadCurrentSpaceData()).direct;
+      await updateCurrentSpaceData(direct ? { nostr: next, direct: false } : { nostr: next });
+      if (direct) setDirect(false);
       setSetting(next);
       setNostr(nostrOf(next), next.tor === true);
-      setNote(said || t('Saved.'));
+      setNote(direct ? t('Direct connections is now off in this space, as Tor is on. It stays off until you turn it on again in Settings.') : said || t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }

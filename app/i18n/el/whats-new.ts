@@ -126,8 +126,12 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
-  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
-    "**Server, σε απλά λόγια**: το Erevos λέει πλέον server, σε κάθε οθόνη, σε κάθε ειδοποίηση και στον οδηγό, γι’ αυτό που κρατά τα μηνύματά σου, κρυπτογραφημένα, μέχρι να τα πάρει το άλλο τηλέφωνο. Δεν αλλάζει τίποτα στο πώς δουλεύει.",
+  "**Direct connections**: one switch at the top of **Settings**, on unless you turn it off, for everything that shows your phone's internet address to someone else. On, Erevos no longer asks before those things, and calls work with a contact even with no server between you two, straight from phone to phone. Off, it asks as before. It never changes Tor, and while Tor is on it stays off. See [Direct connections](#direct).":
+    "**Απευθείας συνδέσεις**: ένας διακόπτης στην κορυφή των **Ρυθμίσεων**, ανοιχτός αν δεν τον κλείσεις, για ό,τι δείχνει τη διεύθυνση internet του τηλεφώνου σου σε κάποιον άλλον. Ανοιχτός, το Erevos δεν ρωτά πια πριν από αυτά, και οι κλήσεις δουλεύουν με μια επαφή ακόμα κι όταν δεν υπάρχει server ανάμεσά σας, απευθείας από τηλέφωνο σε τηλέφωνο. Κλειστός, ρωτά όπως πριν. Δεν αλλάζει ποτέ το Tor, και όσο το Tor είναι ανοιχτό μένει κλειστός. Δες [Απευθείας συνδέσεις](#direct).",
+  "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
+    "**Η Νέα συνομιλία λέει τι δουλεύει χωρίς server**: μηνύματα, φωτογραφίες, αρχεία και φωνητικά μηνύματα, και κλήσεις επίσης όσο οι **Απευθείας συνδέσεις** είναι ανοιχτές.",
+  "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
+    "Μια κλήση χωρίς server ανάμεσα στα δύο τηλέφωνα στήνεται μέσω Nostr, κρυπτογραφημένη από άκρη σε άκρη όπως ένα μήνυμα, και οι δημόσιοι βοηθητικοί servers ρωτιούνται μόνο όταν δεν απαντά αυτός του LPHL.",
   // 7.0.0-rc.7
   // 7.0.0-rc.6
   // 7.0.0-rc.5

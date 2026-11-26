@@ -8,6 +8,7 @@ import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../com
 import { confirm } from '../lib/alert';
 import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges, type TorRoute } from '../lib/bridges';
 import { canTor } from '../lib/core';
+import { setDirect } from '../lib/direct';
 import { mark, plural, t } from '../lib/i18n';
 import type { TorWay } from '../lib/relay';
 import { applyTor, autoState, NoBridgesError, onAutoState, retryAuto, torStatus, type AutoState, type TorStatus } from '../lib/tor';
@@ -109,10 +110,15 @@ export default function TorScreen() {
       if (!ok) return;
     }
     try {
-      await updateCurrentSpaceData({ tor: next });
+      // Tor on: Direct connections goes off with it, and stays off until the owner turns it on
+      // again, so that turning Tor off later connects nothing directly unasked (lib/direct.ts).
+      const direct = next !== 'off' && (await loadCurrentSpaceData()).direct;
+      await updateCurrentSpaceData(direct ? { tor: next, direct: false } : { tor: next });
+      if (direct) setDirect(false);
       setWay(next);
       // The Nostr connections open again the new way as it changes (lib/nostr.ts).
       await applyTor(next, bridges);
+      if (direct) setNote(t('Direct connections is now off in this space, as Tor is on. It stays off until you turn it on again in Settings.'));
     } catch (error) {
       setNote(shown(error));
     }

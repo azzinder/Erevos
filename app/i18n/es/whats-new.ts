@@ -126,8 +126,12 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
-  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
-    "**Servidor, en palabras sencillas**: Erevos ahora dice servidor, en cada pantalla, en cada aviso y en la guía, para lo que guarda tus mensajes, cifrados, hasta que el otro teléfono los recoge. Nada cambia en cómo funciona.",
+  "**Direct connections**: one switch at the top of **Settings**, on unless you turn it off, for everything that shows your phone's internet address to someone else. On, Erevos no longer asks before those things, and calls work with a contact even with no server between you two, straight from phone to phone. Off, it asks as before. It never changes Tor, and while Tor is on it stays off. See [Direct connections](#direct).":
+    "**Conexiones directas**: un interruptor arriba en **Ajustes**, activado salvo que lo desactives, para todo lo que muestra la dirección de internet de tu teléfono a otra persona. Activado, Erevos ya no pregunta antes de esas cosas, y las llamadas funcionan con un contacto aunque no haya servidor entre vosotros dos, directamente de teléfono a teléfono. Desactivado, pregunta como antes. Nunca cambia Tor, y mientras Tor esté activado se queda desactivado. Mira [Conexiones directas](#direct).",
+  "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
+    "**Chat nuevo dice qué funciona sin servidor**: mensajes, fotos, archivos y mensajes de voz, y también llamadas mientras las **Conexiones directas** estén activadas.",
+  "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
+    "Una llamada sin servidor entre los dos teléfonos se establece por Nostr, cifrada de extremo a extremo como un mensaje, y los servidores auxiliares públicos solo se consultan cuando el de LPHL no responde.",
   // 7.0.0-rc.7
   // 7.0.0-rc.6
   // 7.0.0-rc.5

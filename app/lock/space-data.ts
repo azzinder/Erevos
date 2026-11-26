@@ -121,6 +121,14 @@ export type SpaceData = {
   // The warnings that this phone's internet address may be seen (lib/ip-warning.ts) already said
   // and gone on from, by what they were of: each is said once. None while none was.
   ipSeen?: string[];
+  // Direct connections (lib/direct.ts, Settings): on unless turned off. On, Erevos does what shows
+  // this phone's internet address without asking first, and calls a contact with no relay between
+  // the two straight; off, it asks before each, and such a call is not offered. Only the space's own
+  // chats: hidden chats never connect so.
+  direct: boolean;
+  // The helper servers a direct call asks for this phone's internet address (STUN, lib/direct.ts
+  // callHelpers), as typed: left out, the build's own; empty, none.
+  stun?: string;
 };
 
 /**
@@ -177,6 +185,7 @@ export const EMPTY_SPACE: SpaceData = {
   tellOpen: true,
   publicImages: 'always',
   publicCards: true,
+  direct: true,
 };
 
 const BLOCK = 1024;
@@ -273,8 +282,13 @@ function checked(value: unknown): SpaceData {
     publicImages: PUBLIC_IMAGES.includes(v.publicImages as PublicImages) ? (v.publicImages as PublicImages) : 'always',
     publicCards: v.publicCards !== false,
     ...ipSeenOf(v.ipSeen),
+    direct: v.direct !== false,
+    ...(typeof v.stun === 'string' && v.stun.length <= STUN_MOST ? { stun: v.stun } : {}),
   };
 }
+
+/** The most characters kept of the helper servers typed (SpaceData.stun). */
+export const STUN_MOST = 300;
 
 /** The most warnings of an internet address kept as said (SpaceData.ipSeen): the oldest go first. */
 export const IP_SEEN_MOST = 500;

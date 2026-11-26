@@ -157,6 +157,14 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Privacy and security'),
     icon: 'lock',
     items: [
+      // The switch at the top of Settings (lib/direct.ts), in the list too, so that the search finds it.
+      {
+        id: 'direct',
+        title: mark('Direct connections'),
+        detail: mark('Calls with no server, and no questions before your internet address shows: on, unless turned off'),
+        href: '/direct',
+        when: uses('erevos', 'phone', 'collection'),
+      },
       // The name the space's contacts and private groups see in place of a code (lib/my-name.ts).
       { id: 'my-name', title: mark('My name'), detail: mark('The name your contacts see in place of a code'), href: '/security?part=myname', when: uses('erevos') },
       // A fingerprint or face unlocks Erevos only on Android (modules/erevos-biometric), so the web,
@@ -260,6 +268,12 @@ export const groupsHere = (place: SettingsPlace): SettingsGroup[] =>
 export const findGroup = (id: string | undefined): SettingsGroup | undefined => SETTINGS.find((group) => group.id === id);
 
 export const findItem = (group: SettingsGroup | undefined, id: string | undefined): SettingsItem | undefined => group?.items.find((item) => item.id === id);
+
+/** Whether Direct connections (lib/direct.ts) shows here: its switch stands at the top of Settings while a module it is of is on. */
+export const directHere = (place: SettingsPlace): boolean => {
+  const group = findGroup('privacy');
+  return !!group && itemsHere(group, place).some((item) => item.id === 'direct');
+};
 
 /** A setting found by a search: the setting, and the titles of where it is, shown before it. */
 export type SettingsHit = { leaf: SettingsLeaf; path: string[] };

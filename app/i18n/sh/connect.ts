@@ -12,8 +12,6 @@ export const connect: Record<string, string> = {
   "Only nearby, for now": "Zasad samo u blizini",
   "Getting ready": "Priprema",
   "Erevos is making the place where your contacts write to you. If this stays, check the address under For advanced users.": "Erevos pravi mjesto na koje ti kontakti pišu. Ako ovo ostane, provjeri adresu pod Za napredne korisnike.",
-  "Texts only, for now": "Zasad samo poruke",
-  "Your contacts reach you with texts, stickers and reactions. For photos, voice messages, calls and groups, ask someone who uses Erevos for an invite and tap I have their code.": "Kontakti te dosežu porukama, naljepnicama i reakcijama. Za fotografije, glasovne poruke, pozive i grupe, zatraži pozivnicu od nekoga tko koristi Erevos i dodirni Imam njegov kod.",
   "Your contacts reach you only when near, over Wi-Fi or Bluetooth. To be reached from anywhere, ask someone who uses Erevos for an invite and tap I have their code.": "Kontakti te dosežu samo kad ste blizu, preko Wi-Fi-ja ili Bluetootha. Da te dosegnu bilo gdje, zatraži pozivnicu od nekoga tko koristi Erevos i dodirni Imam njegov kod.",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Ovaj uređaj je povezan s vašim telefonom: ima njegove kontakte, a vaš link za kontakt je onaj s telefona.",
   "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Ovi skriveni razgovori su povezani s istim skrivenim razgovorima na vašem telefonu: imaju njihove kontakte, a njihov link za kontakt je telefonov.",

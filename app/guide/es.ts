@@ -291,7 +291,10 @@ como **Ajustes · Settings**, para encontrarlo en un idioma que no sabes leer.
 
 - **Buscar en los ajustes,** arriba, encuentra un ajuste por el principio de sus palabras, con o sin tildes, y muestra
   dónde está, como {~**Teléfono y SMS › SMS**|**Privacidad y seguridad › Chats ocultos**}. Tócalo para abrirlo.
-- **Idioma · Language,** la fila bajo la búsqueda, abre la lista de idiomas, ver Idioma más abajo.
+- **Conexiones directas,** bajo la búsqueda, es el interruptor de todo lo que muestra la dirección de internet de tu
+  teléfono a otra persona, incluidas las llamadas sin servidor entre vosotros. **Qué cambia** abre su pantalla. Ver
+  [Conexiones directas](#direct).
+- **Idioma · Language,** la fila de debajo, abre la lista de idiomas, ver Idioma más abajo.
 - **Un grupo** abre la lista de sus ajustes, y un ajuste abre su pantalla. Un ajuste con partes, como {~**SMS**|**Copias de seguridad**}, las
   lista, y cada parte se abre por separado.
 - **Solo aparece lo que funciona aquí:** en un ordenador, en Sailfish OS y en la app web no hay {~**Teléfono y SMS**, |}Tor,
@@ -304,7 +307,7 @@ como **Ajustes · Settings**, para encontrarlo en un idioma que no sabes leer.
 | **General** | **Idioma**, {~**Módulos**, |}**Actualizaciones**, **Dar Erevos a un teléfono cercano** (Android), **Novedades**, **Acerca de Erevos**, **Apoyar Erevos** y **Permisos** (Android y la app web). Ver Idioma más abajo, {~[Módulos](#modules), |}[Actualizaciones](#updates) y [Erevos a un teléfono cercano](#give-app). |
 | **Apariencia** | **Estilo y colores** (acabado, cristal, estilo, tema, colores y texto sobre zonas de color, con la vista previa), **Fondo de pantalla**, **Mensajes** (la forma de las burbujas), **Iconos del lanzador** (Android), **Widget** (Android) y **Vibrar al tocar** (Android). Ver [Apariencia](#appearance). |
 | **Notificaciones** | **En segundo plano** (Android y la app de ordenador): recibir y sonar mientras Erevos está cerrado, y el aviso de mensajes; en un ordenador, si Erevos sigue funcionando con la ventana cerrada. **Notificaciones con la app cerrada** (la app web): Web Push. **Número en el icono**: cuántos mensajes no has leído, en el icono de Erevos. Ver [En un iPhone](#iphone) y [En un ordenador](#desktop). |
-| **Privacidad y seguridad** | **Bloqueo y segunda contraseña** (bloquear al abrir Erevos, la contraseña, la privacidad de la pantalla, huella o cara, la segunda contraseña), **Chats ocultos** (los PIN de los 4 lugares), **Botón de pánico** (con la contraseña de pánico), **Calculadora en lugar de Erevos** (Android, en Apariencia), **Capturas de pantalla** (Android) y **Esta app web** (solo la app web). Ver [Bloqueo con contraseña](#lock), [Segunda contraseña](#second), [Chats ocultos](#hidden) y [Botón de pánico](#panic). Ver también [Borrarme de todas partes](#forget). |
+| **Privacidad y seguridad** | **Conexiones directas** (llamadas sin servidor, y sin preguntas antes de que se vea tu dirección de internet), **Bloqueo y segunda contraseña** (bloquear al abrir Erevos, la contraseña, la privacidad de la pantalla, huella o cara, la segunda contraseña), **Chats ocultos** (los PIN de los 4 lugares), **Botón de pánico** (con la contraseña de pánico), **Calculadora en lugar de Erevos** (Android, en Apariencia), **Capturas de pantalla** (Android) y **Esta app web** (solo la app web). Ver [Conexiones directas](#direct), [Bloqueo con contraseña](#lock), [Segunda contraseña](#second), [Chats ocultos](#hidden) y [Botón de pánico](#panic). Ver también [Borrarme de todas partes](#forget). |
 | **Servidor y redes** | **Caminos**, **Servidor** (abre **Chat nuevo** con **Para usuarios avanzados** abierto), **Servidor de casa**, **Tor** (Android), **Nostr** (Android){+,}{- y} **Radio LoRa** (Android){+, **Matrix**, **XMPP** y **Chats de Nostr**}. Ver [Chatear a través de un servidor](#relay), [Servidor de casa](#home-relay), [A través de Tor](#tor), [A través de Nostr](#nostr){+,}{- y} [Con una radio LoRa](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) y [Chats con otras apps de Nostr](#nostr-chats)}. |
 [~] | **Teléfono y SMS** (Android) | **Teléfono**, los ajustes de la app de teléfono, los mismos que **Teléfono** → **Ajustes**. **SMS**, en partes: **Erevos como app de SMS**, **Descubrir Erevos en un número**, **SMS cuando nada más funciona**, **Nombres de tus contactos**, **Archivadas, spam y papelera**, **Filtro de spam**, **Números bloqueados**, **Deshacer el envío de un SMS**, **Dos SIM** (solo con dos SIM) y **SMS nuevo**. Ver [Teléfono](#phone) y [SMS](#sms). |
 | **Datos y dispositivos** | **Copias de seguridad**, **Piezas de copias**, **Dispositivos vinculados** y **Chats importados**. Ver [Copias de seguridad](#backup), [Piezas de copias con amigos](#backup-pieces), [Dispositivos vinculados](#devices) y [Chats importados](#import). |
@@ -1436,15 +1439,18 @@ de una conversación SMS}. Es {~el **Teléfono** de Erevos cuando Erevos es la a
 teléfono: toca ahí la tecla de llamar. Una llamada así va por la red de la compañía telefónica y no está cifrada{~, igual
 que un SMS normal}. Los chats ocultos y los ordenadores no la tienen.
 
-- **Cifrado de extremo a extremo:** la llamada se establece con mensajes por el servidor, cifrados como el resto. Estos
-  llevan la clave que cifra la propia llamada, así que nadie entre medias puede escuchar, ni siquiera el servidor de
-  llamadas de más abajo.
+- **Cifrado de extremo a extremo:** la llamada se establece con mensajes por el servidor, o por Nostr cuando no hay
+  servidor entre vosotros, cifrados como el resto. Estos llevan la clave que cifra la propia llamada, así que nadie
+  entre medias puede escuchar, ni siquiera el servidor de llamadas de más abajo.
 - **Por el servidor de llamadas:** un servidor configurado con el kit de \`deploy/relay\` tiene un servidor de llamadas al lado.
   La llamada va a través de él, así que ningún teléfono conoce la dirección IP del otro. Por Wi-Fi o datos móviles, en
   cualquier sitio.
-- **Sin servidor de llamadas** (un servidor en tu propio ordenador, por ejemplo), Erevos pregunta antes: la llamada va
-  entonces directamente entre los teléfonos, solo funciona en la misma Wi-Fi, y cada teléfono ve en ella la dirección
-  del otro.
+- **Sin servidor de llamadas** (un servidor en tu propio ordenador, por ejemplo, o sin ningún servidor): con las **Conexiones
+  directas** activadas, la llamada va directamente de teléfono a teléfono por internet, sin preguntar antes. Cada
+  teléfono ve entonces la dirección de internet del otro, y un servidor auxiliar le dice a cada uno la suya. Algunas
+  redes, sobre todo las móviles, no dejan entrar nada desde fuera: la pantalla de la llamada dice entonces **La llamada
+  no se pudo conectar directamente**, y otra red, como una Wi-Fi, suele ayudar. Con las **Conexiones directas**
+  desactivadas, Erevos pregunta antes, y la llamada solo funciona en la misma Wi-Fi. Ver [Conexiones directas](#direct).
 - **Sin internet:** en la misma Wi-Fi, en el punto de acceso de un teléfono, o en la Wi-Fi que crean dos teléfonos
   (Wi-Fi Direct), con un espacio abierto en los dos, una llamada no necesita ningún servidor: se establece por el enlace de
   cerca y va directamente entre los teléfonos (u ordenadores). Lo mismo vale para los mensajes de grupo
@@ -1956,7 +1962,7 @@ tiene su propia elección, y sus propios servidores de Nostr.
   lo que diga esto. Mira [Quién ve tu dirección de internet](#ip).
 - **Los servidores:** relay.damus.io, nos.lol y relay.primal.net salvo que los cambies; puedes añadir los tuyos, cinco como
   mucho. A tus contactos se les dicen los servidores en los que lees, y te escriben ahí; basta con uno que acepte un texto.
-- **Lo que se queda en tu servidor:** llamadas, reacciones, y las marcas de que un mensaje llegó o se leyó; y lo que escribes a contactos en un iPhone o un ordenador, que no leen en Nostr. Las imágenes, los archivos y los mensajes de voz van por tu servidor cuando hay uno entre vosotros; sin servidor entre vosotros van también por Nostr (ver Sin ningún servidor).
+- **Lo que se queda en tu servidor:** llamadas, reacciones, y las marcas de que un mensaje llegó o se leyó; y lo que escribes a contactos en un iPhone o un ordenador, que no leen en Nostr. Las imágenes, los archivos y los mensajes de voz van por tu servidor cuando hay uno entre vosotros; sin servidor entre vosotros van también por Nostr (ver Sin ningún servidor), y también lo que establece una llamada, mientras las **Conexiones directas** estén activadas.
 - **Por dónde fue:** mantén pulsado un mensaje: su menú dice **Enviado por Nostr** o **Llegó por Nostr** cuando un servidor
   de Nostr lo aceptó. Desde ahora también dice **Enviado por el servidor**, **Llegó por el servidor**, **Enviado a su teléfono
   cercano**, **Llegó de un teléfono cercano** o **Enviado por LoRa**; un mensaje anterior no dice nada. La nota bajo los
@@ -1993,18 +1999,74 @@ dicen dónde lee en Nostr, y eso basta para hablar.
   código QR** o **Compartir mi enlace de contacto**, y dáselo a alguien que use Erevos. Quien lo añada te escribe por
   Nostr, y aparece como solicitud de mensaje, que aceptas. Tú también puedes añadir su enlace o su código QR, de la
   misma manera.
-- **Lo que va:** textos, stickers, reacciones, ediciones, y las marcas de que un mensaje llegó o se leyó, todo por Nostr; y fotos, archivos y mensajes de voz. Un mensaje de voz va en wraps como un texto. Una foto de hasta 3 MB va en trozos de 32 KB, un wrap cada uno, enviados antes del mensaje que la ofrece; el otro teléfono los guarda, cifrados con el resto del espacio o de los chats ocultos para los que llegaron, hasta que lleguen todos, cuatro días como máximo. Una foto mayor, un vídeo o cualquier otro archivo, de hasta 20 MB, va como un solo blob, cifrado en el teléfono, a un servidor de archivos Blossom (blossom.primal.net, blossom.band o nostr.download), por Tor según la elección de Tor del espacio (directo con **Nada**): el servidor guarda solo lo que no puede leer. Las llamadas y los grupos necesitan un servidor, o el otro teléfono cerca. Los chats ocultos también funcionan así, solo por Nostr (ver [Chats ocultos](#hidden)).
+- **Lo que va:** textos, stickers, reacciones, ediciones, y las marcas de que un mensaje llegó o se leyó, todo por Nostr; y fotos, archivos y mensajes de voz. Un mensaje de voz va en wraps como un texto. Una foto de hasta 3 MB va en trozos de 32 KB, un wrap cada uno, enviados antes del mensaje que la ofrece; el otro teléfono los guarda, cifrados con el resto del espacio o de los chats ocultos para los que llegaron, hasta que lleguen todos, cuatro días como máximo. Una foto mayor, un vídeo o cualquier otro archivo, de hasta 20 MB, va como un solo blob, cifrado en el teléfono, a un servidor de archivos Blossom (blossom.primal.net, blossom.band o nostr.download), por Tor según la elección de Tor del espacio (directo con **Nada**): el servidor guarda solo lo que no puede leer. Los grupos necesitan un servidor, o el otro teléfono cerca. Las llamadas se establecen por Nostr y van directamente de teléfono a teléfono mientras las **Conexiones directas** estén activadas (ver [Conexiones directas](#direct)); desactivadas, necesitan un servidor o el otro teléfono cerca. Los chats ocultos también funcionan así, solo por Nostr, aunque una llamada ahí necesita un servidor o el otro teléfono cerca (ver [Chats ocultos](#hidden)).
 - **Cuando no llega:** los servidores de Nostr guardan un texto dos días. Hasta que el teléfono de tu contacto diga que
   llegó, Erevos se lo vuelve a dar una vez al día, durante dos semanas.
 - **Un servidor por sí solo:** cuando tu contacto tiene un servidor que le deja invitar, su Erevos le envía al tuyo una
   invitación a él por sí solo, una vez, en el chat, tanto si os conocisteis por Nostr como de cerca, por Bluetooth,
-  Wi-Fi o un código QR. Tu teléfono la acepta por sí solo, y a partir de entonces las fotos, los mensajes de voz y las
-  llamadas también funcionan, con todos. Cuenta como una de sus invitaciones. Alguien cuya solicitud de mensaje no has
-  aceptado no elige ningún servidor por ti: su invitación espera hasta que lo aceptes, una semana como mucho.
+  Wi-Fi o un código QR. Tu teléfono la acepta por sí solo (con las **Conexiones directas** desactivadas pregunta antes,
+  pues su servidor ve entonces tu dirección de internet), y a partir de entonces los grupos también funcionan, y las
+  llamadas conectan desde cualquier red, con todos. Cuenta como una de sus invitaciones. Alguien cuya solicitud de
+  mensaje no has aceptado no elige ningún servidor por ti: su invitación espera hasta que lo aceptes, una semana como
+  mucho.
 - **Un Erevos más antiguo** no lee la parte de Nostr de un enlace: solo te contacta de cerca, hasta que tengas un servidor.
 
 **Por qué:** Nostr es solo la forma de entrar. Nadie necesita una invitación para empezar, y en cuanto uno de vosotros
 tiene un servidor, este lleva lo que es demasiado grande para Nostr.
+
+## Conexiones directas {#direct}
+
+Las **Conexiones directas** son un interruptor para todo lo que muestra la dirección de internet (dirección IP) de tu
+teléfono a otra persona. Están arriba en **Ajustes**, bajo la búsqueda, y están **activadas** salvo que las desactives;
+cada espacio tiene las suyas. **Qué cambia**, debajo, abre su pantalla, que dice lo que dice esta sección.
+
+- **Activadas:** Erevos no pregunta antes de lo que sigue: lo hace de inmediato. Las llamadas y videollamadas funcionan
+  con un contacto aunque no haya servidor entre vosotros dos: la llamada se establece por Nostr y va directamente de
+  teléfono a teléfono.
+- **Desactivadas:** antes de cada una de esas cosas, Erevos dice una vez quién vería la dirección, y eliges si seguir
+  (ver [Quién ve tu dirección de internet](#ip)). Las llamadas van solo por un servidor de llamadas, que oculta la
+  dirección de cada teléfono al otro, o entre dos teléfonos en la misma Wi-Fi. Una llamada de un contacto sin servidor
+  entre vosotros dos no suena: el chat la muestra como perdida, y dice que las **Conexiones directas** dejan pasar esas
+  llamadas.
+
+**Quién ve tu dirección de internet mientras están activadas:**
+
+- Los servidores que llevan lo que envías y tus llamadas: el tuyo, el de tu contacto, y uno al que te invita un
+  contacto.
+- El teléfono de tu contacto, en una llamada que va directamente de teléfono a teléfono, y los servidores auxiliares,
+  que dicen a cada teléfono su propia dirección.
+- Un servidor que eligió tu contacto para un archivo.
+- Los servidores públicos de Nostr, cuando dos teléfonos se emparejan con un código de 8 dígitos.
+- [~] Una emisora de radio o un canal de TV de la Colección, mientras se reproduce.
+- [~] El sitio de donde viene la lista de números de spam, en **Teléfono**.
+
+Ninguno de ellos ve lo que escribes o dices: eso sigue cifrado de extremo a extremo.
+
+**Lo que nunca cambian:**
+
+- No cambian ningún ajuste de Tor. Mientras Tor esté activado en el espacio siguen desactivadas, y después de desactivar
+  Tor siguen desactivadas hasta que las actives de nuevo.
+- Los chats ocultos, y los chats puestos en **Por Tor**, nunca se conectan directamente y siguen preguntando.
+- Con un servidor de llamadas propio, tus llamadas siguen yendo por él, así que el otro teléfono no ve tu dirección.
+- Erevos sigue preguntando antes de abrir un enlace web o de mostrar la vista previa de un enlace, y antes de traer los
+  mensajes de un teléfono a su lado desde un servidor que este teléfono no usa.
+
+**Conviene saber:**
+
+- **Una llamada directa no siempre conecta:** algunas redes, sobre todo las móviles, no dejan entrar nada desde fuera.
+  La pantalla de la llamada dice entonces **La llamada no se pudo conectar directamente**, y el chat guarda esa línea.
+  Con un servidor de llamadas, una llamada conecta desde cualquier red.
+- **Un Erevos más antiguo** suena con una llamada así, y luego no puede conectar.
+- **Un teléfono sin servidor** oye una llamada así solo mientras Erevos lee en Nostr, algo que hace en Android: si se
+  deja dormir para ahorrar batería, puede perder alguna.
+- **Servidores auxiliares, para usuarios avanzados:** para llamar directamente de teléfono a teléfono, cada teléfono
+  pregunta a un servidor auxiliar cuál es su propia dirección de internet. El servidor auxiliar ve esa dirección, una
+  vez por llamada, y nada de la llamada en sí. Salvo que elijas otra cosa, Erevos pregunta primero al que está junto a
+  tu servidor y al que está junto al servidor de LPHL, y a dos públicos, el de Cloudflare y el de Nextcloud, solo cuando
+  ninguno de esos responde. En la pantalla del interruptor, mientras está activado, **Mis propios servidores** admite
+  hasta tres tuyos, y **Ninguno** no pregunta a nadie: una llamada directa conecta entonces solo donde los dos teléfonos
+  se encuentran por sí solos, como en la misma Wi-Fi. **Comprobar ahora** les pregunta como lo hace una llamada, así que
+  ellos también ven tu dirección entonces.
 
 ## Quién ve tu dirección de internet {#ip}
 
@@ -2021,8 +2083,10 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
   servidores públicos de Nostr, así que sin Nostr a través de Tor ven la dirección, pero no el código ni los enlaces de
   contacto. Erevos lo avisa antes de la primera vez.
 
-- **Las llamadas:** nunca van por Tor. El servidor de llamadas, el tuyo o el de tu contacto, ve la dirección, aunque no
-  lo que se dice. Una llamada entre teléfonos cercanos en la misma red se queda en esa red.
+- **Las llamadas:** nunca van por Tor. El servidor de llamadas, el tuyo o el de tu contacto, ve la dirección, aunque no lo
+  que se dice. Una llamada entre teléfonos cercanos en la misma red se queda en esa red. Sin servidor de llamadas entre
+  vosotros y con las **Conexiones directas** activadas, la llamada va directamente de teléfono a teléfono: el teléfono
+  de tu contacto ve la dirección, y también los servidores auxiliares que dicen a cada teléfono la suya.
 
 - **Un archivo en un servidor que eligió tu contacto:** el servidor ve la dirección cuando tu teléfono descarga el
   archivo. Tor la oculta.
@@ -2033,7 +2097,8 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
 
 - **El servidor de un contacto:** mientras tu espacio no tenga servidor propio, o solo un lugar prestado en uno, un contacto
   puede darte un lugar en el suyo, y llega con su mensaje. Su servidor ve entonces la dirección, así que Erevos pregunta
-  antes de aceptarlo, salvo que el espacio lo envíe todo por Tor. Si no se acepta, la invitación se deja.
+  antes de aceptarlo, salvo que las **Conexiones directas** estén activadas o el espacio lo envíe todo por Tor. Si no se
+  acepta, la invitación se deja.
 
 - **Los grupos:** un mensaje en un grupo de Erevos pasa por un servidor, que ve la dirección. Tor para el espacio la
   oculta; un grupo no tiene interruptor propio.
@@ -2047,15 +2112,21 @@ muestra lo que escribes. Quien se conecta con tu teléfono la ve, salvo que la c
   ajustes de la Colección en Android, desactivado salvo que lo actives, los reproduce solo por Tor. Mira
   [Colección](#collection).
 
-Erevos avisa una vez antes de cada uno de ellos, con el título **Tu dirección de internet puede verse**, un botón
-**Guía** que abre esta sección y, donde puede, un botón que lo arregla, como **Por Tor para este chat**. **Seguir**
-continúa. Para lo que envías, se dice una vez para toda la red, no en cada chat: después, un chat o grupo que va sin
-Tor muestra solo una línea discreta encima de donde escribes, **Sin Tor: los servidores ven tu dirección de internet.**,
-con **Por Tor para este chat** y **Guía** al lado.
+Con las **Conexiones directas** desactivadas, Erevos avisa una vez antes de cada uno de ellos, con el título **Tu
+dirección de internet puede verse**, un botón **Guía** que abre esta sección y, donde puede, un botón que lo arregla,
+como **Por Tor para este chat**. **Seguir** continúa. Para lo que envías, se dice una vez para toda la red, no en cada
+chat: después, un chat o grupo que va sin Tor muestra solo una línea discreta encima de donde escribes, **Sin Tor: los
+servidores ven tu dirección de internet.**, con **Por Tor para este chat** y **Guía** al lado.
 
 Después de la guía vuelve la misma pregunta, y lo que estabas enviando, como un mensaje de voz o un archivo, la
 espera. Una llamada que suena aquí lo dice debajo de la llamada, y contestar sigue adelante. Los chats ocultos guardan
 lo dicho consigo, aparte del espacio.
+
+Con las **Conexiones directas** activadas, como viene por defecto, no pregunta antes de ellos: van de inmediato, y no se
+muestra ninguna línea discreta. Sigue preguntando antes de abrir un enlace web o de mostrar la vista previa de un
+enlace{+, antes de lo que va a Matrix, XMPP u otras apps de Nostr}, y antes de traer los mensajes de un teléfono a su
+lado desde un servidor que este teléfono no usa; y los chats ocultos, y los chats puestos en **Por Tor**, siguen
+preguntando. Ver [Conexiones directas](#direct).
 
 Los teléfonos cercanos{~, LoRa y los SMS| y LoRa} no usan internet, así que no muestran ninguna dirección de internet.
 
@@ -4638,7 +4709,7 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Huella o cara (Android)** | Desactivado salvo que se active. Solo abre el espacio de la primera contraseña: su clave sellada en el Android Keystore, utilizable solo justo después de una comprobación fuerte de huella o cara, y descartada cuando estas cambian. Alguien que te retenga puede usar tu dedo. | |
 | **Avisos (Android)** | En segundo plano: «Erevos – Ready for calls and messages» (no en la pantalla de bloqueo), «Incoming call» o «Incoming video call» – «Open Erevos to answer», y «New message» o cuántos llegaron; cuando Android o la contraseña lo detienen, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un recordatorio, «Reminder» o cuántos; una versión nueva, «Erevos X is out». Nunca quién ni qué. En un teléfono bloqueado, el de los mensajes solo dice «Erevos». Los chats ocultos que pueden decirlo muestran el mismo aviso, contado con el resto: quien lo vea y no encuentre nada nuevo puede suponer que hay más. Como app de teléfono, el aviso de una llamada telefónica nombra a quien llama, también sobre la pantalla de bloqueo, como el de cualquier app de teléfono, pero nunca con un nombre que solo conozcan los chats ocultos: una llamada de uno de sus contactos muestra el número. | |
 | **Widget{~ y Teléfono} (Android)** | El widget, una vez añadido, muestra {~cuántas llamadas perdidas, SMS sin leer y mensajes nuevos hay|cuántos mensajes nuevos hay}, nunca de quién ni qué.{~ El Teléfono se abre sin la contraseña solo si lo permites: entonces cualquiera que tenga el teléfono desbloqueado ve las llamadas y los favoritos que guarda Android, solo con los nombres de los contactos del teléfono.} | |
-| **Llamadas** | Cifradas de extremo a extremo (DTLS-SRTP, con su clave enviada en el chat cifrado). A través del servidor de llamadas, ningún teléfono ve la dirección IP del otro; el servidor que lo ejecuta ve las dos, cuándo y cuánto tiempo, y cuánto pasa. Sin servidor de llamadas, solo en la misma Wi-Fi, cada teléfono ve la dirección del otro. Los servidores ven cuándo empieza a sonar una llamada. | Que suene en la app web estando cerrada. Llamadas por Bluetooth (ahí funciona el walkie-talkie). |
+| **Llamadas** | Cifradas de extremo a extremo (DTLS-SRTP, con su clave enviada en el chat cifrado). A través del servidor de llamadas, ningún teléfono ve la dirección IP del otro; el servidor que lo ejecuta ve las dos, cuándo y cuánto tiempo, y cuánto pasa. Sin servidor de llamadas, cada teléfono ve la dirección del otro: en la misma Wi-Fi, o por internet mientras las **Conexiones directas** estén activadas, y entonces también la ven los servidores auxiliares. Los servidores ven cuándo empieza a sonar una llamada. | Que suene en la app web estando cerrada. Llamadas por Bluetooth (ahí funciona el walkie-talkie). |
 | **Chats de grupo** | Cifrados de extremo a extremo con MLS (RFC 9420); los miembros sacados no leen nada después. La copia de cada miembro se sella aparte, así que los servidores no pueden saber quién está en un grupo; cada servidor sigue viendo que un mensaje llega a una cola. Los miembros ven las claves y las direcciones de servidor de los demás. Las fotos, los archivos y los mensajes de voz van por el almacén de archivos del servidor de quien los envía, como a un contacto, y se quedan ahí 14 días. Sin auditar. | |
 | **Llamadas de grupo** | Voz y vídeo, cifrados de extremo a extremo entre cada dos teléfonos de la llamada (DTLS-SRTP, con sus claves enviadas en el cifrado del grupo). A través del servidor de llamadas, ningún teléfono ve la dirección IP de otro; el servidor que lo ejecuta ve la de cada teléfono, cuándo y cuánto tiempo, y cuánto pasa. Cada miembro, esté en la llamada o no, sabe quién está en ella. Los servidores ven cuándo empieza una. | Vídeo con más de cuatro personas, a través de un servidor; más de ocho personas. |
 | **Grupos públicos** | Como los chats de grupo, y cualquiera con el enlace puede pedir unirse y leer desde que se le deja entrar. Las peticiones llegan al servidor del propietario selladas para el teléfono del propietario: el servidor ve cuántas y cuándo, no de quién. Los miembros ven los nombres elegidos de los demás, claves hechas solo para ese grupo, direcciones de servidor y sender ids de las colas. Sin auditar. | |

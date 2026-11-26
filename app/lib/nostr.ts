@@ -178,6 +178,15 @@ export function nostrOf(setting: NostrSetting): string[] | null {
 let relays: string[] | null = null;
 // Nostr's own Tor switch (NostrSetting.tor).
 let ownTor = false;
+const ownTorListeners = new Set<() => void>();
+
+/** Calls `listener` each time Nostr's own Tor switch changes (lib/direct.ts). Returns how to stop. */
+export function onNostrOwnTor(listener: () => void): () => void {
+  ownTorListeners.add(listener);
+  return () => {
+    ownTorListeners.delete(listener);
+  };
+}
 
 /**
  * Reads on these relays from now on, and says so to contacts (lib/e2e.ts), or on none: then the
@@ -193,6 +202,7 @@ export function setNostr(next: string[] | null, tor = false): void {
     ownTor = tor;
     closeSenders();
     for (const reading of readings.values()) reading.reopen();
+    ownTorListeners.forEach((listener) => listener());
   }
   if (now?.join(' ') === relays?.join(' ')) return;
   relays = now;

@@ -65,6 +65,7 @@ import { canPairWithCode, TheirCode } from '../components/their-code';
 import { RelayKeyNote, useRelayCheck } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
+import { useDirectNow } from '../components/direct-switch';
 import { CollectionSign, PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
@@ -116,6 +117,7 @@ import { hostOf } from '../lib/relay-host';
 import { circuitOf } from '../lib/tor-chats';
 import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canTor, canXmpp, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked, placeLinksNow } from '../lib/devices';
+import { directNow } from '../lib/direct';
 import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
@@ -206,7 +208,7 @@ import {
 import { announceReceived, answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, lookNow, openNearby, shownPace, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrOwnTor, nostrReady, readNostr } from '../lib/nostr';
 import { netThroughTor } from '../lib/net-http';
-import { callIpWarning, ipGate, IpQuiet } from '../components/ip-warning';
+import { callIpWarning, ipGate, IpQuiet, quietLineShows } from '../components/ip-warning';
 import type { IpKeep } from '../lib/ip-warning';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
@@ -531,6 +533,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [placeSign, setPlaceSign] = useState(false);
   // Whether the Collection is on, for its way in at the top of hidden chats (lib/modules.ts).
   const modules = useModules();
+  // Direct connections (lib/direct.ts), read again as the switch or a Tor setting changes: never of hidden chats.
+  const directConnections = useDirectNow() && !hiddenKey;
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
   // The links of these chats' own devices (lib/devices.ts): the space's, or these hidden chats' own,
@@ -1331,7 +1335,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 })
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a server, you reach each other nearby only.')
             : onNostr
-              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no server between you, texts, stickers, reactions, photos, files and voice messages go through Nostr; calls need a server or their phone nearby.')
+              ? directNow() && !hiddenKey
+                ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no server between you, texts, stickers, reactions, photos, files and voice messages go through Nostr, and calls go straight from phone to phone.')
+                : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no server between you, texts, stickers, reactions, photos, files and voice messages go through Nostr; calls need a server or their phone nearby.')
               : lent
                 ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no server of your own, you now have a place on theirs, lent through their link.")
                 : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
@@ -3688,13 +3694,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // On the same Wi-Fi or a hotspot, with no internet, a call is set up over the link nearby and
     // goes straight between the two: to the contact's link when heard on one, else to every link.
     const near = nearby.isNear(identity) || nearby.count() > 0;
-    if (!e2e || ((!ownQueue || !relayUrl.trim()) && !near)) {
-      setNote(e2e ? t('Calls are set up through the server, or with a contact on the same Wi-Fi. Type the server address in Server first.') : notOpen());
+    const relayed = !!ownQueue && !!relayUrl.trim();
+    // With Direct connections on (lib/direct.ts), in the space's own chats: the helper servers of a
+    // call straight between the two phones, and with no relay between the two the call is set up
+    // through Nostr, as their texts go (lib/space-calls.ts). Null with it off, in hidden chats, and
+    // for a chat set to go only through Tor: then all is as before it.
+    const helpers = hiddenKey || !e2e ? null : ((await spaceCalls.direct?.(identity).catch(() => null)) ?? null);
+    const throughNostr = !!helpers && !!e2e && !(relayed && !!e2e.queueOf(identity)?.sender) && e2e.readsOnNostr(identity) && nostrReady();
+    if (!e2e || (!relayed && !near && !throughNostr)) {
+      setNote(
+        !e2e
+          ? notOpen()
+          : helpers
+            ? t('With no server between you two, a call is set up through Nostr, and Nostr is off here or on their phone. Turn it on under Settings, Server and networks, Nostr, or get on the same Wi-Fi.')
+            : t('Calls are set up through the server, or with a contact on the same Wi-Fi. Type the server address in Server first.'),
+      );
       return;
     }
     // Calls never go through Tor: that the call relay sees this phone's internet address is said
-    // once for the chat, before (lib/ip-warning.ts). Nearby, the call stays on the same network.
-    if (!near && !(await ipGate(callIpWarning(identity, ipKeep().keep)))) return;
+    // once for the chat, before (lib/ip-warning.ts), unless Direct connections says nothing of it.
+    // Nearby, the call stays on the same network.
+    if (!near && !(await ipGate(callIpWarning(identity, ipKeep().keep, isTorChat(peer))))) return;
     if (!(await callPermissions(video))) {
       setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
@@ -3710,9 +3730,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }
       }
     }
-    if (!relay && !(await callDirectly())) return;
+    // No call relay: straight between the two phones. With Direct connections on, over the internet
+    // too, with nothing asked; else only on the same Wi-Fi, asked first.
+    const open = relay ? null : helpers;
+    if (!relay && !open && !(await callDirectly())) return;
     try {
-      beginCall(callPlace, peer, video, relay, rtc);
+      beginCall(callPlace, peer, video, relay, rtc, open);
     } catch (error) {
       setNote(errorText(error));
     }
@@ -6414,6 +6437,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     nearby: HAS_LINKS,
     lent: isLentToken(relayToken),
     via: !!viaUrl.trim(),
+    direct: directConnections,
   });
   // Adding someone by what they gave: their contact link or an invite, pasted, or read from a
   // photo of its QR code.
@@ -8063,7 +8087,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         title={t('Start without a server')}
                         line={
                           linkNostr
-                            ? t('Give someone who uses Erevos your QR code or link. Texts go through Nostr.')
+                            ? directConnections
+                              ? t('Give someone who uses Erevos your QR code or link. Texts go through Nostr, and calls straight from phone to phone.')
+                              : t('Give someone who uses Erevos your QR code or link. Texts go through Nostr.')
                             : t('Give someone who uses Erevos your QR code or link. You reach each other when near, over Wi-Fi or Bluetooth.')
                         }
                         open={way === 'own'}
@@ -8417,7 +8443,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             <TextButton title={t('Not now')} onPress={() => setConnecting(null)} />
           </Row>
         ) : null}
-        {selectedContact && !isTorChat(selectedContact) && !throughTor() ? (
+        {selectedContact && !isTorChat(selectedContact) && !throughTor() && !(directConnections && !quietLineShows(!!hiddenKey)) ? (
           <IpQuiet fix={canTor() ? { label: t('Through Tor for this chat'), run: () => changeTor(selectedContact, true) } : undefined} />
         ) : null}
         {selectedContact ? (

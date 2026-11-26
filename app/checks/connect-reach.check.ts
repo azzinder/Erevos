@@ -34,7 +34,7 @@ test('a relay with no queue, Nostr, or nothing: each says what is missing and wh
   const noQueue = connectReach({ ...NONE, relayUrl: 'ws://192.168.1.2:7879' });
   assert.deepEqual([noQueue.reach, noQueue.title, noQueue.detail], ['part', 'Getting ready', undefined]);
   const nostr = connectReach({ ...NONE, nostr: true });
-  assert.deepEqual([nostr.reach, nostr.title, nostr.detail], ['part', 'Texts only, for now', undefined]);
+  assert.deepEqual([nostr.reach, nostr.title, nostr.detail], ['part', 'Messages only, for now', undefined]);
   assert.match(nostr.line, /ask someone who uses Erevos for an invite/);
   assert.doesNotMatch(nostr.line, /relay|queue/);
   assert.doesNotMatch(connectReach(NONE).line, /relay|queue/);

@@ -305,7 +305,10 @@ nicht lesen kannst.
 
 - **Einstellungen durchsuchen,** oben, findet eine Einstellung über den Anfang ihrer Wörter, mit oder ohne Akzente,
   und zeigt, wo sie ist, etwa {~**Telefon und SMS › SMS**|**Datenschutz und Sicherheit › Versteckte Chats**}. Tippe darauf, um sie zu öffnen.
-- **Sprache · Language,** die Zeile unter der Suche, öffnet die Liste der Sprachen, siehe „Sprache“ weiter unten.
+- **Direktverbindungen,** unter der Suche, sind der Schalter für alles, was die Internetadresse deines Telefons jemand
+  anderem zeigt, darunter Anrufe ohne Server dazwischen. **Was sie ändern** öffnet ihren Bildschirm. Siehe
+  [Direktverbindungen](#direct).
+- **Sprache · Language,** die Zeile darunter, öffnet die Liste der Sprachen, siehe „Sprache“ weiter unten.
 - **Eine Gruppe** öffnet die Liste ihrer Einstellungen, und eine Einstellung öffnet ihren Bildschirm. Eine
   Einstellung mit Teilen, etwa {~**SMS**|**Backups**}, listet sie auf, und jeder Teil öffnet sich einzeln.
 - **Nur was hier funktioniert, wird gezeigt:** Auf einem Computer, unter Sailfish OS und in der Web-App gibt es kein{~
@@ -319,7 +322,7 @@ nicht lesen kannst.
 | **Allgemein** | **Sprache**, {~**Module**, |}**Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, {~[Module](#modules), |}[Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android), **Widget** (Android) und **Vibration bei Berührung** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
-| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (mit dem Panik-Passwort), **Taschenrechner anstelle von Erevos** (Android, unter Darstellung), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
+| **Datenschutz und Sicherheit** | **Direktverbindungen** (Anrufe ohne Server, und keine Fragen, bevor deine Internetadresse zu sehen ist), **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (mit dem Panik-Passwort), **Taschenrechner anstelle von Erevos** (Android, unter Darstellung), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Direktverbindungen](#direct), [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
 | **Server und Netze** | **Wege**, **Server** (er öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heimserver**, **Tor** (Android), **Nostr** (Android){+,}{- und} **LoRa-Funk** (Android){+, **Matrix**, **XMPP** und **Nostr-Chats**}. Siehe [Chat über einen Server](#relay), [Heimserver](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr){+,}{- und} [Über LoRa-Funk](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats)}. |
 [~] | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **SMS, wenn sonst nichts geht**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
 | **Daten und Geräte** | **Backups**, **Backup-Teile**, **Verknüpfte Geräte** und **Importierte Chats**. Siehe [Backups](#backup), [Backup-Teile bei Freunden](#backup-pieces), [Verknüpfte Geräte](#devices) und [Importierte Chats](#import). |
@@ -1538,15 +1541,18 @@ Telefon-App ist, sonst }das eigene des Telefons: Tippe dort auf die Anruftaste. 
 Anruf geht über das Netz der Telefongesellschaft und ist nicht verschlüsselt{~, wie eine normale SMS es nicht ist}.
 Versteckte Chats und Computer haben das nicht.
 
-- **Ende-zu-Ende-verschlüsselt:** Der Anruf wird mit Nachrichten über den Server aufgebaut, verschlüsselt wie der Rest.
-  Diese tragen den Schlüssel, der den Anruf selbst verschlüsselt, sodass niemand dazwischen mithören kann, nicht einmal
-  der Anruf-Server unten.
+- **Ende-zu-Ende-verschlüsselt:** Der Anruf wird mit Nachrichten über den Server aufgebaut, oder über Nostr, wenn kein
+  Server zwischen euch ist, verschlüsselt wie der Rest. Diese tragen den Schlüssel, der den Anruf selbst verschlüsselt,
+  sodass niemand dazwischen mithören kann, nicht einmal der Anruf-Server unten.
 - **Über den Anruf-Server:** Ein mit dem Bausatz in \`deploy/relay\` eingerichteter Server hat einen Anruf-Server daneben.
   Der Anruf geht darüber, sodass keines der Telefone die IP-Adresse des anderen erfährt. Über WLAN oder mobile Daten,
   überall.
-- **Ohne Anruf-Server** (zum Beispiel ein Server auf deinem eigenen Computer) fragt Erevos zuerst: Der Anruf geht dann
-  direkt zwischen den Telefonen, funktioniert nur im selben WLAN, und jedes Telefon sieht dort die Adresse des
-  anderen.
+- **Ohne Anruf-Server** (zum Beispiel ein Server auf deinem eigenen Computer, oder gar kein Server): Mit eingeschalteten
+  **Direktverbindungen** geht der Anruf direkt von Telefon zu Telefon über das Internet, ohne vorherige Frage. Jedes
+  Telefon sieht dann die Internetadresse des anderen, und ein Hilfsserver sagt jedem Telefon seine eigene. Manche Netze,
+  vor allem Mobilfunknetze, lassen nichts von außen herein: Der Anrufbildschirm sagt dann **Der Anruf kam nicht direkt
+  zustande**, und ein anderes Netz, etwa ein WLAN, hilft oft. Mit ausgeschalteten **Direktverbindungen** fragt Erevos
+  zuerst, und der Anruf funktioniert nur im selben WLAN. Siehe [Direktverbindungen](#direct).
 - **Ohne Internet:** Im selben WLAN, im Hotspot eines Telefons oder in dem WLAN, das zwei Telefone aufbauen (Wi-Fi
   Direct), mit einem offenen Bereich auf beiden, braucht ein Anruf überhaupt keinen Server: Er wird über die Verbindung in
   der Nähe aufgebaut und geht direkt zwischen den Telefonen (oder Computern). Dasselbe gilt für Gruppennachrichten und
@@ -2084,7 +2090,7 @@ hat. Jeder Bereich hat seine eigene Wahl und seine eigenen Nostr-Server.
 - **Die Server:** relay.damus.io, nos.lol und relay.primal.net, sofern du sie nicht änderst; du kannst eigene
   hinzufügen, höchstens fünf. Deine Kontakte erfahren die Server, auf denen du liest, und schreiben dir dort; einer,
   der einen Text annimmt, genügt.
-- **Was auf deinem Server bleibt:** Anrufe, Reaktionen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht auf Nostr lesen. Bilder, Dateien und Sprachnachrichten gehen über deinen Server, wenn einer zwischen euch ist; ohne Server zwischen euch gehen sie auch über Nostr (siehe Ganz ohne Server).
+- **Was auf deinem Server bleibt:** Anrufe, Reaktionen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht auf Nostr lesen. Bilder, Dateien und Sprachnachrichten gehen über deinen Server, wenn einer zwischen euch ist; ohne Server zwischen euch gehen sie auch über Nostr (siehe Ganz ohne Server), und ebenso, was einen Anruf aufbaut, solange **Direktverbindungen** eingeschaltet sind.
 - **Welchen Weg sie ging:** Halte eine Nachricht gedrückt: Ihr Menü sagt **Über Nostr gesendet** oder **Über Nostr
   gekommen**, wenn ein Nostr-Server sie angenommen hat. Von jetzt an sagt es auch **Über den Server gesendet**, **Über den
   Server gekommen**, **An ihr Telefon in der Nähe gesendet**, **Von einem Telefon in der Nähe gekommen** oder **Über LoRa
@@ -2124,19 +2130,74 @@ wo es auf Nostr liest, und das genügt, um zu reden.
   QR-Code zeigen** oder **Meinen Kontaktlink teilen**, und gib ihn jemandem, der Erevos nutzt. Wer ihn hinzufügt,
   schreibt dir über Nostr und erscheint als Nachrichtenanfrage, die du annimmst. Du kannst auch seinen Link oder
   QR-Code hinzufügen, auf dieselbe Weise.
-- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde, alles über Nostr; und Fotos, Dateien und Sprachnachrichten. Eine Sprachnachricht geht in Wraps wie ein Text. Ein Foto bis 3 MB geht in Stücken von 32 KB, je ein Wrap, die vor der Nachricht gesendet werden, die es anbietet; das andere Telefon behält sie, verschlüsselt mit dem Rest des Bereichs oder der versteckten Chats, für die sie kamen, bis alle da sind, höchstens vier Tage. Ein größeres Foto, ein Video oder jede andere Datei, bis 20 MB, geht als ein Blob, auf dem Telefon verschlüsselt, an einen Blossom-Dateiserver (blossom.primal.net, blossom.band oder nostr.download), über Tor, wie die Tor-Wahl des Bereichs sagt (direkt mit **Nichts**): Der Server behält nur, was er nicht lesen kann. Anrufe und Gruppen brauchen einen Server oder das andere Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr (siehe [Versteckte Chats](#hidden)).
+- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde, alles über Nostr; und Fotos, Dateien und Sprachnachrichten. Eine Sprachnachricht geht in Wraps wie ein Text. Ein Foto bis 3 MB geht in Stücken von 32 KB, je ein Wrap, die vor der Nachricht gesendet werden, die es anbietet; das andere Telefon behält sie, verschlüsselt mit dem Rest des Bereichs oder der versteckten Chats, für die sie kamen, bis alle da sind, höchstens vier Tage. Ein größeres Foto, ein Video oder jede andere Datei, bis 20 MB, geht als ein Blob, auf dem Telefon verschlüsselt, an einen Blossom-Dateiserver (blossom.primal.net, blossom.band oder nostr.download), über Tor, wie die Tor-Wahl des Bereichs sagt (direkt mit **Nichts**): Der Server behält nur, was er nicht lesen kann. Gruppen brauchen einen Server oder das andere Telefon in der Nähe. Anrufe werden über Nostr aufgebaut und gehen direkt von Telefon zu Telefon, solange **Direktverbindungen** eingeschaltet sind (siehe [Direktverbindungen](#direct)); ausgeschaltet brauchen sie einen Server oder das andere Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr, doch ein Anruf dort braucht einen Server oder das andere Telefon in der Nähe (siehe [Versteckte Chats](#hidden)).
 - **Wenn er nicht ankommt:** Die Nostr-Server bewahren einen Text zwei Tage auf. Bis das Telefon deines Kontakts sagt,
   dass er ankam, gibt Erevos ihn ihm einmal am Tag erneut, zwei Wochen lang.
 - **Ein Server von selbst:** Wenn dein Kontakt einen Server hat, der ihn einladen lässt, sendet sein Erevos deinem von
   selbst einmal eine Einladung dazu, im Chat, ob ihr euch zuerst über Nostr oder in der Nähe getroffen habt, über
-  Bluetooth, WLAN oder einen QR-Code. Dein Telefon nimmt sie von selbst an, und ab dann funktionieren auch Fotos,
-  Sprachnachrichten und Anrufe, mit allen. Sie zählt als eine seiner Einladungen. Jemand, dessen Nachrichtenanfrage du
+  Bluetooth, WLAN oder einen QR-Code. Dein Telefon nimmt sie von selbst an (mit ausgeschalteten **Direktverbindungen**
+  fragt es zuerst, da sein Server dann deine Internetadresse sieht), und ab dann funktionieren auch Gruppen, und Anrufe
+  kommen aus jedem Netz zustande, mit allen. Sie zählt als eine seiner Einladungen. Jemand, dessen Nachrichtenanfrage du
   nicht angenommen hast, wählt keinen Server für dich: Seine Einladung wartet, bis du ihn annimmst, höchstens eine Woche.
 - **Ein älteres Erevos** liest den Nostr-Teil eines Links nicht: Es erreicht dich nur in der Nähe, bis du einen Server
   hast.
 
 **Warum:** Nostr ist nur der Weg hinein. Niemand braucht eine Einladung, um anzufangen, und sobald einer von euch einen
 Server hat, trägt er, was für Nostr zu groß ist.
+
+## Direktverbindungen {#direct}
+
+**Direktverbindungen** sind ein Schalter für alles, was die Internetadresse (IP-Adresse) deines Telefons jemand anderem
+zeigt. Er steht oben in den **Einstellungen**, unter der Suche, und ist **An**, sofern du ihn nicht ausschaltest; jeder
+Bereich hat seinen eigenen. **Was sie ändern**, darunter, öffnet seinen Bildschirm, der sagt, was dieser Abschnitt sagt.
+
+- **An:** Erevos fragt vor den folgenden Dingen nicht nach: Es tut sie sofort. Anrufe und Videoanrufe funktionieren mit
+  einem Kontakt auch dann, wenn kein Server zwischen euch beiden ist: Der Anruf wird über Nostr aufgebaut und geht
+  direkt von Telefon zu Telefon.
+- **Aus:** Vor jedem davon sagt Erevos einmal, wer die Adresse sehen würde, und du wählst, ob du weitermachst (siehe
+  [Wer deine Internetadresse sieht](#ip)). Anrufe gehen nur über einen Anruf-Server, der die Adresse jedes Telefons vor
+  dem anderen verbirgt, oder zwischen zwei Telefonen im selben WLAN. Ein Anruf von einem Kontakt ohne Server zwischen
+  euch beiden klingelt nicht: Der Chat zeigt ihn als verpasst und sagt, dass **Direktverbindungen** solche Anrufe
+  durchlassen.
+
+**Wer deine Internetadresse sieht, solange er an ist:**
+
+- Die Server, die tragen, was du sendest, und deine Anrufe: deiner, der deines Kontakts, und einer, zu dem ein Kontakt
+  dich einlädt.
+- Das Telefon deines Kontakts, in einem Anruf, der direkt von Telefon zu Telefon geht, und die Hilfsserver, die jedem
+  Telefon seine eigene Adresse sagen.
+- Ein Server, den dein Kontakt für eine Datei gewählt hat.
+- Die öffentlichen Nostr-Server, wenn sich zwei Telefone mit einem Code aus 8 Ziffern koppeln.
+- [~] Ein Radiosender oder ein TV-Sender der Sammlung, solange er läuft.
+- [~] Die Seite, von der die Liste der Spam-Nummern kommt, in **Telefon**.
+
+Keiner von ihnen sieht, was du schreibst oder sagst: Das bleibt Ende-zu-Ende-verschlüsselt.
+
+**Was er nie ändert:**
+
+- Er ändert keine Tor-Einstellung. Solange Tor im Bereich an ist, bleibt er aus, und nachdem Tor ausgeschaltet wurde,
+  bleibt er aus, bis du ihn wieder einschaltest.
+- Versteckte Chats und Chats, die auf **Über Tor** gestellt sind, verbinden sich nie direkt und fragen weiterhin nach.
+- Mit einem eigenen Anruf-Server gehen deine Anrufe weiterhin darüber, sodass das andere Telefon deine Adresse nicht
+  sieht.
+- Erevos fragt weiterhin, bevor es einen Web-Link öffnet oder die Vorschau eines Links zeigt, und bevor es die
+  Nachrichten eines Telefons neben diesem von einem Server holt, den dieses Telefon nicht nutzt.
+
+**Gut zu wissen:**
+
+- **Ein direkter Anruf kommt nicht immer zustande:** Manche Netze, vor allem Mobilfunknetze, lassen nichts von außen
+  herein. Der Anrufbildschirm sagt dann **Der Anruf kam nicht direkt zustande**, und der Chat behält diese Zeile. Über
+  einen Anruf-Server kommt ein Anruf aus jedem Netz zustande.
+- **Ein älteres Erevos** klingelt bei einem solchen Anruf und kann sich dann nicht verbinden.
+- **Ein Telefon ohne Server** hört einen solchen Anruf nur, solange Erevos auf Nostr liest, was es auf Android tut:
+  Schläft es, um den Akku zu schonen, kann es einen verpassen.
+- **Hilfsserver, für Fortgeschrittene:** Um direkt von Telefon zu Telefon anzurufen, fragt jedes Telefon einen
+  Hilfsserver, wie seine eigene Internetadresse lautet. Der Hilfsserver sieht diese Adresse, einmal pro Anruf, und
+  nichts vom Anruf selbst. Sofern du nichts anderes wählst, fragt Erevos zuerst den neben deinem Server und den neben dem
+  Server von LPHL, und zwei öffentliche, den von Cloudflare und den von Nextcloud, nur wenn keiner davon antwortet. Auf
+  dem Bildschirm des Schalters nimmt **Meine eigenen Server**, solange er an ist, bis zu drei von dir, und **Keiner**
+  fragt gar keinen: Ein direkter Anruf kommt dann nur dort zustande, wo die beiden Telefone einander von selbst finden,
+  etwa im selben WLAN. **Jetzt prüfen** fragt sie, wie ein Anruf es tut, sodass sie deine Adresse dann auch sehen.
 
 ## Wer deine Internetadresse sieht {#ip}
 
@@ -2156,7 +2217,9 @@ Tor.
   Kontaktlinks. Erevos sagt es vor dem ersten Mal.
 
 - **Anrufe:** Sie gehen nie über Tor. Der Anruf-Server, deiner oder der deines Kontakts, sieht die Adresse, aber nicht,
-  was gesagt wird. Ein Anruf zwischen Telefonen in der Nähe im selben Netz bleibt in diesem Netz.
+  was gesagt wird. Ein Anruf zwischen Telefonen in der Nähe im selben Netz bleibt in diesem Netz. Ohne Anruf-Server
+  zwischen euch und mit eingeschalteten **Direktverbindungen** geht der Anruf direkt von Telefon zu Telefon: Das Telefon
+  deines Kontakts sieht die Adresse, und ebenso die Hilfsserver, die jedem Telefon seine eigene sagen.
 
 - **Eine Datei auf einem Server, den dein Kontakt gewählt hat:** Der Server sieht die Adresse, wenn dein Telefon die
   Datei holt. Tor verbirgt sie.
@@ -2165,10 +2228,10 @@ Tor.
   Browser. Die Vorschau eines Links wird auch von seiner Seite geholt, und die Seite sieht die Adresse genauso.
   Mit **Über Tor** für Linkvorschauen sieht sie die Seite nicht.
 
-- **Der Server eines Kontakts:** Solange dein Bereich keinen eigenen Server hat, oder nur einen geliehenen Platz auf
-  einem, kann dir ein Kontakt einen Platz auf seinem geben, und er kommt mit seiner Nachricht. Sein Server sieht dann
-  die Adresse, darum fragt Erevos, bevor es ihn nimmt, außer der Bereich schickt alles über Tor. Nicht genommen, wird
-  die Einladung fallen gelassen.
+- **Der Server eines Kontakts:** Solange dein Bereich keinen eigenen Server hat, oder nur einen geliehenen Platz auf einem,
+  kann dir ein Kontakt einen Platz auf seinem geben, und er kommt mit seiner Nachricht. Sein Server sieht dann die
+  Adresse, darum fragt Erevos, bevor es ihn nimmt, außer **Direktverbindungen** sind an oder der Bereich schickt alles
+  über Tor. Nicht genommen, wird die Einladung fallen gelassen.
 
 - **Gruppen:** Eine Nachricht in einer Erevos-Gruppe geht über einen Server, der die Adresse sieht. Tor für den
   Bereich verbirgt sie; eine Gruppe hat keinen eigenen Schalter.
@@ -2181,15 +2244,22 @@ Tor.
   Sammlung auf Android, aus, solange du es nicht einschaltest, spielt sie nur über Tor ab. Siehe
   [Sammlung](#collection).
 
-Erevos warnt vor jedem davon einmal, mit dem Titel **Deine Internetadresse kann gesehen werden**, einem Knopf
-**Anleitung**, der diesen Abschnitt öffnet, und, wo es geht, einem Knopf, der es behebt, etwa **Über Tor für diesen
-Chat**. Mit **Weiter** geht es weiter. Für das, was du sendest, wird es einmal für das ganze Netz gesagt, nicht in
-jedem Chat: danach zeigt ein Chat oder eine Gruppe ohne Tor nur eine leise Zeile über dem Schreibfeld, **Ohne Tor: Die
-Server sehen deine Internetadresse.**, mit **Über Tor für diesen Chat** und **Anleitung** daneben.
+Mit ausgeschalteten **Direktverbindungen** warnt Erevos vor jedem davon einmal, mit dem Titel **Deine Internetadresse
+kann gesehen werden**, einem Knopf **Anleitung**, der diesen Abschnitt öffnet, und, wo es geht, einem Knopf, der es
+behebt, etwa **Über Tor für diesen Chat**. Mit **Weiter** geht es weiter. Für das, was du sendest, wird es einmal für
+das ganze Netz gesagt, nicht in jedem Chat: danach zeigt ein Chat oder eine Gruppe ohne Tor nur eine leise Zeile über
+dem Schreibfeld, **Ohne Tor: Die Server sehen deine Internetadresse.**, mit **Über Tor für diesen Chat** und
+**Anleitung** daneben.
 
 Nach der Anleitung kommt dieselbe Frage wieder, und was du gerade sendest, etwa eine Sprachnachricht oder eine Datei,
 wartet darauf. Ein Anruf, der hier klingelt, sagt es unter dem Anruf, und Annehmen geht weiter. Versteckte Chats
 bewahren das Gesagte bei sich auf, getrennt vom Bereich.
+
+Mit eingeschalteten **Direktverbindungen**, der Voreinstellung, fragt es nicht vor diesen Dingen: Sie gehen sofort, und
+keine leise Zeile erscheint. Es fragt weiterhin, bevor es einen Web-Link öffnet oder die Vorschau eines Links zeigt{+,
+bevor etwas zu Matrix, XMPP oder anderen Nostr-Apps geht}, und bevor es die Nachrichten eines Telefons neben diesem von
+einem Server holt, den dieses Telefon nicht nutzt; und versteckte Chats und Chats, die auf **Über Tor** gestellt sind,
+fragen weiterhin nach. Siehe [Direktverbindungen](#direct).
 
 Telefone in der Nähe{~, LoRa und SMS| und LoRa} nutzen das Internet nicht, also zeigen sie keine Internetadresse.
 
@@ -4905,7 +4975,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Fingerabdruck oder Gesicht (Android)** | Aus, solange nicht eingeschaltet. Öffnet nur den Bereich des ersten Passworts: sein Schlüssel im Android Keystore versiegelt, nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung nutzbar und verworfen, wenn diese sich ändern. Jemand, der dich festhält, kann deinen Finger benutzen. | |
 | **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos – Ready for calls and messages“ (nicht auf dem Sperrbildschirm), „Incoming call“ oder „Incoming video call“ – „Open Erevos to answer“, und „New message“ oder wie viele kamen; wenn Android oder das Passwort es beendet, „Closed by Android“ oder „Locked“ – „Open it to receive calls and messages again“; eine Erinnerung, „Reminder“ oder wie viele; eine neue Version, „Erevos X is out“. Nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |
 | **Widget{~ und Telefon} (Android)** | Das Widget zeigt, sobald es hinzugefügt ist, wie viele {~verpasste Anrufe, ungelesene SMS und |}neue Nachrichten es gibt, nie wer oder was.{~ Das Telefon öffnet sich nur ohne Passwort, wenn du es erlaubst: Dann sieht jeder, der das entsperrte Telefon in der Hand hat, die Anrufe und Favoriten, die Android führt, nur mit den Namen aus den Kontakten des Telefons.} | |
-| **Anrufe** | Ende-zu-Ende-verschlüsselt (DTLS-SRTP, sein Schlüssel im verschlüsselten Chat gesendet). Über den Anruf-Server sieht keines der Telefone die IP-Adresse des anderen; der Server, auf dem er läuft, sieht beide, wann und wie lange, und wie viel durchgeht. Ohne Anruf-Server, nur im selben WLAN, sieht jedes Telefon die Adresse des anderen. Die Server sehen, wann ein Anruf zu klingeln beginnt. | Klingeln in der Web-App, wenn geschlossen. Anrufe über Bluetooth (das Walkie-Talkie funktioniert dort). |
+| **Anrufe** | Ende-zu-Ende-verschlüsselt (DTLS-SRTP, sein Schlüssel im verschlüsselten Chat gesendet). Über den Anruf-Server sieht keines der Telefone die IP-Adresse des anderen; der Server, auf dem er läuft, sieht beide, wann und wie lange, und wie viel durchgeht. Ohne Anruf-Server sieht jedes Telefon die Adresse des anderen: im selben WLAN, oder über das Internet, solange **Direktverbindungen** an sind, und dann sehen sie auch die Hilfsserver. Die Server sehen, wann ein Anruf zu klingeln beginnt. | Klingeln in der Web-App, wenn geschlossen. Anrufe über Bluetooth (das Walkie-Talkie funktioniert dort). |
 | **Gruppenchats** | Ende-zu-Ende-verschlüsselt mit MLS (RFC 9420); herausgenommene Mitglieder lesen danach nichts mehr. Die Kopie jedes Mitglieds wird für sich versiegelt, sodass Server nicht erkennen können, wer in einer Gruppe ist; jeder Server sieht trotzdem eine Nachricht in einer Warteschlange ankommen. Mitglieder sehen die Schlüssel und Serveradressen der anderen. Fotos, Dateien und Sprachnachrichten gehen über den Dateispeicher des Servers des Absenders, wie an einen Kontakt, und bleiben dort 14 Tage. Nicht geprüft. | |
 | **Gruppenanrufe** | Sprache und Video, Ende-zu-Ende-verschlüsselt zwischen je zwei Telefonen im Anruf (DTLS-SRTP, seine Schlüssel in der Verschlüsselung der Gruppe gesendet). Über den Anruf-Server sieht kein Telefon die IP-Adresse eines anderen; der Server, auf dem er läuft, sieht die jedes Telefons, wann und wie lange, und wie viel durchgeht. Jedes Mitglied, im Anruf oder nicht, erfährt, wer darin ist. Die Server sehen, wann einer beginnt. | Video mit mehr als vier Personen, über einen Server; mehr als acht Personen. |
 | **Öffentliche Gruppen** | Wie Gruppenchats, und jeder mit dem Link kann um Beitritt bitten und ab dem Hereinlassen lesen. Anfragen kommen beim Server des Inhabers an, versiegelt für das Telefon des Inhabers: Der Server sieht wie viele und wann, nicht von wem. Mitglieder sehen die gewählten Namen der anderen, nur für diese Gruppe gemachte Schlüssel, Serveradressen und Absender-IDs der Warteschlangen. Nicht geprüft. | |

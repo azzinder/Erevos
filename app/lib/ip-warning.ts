@@ -6,7 +6,9 @@
 // be: by whom, what can be done instead, and the guide's section on it (Who sees your internet
 // address, {#ip}). Each is said once, by what it is of (ipKey; what is sent, once for the network): to go on is to have read it, and
 // it is not said again; turning Tor on instead says nothing is kept, so it is said again should
-// Tor be turned off. They are the same for every network of the app: Erevos says them before its
+// Tor be turned off. With Direct connections on (lib/direct.ts, the space's switch in Settings, on
+// unless turned off), those it covers are not said at all, and nothing is kept as said: turned off,
+// each is said as before. They are the same for every network of the app: Erevos says them before its
 // chats, calls and files, and any other network says its own, by its name. What asks is
 // components/ip-warning.tsx; what is kept is the space's (SpaceData.ipSeen), each space its own,
 // and a hidden place's in its own data (IpKeep), never the space's: what a warning is of names a
@@ -38,9 +40,10 @@ export type IpKeep = { space: number; pocket: number; key: Uint8Array } | 'memor
  * (a chat, an account, a server), so each is said once; and, for a hidden place's, where it is kept.
  * `own`: only this phone's own server of that network (or the service's) sees the address, never
  * the contact's, as on Matrix, XMPP, Telegram, Signal, Messenger and Session; Erevos's relays
- * carry what goes to the contact's too.
+ * carry what goes to the contact's too. `tor`: of a chat set to go only through Tor, so it is said
+ * whatever Direct connections says (lib/direct.ts).
  */
-export type IpWarning = { network: string; act: IpAct; of: string; keep?: IpKeep; own?: boolean };
+export type IpWarning = { network: string; act: IpAct; of: string; keep?: IpKeep; own?: boolean; tor?: boolean };
 
 /** Thrown where the owner chose not to go on at a warning: nothing failed, so nothing is said of it. */
 export class IpStop extends Error {

@@ -126,8 +126,12 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
-  "**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.":
-    "**Serveur, en mots simples** : Erevos dit maintenant serveur, sur chaque écran, dans chaque notification et dans le guide, pour ce qui garde tes messages, chiffrés, jusqu’à ce que l’autre téléphone les prenne. Rien ne change dans son fonctionnement.",
+  "**Direct connections**: one switch at the top of **Settings**, on unless you turn it off, for everything that shows your phone's internet address to someone else. On, Erevos no longer asks before those things, and calls work with a contact even with no server between you two, straight from phone to phone. Off, it asks as before. It never changes Tor, and while Tor is on it stays off. See [Direct connections](#direct).":
+    "**Connexions directes** : un interrupteur en haut des **Réglages**, activé tant que tu ne le désactives pas, pour tout ce qui montre l’adresse internet de ton téléphone à quelqu’un d’autre. Activé, Erevos ne demande plus avant ces cas, et les appels marchent avec un contact même sans serveur entre vous deux, directement de téléphone à téléphone. Désactivé, il demande comme avant. Il ne change jamais Tor, et tant que Tor est activé il reste désactivé. Voir [Connexions directes](#direct).",
+  "**New chat says what works with no server**: messages, photos, files and voice messages, and calls too while **Direct connections** is on.":
+    "**Nouvelle discussion dit ce qui marche sans serveur** : messages, photos, fichiers et messages vocaux, et les appels aussi tant que les **Connexions directes** sont activées.",
+  "A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer.":
+    "Un appel sans serveur entre les deux téléphones est établi par Nostr, chiffré de bout en bout comme un message, et les serveurs auxiliaires publics ne sont interrogés que lorsque celui de LPHL ne répond pas.",
   // 7.0.0-rc.7
   // 7.0.0-rc.6
   // 7.0.0-rc.5

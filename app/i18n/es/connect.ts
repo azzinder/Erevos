@@ -12,8 +12,6 @@ export const connect: Record<string, string> = {
   "Only nearby, for now": "Solo cerca, por ahora",
   "Getting ready": "Preparándose",
   "Erevos is making the place where your contacts write to you. If this stays, check the address under For advanced users.": "Erevos está creando el lugar donde tus contactos te escriben. Si esto no desaparece, revisa la dirección en Para usuarios avanzados.",
-  "Texts only, for now": "Solo textos, por ahora",
-  "Your contacts reach you with texts, stickers and reactions. For photos, voice messages, calls and groups, ask someone who uses Erevos for an invite and tap I have their code.": "Tus contactos te llegan con textos, stickers y reacciones. Para fotos, mensajes de voz, llamadas y grupos, pide una invitación a alguien que use Erevos y toca Tengo su código.",
   "Your contacts reach you only when near, over Wi-Fi or Bluetooth. To be reached from anywhere, ask someone who uses Erevos for an invite and tap I have their code.": "Tus contactos te llegan solo cuando estáis cerca, por Wi-Fi o Bluetooth. Para que te lleguen desde cualquier lugar, pide una invitación a alguien que use Erevos y toca Tengo su código.",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Este dispositivo está vinculado a tu teléfono: tiene sus contactos, y tu enlace de contacto es el del teléfono.",
   "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Estos chats ocultos están vinculados a los mismos chats ocultos de tu teléfono: tienen sus contactos, y su enlace de contacto es el del teléfono.",

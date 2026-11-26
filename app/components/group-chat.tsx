@@ -56,11 +56,12 @@ import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import type { ChatLook } from '../theme/chat-theme';
 import { ContactPicker, groupableContacts } from './contact-picker';
+import { useDirectNow } from './direct-switch';
 import { ChatMedia } from './chat-media';
 import { groupMedia } from '../lib/chat-media';
 import { IpStop } from '../lib/ip-warning';
 import { throughTor } from '../lib/relay';
-import { IpQuiet } from './ip-warning';
+import { IpQuiet, quietLineShows } from './ip-warning';
 
 // A group chat (lib/groups.ts), of the space or of a hidden place (components/groups-at.tsx): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the message bar to write in (components/composer.tsx). Its members sheet,
@@ -107,6 +108,8 @@ const clock = (at: number) => {
 export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string; onBack: () => void; onLook: (chat: ChatLook | null) => void }) {
   const { at: groupsAt, linked: groupsLinked } = useGroupsWhere();
   const hidden = groupsAt.hidden;
+  // Direct connections (lib/direct.ts), read again as the switch or a Tor setting changes.
+  const directOn = useDirectNow();
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
   const barBlur = useGlassBlur();
@@ -637,7 +640,7 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
           ))}
         </ScrollView>
       )}
-      {out || throughTor() ? null : <IpQuiet />}
+      {out || throughTor() || (directOn && !quietLineShows(hidden)) ? null : <IpQuiet />}
       {out ? null : (
         <DraftComposer
           draft={draft}

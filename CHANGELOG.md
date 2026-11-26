@@ -12,16 +12,32 @@ and 0.1.15 never came out.
 
 ### For you
 
-- **Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, in all its
-  languages, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.
+- **Direct connections** (#73): one switch at the top of **Settings**, on unless turned off, one for each space, for
+  everything that shows the phone's internet address (IP address) to someone else. On, Erevos no longer asks before
+  what it sends through a server, a call, a file on a server a contact chose, a contact's invite to their server, a
+  pairing by a code of 8 digits, a radio station or TV channel, or the spam list: it does them at once, and the chats
+  show no quiet line about the address. Off, it asks before each, as before. It changes no Tor setting: with Tor, or
+  Nostr through Tor, on in the space it is off, and it stays off until turned on again. Hidden chats and chats set to
+  **Through Tor** still ask, and so do a web link, a link's preview, and bringing the messages of a phone beside this
+  one from a server it does not use. **What it changes**, under it, says who sees the address while it is on.
+- **Calls with no server between you** (#73): with Direct connections on, a call or video call with a contact who
+  shares no server with you is set up through Nostr and goes straight from phone to phone. Each phone then sees the
+  other's address, and a helper server (STUN) tells each phone its own: the one beside your server and LPHL's first,
+  Cloudflare's and Nextcloud's only when those do not answer; on the switch's screen, servers of your own or none, and
+  **Check now**. Where a network lets nothing in from outside, the call says **The call could not connect directly**,
+  and what helps. With the switch off such a call does not ring: the chat shows it as missed, and why.
+- **New chat says what works with no server** (#72): **Messages only, for now** (texts, photos, files and voice
+  messages) or, with Direct connections on, **Messages and calls, for now**, in place of **Texts only, for now**.
 
 ### Under the hood
 
-- The words people read say server where they said relay, in the app's texts of every language, in the guide, and on
-  the server's own sign-in page once a server runs this version (`crates/erevos-relay/src/pages.rs`); the names in the
-  code, in the links to the guide's sections and in the server's own program and settings stay as they were
-  (`lib/relay.ts`, `#relay`, `erevos-relay`, `EREVOS_RELAY_…`). The computer app's start check looks for "server" on
-  the first screen (`desktop/main.js`).
+- A space's data keeps `direct`, on unless turned off, and `stun`, the helper servers typed; with no space open nothing
+  is direct (`lib/direct.ts`, `lock/space-data.ts`). Turning Tor or Nostr through Tor on writes the switch off in that
+  space (`app/tor.tsx`, `app/nostr.tsx`).
+- Calls have a third way beside the call server and the same network: straight over the internet, with the helper
+  servers asked in groups, the reserve only when the first group is silent for 1.2 seconds (`lib/call.ts`). Their
+  signals go encrypted through Nostr when no server is between the two phones (`lib/space-calls.ts`, `lib/calls.ts`).
+- LPHL's helper server is its call server, on the port that server listens on there, 3480 (`lib/servers.ts`).
 
 ## 3.2.0-rc.3 (2026-11-25)
 
