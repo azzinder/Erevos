@@ -162,14 +162,22 @@ and 0.1.15 never came out.
   `OPEN` (39) on `/join`, with the SHA-256 of a token the phone made, adds a line for it named `open-` and 8 random hex
   digits, with the day it was made, and answers its name; or `NOT_FOUND` (none given), `FULL`, `DAY_FULL` (7),
   `ADDRESS_FULL` (8) or `FAILED`. `EREVOS_RELAY_OPEN_PLACES` (1000), `_DAY` (100), `_PER_ADDRESS` (3), `_UNUSED_DAYS`
-  (60), `_FILES_MB` (50), `_CALLS` (30) and `_QUEUES` (20) set the limits, each checked at start. An address counts as
-  an HMAC under a secret drawn at start, an IPv6 one by its /64, in memory and for the day only; what each place used
-  that day, and the places given, are counted in `<file of tokens>.open`, written whole. An open place's token uses its
-  own queues and files, sends for later, pushes and the call relay within its day; `INVITE`, `INVITES`, `UNINVITE`,
-  `LEND`, `COUPON_KEY`, `COUPON_SIGN` and `PAIR` answer it `NOT_FOUND`, and `OWN`, `BORROW` and the requests of `/join`
-  close its connection. The hourly look takes out a line whose token connected on none of the set days, one with no
-  record counted from the first look that sees it; `erevos-relay open-places` counts them from the two files. A name
-  typed for an invite or given by a provider never starts with `open-`.
+  (60), `_FIRST_DAYS` (7), `_FILES_MB` (50), `_CALLS` (30), `_QUEUES` (20), `_FORWARDS` (5000), `_QUEUED_MB` (8) and
+  `_LATER` (20) set the limits, each checked at start. An address counts as an HMAC under a secret drawn at start, an
+  IPv6 one by its /48 and one mapped into IPv6 as the IPv4 address, in memory and for the day only; a connection to
+  `/join` from a proxy on the relay's machine that sends no `X-Forwarded-For` is said in the log, once an hour at most.
+  What each place used that day, and the places given, are counted in `<file of tokens>.open`, written whole. An open
+  place's token uses its own queues and files, sends for later, pushes and the call relay within its day: its new
+  queues, bytes of files put or fetched, credentials for calls and forwards (`FORWARD`, `FILE_VIA` taking or deleting,
+  and `LATER` holding a `FORWARD`, each counted when asked and never given back), answered `DAY_FULL` past them. What it
+  keeps counts apart, in memory only: at most `_QUEUED_MB` megabytes of messages waiting in its queues and `_LATER`
+  requests held for later at once, and all open places' together at most half of the messages waiting, of the room for
+  files and of the requests held for later, `FULL` past that. `INVITE`, `INVITES`, `UNINVITE`, `LEND`, `COUPON_KEY`,
+  `COUPON_SIGN` and `PAIR` answer it `NOT_FOUND`, and `OWN`, `BORROW` and the requests of `/join` close its connection.
+  The hourly look takes out a line whose token connected on none of the set days, one with no record counted from the
+  first look that sees it, and `_FIRST_DAYS` days after the day a line was made, one whose token never connected after
+  that day; `erevos-relay open-places` counts them from the two files. A name typed for an invite or given by a provider
+  never starts with `open-`.
 - The app takes such a place with `takeOpenPlace`, and tells its refusals with `openPlaceRefusal` (`lib/relay.ts`). The
   first space wants one from the first start's setup on and takes it once the mode is chosen, or as a space opens once
   the steps are done (`lib/open-place.ts`); an invite that brings a server of its own is told by `bringsServer`

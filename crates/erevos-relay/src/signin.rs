@@ -1039,9 +1039,10 @@ pub(crate) fn client(peer: IpAddr, forwarded_for: &str) -> IpAddr {
     }
 }
 
-/// The address `ip` counts as for `MAX_STARTS`, and for the open places one
-/// address may take (see `open.rs`): an IPv6 address as its /64, which one
-/// machine may have whole.
+/// The address `ip` counts as for `MAX_STARTS`: an IPv6 address as its /64,
+/// which one machine may have whole, and one mapped into IPv6 as that IPv4
+/// address. The open places one address may take count an IPv6 address by
+/// its /48 from here (see `open.rs`).
 pub(crate) fn counted_as(ip: IpAddr) -> IpAddr {
     match ip {
         IpAddr::V6(v6) => match v6.to_ipv4_mapped() {

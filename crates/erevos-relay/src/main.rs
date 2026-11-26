@@ -93,19 +93,29 @@
 //! `open-` and 8 hex digits. It gives at most `EREVOS_RELAY_OPEN_PLACES` at
 //! once (1000 unless set), `EREVOS_RELAY_OPEN_DAY` a day (100 unless set),
 //! and `EREVOS_RELAY_OPEN_PER_ADDRESS` a day to one address (3 unless set),
-//! the address counted in memory only, by a keyed hash, never written or
-//! logged. Behind a proxy on this machine, the proxy must set
-//! `X-Forwarded-For`, as for signing in, or all phones count as one address.
-//! Each open place may make `EREVOS_RELAY_OPEN_QUEUES` queues (20 unless
-//! set), put or fetch `EREVOS_RELAY_OPEN_FILES_MB` megabytes of files
-//! through the relay (50 unless set) and take credentials for the call relay
-//! `EREVOS_RELAY_OPEN_CALLS` times (30 unless set) a day, but may not
-//! invite, lend or have coupons signed. One whose token connects on none of
-//! `EREVOS_RELAY_OPEN_UNUSED_DAYS` days (60 unless set) is taken out of the
-//! file. Days are UTC days. What is counted is kept in `<file>.open`. With
-//! the setting off, or set to anything but `on`, no new ones are given, and
-//! lines named `open-…` stay open places, with these limits. The relay does
-//! not start with it on and no `EREVOS_RELAY_TOKENS`. Off unless set.
+//! an IPv6 address counted by its /48, and the address counted in memory
+//! only, by a keyed hash, never written or logged. Behind a proxy on this
+//! machine, the proxy must set `X-Forwarded-For`, as for signing in, or all
+//! phones count as one address, which the relay says in its log, once an
+//! hour at most. Each open place may make `EREVOS_RELAY_OPEN_QUEUES` queues
+//! (20 unless set), put or fetch `EREVOS_RELAY_OPEN_FILES_MB` megabytes of
+//! files through the relay (50 unless set), take credentials for the call
+//! relay `EREVOS_RELAY_OPEN_CALLS` times (30 unless set) and have the relay
+//! connect to another relay for it `EREVOS_RELAY_OPEN_FORWARDS` times (5000
+//! unless set) a day; past that, it is told its day is full. It may have
+//! `EREVOS_RELAY_OPEN_QUEUED_MB` megabytes of messages waiting in its queues
+//! (8 unless set) and `EREVOS_RELAY_OPEN_LATER` messages sent for later (20
+//! unless set) at once, and all open places together at most half of the
+//! messages waiting, the files and the messages sent for later the relay
+//! holds. It may not invite, lend or have coupons signed. One whose token
+//! connects on none of `EREVOS_RELAY_OPEN_UNUSED_DAYS` days (60 unless set)
+//! is taken out of the file, and one whose token never connects after the
+//! day it was made, `EREVOS_RELAY_OPEN_FIRST_DAYS` days after that day (7
+//! unless set). Days are UTC days. What is counted is kept in
+//! `<file>.open`. With the setting off, or set to anything but `on`, no new
+//! ones are given, and lines named `open-…` stay open places, with these
+//! limits. The relay does not start with it on and no
+//! `EREVOS_RELAY_TOKENS`. Off unless set.
 //! `erevos-relay open-places` says, from the file and `<file>.open` alone,
 //! how many open places there are, how many were made today and in the last
 //! 7 days, and how many were used (their token connected, or they were made)
@@ -290,18 +300,28 @@ fn open_limits() -> Option<open::Limits> {
     let day = number("EREVOS_RELAY_OPEN_DAY", open::DEFAULT_DAY, 1)?;
     let per_address = number("EREVOS_RELAY_OPEN_PER_ADDRESS", open::DEFAULT_PER_ADDRESS, 1)?;
     let unused_days = number("EREVOS_RELAY_OPEN_UNUSED_DAYS", open::DEFAULT_UNUSED_DAYS, 1)?;
+    // 0 would take out a place on the day it was made, before its phone could come back.
+    let first_days = number("EREVOS_RELAY_OPEN_FIRST_DAYS", open::DEFAULT_FIRST_DAYS, 1)?;
     let files_mb = number("EREVOS_RELAY_OPEN_FILES_MB", open::DEFAULT_FILES_MB, 0)?;
     let calls = number("EREVOS_RELAY_OPEN_CALLS", open::DEFAULT_CALLS, 0)?;
     let queues = number("EREVOS_RELAY_OPEN_QUEUES", open::DEFAULT_QUEUES, 1)?;
+    let forwards = number("EREVOS_RELAY_OPEN_FORWARDS", open::DEFAULT_FORWARDS, 0)?;
+    // 0 would let no message wait in an open place's queues: its phone could be sent nothing.
+    let queued_mb = number("EREVOS_RELAY_OPEN_QUEUED_MB", open::DEFAULT_QUEUED_MB, 1)?;
+    let later = number("EREVOS_RELAY_OPEN_LATER", open::DEFAULT_LATER, 0)?;
     let at_most = |n: u64| u32::try_from(n).unwrap_or(u32::MAX);
     Some(open::Limits {
         places: places.try_into().unwrap_or(usize::MAX),
         day: at_most(day),
         per_address: at_most(per_address),
         unused_days,
+        first_days,
         file_bytes: files_mb.saturating_mul(1 << 20),
         calls: at_most(calls),
         queues: at_most(queues),
+        forwards: at_most(forwards),
+        queued: usize::try_from(queued_mb.saturating_mul(1 << 20)).unwrap_or(usize::MAX),
+        later: later.try_into().unwrap_or(usize::MAX),
     })
 }
 
@@ -682,6 +702,10 @@ fn main() -> ExitCode {
     };
     let mb = |n: u64| usize::try_from(n.saturating_mul(1 << 20)).unwrap_or(usize::MAX);
     let (queued, share) = (mb(queued_mb), mb(share_mb));
+    // Read before the store is made, which counts the open places' messages waiting apart.
+    let Some(open_limits) = open_limits() else {
+        return ExitCode::FAILURE;
+    };
     let store = match env::var("EREVOS_RELAY_JOURNAL") {
         Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl, queued) {
             Ok(store) => {
@@ -702,7 +726,8 @@ fn main() -> ExitCode {
     };
     let store = store
         .with_queue_limits(max_queues, queue_ttl)
-        .with_byte_limits(queued, share);
+        .with_byte_limits(queued, share)
+        .with_open_share(open_limits.queued);
     elog!(
         "erevos-relay: holding {max_queues} queues at most, each until its phone leaves it unused for {queue_days} days"
     );
@@ -894,9 +919,6 @@ fn main() -> ExitCode {
     }
     let open_setting = env::var("EREVOS_RELAY_OPEN").ok();
     let giving = open::wanted(open_setting.as_deref());
-    let Some(open_limits) = open_limits() else {
-        return ExitCode::FAILURE;
-    };
     match &phones {
         Some(path) => {
             // Lines named open-… are open places whatever the setting, so they are counted always.
@@ -906,14 +928,19 @@ fn main() -> ExitCode {
                     let limits = open.limits();
                     if open.on() {
                         elog!(
-                            "erevos-relay: a phone with no place here takes an open place by itself, {} at most at once, {} a day, {} a day to one address; each may make {} queues, move {} MB of files through the relay and take credentials for calls {} times a day, and goes when unused for {} days; counted in {kept}",
+                            "erevos-relay: a phone with no place here takes an open place by itself, {} at most at once, {} a day, {} a day to one address; each may make {} queues, move {} MB of files through the relay, take credentials for calls {} times and have the relay connect to another {} times a day, keep {} MB of messages waiting and {} messages sent for later at once, and goes when unused for {} days, or {} days after the day it was made when not used again; all of them together keep at most half of the messages waiting, the files and the messages sent for later the relay holds; counted in {kept}",
                             limits.places,
                             limits.day,
                             limits.per_address,
                             limits.queues,
                             limits.file_bytes >> 20,
                             limits.calls,
-                            limits.unused_days
+                            limits.forwards,
+                            // Never more than a phone's share (see `queue.rs`).
+                            limits.queued.min(share) >> 20,
+                            limits.later,
+                            limits.unused_days,
+                            limits.first_days
                         );
                     } else {
                         elog!("erevos-relay: no EREVOS_RELAY_OPEN=on set, no open places are given; those in the file, if any, keep their limits, counted in {kept}");

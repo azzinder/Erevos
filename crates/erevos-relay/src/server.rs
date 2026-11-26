@@ -144,8 +144,9 @@
 //!   line is gone from the file. Which phone held it is kept in memory only,
 //!   so a request held before a restart goes as one on the relay's token.
 //!   Reply: `OK` (also when it holds that id already, so a phone may ask
-//!   again), `FULL` (it holds `MAX_HELD` requests or `HELD_CAP` bytes), or
-//!   `FAILED`. A time more than `MAX_AHEAD` ahead closes the connection.
+//!   again), `FULL` (it holds `MAX_HELD` requests or `HELD_CAP` bytes, or an
+//!   open place holds all it may, see `later.rs`), or `FAILED`. A time more
+//!   than `MAX_AHEAD` ahead closes the connection.
 //! - `UNLATER`: a 16-byte id. Reply: `OK` if the relay held that request
 //!   and dropped it now, `NOT_FOUND` if it holds none (it went, is going
 //!   now, or never came), or `FAILED`.
@@ -303,22 +304,31 @@
 //! `open-` and more uses its queues and files as one with another phone's
 //! own token does, `FORWARD`, `FILE_VIA` and `LATER` too, and may make so many
 //! queues, put or fetch so many bytes of files through the relay (a `FILE_VIA`
-//! counting a whole `MAX_CHUNK` until the chunk came) and take credentials
-//! for the call relay so many times a day (`FULL` past that). It hands out no
-//! access: `INVITE`, `INVITES`, `UNINVITE`, `LEND`, `COUPON_KEY`,
-//! `COUPON_SIGN` and `PAIR` are answered `NOT_FOUND`, as for a token that is
-//! not a phone's own, and `OWN`, `BORROW` and what only `/join` takes close
-//! the connection. Its first connection of a day counts as its use that day:
-//! one unused for long goes (see `open.rs`).
+//! counting a whole `MAX_CHUNK` until the chunk came), take credentials for
+//! the call relay and have this relay connect to another (a `FORWARD`, a
+//! `FILE_VIA`, or a `LATER` that holds a `FORWARD`, each counted when asked)
+//! so many times a day: past that it is answered `DAY_FULL` until the next
+//! day (UTC). What it keeps here counts apart from what phones with places of
+//! their own keep: the messages waiting in its queues and its requests held
+//! for later in a share of its own, and those and its chunks with those of
+//! all open places in half of what the relay holds (`FULL` past that, see
+//! `queue.rs`, `files.rs` and `later.rs`). It hands out no access: `INVITE`,
+//! `INVITES`, `UNINVITE`, `LEND`, `COUPON_KEY`, `COUPON_SIGN` and `PAIR` are
+//! answered `NOT_FOUND`, as for a token that is not a phone's own, and `OWN`,
+//! `BORROW` and what only `/join` takes close the connection. Its first
+//! connection of a day counts as its use that day: one unused for long goes
+//! (see `open.rs`).
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue or chunk), `FULL` (the
 //! queue holds `MAX_QUEUED` messages, the relay all the queues it may, or all
-//! the bytes of messages it may, in all or in the queues of the phone that
-//! made this one, see `queue.rs`; or the file store is full), `FAILED`
-//! (the relay could not write the change to its journal or file store, so
-//! nothing changed; try again later), or `UNREACHABLE` (a forward could not
-//! reach the other relay, or it closed without a reply). `OPEN` has two more:
-//! `DAY_FULL` and `ADDRESS_FULL`.
+//! the bytes of messages it may, in all, in the queues of the phone that made
+//! this one, or in those of open places, see `queue.rs`; or the file store is
+//! full, or for an open place the half of it open places' chunks may take,
+//! see `files.rs`), `FAILED` (the relay could not write the change to its
+//! journal or file store, so nothing changed; try again later), or
+//! `UNREACHABLE` (a forward could not reach the other relay, or it closed
+//! without a reply). `OPEN` has two more: `DAY_FULL` and `ADDRESS_FULL`; an
+//! open place is answered `DAY_FULL` too, past what it may use a day.
 //!
 //! A message longer than `MAX_MESSAGE`, a chunk longer than `MAX_CHUNK`, an
 //! unknown opcode, or an opcode the path does not allow closes the
@@ -685,7 +695,9 @@ pub const WRONG: u8 = 5;
 /// A push address its push service said is gone (`PUSH_SET` only): the web
 /// app must make a new one.
 pub const EXPIRED: u8 = 6;
-/// The relay gave all the open places it gives a day (`OPEN` only).
+/// The relay gave all the open places it gives a day (`OPEN`), or an open
+/// place used all it may of something a day (see `open.rs`): it may again
+/// the next day (UTC).
 pub const DAY_FULL: u8 = 7;
 /// The address the phone came from took all the open places it may today
 /// (`OPEN` only).
@@ -1147,10 +1159,15 @@ fn phone_access(store: &Shared, phone: &Phone) -> Access {
 /// address may take a day (see `open.rs`): by `peer`, or by the last address
 /// in `X-Forwarded-For` when `peer` is a proxy on this machine, as the
 /// sign-in pages count a browser (`signin::client`). Only the HMAC of the
-/// address is kept, with the connection, and nothing of it is logged. `None`
-/// when the relay keeps no open places.
+/// address is kept, with the connection, and nothing of it is logged; a proxy
+/// on this machine that sent no `X-Forwarded-For` is said in the log, once an
+/// hour at most (`OpenPlaces::unforwarded`). `None` when the relay keeps no
+/// open places.
 fn joining(store: &Shared, peer: IpAddr, request: &Request) -> Option<Address> {
     let open = store.open.get()?;
+    if peer.is_loopback() && !request.headers().contains_key("x-forwarded-for") {
+        open.unforwarded(system_now());
+    }
     let forwarded: Vec<&str> = request
         .headers()
         .get_all("x-forwarded-for")
@@ -1231,7 +1248,8 @@ fn respond(
                 | KEY
                 | XMPP_PUSH
                 // Sends to contacts on other relays, straight or through
-                // this one, which sees no more than for any phone.
+                // this one, which sees no more than for any phone: so many
+                // forwards a day, with those of `FILE_VIA` and `LATER`.
                 | SEALED_SEND
                 | FORWARD
                 // Its own files, and its contacts' through this relay: so
@@ -1245,7 +1263,7 @@ fn respond(
                 | PUSH_KEY
                 | PUSH_SET
                 // Messages sent for later, which go only while its line is
-                // in force (see `run_held`).
+                // in force (see `run_held`): so many at once.
                 | LATER
                 | UNLATER
                 // Credentials for calls through the call relay: so many a day.
@@ -1275,12 +1293,17 @@ fn respond(
     let reply = match op[0] {
         CREATE => {
             let now = system_now();
-            if !lent_may(shared, access, |lend, nonce| lend.may_create(nonce, now))
-                || !open_may(shared, access, |open, line| open.may_create(line, now))
-            {
+            if !lent_may(shared, access, |lend, nonce| lend.may_create(nonce, now)) {
                 return Ok(Some(vec![FULL]));
             }
-            let created = shared.store().create_for(owner_of(access));
+            if !open_may(shared, access, |open, line| open.may_create(line, now)) {
+                return Ok(Some(vec![DAY_FULL]));
+            }
+            let created = match access {
+                // Its bytes queued count in a share of its own, and with all open places'.
+                Access::Open(line) => shared.store().create_open(line),
+                _ => shared.store().create_for(owner_of(access)),
+            };
             match created {
                 Ok(q) => {
                     let mut out = vec![OK];
@@ -1476,6 +1499,9 @@ fn respond(
             let address = read_address(r)?;
             let sealed = read_sealed(r)?;
             let mark = read_mark(r, framed)?;
+            if !open_may_forward(shared, access, system_now(), 0) {
+                return Ok(Some(vec![DAY_FULL]));
+            }
             vec![forward(shared, &address, &sealed, mark)]
         }
         SEALED_SEND => {
@@ -1494,10 +1520,13 @@ fn respond(
             let chunk = read_bytes(r, MAX_CHUNK)?;
             let now = system_now();
             let bytes = chunk.len() as u64;
-            if !lent_may_put(shared, access, now, bytes) || !open_may_move(shared, access, now, bytes) {
+            if !lent_may_put(shared, access, now, bytes) {
                 return Ok(Some(vec![FULL]));
             }
-            let put = shared.files().put(chunk);
+            if !open_may_move(shared, access, now, bytes) {
+                return Ok(Some(vec![DAY_FULL]));
+            }
+            let put = put_chunk(shared, access, chunk, 0);
             match put {
                 Ok(id) => {
                     let mut out = vec![OK];
@@ -1516,7 +1545,7 @@ fn respond(
             let got = shared.files().get(&id);
             match got {
                 // An open place's day counts what it takes, before it is handed over.
-                Ok(chunk) if !open_may_move(shared, access, system_now(), chunk.len() as u64) => vec![FULL],
+                Ok(chunk) if !open_may_move(shared, access, system_now(), chunk.len() as u64) => vec![DAY_FULL],
                 Ok(chunk) => {
                     let mut out = Vec::with_capacity(1 + 4 + chunk.len());
                     out.push(OK);
@@ -1540,11 +1569,12 @@ fn respond(
                 return Err(io::Error::new(ErrorKind::InvalidData, "not a file request"));
             }
             let id = read_id(r)?;
-            // An open place's day counts the most a chunk may be until it came, then what it was.
+            // An open place's day counts a forward, taking or deleting, and the most a chunk
+            // may be until it came, then what it was.
             let now = system_now();
             let most = if op[0] == FILE_GET { MAX_CHUNK as u64 } else { 0 };
-            if most > 0 && !open_may_move(shared, access, now, most) {
-                return Ok(Some(vec![FULL]));
+            if !open_may_forward(shared, access, now, most) {
+                return Ok(Some(vec![DAY_FULL]));
             }
             let reply = file_via(shared, &address, op[0], &id);
             let came = match reply.first() {
@@ -1609,10 +1639,23 @@ fn respond(
             if let Some(mark) = read_mark(r, framed)?.byte() {
                 request.push(mark);
             }
+            // An open place's day counts a forward held for later when it is asked, as one
+            // sent now, whatever comes of it.
+            if request.first() == Some(&FORWARD)
+                && !open_may_forward(shared, access, system_now(), 0)
+            {
+                return Ok(Some(vec![DAY_FULL]));
+            }
             // One held already is given again: it stays with the phone that held it first.
             let (had, held) = {
                 let mut held = shared.held();
-                (held.holds(&id), held.hold(id, at, request))
+                let had = held.holds(&id);
+                let held_now = match access {
+                    // In a share of its own, and with all open places' (see `later.rs`).
+                    Access::Open(line) => held.hold_open(id, at, request, line, open_later(shared)),
+                    _ => held.hold(id, at, request),
+                };
+                (had, held_now)
             };
             if let (false, Ok(()), Access::Phone(phone) | Access::Open(phone)) = (had, &held, access) {
                 shared.held_by().insert(id, phone);
@@ -1638,10 +1681,13 @@ fn respond(
             let chunk = read_bytes(r, MAX_CHUNK)?;
             let now = system_now();
             let bytes = chunk.len() as u64;
-            if !lent_may_put(shared, access, now, bytes) || !open_may_move(shared, access, now, bytes) {
+            if !lent_may_put(shared, access, now, bytes) {
                 return Ok(Some(vec![FULL]));
             }
-            let put = shared.files().put_from(chunk, from);
+            if !open_may_move(shared, access, now, bytes) {
+                return Ok(Some(vec![DAY_FULL]));
+            }
+            let put = put_chunk(shared, access, chunk, from);
             match put {
                 Ok(id) => {
                     let mut out = vec![OK];
@@ -1656,7 +1702,7 @@ fn respond(
             }
         }
         CALL_RELAY => match &shared.turn {
-            Some(_) if !open_may(shared, access, |open, line| open.may_call(line, system_now())) => vec![FULL],
+            Some(_) if !open_may(shared, access, |open, line| open.may_call(line, system_now())) => vec![DAY_FULL],
             Some(turn) => {
                 let (username, password) = turn.credentials();
                 let mut out = vec![OK];
@@ -2045,6 +2091,35 @@ fn open_give_back(shared: &Shared, access: Access, now: u64, queues: u32, bytes:
     }
 }
 
+/// Whether a connection may have this relay connect to another for it once
+/// more, fetching `bytes` more of files through it with that: always, unless
+/// it is an open place's, whose day counts it (see `open.rs`). Never given
+/// back.
+fn open_may_forward(shared: &Shared, access: Access, now: u64, bytes: u64) -> bool {
+    open_may(shared, access, |open, line| open.may_forward(line, now, bytes))
+}
+
+/// The requests for later each open place may hold at once (see `later.rs`):
+/// none when the relay keeps no open places.
+fn open_later(shared: &Shared) -> usize {
+    shared.open.get().map_or(0, |open| open.limits().later)
+}
+
+/// Keeps a chunk a connection put, its time to expire starting at `from` (see
+/// `FileStore::put_from`): an open place's counts with all open places' (see
+/// `files.rs`).
+fn put_chunk(
+    shared: &Shared,
+    access: Access,
+    chunk: Vec<u8>,
+    from: u64,
+) -> Result<ChunkId, FileError> {
+    match access {
+        Access::Open(_) => shared.files().put_open(chunk, from),
+        _ => shared.files().put_from(chunk, from),
+    }
+}
+
 /// Queues `msg` from `sender`, then wakes the connections waiting for a
 /// message. Under the same lock, it pushes to the queue's web app if it asked
 /// for that, unless the sender said it is word between phones that needs
@@ -2142,7 +2217,8 @@ fn status(result: Result<(), QueueError>) -> Vec<u8> {
 }
 
 /// Whose share of the bytes queued a queue made on this connection counts in
-/// (see `queue.rs`): a phone's own token, an open place's among them, or a
+/// (see `queue.rs`): a phone's own token, an open place's among them (whose
+/// queues `CREATE` makes with `Store::create_open`, counted apart too), or a
 /// lent one. The relay's own token is the operator's, and counts in the whole
 /// only.
 fn owner_of(access: Access) -> Option<Owner> {
@@ -3598,13 +3674,32 @@ mod tests {
         turn: Option<Turn>,
         issuer: Option<erevos_core::coupon::Issuer>,
     ) -> SocketAddr {
+        start_ws_open_in(
+            tokens,
+            open,
+            turn,
+            issuer,
+            Store::default(),
+            FileStore::default(),
+        )
+    }
+
+    /// As `start_ws_open`, keeping messages in `queues` and chunks in `files`.
+    fn start_ws_open_in(
+        tokens: std::path::PathBuf,
+        open: OpenPlaces,
+        turn: Option<Turn>,
+        issuer: Option<erevos_core::coupon::Issuer>,
+        queues: Store,
+        files: FileStore,
+    ) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let limits = Limits {
             private_peers: true,
             ..Limits::default()
         };
-        let store = Shared::new(Store::default(), FileStore::default(), Some(RelayKey::generate()), turn, limits);
+        let store = Shared::new(queues, files, Some(RelayKey::generate()), turn, limits);
         let _ = store.tokens.set(Tokens::new(tokens));
         let _ = store.open.set(open);
         let _ = store.invites.set(Invites::in_memory());
@@ -3779,29 +3874,33 @@ mod tests {
         let list = open_test_tokens("caps", "");
         let limits = open::Limits {
             places: 10,
-            day: 5,
+            day: 6,
             per_address: 2,
             ..open::Limits::default()
         };
         let addr = start_ws_open(list.clone(), OpenPlaces::in_memory(true, limits), None, None);
         take_open(addr, "203.0.113.1");
         take_open(addr, "203.0.113.1");
-        // That address took all it may today.
+        // That address took all it may today, also written as IPv4 mapped into IPv6.
         let r = ws_call(&mut join_from(addr, "203.0.113.1"), open_request("a third"));
         assert_eq!(r, vec![ADDRESS_FULL]);
-        // Another still takes one; an IPv6 address counts as its /64.
-        take_open(addr, "2001:db8:1:2::5");
-        take_open(addr, "2001:db8:1:2::6");
-        let r = ws_call(&mut join_from(addr, "2001:db8:1:2:ffff::7"), open_request("one more"));
+        let r = ws_call(&mut join_from(addr, "::ffff:203.0.113.1"), open_request("a third"));
         assert_eq!(r, vec![ADDRESS_FULL]);
-        // The day's are given: the fifth, and then none, from any address.
+        // Another still takes one; an IPv6 address counts as its /48, whatever /64 in it.
+        take_open(addr, "2001:db8:1:2::5");
+        take_open(addr, "2001:db8:1:ffff::6");
+        let r = ws_call(&mut join_from(addr, "2001:db8:1:abcd:ffff::7"), open_request("one more"));
+        assert_eq!(r, vec![ADDRESS_FULL]);
+        // The next /48 is another address.
+        take_open(addr, "2001:db8:2::5");
+        // The day's are given: the sixth, and then none, from any address.
         take_open(addr, "198.51.100.1");
-        let r = ws_call(&mut join_from(addr, "198.51.100.2"), open_request("a sixth"));
+        let r = ws_call(&mut join_from(addr, "198.51.100.2"), open_request("a seventh"));
         assert_eq!(r, vec![DAY_FULL]);
         // A refused one wrote nothing.
         assert_eq!(
             std::fs::read_to_string(&list).unwrap().lines().count(),
-            5
+            6
         );
         // So many at once: past that, full.
         let list_full = open_test_tokens("full", "");
@@ -3837,28 +3936,29 @@ mod tests {
         let (token, _) = take_open(addr, "203.0.113.1");
         let mut ws = connect_with_token(addr, "", &token);
 
-        // Queues.
+        // Queues: past the day's, its day is full, not the relay.
         ws_create(&mut ws);
         ws_create(&mut ws);
-        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![FULL]);
+        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![DAY_FULL]);
         // Files: one taken through the relay counts as what it was, not as a whole chunk.
         let via = |id: &[u8], op: u8| via_request(&format!("ws://{far}"), &id_request(op, id));
         assert_eq!(chunk_of(&ws_call(&mut ws, via(&far_id, FILE_GET))), &far_chunk[..]);
         let r = ws_call(&mut ws, put_request(&vec![1u8; MAX_CHUNK]));
         assert_eq!((r[0], r.len()), (OK, 25));
         let own = r[1..].to_vec();
-        assert_eq!(ws_call(&mut ws, put_request(&[2u8; 701])), vec![FULL]);
+        assert_eq!(ws_call(&mut ws, put_request(&[2u8; 701])), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, keep_request(system_now(), &[2u8; 701])), vec![DAY_FULL]);
         assert_eq!(ws_call(&mut ws, put_request(&[2u8; 700]))[0], OK);
         // Its own file taken back counts too, and one through the relay as a whole chunk until it came.
-        assert_eq!(ws_call(&mut ws, id_request(FILE_GET, &own)), vec![FULL]);
-        assert_eq!(ws_call(&mut ws, via(&far_id, FILE_GET)), vec![FULL]);
-        // Deleting costs nothing.
+        assert_eq!(ws_call(&mut ws, id_request(FILE_GET, &own)), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, via(&far_id, FILE_GET)), vec![DAY_FULL]);
+        // Deleting costs no bytes (through the relay, a forward, see the test of forwards).
         assert_eq!(ws_call(&mut ws, via(&far_id, FILE_DELETE)), vec![OK]);
         assert_eq!(ws_call(&mut ws, id_request(FILE_DELETE, &own)), vec![OK]);
         // Credentials for calls.
         assert_eq!(ws_call(&mut ws, vec![CALL_RELAY])[0], OK);
         assert_eq!(ws_call(&mut ws, vec![CALL_RELAY])[0], OK);
-        assert_eq!(ws_call(&mut ws, vec![CALL_RELAY]), vec![FULL]);
+        assert_eq!(ws_call(&mut ws, vec![CALL_RELAY]), vec![DAY_FULL]);
         // Another open place counts on its own.
         let (other, _) = take_open(addr, "198.51.100.1");
         let mut theirs = connect_with_token(addr, "", &other);
@@ -3869,12 +3969,12 @@ mod tests {
         // A relay started again from the same files counts on from there.
         let again = start_ws_open(list.clone(), OpenPlaces::open(true, limits, &state).unwrap(), turn(), None);
         let mut ws = connect_with_token(again, "", &token);
-        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![FULL]);
-        assert_eq!(ws_call(&mut ws, vec![CALL_RELAY]), vec![FULL]);
-        assert_eq!(ws_call(&mut ws, put_request(&[2u8; 1])), vec![FULL]);
+        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, vec![CALL_RELAY]), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, put_request(&[2u8; 1])), vec![DAY_FULL]);
         let mut theirs = connect_with_token(again, "", &other);
         ws_create(&mut theirs);
-        assert_eq!(ws_call(&mut theirs, vec![CREATE]), vec![FULL]);
+        assert_eq!(ws_call(&mut theirs, vec![CREATE]), vec![DAY_FULL]);
         let _ = std::fs::remove_file(&list);
         let _ = std::fs::remove_file(&state);
     }
@@ -3894,7 +3994,7 @@ mod tests {
         // The place given before goes on, as an open place.
         let mut ws = connect_with_token(addr, "", &token);
         ws_create(&mut ws);
-        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![FULL]);
+        assert_eq!(ws_call(&mut ws, vec![CREATE]), vec![DAY_FULL]);
         assert_eq!(ws_call(&mut ws, invite_request("maria")), vec![NOT_FOUND]);
         // A relay with no file of tokens has no open places either.
         let plain = start_ws(None);
@@ -3915,22 +4015,244 @@ mod tests {
             let (token, _) = take_open(addr, from);
             ws_create(&mut connect_with_token(addr, "", &token));
         }
-        // What is kept: the header, the day and its count, then a record of each
-        // place's line and of what it used today, 48 bytes each, and nothing else.
+        // What is kept: the header, the day and its count, then a record of each place's
+        // line, 48 bytes, and of what it used today, 52 bytes, and nothing else.
         let kept = std::fs::read(&state).unwrap();
-        assert_eq!(kept.len(), 8 + 8 + 4 + 4 + 2 * 48 + 4 + 2 * 48);
+        assert_eq!(kept.len(), 8 + 8 + 4 + 4 + 2 * 48 + 4 + 2 * 52);
         let text = std::fs::read_to_string(&list).unwrap();
         for from in addresses {
             assert!(!text.contains(from));
+            // An IPv6 address counts by its /48, its first 6 bytes.
             let octets = match from.parse::<IpAddr>().unwrap() {
                 IpAddr::V4(v4) => v4.octets().to_vec(),
-                IpAddr::V6(v6) => v6.octets()[..8].to_vec(),
+                IpAddr::V6(v6) => v6.octets()[..6].to_vec(),
             };
             assert!(!kept.windows(octets.len()).any(|w| w == octets.as_slice()));
             assert!(!text.as_bytes().windows(octets.len()).any(|w| w == octets.as_slice()));
         }
         let _ = std::fs::remove_file(&list);
         let _ = std::fs::remove_file(&state);
+    }
+
+    #[test]
+    fn an_open_place_has_its_relay_connect_to_another_so_many_times_a_day() {
+        let list = open_test_tokens("forwards", "");
+        let state =
+            std::env::temp_dir().join(format!("erevos-open-forwards-{}.open", std::process::id()));
+        let _ = std::fs::remove_file(&state);
+        let limits = open::Limits {
+            forwards: 5,
+            ..open::Limits::default()
+        };
+        let open = || OpenPlaces::open(true, limits, &state).unwrap();
+        let key = RelayKey::generate();
+        let public = key.public();
+        let far = start_ws_with(Some("far"), Some(key));
+        let mut far_ws = connect_with_token(far, "", "far");
+        let (recipient, sender) = ws_create(&mut far_ws);
+        let far_id = ws_call(&mut far_ws, put_request(&[9u8; 300]))[1..].to_vec();
+        let near = start_ws_open(list.clone(), open(), None, None);
+        let (token, _) = take_open(near, "203.0.113.1");
+        let mut ws = connect_with_token(near, "", &token);
+        let far_address = format!("ws://{far}");
+        let forward =
+            |text: &[u8]| forward_request(&far_address, &seal(&public, &sender, text).unwrap());
+        let via = |op: u8| via_request(&far_address, &id_request(op, &far_id));
+        let ahead = system_now() + 60 * 60;
+        let later = |id: u8, request: &[u8]| later_request(ahead, &[id; 16], request);
+        let closed = TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap();
+        let sealed = seal(&public, &sender, b"x").unwrap();
+        let nowhere = forward_request(&format!("ws://{closed}"), &sealed);
+
+        // Each counts when asked, whatever comes of it: a forward, one that reached no relay,
+        // a chunk taken or deleted through the relay, and a forward held for later.
+        assert_eq!(ws_call(&mut ws, forward(b"one")), vec![OK]);
+        assert_eq!(ws_call(&mut ws, nowhere), vec![UNREACHABLE]);
+        assert_eq!(chunk_of(&ws_call(&mut ws, via(FILE_GET))), &[9u8; 300][..]);
+        assert_eq!(ws_call(&mut ws, via(FILE_DELETE)), vec![OK]);
+        assert_eq!(ws_call(&mut ws, later(1, &forward(b"later"))), vec![OK]);
+        // That was all of its day: the relay connects nowhere more for it.
+        assert_eq!(ws_call(&mut ws, forward(b"six")), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, via(FILE_GET)), vec![DAY_FULL]);
+        assert_eq!(ws_call(&mut ws, via(FILE_DELETE)), vec![DAY_FULL]);
+        assert_eq!(
+            ws_call(&mut ws, later(2, &forward(b"later"))),
+            vec![DAY_FULL]
+        );
+        let came = ws_receive(&mut far_ws, &recipient);
+        assert_eq!(came.as_deref(), Some(&b"one"[..]));
+        assert_eq!(ws_receive(&mut far_ws, &recipient), None);
+        // A message for later to a queue on this relay is no forward.
+        let (_, own) = ws_create(&mut ws);
+        let to_itself = send_request(&own, b"later");
+        assert_eq!(ws_call(&mut ws, later(3, &to_itself)), vec![OK]);
+        // Another open place counts on its own, and the relay's own token not at all.
+        let (other, _) = take_open(near, "198.51.100.1");
+        let mut theirs = connect_with_token(near, "", &other);
+        assert_eq!(ws_call(&mut theirs, forward(b"other")), vec![OK]);
+        let mut relay = connect_with_token(near, "", "s3cret");
+        assert_eq!(ws_call(&mut relay, forward(b"relay's")), vec![OK]);
+
+        // A relay started again from the same files counts on from there.
+        let again = start_ws_open(list.clone(), open(), None, None);
+        let mut ws = connect_with_token(again, "", &token);
+        assert_eq!(ws_call(&mut ws, forward(b"after")), vec![DAY_FULL]);
+        let mut theirs = connect_with_token(again, "", &other);
+        assert_eq!(ws_call(&mut theirs, forward(b"other")), vec![OK]);
+        let _ = std::fs::remove_file(&list);
+        let _ = std::fs::remove_file(&state);
+    }
+
+    #[test]
+    fn what_open_places_keep_here_counts_apart_from_what_phones_with_places_of_their_own_keep() {
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        let list = open_test_tokens("apart", &format!("{pixel_line}\n"));
+        let limits = open::Limits {
+            later: 2,
+            ..open::Limits::default()
+        };
+        // Room for 8 messages of 400 bytes waiting, 2 of them in the queues of one open place,
+        // and for 4 chunks of 1000 bytes.
+        let message = 400 + crate::queue::KEEPING;
+        let queues = Store::default()
+            .with_byte_limits(8 * message, 8 * message)
+            .with_open_share(2 * message);
+        let files = FileStore::in_memory(4000, crate::queue::DEFAULT_TTL);
+        let open = OpenPlaces::in_memory(true, limits);
+        let addr = start_ws_open_in(list.clone(), open, None, None, queues, files);
+        let mut first = connect_with_token(addr, "", &take_open(addr, "203.0.113.1").0);
+        let mut second = connect_with_token(addr, "", &take_open(addr, "198.51.100.1").0);
+        let mut third = connect_with_token(addr, "", &take_open(addr, "192.0.2.1").0);
+        let mut pixel = connect_with_token(addr, "", &pixel);
+        let (_, pixel_sender) = ws_create(&mut pixel);
+
+        // Messages waiting in an open place's queues, whoever sent them, count in its share,
+        // and with all open places' in half of what the relay holds.
+        let (first_recipient, first_sender) = ws_create(&mut first);
+        assert_eq!(ws_send(&mut pixel, &first_sender, &[1; 400]), OK);
+        assert_eq!(ws_send(&mut first, &first_sender, &[2; 400]), OK);
+        assert_eq!(ws_send(&mut pixel, &first_sender, &[3; 400]), FULL);
+        let (_, second_sender) = ws_create(&mut second);
+        assert_eq!(ws_send(&mut second, &second_sender, &[4; 400]), OK);
+        assert_eq!(ws_send(&mut second, &second_sender, &[5; 400]), OK);
+        let (_, third_sender) = ws_create(&mut third);
+        assert_eq!(ws_send(&mut third, &third_sender, &[6; 400]), FULL);
+        // The other half is left to the phones with places of their own, open places' messages
+        // to them too.
+        for _ in 0..4 {
+            assert_eq!(ws_send(&mut first, &pixel_sender, &[7; 400]), OK);
+        }
+        assert_eq!(ws_send(&mut first, &pixel_sender, &[8; 400]), FULL);
+        // Taken, a message gives its room back.
+        let taken = ws_receive(&mut first, &first_recipient);
+        assert_eq!(taken.as_deref(), Some(&[1; 400][..]));
+        assert_eq!(ws_send(&mut third, &third_sender, &[6; 400]), OK);
+
+        // Chunks: all open places' together take half the room for files at most, and their
+        // day is not counted for one refused so.
+        let put = |ws: &mut Ws, byte: u8| ws_call(ws, put_request(&[byte; 1000]));
+        let keep = |ws: &mut Ws, byte: u8| ws_call(ws, keep_request(system_now(), &[byte; 1000]));
+        let one = put(&mut first, 1);
+        assert_eq!(one[0], OK);
+        assert_eq!(keep(&mut second, 2)[0], OK);
+        assert_eq!(put(&mut third, 3), vec![FULL]);
+        assert_eq!(keep(&mut first, 3), vec![FULL]);
+        assert_eq!(put(&mut pixel, 4)[0], OK);
+        assert_eq!(put(&mut pixel, 5)[0], OK);
+        assert_eq!(put(&mut pixel, 6), vec![FULL]);
+        // Deleted, an open place's chunk gives its room back.
+        let delete = id_request(FILE_DELETE, &one[1..]);
+        assert_eq!(ws_call(&mut first, delete), vec![OK]);
+        assert_eq!(put(&mut third, 3)[0], OK);
+
+        // Requests for later: so many at once for each open place.
+        let ahead = system_now() + 60 * 60;
+        let hold = |id: u8| later_request(ahead, &[id; 16], &send_request(&pixel_sender, b"later"));
+        assert_eq!(ws_call(&mut first, hold(1)), vec![OK]);
+        assert_eq!(ws_call(&mut first, hold(2)), vec![OK]);
+        assert_eq!(ws_call(&mut first, hold(3)), vec![FULL]);
+        // One it holds already is taken as given again.
+        assert_eq!(ws_call(&mut first, hold(2)), vec![OK]);
+        // Another open place holds its own, and a phone with a place of its own is not counted.
+        assert_eq!(ws_call(&mut second, hold(4)), vec![OK]);
+        for id in 5..8 {
+            assert_eq!(ws_call(&mut pixel, hold(id)), vec![OK]);
+        }
+        // Dropped, a request makes room for another.
+        assert_eq!(ws_call(&mut first, unlater_request(&[1; 16])), vec![OK]);
+        assert_eq!(ws_call(&mut first, hold(3)), vec![OK]);
+        assert_eq!(ws_call(&mut first, hold(8)), vec![FULL]);
+        let _ = std::fs::remove_file(&list);
+    }
+
+    #[test]
+    fn a_lent_place_past_what_it_may_put_a_day_is_told_full_as_before() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let key = RelayKey::generate();
+        let shared = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            None,
+            Limits::default(),
+        );
+        let _ = shared.lend.set(Lend::new(&key));
+        let lend = Arc::clone(&shared);
+        thread::spawn(move || serve_ws(listener, shared, Some(Arc::from("t"))));
+        let (_, _, token) = borrow(addr, &ticket_of(addr, "t"));
+        // Its day's files taken up, as so many chunks put would.
+        let lend = lend.lend.get().unwrap();
+        let Some(Pass::Lent(nonce)) = lend.check(&token, system_now()) else {
+            panic!("not a lent token");
+        };
+        assert!(lend.may_put(nonce, system_now(), crate::lend::MAX_FILE_BYTES));
+        let mut lent = connect_with_token(addr, "", &token);
+        assert_eq!(ws_call(&mut lent, put_request(&[2])), vec![FULL]);
+        let keep = keep_request(system_now(), &[2]);
+        assert_eq!(ws_call(&mut lent, keep), vec![FULL]);
+    }
+
+    #[test]
+    fn a_proxy_on_this_machine_that_sends_no_forwarded_for_is_said_in_the_log() {
+        let request = |forwarded: Option<&str>| {
+            let mut request = Request::builder().uri(JOIN_PATH);
+            if let Some(forwarded) = forwarded {
+                request = request.header("x-forwarded-for", forwarded);
+            }
+            request.body(()).unwrap()
+        };
+        let relay = || {
+            let shared = Shared::new(
+                Store::default(),
+                FileStore::default(),
+                None,
+                None,
+                Limits::default(),
+            );
+            let open = OpenPlaces::in_memory(true, open::Limits::default());
+            let _ = shared.open.set(open);
+            shared
+        };
+        let here = IpAddr::V4(Ipv4Addr::LOCALHOST);
+        let afar: IpAddr = "203.0.113.1".parse().unwrap();
+
+        // Through a proxy that sends it, or from afar, the relay says nothing.
+        let shared = relay();
+        let open = shared.open.get().unwrap();
+        // An address has no `Debug`, so that it is never logged: compared with `==`.
+        assert!(joining(&shared, here, &request(Some("203.0.113.1"))) == Some(open.address(afar)));
+        assert!(joining(&shared, afar, &request(None)) == Some(open.address(afar)));
+        assert!(open.unforwarded(system_now()), "said already");
+
+        // With none, every phone counts as this machine: said, then not again within the hour.
+        let shared = relay();
+        let open = shared.open.get().unwrap();
+        assert!(joining(&shared, here, &request(None)) == Some(open.address(here)));
+        assert!(!open.unforwarded(system_now()), "not said");
     }
 
     #[test]
@@ -5111,6 +5433,15 @@ mod tests {
 
     fn put_request(chunk: &[u8]) -> Vec<u8> {
         let mut req = vec![FILE_PUT];
+        req.extend_from_slice(&(chunk.len() as u32).to_be_bytes());
+        req.extend_from_slice(chunk);
+        req
+    }
+
+    /// A `FILE_KEEP` of `chunk`, its time to expire starting at `from`.
+    fn keep_request(from: u64, chunk: &[u8]) -> Vec<u8> {
+        let mut req = vec![FILE_KEEP];
+        req.extend_from_slice(&from.to_be_bytes());
         req.extend_from_slice(&(chunk.len() as u32).to_be_bytes());
         req.extend_from_slice(chunk);
         req

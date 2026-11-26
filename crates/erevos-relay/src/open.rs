@@ -21,10 +21,16 @@
 //! ones a day, and `per_address` new ones a day to one address (days are UTC
 //! days). The address is the one the connection came from, or the last one
 //! in `X-Forwarded-For` when it came from a proxy on this machine, as the
-//! sign-in pages take it (`signin::client`), an IPv6 address as its /64. It
-//! is counted in memory only, by an HMAC keyed with a secret drawn at start
-//! (`Address`), never written or logged, and forgotten at the end of the day
-//! or when the relay stops.
+//! sign-in pages take it (`signin::client`); an IPv6 address counts as its
+//! /48, the block a provider often gives one customer whole, so one customer
+//! cannot take the day's places with addresses of their own (the sign-in
+//! pages count its /64), and an IPv4 address mapped into IPv6 as that IPv4
+//! address. It is counted in memory only, by an HMAC keyed with a secret
+//! drawn at start (`Address`), never written or logged, and forgotten at the
+//! end of the day or when the relay stops. A proxy on this machine that sends
+//! no `X-Forwarded-For` makes every phone count as one address, this
+//! machine's: the relay says so in its log, once an hour at most
+//! (`unforwarded`).
 //!
 //! Every line named `open-` and more, in any case, is an open place's,
 //! whether open places are on or not, one the operator wrote too: the places
@@ -34,16 +40,35 @@
 //! and `LATER` too, but hands out no access: it cannot invite, lend, have
 //! coupons signed or take a line of the operator's (see `server.rs`). Each
 //! may make `queues` queues, put or fetch `file_bytes` bytes of files through
-//! the relay and take `calls` credentials for the call relay a day; past
-//! that the relay answers `FULL`.
+//! the relay, take `calls` credentials for the call relay and have the relay
+//! connect to another relay for it `forwards` times a day (a `FORWARD`, a
+//! `FILE_VIA`, or a `LATER` that holds a `FORWARD`, each counted when asked,
+//! whatever comes of it); past that the relay answers `DAY_FULL`, so the app
+//! can say it goes on tomorrow.
+//!
+//! What open places keep on the relay counts apart from what the phones with
+//! places of their own keep, so that a few of them cannot take what the whole
+//! relay shares: the messages waiting in the queues each made, at most
+//! `queued` bytes, and in all open places' queues together at most half of
+//! what the relay holds (see `queue.rs`); the chunks of files they put, at
+//! most half of the room for files all together (see `files.rs`); the
+//! requests each holds for later, at most `later` at once, and all open
+//! places' together at most half of the requests and bytes the relay holds
+//! (see `later.rs`). Past those the relay answers `FULL`, as when it is full
+//! for everyone. Which queues, chunks and requests are an open place's is
+//! kept in memory only, as which phone made a queue is: after a restart those
+//! from before count as anyone's.
 //!
 //! An open place whose token connected on none of the last `unused_days`
 //! days goes: the hourly look takes its line out of the file of tokens
-//! (`sweep`). One with no record of its use yet (a line the operator wrote,
-//! or one from before the file of counts was lost) counts as used on the day
-//! the look first sees it, so losing that file never takes out a place still
-//! in use before its phone could connect again. Its queues and files expire
-//! by themselves once unused (see `queue.rs` and `files.rs`).
+//! (`sweep`). One whose token never connected after the day it was made goes
+//! sooner, `first_days` days after that day, so places taken and never used
+//! again do not hold the relay's places for long. One with no record of its
+//! use yet (a line the operator wrote, or one from before the file of counts
+//! was lost) counts as used on the day the look first sees it, so losing that
+//! file never takes out a place still in use before its phone could connect
+//! again. Its queues and files expire by themselves once unused (see
+//! `queue.rs` and `files.rs`).
 //!
 //! What is counted is kept in a small file beside the file of tokens
 //! (`<file>.open`), written whole on every change (`journal::write_whole`),
@@ -67,6 +92,7 @@ use sha2::Sha256;
 use crate::invites;
 use crate::journal;
 use crate::lock::lock;
+use crate::queue;
 use crate::signin;
 use crate::tokens::{self, Tokens};
 
@@ -85,6 +111,9 @@ pub const DEFAULT_PER_ADDRESS: u64 = 3;
 /// Days an open place may go unused before it goes, unless set
 /// (`EREVOS_RELAY_OPEN_UNUSED_DAYS`).
 pub const DEFAULT_UNUSED_DAYS: u64 = 60;
+/// Days after the day it was made that an open place whose token never
+/// connected after that day goes, unless set (`EREVOS_RELAY_OPEN_FIRST_DAYS`).
+pub const DEFAULT_FIRST_DAYS: u64 = 7;
 /// Megabytes of files each open place may put or fetch through the relay a
 /// day, unless set (`EREVOS_RELAY_OPEN_FILES_MB`).
 pub const DEFAULT_FILES_MB: u64 = 50;
@@ -94,7 +123,24 @@ pub const DEFAULT_CALLS: u64 = 30;
 /// Queues each open place may make a day, unless set
 /// (`EREVOS_RELAY_OPEN_QUEUES`).
 pub const DEFAULT_QUEUES: u64 = 20;
+/// Times a day each open place may have the relay connect to another relay
+/// for it, unless set (`EREVOS_RELAY_OPEN_FORWARDS`): many, as a phone that
+/// sends everything through its relay (the app's ANONYMOUS mode) forwards
+/// every message and receipt to a contact on another relay.
+pub const DEFAULT_FORWARDS: u64 = 5000;
+/// Megabytes of messages the queues each open place made may hold waiting,
+/// unless set (`EREVOS_RELAY_OPEN_QUEUED_MB`).
+pub const DEFAULT_QUEUED_MB: u64 = (queue::DEFAULT_OPEN_SHARE >> 20) as u64;
+/// Requests for later each open place may hold at once, unless set
+/// (`EREVOS_RELAY_OPEN_LATER`).
+pub const DEFAULT_LATER: u64 = 20;
 const DAY: u64 = 24 * 60 * 60;
+/// How many of the first bits of an IPv6 address an open place is counted
+/// by (`address`): its /48.
+const V6_PREFIX: usize = 48;
+/// The least time between two lines saying that a proxy on this machine
+/// sends no `X-Forwarded-For` (`unforwarded`), seconds.
+const UNFORWARDED_EVERY: u64 = 60 * 60;
 /// The first bytes of the file of counts, so the relay never reads or
 /// overwrites a file that is something else.
 const COUNTS_HEADER: &[u8; 8] = b"EREVOSO1";
@@ -144,12 +190,22 @@ pub struct Limits {
     pub per_address: u32,
     /// Days one may connect on none of before it goes.
     pub unused_days: u64,
+    /// Days after the day it was made that one whose token never connected
+    /// after that day goes.
+    pub first_days: u64,
     /// Bytes of files each may put or fetch through the relay a day.
     pub file_bytes: u64,
     /// Credentials for the call relay each may take a day.
     pub calls: u32,
     /// Queues each may make a day.
     pub queues: u32,
+    /// Times each may have the relay connect to another relay for it a day.
+    pub forwards: u32,
+    /// Bytes of messages the queues each made may hold waiting (see
+    /// `queue.rs`).
+    pub queued: usize,
+    /// Requests for later each may hold at once (see `later.rs`).
+    pub later: usize,
 }
 
 impl Default for Limits {
@@ -159,9 +215,13 @@ impl Default for Limits {
             day: DEFAULT_DAY as u32,
             per_address: DEFAULT_PER_ADDRESS as u32,
             unused_days: DEFAULT_UNUSED_DAYS,
+            first_days: DEFAULT_FIRST_DAYS,
             file_bytes: DEFAULT_FILES_MB << 20,
             calls: DEFAULT_CALLS as u32,
             queues: DEFAULT_QUEUES as u32,
+            forwards: DEFAULT_FORWARDS as u32,
+            queued: queue::DEFAULT_OPEN_SHARE,
+            later: DEFAULT_LATER as usize,
         }
     }
 }
@@ -199,12 +259,28 @@ struct Line {
     used: u64,
 }
 
+impl Line {
+    /// Whether the open place of this line goes on `today`, as `limits` say:
+    /// once its token connected on none of the last `unused_days` days, or,
+    /// when the day it was made is known and its token never connected after
+    /// that day, once `first_days` days after it, whichever comes first.
+    fn goes(&self, today: u64, limits: &Limits) -> bool {
+        let unused = today.saturating_sub(self.used) > limits.unused_days;
+        let never_back = self.made > 0
+            && self.used <= self.made
+            && today >= self.made.saturating_add(limits.first_days);
+        unused || never_back
+    }
+}
+
 /// What an open place used in a day.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct Used {
     queues: u32,
     bytes: u64,
     calls: u32,
+    /// Times the relay connected to another relay for it, or was asked to.
+    forwards: u32,
 }
 
 /// What the file of counts holds.
@@ -234,11 +310,11 @@ impl Kept {
     /// that day (4 bytes), then each line's SHA-256, the day it was made and
     /// the day it last connected (8 bytes each) after their number (4 bytes),
     /// then each line's SHA-256, queues made (4 bytes), bytes of files moved
-    /// (8 bytes) and credentials for calls taken (4 bytes) that day after
-    /// theirs.
+    /// (8 bytes), credentials for calls taken (4 bytes) and forwards (4
+    /// bytes) that day after theirs.
     fn encode(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(
-            8 + 8 + 4 + 4 + self.lines.len() * 48 + 4 + self.today.len() * 48,
+            8 + 8 + 4 + 4 + self.lines.len() * 48 + 4 + self.today.len() * 52,
         );
         out.extend_from_slice(COUNTS_HEADER);
         out.extend_from_slice(&self.day.to_be_bytes());
@@ -255,6 +331,7 @@ impl Kept {
             out.extend_from_slice(&used.queues.to_be_bytes());
             out.extend_from_slice(&used.bytes.to_be_bytes());
             out.extend_from_slice(&used.calls.to_be_bytes());
+            out.extend_from_slice(&used.forwards.to_be_bytes());
         }
         out
     }
@@ -278,13 +355,14 @@ impl Kept {
             );
         }
         for _ in 0..u32_at(take(&mut r, 4)?) {
-            let entry = take(&mut r, 32 + 4 + 8 + 4)?;
+            let entry = take(&mut r, 32 + 4 + 8 + 4 + 4)?;
             kept.today.insert(
                 hash_at(&entry[..32]),
                 Used {
                     queues: u32_at(&entry[32..36]),
                     bytes: u64_at(&entry[36..44]),
-                    calls: u32_at(&entry[44..]),
+                    calls: u32_at(&entry[44..48]),
+                    forwards: u32_at(&entry[48..]),
                 },
             );
         }
@@ -319,6 +397,9 @@ struct Inner {
     from: HashMap<Address, u32>,
     /// The day `from` counts.
     from_day: u64,
+    /// When the relay last said that a proxy on this machine sends no
+    /// `X-Forwarded-For` (`unforwarded`), Unix seconds.
+    said_unforwarded: Option<u64>,
 }
 
 pub struct OpenPlaces {
@@ -404,8 +485,11 @@ impl OpenPlaces {
         }
     }
 
-    /// How a phone that came from `ip` counts for `per_address`: an IPv6
-    /// address as its /64 (`signin::counted_as`).
+    /// How a phone that came from `ip` counts for `per_address`: an IPv4
+    /// address as itself, and one mapped into IPv6 as that IPv4 address
+    /// (`signin::counted_as`); any other IPv6 address as its /48, wider than
+    /// the /64 the sign-in pages count, as a provider often gives one customer
+    /// a whole /48, with more /64s in it than any day's places.
     pub fn address(&self, ip: IpAddr) -> Address {
         let mut mac = Hmac::<Sha256>::new_from_slice(&self.secret).expect("any length");
         match signin::counted_as(ip) {
@@ -414,13 +498,38 @@ impl OpenPlaces {
                 mac.update(&v4.octets());
             }
             IpAddr::V6(v6) => {
+                let mut octets = v6.octets();
+                octets[V6_PREFIX / 8..].fill(0);
                 mac.update(&[6]);
-                mac.update(&v6.octets());
+                mac.update(&octets);
             }
         }
         let mut address = [0u8; 16];
         address.copy_from_slice(&mac.finalize().into_bytes()[..16]);
         Address(address)
+    }
+
+    /// Says in the log, when open places are on, that a connection came to
+    /// `/join` from a proxy on this machine that sent no `X-Forwarded-For`:
+    /// open places count every phone that comes so as one address, this
+    /// machine's, so the first few of a day take all one address may, and the
+    /// rest are refused. Said at most once an hour (`UNFORWARDED_EVERY`), at
+    /// `now` (Unix seconds), with nothing of the phone or of where it came
+    /// from. Whether it was said now.
+    pub fn unforwarded(&self, now: u64) -> bool {
+        if !self.on {
+            return false;
+        }
+        let mut inner = self.inner();
+        if inner
+            .said_unforwarded
+            .is_some_and(|said| now.saturating_sub(said) < UNFORWARDED_EVERY)
+        {
+            return false;
+        }
+        inner.said_unforwarded = Some(now);
+        elog!("erevos-relay: a connection came to /join from a proxy on this machine that sent no X-Forwarded-For, so open places count every phone that comes so as one address, this machine's: have the proxy send X-Forwarded-For (said once an hour at most)");
+        true
     }
 
     /// Gives a phone that came `from` an open place: adds a line to `tokens`
@@ -552,12 +661,31 @@ impl OpenPlaces {
         )
     }
 
+    /// Whether the open place `line` may have the relay connect to another
+    /// relay for it once more on the day of `now` (a `FORWARD`, a `FILE_VIA`,
+    /// or a `LATER` that holds a `FORWARD`), and fetch `bytes` more of files
+    /// through it with that, counted together if so. The forward stays
+    /// counted whatever comes of it: the relay connects, or tries to, as it
+    /// was asked.
+    pub fn may_forward(&self, line: &[u8; 32], now: u64, bytes: u64) -> bool {
+        self.count(
+            line,
+            now,
+            Used {
+                forwards: 1,
+                bytes,
+                ..Used::default()
+            },
+        )
+    }
+
     /// Gives back what the `may_` calls counted at `now` for the open place
     /// `line`, when what it was counted for then failed or came to less (the
     /// relay full, a chunk smaller than counted): nothing is lost for the day
-    /// to that. Nothing once the day it was counted on is over. A failed write
-    /// of the counts leaves them lower in memory only: on disk they stay as
-    /// counted, never less than what was used.
+    /// to that. Forwards are never given back (see `may_forward`). Nothing
+    /// once the day it was counted on is over. A failed write of the counts
+    /// leaves them lower in memory only: on disk they stay as counted, never
+    /// less than what was used.
     pub fn give_back(&self, line: &[u8; 32], now: u64, queues: u32, bytes: u64, calls: u32) {
         if queues == 0 && bytes == 0 && calls == 0 {
             return;
@@ -585,10 +713,12 @@ impl OpenPlaces {
             queues: had.queues.saturating_add(more.queues),
             bytes: had.bytes.saturating_add(more.bytes),
             calls: had.calls.saturating_add(more.calls),
+            forwards: had.forwards.saturating_add(more.forwards),
         };
         let allowed = after.queues <= self.limits.queues
             && after.bytes <= self.limits.file_bytes
-            && after.calls <= self.limits.calls;
+            && after.calls <= self.limits.calls
+            && after.forwards <= self.limits.forwards;
         let counted = allowed && more != Used::default();
         if counted {
             inner.kept.today.insert(*line, after);
@@ -603,9 +733,10 @@ impl OpenPlaces {
 
     /// The hourly look: takes out of `tokens` the lines of the open places
     /// whose token connected on none of the last `unused_days` days (a line
-    /// with no record counted from the first look that sees it), and
-    /// forgets the records of lines gone from the file, or no longer named as
-    /// an open place's.
+    /// with no record counted from the first look that sees it), or never
+    /// connected after the day it was made, `first_days` days after it (see
+    /// `Line::goes`), and forgets the records of lines gone from the file, or
+    /// no longer named as an open place's.
     pub fn sweep(&self, tokens: &Tokens, now: u64) {
         let today = now / DAY;
         let names: HashMap<[u8; 32], String> = tokens.lines().into_iter().collect();
@@ -628,7 +759,7 @@ impl OpenPlaces {
                 if record.made == 0 {
                     record.made = on_line;
                 }
-                if today.saturating_sub(record.used) > self.limits.unused_days {
+                if record.goes(today, &self.limits) {
                     unused.push(*hash);
                 }
             }
@@ -648,8 +779,9 @@ impl OpenPlaces {
         }
         if taken_out > 0 {
             elog!(
-                "erevos-relay: took out {taken_out} open places unused for more than {} days",
-                self.limits.unused_days
+                "erevos-relay: took out {taken_out} open places unused for more than {} days, or not used again in the {} days after the day they were made",
+                self.limits.unused_days,
+                self.limits.first_days
             );
         }
         let names: HashMap<[u8; 32], String> = tokens.lines().into_iter().collect();
@@ -808,9 +940,15 @@ mod tests {
             day: 3,
             per_address: 2,
             unused_days: 10,
+            // Past `unused_days`, so a place never used goes by that rule first, as the looks
+            // that test it see; `an_open_place_never_used_after_its_day_goes_sooner` sets less.
+            first_days: 30,
             file_bytes: 1000,
             calls: 2,
             queues: 2,
+            forwards: 3,
+            queued: 1000,
+            later: 2,
         }
     }
 
@@ -914,17 +1052,54 @@ mod tests {
         // A place taken out makes room again.
         assert!(tokens.remove(&line("a")).unwrap());
         open.give(&line("e"), second, &tokens, NOW + DAY).unwrap();
-        // An IPv6 address counts as its /64, and as a mapped IPv4 address as that address.
+        // An IPv6 address counts as its /48, and a mapped IPv4 address as that address.
         let roomy = OpenPlaces::in_memory(true, Limits { places: 100, day: 100, ..small() });
         let at = |text: &str| roomy.address(text.parse::<IpAddr>().unwrap());
         assert!(at("2001:db8:1:2::5") == at("2001:db8:1:2:ffff::9"));
-        assert!(at("2001:db8:1:2::5") != at("2001:db8:1:3::5"));
+        assert!(at("2001:db8:1:2::5") == at("2001:db8:1:3::5"));
+        assert!(at("2001:db8:1:2::5") != at("2001:db8:2:2::5"));
         assert!(at("::ffff:203.0.113.1") == at("203.0.113.1"));
         // Another relay, or this one after a restart, counts the same address apart.
         let again = OpenPlaces::in_memory(true, small());
         assert!(again.address(v4(1)) != first);
         let v6 = IpAddr::V6(Ipv6Addr::new(0x2001, 0xdb8, 1, 2, 0, 0, 0, 5));
         assert!(roomy.address(v6) == at("2001:db8:1:2::77"));
+    }
+
+    #[test]
+    fn the_addresses_of_one_ipv6_48_take_the_places_of_one_address() {
+        let path = TempPath::new("v6-tokens");
+        let tokens = Tokens::new(path.0.clone());
+        let limits = Limits {
+            places: 100,
+            day: 100,
+            ..small()
+        };
+        let open = OpenPlaces::in_memory(true, limits);
+        // A place for the token `name`, asked for from the address `from`.
+        let give = |name: &str, from: &str| {
+            let from = open.address(from.parse::<IpAddr>().unwrap());
+            open.give(&line(name), from, &tokens, NOW)
+        };
+        // Two /64s of one /48: the second takes the last place of that address today.
+        give("a", "2001:db8:1:2::5").unwrap();
+        give("b", "2001:db8:1:3::5").unwrap();
+        for other in [
+            "2001:db8:1::1",
+            "2001:db8:1:ffff:ffff:ffff:ffff:ffff",
+            "2001:db8:1:4::",
+        ] {
+            assert_eq!(give(other, other), Err(Refused::Address), "{other}");
+        }
+        // The next /48, on either side, is another address.
+        give("c", "2001:db8:2::1").unwrap();
+        give("d", "2001:db8:0:ffff::1").unwrap();
+        // An IPv4 address is counted whole, and one mapped into IPv6 as it.
+        give("e", "203.0.113.1").unwrap();
+        give("f", "::ffff:203.0.113.1").unwrap();
+        assert_eq!(give("g", "203.0.113.1"), Err(Refused::Address));
+        give("g", "203.0.113.2").unwrap();
+        assert_eq!(tokens.count(), 7);
     }
 
     #[test]
@@ -959,6 +1134,40 @@ mod tests {
     }
 
     #[test]
+    fn an_open_place_forwards_so_many_times_a_day_and_none_is_given_back() {
+        let open = OpenPlaces::in_memory(true, small());
+        let place = line("place");
+        // Three a day: one alone, and two that fetch a chunk with it, counted with the day's files.
+        assert!(open.may_forward(&place, NOW, 0));
+        assert!(open.may_forward(&place, NOW, 400));
+        // One that would fetch more than the day's files left is not counted, as a forward either.
+        assert!(!open.may_forward(&place, NOW, 601));
+        assert!(open.may_forward(&place, NOW, 600));
+        assert!(!open.may_forward(&place, NOW, 0));
+        // What a fetch came to less than counted is given back; the forward is not.
+        open.give_back(&place, NOW, 0, 1000, 0);
+        assert!(!open.may_forward(&place, NOW, 0));
+        assert!(open.may_move(&place, NOW, 1000));
+        // The other uses of the day count apart from forwards.
+        assert!(open.may_create(&place, NOW) && open.may_call(&place, NOW));
+        // Another place counts on its own, and the next day starts again.
+        assert!(open.may_forward(&line("other"), NOW, 0));
+        assert!(open.may_forward(&place, NOW + DAY, 0));
+        // None where the operator allows none, and the rest as before.
+        let limits = Limits {
+            forwards: 0,
+            ..small()
+        };
+        let none = OpenPlaces::in_memory(true, limits);
+        assert!(!none.may_forward(&place, NOW, 0));
+        assert!(
+            none.may_create(&place, NOW)
+                && none.may_move(&place, NOW, 1)
+                && none.may_call(&place, NOW)
+        );
+    }
+
+    #[test]
     fn the_counts_survive_a_restart() {
         let path = TempPath::new("restart-tokens");
         let state = TempPath::new("restart-open");
@@ -971,6 +1180,7 @@ mod tests {
         assert!(open.may_create(&place, NOW) && open.may_create(&place, NOW));
         assert!(open.may_move(&place, NOW, 995));
         assert!(open.may_call(&place, NOW));
+        assert!(open.may_forward(&place, NOW, 0) && open.may_forward(&place, NOW, 0));
         drop(open);
         #[cfg(unix)]
         {
@@ -983,6 +1193,7 @@ mod tests {
         assert!(!open.may_create(&place, NOW));
         assert!(!open.may_move(&place, NOW, 6) && open.may_move(&place, NOW, 5));
         assert!(open.may_call(&place, NOW) && !open.may_call(&place, NOW));
+        assert!(open.may_forward(&place, NOW, 0) && !open.may_forward(&place, NOW, 0));
         // The day's places too: one more, then none.
         open.give(&line("c"), open.address(v4(3)), &tokens, NOW).unwrap();
         assert_eq!(open.give(&line("d"), open.address(v4(4)), &tokens, NOW), Err(Refused::Day));
@@ -990,6 +1201,7 @@ mod tests {
         // The next day starts again.
         let open = OpenPlaces::open(true, small(), &state.0).unwrap();
         assert!(open.may_create(&place, NOW + DAY));
+        assert!(open.may_forward(&place, NOW + DAY, 0));
         open.give(&line("d"), open.address(v4(4)), &tokens, NOW + DAY).unwrap();
         drop(open);
 
@@ -1017,6 +1229,7 @@ mod tests {
         );
         assert!(!tokens.has("b"));
         assert!(!open.may_create(&place, NOW) && !open.may_call(&place, NOW));
+        assert!(!open.may_forward(&place, NOW, 0));
         // Back: given again.
         fs::create_dir_all(&dir.0).unwrap();
         open.give(&line("b"), open.address(v4(2)), &tokens, NOW).unwrap();
@@ -1105,6 +1318,87 @@ mod tests {
     }
 
     #[test]
+    fn an_open_place_never_used_after_its_day_goes_sooner() {
+        let path = TempPath::new("first-tokens");
+        let tokens = Tokens::new(path.0.clone());
+        let limits = Limits {
+            first_days: 3,
+            ..small()
+        };
+        let open = OpenPlaces::in_memory(true, limits);
+        let (back, once) = (line("back"), line("once"));
+        open.give(&back, open.address(v4(1)), &tokens, NOW).unwrap();
+        open.give(&once, open.address(v4(2)), &tokens, NOW).unwrap();
+        // Two with no record: one the relay gave that day, its counts lost since, and one
+        // written by hand, with no day on its line.
+        let mut file = fs::OpenOptions::new().append(true).open(&path.0).unwrap();
+        let more = format!(
+            "{} open-0a1b2c3d # open place on {}\n{} open-hand\n",
+            tokens::to_hex(&line("lost")),
+            invites::date(NOW),
+            tokens::to_hex(&line("hand"))
+        );
+        io::Write::write_all(&mut file, more.as_bytes()).unwrap();
+        drop(file);
+        // The first look sees them that day.
+        open.sweep(&tokens, NOW + 3600);
+        // One phone comes back the next day; the other connects again only that day.
+        open.used(&back, NOW + DAY);
+        open.used(&once, NOW + 2 * 3600);
+        open.sweep(&tokens, NOW + 2 * DAY);
+        assert_eq!(tokens.count(), 4);
+        // Three days after the day they were made, those whose token never connected after it go:
+        // `once`, and the one whose counts were lost, as the look saw it on that day.
+        open.sweep(&tokens, NOW + 3 * DAY);
+        assert!(
+            tokens.has("back") && !tokens.has("once") && !tokens.has("lost") && tokens.has("hand")
+        );
+        // The others go once unused for more than ten days, as before: the one written by hand,
+        // whose day nobody knows, never sooner.
+        open.sweep(&tokens, NOW + 10 * DAY);
+        assert!(tokens.has("back") && tokens.has("hand"));
+        open.sweep(&tokens, NOW + 11 * DAY);
+        assert!(tokens.has("back") && !tokens.has("hand"));
+        open.sweep(&tokens, NOW + 12 * DAY);
+        assert!(!tokens.has("back"));
+    }
+
+    #[test]
+    fn a_place_goes_by_whichever_rule_comes_first() {
+        let limits = Limits {
+            unused_days: 10,
+            first_days: 3,
+            ..small()
+        };
+        let record = |made, used| Line { made, used };
+        // Never used after the day it was made: three days after that day.
+        assert!(!record(100, 100).goes(102, &limits) && record(100, 100).goes(103, &limits));
+        // Used after it: more than ten days after that use.
+        assert!(!record(100, 101).goes(111, &limits) && record(100, 101).goes(112, &limits));
+        // The day it was made not known: by the ten days only.
+        assert!(!record(0, 100).goes(110, &limits) && record(0, 100).goes(111, &limits));
+        // First days set past the unused ones: those still take out a place never used.
+        let late = Limits {
+            first_days: 30,
+            ..limits
+        };
+        assert!(!record(100, 100).goes(110, &late) && record(100, 100).goes(111, &late));
+    }
+
+    #[test]
+    fn a_proxy_that_sends_no_forwarded_for_is_said_once_an_hour() {
+        let open = OpenPlaces::in_memory(true, small());
+        assert!(open.unforwarded(NOW));
+        assert!(!open.unforwarded(NOW + 1));
+        assert!(!open.unforwarded(NOW + UNFORWARDED_EVERY - 1));
+        assert!(open.unforwarded(NOW + UNFORWARDED_EVERY));
+        // A clock set back says nothing more before the hour is over.
+        assert!(!open.unforwarded(NOW));
+        // Nothing while open places are off: no phone is counted by its address then.
+        assert!(!OpenPlaces::in_memory(false, small()).unforwarded(NOW));
+    }
+
+    #[test]
     fn the_file_of_counts_holds_nothing_of_an_address() {
         let path = TempPath::new("private-tokens");
         let state = TempPath::new("private-open");
@@ -1177,9 +1471,19 @@ mod tests {
         };
         for n in 0..50u8 {
             kept.lines.insert([n; 32], Line { made: u64::from(n), used: u64::from(n) + 1 });
-            kept.today.insert([n; 32], Used { queues: n.into(), bytes: 1 << n.min(40), calls: 2 });
+            let forwards = u32::from(n) * 100 + 1;
+            kept.today.insert(
+                [n; 32],
+                Used {
+                    queues: n.into(),
+                    bytes: 1 << n.min(40),
+                    calls: 2,
+                    forwards,
+                },
+            );
         }
         let bytes = kept.encode();
+        assert_eq!(bytes.len(), 8 + 8 + 4 + 4 + 50 * 48 + 4 + 50 * 52);
         assert_eq!(Kept::decode(&bytes), Some(kept));
         assert_eq!(Kept::decode(&bytes[..bytes.len() - 1]), None);
         assert_eq!(Kept::decode(&[bytes.as_slice(), b"x"].concat()), None);
