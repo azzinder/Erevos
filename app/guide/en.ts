@@ -273,9 +273,8 @@ phone's own settings do. In the other languages it is named in that language and
 
 - **Search the settings,** at the top, finds a setting by the start of its words, with or without accents, and shows
   where it is, such as {~**Phone and SMS › SMS**|**Privacy and security › Hidden chats**}. Tap it to open it.
-- **Direct connections,** under the search, is the switch for everything that shows your phone's internet address to
-  someone else, calls with no server among them. **What it changes** opens its screen. See [Direct
-  connections](#direct).
+- **How visible are you?** Under the search, three choices for who sees your phone's internet address: **SPEED**,
+  **ANONYMOUS** and **INVISIBLE**. **What it changes** opens their screen. See [How visible are you?](#direct).
 - **Language · Γλώσσα,** the row under it, opens the list of languages, see Language below.
 - **A group** opens the list of its settings, and a setting opens its screen. A setting with parts, such as {~**SMS**|**Backups**},
   lists them, and each part opens alone.
@@ -289,7 +288,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **General** | **Language**, {~**Modules**, |}**Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, {~[Modules](#modules), |}[Updates](#updates) and [Erevos to a phone nearby](#give-app). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android), **Widget** (Android) and **Vibrate on touch** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
-| **Privacy and security** | **Direct connections** (calls with no server, and no questions before your internet address shows), **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [Direct connections](#direct), [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
+| **Privacy and security** | **How visible are you?** (SPEED, ANONYMOUS or INVISIBLE: who sees your internet address, and how calls go), **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [How visible are you?](#direct), [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
 | **Server and networks** | **Ways**, **Server** (it opens **New chat** with **For advanced users** open), **Home server**, **Tor** (Android), **Nostr** (Android){+,}{- and} **LoRa radio** (Android){+, **Matrix**, **XMPP** and **Nostr chats**}. See [Chat through a server](#relay), [Home server](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr){+,}{- and} [Over a LoRa radio](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)}. |
 [~] | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
@@ -1340,12 +1339,12 @@ call goes over the phone company's network and is not encrypted{~, as a plain SM
   listen, not even the call server below.
 - **Through the call server:** a server set up with the kit in \`deploy/relay\` has a call server beside it. The call
   goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
-- **Without a call server** (a server on your own computer, for example, or no server at all): with **Direct connections**
-  on, the call goes straight from phone to phone over the internet, with no question first. Each phone then sees the
-  other's internet address, and a helper server tells each phone its own. Some networks, mobile ones above all, let
-  nothing in from outside: the call screen then says **The call could not connect directly**, and another network, such
-  as a Wi-Fi, often helps. With **Direct connections** off, Erevos asks first, and the call works only on the same
-  Wi-Fi. See [Direct connections](#direct).
+- **Without a call server** (a server on your own computer, for example, or no server at all): with **SPEED**, the
+  call goes straight from phone to phone over the internet, with no question first. Each phone then sees the other's
+  internet address, and a helper server tells each phone its own. Some networks, mobile ones above all, let nothing in
+  from outside: the call screen then says **The call could not connect directly**, and another network, such as a
+  Wi-Fi, often helps. With **ANONYMOUS**, Erevos asks first, and the call works only on the same Wi-Fi. With
+  **INVISIBLE** there are no calls at all. See [How visible are you?](#direct).
 - **Without internet:** on the same Wi-Fi, a phone's hotspot, or the Wi-Fi two phones make (Wi-Fi Direct), with a
   space open on both, a call needs no server at all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
   messages and group calls.
@@ -1826,7 +1825,7 @@ choice, and its own Nostr servers.
   says. See [Who sees your internet address](#ip).
 - **The servers:** relay.damus.io, nos.lol and relay.primal.net unless you change them; you can add your own, five at
   most. Your contacts are told the servers you read on, and write to you there; one that takes a text is enough.
-- **What stays on your server:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your server when one is between you; with no server between you they go through Nostr too (see With no server at all), and so does what sets up a call, while **Direct connections** is on.
+- **What stays on your server:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your server when one is between you; with no server between you they go through Nostr too (see With no server at all), and so does what sets up a call, with **SPEED**.
 - **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
   server took it. From now on it also says **Went through the server**, **Came through the server**, **Went to their phone
   nearby**, **Came from a phone nearby** or **Went over LoRa**; a message from before says nothing. The note under the
@@ -1861,12 +1860,12 @@ on Nostr, and that is enough to talk.
 - **To begin:** on **New chat**, under **For advanced users**, tap **Start without a server**, then **Show my QR code**
   or **Share my contact link**, and give it to someone who uses Erevos. Who adds it writes to you through Nostr, and
   shows as a message request, which you accept. You can add their link or QR code too, the same way.
-- **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr; and photos, files and voice messages too. A voice message goes in wraps like a text. A photo up to 3 MB goes in pieces of 32 KB, a wrap each, sent before the message that offers it; the other phone keeps them, encrypted with the rest of the space or the hidden chats they came for, until all have come, four days at most. A larger photo, a video or any other file, up to 20 MB, goes as one blob, encrypted on the phone, to a Blossom file server (blossom.primal.net, blossom.band or nostr.download), through Tor as the space's Tor choice says (straight with **Nothing**): the server keeps only what it cannot read. Groups need a server, or the other phone nearby. Calls are set up through Nostr and go straight from phone to phone while **Direct connections** is on (see [Direct connections](#direct)); with it off, they need a server or the other phone nearby. Hidden chats work so too, through Nostr only, though a call there needs a server or the other phone nearby (see [Hidden chats](#hidden)).
+- **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr; and photos, files and voice messages too. A voice message goes in wraps like a text. A photo up to 3 MB goes in pieces of 32 KB, a wrap each, sent before the message that offers it; the other phone keeps them, encrypted with the rest of the space or the hidden chats they came for, until all have come, four days at most. A larger photo, a video or any other file, up to 20 MB, goes as one blob, encrypted on the phone, to a Blossom file server (blossom.primal.net, blossom.band or nostr.download), through Tor as the space's Tor choice says (straight with **Nothing**): the server keeps only what it cannot read. Groups need a server, or the other phone nearby. Calls are set up through Nostr and go straight from phone to phone with **SPEED** (see [How visible are you?](#direct)); with **ANONYMOUS** they need a server or the other phone nearby, and with **INVISIBLE** there are none. Hidden chats work so too, through Nostr only, though a call there needs a server or the other phone nearby (see [Hidden chats](#hidden)).
 - **When it does not come:** the Nostr servers keep a text for two days. Until your contact's phone says it came, Erevos
   gives it to them again once a day, for two weeks.
 - **A server by itself:** when your contact has a server that lets them invite, their Erevos sends yours an invite to it
   by itself, once, in the chat, whether you first met through Nostr or nearby, over Bluetooth, Wi-Fi or a QR code. Your
-  phone takes it by itself (with **Direct connections** off it asks first, as their server then sees your internet
+  phone takes it by itself (with **ANONYMOUS** or **INVISIBLE** it asks first, as their server then sees your internet
   address), and from then on groups work too, and calls connect from any network, with everyone. It counts as one of
   their invites, and once you are in, their chat with you says so, with **Take back** under that line. Someone whose
   message request you have not accepted chooses no server for you: their invite waits until you accept them, a week at
@@ -1876,20 +1875,29 @@ on Nostr, and that is enough to talk.
 **Why:** Nostr is only the way in. No one needs an invite to begin, and once one of you has a server, it carries what
 is too big for Nostr.
 
-## Direct connections {#direct}
+## How visible are you? {#direct}
 
-**Direct connections** is one switch for everything that shows your phone's internet address (IP address) to someone
-else. It is at the top of **Settings**, under the search, and is **On** unless you turn it off; each space has its own.
-**What it changes**, under it, opens its screen, which says what this section says.
+**How visible are you?** stands at the top of **Settings**, under the search: three choices for who sees your phone's
+internet address (IP address), which shows roughly where the phone is, and on which network. Each space has its own,
+and a space is on **SPEED** until you choose another, unless Tor is on in it. **What it changes**, under them, opens
+their screen, which says what this section says. Messages are end-to-end encrypted with all three.
 
-- **On:** Erevos does not ask before the things below: it does them at once. Calls and video calls work with a contact
-  even when no server is between you two: the call is set up through Nostr and goes straight from phone to phone.
-- **Off:** before each of them, Erevos says once who would see the address, and you choose whether to go on (see [Who
-  sees your internet address](#ip)). Calls go only through a call server, which hides each phone's address from the
-  other, or between two phones on the same Wi-Fi. A call from a contact with no server between you two does not ring:
-  the chat shows it as missed, and says that **Direct connections** lets such calls through.
+- **SPEED:** the servers and your contacts see your address. Erevos does not ask before the things below: it does
+  them at once. Calls and video calls go straight from phone to phone, the fastest way, even when no server is between
+  you two: the call is then set up through Nostr.
+- **ANONYMOUS:** only the server sees it, never your contacts. Before each of the things below, Erevos says once who
+  would see the address, and you choose whether to go on (see [Who sees your internet address](#ip)). Calls go only
+  through a call server, which hides each phone's address from the other, or between two phones on the same Wi-Fi. A
+  call from a contact with no server between you two does not ring: the chat shows it as missed, and says that
+  **SPEED** lets such calls through. Tor for messages only, or Nostr through Tor, chosen on their own screens, keep a
+  space on ANONYMOUS.
+- **INVISIBLE:** no one sees it. Everything of the space goes through Tor, files and Nostr too: the servers see an
+  address of Tor, never yours, and your contacts see none. Messages and files come and go slower, and the first start
+  of Tor takes a while. There are no voice or video calls, as calls do not go through Tor: trying one says why, a
+  contact's call does not ring (the chat shows it as missed, in INVISIBLE), and a call going on ends when INVISIBLE is
+  chosen. **Everything** on the Tor screen (**Settings** → **Server and networks** → **Tor**) is INVISIBLE too.
 
-**Who sees your internet address while it is on:**
+**Who sees your internet address with SPEED:**
 
 - The servers that carry what you send and your calls: yours, your contact's, and one a contact invites you to.
 - Your contact's phone, in a call that goes straight from phone to phone, and the helper servers, which tell each phone
@@ -1901,14 +1909,14 @@ else. It is at the top of **Settings**, under the search, and is **On** unless y
 
 None of them sees what you write or say: that stays end-to-end encrypted.
 
-**What it never changes:**
+**What none of them changes:**
 
-- It changes no Tor setting. While Tor is on in the space it stays off, and after Tor is turned off it stays off until
-  you turn it on again.
 - Hidden chats, and chats set to **Through Tor**, never connect directly and still ask.
 - With a call server of your own, your calls still go through it, so the other phone does not see your address.
 - Erevos still asks before it opens a web link or shows a link's preview, and before it brings the messages of a phone
   beside this one from a server this phone does not use.
+- Tor turned off on its own screen leaves the space on **ANONYMOUS**: nothing connects directly until you choose
+  **SPEED** again, which turns off Tor, and Nostr through Tor, in that space.
 
 **Good to know:**
 
@@ -1921,7 +1929,7 @@ None of them sees what you write or say: that stays end-to-end encrypted.
 - **Helper servers, for advanced users:** to call straight from phone to phone, each phone asks a helper server what its
   own internet address is. The helper sees that address, once a call, and nothing of the call itself. Unless you choose
   otherwise, Erevos asks the one beside your server and the one beside LPHL's first, and two public ones, Cloudflare's
-  and Nextcloud's, only when none of those answers. On the switch's screen, while it is on, **My own servers** takes up
+  and Nextcloud's, only when none of those answers. On their screen, with **SPEED**, **My own servers** takes up
   to three of yours, and **No helper** asks none: a direct call then connects only where the two phones find each other
   by themselves, as on the same Wi-Fi. **Check now** asks them as a call does, so they see your address then too.
 
@@ -1930,8 +1938,9 @@ None of them sees what you write or say: that stays end-to-end encrypted.
 Your phone's internet address, its IP address, shows roughly where you are and which provider you use. It does not
 show what you write. Whoever your phone connects to sees it, unless the connection goes through Tor.
 
-- **Your server and your contact's servers:** they see it. To hide it, turn Tor on for the space (**Settings** → **Server
-  and networks** → **Tor**), or turn on **Through Tor** in one chat's **Details**. See [Through Tor](#tor).
+- **Your server and your contact's servers:** they see it. To hide it, choose **INVISIBLE** at the top of **Settings**,
+  turn Tor on for the space's messages (**Settings** → **Server and networks** → **Tor**), or turn on **Through Tor** in
+  one chat's **Details**. See [How visible are you?](#direct) and [Through Tor](#tor).
 
 - **The public Nostr servers and the Nostr file servers:** they see it unless the connection goes through Tor. Turn on
   **Nostr through Tor** under **Settings** → **Server and networks** → **Nostr**, or **Through Tor** for one chat. See
@@ -1940,10 +1949,10 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
   servers, so without Nostr through Tor they see the address, though not the code or the contact links. Erevos says so
   before the first one.
 
-- **Calls:** they never go through Tor. The call server, yours or your contact's, sees the address, though not what is
-  said. A call between phones nearby on the same network stays on that network. With no call server between you and
-  **Direct connections** on, the call goes straight from phone to phone: your contact's phone sees the address, and so
-  do the helper servers that tell each phone its own.
+- **Calls:** they never go through Tor, so **INVISIBLE** has none. The call server, yours or your contact's, sees the
+  address, though not what is said. A call between phones nearby on the same network stays on that network. With no
+  call server between you and **SPEED** chosen, the call goes straight from phone to phone: your contact's phone sees
+  the address, and so do the helper servers that tell each phone its own.
 
 - **A file on a server your contact chose:** the server sees the address when your phone fetches the file. Tor hides
   it.
@@ -1954,7 +1963,8 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
 
 - **A contact's server:** while your space has no server of its own, or only a place lent on one, a contact can give you a
   place on theirs, and it comes with their message. Their server then sees the address, so Erevos asks before it takes
-  it, unless **Direct connections** is on or the space sends everything through Tor. Not taken, the invite is let go.
+  it, unless the space is on **SPEED**, or on **INVISIBLE**, which sends everything through Tor. Not taken, the invite is
+  let go.
 
 - **Groups:** a message in an Erevos group goes through a server, which sees the address. Tor for the space hides it;
   a group has no switch of its own.
@@ -1966,7 +1976,7 @@ show what you write. Whoever your phone connects to sees it, unless the connecti
 - [~] **Radio stations and TV channels:** each sees the address while it plays. **Play through Tor**, in the Collection's
   settings on Android, off unless you turn it on, plays them only through Tor. See [Collection](#collection).
 
-With **Direct connections** off, Erevos warns once before each of these, with the title **Your internet address can be
+With **ANONYMOUS** or **INVISIBLE**, Erevos warns once before each of these, with the title **Your internet address can be
 seen**, a **Guide** button that opens this section and, where it can, a button that fixes it, such as **Through Tor for
 this chat**. **Go on** goes on. For what you send, it is said once for the whole network, not in each chat: after that,
 a chat or group that goes without Tor shows only a quiet line above where you write, **Without Tor: the servers see your
@@ -1976,10 +1986,10 @@ After the guide, the same question comes back, and what you were sending, such a
 for it. A call that rings here says it under the call, and answering goes on. Hidden chats keep what was said with
 them, apart from the space.
 
-With **Direct connections** on, the default, it does not ask before these: they go at once, and no quiet line shows. It
+With **SPEED**, the default, it does not ask before these: they go at once, and no quiet line shows. It
 still asks before it opens a web link or shows a link's preview{+, before what goes to Matrix, XMPP or other Nostr
 apps}, and before it brings the messages of a phone beside this one from a server this phone does not use; and hidden
-chats, and chats set to **Through Tor**, still ask. See [Direct connections](#direct).
+chats, and chats set to **Through Tor**, still ask. See [How visible are you?](#direct).
 
 Nearby phones{~, LoRa and SMS| and LoRa} do not use the internet, so they show no internet address.
 
@@ -4342,7 +4352,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget{~ and Phone} (Android)** | The widget, once added, shows how many {~missed calls, unread SMS and |}new messages there are, never who or what.{~ The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only.} | |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call server, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call server, each phone sees the other's address: on the same Wi-Fi, or over the internet while **Direct connections** is on, and then the helper servers see it too. The servers see when a call starts ringing. | Ringing in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call server, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call server, each phone sees the other's address: on the same Wi-Fi, or over the internet with **SPEED**, and then the helper servers see it too. With **INVISIBLE** there are no calls. The servers see when a call starts ringing. | Ringing in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so servers cannot tell who is in a group; each server still sees a message reach a queue. Members see each other's keys and server addresses. Photos, files and voice messages go through the sender's server's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call server, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The servers see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's server sealed for the owner's phone: the server sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, server addresses and queue sender ids. Not audited. | |

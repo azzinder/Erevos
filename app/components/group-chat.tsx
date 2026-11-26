@@ -33,6 +33,7 @@ import { currentCall } from '../lib/call';
 import { sameDay } from '../lib/day-mark';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
+import { callsOff, callsOffNote } from '../lib/modes';
 import { currentGroupCall } from '../lib/group-call';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
@@ -56,7 +57,7 @@ import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import type { ChatLook } from '../theme/chat-theme';
 import { ContactPicker, groupableContacts } from './contact-picker';
-import { useDirectNow } from './direct-switch';
+import { useDirectNow } from './mode-picker';
 import { ChatMedia } from './chat-media';
 import { groupMedia } from '../lib/chat-media';
 import { IpStop } from '../lib/ip-warning';
@@ -374,6 +375,11 @@ export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string;
     // On a linked device the group is the phone's, and so are its calls (lib/devices.ts).
     if (groupsLinked()) {
       setNote(t('Group calls ring on the phone that holds this account, for now. Call from there.'));
+      return;
+    }
+    // INVISIBLE (lib/modes.ts): no calls, and it is said before anything is asked.
+    if (callsOff()) {
+      setNote(callsOffNote());
       return;
     }
     if (currentCall() || currentGroupCall()) {

@@ -306,9 +306,9 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 
 - **Rechercher dans les réglages,** en haut, trouve un réglage par le début de ses mots, avec ou sans accents, et montre
   où il se trouve, comme {~**Téléphone et SMS › SMS**|**Confidentialité et sécurité › Discussions masquées**}. Appuie dessus pour l’ouvrir.
-- **Connexions directes,** sous la recherche, est l’interrupteur de tout ce qui montre l’adresse internet de ton
-  téléphone à quelqu’un d’autre, y compris les appels sans serveur entre vous. **Ce que ça change** ouvre son écran.
-  Voir [Connexions directes](#direct).
+- **À quel point es-tu visible ?** Sous la recherche, trois choix pour savoir qui voit l’adresse internet de ton
+  téléphone : **SPEED**, **ANONYMOUS** et **INVISIBLE**. **Ce que ça change** ouvre leur écran. Voir [À quel point es-tu
+  visible ?](#direct).
 - **Langue · Language,** la ligne en dessous, ouvre la liste des langues, voir Langue ci-dessous.
 - **Un groupe** ouvre la liste de ses réglages, et un réglage ouvre son écran. Un réglage avec des parties, comme
   {~**SMS**|**Sauvegardes**}, les liste, et chaque partie s’ouvre seule.
@@ -322,7 +322,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Général** | **Langue**, {~**Modules**, |}**Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, {~[Modules](#modules), |}[Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android), **Widget** (Android) et **Vibrer au toucher** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
-| **Confidentialité et sécurité** | **Connexions directes** (appels sans serveur, et aucune question avant que ton adresse internet se voie), **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (avec le mot de passe de panique), **Calculatrice à la place d’Erevos** (Android, dans Apparence), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Connexions directes](#direct), [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
+| **Confidentialité et sécurité** | **À quel point es-tu visible ?** (SPEED, ANONYMOUS ou INVISIBLE : qui voit ton adresse internet, et comment passent les appels), **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (avec le mot de passe de panique), **Calculatrice à la place d’Erevos** (Android, dans Apparence), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [À quel point es-tu visible ?](#direct), [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
 | **Serveur et réseaux** | **Voies**, **Serveur** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Serveur d’attache**, **Tor** (Android), **Nostr** (Android){+,}{- et} **Radio LoRa** (Android){+, **Matrix**, **XMPP** et **Discussions Nostr**}. Voir [Discuter par un serveur](#relay), [Serveur d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr){+,}{- et} [Par une radio LoRa](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)}. |
 [~] | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
@@ -1530,12 +1530,12 @@ chiffré{~, pas plus qu’un SMS ordinaire}. Les discussions masquées et les or
 - **Par le serveur d’appel :** un serveur installé avec le kit dans \`deploy/relay\` a un serveur d’appel à côté. L’appel
   passe par lui, si bien qu’aucun téléphone n’apprend l’adresse IP de l’autre. Par Wi-Fi ou données mobiles, n’importe
   où.
-- **Sans serveur d’appel** (un serveur sur ton propre ordinateur, par exemple, ou aucun serveur) : avec les **Connexions
-  directes** activées, l’appel passe directement de téléphone à téléphone par internet, sans question d’abord. Chaque
-  téléphone voit alors l’adresse internet de l’autre, et un serveur auxiliaire dit à chacun la sienne. Certains réseaux,
-  surtout mobiles, ne laissent rien entrer de l’extérieur : l’écran d’appel dit alors **L’appel n’a pas pu aboutir
-  directement**, et un autre réseau, comme un Wi-Fi, aide souvent. Avec les **Connexions directes** désactivées, Erevos
-  demande d’abord, et l’appel ne marche que sur le même Wi-Fi. Voir [Connexions directes](#direct).
+- **Sans serveur d’appel** (un serveur sur ton propre ordinateur, par exemple, ou aucun serveur) : avec **SPEED**,
+  l’appel passe directement de téléphone à téléphone par internet, sans question d’abord. Chaque téléphone voit alors
+  l’adresse internet de l’autre, et un serveur auxiliaire dit à chacun la sienne. Certains réseaux, surtout mobiles, ne
+  laissent rien entrer de l’extérieur : l’écran d’appel dit alors **L’appel n’a pas pu aboutir directement**, et un
+  autre réseau, comme un Wi-Fi, aide souvent. Avec **ANONYMOUS**, Erevos demande d’abord, et l’appel ne marche que sur
+  le même Wi-Fi. Avec **INVISIBLE**, il n’y a pas d’appels du tout. Voir [À quel point es-tu visible ?](#direct).
 - **Sans internet :** sur le même Wi-Fi, le point d’accès d’un téléphone, ou le Wi-Fi que deux téléphones créent (Wi-Fi
   Direct), avec un espace ouvert sur les deux, un appel n’a besoin d’aucun serveur : il est établi par la liaison à
   proximité et passe directement entre les téléphones (ou ordinateurs). Il en va de même pour les messages de groupe et
@@ -2069,7 +2069,7 @@ quand aucun ne l’a pris. Chaque espace a son propre choix, et ses propres serv
 - **Les serveurs :** relay.damus.io, nos.lol et relay.primal.net tant que tu ne les changes pas ; tu peux ajouter les
   tiens, cinq au plus. Tes contacts apprennent les serveurs sur lesquels tu lis, et t’y écrivent ; un serveur qui prend un
   texte suffit.
-- **Ce qui reste sur ton serveur :** les appels, réactions, et les marques qu’un message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas sur Nostr. Les images, fichiers et messages vocaux passent par ton serveur quand il y en a un entre vous ; sans serveur entre vous, ils passent aussi par Nostr (voir Sans aucun serveur), et aussi ce qui établit un appel, tant que les **Connexions directes** sont activées.
+- **Ce qui reste sur ton serveur :** les appels, réactions, et les marques qu’un message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas sur Nostr. Les images, fichiers et messages vocaux passent par ton serveur quand il y en a un entre vous ; sans serveur entre vous, ils passent aussi par Nostr (voir Sans aucun serveur), et aussi ce qui établit un appel, avec **SPEED**.
 - **Par où il est passé :** appuie longuement sur un message : son menu dit **Envoyé par Nostr** ou **Arrivé par Nostr**
   quand un serveur Nostr l’a pris. Désormais il dit aussi **Envoyé par le serveur**, **Arrivé par le serveur**, **Envoyé à
   son téléphone proche**, **Arrivé d’un téléphone proche** ou **Envoyé par LoRa** ; un message plus ancien ne dit rien.
@@ -2107,12 +2107,12 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
 - **Pour commencer :** dans **Nouvelle discussion**, sous **Pour les utilisateurs avancés**, appuie sur **Commencer sans serveur**, puis sur **Afficher mon code QR** ou **Partager mon lien de contact**, et donne-le à quelqu’un qui
   utilise Erevos. Celui qui l’ajoute t’écrit par Nostr, et apparaît comme une demande de message, que tu acceptes. Tu
   peux aussi ajouter son lien ou son code QR, de la même façon.
-- **Ce qui passe :** les textes, stickers, réactions, modifications, et les marques qu’un message est arrivé ou a été lu, tout par Nostr ; et les photos, fichiers et messages vocaux. Un message vocal passe en wraps comme un texte. Une photo jusqu’à 3 Mo passe en morceaux de 32 Ko, un wrap chacun, envoyés avant le message qui la propose ; l’autre téléphone les garde, chiffrés avec le reste de l’espace ou des discussions masquées pour lesquels ils sont venus, jusqu’à ce que tous soient arrivés, quatre jours au plus. Une photo plus grande, une vidéo ou tout autre fichier, jusqu’à 20 Mo, passe en un seul blob, chiffré sur le téléphone, vers un serveur de fichiers Blossom (blossom.primal.net, blossom.band ou nostr.download), via Tor comme le dit le choix Tor de l’espace (en direct avec **Rien**) : le serveur ne garde que ce qu’il ne peut pas lire. Les groupes ont besoin d’un serveur, ou de l’autre téléphone à proximité. Les appels sont établis par Nostr et passent directement de téléphone à téléphone tant que les **Connexions directes** sont activées (voir [Connexions directes](#direct)) ; désactivées, ils ont besoin d’un serveur ou de l’autre téléphone à proximité. Les discussions masquées fonctionnent ainsi aussi, par Nostr seulement, mais un appel y a besoin d’un serveur ou de l’autre téléphone à proximité (voir [Discussions masquées](#hidden)).
+- **Ce qui passe :** les textes, stickers, réactions, modifications, et les marques qu’un message est arrivé ou a été lu, tout par Nostr ; et les photos, fichiers et messages vocaux. Un message vocal passe en wraps comme un texte. Une photo jusqu’à 3 Mo passe en morceaux de 32 Ko, un wrap chacun, envoyés avant le message qui la propose ; l’autre téléphone les garde, chiffrés avec le reste de l’espace ou des discussions masquées pour lesquels ils sont venus, jusqu’à ce que tous soient arrivés, quatre jours au plus. Une photo plus grande, une vidéo ou tout autre fichier, jusqu’à 20 Mo, passe en un seul blob, chiffré sur le téléphone, vers un serveur de fichiers Blossom (blossom.primal.net, blossom.band ou nostr.download), via Tor comme le dit le choix Tor de l’espace (en direct avec **Rien**) : le serveur ne garde que ce qu’il ne peut pas lire. Les groupes ont besoin d’un serveur, ou de l’autre téléphone à proximité. Les appels sont établis par Nostr et passent directement de téléphone à téléphone avec **SPEED** (voir [À quel point es-tu visible ?](#direct)) ; avec **ANONYMOUS**, ils ont besoin d’un serveur ou de l’autre téléphone à proximité, et avec **INVISIBLE** il n’y en a pas. Les discussions masquées fonctionnent ainsi aussi, par Nostr seulement, mais un appel y a besoin d’un serveur ou de l’autre téléphone à proximité (voir [Discussions masquées](#hidden)).
 - **Quand il n’arrive pas :** les serveurs Nostr gardent un texte deux jours. Tant que le téléphone de ton contact n’a pas
   dit qu’il est arrivé, Erevos le lui redonne une fois par jour, pendant deux semaines.
 - **Un serveur tout seul :** quand ton contact a un serveur qui lui permet d’inviter, son Erevos envoie tout seul au tien
   une invitation à celui-ci, une fois, dans la discussion, que vous vous soyez rencontrés par Nostr ou à proximité, par
-  Bluetooth, Wi-Fi ou un code QR. Ton téléphone la prend tout seul (avec les **Connexions directes** désactivées, il
+  Bluetooth, Wi-Fi ou un code QR. Ton téléphone la prend tout seul (avec **ANONYMOUS** ou **INVISIBLE**, il
   demande d’abord, car son serveur voit alors ton adresse internet), et à partir de là les groupes fonctionnent aussi, et
   les appels aboutissent depuis n’importe quel réseau, avec tout le monde. Elle compte comme l’une de ses invitations,
   et dès que tu as rejoint son serveur, sa discussion avec toi le dit, avec **Reprendre** sous cette ligne. Quelqu’un
@@ -2124,23 +2124,31 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
 **Pourquoi :** Nostr n’est que la porte d’entrée. Personne n’a besoin d’une invitation pour commencer, et dès que l’un
 de vous a un serveur, celui-ci porte ce qui est trop gros pour Nostr.
 
-## Connexions directes {#direct}
+## À quel point es-tu visible ? {#direct}
 
-Les **Connexions directes** sont un interrupteur pour tout ce qui montre l’adresse internet (adresse IP) de ton
-téléphone à quelqu’un d’autre. Elles sont en haut des **Réglages**, sous la recherche, et sont **activées** tant que tu
-ne les désactives pas ; chaque espace a les siennes. **Ce que ça change**, en dessous, ouvre leur écran, qui dit ce que
-dit cette section.
+**À quel point es-tu visible ?** est en haut des **Réglages**, sous la recherche : trois choix pour savoir qui voit
+l’adresse internet (adresse IP) de ton téléphone, qui montre à peu près où est le téléphone, et sur quel réseau. Chaque
+espace a le sien, et un espace est en **SPEED** jusqu’à ce que tu en choisisses un autre, sauf si Tor y est activé. **Ce
+que ça change**, en dessous, ouvre leur écran, qui dit ce que dit cette section. Les messages sont chiffrés de bout en
+bout avec les trois.
 
-- **Activées :** Erevos ne demande pas avant ce qui suit : il le fait tout de suite. Les appels et les appels vidéo
-  marchent avec un contact même quand aucun serveur n’est entre vous deux : l’appel est établi par Nostr et passe
-  directement de téléphone à téléphone.
-- **Désactivées :** avant chacun de ces cas, Erevos dit une fois qui verrait l’adresse, et tu choisis de continuer ou
-  non (voir [Qui voit ton adresse internet](#ip)). Les appels passent seulement par un serveur d’appel, qui cache
-  l’adresse de chaque téléphone à l’autre, ou entre deux téléphones sur le même Wi-Fi. Un appel d’un contact sans
-  serveur entre vous deux ne sonne pas : la discussion le montre comme manqué, et dit que les **Connexions directes**
-  laissent passer de tels appels.
+- **SPEED :** les serveurs et tes contacts voient ton adresse. Erevos ne demande pas avant ce qui suit : il le fait tout
+  de suite. Les appels et les appels vidéo passent directement de téléphone à téléphone, le plus vite possible, même
+  quand aucun serveur n’est entre vous deux : l’appel est alors établi par Nostr.
+- **ANONYMOUS :** seul le serveur la voit, jamais tes contacts. Avant chacun des cas qui suivent, Erevos dit une fois
+  qui verrait l’adresse, et tu choisis de continuer ou non (voir [Qui voit ton adresse internet](#ip)). Les appels
+  passent seulement par un serveur d’appel, qui cache l’adresse de chaque téléphone à l’autre, ou entre deux téléphones
+  sur le même Wi-Fi. Un appel d’un contact sans serveur entre vous deux ne sonne pas : la discussion le montre comme
+  manqué, et dit que **SPEED** laisse passer de tels appels. Tor seulement pour les messages, ou Nostr par Tor, choisis
+  sur leurs propres écrans, gardent un espace en ANONYMOUS.
+- **INVISIBLE :** personne ne la voit. Tout dans l’espace passe par Tor, les fichiers et Nostr aussi : les serveurs
+  voient une adresse de Tor, jamais la tienne, et tes contacts n’en voient aucune. Les messages et les fichiers vont et
+  viennent plus lentement, et le premier démarrage de Tor prend un moment. Il n’y a pas d’appels vocaux ni vidéo, car
+  les appels ne passent pas par Tor : si tu en essaies un, Erevos dit pourquoi, l’appel d’un contact ne sonne pas (la
+  discussion le montre comme manqué, en INVISIBLE), et un appel en cours se termine quand INVISIBLE est choisi.
+  **Tout**, sur l’écran de Tor (**Réglages** → **Serveur et réseaux** → **Tor**), est aussi INVISIBLE.
 
-**Qui voit ton adresse internet quand elles sont activées :**
+**Qui voit ton adresse internet avec SPEED :**
 
 - Les serveurs qui portent ce que tu envoies et tes appels : le tien, celui de ton contact, et celui auquel un contact
   t’invite.
@@ -2153,16 +2161,16 @@ dit cette section.
 
 Aucun d’eux ne voit ce que tu écris ou dis : cela reste chiffré de bout en bout.
 
-**Ce qu’elles ne changent jamais :**
+**Ce qu’aucun des trois ne change :**
 
-- Elles ne changent aucun réglage de Tor. Tant que Tor est activé dans l’espace, elles restent désactivées, et après la
-  désactivation de Tor elles restent désactivées jusqu’à ce que tu les actives de nouveau.
 - Les discussions masquées, et les discussions réglées sur **Par Tor**, ne se connectent jamais directement et demandent
   toujours.
 - Avec ton propre serveur d’appel, tes appels passent toujours par lui, si bien que l’autre téléphone ne voit pas ton
   adresse.
 - Erevos demande toujours avant d’ouvrir un lien web ou d’afficher l’aperçu d’un lien, et avant de faire venir les
   messages d’un téléphone à côté de celui-ci depuis un serveur que ce téléphone n’utilise pas.
+- Tor désactivé sur son propre écran laisse l’espace en **ANONYMOUS** : rien ne se connecte directement jusqu’à ce que
+  tu choisisses de nouveau **SPEED**, ce qui désactive Tor, et Nostr par Tor, dans cet espace.
 
 **Bon à savoir :**
 
@@ -2176,18 +2184,19 @@ Aucun d’eux ne voit ce que tu écris ou dis : cela reste chiffré de bout en b
   téléphone demande à un serveur auxiliaire quelle est sa propre adresse internet. Le serveur auxiliaire voit cette
   adresse, une fois par appel, et rien de l’appel lui-même. Sauf si tu choisis autrement, Erevos interroge d’abord celui
   à côté de ton serveur et celui à côté du serveur de LPHL, et deux publics, celui de Cloudflare et celui de Nextcloud,
-  seulement quand aucun de ceux-là ne répond. Sur l’écran de l’interrupteur, tant qu’il est activé, **Mes propres
-  serveurs** en accepte jusqu’à trois des tiens, et **Aucun** n’en interroge aucun : un appel direct n’aboutit alors que
-  là où les deux téléphones se trouvent d’eux-mêmes, comme sur le même Wi-Fi. **Vérifier maintenant** les interroge
-  comme le fait un appel, donc eux aussi voient alors ton adresse.
+  seulement quand aucun de ceux-là ne répond. Sur leur écran, avec **SPEED**, **Mes propres serveurs** en accepte
+  jusqu’à trois des tiens, et **Aucun** n’en interroge aucun : un appel direct n’aboutit alors que là où les deux
+  téléphones se trouvent d’eux-mêmes, comme sur le même Wi-Fi. **Vérifier maintenant** les interroge comme le fait un
+  appel, donc eux aussi voient alors ton adresse.
 
 ## Qui voit ton adresse internet {#ip}
 
 L’adresse internet de ton téléphone, son adresse IP, montre à peu près où tu es et quel fournisseur tu utilises. Elle
 ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf si la connexion passe par Tor.
 
-- **Ton serveur et les serveurs de tes contacts :** ils la voient. Pour la cacher, active Tor pour l’espace (**Réglages**
-  → **Serveur et réseaux** → **Tor**) ou **Par Tor** dans les **Détails** d’une discussion. Voir [Par Tor](#tor).
+- **Ton serveur et les serveurs de tes contacts :** ils la voient. Pour la cacher, choisis **INVISIBLE** en haut des
+  **Réglages**, active Tor pour les messages de l’espace (**Réglages** → **Serveur et réseaux** → **Tor**) ou **Par
+  Tor** dans les **Détails** d’une discussion. Voir [À quel point es-tu visible ?](#direct) et [Par Tor](#tor).
 
 - **Les serveurs Nostr publics et les serveurs de fichiers Nostr :** ils la voient, sauf si la connexion passe par Tor.
   Active **Nostr par Tor** sous **Réglages** → **Serveur et réseaux** → **Nostr**, ou **Par Tor** pour une discussion.
@@ -2196,10 +2205,11 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
   mêmes serveurs Nostr publics, donc sans Nostr via Tor ils voient l’adresse, mais pas le code ni les liens de contact.
   Erevos le dit avant la première fois.
 
-- **Les appels :** ils ne passent jamais par Tor. Le serveur d’appel, le tien ou celui de ton contact, voit l’adresse,
-  mais pas ce qui se dit. Un appel entre téléphones proches sur le même réseau reste sur ce réseau. Sans serveur d’appel
-  entre vous et avec les **Connexions directes** activées, l’appel passe directement de téléphone à téléphone : le
-  téléphone de ton contact voit l’adresse, tout comme les serveurs auxiliaires qui disent à chaque téléphone la sienne.
+- **Les appels :** ils ne passent jamais par Tor, donc **INVISIBLE** n’en a pas. Le serveur d’appel, le tien ou celui de
+  ton contact, voit l’adresse, mais pas ce qui se dit. Un appel entre téléphones proches sur le même réseau reste sur ce
+  réseau. Sans serveur d’appel entre vous et avec **SPEED** choisi, l’appel passe directement de téléphone à téléphone :
+  le téléphone de ton contact voit l’adresse, tout comme les serveurs auxiliaires qui disent à chaque téléphone la
+  sienne.
 
 - **Un fichier sur un serveur que ton contact a choisi :** le serveur voit l’adresse quand ton téléphone récupère le
   fichier. Tor la cache.
@@ -2210,8 +2220,8 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
 
 - **Le serveur d’un contact :** tant que ton espace n’a pas de serveur à lui, ou seulement une place prêtée sur un, un
   contact peut te donner une place sur le sien, et elle arrive avec son message. Son serveur voit alors l’adresse, donc
-  Erevos demande avant de la prendre, sauf si les **Connexions directes** sont activées ou si l’espace envoie tout par
-  Tor. Si elle n’est pas prise, l’invitation est abandonnée.
+  Erevos demande avant de la prendre, sauf si l’espace est en **SPEED**, ou en **INVISIBLE**, qui envoie tout par Tor.
+  Si elle n’est pas prise, l’invitation est abandonnée.
 
 - **Les groupes :** un message dans un groupe Erevos passe par un serveur, qui voit l’adresse. Tor pour l’espace la
   cache ; un groupe n’a pas de réglage à lui.
@@ -2224,7 +2234,7 @@ ne montre pas ce que tu écris. Qui se connecte à ton téléphone la voit, sauf
   réglages de la Collection sur Android, désactivé tant que tu ne l’actives pas, les lit uniquement par Tor. Voir
   [Collection](#collection).
 
-Avec les **Connexions directes** désactivées, Erevos prévient une fois avant chacun de ces cas, avec le titre **Ton
+Avec **ANONYMOUS** ou **INVISIBLE**, Erevos prévient une fois avant chacun de ces cas, avec le titre **Ton
 adresse internet peut être vue**, un bouton **Guide** qui ouvre cette section et, quand c’est possible, un bouton qui y
 remédie, comme **Par Tor pour cette discussion**. **Continuer** poursuit. Pour ce que tu envoies, c’est dit une fois
 pour tout le réseau, pas dans chaque discussion : ensuite, une discussion ou un groupe qui passe sans Tor montre
@@ -2235,11 +2245,11 @@ Après le guide, la même question revient, et ce que tu envoyais, comme un mess
 appel qui sonne ici le dit sous l’appel, et répondre continue. Les discussions masquées gardent ce qui a été dit avec
 elles, à part de l’espace.
 
-Avec les **Connexions directes** activées, le réglage par défaut, il ne demande pas avant ces cas : ils se font tout de
+Avec **SPEED**, le réglage par défaut, il ne demande pas avant ces cas : ils se font tout de
 suite, et aucune ligne discrète ne s’affiche. Il demande toujours avant d’ouvrir un lien web ou d’afficher l’aperçu d’un
 lien{+, avant ce qui va vers Matrix, XMPP ou d’autres applications Nostr}, et avant de faire venir les messages d’un
 téléphone à côté de celui-ci depuis un serveur que ce téléphone n’utilise pas ; et les discussions masquées, et les
-discussions réglées sur **Par Tor**, demandent toujours. Voir [Connexions directes](#direct).
+discussions réglées sur **Par Tor**, demandent toujours. Voir [À quel point es-tu visible ?](#direct).
 
 Les téléphones proches{~, LoRa et les SMS| et LoRa} n’utilisent pas internet, donc ils ne montrent aucune adresse internet.
 
@@ -4967,7 +4977,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Empreinte digitale ou visage (Android)** | Désactivé sauf si tu l’actives. N’ouvre que l’espace du premier mot de passe : sa clé est scellée dans l’Android Keystore, utilisable seulement juste après une vérification forte de l’empreinte ou du visage, et abandonnée quand ils changent. Quelqu’un qui te retient peut utiliser ton doigt. | |
 | **Notifications (Android)** | En arrière-plan : « Erevos – Ready for calls and messages » (pas sur l’écran de verrouillage), « Incoming call » ou « Incoming video call » – « Open Erevos to answer », et « New message » ou combien sont arrivés ; quand Android ou le mot de passe l’arrête, « Closed by Android » ou « Locked » – « Open it to receive calls and messages again » ; un rappel, « Reminder » ou combien ; une nouvelle version, « Erevos X is out ». Jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |
 | **Widget{~ et Téléphone} (Android)** | Le widget, une fois ajouté, montre combien il y a {~d’appels manqués, de SMS non lus et |}de nouveaux messages, jamais qui ni quoi.{~ Le Téléphone s’ouvre sans le mot de passe seulement si tu le permets : alors quiconque tient le téléphone déverrouillé voit les appels et les favoris qu’Android garde, avec les noms des contacts du téléphone seulement.} | |
-| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le serveur d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans serveur d’appel, chaque téléphone voit l’adresse de l’autre : sur le même Wi-Fi, ou par internet tant que les **Connexions directes** sont activées, et alors les serveurs auxiliaires la voient aussi. Les serveurs voient quand un appel commence à sonner. | La sonnerie dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
+| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le serveur d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans serveur d’appel, chaque téléphone voit l’adresse de l’autre : sur le même Wi-Fi, ou par internet avec **SPEED**, et alors les serveurs auxiliaires la voient aussi. Avec **INVISIBLE**, il n’y a pas d’appels. Les serveurs voient quand un appel commence à sonner. | La sonnerie dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
 | **Discussions de groupe** | Chiffrées de bout en bout avec MLS (RFC 9420) ; les membres retirés ne lisent plus rien ensuite. La copie de chaque membre est scellée à part, donc les serveurs ne peuvent pas savoir qui est dans un groupe ; chaque serveur voit quand même un message atteindre une file d’attente. Les membres voient les clés et les adresses de serveur les uns des autres. Les photos, fichiers et messages vocaux passent par le stockage de fichiers du serveur de l’expéditeur, comme vers un contact, et y restent 14 jours. Pas audité. | |
 | **Appels de groupe** | Voix et vidéo, chiffrées de bout en bout entre chaque paire de téléphones de l’appel (DTLS-SRTP, ses clés envoyées dans le chiffrement du groupe). Par le serveur d’appel, aucun téléphone ne voit l’adresse IP d’un autre ; le serveur qui le fait tourner voit celle de chaque téléphone, quand et combien de temps, et combien passe. Chaque membre, dans l’appel ou non, apprend qui y est. Les serveurs voient quand un appel commence. | La vidéo à plus de quatre personnes, par un serveur ; plus de huit personnes. |
 | **Groupes publics** | Comme les discussions de groupe, et quiconque a le lien peut demander à rejoindre et lire à partir du moment où il est admis. Les demandes arrivent au serveur du propriétaire scellées pour le téléphone du propriétaire : le serveur voit combien et quand, pas de qui. Les membres voient les noms choisis, les clés faites pour ce seul groupe, les adresses de serveur et les identifiants d’expéditeur de file d’attente les uns des autres. Pas audité. | |

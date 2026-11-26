@@ -157,11 +157,11 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Privacy and security'),
     icon: 'lock',
     items: [
-      // The switch at the top of Settings (lib/direct.ts), in the list too, so that the search finds it.
+      // The three modes at the top of Settings (lib/modes.ts), in the list too, so that the search finds them.
       {
         id: 'direct',
-        title: mark('Direct connections'),
-        detail: mark('Calls with no server, and no questions before your internet address shows: on, unless turned off'),
+        title: mark('How visible are you?'),
+        detail: mark('SPEED, ANONYMOUS or INVISIBLE: who sees your internet address, and how calls go'),
         href: '/direct',
         when: uses('erevos', 'phone', 'collection'),
       },
@@ -269,7 +269,7 @@ export const findGroup = (id: string | undefined): SettingsGroup | undefined => 
 
 export const findItem = (group: SettingsGroup | undefined, id: string | undefined): SettingsItem | undefined => group?.items.find((item) => item.id === id);
 
-/** Whether Direct connections (lib/direct.ts) shows here: its switch stands at the top of Settings while a module it is of is on. */
+/** Whether the three modes (lib/modes.ts) show here: they stand at the top of Settings while a module they are of is on. */
 export const directHere = (place: SettingsPlace): boolean => {
   const group = findGroup('privacy');
   return !!group && itemsHere(group, place).some((item) => item.id === 'direct');

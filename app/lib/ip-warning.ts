@@ -6,9 +6,9 @@
 // be: by whom, what can be done instead, and the guide's section on it (Who sees your internet
 // address, {#ip}). Each is said once, by what it is of (ipKey; what is sent, once for the network): to go on is to have read it, and
 // it is not said again; turning Tor on instead says nothing is kept, so it is said again should
-// Tor be turned off. With Direct connections on (lib/direct.ts, the space's switch in Settings, on
-// unless turned off), those it covers are not said at all, and nothing is kept as said: turned off,
-// each is said as before. They are the same for every network of the app: Erevos says them before its
+// Tor be turned off. With Direct connections on (lib/direct.ts: SPEED, lib/modes.ts, the space's mode
+// unless another is chosen at the top of Settings), those it covers are not said at all, and nothing
+// is kept as said: in ANONYMOUS and INVISIBLE, each is said as before. They are the same for every network of the app: Erevos says them before its
 // chats, calls and files, and any other network says its own, by its name. What asks is
 // components/ip-warning.tsx; what is kept is the space's (SpaceData.ipSeen), each space its own,
 // and a hidden place's in its own data (IpKeep), never the space's: what a warning is of names a

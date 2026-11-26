@@ -4,12 +4,14 @@
 
 import { useEffect, useState } from 'react';
 
+import { askInvisible } from '../components/mode-picker';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges, type TorRoute } from '../lib/bridges';
 import { canTor } from '../lib/core';
 import { setDirect } from '../lib/direct';
 import { mark, plural, t } from '../lib/i18n';
+import { modeOf, modeSaid } from '../lib/modes';
 import type { TorWay } from '../lib/relay';
 import { applyTor, autoState, NoBridgesError, onAutoState, retryAuto, torStatus, type AutoState, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
@@ -98,27 +100,28 @@ export default function TorScreen() {
   async function choose(next: TorWay) {
     if (next === way) return;
     setNote('');
-    // Tor going on: slower, so asked first.
-    if (way === 'off') {
-      const ok = await confirm(
-        t('Turn Tor on?'),
-        next === 'all'
-          ? t('Messages and files then come and go slower, and the first start of Tor takes a while. Until Tor is ready, nothing goes: messages wait for it.')
-          : t('Messages then come and go slower, and the first start of Tor takes a while. Until Tor is ready, messages go straight, as now.'),
-        t('Turn on'),
-      );
+    // Everything through Tor is INVISIBLE (lib/modes.ts), with no calls: asked first, as at the top
+    // of Settings. Tor going on for messages: slower, so asked first too.
+    if (next === 'all') {
+      if (!(await askInvisible())) return;
+    } else if (way === 'off') {
+      const ok = await confirm(t('Turn Tor on?'), t('Messages then come and go slower, and the first start of Tor takes a while. Until Tor is ready, messages go straight, as now.'), t('Turn on'));
       if (!ok) return;
     }
     try {
-      // Tor on: Direct connections goes off with it, and stays off until the owner turns it on
-      // again, so that turning Tor off later connects nothing directly unasked (lib/direct.ts).
-      const direct = next !== 'off' && (await loadCurrentSpaceData()).direct;
+      // Tor on: Direct connections goes off with it (SPEED becomes ANONYMOUS, or INVISIBLE), and
+      // stays off until the owner chooses SPEED again, so that turning Tor off later connects nothing
+      // directly unasked (lib/direct.ts).
+      const data = await loadCurrentSpaceData();
+      const direct = next !== 'off' && data.direct;
       await updateCurrentSpaceData(direct ? { tor: next, direct: false } : { tor: next });
       if (direct) setDirect(false);
       setWay(next);
       // The Nostr connections open again the new way as it changes (lib/nostr.ts).
       await applyTor(next, bridges);
-      if (direct) setNote(t('Direct connections is now off in this space, as Tor is on. It stays off until you turn it on again in Settings.'));
+      const was = modeOf(data);
+      const now = modeOf({ ...data, tor: next, direct: data.direct && !direct });
+      if (now !== was) setNote(modeSaid(now));
     } catch (error) {
       setNote(shown(error));
     }
@@ -200,9 +203,13 @@ export default function TorScreen() {
           </Text>
         ) : null}
         <Text tone="muted">
-          {t(
-            'Calls do not go through Tor: their sound and picture go straight between the phones, or through the call server. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
-          )}
+          {way === 'all'
+            ? t(
+                'With everything through Tor this space is INVISIBLE, and there are no calls, as calls do not go through Tor. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
+              )
+            : t(
+                'Calls do not go through Tor: their sound and picture go straight between the phones, or through the call server. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
+              )}
         </Text>
       </Card>
       {on && status ? (

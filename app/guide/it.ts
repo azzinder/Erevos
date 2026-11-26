@@ -292,9 +292,8 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 
 - **Cerca nelle impostazioni,** in alto, trova un’impostazione dall’inizio delle sue parole, con o senza accenti, e
   mostra dove si trova, come {~**Telefono e SMS › SMS**|**Privacy e sicurezza › Chat nascoste**}. Toccala per aprirla.
-- **Connessioni dirette,** sotto la ricerca, è l’interruttore di tutto ciò che mostra l’indirizzo internet del tuo
-  telefono a qualcun altro, comprese le chiamate senza server tra voi. **Cosa cambia** apre la sua schermata. Vedi
-  [Connessioni dirette](#direct).
+- **Quanto sei visibile?** Sotto la ricerca, tre scelte per chi vede l’indirizzo internet del tuo telefono: **SPEED**,
+  **ANONYMOUS** e **INVISIBLE**. **Cosa cambia** apre la loro schermata. Vedi [Quanto sei visibile?](#direct).
 - **Lingua · Language,** la riga sotto, apre l’elenco delle lingue, vedi Lingua più sotto.
 - **Un gruppo** apre l’elenco delle sue impostazioni, e un’impostazione apre la sua schermata. Un’impostazione con
   parti, come {~**SMS**|**Backup**}, le elenca, e ogni parte si apre da sola.
@@ -308,7 +307,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | **Generali** | **Lingua**, {~**Moduli**, |}**Aggiornamenti**, **Dai Erevos a un telefono vicino** (Android), **Novità**, **Informazioni su Erevos**, **Sostieni Erevos** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, {~[Moduli](#modules), |}[Aggiornamenti](#updates) e [Erevos a un telefono vicino](#give-app). |
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android), **Widget** (Android) e **Vibrazione al tocco** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android e l’app per computer): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi; su un computer, se Erevos continua a funzionare con la finestra chiusa. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone) e [Su un computer](#desktop). |
-| **Privacy e sicurezza** | **Connessioni dirette** (chiamate senza server, e nessuna domanda prima che si veda il tuo indirizzo internet), **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Connessioni dirette](#direct), [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
+| **Privacy e sicurezza** | **Quanto sei visibile?** (SPEED, ANONYMOUS o INVISIBLE: chi vede il tuo indirizzo internet, e come vanno le chiamate), **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Quanto sei visibile?](#direct), [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
 | **Server e reti** | **Vie**, **Server** (apre **Nuova chat** con **Per utenti esperti** aperto), **Server di casa**, **Tor** (Android), **Nostr** (Android){+,}{- e} **Radio LoRa** (Android){+, **Matrix**, **XMPP** e **Chat Nostr**}. Vedi [Chat tramite un server](#relay), [Server di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr){+,}{- e} [Con una radio LoRa](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats)}. |
 [~] | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **SMS quando nient’altro funziona**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
 | **Dati e dispositivi** | **Backup**, **Pezzi del backup**, **Dispositivi collegati** e **Chat importate**. Vedi [Backup](#backup), [Pezzi del backup presso amici](#backup-pieces), [Dispositivi collegati](#devices) e [Chat importate](#import). |
@@ -1457,12 +1456,12 @@ computer non ce l’hanno.
 - **Tramite il server per le chiamate:** un server configurato con il kit in \`deploy/relay\` ha accanto un server per
   le chiamate. La chiamata passa da lì, così nessuno dei due telefoni conosce l’indirizzo IP dell’altro. Via Wi-Fi o
   dati mobili, ovunque.
-- **Senza un server per le chiamate** (un server sul tuo computer, per esempio, o nessun server): con le **Connessioni
-  dirette** attive, la chiamata va diretta da telefono a telefono via internet, senza chiedere prima. Ogni telefono vede
-  allora l’indirizzo internet dell’altro, e un server di supporto dice a ciascuno il proprio. Alcune reti, soprattutto
-  quelle mobili, non lasciano entrare nulla da fuori: la schermata della chiamata dice allora **Impossibile collegare
-  direttamente la chiamata**, e un’altra rete, come un Wi-Fi, spesso aiuta. Con le **Connessioni dirette** disattivate,
-  Erevos chiede prima, e la chiamata funziona solo sulla stessa rete Wi-Fi. Vedi [Connessioni dirette](#direct).
+- **Senza un server per le chiamate** (un server sul tuo computer, per esempio, o nessun server): con **SPEED**, la
+  chiamata va diretta da telefono a telefono via internet, senza chiedere prima. Ogni telefono vede allora l’indirizzo
+  internet dell’altro, e un server di supporto dice a ciascuno il proprio. Alcune reti, soprattutto quelle mobili, non
+  lasciano entrare nulla da fuori: la schermata della chiamata dice allora **Impossibile collegare direttamente la
+  chiamata**, e un’altra rete, come un Wi-Fi, spesso aiuta. Con **ANONYMOUS**, Erevos chiede prima, e la chiamata
+  funziona solo sulla stessa rete Wi-Fi. Con **INVISIBLE** non ci sono chiamate. Vedi [Quanto sei visibile?](#direct).
 - **Senza internet:** sulla stessa rete Wi-Fi, sull’hotspot di un telefono, o sulla rete Wi-Fi che due telefoni creano
   (Wi-Fi Direct), con uno spazio aperto su entrambi, una chiamata non ha bisogno di nessun server: si avvia tramite il
   collegamento da vicino e va direttamente tra i telefoni (o i computer). Lo stesso vale per i messaggi di gruppo
@@ -1978,7 +1977,7 @@ spazio ha la sua scelta, e i suoi server Nostr.
 - **I server:** relay.damus.io, nos.lol e relay.primal.net a meno che tu non li cambi; puoi aggiungere i tuoi, al
   massimo cinque. Ai tuoi contatti vengono comunicati i server su cui leggi, e ti scrivono lì; basta che uno prenda un
   testo.
-- **Che cosa resta sul tuo server:** chiamate, reazioni, e i segni che un messaggio è arrivato o è stato letto; e quello che scrivi ai contatti su iPhone o su computer, che non leggono su Nostr. Immagini, file e messaggi vocali passano dal tuo server quando ce n’è uno tra voi; senza server tra voi passano anche da Nostr (vedi Senza alcun server), e così anche ciò che avvia una chiamata, finché le **Connessioni dirette** sono attive.
+- **Che cosa resta sul tuo server:** chiamate, reazioni, e i segni che un messaggio è arrivato o è stato letto; e quello che scrivi ai contatti su iPhone o su computer, che non leggono su Nostr. Immagini, file e messaggi vocali passano dal tuo server quando ce n’è uno tra voi; senza server tra voi passano anche da Nostr (vedi Senza alcun server), e così anche ciò che avvia una chiamata, con **SPEED**.
 - **Da che parte è passato:** tieni premuto un messaggio: il suo menu dice **Inviato tramite Nostr** o **Arrivato
   tramite Nostr** quando l’ha preso un server Nostr. D’ora in poi dice anche **Inviato tramite il server**, **Arrivato
   tramite il server**, **Inviato al suo telefono vicino**, **Arrivato da un telefono vicino** o **Inviato tramite LoRa**;
@@ -2017,12 +2016,12 @@ codice QR dicono dove legge su Nostr, e basta questo per parlare.
   codice QR** o **Condividi il mio link di contatto**, e dallo a qualcuno che usa Erevos. Chi lo aggiunge ti scrive
   tramite Nostr, e appare come richiesta di messaggio, che accetti. Puoi anche aggiungere il suo link o codice QR,
   allo stesso modo.
-- **Che cosa passa:** testi, sticker, reazioni, modifiche, e i segni che un messaggio è arrivato o è stato letto, tutto tramite Nostr; e foto, file e messaggi vocali. Un messaggio vocale passa in wrap come un testo. Una foto fino a 3 MB passa in pezzi da 32 KB, un wrap ciascuno, inviati prima del messaggio che la offre; l’altro telefono li tiene, cifrati con il resto dello spazio o delle chat nascoste per cui sono arrivati, finché non sono arrivati tutti, quattro giorni al massimo. Una foto più grande, un video o qualsiasi altro file, fino a 20 MB, passa come un unico blob, cifrato sul telefono, verso un server di file Blossom (blossom.primal.net, blossom.band o nostr.download), tramite Tor come dice la scelta Tor dello spazio (direttamente con **Niente**): il server tiene solo ciò che non può leggere. I gruppi hanno bisogno di un server, o dell’altro telefono vicino. Le chiamate si avviano tramite Nostr e vanno dirette da telefono a telefono finché le **Connessioni dirette** sono attive (vedi [Connessioni dirette](#direct)); disattivate, hanno bisogno di un server o dell’altro telefono vicino. Anche le chat nascoste funzionano così, solo tramite Nostr, ma una chiamata lì ha bisogno di un server o dell’altro telefono vicino (vedi [Chat nascoste](#hidden)).
+- **Che cosa passa:** testi, sticker, reazioni, modifiche, e i segni che un messaggio è arrivato o è stato letto, tutto tramite Nostr; e foto, file e messaggi vocali. Un messaggio vocale passa in wrap come un testo. Una foto fino a 3 MB passa in pezzi da 32 KB, un wrap ciascuno, inviati prima del messaggio che la offre; l’altro telefono li tiene, cifrati con il resto dello spazio o delle chat nascoste per cui sono arrivati, finché non sono arrivati tutti, quattro giorni al massimo. Una foto più grande, un video o qualsiasi altro file, fino a 20 MB, passa come un unico blob, cifrato sul telefono, verso un server di file Blossom (blossom.primal.net, blossom.band o nostr.download), tramite Tor come dice la scelta Tor dello spazio (direttamente con **Niente**): il server tiene solo ciò che non può leggere. I gruppi hanno bisogno di un server, o dell’altro telefono vicino. Le chiamate si avviano tramite Nostr e vanno dirette da telefono a telefono con **SPEED** (vedi [Quanto sei visibile?](#direct)); con **ANONYMOUS** hanno bisogno di un server o dell’altro telefono vicino, e con **INVISIBLE** non ce ne sono. Anche le chat nascoste funzionano così, solo tramite Nostr, ma una chiamata lì ha bisogno di un server o dell’altro telefono vicino (vedi [Chat nascoste](#hidden)).
 - **Quando non arriva:** i server Nostr conservano un testo per due giorni. Finché il telefono del tuo contatto non dice
   che è arrivato, Erevos glielo ridà una volta al giorno, per due settimane.
 - **Un server da solo:** quando il tuo contatto ha un server che gli permette di invitare, il suo Erevos manda da solo al
   tuo un invito per quel server, una volta, nella chat, che vi siate conosciuti prima tramite Nostr o da vicino, via
-  Bluetooth, Wi-Fi o un codice QR. Il tuo telefono lo prende da solo (con le **Connessioni dirette** disattivate chiede
+  Bluetooth, Wi-Fi o un codice QR. Il tuo telefono lo prende da solo (con **ANONYMOUS** o **INVISIBLE** chiede
   prima, perché il suo server vede allora il tuo indirizzo internet), e da allora funzionano anche i gruppi, e le
   chiamate si collegano da qualsiasi rete, con tutti. Conta come uno dei suoi inviti, e una volta che sei dentro, la sua
   chat con te lo dice, con **Ritira** sotto quella riga. Qualcuno di cui non hai accettato la richiesta di messaggio non
@@ -2032,23 +2031,31 @@ codice QR dicono dove legge su Nostr, e basta questo per parlare.
 **Perché:** Nostr è solo la porta d’ingresso. Nessuno ha bisogno di un invito per iniziare, e appena uno di voi ha un
 server, questo trasporta quello che è troppo grande per Nostr.
 
-## Connessioni dirette {#direct}
+## Quanto sei visibile? {#direct}
 
-Le **Connessioni dirette** sono un interruttore per tutto ciò che mostra l’indirizzo internet (indirizzo IP) del tuo
-telefono a qualcun altro. Stanno in alto nelle **Impostazioni**, sotto la ricerca, e sono **attive** a meno che tu non
-le disattivi; ogni spazio ha le sue. **Cosa cambia**, sotto, apre la loro schermata, che dice ciò che dice questa
-sezione.
+**Quanto sei visibile?** sta in alto nelle **Impostazioni**, sotto la ricerca: tre scelte per chi vede l’indirizzo
+internet (indirizzo IP) del tuo telefono, che mostra più o meno dove si trova il telefono, e su quale rete. Ogni spazio
+ha la sua, e uno spazio è in **SPEED** finché non ne scegli un’altra, a meno che in esso Tor sia attivo. **Cosa
+cambia**, sotto, apre la loro schermata, che dice ciò che dice questa sezione. I messaggi sono crittografati end-to-end
+con tutte e tre.
 
-- **Attive:** Erevos non chiede prima di ciò che segue: lo fa subito. Le chiamate e le videochiamate funzionano con un
-  contatto anche quando non c’è nessun server tra voi due: la chiamata si avvia tramite Nostr e va diretta da telefono a
-  telefono.
-- **Disattivate:** prima di ciascuno di questi casi, Erevos dice una volta chi vedrebbe l’indirizzo, e scegli se andare
-  avanti (vedi [Chi vede il tuo indirizzo internet](#ip)). Le chiamate passano solo da un server delle chiamate, che
-  nasconde l’indirizzo di ogni telefono all’altro, o tra due telefoni sulla stessa rete Wi-Fi. Una chiamata da un
-  contatto senza server tra voi due non squilla: la chat la mostra come persa, e dice che le **Connessioni dirette**
-  lasciano passare queste chiamate.
+- **SPEED:** i server e i tuoi contatti vedono il tuo indirizzo. Erevos non chiede prima di ciò che segue: lo fa subito.
+  Le chiamate e le videochiamate vanno dirette da telefono a telefono, nel modo più veloce, anche quando non c’è nessun
+  server tra voi due: la chiamata si avvia allora tramite Nostr.
+- **ANONYMOUS:** lo vede solo il server, mai i tuoi contatti. Prima di ciascuno dei casi che seguono, Erevos dice una
+  volta chi vedrebbe l’indirizzo, e scegli se andare avanti (vedi [Chi vede il tuo indirizzo internet](#ip)). Le
+  chiamate passano solo da un server delle chiamate, che nasconde l’indirizzo di ogni telefono all’altro, o tra due
+  telefoni sulla stessa rete Wi-Fi. Una chiamata da un contatto senza server tra voi due non squilla: la chat la mostra
+  come persa, e dice che **SPEED** lascia passare queste chiamate. Tor solo per i messaggi, o Nostr tramite Tor, scelti
+  nelle loro schermate, tengono uno spazio in ANONYMOUS.
+- **INVISIBLE:** nessuno lo vede. Tutto dello spazio passa da Tor, anche i file e Nostr: i server vedono un indirizzo di
+  Tor, mai il tuo, e i tuoi contatti non ne vedono nessuno. I messaggi e i file vanno e vengono più lentamente, e il
+  primo avvio di Tor richiede un po’ di tempo. Non ci sono chiamate vocali né videochiamate, perché le chiamate non
+  passano da Tor: se ne provi una, Erevos dice perché, la chiamata di un contatto non squilla (la chat la mostra come
+  persa, in INVISIBLE), e una chiamata in corso termina quando si sceglie INVISIBLE. **Tutto**, nella schermata di Tor
+  (**Impostazioni** → **Server e reti** → **Tor**), è anch’esso INVISIBLE.
 
-**Chi vede il tuo indirizzo internet quando sono attive:**
+**Chi vede il tuo indirizzo internet con SPEED:**
 
 - I server che portano ciò che invii e le tue chiamate: il tuo, quello del tuo contatto, e uno a cui un contatto ti
   invita.
@@ -2061,15 +2068,15 @@ sezione.
 
 Nessuno di essi vede ciò che scrivi o dici: resta crittografato end-to-end.
 
-**Cosa non cambiano mai:**
+**Cosa non cambia nessuna delle tre:**
 
-- Non cambiano nessuna impostazione di Tor. Finché Tor è attivo nello spazio restano disattivate, e dopo che Tor è stato
-  disattivato restano disattivate finché non le attivi di nuovo.
 - Le chat nascoste, e le chat impostate su **Tramite Tor**, non si collegano mai direttamente e continuano a chiedere.
 - Con un tuo server delle chiamate, le tue chiamate continuano a passare da lì, così l’altro telefono non vede il tuo
   indirizzo.
 - Erevos continua a chiedere prima di aprire un link web o di mostrare l’anteprima di un link, e prima di portare i
   messaggi di un telefono accanto a questo da un server che questo telefono non usa.
+- Tor spento nella sua schermata lascia lo spazio in **ANONYMOUS**: niente si collega direttamente finché non scegli di
+  nuovo **SPEED**, che spegne Tor, e Nostr tramite Tor, in quello spazio.
 
 **Da sapere:**
 
@@ -2083,18 +2090,19 @@ Nessuno di essi vede ciò che scrivi o dici: resta crittografato end-to-end.
   server di supporto qual è il proprio indirizzo internet. Il server di supporto vede quell’indirizzo, una volta per
   chiamata, e nulla della chiamata stessa. A meno che tu non scelga altrimenti, Erevos interroga prima quello accanto al
   tuo server e quello accanto al server di LPHL, e due pubblici, quello di Cloudflare e quello di Nextcloud, solo quando
-  nessuno di quelli risponde. Nella schermata dell’interruttore, finché è attivo, **I miei server** ne accetta fino a
-  tre tuoi, e **Nessuno** non ne interroga nessuno: una chiamata diretta si collega allora solo dove i due telefoni si
-  trovano da soli, come sulla stessa rete Wi-Fi. **Controlla ora** li interroga come fa una chiamata, quindi anche loro
-  vedono allora il tuo indirizzo.
+  nessuno di quelli risponde. Nella loro schermata, con **SPEED**, **I miei server** ne accetta fino a tre tuoi, e
+  **Nessuno** non ne interroga nessuno: una chiamata diretta si collega allora solo dove i due telefoni si trovano da
+  soli, come sulla stessa rete Wi-Fi. **Controlla ora** li interroga come fa una chiamata, quindi anche loro vedono
+  allora il tuo indirizzo.
 
 ## Chi vede il tuo indirizzo internet {#ip}
 
 L’indirizzo internet del tuo telefono, il suo indirizzo IP, mostra più o meno dove sei e quale operatore usi. Non
 mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la connessione passi da Tor.
 
-- **Il tuo server e i server dei tuoi contatti:** lo vedono. Per nasconderlo, attiva Tor per lo spazio (**Impostazioni**
-  → **Server e reti** → **Tor**) oppure **Tramite Tor** nei **Dettagli** di una chat. Vedi [Tramite Tor](#tor).
+- **Il tuo server e i server dei tuoi contatti:** lo vedono. Per nasconderlo, scegli **INVISIBLE** in alto nelle
+  **Impostazioni**, attiva Tor per i messaggi dello spazio (**Impostazioni** → **Server e reti** → **Tor**) oppure
+  **Tramite Tor** nei **Dettagli** di una chat. Vedi [Quanto sei visibile?](#direct) e [Tramite Tor](#tor).
 
 - **I server Nostr pubblici e i server di file Nostr:** lo vedono, a meno che la connessione passi da Tor. Attiva
   **Nostr tramite Tor** in **Impostazioni** → **Server e reti** → **Nostr**, oppure **Tramite Tor** per una chat. Vedi
@@ -2103,10 +2111,11 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
   server Nostr pubblici, quindi senza Nostr tramite Tor vedono l’indirizzo, ma non il codice né i link di contatto.
   Erevos lo dice prima della prima volta.
 
-- **Le chiamate:** non passano mai da Tor. Il server delle chiamate, il tuo o quello del tuo contatto, vede l’indirizzo,
-  ma non quello che si dice. Una chiamata tra telefoni vicini sulla stessa rete resta su quella rete. Senza un server per
-  le chiamate tra voi e con le **Connessioni dirette** attive, la chiamata va diretta da telefono a telefono: il
-  telefono del tuo contatto vede l’indirizzo, e così pure i server di supporto che dicono a ogni telefono il proprio.
+- **Le chiamate:** non passano mai da Tor, quindi **INVISIBLE** non ne ha. Il server delle chiamate, il tuo o quello del
+  tuo contatto, vede l’indirizzo, ma non quello che si dice. Una chiamata tra telefoni vicini sulla stessa rete resta su
+  quella rete. Senza un server per le chiamate tra voi e con **SPEED** scelto, la chiamata va diretta da telefono a
+  telefono: il telefono del tuo contatto vede l’indirizzo, e così pure i server di supporto che dicono a ogni telefono
+  il proprio.
 
 - **Un file su un server scelto dal tuo contatto:** il server vede l’indirizzo quando il tuo telefono scarica il file.
   Tor lo nasconde.
@@ -2117,8 +2126,8 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
 
 - **Il server di un contatto:** finché il tuo spazio non ha un server suo, o solo un posto prestato su uno, un contatto
   può darti un posto sul suo, e arriva con il suo messaggio. Il suo server vede allora l’indirizzo, perciò Erevos chiede
-  prima di prenderlo, a meno che le **Connessioni dirette** non siano attive o lo spazio non mandi tutto tramite Tor. Se
-  non lo prendi, l’invito viene lasciato cadere.
+  prima di prenderlo, a meno che lo spazio non sia in **SPEED**, o in **INVISIBLE**, che manda tutto tramite Tor. Se non
+  lo prendi, l’invito viene lasciato cadere.
 
 - **I gruppi:** un messaggio in un gruppo Erevos passa da un server, che vede l’indirizzo. Tor per lo spazio lo
   nasconde; un gruppo non ha un interruttore suo.
@@ -2131,7 +2140,7 @@ mostra quello che scrivi. Chi si collega al tuo telefono lo vede, a meno che la 
   impostazioni della Raccolta su Android, disattivato finché non lo attivi, li riproduce solo tramite Tor. Vedi
   [Raccolta](#collection).
 
-Con le **Connessioni dirette** disattivate, Erevos avvisa una volta prima di ciascuno di questi casi, con il titolo **Il
+Con **ANONYMOUS** o **INVISIBLE**, Erevos avvisa una volta prima di ciascuno di questi casi, con il titolo **Il
 tuo indirizzo internet può essere visto**, un pulsante **Guida** che apre questa sezione e, dove può, un pulsante che lo
 risolve, come **Tramite Tor per questa chat**. **Vai avanti** prosegue. Per ciò che invii, viene detto una volta per
 tutta la rete, non in ogni chat: dopo, una chat o un gruppo che va senza Tor mostra solo una riga discreta sopra dove
@@ -2142,11 +2151,11 @@ Dopo la guida torna la stessa domanda, e quello che stavi inviando, come un mess
 Una chiamata che squilla qui lo dice sotto la chiamata, e rispondere va avanti. Le chat nascoste tengono ciò che è
 stato detto con sé, separato dallo spazio.
 
-Con le **Connessioni dirette** attive, l’impostazione predefinita, non chiede prima di questi casi: vanno subito, e non
+Con **SPEED**, l’impostazione predefinita, non chiede prima di questi casi: vanno subito, e non
 compare nessuna riga discreta. Continua a chiedere prima di aprire un link web o di mostrare l’anteprima di un link{+,
 prima di ciò che va a Matrix, XMPP o ad altre app Nostr}, e prima di portare i messaggi di un telefono accanto a questo
 da un server che questo telefono non usa; e le chat nascoste, e le chat impostate su **Tramite Tor**, continuano a
-chiedere. Vedi [Connessioni dirette](#direct).
+chiedere. Vedi [Quanto sei visibile?](#direct).
 
 I telefoni vicini{~, LoRa e gli SMS| e LoRa} non usano internet, quindi non mostrano nessun indirizzo internet.
 
@@ -4728,7 +4737,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Impronta o volto (Android)** | Disattivato finché non lo attivi. Apre solo lo spazio della prima password: la sua chiave è sigillata nell’Android Keystore, utilizzabile solo subito dopo un controllo forte dell’impronta o del volto, e scartata quando questi cambiano. Qualcuno che ti trattiene può usare il tuo dito. | |
 | **Notifiche (Android)** | In background: «Erevos – Ready for calls and messages» (non sulla schermata di blocco), «Incoming call» o «Incoming video call» – «Open Erevos to answer», e «New message» o quanti ne sono arrivati; quando Android o la password lo fermano, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un promemoria, «Reminder» o quanti; una nuova versione, «Erevos X is out». Mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |
 | **Widget{~ e Telefono} (Android)** | Il widget, una volta aggiunto, mostra quant{~e chiamate perse, SMS non letti e |i }nuovi messaggi ci sono, mai chi o cosa.{~ Il Telefono si apre senza password solo se lo permetti: allora chiunque abbia in mano il telefono sbloccato vede le chiamate e i preferiti che Android conserva, con i soli nomi dei contatti del telefono.} | |
-| **Chiamate** | Crittografate end-to-end (DTLS-SRTP, con la chiave inviata nella chat crittografata). Tramite il server delle chiamate, nessuno dei due telefoni vede l’indirizzo IP dell’altro; il server che lo fa funzionare li vede entrambi, quando e per quanto tempo, e quanto passa. Senza un server delle chiamate, ogni telefono vede l’indirizzo dell’altro: sulla stessa rete Wi-Fi, o via internet finché le **Connessioni dirette** sono attive, e allora lo vedono anche i server di supporto. I server vedono quando una chiamata inizia a squillare. | Squillo nella web app da chiusa. Chiamate via Bluetooth (lì funziona il walkie-talkie). |
+| **Chiamate** | Crittografate end-to-end (DTLS-SRTP, con la chiave inviata nella chat crittografata). Tramite il server delle chiamate, nessuno dei due telefoni vede l’indirizzo IP dell’altro; il server che lo fa funzionare li vede entrambi, quando e per quanto tempo, e quanto passa. Senza un server delle chiamate, ogni telefono vede l’indirizzo dell’altro: sulla stessa rete Wi-Fi, o via internet con **SPEED**, e allora lo vedono anche i server di supporto. Con **INVISIBLE** non ci sono chiamate. I server vedono quando una chiamata inizia a squillare. | Squillo nella web app da chiusa. Chiamate via Bluetooth (lì funziona il walkie-talkie). |
 | **Chat di gruppo** | Crittografate end-to-end con MLS (RFC 9420); i membri rimossi non leggono più nulla dopo. La copia di ogni membro è sigillata a parte, quindi i server non possono capire chi fa parte di un gruppo; ogni server vede comunque un messaggio arrivare a una coda. I membri vedono le chiavi e gli indirizzi dei server gli uni degli altri. Foto, file e messaggi vocali passano dall’archivio di file del server di chi invia, come verso un contatto, e restano lì 14 giorni. Non sottoposte ad audit. | |
 | **Chiamate di gruppo** | Voce e video, crittografati end-to-end tra ogni coppia di telefoni nella chiamata (DTLS-SRTP, con le chiavi inviate nella crittografia del gruppo). Tramite il server delle chiamate, nessun telefono vede l’indirizzo IP di un altro; il server che lo fa funzionare vede quello di ogni telefono, quando e per quanto tempo, e quanto passa. Ogni membro, nella chiamata o no, sa chi ne fa parte. I server vedono quando ne inizia una. | Video con più di quattro persone, tramite un server; più di otto persone. |
 | **Gruppi pubblici** | Come le chat di gruppo, e chiunque abbia il link può chiedere di entrare e leggere da quando viene fatto entrare. Le richieste arrivano al server del proprietario sigillate per il telefono del proprietario: il server vede quante e quando, non da chi. I membri vedono gli uni degli altri i nomi scelti, le chiavi create solo per quel gruppo, gli indirizzi dei server e gli ID mittente delle code. Non sottoposti ad audit. | |

@@ -7,8 +7,8 @@ import { nostrOwnTor, onNostrOwnTor } from './nostr';
 import { onTorWay, torOff } from './relay';
 import { LPHL_HELPER, LPHL_RELAY, PUBLIC_HELPERS, START_RELAY } from './servers';
 
-// Direct connections: one switch of the open space (Settings, at the top; SpaceData.direct), on
-// unless turned off.
+// Direct connections: what SPEED, one of the open space's three modes (lib/modes.ts, chosen at the
+// top of Settings), keeps on (SpaceData.direct); on unless another mode is chosen.
 //
 // On, Erevos does what shows this phone's internet address (its IP address) without asking first:
 // the warnings it covers (QUIET) are not said, and a call to a contact with no call relay to go
@@ -16,12 +16,14 @@ import { LPHL_HELPER, LPHL_RELAY, PUBLIC_HELPERS, START_RELAY } from './servers'
 // and goes straight between the two phones over the internet (lib/call.ts, CallOptions.open). Each
 // phone then sees the other's address, and so do the helper servers asked for it (callHelpers).
 //
-// Off, everything is as before it: each warning is said once, before; calls go only through a call
-// relay, or between two phones on the same network; and nothing of a call goes through Nostr.
+// Off (ANONYMOUS), everything is as before it: each warning is said once, before; calls go only
+// through a call relay, or between two phones on the same network; and nothing of a call goes through
+// Nostr. INVISIBLE has it off too, and no calls at all (lib/modes.ts callsOff).
 //
-// It never changes a Tor setting, and Tor comes first: while anything of the space goes through Tor
-// (its Tor way, or Nostr's own Tor switch) it counts as off, and it is kept off from then on
-// (directOf), so that turning Tor off later connects nothing directly until the owner says so again.
+// It changes no Tor setting by itself (choosing a mode does: lib/modes.ts modeChange), and Tor comes
+// first: while anything of the space goes through Tor (its Tor way, or Nostr's own Tor switch) it
+// counts as off, and it is kept off from then on (directOf), so that turning Tor off later connects
+// nothing directly until the owner chooses SPEED again.
 // It is the space's own chats' alone: hidden chats keep their warnings (IpWarning.keep) and never
 // call so, and a chat set to go only through Tor is called only through a call relay, with its
 // warning (IpWarning.tor). Two things are asked whatever it says: a web link opened, and the

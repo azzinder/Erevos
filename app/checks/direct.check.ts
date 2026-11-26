@@ -458,7 +458,7 @@ test('a call that could not be answered back does not ring: it is a missed call,
   const { rtc, connections } = fakeRtc();
   const here = place({ reaches: async () => false });
   const said = await callSignal(here.calls, 'contact:a', offer(BEYOND), false, rtc);
-  assert.match(said ?? '', /^Anna tried to call, with no server between you two\. .*Direct connections/);
+  assert.match(said ?? '', /^Anna tried to call, with no server between you two\. To take such calls, choose SPEED at the top of Settings\.$/);
   assert.equal(shownCall(), null, 'nothing rings');
   assert.equal(connections.length, 0);
   assert.deepEqual(here.lines, [{ peer: 'contact:a', mine: false, text: 'Missed voice call' }]);
@@ -508,7 +508,7 @@ test('New chat says that calls work with no relay while Direct connections are o
   assert.equal(connectReach({ ...none, nostr: false, direct: true }).title, 'Only nearby, for now');
 });
 
-test('the switch stands in Settings, at its top and in the search, wherever a module it is of is on', async () => {
+test('the three modes stand in Settings, at its top and in the search, wherever a module they are of is on', async () => {
   await setLang('en');
   const phone: SettingsPlace = { web: false, webApp: false, push: false, background: true, checks: true, launcher: true, widget: true, sims: true };
   assert.equal(directHere(phone), true);
@@ -516,11 +516,11 @@ test('the switch stands in Settings, at its top and in the search, wherever a mo
   assert.equal(directHere({ ...phone, modules: new Set(['erevos']) }), true);
   assert.equal(directHere({ ...phone, modules: new Set(['collection', 'sms']) }), true);
   assert.equal(directHere({ ...phone, modules: new Set(['sms']) }), false, 'not where nothing it is of is on');
-  const hits = searchSettings('direct', phone, (english) => english);
+  const hits = searchSettings('invisible', phone, (english) => english);
   assert.deepEqual(hits.map((hit) => hit.leaf.href), ['/direct']);
-  // Its switch is the first thing under the search, before the language and the groups.
+  // They are the first thing under the search, before the language and the groups (checks/modes.check.ts).
   const screen = readFileSync(join(APP, 'app', 'settings', 'index.tsx'), 'utf8');
-  assert.ok(screen.indexOf('<DirectSwitch') > 0 && screen.indexOf('<DirectSwitch') < screen.indexOf('key="language"'));
+  assert.ok(screen.indexOf('<ModePicker') > 0 && screen.indexOf('<ModePicker') < screen.indexOf('key="language"'));
 });
 
 test('turning Tor on, or opening a space where it is on, turns the switch off and keeps it off; closing the space leaves nothing direct', () => {
@@ -534,7 +534,7 @@ test('turning Tor on, or opening a space where it is on, turns the switch off an
   assert.match(close.slice(0, close.indexOf('\n}')), /setDirect\(false\);/);
   // The space's Tor way, and Nostr's own Tor switch: each writes the switch off with it.
   const tor = readFileSync(join(APP, 'app', 'tor.tsx'), 'utf8');
-  assert.match(tor, /const direct = next !== 'off' && \(await loadCurrentSpaceData\(\)\)\.direct;\s+await updateCurrentSpaceData\(direct \? \{ tor: next, direct: false \} : \{ tor: next \}\);\s+if \(direct\) setDirect\(false\);/);
+  assert.match(tor, /const data = await loadCurrentSpaceData\(\);\s+const direct = next !== 'off' && data\.direct;\s+await updateCurrentSpaceData\(direct \? \{ tor: next, direct: false \} : \{ tor: next \}\);\s+if \(direct\) setDirect\(false\);/);
   const nostr = readFileSync(join(APP, 'app', 'nostr.tsx'), 'utf8');
   assert.match(nostr, /const direct = next\.tor === true && setting\?\.tor !== true && \(await loadCurrentSpaceData\(\)\)\.direct;\s+await updateCurrentSpaceData\(direct \? \{ nostr: next, direct: false \} : \{ nostr: next \}\);\s+if \(direct\) setDirect\(false\);/);
   // Nothing else writes the space's Tor way, or its Nostr setting.
@@ -548,6 +548,10 @@ test('turning Tor on, or opening a space where it is on, turns the switch off an
   };
   for (const folder of ['app', 'components', 'lib']) look(folder);
   assert.deepEqual(writes.sort(), ['app/nostr.tsx', 'app/tor.tsx']);
+  // And choosing a mode, which writes all three as the mode says (lib/modes.ts modeChange, checks/modes.check.ts).
+  const picker = readFileSync(join(APP, 'components', 'mode-picker.tsx'), 'utf8');
+  assert.equal(picker.match(/update(?:Current)?SpaceData\(/g)?.length, 1);
+  assert.match(picker, /const next = modeChange\(data, mode\);\s+await updateCurrentSpaceData\(next\);/);
 });
 
 test('the spam list comes without Tor unasked only while Direct connections are on, and nothing is kept as said', async () => {

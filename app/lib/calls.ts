@@ -5,10 +5,11 @@
 import { Call, currentCall, OFFER_FRESH_MS, offerMissed, offersBeyond, otherCallOn, relayToAnswer, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
-import type { CallRelay } from './relay';
+import { onTorWay, type CallRelay } from './relay';
 import { newTag, type Message } from '../lock/history';
 import { t } from './i18n';
 import type { IpKeep } from './ip-warning';
+import { callsOff, callsOffNote, CALLS_OFF_LINE } from './modes';
 
 // The call on this phone, whatever screen shows: the chat starts it, and a contact's call rings
 // from the chat or from the receiver beside the other screens (lib/receiver.ts), so it rings
@@ -70,6 +71,10 @@ const listeners = new Set<() => void>();
 const endedBefore = new Map<string, number>();
 const ENDED_KEPT_MS = 2 * OFFER_FRESH_MS;
 const callKey = (peer: string, id: string) => `${peer} ${id}`;
+// The calls that did not ring here as calls were off (lib/modes.ts), by peer and call id, the last
+// QUIET_KEPT: the same offer again, through another way, keeps no second line.
+const quietBefore = new Set<string>();
+const QUIET_KEPT = 50;
 
 // Whether the contact hung up the call `id` before its offer was read here; forgotten once asked.
 function endedAlready(peer: string, id: string): boolean {
@@ -142,8 +147,9 @@ function events(place: CallPlace, identity: string) {
   };
 }
 
-/** Calls a contact. `open`: with no call relay, straight over the internet, with these helper servers (CallPlace.direct). Throws if a call is already in progress. */
+/** Calls a contact. `open`: with no call relay, straight over the internet, with these helper servers (CallPlace.direct). Throws if a call is already in progress, or calls are off (INVISIBLE). */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc, open: string[][] | null = null): Call {
+  if (callsOff()) throw new Error(callsOffNote());
   if (currentGroupCall() || elsewhere() || otherCallOn()) throw new Error(t('There is a call already.'));
   const call = Call.start({ peer, video, relay, open: relay ? null : open, rtc, events: events(place, identityOf(peer)) });
   shown = { call, place };
@@ -189,6 +195,16 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     place.line(peer, false, `Missed ${kind}`, signal.id);
     return null;
   }
+  // INVISIBLE (lib/modes.ts): no call rings, as a call would show this phone's internet address. The
+  // caller's phone is told nothing, and rings until no one answers.
+  if (callsOff()) {
+    const key = callKey(peer, signal.id);
+    if (quietBefore.has(key)) return null;
+    quietBefore.add(key);
+    if (quietBefore.size > QUIET_KEPT) quietBefore.delete(quietBefore.values().next().value as string);
+    place.line(peer, false, `Missed ${kind}${CALLS_OFF_LINE}`, signal.id);
+    return t('{name} tried to call. In INVISIBLE no call rings, as a call would show your internet address. To take calls, choose ANONYMOUS or SPEED at the top of Settings.', { name: place.name(peer) });
+  }
   const busy = () => {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`, signal.id);
@@ -196,10 +212,10 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   };
   if (ours || currentGroupCall() || elsewhere(signal.id) || otherCallOn()) return busy();
   // No way back to them from here: their call came through Nostr, with no relay between the two,
-  // and Direct connections is off here. It could not be answered, so it does not ring.
+  // and Direct connections is off here (ANONYMOUS). It could not be answered, so it does not ring.
   if (place.reaches && !(await place.reaches(identity).catch(() => true))) {
     place.line(peer, false, `Missed ${kind}`, signal.id);
-    return t('{name} tried to call, with no server between you two. To take such calls, turn on Direct connections in Settings.', { name: place.name(peer) });
+    return t('{name} tried to call, with no server between you two. To take such calls, choose SPEED at the top of Settings.', { name: place.name(peer) });
   }
   // An offer still to come (XMPP's calls ring first) answers through our call relay, if there is one.
   const callRelay = await place.callRelay().catch(() => null);
@@ -224,6 +240,12 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   changed();
   return null;
 }
+
+// INVISIBLE chosen, or everything of the space sent through Tor on its screen: a call on ends, as no
+// call goes through Tor (lib/modes.ts).
+onTorWay(() => {
+  if (callsOff()) shown?.call.hangUp();
+});
 
 /** Ends the call if it belongs to `place`, as when hidden chats close. */
 export function endCallsOf(place: CallPlace): void {

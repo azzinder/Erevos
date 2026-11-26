@@ -20,6 +20,7 @@ import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { inMatrixCall, onMatrixCallChange } from '../lib/matrix-calls';
 import { callPermissions } from '../lib/call-permissions';
+import { callsOff, callsOffNote } from '../lib/modes';
 import { callLineMessage, callSignal, endCallsOf, keptLineMessage, onCallChange, startCall as beginCall, type CallPlace } from '../lib/calls';
 import { inviteLine, isInviteCame, shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
@@ -65,7 +66,7 @@ import { canPairWithCode, TheirCode } from '../components/their-code';
 import { RelayKeyNote, useRelayCheck } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
-import { useDirectNow } from '../components/direct-switch';
+import { useDirectNow } from '../components/mode-picker';
 import { CollectionSign, PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
@@ -3726,6 +3727,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   async function startCall(video: boolean) {
+    // INVISIBLE (lib/modes.ts): no calls, and it is said before anything is asked.
+    if (callsOff()) {
+      setNote(callsOffNote());
+      return;
+    }
     if (!selectedContact) {
       setNote(video ? t('Video calls go to contacts through the server. Pick one first.') : t('Calls go to contacts through the server. Pick one first.'));
       return;

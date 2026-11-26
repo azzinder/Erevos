@@ -4,19 +4,20 @@
 
 import { useEffect, useState } from 'react';
 
-import { DirectSwitch, useDirect } from '../components/direct-switch';
 import { openGuideLink } from '../components/guide';
+import { ModePicker, useMode } from '../components/mode-picker';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { askHelpers } from '../lib/call';
 import { callHelpers, helpersTyped } from '../lib/direct';
 import { t } from '../lib/i18n';
+import { MODE_NAMES } from '../lib/modes';
 import { useModules } from '../lib/modules';
 import { rtc } from '../lib/webrtc';
 import { loadCurrentSpaceData, STUN_MOST, updateCurrentSpaceData } from '../lock/space-data';
 
-// Direct connections (lib/direct.ts): the space's switch, what it changes on and off in plain words,
-// who sees this phone's internet address with it on, what it never changes, and, while it is on,
-// the helper servers a call straight between two phones asks, with a check that they answer.
+// How visible are you? The three modes (lib/modes.ts) and what each changes in plain words: who sees
+// this phone's internet address, and how calls go; what none of them changes; and, with SPEED, the
+// helper servers a call straight between two phones asks (lib/direct.ts), with a check that they answer.
 
 /** How long the check waits for one helper server, milliseconds. */
 const CHECK_WAIT_MS = 3_000;
@@ -27,7 +28,7 @@ const listed = (helpers: readonly string[]) => helpers.map(shown).join(', ');
 type Kept = { stun?: string; url: string };
 
 export default function DirectScreen() {
-  const { on } = useDirect();
+  const on = useMode() === 'speed';
   const modules = useModules();
   const [kept, setKept] = useState<Kept | null>(null);
   // "My own" chosen: typed, used only once saved.
@@ -111,11 +112,11 @@ export default function DirectScreen() {
 
   return (
     <Page>
-      <Text variant="title">{t('Direct connections')}</Text>
-      <Text tone="muted">{t("One switch for everything that shows this phone's internet address (IP address) to someone else. It is on unless you turn it off, and each space has its own.")}</Text>
-      <DirectSwitch />
+      <Text variant="title">{t('How visible are you?')}</Text>
+      <Text tone="muted">{t("Your address here is this phone's internet address (IP address): whoever sees it can tell roughly where the phone is, and on which network.")}</Text>
+      <ModePicker />
 
-      <SectionTitle title={t('While it is on')} />
+      <SectionTitle title={MODE_NAMES.speed} />
       <Card>
         <Text>{t('Erevos does not ask before the things below: it does them at once.')}</Text>
         <Text>{t('Calls and video calls work with a contact when no server is between you two, too: the call is set up through Nostr and goes straight from phone to phone.')}</Text>
@@ -129,16 +130,25 @@ export default function DirectScreen() {
         <Text>{t('None of them sees what you write or say: that stays end-to-end encrypted.')}</Text>
       </Card>
 
-      <SectionTitle title={t('While it is off')} />
+      <SectionTitle title={MODE_NAMES.anonymous} />
       <Card>
-        <Text>{t('Before each of these, Erevos says once who would see the address, and you choose whether to go on.')}</Text>
+        <Text>{t('Before each of the things listed under SPEED, Erevos says once who would see your address, and you choose whether to go on.')}</Text>
         <Text>{t("Calls go only through a call server, which hides each phone's address from the other, or between two phones on the same Wi-Fi.")}</Text>
         <Text>{t('A call from a contact with no server between you two does not ring here: the chat shows it as missed.')}</Text>
+        <Text tone="muted">{t('Tor for messages only, or Nostr through Tor, chosen on their own screens, keep this space ANONYMOUS.')}</Text>
       </Card>
 
-      <SectionTitle title={t('What it never changes')} />
+      <SectionTitle title={MODE_NAMES.invisible} />
       <Card>
-        <Text tone="muted">{t('It changes no Tor setting. While Tor is on in this space it stays off, and after Tor is turned off it stays off until you turn it on here again.')}</Text>
+        <Text>{t('Everything of this space goes through Tor: messages, files and Nostr. The servers see an address of Tor, never yours, and your contacts see none.')}</Text>
+        <Text>{t("There are no voice or video calls, as calls do not go through Tor: trying one says why, and a contact's call does not ring here. The chat shows it as missed.")}</Text>
+        <Text tone="muted">{t('Messages and files come and go slower, and the first start of Tor takes a while. How Tor connects, and its bridges, are under Settings, Server and networks, Tor.')}</Text>
+        <Text tone="muted">{t('Before anything that cannot go through Tor and would show your address, Erevos still asks first.')}</Text>
+      </Card>
+
+      <SectionTitle title={t('What none of them changes')} />
+      <Card>
+        <Text tone="muted">{t('Messages stay end-to-end encrypted in all three: no server, and no one on the way, reads them.')}</Text>
         <Text tone="muted">{t('Hidden chats, and chats set to "Through Tor", never connect directly and still ask.')}</Text>
         <Text tone="muted">{t('With a call server of your own, your calls still go through it, so the other phone does not see your address.')}</Text>
         <Text tone="muted">{t("Erevos still asks before it opens a web link or shows a link's preview, and before it brings the messages of a phone beside this one from a server this phone does not use.")}</Text>

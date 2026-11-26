@@ -81,10 +81,12 @@ export function shownLine(text: string): string {
   }
   if (!text.startsWith(PREFIX)) return text;
   const line = text.slice(PREFIX.length);
-  const missed = /^Missed (.+?)(, while in another call)?$/.exec(line);
+  // Missed while in another call, or as calls were off (INVISIBLE, lib/modes.ts CALLS_OFF_LINE).
+  const missed = /^Missed (.+?)(, while in another call|, in INVISIBLE)?$/.exec(line);
   if (missed && MISSED[missed[1]]) {
     const shown = t(MISSED[missed[1]]);
-    return PREFIX + (missed[2] ? t('{missed}, while in another call', { missed: shown }) : shown);
+    if (!missed[2]) return PREFIX + shown;
+    return PREFIX + (missed[2] === ', in INVISIBLE' ? t('{missed}, in INVISIBLE', { missed: shown }) : t('{missed}, while in another call', { missed: shown }));
   }
   const comma = line.indexOf(', ');
   const kind = comma < 0 ? '' : line.slice(0, comma);

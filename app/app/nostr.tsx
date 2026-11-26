@@ -8,6 +8,7 @@ import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../com
 import { canNostr } from '../lib/core';
 import { setDirect } from '../lib/direct';
 import { t } from '../lib/i18n';
+import { modeSaid } from '../lib/modes';
 import { nostrOf, nostrStates, onNostrStates, setNostr, type NostrRelayState } from '../lib/nostr';
 import type { TorWay } from '../lib/relay';
 import { isNostrRelay, MAX_NOSTR_RELAYS } from '../lock/e2e-data';
@@ -72,14 +73,14 @@ export default function NostrScreen() {
   async function keep(next: NostrSetting, said = '') {
     setNote('');
     try {
-      // Nostr through Tor on: Direct connections goes off with it, and stays off until the owner
-      // turns it on again (lib/direct.ts), as with the space's Tor way.
+      // Nostr through Tor on: Direct connections goes off with it (SPEED becomes ANONYMOUS), and stays
+      // off until the owner chooses SPEED again (lib/direct.ts), as with the space's Tor way.
       const direct = next.tor === true && setting?.tor !== true && (await loadCurrentSpaceData()).direct;
       await updateCurrentSpaceData(direct ? { nostr: next, direct: false } : { nostr: next });
       if (direct) setDirect(false);
       setSetting(next);
       setNostr(nostrOf(next), next.tor === true);
-      setNote(direct ? t('Direct connections is now off in this space, as Tor is on. It stays off until you turn it on again in Settings.') : said || t('Saved.'));
+      setNote(direct ? modeSaid('anonymous') : said || t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }

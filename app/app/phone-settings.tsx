@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform, View } from 'react-native';
 
 import { BlockedNumbers } from '../components/blocked-numbers';
-import { useDirectNow } from '../components/direct-switch';
+import { useDirectNow } from '../components/mode-picker';
 import { SpeedDialPick } from '../components/speed-dial';
 import { Button, Card, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
@@ -707,7 +707,7 @@ function SpamList({ screens }: { screens: boolean }) {
           </Text>
           {state.auto && !plainOk && !netThroughTor() && !directOn ? (
             <Text variant="caption" tone="faint">
-              {t('Tor is off, so the list does not come again: it was switched on with Tor, or while Direct connections were on. Switch it off and on again to let it come without Tor.')}
+              {t('Tor is off, so the list does not come again: it was switched on with Tor, or with SPEED. Switch it off and on again to let it come without Tor.')}
             </Text>
           ) : null}
         </>

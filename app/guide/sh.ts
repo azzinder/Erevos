@@ -287,9 +287,8 @@ kraj među njima kao vaši razgovori: server ih prenosi samo šifrirane.
 
 - **Pretraži postavke,** na vrhu, pronalazi postavku po početku njenih riječi, sa ili bez dijakritičkih znakova, i
   pokazuje gdje se nalazi, kao {~**Telefon i SMS › SMS**|**Privatnost i sigurnost › Skriveni razgovori**}. Dodirnite je da je otvorite.
-- **Direktne veze,** ispod pretrage, su prekidač za sve što pokazuje internet adresu vašeg telefona nekom drugom,
-  uključujući i pozive bez servera između vas. **Šta se mijenja** otvara njegov ekran. Pogledajte [Direktne
-  veze](#direct).
+- **Koliko ste vidljivi?** Ispod pretrage, tri izbora o tome ko vidi internet adresu vašeg telefona: **SPEED**,
+  **ANONYMOUS** i **INVISIBLE**. **Šta se mijenja** otvara njihov ekran. Pogledajte [Koliko ste vidljivi?](#direct).
 - **Jezik · Language,** red ispod, otvara popis jezika, pogledajte Jezik ispod.
 - **Grupa** otvara popis svojih postavki, a postavka otvara svoj ekran. Postavka s dijelovima, kao {~**SMS**|**Rezervne kopije**}, navodi ih,
   i svaki dio se otvara zasebno.
@@ -303,7 +302,7 @@ kraj među njima kao vaši razgovori: server ih prenosi samo šifrirane.
 | **Općenito** | **Jezik**, {~**Moduli**, |}**Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, {~[Moduli](#modules), |}[Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android), **Widget** (Android) i **Vibracija na dodir** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
-| **Privatnost i sigurnost** | **Direktne veze** (pozivi bez servera, i bez pitanja prije nego se vidi vaša internet adresa), **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Direktne veze](#direct), [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
+| **Privatnost i sigurnost** | **Koliko ste vidljivi?** (SPEED, ANONYMOUS ili INVISIBLE: ko vidi vašu internet adresu, i kako idu pozivi), **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Koliko ste vidljivi?](#direct), [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
 | **Server i mreže** | **Putevi**, **Server** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni server**, **Tor** (Android), **Nostr** (Android){+,}{- i} **LoRa radio** (Android){+, **Matrix**, **XMPP** i **Nostr razgovori**}. Pogledajte [Razgovor preko servera](#relay), [Kućni server](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr){+,}{- i} [Preko LoRa radija](#lora){+, [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)}. |
 [~] | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
@@ -1398,12 +1397,12 @@ Skriveni razgovori i računari to nemaju.
   server za pozive opisan ispod.
 - **Preko servera za pozive:** server postavljen kompletom iz \`deploy/relay\` ima uz sebe server za pozive. Poziv ide
   preko njega, pa nijedan telefon ne saznaje IP adresu drugog. Preko Wi-Fi mreže ili mobilnih podataka, bilo gdje.
-- **Bez servera za pozive** (server na vašem vlastitom računaru, na primjer, ili bez ikakvog servera): s uključenim
-  **Direktnim vezama** poziv ide direktno s telefona na telefon preko interneta, bez pitanja prije. Svaki telefon tada
-  vidi internet adresu drugog, a pomoćni server svakom kaže njegovu. Neke mreže, naročito mobilne, ne puštaju ništa
-  izvana: ekran poziva tada kaže **Poziv se nije uspostavio direktno**, a druga mreža, poput Wi-Fi mreže, često pomaže.
-  S isključenim **Direktnim vezama** Erevos prvo pita, a poziv radi samo na istoj Wi-Fi mreži. Pogledajte [Direktne
-  veze](#direct).
+- **Bez servera za pozive** (server na vašem vlastitom računaru, na primjer, ili bez ikakvog servera): sa **SPEED**
+  poziv ide direktno s telefona na telefon preko interneta, bez pitanja prije. Svaki telefon tada vidi internet adresu
+  drugog, a pomoćni server svakom kaže njegovu. Neke mreže, naročito mobilne, ne puštaju ništa izvana: ekran poziva tada
+  kaže **Poziv se nije uspostavio direktno**, a druga mreža, poput Wi-Fi mreže, često pomaže. Sa **ANONYMOUS** Erevos
+  prvo pita, a poziv radi samo na istoj Wi-Fi mreži. Sa **INVISIBLE** uopće nema poziva. Pogledajte [Koliko ste
+  vidljivi?](#direct).
 - **Bez interneta:** na istoj Wi-Fi mreži, na hotspotu telefona ili na Wi-Fi mreži koju prave dva telefona (Wi-Fi
   Direct), s prostorom otvorenim na oba, pozivu uopće nije potreban server: uspostavlja se preko veze u blizini i ide
   direktno između telefona (ili računara). Isto važi i za grupne poruke i grupne pozive.
@@ -1890,7 +1889,7 @@ vlastiti izbor i vlastite Nostr servere.
   [Ko vidi vašu IP adresu](#ip).
 - **Serveri:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju serveri na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
-- **Šta ostaje na vašem serveru:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg servera kad je jedan između vas; bez servera između vas idu i preko Nostra (pogledajte Bez ikakvog servera), a tako i ono što uspostavlja poziv, dok su **Direktne veze** uključene.
+- **Šta ostaje na vašem serveru:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg servera kad je jedan između vas; bez servera između vas idu i preko Nostra (pogledajte Bez ikakvog servera), a tako i ono što uspostavlja poziv, sa **SPEED**.
 - **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko Nostra**
   kad ju je preuzeo neki Nostr server. Od sada kaže i **Poslano preko servera**, **Stiglo preko servera**, **Poslano na
   njihov obližnji telefon**, **Stiglo s obližnjeg telefona** ili **Poslano preko LoRa**; starija poruka ne kaže ništa. I
@@ -1927,12 +1926,12 @@ Nostru, i to je dovoljno za razgovor.
   **Prikaži moj QR kod** ili **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda
   piše vam preko Nostra i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR
   kod, na isti način.
-- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva, šifrirane s ostatkom prostora ili skrivenih razgovora za koje su stigli, dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora kako kaže izbor Tora za prostor (izravno s **Ništa**): poslužitelj čuva samo ono što ne može pročitati. Za grupe je potreban server, ili drugi telefon u blizini. Pozivi se uspostavljaju preko Nostra i idu direktno s telefona na telefon dok su **Direktne veze** uključene (pogledajte [Direktne veze](#direct)); kad su isključene, potreban im je server ili drugi telefon u blizini. Skriveni razgovori i tako rade, samo preko Nostra, ali poziv tamo traži server ili drugi telefon u blizini (pogledajte [Skriveni razgovori](#hidden)).
+- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva, šifrirane s ostatkom prostora ili skrivenih razgovora za koje su stigli, dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora kako kaže izbor Tora za prostor (izravno s **Ništa**): poslužitelj čuva samo ono što ne može pročitati. Za grupe je potreban server, ili drugi telefon u blizini. Pozivi se uspostavljaju preko Nostra i idu direktno s telefona na telefon sa **SPEED** (pogledajte [Koliko ste vidljivi?](#direct)); sa **ANONYMOUS** potreban im je server ili drugi telefon u blizini, a sa **INVISIBLE** ih nema. Skriveni razgovori i tako rade, samo preko Nostra, ali poziv tamo traži server ili drugi telefon u blizini (pogledajte [Skriveni razgovori](#hidden)).
 - **Kad ne stigne:** Nostr serveri čuvaju tekst dva dana. Dok telefon vašeg kontakta ne javi da je stigao, Erevos mu ga
   ponovo daje jednom dnevno, dvije sedmice.
 - **Server sam od sebe:** kad vaš kontakt ima server koji mu dozvoljava da poziva, njegov Erevos sam šalje vašem pozivnicu
   za njega, jednom, u razgovoru, bilo da ste se prvi put sreli preko Nostra ili u blizini, preko Bluetootha, Wi-Fi mreže
-  ili QR koda. Vaš telefon je sam prihvata (s isključenim **Direktnim vezama** prvo pita, jer njegov server tada vidi
+  ili QR koda. Vaš telefon je sam prihvata (sa **ANONYMOUS** ili **INVISIBLE** prvo pita, jer njegov server tada vidi
   vašu internet adresu), i od tada rade i grupe, a pozivi se uspostavljaju iz bilo koje mreže, sa svima. Računa se kao
   jedna od njegovih pozivnica, a kad ste unutra, njegov razgovor s vama to kaže, s **Povuci** ispod te linije. Neko čiji
   zahtjev za razgovor niste prihvatili ne bira server za vas: njegova pozivnica čeka dok ga ne prihvatite, najviše
@@ -1942,20 +1941,28 @@ Nostru, i to je dovoljno za razgovor.
 **Zašto:** Nostr je samo način ulaska. Nikome ne treba pozivnica da počne, a kad jedno od vas ima server, on prenosi
 ono što je preveliko za Nostr.
 
-## Direktne veze {#direct}
+## Koliko ste vidljivi? {#direct}
 
-**Direktne veze** su jedan prekidač za sve što pokazuje internet adresu (IP adresu) vašeg telefona nekom drugom. Nalaze
-se na vrhu **Postavki**, ispod pretrage, i **uključene** su dok ih ne isključite; svaki prostor ima svoje. **Šta se
-mijenja**, ispod njih, otvara njihov ekran, koji kaže ono što kaže ovaj odjeljak.
+**Koliko ste vidljivi?** stoji na vrhu **Postavki**, ispod pretrage: tri izbora o tome ko vidi internet adresu (IP
+adresu) vašeg telefona, koja otprilike pokazuje gdje je telefon, i na kojoj mreži. Svaki prostor ima svoj, a prostor je
+na **SPEED** dok ne izaberete drugi, osim ako je u njemu uključen Tor. **Šta se mijenja**, ispod njih, otvara njihov
+ekran, koji kaže ono što kaže ovaj odjeljak. Poruke su šifrirane s kraja na kraj u sva tri.
 
-- **Uključene:** Erevos ne pita prije onoga što slijedi: radi to odmah. Pozivi i video pozivi rade s kontaktom i kad
-  između vas dvoje nema servera: poziv se uspostavlja preko Nostra i ide direktno s telefona na telefon.
-- **Isključene:** prije svakog od tih slučajeva Erevos jednom kaže ko bi vidio adresu, a vi birate hoćete li nastaviti
-  (pogledajte [Ko vidi vašu IP adresu](#ip)). Pozivi idu samo preko servera za pozive, koji skriva adresu svakog
-  telefona od drugog, ili između dva telefona na istoj Wi-Fi mreži. Poziv od kontakta bez servera između vas dvoje ne
-  zvoni: razgovor ga prikazuje kao propušten, i kaže da **Direktne veze** propuštaju takve pozive.
+- **SPEED:** serveri i vaši kontakti vide vašu adresu. Erevos ne pita prije onoga što slijedi: radi to odmah. Pozivi i
+  video pozivi idu direktno s telefona na telefon, najbrže moguće, čak i kad između vas dvoje nema servera: poziv se
+  tada uspostavlja preko Nostra.
+- **ANONYMOUS:** vidi je samo server, nikad vaši kontakti. Prije svakog od slučajeva koji slijede Erevos jednom kaže ko
+  bi vidio adresu, a vi birate hoćete li nastaviti (pogledajte [Ko vidi vašu IP adresu](#ip)). Pozivi idu samo preko
+  servera za pozive, koji skriva adresu svakog telefona od drugog, ili između dva telefona na istoj Wi-Fi mreži. Poziv
+  od kontakta bez servera između vas dvoje ne zvoni: razgovor ga prikazuje kao propušten, i kaže da **SPEED** propušta
+  takve pozive. Tor samo za poruke, ili Nostr preko Tora, izabrani na svojim ekranima, drže prostor na ANONYMOUS.
+- **INVISIBLE:** niko je ne vidi. Sve iz prostora ide preko Tora, i datoteke i Nostr: serveri vide adresu Tora, nikad
+  vašu, a vaši kontakti ne vide nikakvu. Poruke i datoteke idu i stižu sporije, a prvo pokretanje Tora traje neko
+  vrijeme. Nema glasovnih ni video poziva, jer pozivi ne idu preko Tora: ako pokušate jedan, Erevos kaže zašto, poziv
+  kontakta ne zvoni (razgovor ga prikazuje kao propušten, u INVISIBLE), a poziv koji je u toku se završava kad se
+  izabere INVISIBLE. **Sve**, na ekranu Tora (**Postavke** → **Server i mreže** → **Tor**), takođe je INVISIBLE.
 
-**Ko vidi vašu internet adresu dok su uključene:**
+**Ko vidi vašu internet adresu sa SPEED:**
 
 - Serveri koji nose ono što šaljete i vaše pozive: vaš, vašeg kontakta i onaj na koji vas kontakt pozove.
 - Telefon vašeg kontakta, u pozivu koji ide direktno s telefona na telefon, i pomoćni serveri, koji svakom telefonu kažu
@@ -1967,14 +1974,14 @@ mijenja**, ispod njih, otvara njihov ekran, koji kaže ono što kaže ovaj odjel
 
 Nijedan od njih ne vidi šta pišete ili govorite: to ostaje šifrirano s kraja na kraj.
 
-**Šta nikad ne mijenjaju:**
+**Šta ne mijenja nijedan od njih:**
 
-- Ne mijenjaju nijednu postavku Tora. Dok je Tor uključen u prostoru, ostaju isključene, a nakon što se Tor isključi,
-  ostaju isključene dok ih ponovo ne uključite.
 - Skriveni razgovori, i razgovori postavljeni na **Preko Tora**, nikad se ne spajaju direktno, a i dalje pitaju.
 - S vlastitim serverom za pozive, vaši pozivi i dalje idu preko njega, pa drugi telefon ne vidi vašu adresu.
 - Erevos i dalje pita prije nego otvori web link ili pokaže pregled linka, i prije nego donese poruke telefona pored
   ovog sa servera koji ovaj telefon ne koristi.
+- Tor isključen na svom ekranu ostavlja prostor na **ANONYMOUS**: ništa se ne spaja direktno dok ponovo ne izaberete
+  **SPEED**, što isključuje Tor, i Nostr preko Tora, u tom prostoru.
 
 **Dobro je znati:**
 
@@ -1987,18 +1994,18 @@ Nijedan od njih ne vidi šta pišete ili govorite: to ostaje šifrirano s kraja 
 - **Pomoćni serveri, za napredne korisnike:** za poziv direktno s telefona na telefon, svaki telefon pita pomoćni server
   koja je njegova vlastita internet adresa. Pomoćni server vidi tu adresu, jednom po pozivu, i ništa od samog poziva.
   Ako ne izaberete drugačije, Erevos prvo pita onaj pored vašeg servera i onaj pored LPHL-ovog servera, a dva javna,
-  Cloudflareov i Nextcloudov, samo kad nijedan od njih ne odgovori. Na ekranu prekidača, dok je uključen, **Moji
-  serveri** primaju do tri vaša, a **Nijedan** ne pita nijednog: direktan poziv se tada uspostavlja samo tamo gdje se
-  dva telefona sama nađu, kao na istoj Wi-Fi mreži. **Provjeri sada** ih pita kao što to čini poziv, pa i oni tada vide
-  vašu adresu.
+  Cloudflareov i Nextcloudov, samo kad nijedan od njih ne odgovori. Na njihovom ekranu, sa **SPEED**, **Moji serveri**
+  primaju do tri vaša, a **Nijedan** ne pita nijednog: direktan poziv se tada uspostavlja samo tamo gdje se dva telefona
+  sama nađu, kao na istoj Wi-Fi mreži. **Provjeri sada** ih pita kao što to čini poziv, pa i oni tada vide vašu adresu.
 
 ## Ko vidi vašu IP adresu {#ip}
 
 Internet adresa vašeg telefona, njegova IP adresa, otprilike pokazuje gdje ste i kojeg provajdera koristite. Ne
 pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne ide preko Tora.
 
-- **Vaš server i serveri vaših kontakata:** vide je. Da je sakrijete, uključite Tor za prostor (**Postavke** → **Server i
-  mreže** → **Tor**) ili **Preko Tora** u **Detaljima** jednog razgovora. Vidi [Preko Tora](#tor).
+- **Vaš server i serveri vaših kontakata:** vide je. Da je sakrijete, izaberite **INVISIBLE** na vrhu **Postavki**,
+  uključite Tor za poruke prostora (**Postavke** → **Server i mreže** → **Tor**) ili **Preko Tora** u **Detaljima**
+  jednog razgovora. Pogledajte [Koliko ste vidljivi?](#direct) i [Preko Tora](#tor).
 
 - **Javni Nostr serveri i Nostr serveri datoteka:** vide je, osim ako veza ne ide preko Tora. Uključite **Nostr preko
   Tora** pod **Postavke** → **Server i mreže** → **Nostr**, ili **Preko Tora** za jedan razgovor. Vidi [Preko
@@ -2007,10 +2014,10 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
   serverima, pa bez Nostra preko Tora oni vide adresu, ali ne i kod ni linkove za kontakt. Erevos to kaže prije prvog
   puta.
 
-- **Pozivi:** nikad ne idu preko Tora. Server za pozive, vaš ili vašeg kontakta, vidi adresu, ali ne i ono što se govori.
-  Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži. Bez servera za pozive između vas i s uključenim
-  **Direktnim vezama** poziv ide direktno s telefona na telefon: telefon vašeg kontakta vidi adresu, a tako i pomoćni
-  serveri koji svakom telefonu kažu njegovu.
+- **Pozivi:** nikad ne idu preko Tora, pa ih **INVISIBLE** nema. Server za pozive, vaš ili vašeg kontakta, vidi adresu,
+  ali ne i ono što se govori. Poziv između obližnjih telefona na istoj mreži ostaje na toj mreži. Bez servera za pozive
+  između vas i sa **SPEED** poziv ide direktno s telefona na telefon: telefon vašeg kontakta vidi adresu, a tako i
+  pomoćni serveri koji svakom telefonu kažu njegovu.
 
 - **Datoteka na serveru koji je odabrao vaš kontakt:** server vidi adresu kad vaš telefon preuzima datoteku. Tor je
   sakriva.
@@ -2021,7 +2028,8 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
 
 - **Server kontakta:** dok vaš prostor nema vlastiti server, ili samo posuđeno mjesto na jednom, kontakt vam može dati
   mjesto na svom, i ono stiže s njegovom porukom. Njegov server tada vidi adresu, pa Erevos pita prije nego ga prihvati,
-  osim ako su **Direktne veze** uključene ili prostor sve šalje preko Tora. Ako se ne prihvati, pozivnica se odbacuje.
+  osim ako je prostor na **SPEED**, ili na **INVISIBLE**, koji sve šalje preko Tora. Ako se ne prihvati, pozivnica se
+  odbacuje.
 
 - **Grupe:** poruka u Erevos grupi ide preko servera, koji vidi adresu. Tor za prostor je sakriva; grupa nema vlastiti
   prekidač.
@@ -2033,7 +2041,7 @@ pokazuje šta pišete. Ko se spoji na vaš telefon, vidi je, osim ako veza ne id
 - [~] **Radio stanice i TV kanali:** svaki vidi adresu dok se pušta. **Puštaj preko Tora**, u postavkama Zbirke na
   Androidu, isključeno dok ga ne uključite, pušta ih samo preko Tora. Vidi [Zbirka](#collection).
 
-S isključenim **Direktnim vezama** Erevos upozorava jednom prije svakog od ovih slučajeva, s naslovom **Vaša IP adresa
+Sa **ANONYMOUS** ili **INVISIBLE** Erevos upozorava jednom prije svakog od ovih slučajeva, s naslovom **Vaša IP adresa
 može biti vidljiva**, dugmetom **Vodič** koje otvara ovaj odjeljak i, gdje može, dugmetom koje to popravlja, poput
 **Preko Tora za ovaj razgovor**. **Nastavi** ide dalje. Za ono što šaljete, kaže se jednom za cijelu mrežu, ne u svakom
 razgovoru: poslije toga razgovor ili grupa bez Tora pokazuje samo diskretan red iznad mjesta gdje pišete, **Bez Tora:
@@ -2043,10 +2051,10 @@ Nakon vodiča isto pitanje se vraća, a ono što ste slali, poput glasovne poruk
 koji ovdje zvoni to kaže ispod poziva, a javljanje ide dalje. Skriveni razgovori čuvaju ono što je rečeno kod sebe,
 odvojeno od prostora.
 
-S uključenim **Direktnim vezama**, što je zadano, ne pita prije ovih slučajeva: idu odmah, i ne prikazuje se nikakav
+Sa **SPEED**, što je zadano, ne pita prije ovih slučajeva: idu odmah, i ne prikazuje se nikakav
 diskretan red. I dalje pita prije nego otvori web link ili pokaže pregled linka{+, prije onoga što ide na Matrix, XMPP
 ili druge Nostr aplikacije}, i prije nego donese poruke telefona pored ovog sa servera koji ovaj telefon ne koristi; a
-skriveni razgovori, i razgovori postavljeni na **Preko Tora**, i dalje pitaju. Pogledajte [Direktne veze](#direct).
+skriveni razgovori, i razgovori postavljeni na **Preko Tora**, i dalje pitaju. Pogledajte [Koliko ste vidljivi?](#direct).
 
 Obližnji telefoni{~, LoRa i SMS| i LoRa} ne koriste internet, pa ne pokazuju nikakvu IP adresu.
 
@@ -4505,7 +4513,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
 | **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |
 | **Widget{~ i Telefon} (Android)** | Widget, kad se doda, prikazuje koliko ima {~propuštenih poziva, nepročitanih SMS poruka i |}novih poruka, nikad od koga ni šta.{~ Telefon se otvara bez lozinke samo ako to dozvolite: tada svako ko drži otključan telefon vidi pozive i favorite koje Android čuva, samo s imenima iz kontakata telefona.} | |
-| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko servera za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez servera za pozive svaki telefon vidi adresu drugog: na istoj Wi-Fi mreži, ili preko interneta dok su **Direktne veze** uključene, kada je vide i pomoćni serveri. Serveri vide kada poziv počinje zvoniti. | Zvonjenje u web-aplikaciji dok je zatvorena. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
+| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko servera za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez servera za pozive svaki telefon vidi adresu drugog: na istoj Wi-Fi mreži, ili preko interneta sa **SPEED**, kada je vide i pomoćni serveri. Sa **INVISIBLE** nema poziva. Serveri vide kada poziv počinje zvoniti. | Zvonjenje u web-aplikaciji dok je zatvorena. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
 | **Grupni razgovori** | Šifrirani s kraja na kraj pomoću MLS-a (RFC 9420); uklonjeni članovi nakon toga ništa ne čitaju. Kopija svakog člana zapečaćena je zasebno, pa serveri ne mogu saznati ko je u grupi; svaki server ipak vidi da poruka stiže u red. Članovi vide ključeve i adrese servera jedni drugih. Fotografije, datoteke i glasovne poruke idu preko pohrane datoteka servera pošiljaoca, kao i kontaktu, i ostaju tamo 14 dana. Nije nezavisno provjereno. | |
 | **Grupni pozivi** | Glasovni i video, šifrirani s kraja na kraj između svaka dva telefona u pozivu (DTLS-SRTP, čiji se ključevi šalju u šifriranju grupe). Preko servera za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi adresu svakog telefona, kada i koliko dugo, i koliko prolazi. Svaki član, u pozivu ili ne, saznaje ko je u njemu. Serveri vide kada poziv počinje. | Video s više od četiri osobe, preko servera; više od osam osoba. |
 | **Javne grupe** | Kao grupni razgovori, a svako ko ima link može zatražiti ulazak i čitati od trenutka kad ga puste. Zahtjevi stižu na server vlasnika zapečaćeni za telefon vlasnika: server vidi koliko ih je i kada, ali ne i od koga. Članovi vide izabrana imena jedni drugih, ključeve napravljene samo za tu grupu, adrese servera i identifikatore pošiljaoca redova. Nije nezavisno provjereno. | |
