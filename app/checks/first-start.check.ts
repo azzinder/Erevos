@@ -133,6 +133,31 @@ test("LPHL's open server is wanted for a new start unless the invite brings a se
   assert.ok(home.includes("t('Erevos could not reach it now. It tries again by itself each time Erevos opens.')") && !home.includes('server.error'));
 });
 
+test("LPHL's place is promised only once taken, a home with no server warns first, and a free place says its day's limits", () => {
+  // The mode step: ready only once it is; waiting until then, as the server may still give none.
+  const mode = between(steps, "if (step === 'mode') {", 'return (');
+  assert.ok(mode.includes("server.kind === 'ready'\n          ? t('Your server is ready · LPHL, free')"));
+  assert.ok(mode.includes("server.kind === 'waiting' || server.kind === 'taking'") && mode.includes("t('LPHL’s server is waiting for you · free')"));
+  // The first home: the dot warns with no server, and what to do about it comes above the two ways.
+  const home = read('components/first-home.tsx');
+  assert.ok(home.includes("const served = server.kind === 'ready' || server.kind === 'waiting' || server.kind === 'taking';"));
+  assert.ok(home.includes('backgroundColor: served ? colors.success : colors.warning'));
+  const doors = home.indexOf("title={t('They are beside me')}");
+  assert.ok(home.indexOf("{server.kind === 'none' ? (") < doors && home.indexOf("{server.kind === 'refused' || server.kind === 'failed' ? (") < doors);
+  // Under the two ways, a free place's limits for a day: LPHL's as they are set, another's in general.
+  assert.ok(home.indexOf("{server.kind === 'ready' && server.open ? (") > doors);
+  assert.ok(home.includes("t('Free on LPHL’s server: up to 20 new contacts, 50 MB of files and 30 calls through it each day.')"));
+  // The place is kept as a free one, and known as such only for the token it was given with.
+  const place = read('lib/open-place.ts');
+  assert.ok(place.includes('ownToken: { ...ownToken(LPHL_RELAY, token), open: true }'));
+  assert.ok(place.includes("if (!url || !data.token.trim() || data.ownToken.open !== true) return false;"));
+  // A free place's day used is said in plain words, and what was sent goes again later.
+  const relay = read('lib/relay.ts');
+  assert.ok(relay.includes("if (reply[0] === DAY_FULL) throw new RelayError(t('{what}: your free place on this server has used all it may today. It goes on tomorrow.', { what }), DAY_FULL);"));
+  assert.ok(relay.includes("if (reply[0] === DAY_FULL) throw new RelayError(t('{what}: your free place on this server has moved all the files it may today. Files go again tomorrow.', { what }), DAY_FULL);"));
+  assert.ok(relay.includes('error.status === UNREACHABLE || error.status === DAY_FULL);'));
+});
+
 test('on the web, the icons in the tiles are drawn over their gradient and the highlighted words keep the title size', () => {
   const look = read('components/first-start-look.tsx');
   const tile = between(look, 'export function Tile(', '\n}\n');

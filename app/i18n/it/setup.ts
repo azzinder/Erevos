@@ -36,6 +36,7 @@ export const setupText: Record<string, string> = {
   'SMS app': 'App SMS',
   'Your server is ready · {server}': 'Il tuo server è pronto · {server}',
   'Your server is ready · LPHL, free': 'Il tuo server è pronto · LPHL, gratis',
+  'LPHL’s server is waiting for you · free': 'Il server di LPHL ti aspetta · gratis',
   'Another server (for advanced users)': 'Altro server (per utenti esperti)',
   'How *visible* are you?': 'Quanto sei *visibile*?',
   'Messages are always encrypted · change it in Settings': 'I messaggi sono sempre cifrati · si cambia nelle Impostazioni',

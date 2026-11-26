@@ -109,8 +109,9 @@ spazio:
    (vedi [Backup](#backup)).
 
 Poi la schermata principale dice **Pronto**, con il tuo nome, e offre **È accanto a me** e **È lontano** per il tuo
-primo contatto, con una riga per un’autorizzazione ancora mancante. Fino a **Fatto**, i passi ricompaiono all’avvio di
-Erevos. Aperto con un invito, Erevos lo mostra a passi finiti.
+primo contatto, con ciò che un posto gratuito sul server di LPHL può fare ogni giorno e una riga per un’autorizzazione
+ancora mancante. Fino a **Fatto**, i passi ricompaiono all’avvio di Erevos. Aperto con un invito, Erevos lo mostra a
+passi finiti.
 
 - **Il nome:** non è un nome utente: nessuno lo cerca, e non deve essere unico. Va, cifrato, solo a chi aggiungi, e **Il
   mio nome** sotto Impostazioni → Privacy e sicurezza lo cambia.
@@ -652,11 +653,15 @@ lì, così chi gestisce il server può togliere un singolo telefono da solo.
   senza invito e senza account. Al primo avvio, quando scegli quanto sei visibile, Erevos ne prende uno sul server di
   LPHL e ci crea la tua coda (vedi [Per iniziare](#start)); **Usa il server di LPHL**, nella schermata principale di uno
   spazio senza server e senza chat, ne prende uno anch’esso. Il telefono fa il suo token da solo e dà al server solo il
-  suo SHA-256. Un posto così è per le tue chat: non può invitare né prestare posti, e ogni giorno può creare 20 code,
-  far passare dal server 50 MB di file e prendere 30 volte ciò che serve a una chiamata tramite il server. Il server ne
-  dà 1000 al massimo, 100 al giorno e 3 al giorno a uno stesso indirizzo internet, e toglie quello il cui telefono non
-  si è collegato da 60 giorni, a meno che chi lo gestisce non abbia scelto altro. Conta gli indirizzi solo per il
-  giorno, in memoria, e non li annota mai. Quando non ne dà nessuno, la schermata principale dice perché, con
+  suo SHA-256. Un posto così è per le tue chat: non può invitare né prestare posti. Ogni giorno può creare 20 code, far
+  passare dal server 50 MB di file, prendere 30 volte ciò che serve a una chiamata tramite il server e inviare 5000
+  messaggi ad altri server: oltre uno di questi limiti, Erevos lo dice, e si riprende il giorno dopo. Allo stesso tempo
+  può avere 8 MB di messaggi in attesa e 20 tenuti per dopo, e tutti i posti aperti insieme occupano al massimo la metà
+  di ciò che il server tiene di ciascuna cosa, e dei file, così da non riempirlo mai per tutti. Il server ne dà 1000 al
+  massimo, 100 al giorno e 3 al giorno a uno stesso indirizzo internet (uno IPv6 conta con tutta la sua rete, dai suoi
+  primi 48 bit), e toglie quello il cui telefono non si è collegato da 60 giorni, o da 7 se non si è mai più collegato
+  dopo il giorno in cui è stato creato, a meno che chi lo gestisce non abbia scelto altro. Conta gli indirizzi solo per
+  il giorno, in memoria, e non li annota mai. Quando non ne dà nessuno, la schermata principale dice perché, con
   **Riprova** e **Altro server**, ed Erevos riprova a ogni apertura.
 - **Un invito:** un codice QR o un link da un telefono già sul server (vedi Invitare qualcuno di nuovo più sotto). Niente
   da scrivere, e siete subito contatti.

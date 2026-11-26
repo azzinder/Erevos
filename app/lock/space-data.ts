@@ -309,7 +309,8 @@ function checkedOffered(value: unknown): Offered {
 
 function checkedOwnToken(value: unknown): OwnToken {
   const v = (value ?? {}) as Partial<Record<keyof OwnToken, unknown>>;
-  return typeof v.relay === 'string' && isHex(v.hash, 64) ? { relay: v.relay, hash: v.hash } : NO_OWN_TOKEN;
+  if (typeof v.relay !== 'string' || !isHex(v.hash, 64)) return NO_OWN_TOKEN;
+  return v.open === true ? { relay: v.relay, hash: v.hash, open: true } : { relay: v.relay, hash: v.hash };
 }
 
 function checkedLending(value: unknown): Lending {

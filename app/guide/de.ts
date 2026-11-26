@@ -110,9 +110,9 @@ anderen Netzwerke, unter **Andere Netzwerke**, aus}. Dann, im Bereich:
    eingerichtet, den **Fertig** öffnet (siehe [Backups](#backup)).
 
 Dann sagt der Startbildschirm **Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist
-weit weg** für deinen ersten Kontakt an, mit einer Zeile für eine noch fehlende Berechtigung. Bis **Fertig** erscheinen
-die Schritte beim Start von Erevos wieder. Wird Erevos mit einer Einladung geöffnet, zeigt es sie, sobald die Schritte
-durch sind.
+weit weg** für deinen ersten Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und
+einer Zeile für eine noch fehlende Berechtigung. Bis **Fertig** erscheinen die Schritte beim Start von Erevos wieder.
+Wird Erevos mit einer Einladung geöffnet, zeigt es sie, sobald die Schritte durch sind.
 
 - **Der Name:** er ist kein Benutzername: niemand sucht danach, und er muss nicht eindeutig sein. Er geht verschlüsselt
   nur an die, die du hinzufügst, und **Mein Name** unter Einstellungen → Datenschutz und Sicherheit ändert ihn.
@@ -692,12 +692,16 @@ Telefons dort, sodass, wer den Server betreibt, jedes einzelne Telefon für sich
   nimmt Erevos einen auf dem Server von LPHL und legt dort deine Warteschlange an (siehe [Erste Schritte](#start));
   **Server von LPHL nutzen** auf dem Startbildschirm eines Bereichs ohne Server und ohne Chats nimmt auch einen. Das
   Telefon macht sein Token selbst und gibt dem Server nur dessen SHA-256. Ein solcher Platz ist für deine eigenen Chats:
-  Er kann keine Plätze einladen oder verleihen, und er darf am Tag 20 Warteschlangen machen, 50 MB an Dateien über den
-  Server schicken und 30-mal nehmen, was ein Anruf über den Server braucht. Der Server vergibt höchstens 1000 davon, 100
-  am Tag und 3 am Tag an eine Internetadresse, und nimmt einen heraus, dessen Telefon sich 60 Tage nicht verbunden hat,
-  sofern sein Betreiber nichts anderes gewählt hat. Adressen zählt er nur für den Tag, im Speicher, und schreibt sie nie
-  auf. Wenn er keine vergibt, sagt der Startbildschirm warum, mit **Erneut versuchen** und **Anderer Server**, und
-  Erevos versucht es jedes Mal wieder, wenn es sich öffnet.
+  Er kann niemanden einladen und keine Plätze verleihen. Am Tag darf er 20 Warteschlangen machen, 50 MB an Dateien über
+  den Server schicken, 30-mal nehmen, was ein Anruf über den Server braucht, und 5000 Nachrichten an andere Server
+  weitergeben: Ist eines davon erreicht, sagt Erevos es, und am nächsten Tag geht es weiter. Zugleich darf er 8 MB an
+  wartenden Nachrichten und 20 für später gehaltene haben, und alle offenen Plätze zusammen belegen höchstens die Hälfte
+  dessen, was der Server davon und an Dateien hält, damit sie ihn nie für alle füllen. Der Server vergibt höchstens 1000
+  davon, 100 am Tag und 3 am Tag an eine Internetadresse (eine IPv6-Adresse zählt mit ihrem ganzen Netz, nach ihren
+  ersten 48 Bits), und nimmt einen heraus, dessen Telefon sich 60 Tage nicht verbunden hat, oder 7 Tage, wenn es sich
+  nach dem Tag, an dem er entstand, nie wieder verbunden hat, sofern sein Betreiber nichts anderes gewählt hat. Adressen
+  zählt er nur für den Tag, im Speicher, und schreibt sie nie auf. Wenn er keine vergibt, sagt der Startbildschirm
+  warum, mit **Erneut versuchen** und **Anderer Server**, und Erevos versucht es jedes Mal wieder, wenn es sich öffnet.
 - **Eine Einladung:** ein QR-Code oder Link von einem Telefon, das schon auf dem Server ist (siehe „Jemand Neues
   einladen“ weiter unten). Nichts einzutippen, und ihr seid sofort Kontakte.
 - **Ein Konto:** **Mit LPHL anmelden**, wenn der Server es anbietet (siehe „Beim Server anmelden“ weiter unten). Jedes

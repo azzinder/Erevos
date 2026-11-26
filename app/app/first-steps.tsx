@@ -505,9 +505,12 @@ export default function FirstSteps() {
     const status =
       server.kind === 'ready' && !server.lphl
         ? t('Your server is ready · {server}', { server: hostOf(server.url) })
-        : server.kind === 'ready' || server.kind === 'waiting' || server.kind === 'taking'
+        : server.kind === 'ready'
           ? t('Your server is ready · LPHL, free')
-          : null;
+          : server.kind === 'waiting' || server.kind === 'taking'
+            ? // Not taken yet: it is once the mode is chosen, and the server may still give none.
+              t('LPHL’s server is waiting for you · free')
+            : null;
     return (
       <StartScreen
         footer={

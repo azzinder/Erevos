@@ -253,11 +253,17 @@ export function isRelayAddress(url: string): boolean {
 
 /**
  * Whether what failed may go later: the relay could not be reached, or said to try again later
- * (full, could not save it, or could not reach the next relay).
+ * (full, could not save it, could not reach the next relay, or a free place there used its day).
  */
 export function canTryLater(error: unknown): boolean {
   if (error instanceof RelayUnreachableError) return true;
-  return error instanceof RelayError && (error.status === FULL || error.status === FAILED || error.status === UNREACHABLE);
+  return error instanceof RelayError && (error.status === FULL || error.status === FAILED || error.status === UNREACHABLE || error.status === DAY_FULL);
+}
+
+/** Whether the relay said a free place there (an open place) used all it may today: new chats,
+ *  files, calls through it or sends to other servers, each its own share. It goes on tomorrow. */
+export function isDayFull(error: unknown): boolean {
+  return error instanceof RelayError && error.status === DAY_FULL;
 }
 
 /** Whether the relay said the queue is full: as many wait there as it keeps for one, unread. */
@@ -1084,6 +1090,9 @@ function check(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
   if (reply[0] === NOT_FOUND) throw queueNotFound(what);
   if (reply[0] === FULL) throw new RelayError(t('{what}: queue is full', { what }), FULL);
+  // A free place on the server (an open place) has a day's share of new chats, calls and sends to
+  // other servers: past it, it goes on the next day.
+  if (reply[0] === DAY_FULL) throw new RelayError(t('{what}: your free place on this server has used all it may today. It goes on tomorrow.', { what }), DAY_FULL);
   if (reply[0] === FAILED) throw new RelayError(t('{what}: the server could not save it, try again later', { what }), FAILED);
   if (reply[0] === UNREACHABLE)
     throw new RelayError(t('{what}: the second server could not reach your server, try again later', { what }), UNREACHABLE);
@@ -2360,6 +2369,8 @@ function checkFile(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
   if (reply[0] === NOT_FOUND) throw new RelayError(t('{what}: the file is not on the server any more', { what }), NOT_FOUND);
   if (reply[0] === FULL) throw new RelayError(t('{what}: the server has no room for files now, try again later', { what }), FULL);
+  // A free place on the server (an open place) moves so many megabytes of files a day.
+  if (reply[0] === DAY_FULL) throw new RelayError(t('{what}: your free place on this server has moved all the files it may today. Files go again tomorrow.', { what }), DAY_FULL);
   if (reply[0] === FAILED) throw new RelayError(t('{what}: the server could not keep it, try again later', { what }), FAILED);
   if (reply[0] === UNREACHABLE) throw new RelayError(t('{what}: your server could not reach the server the file is on', { what }), UNREACHABLE);
   throw new RelayError(`${what}: unexpected reply ${reply[0]}`, reply[0]);

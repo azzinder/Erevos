@@ -109,8 +109,9 @@ principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después, en e
    **Hecho** (ver [Copias de seguridad](#backup)).
 
 Luego la pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está lejos** para tu primer
-contacto, con una línea para un permiso que aún falte. Hasta **Hecho**, los pasos vuelven a salir cuando se inicia
-Erevos. Si Erevos se abrió con una invitación, la muestra cuando terminan los pasos.
+contacto, con lo que puede hacer cada día un sitio gratuito en el servidor de LPHL y una línea para un permiso que aún
+falte. Hasta **Hecho**, los pasos vuelven a salir cuando se inicia Erevos. Si Erevos se abrió con una invitación, la
+muestra cuando terminan los pasos.
 
 - **El nombre:** no es un nombre de usuario: nadie lo busca, y no tiene que ser único. Va, cifrado, solo a quienes
   añades, y **Mi nombre**, en Ajustes → Privacidad y seguridad, lo cambia.
@@ -650,12 +651,16 @@ así que quien gestiona el servidor puede sacar a cualquier teléfono por separa
   allí, sin invitación ni cuenta. En el primer inicio, cuando eliges cuánto se te ve, Erevos toma uno en el servidor de
   LPHL y crea allí tu cola (ver [Primeros pasos](#start)); **Usar el servidor de LPHL**, en la pantalla de inicio de un
   espacio sin servidor y sin chats, también toma uno. El teléfono crea su token él mismo y da al servidor solo su
-  SHA-256. Un sitio así es para tus propios chats: no puede invitar ni prestar sitios, y cada día puede crear 20 colas,
-  mover 50 MB de archivos por el servidor y tomar 30 veces lo que necesita una llamada por el servidor. El servidor da
-  1000 como máximo, 100 al día y 3 al día a una misma dirección de internet, y quita uno cuyo teléfono no se ha
-  conectado en 60 días, salvo que quien lo gestiona haya elegido otra cosa. Cuenta las direcciones solo durante el día,
-  en memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, con **Volver a
-  intentarlo** y **Otro servidor**, y Erevos lo intenta de nuevo cada vez que se abre.
+  SHA-256. Un sitio así es para tus propios chats: no puede invitar ni prestar sitios. Cada día puede crear 20 colas,
+  mover 50 MB de archivos por el servidor, tomar 30 veces lo que necesita una llamada por el servidor y enviar 5000
+  mensajes a otros servidores: al llegar a uno de esos límites, Erevos lo dice, y sigue al día siguiente. A la vez puede
+  tener 8 MB de mensajes esperando y 20 guardados para más tarde, y todos los sitios abiertos juntos ocupan como máximo
+  la mitad de lo que el servidor guarda de cada cosa, y de archivos, para que nunca lo llenen para todos. El servidor da
+  1000 como máximo, 100 al día y 3 al día a una misma dirección de internet (una IPv6 cuenta con toda su red, por sus
+  primeros 48 bits), y quita uno cuyo teléfono no se ha conectado en 60 días, o en 7 si nunca volvió a conectarse
+  después del día en que se creó, salvo que quien lo gestiona haya elegido otra cosa. Cuenta las direcciones solo
+  durante el día, en memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, con **Volver
+  a intentarlo** y **Otro servidor**, y Erevos lo intenta de nuevo cada vez que se abre.
 - **Una invitación:** un código QR o un enlace de un teléfono que ya está en el servidor (ver Invitar a alguien nuevo más
   abajo). Nada que escribir, y sois contactos al instante.
 - **Una cuenta:** **Iniciar sesión con LPHL**, cuando el servidor lo ofrece (ver Iniciar sesión en el servidor más abajo).

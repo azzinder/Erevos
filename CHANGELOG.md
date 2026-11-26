@@ -75,13 +75,19 @@ and 0.1.15 never came out.
   server, or a server of your own, are under **Another server (for advanced users)** on the mode's step.
 - **LPHL's server, by itself** (#74): a new phone needs no invite and no account any more. At the first start, once you
   choose how visible you are, Erevos takes a place for your messages on LPHL's server by itself and makes your queue
-  there, with nothing to type; the phone makes its token itself, and the server gets only its SHA-256. Such a place is
-  for your own chats: it cannot invite or lend places, and each day it may make 20 queues, move 50 MB of files through
-  the server and take what a call through the server needs 30 times. The server gives 1000 at most, 100 a day and 3 a
-  day to one internet address, which it counts only for the day, in memory, and takes out a place whose phone has not
-  connected for 60 days. When it gives none, the home screen says why, with **Try again** and **Another server**, and
-  Erevos tries again each time it opens; a space with no server and no chats yet offers **Use LPHL’s server**. An invite
-  Erevos was first opened with that brings a server of its own, a server at someone's home say, is used instead.
+  there, with nothing to type; the phone makes its token itself, and the server gets only its SHA-256. Until then the
+  step says LPHL's server is waiting for you, and once it is taken that it is ready. Such a place is for your own chats:
+  it cannot invite or lend places; each day it may make 20 queues, move 50 MB of files through the server, take what a
+  call through the server needs 30 times and send 5000 messages on to other servers, and past one of those Erevos says
+  in plain words that it goes on tomorrow, and sends what waits then; at once it may have 8 MB of messages waiting and
+  20 held for later, and open places together keep at most half of what the server keeps of messages, of files and of
+  what is held for later, so they never fill it for everyone. The home screen says what a free place on LPHL's server
+  may do each day. The server gives 1000 at most, 100 a day and 3 a day to one internet address (an IPv6 one by its
+  first 48 bits, its whole network), which it counts only for the day, in memory, and takes out a place whose phone has
+  not connected for 60 days, or for 7 when it never connected again after its first day. When it gives none, the home
+  screen's dot warns, and above the two ways to add someone it says why, with **Try again** and **Another server**, and
+  Erevos tries again each time it opens; a space with no server and no chats yet offers **Use LPHL’s server** there. An
+  invite Erevos was first opened with that brings a server of its own, a server at someone's home say, is used instead.
 - **Automatic backups only to a server**: automatic backups can now go to a WebDAV server with no folder on the device.
   The first start's **WebDAV** sets them up so, and **Backups** shows them as **Only to** that server, with a folder on
   the device optional, for one more copy close at hand. Stopping that server stops them too.
@@ -167,7 +173,11 @@ and 0.1.15 never came out.
 - The app takes such a place with `takeOpenPlace`, and tells its refusals with `openPlaceRefusal` (`lib/relay.ts`). The
   first space wants one from the first start's setup on and takes it once the mode is chosen, or as a space opens once
   the steps are done (`lib/open-place.ts`); an invite that brings a server of its own is told by `bringsServer`
-  (`lib/invite-server.ts`).
+  (`lib/invite-server.ts`). The token is kept as the space's own with `open` (`OwnToken`, `lib/relay-signin.ts`;
+  `checkedOwnToken`, `lock/space-data.ts`), so `isOpenPlace` knows a free place by its token, and the first home says
+  its limits (`components/first-home.tsx`). A day used (`DAY_FULL`) is said in plain words by `check` and `checkFile`,
+  `isDayFull` tells it, and `canTryLater` takes it as something to send again later. The computer app's start check
+  knows the first start's welcome by **Get started** (`desktop/main.js`).
 - Automatic backups with no folder and a WebDAV server go only to that server: `runAutoBackup` already sent them so, and
   `app/backup.tsx` now sets them up that way, says so, and stops them with the server.
 

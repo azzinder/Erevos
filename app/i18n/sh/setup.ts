@@ -36,6 +36,7 @@ export const setupText: Record<string, string> = {
   'SMS app': 'Aplikacija za SMS',
   'Your server is ready · {server}': 'Vaš server je spreman · {server}',
   'Your server is ready · LPHL, free': 'Vaš server je spreman · LPHL, besplatno',
+  'LPHL’s server is waiting for you · free': 'LPHL-ov server vas čeka · besplatno',
   'Another server (for advanced users)': 'Drugi server (za napredne korisnike)',
   'How *visible* are you?': 'Koliko ste *vidljivi*?',
   'Messages are always encrypted · change it in Settings': 'Poruke su uvijek šifrirane · mijenja se u Postavkama',

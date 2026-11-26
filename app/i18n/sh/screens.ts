@@ -327,6 +327,8 @@ export const screens: Record<string, string> = {
   'Erevos could not reach it now. It tries again by itself each time Erevos opens.': 'Erevos ga sada nije mogao dosegnuti. Pokušava ponovno sam svaki put kad se Erevos otvori.',
   'Another server': 'Drugi server',
   'No server yet. LPHL’s is free, and gives you a place by itself.': 'Još nema servera. LPHL-ov je besplatan i sam vam daje mjesto.',
+  'Free on LPHL’s server: up to 20 new contacts, 50 MB of files and 30 calls through it each day.': 'Besplatno na LPHL-ovom serveru: do 20 novih kontakata, 50 MB datoteka i 30 poziva preko njega svaki dan.',
+  'A free place on this server, with limits for each day.': 'Besplatno mjesto na ovom serveru, s ograničenjima za svaki dan.',
   'Use LPHL’s server': 'Koristi LPHL-ov server',
   '{n} permission missing': 'nedostaje {n} dozvola',
   '{n} permissions missing': 'nedostaje {n} dozvola | nedostaju {n} dozvole | nedostaje {n} dozvola',

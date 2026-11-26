@@ -20,7 +20,10 @@ import { after, before, test } from 'node:test';
 
 import { freePort, ready, relayNote, startRelay } from './real-relay';
 import {
+  canTryLater,
   createQueue,
+  getChunk,
+  isDayFull,
   isQueueFull,
   lendTicket,
   listInvites,
@@ -28,8 +31,10 @@ import {
   newPhoneToken,
   OpenPlaceRefusedError,
   openPlaceRefusal,
+  putChunk,
   receiveMessage,
   RelayError,
+  RelaySession,
   RelayUnreachableError,
   sendMessage,
   takeOpenPlace,
@@ -122,11 +127,30 @@ test('a relay that gives open places gives a new phone one, which makes queues, 
   assert.ok(readFileSync(file, 'utf8').includes(`${sha(other.token)} ${other.name} # open place on ${today()}\n`));
 });
 
-test('an open place makes only so many queues a day', { skip: !ready }, async () => {
+test('an open place makes only so many queues a day, and is told it is its day that is used', { skip: !ready }, async () => {
   // One made above, and EREVOS_RELAY_OPEN_QUEUES is 2.
   await createQueue(phone);
-  await assert.rejects(createQueue(phone), (error) => isQueueFull(error));
+  await assert.rejects(createQueue(phone), (error) => isDayFull(error) && !isQueueFull(error) && canTryLater(error) && (error as Error).message.includes('It goes on tomorrow'));
   assert.ok(await createQueue(alice), 'a phone with a line of its own has no such limit');
+});
+
+test("an open place moves only so many megabytes of files a day, and is told so in plain words", { skip: !ready }, async () => {
+  const relay = await startRelay(false, '', false, {
+    EREVOS_RELAY_TOKENS: tokens('files.tokens'),
+    EREVOS_RELAY_OPEN: 'on',
+    EREVOS_RELAY_OPEN_FILES_MB: '1',
+  });
+  const own = { url: relay, token: (await takeOpenPlace(relay)).token };
+  const session = await RelaySession.open(own);
+  try {
+    const half = new Uint8Array(512 * 1024);
+    const id = await putChunk(session, half);
+    // Taking it back counts too: 1 MB in all.
+    assert.equal((await getChunk(session, id))?.length, half.length);
+    await assert.rejects(putChunk(session, half), (error) => isDayFull(error) && (error as Error).message.includes('Files go again tomorrow'));
+  } finally {
+    session.close();
+  }
 });
 
 test('an open place invites no one, lends no place and takes no line of its own', { skip: !ready }, async () => {

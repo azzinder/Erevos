@@ -102,8 +102,8 @@ space:
    ownCloud and others), each set up on the Backups screen that **Done** opens (see [Backups](#backup)).
 
 Then the home screen says **Ready**, with your name, and offers **They are beside me** and **They are far away** for
-your first contact, with a line for a permission still missing. Until **Done**, the steps show again when Erevos
-starts. Opened with an invite, Erevos shows it once the steps are done.
+your first contact, with what a free place on LPHL's server may do each day and a line for a permission still missing.
+Until **Done**, the steps show again when Erevos starts. Opened with an invite, Erevos shows it once the steps are done.
 
 - **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
   those you add, and **My name** under Settings → Privacy and security changes it.
@@ -605,13 +605,17 @@ runs the server can take any one phone out alone.
 
 - **An open place:** a server that gives them, as LPHL's does, gives a phone with no place there one by itself, with no
   invite and no account. At the first start, once you choose how visible you are, Erevos takes one on LPHL's server and
-  makes your queue there (see [Getting started](#start)); **Use LPHL’s server**, on the home screen of a space with no server
-  and no chats, takes one too. The phone makes its token itself and gives the server only its SHA-256. Such a place is
-  for your own chats: it cannot invite or lend places, and each day it may make 20 queues, move 50 MB of files through
-  the server and take what a call through the server needs 30 times. The server gives 1000 of them at most, 100 a day
-  and 3 a day to one internet address, and takes out one whose phone has not connected for 60 days, unless whoever runs
-  it chose otherwise. It counts addresses only for the day, in memory, and never writes them down. When it gives none,
-  the home screen says why, with **Try again** and **Another server**, and Erevos tries again each time it opens.
+  makes your queue there (see [Getting started](#start)); **Use LPHL’s server**, on the home screen of a space with no
+  server and no chats, takes one too. The phone makes its token itself and gives the server only its SHA-256. Such a
+  place is for your own chats: it cannot invite or lend places. Each day it may make 20 queues, move 50 MB of files
+  through the server, take what a call through the server needs 30 times and send 5000 messages on to other servers:
+  past one of those, Erevos says so, and it goes on the next day. At once it may have 8 MB of messages waiting and 20
+  held for later, and open places together keep at most half of what the server keeps of each, and of files, so they
+  never fill it for everyone. The server gives 1000 of them at most, 100 a day and 3 a day to one internet address (an
+  IPv6 one counted with its whole network, by its first 48 bits), and takes out one whose phone has not connected for 60
+  days, or for 7 when it never connected again after the day it was made, unless whoever runs it chose otherwise. It
+  counts addresses only for the day, in memory, and never writes them down. When it gives none, the home screen says
+  why, with **Try again** and **Another server**, and Erevos tries again each time it opens.
 - **An invite:** a QR code or link from a phone already on the server (see Inviting someone new below). Nothing to type,
   and you are contacts at once.
 - **An account:** **Sign in with LPHL**, when the server offers it (see Signing in to the server below). Any LPHL account

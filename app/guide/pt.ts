@@ -107,9 +107,10 @@ redes, em **Outras redes**, desativadas}. Depois, no espaço:
    escolhe, ou **WebDAV** (Nextcloud, ownCloud e outros), cada um configurado na tela de Backups que o **Pronto** abre
    (veja [Backups](#backup)).
 
-Depois a tela inicial diz **Pronto**, com o seu nome, e oferece **Está do meu lado** e **Está longe** para o seu
-primeiro contato, com uma linha para uma permissão que ainda falta. Até o **Pronto**, os passos aparecem de novo quando
-o Erevos inicia. Aberto com um convite, o Erevos o mostra quando os passos terminam.
+Depois a tela inicial diz **Tudo pronto**, com o seu nome, e oferece **Está do meu lado** e **Está longe** para o seu
+primeiro contato, com o que um lugar gratuito no servidor do LPHL pode fazer a cada dia e uma linha para uma permissão
+que ainda falta. Até o **Pronto**, os passos aparecem de novo quando o Erevos inicia. Aberto com um convite, o Erevos o
+mostra quando os passos terminam.
 
 - **O nome:** não é um nome de usuário: ninguém o procura, e ele não precisa ser único. Ele vai, criptografado, só para
   quem você adiciona, e **O meu nome**, em Configurações → Privacidade e segurança, o muda.
@@ -648,12 +649,16 @@ ali, então quem cuida do servidor pode tirar qualquer celular sozinho.
   ali, sem convite e sem conta. No primeiro início, quando você escolhe o quanto é visível, o Erevos pega um no servidor
   do LPHL e cria ali a sua fila (veja [Primeiros passos](#start)); **Usar o servidor do LPHL**, na tela inicial de um
   espaço sem servidor e sem conversas, também pega um. O celular faz o próprio token e dá ao servidor só o SHA-256 dele.
-  Um lugar assim é para as suas próprias conversas: ele não pode convidar nem emprestar lugares, e a cada dia pode criar
-  20 filas, passar 50 MB de arquivos pelo servidor e pegar 30 vezes o que uma chamada pelo servidor precisa. O servidor
-  dá 1000 no máximo, 100 por dia e 3 por dia para um mesmo endereço de internet, e tira aquele cujo celular não se
-  conecta há 60 dias, a menos que quem cuida dele tenha escolhido outra coisa. Ele conta os endereços só durante o dia,
-  na memória, e nunca os anota. Quando não dá nenhum, a tela inicial diz o porquê, com **Tentar de novo** e
-  **Outro servidor**, e o Erevos tenta de novo toda vez que abre.
+  Um lugar assim é para as suas próprias conversas: ele não pode convidar nem emprestar lugares. A cada dia pode criar
+  20 filas, passar 50 MB de arquivos pelo servidor, pegar 30 vezes o que uma chamada pelo servidor precisa e enviar 5000
+  mensagens para outros servidores: ao chegar a um desses limites, o Erevos avisa, e tudo continua no dia seguinte. Ao
+  mesmo tempo pode ter 8 MB de mensagens esperando e 20 guardadas para mais tarde, e todos os lugares abertos juntos
+  ocupam no máximo a metade do que o servidor guarda de cada coisa, e de arquivos, para nunca o encherem para todos. O
+  servidor dá 1000 no máximo, 100 por dia e 3 por dia para um mesmo endereço de internet (um IPv6 conta com toda a sua
+  rede, pelos seus primeiros 48 bits), e tira aquele cujo celular não se conecta há 60 dias, ou há 7 se nunca mais se
+  conectou depois do dia em que foi criado, a menos que quem cuida dele tenha escolhido outra coisa. Ele conta os
+  endereços só durante o dia, na memória, e nunca os anota. Quando não dá nenhum, a tela inicial diz o porquê, com
+  **Tentar de novo** e **Outro servidor**, e o Erevos tenta de novo toda vez que abre.
 - **Um convite:** um código QR ou link de um celular que já está no servidor (veja Convidar alguém novo abaixo). Nada para
   digitar, e vocês viram contatos na hora.
 - **Uma conta:** **Entrar com LPHL**, quando o servidor oferece (veja Entrar no servidor abaixo). Qualquer conta LPHL pode,

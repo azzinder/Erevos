@@ -112,8 +112,9 @@ activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensui
    Sauvegardes qu’ouvre **Terminé** (voir [Sauvegardes](#backup)).
 
 Ensuite l’écran d’accueil dit **Prêt**, avec ton nom, et propose **La personne est à côté de moi** et **La personne est
-loin** pour ton premier contact, avec une ligne pour une autorisation qui manque encore. Jusqu’à **Terminé**, les étapes
-réapparaissent au démarrage d’Erevos. Ouvert avec une invitation, Erevos la montre une fois les étapes terminées.
+loin** pour ton premier contact, avec ce qu’une place gratuite sur le serveur de LPHL peut faire chaque jour et une
+ligne pour une autorisation qui manque encore. Jusqu’à **Terminé**, les étapes réapparaissent au démarrage d’Erevos.
+Ouvert avec une invitation, Erevos la montre une fois les étapes terminées.
 
 - **Le nom :** ce n’est pas un nom d’utilisateur : personne ne le cherche, et il n’a pas besoin d’être unique. Il part,
   chiffré, seulement vers ceux que tu ajoutes, et **Mon nom**, sous Réglages → Confidentialité et sécurité, le change.
@@ -685,12 +686,17 @@ téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut r
   visible, Erevos en prend une sur le serveur de LPHL et y crée ta file d’attente (voir [Premiers pas](#start)) ;
   **Utiliser le serveur de LPHL**, sur l’écran d’accueil d’un espace sans serveur et sans discussions, en prend une
   aussi. Le téléphone fait son jeton lui-même et ne donne au serveur que son SHA-256. Une telle place est pour tes
-  propres discussions : elle ne peut ni inviter ni prêter de places, et chaque jour elle peut créer 20 files d’attente,
-  faire passer 50 Mo de fichiers par le serveur et prendre 30 fois ce qu’il faut à un appel par le serveur. Le serveur
-  en donne 1000 au plus, 100 par jour et 3 par jour à une même adresse internet, et retire celle dont le téléphone ne
-  s’est pas connecté depuis 60 jours, sauf si celui qui le gère a choisi autrement. Il ne compte les adresses que pour
-  la journée, en mémoire, et ne les note jamais. Quand il n’en donne aucune, l’écran d’accueil dit pourquoi, avec
-  **Réessayer** et **Autre serveur**, et Erevos réessaie à chaque ouverture.
+  propres discussions : elle ne peut ni inviter ni prêter de places. Chaque jour, elle peut créer 20 files d’attente,
+  faire passer 50 Mo de fichiers par le serveur, prendre 30 fois ce qu’il faut à un appel par le serveur et envoyer 5000
+  messages vers d’autres serveurs : au-delà de l’une de ces limites, Erevos le dit, et ça reprend le lendemain. En même
+  temps, elle peut avoir 8 Mo de messages en attente et 20 gardés pour plus tard, et toutes les places ouvertes ensemble
+  occupent au plus la moitié de ce que le serveur garde de chacun, et de fichiers, pour ne jamais le remplir pour tout
+  le monde. Le serveur en donne 1000 au plus, 100 par jour et 3 par jour à une même adresse internet (une adresse IPv6
+  compte avec tout son réseau, par ses 48 premiers bits), et retire celle dont le téléphone ne s’est pas connecté depuis
+  60 jours, ou depuis 7 s’il ne s’est jamais reconnecté après le jour où elle a été créée, sauf si celui qui le gère a
+  choisi autrement. Il ne compte les adresses que pour la journée, en mémoire, et ne les note jamais. Quand il n’en
+  donne aucune, l’écran d’accueil dit pourquoi, avec **Réessayer** et **Autre serveur**, et Erevos réessaie à chaque
+  ouverture.
 - **Une invitation :** un code QR ou un lien d’un téléphone déjà sur le serveur (voir Inviter quelqu’un de nouveau
   ci-dessous). Rien à taper, et vous êtes contacts aussitôt.
 - **Un compte :** **Se connecter avec LPHL**, quand le serveur le propose (voir Se connecter au serveur ci-dessous).

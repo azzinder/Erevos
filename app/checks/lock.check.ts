@@ -440,6 +440,11 @@ t('a space keeps which token it got as its own from which relay, and nothing of 
   assert.deepEqual((await loadSpaceData(0, key)).ownToken, own);
   await saveSpaceData(0, key, { ...EMPTY_SPACE, ownToken: { relay: own.relay, hash: 'mine' } });
   assert.deepEqual((await loadSpaceData(0, key)).ownToken, { relay: '', hash: '' });
+  // One that is a free place its relay gave by itself (lib/open-place.ts) says so, and only with `true`.
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: own.relay, token: 'mine', ownToken: { ...own, open: true } });
+  assert.deepEqual((await loadSpaceData(0, key)).ownToken, { ...own, open: true });
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: own.relay, token: 'mine', ownToken: { ...own, open: 'yes' } as never });
+  assert.deepEqual((await loadSpaceData(0, key)).ownToken, own);
   // The keys its relays proved (lib/relay.ts, pinRelay): whole ones only, and only for the relays it uses.
   const proven = 'ab'.repeat(32);
   await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://Relay.example.org/', relayKeys: { 'wss://relay.example.org': proven, 'wss://other.example.org': proven } });

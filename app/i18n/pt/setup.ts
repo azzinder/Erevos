@@ -18,7 +18,7 @@ export const setupText: Record<string, string> = {
   'Start without a backup': 'Começar sem backup',
   'I have no backup yet': 'Ainda não tenho backup',
   'A password for Erevos': 'Uma senha para o Erevos',
-  'Ready': 'Pronto',
+  'Ready': 'Tudo pronto',
   'It opens after the setup: the invite waits for you.': 'Ele abre depois da configuração: o convite espera por você.',
   'What will you use?': 'O que você vai usar?',
   'Choose at least one for chats: the Collection alone has nothing to open.':
@@ -36,6 +36,7 @@ export const setupText: Record<string, string> = {
   'SMS app': 'App de SMS',
   'Your server is ready · {server}': 'Seu servidor está pronto · {server}',
   'Your server is ready · LPHL, free': 'Seu servidor está pronto · LPHL, grátis',
+  'LPHL’s server is waiting for you · free': 'O servidor do LPHL está esperando você · grátis',
   'Another server (for advanced users)': 'Outro servidor (para usuários avançados)',
   'How *visible* are you?': 'Quão *visível* você é?',
   'Messages are always encrypted · change it in Settings':

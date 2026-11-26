@@ -103,9 +103,9 @@ SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže**, isklju
    ownCloud i drugi), svako postavljeno na ekranu Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne
    kopije](#backup)).
 
-Zatim početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko je** za vaš prvi kontakt, s retkom
-za dozvolu koja još nedostaje. Do **Gotovo** koraci se opet prikazuju kad se Erevos pokrene. Otvoren s pozivnicom,
-Erevos je prikazuje kad se koraci završe.
+Zatim početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko je** za vaš prvi kontakt, s onim
+što besplatno mjesto na LPHL-ovom serveru smije svaki dan i retkom za dozvolu koja još nedostaje. Do **Gotovo** koraci
+se opet prikazuju kad se Erevos pokrene. Otvoren s pozivnicom, Erevos je prikazuje kad se koraci završe.
 
 - **Ime:** nije korisničko ime: nitko ga ne traži i ne mora biti jedinstveno. Ide, šifrirano, samo onima koje dodate, a
   mijenja ga **Moje ime** pod Postavke → Privatnost i sigurnost.
@@ -632,11 +632,15 @@ onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
   računa. Pri prvom pokretanju, kad izaberete koliko ste vidljivi, Erevos uzima jedno na LPHL-ovom serveru i tamo pravi
   vaš red (pogledajte [Prvi koraci](#start)); **Koristi LPHL-ov server**, na početnom ekranu prostora bez servera i bez
   razgovora, također uzima jedno. Telefon sam pravi svoj token i serveru daje samo njegov SHA-256. Takvo mjesto je za
-  vaše vlastite razgovore: ne može pozivati ni posuđivati mjesta, a svaki dan može napraviti 20 redova, provući kroz
-  server 50 MB datoteka i 30 puta uzeti ono što treba pozivu preko servera. Server ih daje najviše 1000, 100 dnevno i 3
-  dnevno jednoj internet adresi, i uklanja ono čiji se telefon nije povezao 60 dana, osim ako onaj ko ga vodi nije
-  izabrao drugačije. Adrese broji samo za taj dan, u memoriji, i nikad ih ne zapisuje. Kad ne daje nijedno, početni
-  ekran kaže zašto, uz **Pokušajte ponovo** i **Drugi server**, a Erevos pokušava ponovo svaki put kad se otvori.
+  vaše vlastite razgovore: ne može pozivati ni posuđivati mjesta. Svaki dan može napraviti 20 redova, provući kroz
+  server 50 MB datoteka, 30 puta uzeti ono što treba pozivu preko servera i poslati 5000 poruka na druge servere: kad
+  dosegne jedno od toga, Erevos to kaže, a sutradan se nastavlja. Istovremeno može imati 8 MB poruka koje čekaju i 20
+  zadržanih za kasnije, a sva otvorena mjesta zajedno zauzimaju najviše polovinu onoga što server čuva od svakog, i od
+  datoteka, da ga nikad ne napune za sve. Server ih daje najviše 1000, 100 dnevno i 3 dnevno jednoj internet adresi
+  (IPv6 adresa broji se sa cijelom svojom mrežom, po prvih 48 bita), i uklanja ono čiji se telefon nije povezao 60 dana,
+  ili 7 kad se nikad više nije povezao nakon dana kad je napravljeno, osim ako onaj ko ga vodi nije izabrao drugačije.
+  Adrese broji samo za taj dan, u memoriji, i nikad ih ne zapisuje. Kad ne daje nijedno, početni ekran kaže zašto, uz
+  **Pokušajte ponovo** i **Drugi server**, a Erevos pokušava ponovo svaki put kad se otvori.
 - **Pozivnica:** QR kod ili link s telefona koji je već na serveru (pogledajte Pozivanje nekoga novog ispod). Ništa se
   ne upisuje, a odmah ste kontakti.
 - **Nalog:** **Prijava preko LPHL**, kad je server nudi (pogledajte Prijava na server ispod). Može svaki LPHL nalog, na

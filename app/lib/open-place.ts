@@ -8,7 +8,7 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadSpaceData, updateSpaceData } from '../lock/space-data';
 import { placeChanged } from './receiver';
 import { createQueue, openPlaceRefusal, takeOpenPlace, toHex, type OpenPlaceRefusal } from './relay';
-import { ownToken } from './relay-signin';
+import { ownToken, type OwnToken } from './relay-signin';
 import { secureDelete, secureGet, secureSet } from './secure';
 import { LPHL_RELAY } from './servers';
 import { loadSetupAfter } from './setup-after';
@@ -33,7 +33,7 @@ export type FirstServer =
   | { kind: 'none' }
   | { kind: 'waiting' }
   | { kind: 'taking' }
-  | { kind: 'ready'; url: string; lphl: boolean }
+  | { kind: 'ready'; url: string; lphl: boolean; open: boolean }
   | { kind: 'refused'; why: OpenRefusal }
   | { kind: 'failed'; error: string };
 
@@ -91,6 +91,21 @@ export function isLphl(url: string): boolean {
   return url.trim().replace(/\/+$/, '') === LPHL_RELAY;
 }
 
+/** Whether the space's server is a free place its server gave by itself (an open place): its token
+ *  is the one kept as such. */
+export function isOpenPlace(data: { url: string; token: string; ownToken: OwnToken }): boolean {
+  const url = data.url.trim();
+  if (!url || !data.token.trim() || data.ownToken.open !== true) return false;
+  const own = ownToken(url, data.token);
+  return data.ownToken.hash === own.hash && data.ownToken.relay.trim().replace(/\/+$/, '') === url.replace(/\/+$/, '');
+}
+
+// What the first space's server is once it has one.
+function ready(data: { url: string; token: string; ownToken: OwnToken }): FirstServer {
+  const url = data.url.trim();
+  return { kind: 'ready', url, lphl: isLphl(url), open: isOpenPlace(data) };
+}
+
 /**
  * Takes the place, when it is still wanted and the open space has no server yet: a token on LPHL's
  * open server, then a queue with it, both kept in the space at once, and the receiver told. With a
@@ -107,9 +122,9 @@ export function takeFirstServer(): Promise<FirstServer> {
       const url = data.url.trim();
       if (url && (data.ownQueue || !isLphl(url))) {
         if (await firstServerWanted(space)) await firstServerDone();
-        return set({ kind: 'ready', url, lphl: isLphl(url) });
+        return set(ready(data));
       }
-      if (!(await firstServerWanted(space))) return set(url ? { kind: 'ready', url, lphl: isLphl(url) } : { kind: 'none' });
+      if (!(await firstServerWanted(space))) return set(url ? ready(data) : { kind: 'none' });
       set({ kind: 'taking' });
       let token = url ? data.token.trim() : '';
       if (!token) {
@@ -120,7 +135,7 @@ export function takeFirstServer(): Promise<FirstServer> {
           return set(why ? { kind: 'refused', why } : { kind: 'failed', error: error instanceof Error ? error.message : String(error) });
         }
         // The token is kept at once: the server has its line now, and a queue made later still finds it.
-        await updateSpaceData(space, key, { url: LPHL_RELAY, token, ownToken: ownToken(LPHL_RELAY, token) });
+        await updateSpaceData(space, key, { url: LPHL_RELAY, token, ownToken: { ...ownToken(LPHL_RELAY, token), open: true } });
       }
       try {
         const ids = await createQueue({ url: LPHL_RELAY, token });
@@ -130,7 +145,7 @@ export function takeFirstServer(): Promise<FirstServer> {
       }
       await firstServerDone();
       placeChanged();
-      return set({ kind: 'ready', url: LPHL_RELAY, lphl: true });
+      return set(ready(await loadSpaceData(space, key)));
     } catch (error) {
       return set({ kind: 'failed', error: error instanceof Error ? error.message : String(error) });
     }
@@ -155,10 +170,10 @@ export async function retryFirstServer(): Promise<void> {
 export async function readFirstServer(): Promise<FirstServer> {
   const data = await loadCurrentSpaceData().catch(() => null);
   const url = data?.url.trim() ?? '';
-  if (url && data?.ownQueue) return set({ kind: 'ready', url, lphl: isLphl(url) });
+  if (data && url && data.ownQueue) return set(ready(data));
   if (state.kind === 'taking' || state.kind === 'refused' || state.kind === 'failed') return state;
   if (await firstServerWanted()) return set({ kind: 'waiting' });
-  return set(url ? { kind: 'ready', url, lphl: isLphl(url) } : { kind: 'none' });
+  return set(data && url ? ready(data) : { kind: 'none' });
 }
 
 /** The open space has no server, and its owner asks for LPHL's (the first home): a place is wanted

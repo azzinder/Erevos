@@ -24,10 +24,11 @@ import { Button, Card, Text } from './ui';
 // The home screen of a space with no chats yet, once Erevos's own chats are on (app/index.tsx): what
 // is ready, and the first person to add: someone beside you (their QR code, or yours), or someone
 // far away (a link). In the app's own colours, as the rest of the home screen. A small pill says the
-// mode and the server; where LPHL's server gave no place, why, with a way to try again or to
-// choose another server; with no server at all (an invite that was not taken, or an Erevos from
-// before), LPHL's to take with one tap; and where permissions are checked, the first one still
-// missing.
+// mode and the server, its dot warning when there is none; then, above the two ways, where LPHL's
+// server gave no place, why, with a way to try again or to choose another server, and with no
+// server at all (an invite that was not taken, or an Erevos from before), LPHL's to take with one
+// tap; under them, on a free place a server gave by itself (an open place), its limits for a day;
+// and where permissions are checked, the first one still missing.
 
 // Why LPHL's open server gave no place.
 function refusalText(why: OpenRefusal): string {
@@ -99,14 +100,17 @@ export function FirstHome() {
     }, []),
   );
   const missing = checks.filter(lacking);
-  const where = server.kind === 'ready' ? (isLphl(server.url) ? 'LPHL' : hostOf(server.url)) : server.kind === 'waiting' || server.kind === 'taking' ? 'LPHL' : t('no server');
+  // A server, or LPHL's on its way: the dot is green; with none, or none given, it warns, and what
+  // to do about it comes first, above the two ways to add someone.
+  const served = server.kind === 'ready' || server.kind === 'waiting' || server.kind === 'taking';
+  const where = server.kind === 'ready' ? (isLphl(server.url) ? 'LPHL' : hostOf(server.url)) : served ? 'LPHL' : t('no server');
   // The asterisks mark the name in the title: none may come from the name itself.
   const title = name ? t('Ready, *{name}*', { name: name.replace(/\*/g, '') }) : t('Ready');
   const parts = title.split('*');
   return (
     <View style={{ alignItems: 'center', gap: space.md, paddingTop: space.xl, paddingHorizontal: space.xl, alignSelf: 'stretch' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, backgroundColor: colors.surface }}>
-        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.success }} />
+        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: served ? colors.success : colors.warning }} />
         <Text variant="caption" tone="muted">
           {t('{mode} · {server}', { mode: MODE_NAMES[mode], server: where })}
         </Text>
@@ -126,10 +130,6 @@ export function FirstHome() {
       <Text tone="muted" style={{ textAlign: 'center' }}>
         {t('Add your first person.')}
       </Text>
-      <View style={{ alignSelf: 'stretch', gap: space.md, marginTop: space.sm }}>
-        <Door icon={<PersonIcon color={colors.primary} size={24} />} title={t('They are beside me')} line={t('They scan your QR code, or you scan theirs')} onPress={() => router.push('/chat?setup=near')} />
-        <Door icon={<GlobeIcon color={colors.primary} size={24} />} title={t('They are far away')} line={t('Send them a link')} onPress={() => router.push('/chat?setup=invite')} />
-      </View>
       {server.kind === 'none' ? (
         <Card style={{ alignSelf: 'stretch' }}>
           <Text variant="caption" tone="muted">
@@ -151,6 +151,15 @@ export function FirstHome() {
             <Button title={t('Another server')} kind="secondary" compact onPress={() => router.push('/chat?setup=relay')} />
           </View>
         </Card>
+      ) : null}
+      <View style={{ alignSelf: 'stretch', gap: space.md, marginTop: space.sm }}>
+        <Door icon={<PersonIcon color={colors.primary} size={24} />} title={t('They are beside me')} line={t('They scan your QR code, or you scan theirs')} onPress={() => router.push('/chat?setup=near')} />
+        <Door icon={<GlobeIcon color={colors.primary} size={24} />} title={t('They are far away')} line={t('Send them a link')} onPress={() => router.push('/chat?setup=invite')} />
+      </View>
+      {server.kind === 'ready' && server.open ? (
+        <Text variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+          {server.lphl ? t('Free on LPHL’s server: up to 20 new contacts, 50 MB of files and 30 calls through it each day.') : t('A free place on this server, with limits for each day.')}
+        </Text>
       ) : null}
       {missing.length > 0 ? (
         <Pressable onPress={() => router.push('/permissions')} accessibilityRole="button" hitSlop={8} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, marginTop: space.sm })}>
