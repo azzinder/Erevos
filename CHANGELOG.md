@@ -58,6 +58,24 @@ and 0.1.15 never came out.
   short. The check now looks again a few times over about four minutes, and says so as it waits, before it says what
   it found; under it, **Check again** looks once more, while the space stays open. Automatic backups into such a folder
   wait the same way, and a check that finds the backup empty says that.
+- **A new first start**: Erevos now sets itself up in five short steps, with a dot for each, in the edition's own
+  colours over a dark or a light ground, as the phone is. **Welcome**: what you do not give, and your name if you like.
+  **What will you use?**: Erevos's chats, the Phone, the SMS and the Collection, each one left off not running at all
+  (not in Erevos Lite, nor where only one is there). **How visible are you?**: the three choices of Settings, SPEED
+  chosen already. **Miss nothing**: every permission Erevos asks for, in five groups by what they are for (Notices,
+  Calls, Messages, In the background, Reminders), with how many are allowed; **Allow all** asks Android's own questions
+  first, then for Erevos as the phone app and as the SMS app, then opens each screen of Android's settings in turn, as
+  you come back from the one before. **Keep it safe**: a password for Erevos, typed twice, with a meter and four tips
+  for a stronger one, the fingerprint or face, and where automatic backups go: **On this device**, in a folder you
+  choose, or **WebDAV** (Nextcloud, ownCloud and others), each set up on the Backups screen that **Done** opens. Moving
+  from another phone leaves out the choice of mode, as the backup brings it, and the computer app and Sailfish OS have
+  no permissions step. Then the home screen says **Ready**, with your name, and offers **They are beside me** and
+  **They are far away**, with a line for a permission still missing. The first start no longer asks whether you have
+  an invite: one that Erevos was opened with still opens once the steps are done, and the ways in with an account at a
+  server, or a server of your own, are under **Another server (for advanced users)** on the mode's step.
+- **Automatic backups only to a server**: automatic backups can now go to a WebDAV server with no folder on the device.
+  The first start's **WebDAV** sets them up so, and **Backups** shows them as **Only to** that server, with a folder on
+  the device optional, for one more copy close at hand. Stopping that server stops them too.
 
 ### Under the hood
 
@@ -116,6 +134,17 @@ and 0.1.15 never came out.
   kept only in the screen's note while the space is open (`lib/backup-making.ts`). DAVx5 makes each file empty on its
   server first and uploads it once written, and reads it back empty until then: an empty backup says so
   (`lib/backup-check.ts`). The checks run it in a DAVx5 folder whose backup comes whole only after a wait.
+- The first start's steps, their dots and the editions' colours come from `lib/first-start.ts` (`startSteps`, `stepAt`,
+  `startLook`), the permissions' groups and the order of **Allow all** from `lib/permission-groups.ts`
+  (`permissionGroups`, `askedInApp`, `nextSettingsScreen`), both checked under Node. The screens are drawn with parts of
+  their own (`components/first-start-look.tsx`): the welcome and the modules in `components/setup.tsx`, the rest in
+  `app/first-steps.tsx`, the first home in `components/first-home.tsx`. **Done** turns the password lock on with the
+  calls Settings makes (`lockWithPassword`, `prepareSpaces`), then the fingerprint (`turnOnBiometric`), and opens
+  Backups with the choice (`/backup?start=device` or `webdav`); the meter is `strengthOf` (`lib/password-strength.ts`).
+  The steps left are kept as before (`lib/setup-after.ts`), so they show again when Erevos closes before **Done**. The
+  Photos permission is not asked: the Collection takes photos and files through Android's own picker, which needs none.
+- Automatic backups with no folder and a WebDAV server go only to that server: `runAutoBackup` already sent them so, and
+  `app/backup.tsx` now sets them up that way, says so, and stops them with the server.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

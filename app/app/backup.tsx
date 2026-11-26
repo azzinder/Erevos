@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 
@@ -263,8 +264,9 @@ export default function Backups() {
   const [checking, setChecking] = useState(false);
   const [fully, setFully] = useState("");
   const stopFull = useRef(false);
-  // A server's fields shown: to add one, under To a server too (add) or Make a backup (make), or to restore from one.
-  const [form, setForm] = useState<"add" | "make" | "restore" | null>(null);
+  // A server's fields shown: to add one, under To a server too (add) or Make a backup (make), or to restore from one;
+  // or, from the first start, the server automatic backups go to (start).
+  const [form, setForm] = useState<"add" | "make" | "restore" | "start" | null>(null);
   const adding = form === "add";
   // The backups on a server to restore from, newest first, once listed.
   const [listed, setListed] = useState<{
@@ -299,6 +301,20 @@ export default function Backups() {
   // How backups to the server go through Tor changes as Tor becomes ready.
   const [, setTorTick] = useState(0);
   useEffect(() => onTorReady(() => setTorTick((n) => n + 1)), []);
+  // Where the first start's last step chose automatic backups to go (app/first-steps.tsx): they
+  // begin here at once, every day, into a folder of this device, or to a WebDAV server once it is
+  // added. Not again when they are on already.
+  const { start: startAt } = useLocalSearchParams<{ start?: string }>();
+  const begun = useRef(false);
+  useEffect(() => {
+    if (begun.current || !CAN_AUTO_BACKUP || (startAt !== "device" && startAt !== "webdav")) return;
+    begun.current = true;
+    void loadAutoBackup().then((on) => {
+      if (on) return;
+      if (startAt === "device") void choose(1);
+      else setForm("start");
+    });
+  }, [startAt]);
 
   if (!CAN_BACK_UP) {
     return (
@@ -433,20 +449,15 @@ export default function Backups() {
       setChecks(await loadChecks());
       if (next?.error) say(t("Not made. {error}", { error: next.error }), true);
       else if (next && !next.folder) {
-        // Restored from a backup made elsewhere: no folder here yet.
+        // No folder here: restored from a backup made elsewhere, or only to the server, as the
+        // first start chose; its card says a folder can be chosen too.
         const choosing = t(
           "Automatic backups need a folder on {device}: choose one.",
           { device: t(THIS_DEVICE) },
         );
-        if (sent?.error)
-          say(
-            `${t("Not sent. {error}", { error: sent.error })} ${choosing}`,
-            true,
-          );
+        if (sent?.error) say(t("Not sent. {error}", { error: sent.error }), true);
         else if (sent)
-          say(
-            `${t("Sent a backup to {server}.", { server: cloudLabel(sent) })} ${choosing}`,
-          );
+          say(t("Sent a backup to {server}.", { server: cloudLabel(sent) }));
         else say(choosing, true);
       } else if (next && sent?.error)
         say(
@@ -473,8 +484,10 @@ export default function Backups() {
   }
 
   async function addServer() {
-    // Added from Make a backup: a backup goes there now, and only there.
+    // Added from Make a backup: a backup goes there now, and only there. Added from the first
+    // start: automatic backups begin, to the server alone until a folder is chosen too.
     const fromMake = form === "make";
+    const fromStart = form === "start";
     say("");
     setBusy(true);
     try {
@@ -489,6 +502,7 @@ export default function Backups() {
       setBusy(false);
     }
     if (CAN_AUTO_BACKUP && auto) await (fromMake ? serverNow() : backUpNow());
+    else if (CAN_AUTO_BACKUP && fromStart) setAsking({ kind: "auto", every: 1, folder: "" });
     else setAsking({ kind: "cloud" });
   }
 
@@ -552,17 +566,28 @@ export default function Backups() {
   }
 
   async function stopServer() {
-    const told = CAN_AUTO_BACKUP && auto
+    // Automatic backups with no folder here went only to the server: they stop with it.
+    const alone = CAN_AUTO_BACKUP && !!auto && !auto.folder;
+    const told = alone
       ? t(
-          "Automatic backups will go only to the folder from now on. Those already on the server stay there until you delete them.",
+          "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.",
+          { device: t(THIS_DEVICE) },
         )
-      : t(
-          "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.",
-        );
+      : CAN_AUTO_BACKUP && auto
+        ? t(
+            "Automatic backups will go only to the folder from now on. Those already on the server stay there until you delete them.",
+          )
+        : t(
+            "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.",
+          );
     if (!(await confirm(t("Stop sending to the server"), told))) return;
     await stopCloudBackup();
     setCloud(null);
-    setChecks(await saveCheck("server", null));
+    if (alone) {
+      await stopAutoBackup();
+      setAuto(null);
+    }
+    setChecks(await (alone ? loadChecks() : saveCheck("server", null)));
     say(t("Backups no longer go to the server."));
   }
 
@@ -1246,6 +1271,20 @@ export default function Backups() {
         )}
       </Text>
 
+      {form === "start" && !cloud ? (
+        <>
+          <SectionTitle title={t("Automatic backups to a server")} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t(
+                "Add the WebDAV folder they go to, such as one in your Nextcloud. Then choose their password: from then on Erevos sends one by itself every day, encrypted.",
+              )}
+            </Text>
+            {addForm}
+          </Card>
+        </>
+      ) : null}
+
       <SectionTitle title={t("Make a backup")} />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
@@ -1429,7 +1468,55 @@ export default function Backups() {
               />
             ))}
           </Row>
-          {auto && !auto.folder ? (
+          {auto && !auto.folder && cloud ? (
+            <Card>
+              <Text variant="bodyStrong">
+                {t("Only to {server}", { server: cloudLabel(cloud) })}
+              </Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {cloud.last
+                  ? t("Last one sent {when}.", { when: whenText(cloud.last) })
+                  : t("None sent yet.")}{" "}
+                {t(
+                  "Made while Erevos is open, and as it goes to the background, once the last one is older than that. A folder on {device} as well keeps one more copy close at hand.",
+                  { device: t(THIS_DEVICE) },
+                )}
+              </Text>
+              {auto.error ? (
+                <Text variant="caption" color={colors.danger} style={hint}>
+                  {t(
+                    "The last one failed: {error} Erevos tries again next time it opens.",
+                    { error: auto.error },
+                  )}
+                </Text>
+              ) : null}
+              <Row wrap>
+                <Button
+                  title={busy ? t("One moment…") : t("Back up now")}
+                  kind="secondary"
+                  compact
+                  onPress={backUpNow}
+                  disabled={busy}
+                />
+                {SHELL === "sailfish" ? null : (
+                  <Button
+                    title={t("Choose a folder")}
+                    kind="secondary"
+                    compact
+                    onPress={moveAuto}
+                    disabled={busy}
+                  />
+                )}
+                <Button
+                  title={t("Change password")}
+                  kind="secondary"
+                  compact
+                  onPress={changePassword}
+                  disabled={busy}
+                />
+              </Row>
+            </Card>
+          ) : auto && !auto.folder ? (
             <Card>
               <Text variant="bodyStrong">
                 {t("No folder on {device} yet", { device: t(THIS_DEVICE) })}

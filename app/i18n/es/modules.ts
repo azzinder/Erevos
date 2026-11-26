@@ -30,9 +30,6 @@ export const modulesText: Record<string, string> = {
   "The Phone and its icon go. Nothing is deleted.": "El Teléfono y su icono desaparecen. No se borra nada.",
   "The SMS leave the list, and their icon goes. Nothing is deleted.": "Los SMS salen de la lista y su icono desaparece. No se borra nada.",
   "Its chats leave the list, and their messages do not come while it is off. Nothing is deleted: the account and the chats are there again when you turn it on.": "Sus chats salen de la lista y sus mensajes no llegan mientras esté desactivado. No se borra nada: la cuenta y los chats vuelven a estar cuando lo activas.",
-  "Setting up Erevos · step {n} of {m}": "Configurando Erevos · paso {n} de {m}",
-  "Welcome to Erevos": "Te damos la bienvenida a Erevos",
-  "What Android should allow": "Qué debe permitir Android",
   "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
     "Se acaba de restaurar una copia. Lo que Android permite hacer a Erevos, y qué apps hacen las llamadas y envían los SMS, se quedan en cada teléfono y no vienen con ninguna copia: esto es lo que necesitan en este teléfono los módulos activados.",
 };

@@ -432,6 +432,7 @@ export default function ChatScreen() {
               nearbyOpen={setup === 'nearby'}
               inviteNow={setup === 'invite'}
               codeNow={setup === 'code'}
+              nearNow={setup === 'near'}
               shown={!hiddenKey}
               onLook={setChatLook}
             />
@@ -483,7 +484,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, nearbyOpen = false, inviteNow = false, codeNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, nearbyOpen = false, inviteNow = false, codeNow = false, nearNow = false, shown, callOnly = false, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -501,6 +502,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   inviteNow?: boolean;
   /** Opens on I have their code: an invite or a link to scan, paste or type (First steps' I have an invite). */
   codeNow?: boolean;
+  /** Opens on Near me: someone beside you scans your QR code, or you scan theirs (the first home's They are beside me). */
+  nearNow?: boolean;
   shown: boolean;
   /** Hidden chats run only for a call answered with no PIN (ChatScreen): its screen shows no name, and they close as it ends. */
   callOnly?: boolean;
@@ -629,8 +632,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // page of its own. Opened from elsewhere on one of them (the relay's settings, the phones nearby,
   // the home screen's Invite, First steps' I have an invite), Back leaves New chat as it came, not
   // for its first page.
-  const [door, setDoor] = useState<Door>(relaySettings || nearbyOpen ? 'advanced' : inviteNow ? 'far' : codeNow ? 'code' : 'root');
-  const doorFromOutside = useRef(relaySettings || nearbyOpen || inviteNow || codeNow);
+  const [door, setDoor] = useState<Door>(relaySettings || nearbyOpen ? 'advanced' : inviteNow ? 'far' : codeNow ? 'code' : nearNow ? 'near' : 'root');
+  const doorFromOutside = useRef(relaySettings || nearbyOpen || inviteNow || codeNow || nearNow);
   const doorNow = useRef(door);
   doorNow.current = door;
   // You are connected, where the doors end: who was just added.

@@ -24,7 +24,6 @@ export const connect: Record<string, string> = {
   "through a second server": "μέσω δεύτερου server",
   "Paste their contact link or invite": "Επικόλλησε σύνδεσμο ή πρόσκληση",
   "No hidden chats yet. Add a contact below, or move a chat here from its details.": "Καμία κρυφή συνομιλία ακόμα. Πρόσθεσε μια επαφή παρακάτω, ή μετάφερε εδώ μια συνομιλία από τις λεπτομέρειές της.",
-  "I have an invite": "Έχω πρόσκληση",
   "Give someone who uses Erevos your QR code or link. Texts go through Nostr.": "Δώσε σε κάποιον που έχει Erevos τον κωδικό QR ή τον σύνδεσμό σου. Τα κείμενα πηγαίνουν μέσω Nostr.",
   "Give someone who uses Erevos your QR code or link. You reach each other when near, over Wi-Fi or Bluetooth.": "Δώσε σε κάποιον που έχει Erevos τον κωδικό QR ή τον σύνδεσμό σου. Βρίσκεστε όταν είστε κοντά, μέσω Wi-Fi ή Bluetooth.",
   "If they have a server, an invite to it comes to this phone by itself, and photos, voice messages and calls work too.": "Αν έχει server, μια πρόσκληση σε αυτόν έρχεται μόνη της σε αυτό το τηλέφωνο, και δουλεύουν και οι φωτογραφίες, τα φωνητικά μηνύματα και οι κλήσεις.",

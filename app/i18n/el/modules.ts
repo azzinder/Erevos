@@ -42,9 +42,6 @@ export const modulesText: Record<string, string> = {
   'The SMS leave the list, and their icon goes. Nothing is deleted.': 'Τα SMS φεύγουν από τη λίστα, και το εικονίδιό τους φεύγει. Τίποτα δεν σβήνεται.',
   'Its chats leave the list, and their messages do not come while it is off. Nothing is deleted: the account and the chats are there again when you turn it on.':
     'Οι συνομιλίες του φεύγουν από τη λίστα, και τα μηνύματά τους δεν έρχονται όσο είναι ανενεργό. Τίποτα δεν σβήνεται: ο λογαριασμός και οι συνομιλίες είναι πάλι εκεί όταν το ενεργοποιήσεις.',
-  'Setting up Erevos · step {n} of {m}': 'Ρύθμιση του Erevos · βήμα {n} από {m}',
-  'Welcome to Erevos': 'Καλώς ήρθες στο Erevos',
-  'What Android should allow': 'Τι πρέπει να επιτρέψει το Android',
   "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
     "Μόλις έγινε επαναφορά αντιγράφου. Ό,τι επιτρέπει το Android στο Erevos, και ποιες εφαρμογές κάνουν τις κλήσεις και στέλνουν τα SMS, μένουν σε κάθε τηλέφωνο και δεν έρχονται με κανένα αντίγραφο: αυτά χρειάζονται σε αυτό το τηλέφωνο οι ενότητες που είναι ενεργές.",
 };

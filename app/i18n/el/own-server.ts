@@ -10,7 +10,6 @@ export const ownServerText: Record<string, string> = {
   "I have no invite": "Δεν έχω πρόσκληση",
   "My account is at another server…": "Ο λογαριασμός μου είναι σε άλλον server…",
   "Start without a server": "Ξεκίνα χωρίς server",
-  "With an account at a server such as LPHL, with a server of your own, or with no server at all. The next screen says what each one means.": "Με λογαριασμό σε έναν server όπως το LPHL, με δικό σου server, ή χωρίς κανέναν server. Η επόμενη οθόνη εξηγεί τι σημαίνει το καθένα.",
   "That is not a web address. Type the folder as you were given it, such as cloud.example.org/erevos-models.": "Αυτή δεν είναι διεύθυνση web. Γράψε τον φάκελο όπως σου τον δώσανε, π.χ. cloud.example.org/erevos-models.",
   "Download from another server…": "Λήψη από άλλον server…",
   "Back to the usual server": "Πίσω στον συνηθισμένο server",

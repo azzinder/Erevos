@@ -192,9 +192,10 @@ test('a phone with no relay yet is offered every way to begin on one page, in pl
   const tried = joining.indexOf('await createQueue({ url, token: token || undefined })');
   assert.ok(tried > 0);
   for (const kept of ['setRelayUrl(url)', 'setRelayToken(token)', 'setOwnQueue(']) assert.ok(joining.indexOf(kept) > tried, kept);
-  // The first start names both ways in, and the one with no invite opens that page (setup=relay).
+  // The first start's mode step leaves the other ways, an account at a server or one's own, to the link
+  // Another server (for advanced users), which opens that page (setup=relay).
   const first = read('../app/first-steps.tsx');
-  assert.ok(first.includes("{t('I have an invite')}") && first.includes("{t('I have no invite')}"));
+  assert.ok(first.includes("t('Another server (for advanced users)')"));
   assert.ok(first.includes("router.push('/chat?setup=relay')"));
   assert.ok(chat.includes("relaySettings={setup === 'relay'}") && chat.includes("useState<Door>(relaySettings || nearbyOpen ? 'advanced'"));
   // Whoever has neither an account nor a server is told which way is theirs, where that way is offered.

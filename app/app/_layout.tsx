@@ -80,6 +80,8 @@ import '../lib/sms-share';
 import { startChunkChannel } from '../lib/chunk-channel';
 import { followModuleIcons } from '../lib/module-icons';
 import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules } from '../lib/modules';
+import { bringsServer } from '../lib/invite-server';
+import { retryFirstServer, wantFirstServer } from '../lib/open-place';
 import { keepSetupAfter } from '../lib/setup-after';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
@@ -256,6 +258,8 @@ export default function RootLayout() {
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
       // The Collection copied to its server, when it has one (lib/collection-webdav.ts).
       collectionServerOpened();
+      // A place on LPHL's open server the first start still wants is taken now (lib/open-place.ts).
+      void retryFirstServer().catch(() => undefined);
       // What the camera took for this space while Erevos was locked comes in, and it takes for
       // this space from now on (lock/camera-drop.ts).
       cameraFollows(passwordLock);
@@ -343,6 +347,9 @@ export default function RootLayout() {
     async ({ modules, name, restore, linkPhone }: SetupChoice) => {
       await setModules(modules);
       const invite = peekLink() ?? undefined;
+      // Erevos's own chats, for a new start: the first space takes a place on LPHL's open server
+      // once its mode is chosen (lib/open-place.ts), unless the invite it opened with brings a server.
+      if (modules.includes('erevos') && !restore && !linkPhone && !bringsServer(invite)) await wantFirstServer(0).catch(() => undefined);
       const kept = await keepSetupAfter({ name, modules, ...(restore ? { restore: 'wanted' as const } : {}), ...(linkPhone ? { linkPhone } : {}), ...(invite ? { invite } : {}) }).then(
         () => true,
         () => false,

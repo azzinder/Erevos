@@ -26,7 +26,8 @@ import { Card, Text, TextButton } from './ui';
 // as Settings shows them at its top and their screen (app/direct.tsx) does, in the words of the
 // first start's third screen. Each says who sees the address, and how calls go.
 
-const SAYS: Record<Mode, { line: string; calls: string; server: boolean; contacts: boolean }> = {
+/** What each mode says: who sees the address, and how calls go (the first start's third screen shows them too). */
+export const modeSays: Record<Mode, { line: string; calls: string; server: boolean; contacts: boolean }> = {
   speed: { line: mark('The servers and your contacts see your address.'), calls: mark('Calls go straight · the fastest'), server: true, contacts: true },
   anonymous: { line: mark('Only the server sees it, never your contacts.'), calls: mark('Calls through a server'), server: true, contacts: false },
   invisible: { line: mark('No one sees it. Everything goes through Tor.'), calls: mark('No voice or video calls'), server: false, contacts: false },
@@ -102,7 +103,7 @@ function Sees({ who, sees }: { who: string; sees: boolean }) {
 // cannot be had here (INVISIBLE where this build has no Tor).
 function ModeRow({ mode, chosen, faint, onPress }: { mode: Mode; chosen: boolean; faint: boolean; onPress: () => void }) {
   const colors = useColors();
-  const says = SAYS[mode];
+  const says = modeSays[mode];
   const name = MODE_NAMES[mode];
   return (
     <Pressable

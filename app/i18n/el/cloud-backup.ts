@@ -241,4 +241,14 @@ export const cloudBackup: Record<string, string> = {
     "Με τα αυτόματα αντίγραφα ανοιχτά, πηγαίνει κάθε φορά μόνο ό,τι είναι νέο.",
   "The server keeps the {n} newest whole.":
     "Ο server κρατά τα {n} πιο πρόσφατα ολόκληρα.",
+  "Automatic backups to a server":
+    "Αυτόματα αντίγραφα σε server",
+  "Add the WebDAV folder they go to, such as one in your Nextcloud. Then choose their password: from then on Erevos sends one by itself every day, encrypted.":
+    "Πρόσθεσε τον φάκελο WebDAV όπου θα πηγαίνουν, π.χ. έναν στο Nextcloud σου. Μετά διάλεξε τον κωδικό τους: από εκεί και πέρα το Erevos στέλνει ένα μόνο του κάθε μέρα, κρυπτογραφημένο.",
+  "Only to {server}":
+    "Μόνο στο {server}",
+  "Made while Erevos is open, and as it goes to the background, once the last one is older than that. A folder on {device} as well keeps one more copy close at hand.":
+    "Γίνεται όσο το Erevos είναι ανοιχτό, και όταν πηγαίνει στο παρασκήνιο, μόλις το τελευταίο είναι παλαιότερο από αυτό. Ένας φάκελος και σε {device} κρατά ένα ακόμα αντίγραφο κοντά σου.",
+  "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.":
+    "Σταματούν και τα αυτόματα αντίγραφα, αφού δεν έχουν φάκελο σε {device}. Όσα είναι ήδη στον server μένουν εκεί μέχρι να τα σβήσεις.",
 };

@@ -24,7 +24,6 @@ export const connect: Record<string, string> = {
   "through a second server": "par un second serveur",
   "Paste their contact link or invite": "Colle son lien de contact ou son invitation",
   "No hidden chats yet. Add a contact below, or move a chat here from its details.": "Pas encore de discussions masquées. Ajoute un contact ci-dessous, ou déplace ici une discussion depuis ses détails.",
-  "I have an invite": "J’ai une invitation",
   "Give someone who uses Erevos your QR code or link. Texts go through Nostr.": "Donne ton code QR ou ton lien à quelqu’un qui utilise Erevos. Les textes passent par Nostr.",
   "Give someone who uses Erevos your QR code or link. You reach each other when near, over Wi-Fi or Bluetooth.": "Donne ton code QR ou ton lien à quelqu’un qui utilise Erevos. Vous vous joignez quand vous êtes proches, par Wi-Fi ou Bluetooth.",
   "If they have a server, an invite to it comes to this phone by itself, and photos, voice messages and calls work too.": "S’il a un serveur, une invitation à celui-ci arrive toute seule sur ce téléphone, et les photos, les messages vocaux et les appels fonctionnent aussi.",

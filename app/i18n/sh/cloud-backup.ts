@@ -239,4 +239,14 @@ export const cloudBackup: Record<string, string> = {
     "S uključenim automatskim kopijama svaki put ide samo ono što je novo.",
   "The server keeps the {n} newest whole.":
     "Server čuva {n} najnovije cijele.",
+  "Automatic backups to a server":
+    "Automatske rezervne kopije na server",
+  "Add the WebDAV folder they go to, such as one in your Nextcloud. Then choose their password: from then on Erevos sends one by itself every day, encrypted.":
+    "Dodajte WebDAV folder u koji idu, recimo jedan u vašem Nextcloudu. Zatim izaberite njihovu lozinku: od tada Erevos sam šalje jednu svaki dan, šifriranu.",
+  "Only to {server}":
+    "Samo na {server}",
+  "Made while Erevos is open, and as it goes to the background, once the last one is older than that. A folder on {device} as well keeps one more copy close at hand.":
+    "Pravi se dok je Erevos otvoren, i kad ode u pozadinu, čim je posljednja starija od toga. Folder i na {device} čuva još jednu kopiju pri ruci.",
+  "Automatic backups stop too, as they have no folder on {device}. Those already on the server stay there until you delete them.":
+    "Zaustavljaju se i automatske rezervne kopije, jer nemaju folder na {device}. One koje su već na serveru ostaju tamo dok ih ne obrišete.",
 };

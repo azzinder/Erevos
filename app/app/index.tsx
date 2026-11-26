@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatActions, useArrangedChats } from '../components/chat-actions';
 import { ChatRow, MyselfRow } from '../components/chat-row';
 import { NewSmsSheet } from '../components/new-sms-sheet';
+import { FirstHome } from '../components/first-home';
+import { firstServer, onFirstServer } from '../lib/open-place';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
 import { BellIcon, ChevronIcon, GearIcon, MoreIcon, PencilIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
@@ -542,6 +544,10 @@ function Home() {
         load();
         lookOnline();
       });
+      // And the server, once the place on LPHL's open server is taken (lib/open-place.ts).
+      const stopServer = onFirstServer(() => {
+        if (firstServer().kind === 'ready') load();
+      });
       // And an SMS, as Erevos is the SMS app, and a change of the space's order of its SMS.
       const sms = onSmsEvent('onSms', load);
       const stopOrder = onSmsOrderChanged(load);
@@ -562,6 +568,7 @@ function Home() {
         stopOrder();
         stopGroups();
         stopAsk();
+        stopServer();
       };
     }, [again]),
   );
@@ -1008,20 +1015,22 @@ function Home() {
                 </Row>
               </View>
             ) : (
-              <View style={styles.empty}>
-                <Logo size={64} />
-                <Text variant="heading" style={styles.emptyText}>
-                  {t('No chats yet')}
-                </Text>
-                {erevosOn ? (
-                  <Text tone="muted" style={styles.emptyText}>
-                    {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
+              erevosOn && linkedRole() !== 'linked' ? (
+                // Ready, with the first person to add (components/first-home.tsx).
+                <FirstHome />
+              ) : (
+                <View style={styles.empty}>
+                  <Logo size={64} />
+                  <Text variant="heading" style={styles.emptyText}>
+                    {t('No chats yet')}
                   </Text>
-                ) : null}
-                {erevosOn && relay === 'ready' && linkedRole() !== 'linked' ? (
-                  <Button title={t('Invite someone')} onPress={() => router.push('/chat?setup=invite')} />
-                ) : null}
-              </View>
+                  {erevosOn ? (
+                    <Text tone="muted" style={styles.emptyText}>
+                      {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
+                    </Text>
+                  ) : null}
+                </View>
+              )
             )
           }
           ListFooterComponent={

@@ -10,7 +10,6 @@ export const ownServerText: Record<string, string> = {
   "I have no invite": "No tengo invitación",
   "My account is at another server…": "Mi cuenta está en otro servidor…",
   "Start without a server": "Empezar sin servidor",
-  "With an account at a server such as LPHL, with a server of your own, or with no server at all. The next screen says what each one means.": "Con una cuenta en un servidor como LPHL, con un servidor propio o sin ningún servidor. La pantalla siguiente explica qué significa cada opción.",
   "That is not a web address. Type the folder as you were given it, such as cloud.example.org/erevos-models.": "Eso no es una dirección web. Escribe la carpeta como te la dieron, por ejemplo cloud.example.org/erevos-models.",
   "Download from another server…": "Descargar de otro servidor…",
   "Back to the usual server": "Volver al servidor habitual",

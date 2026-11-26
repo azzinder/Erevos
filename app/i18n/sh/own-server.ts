@@ -10,7 +10,6 @@ export const ownServerText: Record<string, string> = {
   "I have no invite": "Nemam pozivnicu",
   "My account is at another server…": "Moj račun je na drugom serveru…",
   "Start without a server": "Počnite bez servera",
-  "With an account at a server such as LPHL, with a server of your own, or with no server at all. The next screen says what each one means.": "S računom na serveru kao što je LPHL, s vlastitim serverom, ili bez ikakvog servera. Sljedeći ekran objašnjava šta svako od toga znači.",
   "That is not a web address. Type the folder as you were given it, such as cloud.example.org/erevos-models.": "To nije web adresa. Upišite folder onako kako ste ga dobili, na primjer cloud.example.org/erevos-models.",
   "Download from another server…": "Preuzmi s drugog servera…",
   "Back to the usual server": "Nazad na uobičajeni server",
