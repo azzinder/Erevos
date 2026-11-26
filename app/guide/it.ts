@@ -80,8 +80,47 @@ Questa parte si apre anche da **Impostazioni** → **Generali** → **Informazio
 
 Erevos si scarica dalla sua pagina delle versioni, un file per ogni sistema: vedi [Aggiornamenti](#updates) per dove, e
 per come aggiornarlo. Funziona su Android, su computer (Linux, macOS e Windows), su Sailfish OS e, dal browser, su
-iPhone. Se sei nuovo, comincia con un invito da qualcuno che lo usa: un codice QR o un link, e sei dentro, con quella
-persona già tra i tuoi contatti (vedi Invitare qualcuno di nuovo, in [Chat tramite un server](#relay)).
+iPhone. Se sei nuovo, aprilo e basta: al primo avvio, come qui sotto, Erevos prende da solo un posto per i tuoi messaggi
+sul server di LPHL, senza numero di telefono, e-mail o account. Un invito da qualcuno che lo usa, un codice QR o un
+link, ti porta dentro subito, con quella persona già tra i tuoi contatti (vedi Invitare qualcuno di nuovo, in [Chat
+tramite un server](#relay)).
+
+La primissima volta che si avvia, Erevos si configura in pochi brevi passi, con un punto per ciascuno. Prima che si apra
+il suo primo spazio: **Benvenuto in Erevos**, con ciò che non dai (né numero di telefono, né e-mail, né nome utente, né
+account: aggiungi persone con un codice QR o un link) e un nome per i tuoi contatti se lo vuoi, con la lingua in alto{~;
+poi **Cosa userai?**, i moduli (vedi [Moduli](#modules)): ciò che disattivi non funziona affatto. Le chat di Erevos, il
+Telefono, gli SMS e la Raccolta sono attivi all’inizio}{+, le altre reti, sotto **Altre reti**, disattivate}. Poi, nello
+spazio:
+
+1. **Quanto sei visibile?**: le tre scelte di [Quanto sei visibile?](#direct), con SPEED già scelta. Quando continui,
+   Erevos prende da solo un posto per i tuoi messaggi sul server di LPHL, senza invito e senza account (vedi **Un posto
+   aperto** in [Chat tramite un server](#relay)), a meno che l’invito con cui Erevos è stato aperto non porti un server
+   suo. **Altro server (per utenti esperti)**, sotto le scelte, apre gli altri modi per entrare: un account su un
+   server, o un server tuo.
+2. **Non perdere niente**: ogni autorizzazione che Erevos chiede, in cinque gruppi secondo ciò a cui servono (Notifiche,
+   Chiamate, Messaggi, In background, Promemoria), con quante sono consentite. **Consenti tutto** pone prima le domande
+   che Android pone in Erevos stesso{~, poi per Erevos come app Telefono e come app SMS}, poi apre una dopo l’altra ogni
+   schermata delle impostazioni di Android, quando torni da quella prima; **Continua senza** le lascia a
+   **Impostazioni** → **Generali** → **Autorizzazioni**. In un browser il passo ha ciò che chiede il browser; l’app per
+   computer non ha questo passo.
+3. **Tienilo al sicuro**: una password per Erevos, digitata due volte, con un indicatore e quattro consigli per averne
+   una più forte, l’impronta o il volto, e dove vanno i backup automatici: **Su questo dispositivo**, in una cartella
+   che scegli, o **WebDAV** (Nextcloud, ownCloud e altri), ciascuno impostato nella schermata Backup che apre **Fatto**
+   (vedi [Backup](#backup)).
+
+Poi la schermata principale dice **Pronto**, con il tuo nome, e offre **È accanto a me** e **È lontano** per il tuo
+primo contatto, con una riga per un’autorizzazione ancora mancante. Fino a **Fatto**, i passi ricompaiono all’avvio di
+Erevos. Aperto con un invito, Erevos lo mostra a passi finiti.
+
+- **Il nome:** non è un nome utente: nessuno lo cerca, e non deve essere unico. Va, cifrato, solo a chi aggiungi, e **Il
+  mio nome** sotto Impostazioni → Privacy e sicurezza lo cambia.
+- **Passare da un altro telefono:** su Android, **Portalo qui**, accanto a **Ho già Erevos su un altro telefono** nella
+  prima schermata, salta il nome{~ e i moduli}, che il backup porta. Lo spazio si apre, **Apri Backup** lo ripristina
+  (vedi [Passare a un nuovo telefono](#new-phone)), e i passi proseguono senza **Quanto sei visibile?**, che il backup
+  porta anch’esso: le autorizzazioni, poi l’impronta e dove vanno i backup automatici, che restano con ogni telefono; un
+  blocco con password portato dal backup risulta attivo. **Non ho ancora un backup** dice come farne uno, e **Inizia
+  senza backup** comincia come qualcuno di nuovo.
+- [~] **Su un computer o in un browser:** **Collega al mio telefono** salta i passi e apre **Dispositivi collegati**.
 
 La schermata principale è l’elenco delle tue chat, con in cima quella che si è mossa per ultima. Ognuna mostra
 l’immagine del contatto, l’ultimo messaggio con i suoi segni, quando è arrivato, e quanti dei suoi messaggi non hai
@@ -340,25 +379,8 @@ crittografati end-to-end, con le chat nascoste), il **Telefono**{- e}{+,} gli **
 **XMPP**}. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono e gli SMS ci sono solo su Android, la Raccolta su Android, nell’app per computer, nella web app e su Sailfish OS. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
 più, almeno uno: **Impostazioni** → **Generali** → **Moduli** attiva o disattiva ciascuno in qualsiasi momento.
 
-La primissima volta che si avvia, Erevos si configura come fa un installer. Prima che si apra il suo primo spazio: ciò
-che non dai (né numero di telefono, né e-mail, né nome utente, né account: aggiungi persone con un codice QR o un link,
-oppure ti invitano loro), un nome per i tuoi contatti se lo vuoi, e la lingua; poi quali moduli usare, ciascuno con ciò
-che fa. Poi, nello spazio: una schermata per ogni modulo scelto, con come iniziare (per Erevos, come entri; per il
-Telefono e gli SMS, Erevos come app Telefono e come app SMS{+; per Nostr, Matrix e XMPP, il tuo account lì}) e ciò che
-Android, o il browser, deve consentire per esso. Ogni autorizzazione è nella prima schermata che ne ha bisogno, e
-**Consenti tutto, uno per uno** pone le domande che Android pone, nello stesso Erevos, una dopo l’altra. Poi il blocco
-con password e i backup automatici, poi ciò che è pronto e ciò che manca, con **Invita qualcuno**. **Il resto più
-tardi** lascia il resto alle Impostazioni; finché non finisci o rimandi, i passi ricompaiono all’avvio di Erevos. Aperto
-con un invito, Erevos lo mostra a passi finiti. Dopo un aggiornamento ogni modulo resta attivo, come prima, finché non
-lo cambi.
-
-- **Il nome:** non è un nome utente: nessuno lo cerca, e non deve essere unico. Va, cifrato, solo a chi aggiungi, e **Il
-  mio nome** sotto Impostazioni → Privacy e sicurezza lo cambia.
-- **Passare da un altro telefono:** su Android, **Ho già Erevos su un altro telefono** salta il nome e i moduli, che
-  arrivano con il backup. Lo spazio si apre, **Apri Backup** lo ripristina (vedi [Passare a un nuovo
-  telefono](#new-phone)), e seguono le schermate dei moduli che porta, poi l’impronta e la cartella dei backup
-  automatici, che restano con ogni telefono. **Non ho ancora un backup** dice come farne uno.
-- **Su un computer o in un browser:** **Collega al mio telefono** salta i passi e apre **Dispositivi collegati**.
+Al primo avvio, **Cosa userai?** li sceglie, ciascuno con ciò che fa (vedi [Per iniziare](#start)). Dopo un
+aggiornamento ogni modulo resta attivo, come prima, finché non li cambi.
 
 - **Disattivato:** un modulo disattivato non si avvia: niente di esso funziona, aspetta su un server o squilla, quindi
   Erevos è più leggero, si apre più in fretta e consuma meno batteria. Non compare da nessuna parte: non nella schermata
@@ -623,9 +645,19 @@ chat nascoste chiuse.
 
 ### Modi per entrare nel server
 
-Un server che richiede un token fa entrare un telefono in tre modi. Ogni modo finisce con un token tutto del telefono
+Un server che richiede un token fa entrare un telefono in quattro modi. Ogni modo finisce con un token tutto del telefono
 lì, così chi gestisce il server può togliere un singolo telefono da solo.
 
+- **Un posto aperto:** un server che li dà, come quello di LPHL, dà da solo un posto a un telefono che lì non ne ha uno,
+  senza invito e senza account. Al primo avvio, quando scegli quanto sei visibile, Erevos ne prende uno sul server di
+  LPHL e ci crea la tua coda (vedi [Per iniziare](#start)); **Usa il server di LPHL**, nella schermata principale di uno
+  spazio senza server e senza chat, ne prende uno anch’esso. Il telefono fa il suo token da solo e dà al server solo il
+  suo SHA-256. Un posto così è per le tue chat: non può invitare né prestare posti, e ogni giorno può creare 20 code,
+  far passare dal server 50 MB di file e prendere 30 volte ciò che serve a una chiamata tramite il server. Il server ne
+  dà 1000 al massimo, 100 al giorno e 3 al giorno a uno stesso indirizzo internet, e toglie quello il cui telefono non
+  si è collegato da 60 giorni, a meno che chi lo gestisce non abbia scelto altro. Conta gli indirizzi solo per il
+  giorno, in memoria, e non li annota mai. Quando non ne dà nessuno, la schermata principale dice perché, con
+  **Riprova** e **Altro server**, ed Erevos riprova a ogni apertura.
 - **Un invito:** un codice QR o un link da un telefono già sul server (vedi Invitare qualcuno di nuovo più sotto). Niente
   da scrivere, e siete subito contatti.
 - **Un account:** **Accedi con LPHL**, quando il server lo offre (vedi Accedere al server più sotto). Qualsiasi account
@@ -651,7 +683,8 @@ lì, così chi gestisce il server può togliere un singolo telefono da solo.
 
 **Perché:** il server dà a ogni connessione un suo thread, quindi ne serve solo un certo numero insieme; e aggiunge solo
 un certo numero di righe al giorno per i telefoni entrati con il suo unico token, così un token finito dove non doveva
-non può riempire il suo file dei token.
+non può riempire il suo file dei token. I posti aperti sono contati allo stesso modo, perché nessuno possa prenderli
+tutti, e uno che non dà alcun accesso non può far entrare altri.
 
 ### Invitare qualcuno di nuovo
 
@@ -3656,7 +3689,9 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
    bisogno, ed elimina i file di cui nessuno ha bisogno. Uno che è fallito viene ritentato quando si apre uno spazio,
    o un’ora dopo. Sotto ci sono **Fai il
    backup ora**, **Cambia cartella** e **Cambia password**; **Disattivato** li ferma, e quelli fatti restano nella
-   cartella.
+   cartella. Possono anche andare solo a un server, senza cartella qui: **WebDAV**, al primo avvio, li imposta così,
+   ogni giorno, e la loro scheda dice allora **Solo a** e il nome del server, con **Scegli una cartella** per un’altra
+   copia a portata di mano. **Smetti di inviare**, per quel server, li ferma anch’esso.
 3. **Anche su un server:** un backup può andare anche in una cartella su un server che scegli tu e che parla WebDAV,
    come il tuo Nextcloud. **Aggiungi un server** sotto **Anche su un server**, o **Su un server (WebDAV)** sotto
    **Crea un backup**, chiede l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per

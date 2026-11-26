@@ -18,7 +18,7 @@ export const setupText: Record<string, string> = {
   'Start without a backup': 'Počni bez rezervne kopije',
   'I have no backup yet': 'Još nemam rezervnu kopiju',
   'A password for Erevos': 'Lozinka za Erevos',
-  'Ready': 'Gotovo',
+  'Ready': 'Spremno',
   'It opens after the setup: the invite waits for you.': 'Otvara se nakon postavljanja: poziv vas čeka.',
   'What will you use?': 'Što ćete koristiti?',
   'Choose at least one for chats: the Collection alone has nothing to open.':

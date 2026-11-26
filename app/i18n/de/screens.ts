@@ -315,7 +315,7 @@ export const screens: Record<string, string> = {
   'Its places for today are taken: try again tomorrow.': 'Seine Plätze für heute sind vergeben: versuche es morgen wieder.',
   'Too many from this connection today: try again tomorrow.': 'Zu viele von dieser Verbindung heute: versuche es morgen wieder.',
   'no server': 'kein Server',
-  'Ready, *{name}*': 'Fertig, *{name}*',
+  'Ready, *{name}*': 'Bereit, *{name}*',
   '{mode} · {server}': '{mode} · {server}',
   'Add your first person.': 'Füge deine erste Person hinzu.',
   'They are beside me': 'Die Person ist neben mir',

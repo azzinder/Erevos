@@ -18,7 +18,7 @@ export const setupText: Record<string, string> = {
   'Start without a backup': 'Ohne Backup anfangen',
   'I have no backup yet': 'Ich habe noch kein Backup',
   'A password for Erevos': 'Ein Passwort für Erevos',
-  'Ready': 'Fertig',
+  'Ready': 'Bereit',
   'It opens after the setup: the invite waits for you.':
     'Sie öffnet sich nach der Einrichtung: die Einladung wartet auf dich.',
   'What will you use?': 'Was wirst du nutzen?',

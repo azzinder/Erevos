@@ -78,8 +78,44 @@ Ovaj dio se otvara i iz **Postavke** → **Općenito** → **O Erevosu**.
 
 Erevos se preuzima s njegove stranice izdanja, po jedna datoteka za svaki sistem: pogledajte [Ažuriranja](#updates) za
 to gdje i kako ga ažurirati. Radi na Androidu, na računaru (Linux, macOS i Windows), na Sailfish OS-u i, iz
-preglednika, na iPhoneu. Ako ste novi, počnite s pozivnicom od nekoga ko ga koristi: jedan QR kod ili link, i već ste
-unutra, s tom osobom kao kontaktom (pogledajte Pozivanje nekoga novog, pod [Razgovor preko servera](#relay)).
+preglednika, na iPhoneu. Ako ste novi, jednostavno ga otvorite: pri prvom pokretanju, kao dolje, Erevos sam uzima mjesto
+za vaše poruke na LPHL-ovom serveru, bez broja telefona, e-pošte ili računa. Pozivnica od nekoga ko ga koristi, jedan QR
+kod ili link, odmah vas uvodi unutra, s tom osobom kao kontaktom (pogledajte Pozivanje nekoga novog, pod [Razgovor preko
+servera](#relay)).
+
+Pri sasvim prvom pokretanju Erevos se postavlja u nekoliko kratkih koraka, s tačkom za svaki. Prije nego se otvori
+njegov prvi prostor: **Dobro došli u Erevos**, s onim što ne dajete (ni broj telefona, ni e-poštu, ni korisničko ime, ni
+račun: ljude dodajete QR kodom ili linkom) i imenom za vaše kontakte ako ga želite, s jezikom na vrhu{~; zatim **Što
+ćete koristiti?**, moduli (pogledajte [Moduli](#modules)): ono što isključite uopće ne radi. Razgovori Erevosa, Telefon,
+SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže**, isključene}. Zatim, u prostoru:
+
+1. **Koliko ste vidljivi?**: tri izbora iz [Koliko ste vidljivi?](#direct), s već izabranim SPEED. Kad nastavite, Erevos
+   sam uzima mjesto za vaše poruke na LPHL-ovom serveru, bez pozivnice i bez računa (pogledajte **Otvoreno mjesto** pod
+   [Razgovor preko servera](#relay)), osim ako pozivnica s kojom je Erevos otvoren ne donosi vlastiti server. **Drugi
+   server (za napredne korisnike)**, ispod izbora, otvara druge načine ulaska: račun na serveru ili vlastiti server.
+2. **Ne propustite ništa**: svaka dozvola koju Erevos traži, u pet grupa prema tome čemu služe (Obavijesti, Pozivi,
+   Poruke, U pozadini, Podsjetnici), s brojem dozvoljenih. **Dopusti sve** prvo postavlja pitanja koja Android postavlja
+   u samom Erevosu{~, zatim za Erevos kao aplikaciju za telefon i kao aplikaciju za SMS}, pa jedan za drugim otvara
+   svaki ekran Androidovih postavki, kad se vratite s prethodnog; **Nastavite bez njih** ih ostavlja za **Postavke** →
+   **Općenito** → **Dozvole**. U pregledniku korak ima ono što pita preglednik; aplikacija za računar nema taj korak.
+3. **Čuvajte ga sigurnim**: lozinka za Erevos, upisana dva puta, s mjeračem i četiri savjeta za jaču, otisak prsta ili
+   lice, i kamo idu automatske rezervne kopije: **Na ovom uređaju**, u folder koji izaberete, ili **WebDAV** (Nextcloud,
+   ownCloud i drugi), svako postavljeno na ekranu Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne
+   kopije](#backup)).
+
+Zatim početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko je** za vaš prvi kontakt, s retkom
+za dozvolu koja još nedostaje. Do **Gotovo** koraci se opet prikazuju kad se Erevos pokrene. Otvoren s pozivnicom,
+Erevos je prikazuje kad se koraci završe.
+
+- **Ime:** nije korisničko ime: nitko ga ne traži i ne mora biti jedinstveno. Ide, šifrirano, samo onima koje dodate, a
+  mijenja ga **Moje ime** pod Postavke → Privatnost i sigurnost.
+- **Prelazak s drugog telefona:** na Androidu **Prenesite ovdje**, pored **Već imam Erevos na drugom telefonu** na prvom
+  ekranu, preskače ime{~ i module}, koje donosi rezervna kopija. Prostor se otvara, **Otvori rezervne kopije** je vraća
+  (vidi [Prelazak na novi telefon](#new-phone)), a koraci idu dalje bez **Koliko ste vidljivi?**, što rezervna kopija
+  također donosi: dozvole, zatim otisak prsta i kamo idu automatske rezervne kopije, koji ostaju uz svaki telefon;
+  zaključavanje lozinkom koje je donijela rezervna kopija prikazuje se kao uključeno. **Još nemam rezervnu kopiju** kaže
+  kako je napraviti, a **Počni bez rezervne kopije** počinje kao neko nov.
+- [~] **Na računaru ili u pregledniku:** **Poveži s mojim telefonom** preskače korake i otvara **Povezani uređaji**.
 
 Početni ekran je popis vaših razgovora, s onim u kojem se posljednje nešto desilo na vrhu. Svaki prikazuje sliku
 kontakta, posljednju poruku s njenim oznakama, kada je stigla i koliko poruka te osobe niste pročitali. Sat pored njega
@@ -335,24 +371,8 @@ s kraja na kraj, sa skrivenim razgovorima), **Telefona**{- i}{+,} **SMS-a**{+ i 
 aplikacijama}. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu, u aplikaciji za računar, u web aplikaciji i na Sailfish OS-u. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
-Pri sasvim prvom pokretanju Erevos se postavlja kao instalater. Prije nego se otvori njegov prvi prostor: što ne dajete
-(ni broj telefona, ni e-poštu, ni korisničko ime, ni račun: ljude dodajete QR kodom ili linkom, ili vas oni pozovu), ime
-za vaše kontakte ako ga želite, i jezik; zatim koje module koristiti, svaki s onim što radi. Zatim, u prostoru: ekran za
-svaki izabrani modul, s onim kako početi s njim (za Erevos, kako ulazite; za Telefon i SMS, Erevos kao aplikacija za
-telefon i kao aplikacija za SMS{+; za Nostr, Matrix i XMPP, vaš račun tamo}) i što Android, ili preglednik, treba dozvoliti
-za njega. Svaka dozvola je na prvom ekranu koji je treba, a **Dozvoli sve, jedno po jedno** postavlja pitanja koja
-Android postavlja u samom Erevosu, jedno za drugim. Zatim zaključavanje lozinkom i automatske rezervne kopije, pa što je
-spremno i što nedostaje, uz **Pozovite nekoga**. **Ostalo kasnije** ostavlja ostalo za Postavke; dok ne završite ili
-odgodite, koraci se opet prikazuju kad se Erevos pokrene. Otvoren s pozivom, Erevos ga prikazuje kad se koraci završe.
-Nakon ažuriranja svaki modul ostaje uključen, kao prije, dok ih ne promijenite.
-
-- **Ime:** nije korisničko ime: nitko ga ne traži i ne mora biti jedinstveno. Ide, šifrirano, samo onima koje dodate, a
-  mijenja ga **Moje ime** pod Postavke → Privatnost i sigurnost.
-- **Prelazak s drugog telefona:** na Androidu **Već imam Erevos na drugom telefonu** preskače ime i module, koji dolaze
-  s rezervnom kopijom. Prostor se otvara, **Otvori rezervne kopije** je vraća (vidi [Prelazak na novi
-  telefon](#new-phone)), i slijede ekrani modula koje donosi, zatim otisak prsta i mapa automatskih rezervnih kopija,
-  koji ostaju uz svaki telefon. **Još nemam rezervnu kopiju** kaže kako je napraviti.
-- **Na računaru ili u pregledniku:** **Poveži s mojim telefonom** preskače korake i otvara **Povezani uređaji**.
+Pri prvom pokretanju ih bira **Što ćete koristiti?**, svaki s onim što radi (pogledajte [Prvi koraci](#start)). Nakon
+ažuriranja svaki modul ostaje uključen, kao prije, dok ih ne promijenite.
 
 - **Isključen:** isključen modul se ne pokreće: ništa od njega ne radi, ne čeka na serveru niti zvoni, pa je Erevos
   lakši, brže se otvara i troši manje baterije. Nigdje se ne prikazuje: ni na početnom ekranu, ni u svom meniju, ni u
@@ -605,9 +625,18 @@ zatvorenih skrivenih razgovora.
 
 ### Načini ulaska na server
 
-Server koji traži token pušta telefon na tri načina. Svaki način završava se vlastitim tokenom telefona na serveru, pa
+Server koji traži token pušta telefon na četiri načina. Svaki način završava se vlastitim tokenom telefona na serveru, pa
 onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
 
+- **Otvoreno mjesto:** server koji ih daje, kao LPHL-ov, sam daje mjesto telefonu koji ga tamo nema, bez pozivnice i bez
+  računa. Pri prvom pokretanju, kad izaberete koliko ste vidljivi, Erevos uzima jedno na LPHL-ovom serveru i tamo pravi
+  vaš red (pogledajte [Prvi koraci](#start)); **Koristi LPHL-ov server**, na početnom ekranu prostora bez servera i bez
+  razgovora, također uzima jedno. Telefon sam pravi svoj token i serveru daje samo njegov SHA-256. Takvo mjesto je za
+  vaše vlastite razgovore: ne može pozivati ni posuđivati mjesta, a svaki dan može napraviti 20 redova, provući kroz
+  server 50 MB datoteka i 30 puta uzeti ono što treba pozivu preko servera. Server ih daje najviše 1000, 100 dnevno i 3
+  dnevno jednoj internet adresi, i uklanja ono čiji se telefon nije povezao 60 dana, osim ako onaj ko ga vodi nije
+  izabrao drugačije. Adrese broji samo za taj dan, u memoriji, i nikad ih ne zapisuje. Kad ne daje nijedno, početni
+  ekran kaže zašto, uz **Pokušajte ponovo** i **Drugi server**, a Erevos pokušava ponovo svaki put kad se otvori.
 - **Pozivnica:** QR kod ili link s telefona koji je već na serveru (pogledajte Pozivanje nekoga novog ispod). Ništa se
   ne upisuje, a odmah ste kontakti.
 - **Nalog:** **Prijava preko LPHL**, kad je server nudi (pogledajte Prijava na server ispod). Može svaki LPHL nalog, na
@@ -632,7 +661,8 @@ onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
 
 **Zašto:** server svakoj vezi daje vlastitu nit, pa istovremeno opslužuje samo ograničen broj veza; i dnevno dodaje
 samo ograničen broj redova za telefone koji su došli s njegovim jednim tokenom, pa token koji je otišao gdje ne treba
-ne može napuniti njegovu datoteku tokena.
+ne može napuniti njegovu datoteku tokena. Otvorena mjesta se broje na isti način, da ih niko ne može uzeti sva, a ono
+koje ne daje pristup ne može dovesti druge.
 
 ### Pozivanje nekoga novog
 
@@ -3476,6 +3506,9 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
    koje ne treba nijedna od njih. Ona koja nije uspjela pokušava se ponovo kad se otvori prostor, ili sat kasnije.
    Ispod njih su **Napravi kopiju
    sada**, **Promijeni folder** i **Promijeni lozinku**; **Isključeno** ih zaustavlja, a napravljene ostaju u folderu.
+   Mogu ići i samo na server, bez foldera ovdje: **WebDAV** pri prvom pokretanju ih tako postavlja, svaki dan, a njihova
+   kartica tada kaže **Samo na** i ime servera, uz **Izaberi folder** za još jednu kopiju pri ruci. **Prestani slati**,
+   za taj server, također ih zaustavlja.
 3. **I na server:** rezervna kopija može ići i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš
    vlastiti Nextcloud. **Dodaj server** pod **I na server**, ili **Na server (WebDAV)** pod **Napravi rezervnu
    kopiju**, traži adresu foldera, korisničko ime i, najbolje, lozinku aplikacije samo za Erevos: dodirnite

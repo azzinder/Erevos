@@ -80,8 +80,48 @@ Esta parte también se abre desde **Ajustes** → **General** → **Acerca de Er
 
 Erevos se descarga de su página de versiones, un archivo para cada sistema: ver [Actualizaciones](#updates) para saber
 dónde, y cómo actualizarlo. Funciona en Android, en un ordenador (Linux, macOS y Windows), en Sailfish OS y, desde el
-navegador, en un iPhone. Si eres nuevo, empieza con una invitación de alguien que lo use: un código QR o un enlace, y ya
-estás dentro, con esa persona como contacto (ver Invitar a alguien nuevo, en [Chatear a través de un servidor](#relay)).
+navegador, en un iPhone. Si eres nuevo, ábrelo sin más: en su primer inicio, como se explica abajo, Erevos toma por sí
+solo un sitio para tus mensajes en el servidor de LPHL, sin número de teléfono, correo ni cuenta. Una invitación de
+alguien que lo use, un código QR o un enlace, te mete dentro al instante, con esa persona como contacto (ver Invitar a
+alguien nuevo, en [Chatear a través de un servidor](#relay)).
+
+La primera vez que se inicia, Erevos se configura en unos pocos pasos cortos, con un punto para cada uno. Antes de que
+se abra su primer espacio: **Te damos la bienvenida a Erevos**, con lo que no entregas (ni número de teléfono, ni
+correo, ni nombre de usuario, ni cuenta: añades gente con un código QR o un enlace) y un nombre para tus contactos si
+quieres uno, con el idioma arriba{~; luego **¿Qué vas a usar?**, los módulos (ver [Módulos](#modules)): lo que
+desactivas no funciona en absoluto. Los chats de Erevos, el Teléfono, los SMS y la Colección están activados al
+principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después, en el espacio:
+
+1. **¿Cuánto se te ve?**: las tres opciones de [¿Cuánto se te ve?](#direct), con SPEED ya elegida. Al continuar, Erevos
+   toma por sí solo un sitio para tus mensajes en el servidor de LPHL, sin invitación ni cuenta (ver **Un sitio
+   abierto** en [Chatear a través de un servidor](#relay)), salvo que la invitación con la que se abrió Erevos traiga un
+   servidor propio. **Otro servidor (para usuarios avanzados)**, bajo las opciones, abre las otras formas de entrar: una
+   cuenta en un servidor o un servidor propio.
+2. **No te pierdas nada**: cada permiso que pide Erevos, en cinco grupos según para qué sirven (Notificaciones,
+   Llamadas, Mensajes, En segundo plano, Recordatorios), con cuántos están permitidos. **Permitir todo** hace primero
+   las preguntas que hace Android en el propio Erevos{~, luego las de Erevos como app de teléfono y como app de SMS}, y
+   después abre cada pantalla de los ajustes de Android una tras otra, al volver de la anterior; **Continuar sin ellos**
+   los deja para **Ajustes** → **General** → **Permisos**. En un navegador el paso tiene lo que pregunta el navegador;
+   la aplicación de escritorio no tiene este paso.
+3. **Mantenlo seguro**: una contraseña para Erevos, escrita dos veces, con un medidor y cuatro consejos para una más
+   fuerte, la huella o la cara, y adónde van las copias automáticas: **En este dispositivo**, en una carpeta que eliges,
+   o **WebDAV** (Nextcloud, ownCloud y otros), cada una configurada en la pantalla de Copias de seguridad que abre
+   **Hecho** (ver [Copias de seguridad](#backup)).
+
+Luego la pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está lejos** para tu primer
+contacto, con una línea para un permiso que aún falte. Hasta **Hecho**, los pasos vuelven a salir cuando se inicia
+Erevos. Si Erevos se abrió con una invitación, la muestra cuando terminan los pasos.
+
+- **El nombre:** no es un nombre de usuario: nadie lo busca, y no tiene que ser único. Va, cifrado, solo a quienes
+  añades, y **Mi nombre**, en Ajustes → Privacidad y seguridad, lo cambia.
+- **Pasar desde otro teléfono:** en Android, **Pasarlo aquí**, junto a **Ya tengo Erevos en otro teléfono** en la
+  primera pantalla, se salta el nombre{~ y los módulos}, que trae la copia de seguridad. Se abre el espacio, **Abrir
+  Copias de seguridad** la restaura (mira [Pasar a un teléfono nuevo](#new-phone)), y los pasos siguen sin **¿Cuánto se
+  te ve?**, que la copia también trae: los permisos, luego la huella y adónde van las copias automáticas, que se quedan
+  con cada teléfono; un bloqueo con contraseña que trajo la copia aparece como activado. **Aún no tengo copia** dice
+  cómo hacer una, y **Empezar sin copia** empieza como alguien nuevo.
+- [~] **En un ordenador o en un navegador:** **Vincular a mi teléfono** se salta los pasos y abre **Dispositivos
+  vinculados**.
 
 La pantalla de inicio es la lista de tus chats, con el que se movió por última vez arriba. Cada uno muestra la imagen del
 contacto, el último mensaje con sus marcas, cuándo llegó y cuántos de sus mensajes no has leído. Un reloj al lado
@@ -338,26 +378,8 @@ extremo, con los chats ocultos), el **Teléfono**{- y}{+,} los **SMS**{+ y los c
 La **Colección** (tus fotos y archivos, cifrados) también es un módulo. El Teléfono y los SMS solo existen en Android, la Colección en Android, en la aplicación de escritorio, en la app web y en Sailfish OS. Cualquiera puede estar activado, también Erevos mismo, uno o varios, al
 menos uno: **Ajustes** → **General** → **Módulos** activa o desactiva cada uno en cualquier momento.
 
-La primera vez que se inicia, Erevos se configura como lo hace un instalador. Antes de que se abra su primer espacio: lo
-que no entregas (ni número de teléfono, ni correo, ni nombre de usuario, ni cuenta: añades gente con un código QR o un
-enlace, o te invitan ellos), un nombre para tus contactos si quieres uno, y el idioma; luego qué módulos usar, cada uno
-con lo que hace. Después, en el espacio: una pantalla para cada módulo elegido, con cómo empezar con él (para Erevos,
-cómo entras; para el Teléfono y los SMS, Erevos como app de teléfono y como app de SMS{+; para Nostr, Matrix y XMPP, tu
-cuenta allí}) y lo que Android, o el navegador, debe permitir para él. Cada permiso está en la primera pantalla que lo
-necesita, y **Permitir todo, una por una** hace las preguntas que hace Android en el propio Erevos, una tras otra. Luego
-el bloqueo con contraseña y las copias automáticas, y después lo que está listo y lo que falta, con **Invitar a
-alguien**. **El resto, luego** deja el resto para Ajustes; hasta que termines o lo pospongas, los pasos vuelven a salir
-cuando se inicia Erevos. Si Erevos se abrió con una invitación, la muestra cuando terminan los pasos. Tras una
+En el primer inicio, **¿Qué vas a usar?** los elige, cada uno con lo que hace (ver [Primeros pasos](#start)). Tras una
 actualización todos los módulos siguen activados, como antes, hasta que los cambies.
-
-- **El nombre:** no es un nombre de usuario: nadie lo busca, y no tiene que ser único. Va, cifrado, solo a quienes
-  añades, y **Mi nombre**, en Ajustes → Privacidad y seguridad, lo cambia.
-- **Pasar desde otro teléfono:** en Android, **Ya tengo Erevos en otro teléfono** se salta el nombre y los módulos, que
-  vienen con la copia de seguridad. Se abre el espacio, **Abrir copias de seguridad** la restaura (mira [Pasar a un
-  teléfono nuevo](#new-phone)), y siguen las pantallas de los módulos que trae, luego la huella y la carpeta de las
-  copias automáticas, que se quedan con cada teléfono. **Aún no tengo copia** dice cómo hacer una.
-- **En un ordenador o en un navegador:** **Vincular a mi teléfono** se salta los pasos y abre **Dispositivos
-  vinculados**.
 
 - **Desactivado:** un módulo desactivado no se inicia: nada de él funciona, espera en un servidor ni suena, así que
   Erevos es más ligero, abre más rápido y gasta menos batería. No aparece en ningún sitio: ni en la pantalla de inicio,
@@ -621,9 +643,19 @@ app web cerrada puede contarlos, y el aviso de los chats ocultos cerrados.
 
 ### Formas de entrar al servidor
 
-Un servidor que pide token deja entrar a un teléfono de tres formas. Cada forma acaba con un token propio del teléfono ahí,
+Un servidor que pide token deja entrar a un teléfono de cuatro formas. Cada forma acaba con un token propio del teléfono ahí,
 así que quien gestiona el servidor puede sacar a cualquier teléfono por separado.
 
+- **Un sitio abierto:** un servidor que los da, como el de LPHL, da por sí solo uno a un teléfono que no tiene sitio
+  allí, sin invitación ni cuenta. En el primer inicio, cuando eliges cuánto se te ve, Erevos toma uno en el servidor de
+  LPHL y crea allí tu cola (ver [Primeros pasos](#start)); **Usar el servidor de LPHL**, en la pantalla de inicio de un
+  espacio sin servidor y sin chats, también toma uno. El teléfono crea su token él mismo y da al servidor solo su
+  SHA-256. Un sitio así es para tus propios chats: no puede invitar ni prestar sitios, y cada día puede crear 20 colas,
+  mover 50 MB de archivos por el servidor y tomar 30 veces lo que necesita una llamada por el servidor. El servidor da
+  1000 como máximo, 100 al día y 3 al día a una misma dirección de internet, y quita uno cuyo teléfono no se ha
+  conectado en 60 días, salvo que quien lo gestiona haya elegido otra cosa. Cuenta las direcciones solo durante el día,
+  en memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, con **Volver a
+  intentarlo** y **Otro servidor**, y Erevos lo intenta de nuevo cada vez que se abre.
 - **Una invitación:** un código QR o un enlace de un teléfono que ya está en el servidor (ver Invitar a alguien nuevo más
   abajo). Nada que escribir, y sois contactos al instante.
 - **Una cuenta:** **Iniciar sesión con LPHL**, cuando el servidor lo ofrece (ver Iniciar sesión en el servidor más abajo).
@@ -650,7 +682,8 @@ así que quien gestiona el servidor puede sacar a cualquier teléfono por separa
 
 **Por qué:** el servidor da a cada conexión un hilo propio, así que solo atiende cierto número a la vez; y solo añade cierto
 número de líneas al día para teléfonos que llegaron con su token único, así que un token que fue a parar donde no debía
-no puede llenar su archivo de tokens.
+no puede llenar su archivo de tokens. Los sitios abiertos se cuentan igual, para que nadie pueda tomarlos todos, y uno
+que no da acceso a nadie no puede traer a otros.
 
 ### Invitar a alguien nuevo
 
@@ -3636,7 +3669,9 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
    todos los archivos que necesitan, y borra los archivos que ninguna de ellas necesita. Una que falló se vuelve a
    intentar cuando se abre un espacio, o una hora después. Debajo están **Hacer
    copia ahora**, **Cambiar carpeta** y **Cambiar contraseña**; **Desactivado** las detiene, y las ya hechas se quedan
-   en la carpeta.
+   en la carpeta. También pueden ir solo a un servidor, sin carpeta aquí: **WebDAV**, en el primer inicio, las configura
+   así, cada día, y su tarjeta dice entonces **Solo a** y el nombre del servidor, con **Elegir una carpeta** para una
+   copia más a mano. **Dejar de enviar**, para ese servidor, también las detiene.
 3. **También a un servidor:** una copia puede ir también a una carpeta en un servidor que elijas y que hable WebDAV,
    como tu propio Nextcloud. **Añadir un servidor** en **También a un servidor**, o **A un servidor (WebDAV)** en
    **Hacer una copia de seguridad**, pide la dirección de la carpeta, un nombre de usuario y, mejor, una contraseña de

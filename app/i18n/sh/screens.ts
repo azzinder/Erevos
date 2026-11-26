@@ -316,7 +316,7 @@ export const screens: Record<string, string> = {
   'Its places for today are taken: try again tomorrow.': 'Njegova mjesta za danas su zauzeta: pokušajte ponovo sutra.',
   'Too many from this connection today: try again tomorrow.': 'Danas ih je previše s ove veze: pokušajte ponovo sutra.',
   'no server': 'nema servera',
-  'Ready, *{name}*': 'Gotovo, *{name}*',
+  'Ready, *{name}*': 'Spremno, *{name}*',
   '{mode} · {server}': '{mode} · {server}',
   'Add your first person.': 'Dodajte svoju prvu osobu.',
   'They are beside me': 'Uz mene je',

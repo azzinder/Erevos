@@ -83,9 +83,49 @@ Cette partie s’ouvre aussi depuis **Réglages** → **Général** → **À pro
 
 Erevos se télécharge depuis sa page des versions, un fichier pour chaque système : voir [Mises à jour](#updates) pour
 savoir où, et comment le mettre à jour. Il fonctionne sur Android, sur un ordinateur (Linux, macOS et Windows), sur
-Sailfish OS et, depuis le navigateur, sur un iPhone. Si tu es nouveau, commence par une invitation de quelqu’un qui
-l’utilise : un code QR ou un lien, et tu y es, avec cette personne comme contact (voir Inviter quelqu’un de nouveau,
-sous [Discuter par un serveur](#relay)).
+Sailfish OS et, depuis le navigateur, sur un iPhone. Si tu es nouveau, ouvre-le simplement : à son premier démarrage,
+comme plus bas, Erevos prend de lui-même une place pour tes messages sur le serveur de LPHL, sans numéro de téléphone,
+e-mail ni compte. Une invitation de quelqu’un qui l’utilise, un code QR ou un lien, te fait entrer tout de suite, avec
+cette personne comme contact (voir Inviter quelqu’un de nouveau, sous [Discuter par un serveur](#relay)).
+
+Au tout premier démarrage, Erevos se configure en quelques courtes étapes, avec un point pour chacune. Avant l’ouverture
+de son premier espace : **Bienvenue sur Erevos**, avec ce que tu ne donnes pas (ni numéro de téléphone, ni e-mail, ni
+nom d’utilisateur, ni compte : tu ajoutes des gens avec un code QR ou un lien) et un nom pour tes contacts si tu en veux
+un, avec la langue en haut{~ ; puis **Que vas-tu utiliser ?**, les modules (voir [Modules](#modules)) : ce que tu
+désactives ne tourne pas du tout. Les discussions d’Erevos, le Téléphone, les SMS et la Collection sont d’abord
+activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensuite, dans l’espace :
+
+1. **À quel point es-tu visible ?** : les trois choix de [À quel point es-tu visible ?](#direct), avec SPEED déjà
+   choisi. Quand tu continues, Erevos prend de lui-même une place pour tes messages sur le serveur de LPHL, sans
+   invitation ni compte (voir **Une place ouverte** sous [Discuter par un serveur](#relay)), sauf si l’invitation avec
+   laquelle Erevos a été ouvert apporte un serveur à elle. **Autre serveur (pour les utilisateurs avancés)**, sous les
+   choix, ouvre les autres façons d’entrer : un compte sur un serveur, ou un serveur à toi.
+2. **Ne rate rien** : toutes les autorisations qu’Erevos demande, en cinq groupes selon leur usage (Notifications,
+   Appels, Messages, En arrière-plan, Rappels), avec le nombre de celles qui sont accordées. **Tout autoriser** pose
+   d’abord les questions qu’Android pose dans Erevos même{~, puis pour Erevos comme app Téléphone et comme app SMS},
+   puis ouvre chaque écran des réglages d’Android à la suite, quand tu reviens du précédent ; **Continuer sans** les
+   laisse à **Réglages** → **Général** → **Autorisations**. Dans un navigateur, l’étape a ce que demande le navigateur ;
+   l’app de bureau n’a pas cette étape.
+3. **Garde-le en sécurité** : un mot de passe pour Erevos, tapé deux fois, avec un indicateur et quatre conseils pour en
+   avoir un plus solide, l’empreinte ou le visage, et où vont les sauvegardes automatiques : **Sur cet appareil**, dans
+   un dossier que tu choisis, ou **WebDAV** (Nextcloud, ownCloud et d’autres), chacune réglée sur l’écran des
+   Sauvegardes qu’ouvre **Terminé** (voir [Sauvegardes](#backup)).
+
+Ensuite l’écran d’accueil dit **Prêt**, avec ton nom, et propose **La personne est à côté de moi** et **La personne est
+loin** pour ton premier contact, avec une ligne pour une autorisation qui manque encore. Jusqu’à **Terminé**, les étapes
+réapparaissent au démarrage d’Erevos. Ouvert avec une invitation, Erevos la montre une fois les étapes terminées.
+
+- **Le nom :** ce n’est pas un nom d’utilisateur : personne ne le cherche, et il n’a pas besoin d’être unique. Il part,
+  chiffré, seulement vers ceux que tu ajoutes, et **Mon nom**, sous Réglages → Confidentialité et sécurité, le change.
+- **Venir d’un autre téléphone :** sur Android, **Le ramener ici**, à côté de **J’ai déjà Erevos sur un autre
+  téléphone** sur le premier écran, saute le nom{~ et les modules}, que la sauvegarde apporte. L’espace s’ouvre,
+  **Ouvrir les sauvegardes** la restaure (voir [Passer à un nouveau téléphone](#new-phone)), et les étapes continuent
+  sans **À quel point es-tu visible ?**, que la sauvegarde apporte aussi : les autorisations, puis l’empreinte et où
+  vont les sauvegardes automatiques, qui restent propres à chaque téléphone ; un verrouillage par mot de passe
+  qu’apportait la sauvegarde apparaît comme activé. **Je n’ai pas encore de sauvegarde** dit comment en faire une, et
+  **Commencer sans sauvegarde** commence comme quelqu’un de nouveau.
+- [~] **Sur un ordinateur ou dans un navigateur :** **Associer à mon téléphone** saute les étapes et ouvre **Appareils
+  associés**.
 
 L’écran d’accueil est la liste de tes discussions, celle qui a bougé en dernier en haut. Chacune montre l’image du
 contact, le dernier message avec ses marques, quand il est arrivé, et combien de ses messages tu n’as pas lus. Une
@@ -355,28 +395,8 @@ bout en bout, avec les discussions masquées), le **Téléphone**{- et}{+,} les 
 Erevos lui-même aussi, un ou plusieurs, au moins un : **Réglages** → **Général** → **Modules** active ou désactive
 chacun à tout moment.
 
-Au tout premier démarrage, Erevos se configure comme le fait un installateur. Avant l’ouverture de son premier espace :
-ce que tu ne donnes pas (ni numéro de téléphone, ni e-mail, ni nom d’utilisateur, ni compte : tu ajoutes des gens avec
-un code QR ou un lien, ou ce sont eux qui t’invitent), un nom pour tes contacts si tu en veux un, et la langue ; puis
-quels modules utiliser, chacun avec ce qu’il fait. Ensuite, dans l’espace : un écran pour chaque module choisi, avec la
-façon de commencer (pour Erevos, comment tu entres ; pour le Téléphone et les SMS, Erevos comme app Téléphone et comme
-app SMS{+ ; pour Nostr, Matrix et XMPP, ton compte là-bas}) et ce qu’Android, ou le navigateur, doit autoriser pour lui.
-Chaque autorisation est sur le premier écran qui en a besoin, et **Tout autoriser, un par un** pose les questions
-qu’Android pose, dans Erevos même, l’une après l’autre. Puis le verrouillage par mot de passe et les sauvegardes
-automatiques, puis ce qui est prêt et ce qui manque, avec **Inviter quelqu’un**. **Le reste plus tard** laisse le reste
-aux Réglages ; tant que tu n’as pas fini ou remis à plus tard, les étapes réapparaissent au démarrage d’Erevos. Ouvert
-avec une invitation, Erevos la montre une fois les étapes terminées. Après une mise à jour, chaque module reste activé,
-comme avant, jusqu’à ce que tu les changes.
-
-- **Le nom :** ce n’est pas un nom d’utilisateur : personne ne le cherche, et il n’a pas besoin d’être unique. Il part,
-  chiffré, seulement vers ceux que tu ajoutes, et **Mon nom**, sous Réglages → Confidentialité et sécurité, le change.
-- **Venir d’un autre téléphone :** sur Android, **J’ai déjà Erevos sur un autre téléphone** saute le nom et les modules,
-  qui viennent avec la sauvegarde. L’espace s’ouvre, **Ouvrir les sauvegardes** la restaure (voir [Passer à un nouveau
-  téléphone](#new-phone)), puis suivent les écrans des modules qu’elle apporte, puis l’empreinte et le dossier des
-  sauvegardes automatiques, qui restent propres à chaque téléphone. **Je n’ai pas encore de sauvegarde** dit comment en
-  faire une.
-- **Sur un ordinateur ou dans un navigateur :** **Associer à mon téléphone** saute les étapes et ouvre **Appareils
-  associés**.
+Au premier démarrage, **Que vas-tu utiliser ?** les choisit, chacun avec ce qu’il fait (voir [Premiers pas](#start)).
+Après une mise à jour, chaque module reste activé, comme avant, jusqu’à ce que tu les changes.
 
 - **Désactivé :** un module désactivé ne démarre pas : rien de lui ne tourne, n’attend sur un serveur ni ne sonne, donc
   Erevos est plus léger, s’ouvre plus vite et consomme moins de batterie. Il n’apparaît nulle part : ni sur l’écran
@@ -657,9 +677,20 @@ notification d’une app web fermée peut les compter, de même que la notificat
 
 ### Les façons d’entrer sur le serveur
 
-Un serveur qui demande un jeton laisse entrer un téléphone de trois façons. Chaque façon aboutit à un jeton propre au
+Un serveur qui demande un jeton laisse entrer un téléphone de quatre façons. Chaque façon aboutit à un jeton propre au
 téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut retirer n’importe quel téléphone à lui seul.
 
+- **Une place ouverte :** un serveur qui en donne, comme celui de LPHL, donne de lui-même une place à un téléphone qui
+  n’en a pas là-bas, sans invitation ni compte. Au premier démarrage, une fois que tu as choisi à quel point tu es
+  visible, Erevos en prend une sur le serveur de LPHL et y crée ta file d’attente (voir [Premiers pas](#start)) ;
+  **Utiliser le serveur de LPHL**, sur l’écran d’accueil d’un espace sans serveur et sans discussions, en prend une
+  aussi. Le téléphone fait son jeton lui-même et ne donne au serveur que son SHA-256. Une telle place est pour tes
+  propres discussions : elle ne peut ni inviter ni prêter de places, et chaque jour elle peut créer 20 files d’attente,
+  faire passer 50 Mo de fichiers par le serveur et prendre 30 fois ce qu’il faut à un appel par le serveur. Le serveur
+  en donne 1000 au plus, 100 par jour et 3 par jour à une même adresse internet, et retire celle dont le téléphone ne
+  s’est pas connecté depuis 60 jours, sauf si celui qui le gère a choisi autrement. Il ne compte les adresses que pour
+  la journée, en mémoire, et ne les note jamais. Quand il n’en donne aucune, l’écran d’accueil dit pourquoi, avec
+  **Réessayer** et **Autre serveur**, et Erevos réessaie à chaque ouverture.
 - **Une invitation :** un code QR ou un lien d’un téléphone déjà sur le serveur (voir Inviter quelqu’un de nouveau
   ci-dessous). Rien à taper, et vous êtes contacts aussitôt.
 - **Un compte :** **Se connecter avec LPHL**, quand le serveur le propose (voir Se connecter au serveur ci-dessous).
@@ -686,7 +717,9 @@ téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut r
 
 **Pourquoi :** le serveur donne à chaque connexion son propre fil d’exécution, il n’en sert donc qu’un nombre limité à la
 fois ; et il n’ajoute qu’un nombre limité de lignes par jour pour les téléphones venus avec son jeton unique, si bien
-qu’un jeton parti là où il ne devait pas ne peut pas remplir son fichier de jetons.
+qu’un jeton parti là où il ne devait pas ne peut pas remplir son fichier de jetons. Les places ouvertes sont comptées de
+la même façon, pour que personne ne puisse les prendre toutes, et une qui ne donne aucun accès ne peut faire entrer
+personne d’autre.
 
 ### Inviter quelqu’un de nouveau
 
@@ -3831,7 +3864,10 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
    coûte peu. Le dossier garde les 3 plus récentes, avec tous les fichiers dont elles ont besoin, et supprime les
    fichiers dont aucune n’a besoin. Une qui a échoué est retentée quand un espace s’ouvre, ou une heure plus tard. En
    dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
-   **Désactivé** les arrête, et celles déjà faites restent dans le dossier.
+   **Désactivé** les arrête, et celles déjà faites restent dans le dossier. Elles peuvent aussi aller seulement vers un
+   serveur, sans dossier ici : **WebDAV**, au premier démarrage, les règle ainsi, chaque jour, et leur carte indique
+   alors **Seulement vers** et le nom du serveur, avec **Choisir un dossier** pour une copie de plus à portée de main.
+   **Ne plus envoyer**, pour ce serveur, les arrête aussi.
 3. **Aussi vers un serveur :** une sauvegarde peut aussi aller dans un dossier sur un serveur de ton choix qui parle
    WebDAV, comme ton propre Nextcloud. **Ajouter un serveur** sous **Aussi vers un serveur**, ou **Vers un serveur
    (WebDAV)** sous **Créer une sauvegarde**, demande l’adresse du dossier, un nom d’utilisateur et, mieux, un mot de

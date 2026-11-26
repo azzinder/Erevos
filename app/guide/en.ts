@@ -76,8 +76,44 @@ This part opens from **Settings** → **General** → **About Erevos** too.
 
 Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to
 update it. It runs on Android, on a computer (Linux, macOS and Windows), on Sailfish OS and, from the browser, on an
-iPhone. If you are new to it, start with an invite from someone who uses it: one QR code or link, and you are in,
-with them as a contact (see Inviting someone new, under [Chat through a server](#relay)).
+iPhone. If you are new to it, just open it: at its first start, as below, Erevos takes a place for your messages on
+LPHL's server by itself, with no phone number, email or account. An invite from someone who uses it, one QR code or
+link, brings you in with them as a contact at once (see Inviting someone new, under [Chat through a server](#relay)).
+
+The very first time Erevos starts, it sets itself up in a few short steps, with a dot for each. Before its first space
+opens: **Welcome to Erevos**, with what you do not give (no phone number, email, user name or account: you add people
+with a QR code or a link) and a name for your contacts if you want one, with the language at the top{~; then **What
+will you use?**, the modules (see [Modules](#modules)): what you turn off does not run at all. Erevos's chats, the
+Phone, the SMS and the Collection are on at first}{+, the other networks, under **Other networks**, off}. Then, in the
+space:
+
+1. **How visible are you?**: the three choices of [How visible are you?](#direct), with SPEED chosen already. As you
+   continue, Erevos takes a place for your messages on LPHL's server by itself, with no invite and no account (see
+   **An open place** under [Chat through a server](#relay)), unless the invite Erevos was opened with brings a server
+   of its own. **Another server (for advanced users)**, under the choices, opens the other ways in: an account at a
+   server, or a server of your own.
+2. **Miss nothing**: every permission Erevos asks for, in five groups by what they are for (Notices, Calls, Messages,
+   In the background, Reminders), with how many are allowed. **Allow all** asks the questions Android asks in Erevos
+   itself first{~, then for Erevos as the phone app and as the SMS app}, then opens each screen of Android's settings
+   in turn, as you come back from the one before; **Continue without them** leaves them for **Settings** → **General**
+   → **Permissions**. In a browser the step has what the browser asks about; the computer app has no such step.
+3. **Keep it safe**: a password for Erevos, typed twice, with a meter and four tips for a stronger one, the fingerprint
+   or face, and where automatic backups go: **On this device**, in a folder you choose, or **WebDAV** (Nextcloud,
+   ownCloud and others), each set up on the Backups screen that **Done** opens (see [Backups](#backup)).
+
+Then the home screen says **Ready**, with your name, and offers **They are beside me** and **They are far away** for
+your first contact, with a line for a permission still missing. Until **Done**, the steps show again when Erevos
+starts. Opened with an invite, Erevos shows it once the steps are done.
+
+- **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
+  those you add, and **My name** under Settings → Privacy and security changes it.
+- **Moving from another phone:** on Android, **Move it here**, beside **I already have Erevos on another phone** on the
+  first screen, skips the name{~ and the modules}, which the backup brings. The space opens, **Open Backups** restores
+  it (see [Moving to a new phone](#new-phone)), and the steps go on without **How visible are you?**, which the backup
+  brings too: the permissions, then the fingerprint and where automatic backups go, which stay with each phone; a
+  password lock the backup brought shows as on. **I have no backup yet** says how to make one, and **Start without a
+  backup** begins as someone new.
+- [~] **On a computer or in a browser:** **Link to my phone** skips the steps and opens **Linked devices**.
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
@@ -319,24 +355,8 @@ Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups a
 the hidden chats), the **Phone**{- and}{+,} the **SMS**{+, and the chats with **Nostr**, **Matrix** and **XMPP** apps}. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android, in the desktop app, in the web app and on Sailfish OS. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
 **General** → **Modules** turns each on or off at any time.
 
-The very first time Erevos starts, it sets itself up as an installer does. Before its first space opens: what you
-do not give (no phone number, email, user name or account: you add people with a QR code or a link, or they invite
-you), a name for your contacts if you want one, and the language; then which modules to use, each with what it does.
-Then, in the space: a screen for each module chosen, with how to begin with it (for Erevos, how you join; for the Phone
-and the SMS, Erevos as the phone app and as the SMS app{+; for Nostr, Matrix and XMPP, your account there}) and what
-Android, or the browser, should allow for it. Each permission is on the first screen that needs it, and **Allow all,
-one by one** asks the questions Android asks in Erevos itself one after another. Then the password lock and automatic
-backups, then what is ready and what is missing, with **Invite someone**. **Do the rest later** leaves the rest for
-Settings; until you finish or put it off, the steps show again when Erevos starts. Opened with an invite, Erevos shows
-it once the steps are done. After an update every module stays on, as before, until you change them.
-
-- **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
-  those you add, and **My name** under Settings → Privacy and security changes it.
-- **Moving from another phone:** on Android, **I already have Erevos on another phone** skips the name and the
-  modules, which come with the backup. The space opens, **Open Backups** restores it (see
-  [Moving to a new phone](#new-phone)), and the screens of the modules it brings follow, then the fingerprint and the
-  folder of automatic backups, which stay with each phone. **I have no backup yet** says how to make one.
-- **On a computer or in a browser:** **Link to my phone** skips the steps and opens **Linked devices**.
+At the first start, **What will you use?** chooses them, each with what it does (see [Getting started](#start)). After
+an update every module stays on, as before, until you change them.
 
 - **Off:** a module that is off does not start: nothing of it runs, waits at a server or rings, so Erevos is lighter,
   opens faster and uses less battery. It shows nowhere: not on the home screen, in its menu or in Settings, and the
@@ -580,9 +600,18 @@ on or not: it is how a closed web app's notice can count them, and the notice of
 
 ### Ways in to the server
 
-A server that needs a token lets a phone in three ways. Each way ends with a token of the phone's own there, so whoever
+A server that needs a token lets a phone in four ways. Each way ends with a token of the phone's own there, so whoever
 runs the server can take any one phone out alone.
 
+- **An open place:** a server that gives them, as LPHL's does, gives a phone with no place there one by itself, with no
+  invite and no account. At the first start, once you choose how visible you are, Erevos takes one on LPHL's server and
+  makes your queue there (see [Getting started](#start)); **Use LPHL’s server**, on the home screen of a space with no server
+  and no chats, takes one too. The phone makes its token itself and gives the server only its SHA-256. Such a place is
+  for your own chats: it cannot invite or lend places, and each day it may make 20 queues, move 50 MB of files through
+  the server and take what a call through the server needs 30 times. The server gives 1000 of them at most, 100 a day
+  and 3 a day to one internet address, and takes out one whose phone has not connected for 60 days, unless whoever runs
+  it chose otherwise. It counts addresses only for the day, in memory, and never writes them down. When it gives none,
+  the home screen says why, with **Try again** and **Another server**, and Erevos tries again each time it opens.
 - **An invite:** a QR code or link from a phone already on the server (see Inviting someone new below). Nothing to type,
   and you are contacts at once.
 - **An account:** **Sign in with LPHL**, when the server offers it (see Signing in to the server below). Any LPHL account
@@ -606,7 +635,8 @@ runs the server can take any one phone out alone.
 
 **Why:** the server gives each connection a thread of its own, so it serves only so many at once; and it adds only so
 many lines a day for phones that came with its one token, so a token that went where it should not cannot fill its file
-of tokens.
+of tokens. Open places are counted the same way, so that no one can take them all, and one that hands out no access
+cannot bring others in.
 
 ### Inviting someone new
 
@@ -3362,7 +3392,10 @@ automatic backup uses the files of the ones before it too: keep the whole folder
    voice messages that are new since the one before, and names again the files of the earlier ones for the rest, so
    one every 6 hours costs little. The folder keeps the 3 newest, with every file they need, and deletes the files none
    of them needs. One that failed is tried again when a space opens, or an hour later. Under them are **Back up now**,
-   **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
+   **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder. They can go
+   only to a server, with no folder here: the first start's **WebDAV** sets them up so, every day, and their card then
+   reads **Only to** and the server's name, with **Choose a folder** for one more copy close at hand. **Stop sending**,
+   for that server, stops them too.
 3. **To a server too:** a backup can also go to a folder on a server you choose that speaks WebDAV, such as your own
    Nextcloud. **Add a server** under **To a server too**, or **To a server (WebDAV)** under **Make a backup**, asks
    for the folder's address, a user name and, best, an app password made for Erevos alone: tap **Connect**, and the
