@@ -2712,7 +2712,7 @@ pub mod tests {
             fake.state.lock().unwrap().groups = groups;
             let page = sign_in_page(&signin, &fake, &[1u8; 32], NOW);
             assert_eq!(page.status, 403);
-            assert!(page.body.contains("this account may not use this relay"));
+            assert!(page.body.contains("this account may not use this server"));
         }
         fake.state.lock().unwrap().groups = Some(vec!["family".into(), "erevos".into()]);
         claimed(&signin, &fake, &tokens, &[2u8; 32], "in", &NONE, NOW).unwrap();
