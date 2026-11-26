@@ -3302,9 +3302,13 @@ também pode abrir com eles. Fica desativado a menos que você o ative.
   isso puder acontecer, mantenha-a desativada: então a pessoa precisa de uma senha, e você pode dar a segunda.
 - **Como é guardada:** a chave do primeiro espaço é selada por uma chave no hardware seguro do celular (o Android
   Keystore) que só funciona logo depois de uma verificação forte de impressão digital ou rosto, uma vez para cada uso.
-  Adicionar ou remover uma impressão digital ou um rosto faz o Android descartar essa chave: ela fica então
-  desativada, e você a ativa de novo. Uma chave que para de funcionar de outro jeito também leva à desativação, depois
-  de três tentativas seguidas em que não pôde ser usada. Nada sai do celular.
+  Essa chave fica guardada na área segura do celular, não no chip de segurança separado dele, se houver um, para que o
+  Android peça o dedo ou o rosto na hora: o chip começa cada uso com um instante de atraso, e o dedo ou o rosto é
+  verificado na área segura de qualquer modo. Uma chave que um Erevos mais antigo fez pode ainda estar no chip:
+  desative este desbloqueio e ative-o de novo uma vez, para ter uma chave nova. Adicionar ou remover uma impressão
+  digital ou um rosto faz o Android descartar essa chave: ela fica então desativada, e você a ativa de novo. Uma chave
+  que para de funcionar de outro jeito também leva à desativação, depois de três tentativas seguidas em que não pôde
+  ser usada. Nada sai do celular.
 - **Que rosto:** um rosto só conta onde o Android classifica o desbloqueio facial dele como forte, como no Pixel 8 e
   posteriores; nos outros, é a impressão digital.
 - **As senhas erradas** são contadas como antes: uma impressão digital não muda a contagem.

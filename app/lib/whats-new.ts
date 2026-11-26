@@ -27,6 +27,7 @@ export const NEXT: Changes = {
     mark("**New chat says what works with no server**: messages, photos, files and voice messages, and calls too with **SPEED**."),
     mark("**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line."),
     mark("**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works."),
+    mark("**Fingerprint or face, at once**: Android asks for the finger or face without a moment's wait, as its key is now kept in the phone's secure area, not in its separate security chip. Where it is on already, turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**. See [Password lock](#lock)."),
   ],
   underTheHood: [
     mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),

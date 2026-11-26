@@ -3345,9 +3345,13 @@ anche così. È disattivato finché non lo attivi.
   viso. Se può succedere, tienila disattivata: così serve una password, e puoi dargli la seconda.
 - **Come è conservata:** la chiave del primo spazio è sigillata da una chiave nell’hardware sicuro del telefono
   (l’Android Keystore) che funziona solo subito dopo un controllo forte dell’impronta o del volto, una volta per ogni
-  uso. Aggiungere o rimuovere un’impronta o un volto fa scartare ad Android quella chiave: allora è disattivata, e la
-  riattivi. Anche una chiave che smette di funzionare in altro modo porta alla disattivazione, dopo tre tentativi di
-  fila in cui non si è potuta usare. Niente lascia il telefono.
+  uso. Quella chiave è conservata nell’area sicura del telefono, non nel suo chip di sicurezza separato, se ce l’ha,
+  così Android chiede subito il dito o il volto: il chip avvia ogni uso con un attimo di ritardo, e il dito o il volto
+  viene controllato comunque nell’area sicura. Una chiave creata da un Erevos più vecchio può essere ancora nel chip:
+  disattiva e riattiva una volta questo sblocco, per una chiave nuova. Aggiungere o rimuovere un’impronta o un volto
+  fa scartare ad Android quella chiave: allora è disattivata, e la riattivi. Anche una chiave che smette di funzionare
+  in altro modo porta alla disattivazione, dopo tre tentativi di fila in cui non si è potuta usare. Niente lascia il
+  telefono.
 - **Quale volto:** un volto conta solo dove Android considera forte il suo sblocco con il volto, come sul Pixel 8 e
   successivi; altrove vale l’impronta.
 - **Le password sbagliate** vengono contate come prima: un’impronta non cambia il conteggio.

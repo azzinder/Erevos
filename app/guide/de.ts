@@ -3530,10 +3530,14 @@ sich Erevos auch damit öffnen. Es ist aus, solange du es nicht einschaltest.
   halten. Wenn das passieren kann, lass es aus: Dann braucht er ein Passwort, und du kannst ihm das zweite geben.
 - **Wie es aufbewahrt wird:** Der Schlüssel des ersten Bereichs ist mit einem Schlüssel in der sicheren Hardware des
   Telefons (dem Android Keystore) versiegelt, der nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung
-  funktioniert, einmal für jede Nutzung. Einen Fingerabdruck oder ein Gesicht hinzuzufügen oder zu entfernen, lässt
-  Android diesen Schlüssel verwerfen: Es ist dann aus, und du schaltest es wieder ein. Ein Schlüssel, der auf andere
-  Weise nicht mehr funktioniert, schaltet es ebenfalls aus, nach drei Versuchen in Folge, bei denen er sich nicht
-  benutzen ließ. Nichts verlässt das Telefon.
+  funktioniert, einmal für jede Nutzung. Dieser Schlüssel wird im sicheren Bereich des Telefons aufbewahrt, nicht in
+  dessen separatem Sicherheitschip, sofern es einen hat, damit Android sofort nach dem Finger oder dem Gesicht fragt:
+  Der Chip beginnt jede Nutzung einen Moment verspätet, und der Finger oder das Gesicht wird in beiden Fällen im
+  sicheren Bereich geprüft. Ein Schlüssel, den ein älteres Erevos erstellt hat, kann noch im Chip liegen: Schalte es
+  einmal aus und wieder ein, dann wird ein neuer erstellt. Einen Fingerabdruck oder ein Gesicht hinzuzufügen oder zu
+  entfernen, lässt Android diesen Schlüssel verwerfen: Es ist dann aus, und du schaltest es wieder ein. Ein Schlüssel,
+  der auf andere Weise nicht mehr funktioniert, schaltet es ebenfalls aus, nach drei Versuchen in Folge, bei denen er
+  sich nicht benutzen ließ. Nichts verlässt das Telefon.
 - **Welches Gesicht:** Ein Gesicht zählt nur, wo Android seine Gesichtsentsperrung als stark einstuft, etwa auf dem
   Pixel 8 und neuer; anderswo ist es der Fingerabdruck.
 - **Falsche Passwörter** werden wie bisher gezählt: Ein Fingerabdruck ändert die Zählung nicht.

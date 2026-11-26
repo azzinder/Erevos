@@ -3078,9 +3078,13 @@ is off unless you turn it on.
 - **Under pressure:** someone who holds you can press your finger to the phone, or hold it to your face. If that may
   happen, keep it off: then they need a password, and you can give them the second one.
 - **How it is kept:** the first space's key is sealed by a key in the phone's secure hardware (the Android Keystore)
-  that works only right after a strong fingerprint or face check, once for each use. Adding or removing a fingerprint
-  or face makes Android drop that key: it is then off, and you turn it on again. A key that stops working in some
-  other way turns it off too, after three tries in a row in which the key could not be used. Nothing leaves the phone.
+  that works only right after a strong fingerprint or face check, once for each use. That key is kept in the phone's
+  secure area, not in its separate security chip where it has one, so that Android asks for the finger or face at
+  once: the chip starts each use a moment late, and the finger or face is checked in the secure area either way. A key
+  an older Erevos made may still be in the chip: turn it off and on once for a new one. Adding or removing a
+  fingerprint or face makes Android drop that key: it is then off, and you turn it on again. A key that stops working
+  in some other way turns it off too, after three tries in a row in which the key could not be used. Nothing leaves
+  the phone.
 - **Which face:** a face counts only where Android rates its face unlock as strong, as on the Pixel 8 and later;
   elsewhere it is the fingerprint.
 - **Wrong passwords** are counted as before: a fingerprint does not change the count.

@@ -3500,9 +3500,13 @@ peut aussi s’ouvrir avec. C’est désactivé tant que tu ne l’actives pas.
   second.
 - **Comment c’est gardé :** la clé du premier espace est scellée par une clé dans le matériel sécurisé du téléphone
   (l’Android Keystore) qui ne fonctionne que juste après une vérification forte de l’empreinte ou du visage, une fois
-  pour chaque utilisation. Ajouter ou retirer une empreinte ou un visage fait abandonner cette clé par Android : c’est
-  alors désactivé, et tu l’actives de nouveau. Une clé qui cesse de fonctionner d’une autre façon le désactive aussi,
-  après trois essais de suite où elle n’a pas pu servir. Rien ne quitte le téléphone.
+  pour chaque utilisation. Cette clé est gardée dans la zone sécurisée du téléphone, et non dans sa puce de sécurité
+  séparée s’il en a une, pour qu’Android demande le doigt ou le visage aussitôt : la puce démarre chaque utilisation
+  avec un instant de retard, et le doigt ou le visage est vérifié dans la zone sécurisée dans les deux cas. Une clé
+  faite par un Erevos plus ancien peut encore être dans la puce : désactive-le puis réactive-le une fois pour en avoir
+  une nouvelle. Ajouter ou retirer une empreinte ou un visage fait abandonner cette clé par Android : c’est alors
+  désactivé, et tu l’actives de nouveau. Une clé qui cesse de fonctionner d’une autre façon le désactive aussi, après
+  trois essais de suite où elle n’a pas pu servir. Rien ne quitte le téléphone.
 - **Quel visage :** un visage ne compte que là où Android classe son déverrouillage par le visage comme fort, comme sur
   le Pixel 8 et plus récent ; ailleurs, c’est l’empreinte.
 - **Les mots de passe erronés** sont comptés comme avant : une empreinte ne change pas le compte.

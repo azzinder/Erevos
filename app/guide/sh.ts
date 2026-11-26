@@ -3180,10 +3180,13 @@ Isključeno je dok to ne uključite.
 - **Pod prisilom:** neko ko vas drži može vam pritisnuti prst na telefon, ili ga prinijeti vašem licu. Ako se to može
   desiti, držite ovo isključenim: tada mu treba lozinka, a vi mu možete dati drugu.
 - **Kako se čuva:** ključ prvog prostora zapečaćen je ključem u sigurnom hardveru telefona (Android Keystore) koji
-  radi samo odmah nakon jake provjere otiska prsta ili lica, jednom za svaku upotrebu. Dodavanje ili uklanjanje otiska
-  prsta ili lica tjera Android da odbaci taj ključ: tada se ovo isključuje, i ponovo ga uključujete. Ključ koji
-  prestane raditi na neki drugi način također ovo isključuje, nakon tri pokušaja zaredom u kojima se nije mogao
-  upotrijebiti. Ništa ne napušta telefon.
+  radi samo odmah nakon jake provjere otiska prsta ili lica, jednom za svaku upotrebu. Taj ključ se čuva u sigurnom
+  području telefona, a ne u njegovom zasebnom sigurnosnom čipu, ako ga ima, kako bi Android odmah tražio prst ili
+  lice: čip počinje svaku upotrebu s malim kašnjenjem, a prst ili lice se u svakom slučaju provjerava u sigurnom
+  području. Ključ koji je napravio stariji Erevos možda je još u čipu: jednom isključite ovo i ponovo uključite, za
+  novi ključ. Dodavanje ili uklanjanje otiska prsta ili lica tjera Android da odbaci taj ključ: tada se ovo
+  isključuje, i ponovo ga uključujete. Ključ koji prestane raditi na neki drugi način također ovo isključuje, nakon
+  tri pokušaja zaredom u kojima se nije mogao upotrijebiti. Ništa ne napušta telefon.
 - **Koje lice:** lice se računa samo tamo gdje Android ocjenjuje svoje otključavanje licem kao jako, kao na Pixelu 8 i
   novijim; drugdje je to otisak prsta.
 - **Pogrešne lozinke** se broje kao i prije: otisak prsta ne mijenja broj.

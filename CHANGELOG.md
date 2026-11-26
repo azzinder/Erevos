@@ -41,6 +41,10 @@ and 0.1.15 never came out.
   itself, their chat says so, on your phone only, with **Take back** under that line while they are there.
 - **Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, in all its
   languages, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works.
+- **Fingerprint or face, at once** (#76): Android asks for the finger or face without the moment's wait it took, as
+  the key it opens is now made in the phone's secure area, not in its separate security chip. Where it is on already,
+  turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**, for the new
+  key.
 
 ### Under the hood
 
@@ -74,6 +78,12 @@ and 0.1.15 never came out.
   code, in the links to the guide's sections and in the server's own program and settings stay as they were
   (`lib/relay.ts`, `#relay`, `erevos-relay`, `EREVOS_RELAY_…`). The computer app's start check looks for "server" on
   the first screen (`desktop/main.js`).
+- The key that a fingerprint or face opens is made in the phone's TEE, no longer in StrongBox where the phone has it
+  (`modules/erevos-biometric`, `newKey`): each use of a StrongBox key began in the chip before Android's prompt could
+  show, a moment or more on a Pixel. It still needs a strong check for each single use, only on an unlocked phone, and
+  is dropped when fingerprints or faces change. The token that lets a use happen comes from the TEE in both cases, and
+  StrongBox takes it on a key the two share, so for a key that one use opens StrongBox added no safety. A key made in
+  StrongBox before keeps working there until unlocking is turned off and on again.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

@@ -3328,9 +3328,12 @@ abrirse con ella. Está desactivado salvo que lo actives.
   eso puede pasar, déjalo desactivado: así necesitan una contraseña, y puedes darles la segunda.
 - **Cómo se guarda:** la clave del primer espacio está sellada por una clave del hardware seguro del teléfono (el
   Android Keystore) que solo funciona justo después de una comprobación fuerte de huella o cara, una vez por cada uso.
-  Añadir o quitar una huella o una cara hace que Android descarte esa clave: entonces queda desactivado, y lo vuelves
-  a activar. Una clave que deja de funcionar de otro modo también lo desactiva, tras tres intentos seguidos en los que
-  no se pudo usar. Nada sale del teléfono.
+  Esa clave se guarda en el área segura del teléfono, no en su chip de seguridad aparte, si lo tiene, para que Android
+  pida el dedo o la cara al instante: el chip empieza cada uso con un momento de retraso, y el dedo o la cara se
+  comprueba en el área segura de todos modos. Una clave que hizo un Erevos anterior puede seguir en el chip:
+  desactívalo y actívalo una vez para tener una nueva. Añadir o quitar una huella o una cara hace que Android descarte
+  esa clave: entonces queda desactivado, y lo vuelves a activar. Una clave que deja de funcionar de otro modo también
+  lo desactiva, tras tres intentos seguidos en los que no se pudo usar. Nada sale del teléfono.
 - **Qué cara:** una cara solo cuenta donde Android califica su desbloqueo facial como fuerte, como en el Pixel 8 y
   posteriores; en los demás, es la huella.
 - **Las contraseñas incorrectas** se cuentan como antes: una huella no cambia el contador.
