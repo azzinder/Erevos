@@ -121,8 +121,7 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   are, sees when one comes and how big it is, and may hand that over if asked; in INVISIBLE also that signing in happens
   in the browser, outside Erevos, not through Tor. **Restore from Google Drive** lists the backups there and puts one
   back, with its photos, files and voice messages. **Stop sending** takes Erevos's access back at Google; the backups
-  there stay. It shows only once a build has Erevos's own client ID from Google for its edition: until then nothing of
-  Google Drive shows.
+  there stay. It is not in the F-Droid build, which keeps to services anyone may run.
 
 ### Under the hood
 
@@ -235,9 +234,9 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   most, and are taken at the first answer, so a code goes once. The refresh token is kept as the WebDAV password is
   (`erevos.backup-drive`, outside the spaces and in backups, sealed with their password), access tokens only in memory,
   asked for again when one runs out or Google refuses it (401), and **Stop sending** revokes it at
-  `oauth2.googleapis.com/revoke`. Each edition's Android OAuth client ID goes in `lib/google-drive-ids.ts`, empty for
-  now: `CAN_DRIVE` is false, and nothing of Google Drive shows; it is false in the F-Droid build too, which has no
-  intent filter for it either. Files go as multipart uploads, those above 5 MB as
+  `oauth2.googleapis.com/revoke`. Each edition's Android OAuth client ID is in `lib/google-drive-ids.ts`, the three
+  from one Google Cloud project; without one `CAN_DRIVE` is false and nothing of Google Drive shows, as in the F-Droid
+  build, which has no intent filter for it either. Files go as multipart uploads, those above 5 MB as
   resumable ones, through the same HTTP layer as backups to a server, so the space's Tor way applies; through Tor, whose
   answers carry no headers, a large one goes as a multipart upload too. Backups there are sent, checked after each, kept
   and deleted as on a server: `sendBare` sends to either place, a `BarePlace` (`lib/backup-cloud.ts`,

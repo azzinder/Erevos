@@ -14,9 +14,9 @@ import { PACKAGES, type UpdateEdition } from './update-channel';
 /** Each edition's Android OAuth client ID, as Google Cloud's console gives it: it ends in
  *  .apps.googleusercontent.com. */
 export const DRIVE_CLIENT_IDS: Readonly<Record<UpdateEdition, string>> = {
-  erevos: '',
-  plus: '',
-  lite: '',
+  erevos: '566865563491-5i6ktv407ht4slhvoushknmfsq0obgtu.apps.googleusercontent.com',
+  plus: '566865563491-3gumdkvpcsmd8ms93f7a9j4g4heqeufq.apps.googleusercontent.com',
+  lite: '566865563491-0fbffurbjdet8k2tj4rt6jv03eqt8cop.apps.googleusercontent.com',
 };
 
 /** The client ID of the app whose Android package is `pkg`, '' for none. By the package, not the

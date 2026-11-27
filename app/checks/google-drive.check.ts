@@ -632,8 +632,11 @@ test('without a client ID for the app nothing of Google Drive is offered', async
   assert.equal(driveClientFor('app.erevos.plus', { ...ids, plus: '' }), '');
   assert.equal(driveClientFor('app.other', ids), '');
   assert.equal(driveClientFor('', ids), '');
-  // Each one as Google Cloud's console gives it, or none yet.
-  for (const id of Object.values(DRIVE_CLIENT_IDS)) assert.match(id, /^(?:[\w-]+\.apps\.googleusercontent\.com)?$/);
+  // Each one as Google Cloud's console gives it: one for each edition's app, the three from one project.
+  const own = Object.values(DRIVE_CLIENT_IDS);
+  for (const id of own) assert.match(id, /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/);
+  assert.equal(new Set(own).size, own.length);
+  assert.equal(new Set(own.map((id) => id.split('-')[0])).size, 1);
   // Here, as in a build with none: nothing is kept, loaded or asked.
   assert.equal(DRIVE_CLIENT_ID, '');
   assert.equal(CAN_DRIVE, false);
