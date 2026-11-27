@@ -24,25 +24,30 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**How visible are you?** Three choices at the top of **Settings**, for who sees your phone's internet address, each space its own. **SPEED**: the servers and your contacts see it; Erevos no longer asks first, and calls with a contact go straight from phone to phone where they can, through the call server where they cannot, and work even with no server between you two. **ANONYMOUS**: only the server sees it, never your contacts; Erevos asks first, as before, and calls go through a server. **INVISIBLE**: no one sees it; everything goes through Tor, and there are no voice or video calls. A space is on SPEED until you choose another, unless Tor is on in it. See [How visible are you?](#direct)."),
-    mark("**New chat says what works with no server**: messages, photos, files and voice messages, and calls too with **SPEED**."),
-    mark("**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line."),
-    mark("**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works."),
-    mark("**Fingerprint or face, at once**: Android asks for the finger or face without a moment's wait, as its key is now kept in the phone's secure area, not in its separate security chip. Where it is on already, turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**. See [Password lock](#lock)."),
-    mark("**Nostr on a computer, in the web app and on Sailfish OS**: texts there now go through the public Nostr servers too when your servers do not take them, as on Android, and with no server at all. There is no Tor there, so they go straight: the Nostr servers see that device's internet address. See [Through Nostr](#nostr)."),
-    mark("**Backups into a cloud app's folder**: when Android does not let a backup into a folder, Erevos now says why, in plain words, and what to do. In a cloud app's folder, such as DAVx5's, the check after a backup waits for that app to send it to its server, and **Check again** under it looks once more. See [Backups](#backup)."),
-    mark("**A new first start**: five short steps, in each edition's own colours: your name if you like, what you will use, how visible you are, every permission in five groups with **Allow all**, a password with tips for a stronger one, and where automatic backups go. Then **They are beside me** or **They are far away** adds your first person. See [Getting started](#start)."),
-    mark("**LPHL's server, by itself**: a new phone needs no invite and no account: at the first start Erevos takes a place for your messages on LPHL's free server by itself, with nothing to type. Such a place is for your own chats, with limits for each day. Should the server let it go, after 60 days without your phone, or a week when it never came back after its first day, Erevos asks for it again by itself, and your chats stay as they were. See [Chat through a server](#relay)."),
-    mark("**Automatic backups only to a server**: they can now go to a WebDAV server with no folder on this device; a folder there is optional, for one more copy close at hand. See [Backups](#backup)."),
-    mark("**Automatic backups to Google Drive**: on Android they can now go to your Google Drive too, encrypted, into a folder named Erevos, or only there. Erevos first says what Google then knows: your account, when a backup comes and how big it is. Sign in with Google under **Backups** or at the first start; **Restore from Google Drive** brings one back. See [Backups](#backup)."),
-  ],
-  underTheHood: [
-    mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),
-  ],
+  forYou: [],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '3.0.0-rc.4',
+    forYou: [
+      mark("**How visible are you?** Three choices at the top of **Settings**, for who sees your phone's internet address, each space its own. **SPEED**: the servers and your contacts see it; Erevos no longer asks first, and calls with a contact go straight from phone to phone where they can, through the call server where they cannot, and work even with no server between you two. **ANONYMOUS**: only the server sees it, never your contacts; Erevos asks first, as before, and calls go through a server. **INVISIBLE**: no one sees it; everything goes through Tor, and there are no voice or video calls. A space is on SPEED until you choose another, unless Tor is on in it. See [How visible are you?](#direct)."),
+      mark("**New chat says what works with no server**: messages, photos, files and voice messages, and calls too with **SPEED**."),
+      mark("**Who came in with your invite**: when a contact takes the invite your phone sent them by itself, their chat says so, on this phone only, with **Take back** under that line."),
+      mark("**Server, in plain words**: Erevos now says server, on every screen, in every notice and in the guide, for what keeps your messages, encrypted, until the other phone takes them. Nothing changes in how it works."),
+      mark("**Fingerprint or face, at once**: Android asks for the finger or face without a moment's wait, as its key is now kept in the phone's secure area, not in its separate security chip. Where it is on already, turn it off and on once under **Settings** → **Privacy and security** → **Lock and second password**. See [Password lock](#lock)."),
+      mark("**Nostr on a computer, in the web app and on Sailfish OS**: texts there now go through the public Nostr servers too when your servers do not take them, as on Android, and with no server at all. There is no Tor there, so they go straight: the Nostr servers see that device's internet address. See [Through Nostr](#nostr)."),
+      mark("**Backups into a cloud app's folder**: when Android does not let a backup into a folder, Erevos now says why, in plain words, and what to do. In a cloud app's folder, such as DAVx5's, the check after a backup waits for that app to send it to its server, and **Check again** under it looks once more. See [Backups](#backup)."),
+      mark("**A new first start**: five short steps, in each edition's own colours: your name if you like, what you will use, how visible you are, every permission in five groups with **Allow all**, a password with tips for a stronger one, and where automatic backups go. Then **They are beside me** or **They are far away** adds your first person. See [Getting started](#start)."),
+      mark("**LPHL's server, by itself**: a new phone needs no invite and no account: at the first start Erevos takes a place for your messages on LPHL's free server by itself, with nothing to type. Such a place is for your own chats, with limits for each day. Should the server let it go, after 60 days without your phone, or a week when it never came back after its first day, Erevos asks for it again by itself, and your chats stay as they were. See [Chat through a server](#relay)."),
+      mark("**Automatic backups only to a server**: they can now go to a WebDAV server with no folder on this device; a folder there is optional, for one more copy close at hand. See [Backups](#backup)."),
+      mark("**Automatic backups to Google Drive**: on Android they can now go to your Google Drive too, encrypted, into a folder named Erevos, or only there. Erevos first says what Google then knows: your account, when a backup comes and how big it is. Sign in with Google under **Backups** or at the first start; **Restore from Google Drive** brings one back. See [Backups](#backup)."),
+    ],
+    underTheHood: [
+      mark("A call with no server between the two phones is set up through Nostr, end-to-end encrypted like a message, and the public helper servers are asked only when LPHL's does not answer."),
+    ],
+  },
   {
     version: '3.2.0-rc.3',
     forYou: [
