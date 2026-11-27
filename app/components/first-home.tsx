@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { askFirstServer, isLphl, readFirstServer, takeFirstServer, useFirstServer, type OpenRefusal } from '../lib/open-place';
+import { askFirstServer, isLphl, readFirstServer, takeFirstServer, useFirstServer, type FirstServer, type OpenRefusal } from '../lib/open-place';
 import { t, plural } from '../lib/i18n';
 import { MODE_NAMES } from '../lib/modes';
 import { myNameAt } from '../lib/my-name';
@@ -51,6 +51,25 @@ function hostOf(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** Where LPHL's server gave no place, why, with a way to try again or to choose another server:
+ *  on the first home, and above the chats of a space whose free place it let go and cannot give
+ *  again now (app/index.tsx, lib/open-place.ts). Nothing otherwise. */
+export function NoPlaceCard({ server }: { server: FirstServer }) {
+  const colors = useColors();
+  if (server.kind !== 'refused' && server.kind !== 'failed') return null;
+  return (
+    <Card style={{ alignSelf: 'stretch' }}>
+      <Text variant="caption" color={colors.warning}>
+        {server.kind === 'refused' ? t('LPHL’s server gave no place. {why}', { why: refusalText(server.why) }) : t('LPHL’s server gave no place. {why}', { why: t('Erevos could not reach it now. It tries again by itself each time Erevos opens.') })}
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+        <Button title={t('Try again')} compact onPress={() => void takeFirstServer()} />
+        <Button title={t('Another server')} kind="secondary" compact onPress={() => router.push('/chat?setup=relay')} />
+      </View>
+    </Card>
+  );
 }
 
 // A large card to press: a tile, what it is, and a chevron.
@@ -141,17 +160,7 @@ export function FirstHome() {
           </View>
         </Card>
       ) : null}
-      {server.kind === 'refused' || server.kind === 'failed' ? (
-        <Card style={{ alignSelf: 'stretch' }}>
-          <Text variant="caption" color={colors.warning}>
-            {server.kind === 'refused' ? t('LPHL’s server gave no place. {why}', { why: refusalText(server.why) }) : t('LPHL’s server gave no place. {why}', { why: t('Erevos could not reach it now. It tries again by itself each time Erevos opens.') })}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-            <Button title={t('Try again')} compact onPress={() => void takeFirstServer()} />
-            <Button title={t('Another server')} kind="secondary" compact onPress={() => router.push('/chat?setup=relay')} />
-          </View>
-        </Card>
-      ) : null}
+      <NoPlaceCard server={server} />
       <View style={{ alignSelf: 'stretch', gap: space.md, marginTop: space.sm }}>
         <Door icon={<PersonIcon color={colors.primary} size={24} />} title={t('They are beside me')} line={t('They scan your QR code, or you scan theirs')} onPress={() => router.push('/chat?setup=near')} />
         <Door icon={<GlobeIcon color={colors.primary} size={24} />} title={t('They are far away')} line={t('Send them a link')} onPress={() => router.push('/chat?setup=invite')} />

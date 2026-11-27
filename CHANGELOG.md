@@ -84,10 +84,13 @@ and 0.1.15 never came out.
   what is held for later, so they never fill it for everyone. The home screen says what a free place on LPHL's server
   may do each day. The server gives 1000 at most, 100 a day and 3 a day to one internet address (an IPv6 one by its
   first 48 bits, its whole network), which it counts only for the day, in memory, and takes out a place whose phone has
-  not connected for 60 days, or for 7 when it never connected again after its first day. When it gives none, the home
-  screen's dot warns, and above the two ways to add someone it says why, with **Try again** and **Another server**, and
-  Erevos tries again each time it opens; a space with no server and no chats yet offers **Use LPHL’s server** there. An
-  invite Erevos was first opened with that brings a server of its own, a server at someone's home say, is used instead.
+  not connected for 60 days, or for 7 when it never connected again after its first day. Should it take yours out,
+  Erevos asks for it again by itself, with the same token, the next time it reaches the server, and your queue, links
+  and contacts stay as they were, as the server keeps queues for months. When it gives none, the home screen's dot
+  warns, and above the two ways to add someone, or above the chats of a space that has some, it says why, with **Try
+  again** and **Another server**, and Erevos tries again each time it opens; a space with no server and no chats yet
+  offers **Use LPHL’s server** there. An invite Erevos was first opened with that brings a server of its own, a server
+  at someone's home say, is used instead.
 - **Automatic backups only to a server**: automatic backups can now go to a WebDAV server with no folder on the device.
   The first start's **WebDAV** sets them up so, and **Backups** shows them as **Only to** that server, with a folder on
   the device optional, for one more copy close at hand. Stopping that server stops them too.
@@ -195,6 +198,13 @@ and 0.1.15 never came out.
   its limits (`components/first-home.tsx`). A day used (`DAY_FULL`) is said in plain words by `check` and `checkFile`,
   `isDayFull` tells it, and `canTryLater` takes it as something to send again later. The computer app's start check
   knows the first start's welcome by **Get started** (`desktop/main.js`).
+- A channel the relay ends at its token (a WebSocket closed for policy, `unauthorized`) is now a `RelayTokenError`,
+  still a `RelayUnreachableError` everywhere else, and `onTokenRefused` tells of it: `lib/open-place.ts` then asks for
+  the free place of the open space again with the same token (`takeOpenPlace(url, again)`, `reopenPlace`), so its
+  queues, links and contacts stay as they were; through Tor, which tells only that the connection closed, only once the
+  token alone, tried again at most once a minute, is not taken either (`tokenTaken`). One the relay cannot give again
+  now says why on the first home and above the chats (`NoPlaceCard`), and is asked for again as the space opens and with
+  **Try again** (`checks/open-place-again.check.ts`, against a real relay in a channel).
 - Automatic backups with no folder and a WebDAV server go only to that server: `runAutoBackup` already sent them so, and
   `app/backup.tsx` now sets them up that way, says so, and stops them with the server.
 - Google Drive (`lib/google-drive.ts`) signs in with OAuth 2.0 for an app on the phone, with PKCE (S256), no client

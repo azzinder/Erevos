@@ -208,6 +208,35 @@ export class RelayError extends Error {
 /** The relay could not be reached, or the connection to it ended before it answered. */
 export class RelayUnreachableError extends RelayError {}
 
+/**
+ * The relay ended the channel at its token, as it does for a token it does not take, such as a free
+ * place's whose line it took out once its phone did not connect for long (crates/erevos-relay
+ * open.rs). Everywhere else it reads as unreachable, as before. `sure` when the relay said so
+ * itself, closing the WebSocket for policy (`unauthorized`); through Tor, which tells only that it
+ * closed, or when the connection was lost then, it may also have been the way.
+ */
+export class RelayTokenError extends RelayUnreachableError {
+  readonly sure: boolean;
+
+  constructor(message: string, sure: boolean) {
+    super(message);
+    this.sure = sure;
+  }
+}
+
+// Told each time a relay ended a channel at its token (RelayTokenError): lib/open-place.ts asks for
+// a free place again with the same token.
+const tokenListeners = new Set<(relay: Relay, sure: boolean) => void>();
+
+/** Has `listener` called with the relay, as asked, each time one ended a channel at its token
+ *  (RelayTokenError). Returns how to stop. */
+export function onTokenRefused(listener: (relay: Relay, sure: boolean) => void): () => void {
+  tokenListeners.add(listener);
+  return () => {
+    tokenListeners.delete(listener);
+  };
+}
+
 /** The address is not one a connection can be opened to; what waits for it goes once it is fixed. */
 export class BadRelayAddressError extends RelayUnreachableError {
   constructor(url: string) {
@@ -760,8 +789,10 @@ class SocketLine implements Line {
       this.ended ??= new RelayUnreachableError(t('lost the connection to the server'));
       answer(this.ended);
     };
-    socket.onclose = () => {
-      this.ended ??= new RelayUnreachableError(t('the server closed the connection'));
+    socket.onclose = (event) => {
+      // Closed for policy, `unauthorized`: the relay did not take the token (RelayTokenError).
+      const refused = event?.code === 1008 && event?.reason === 'unauthorized';
+      this.ended ??= refused ? new RelayTokenError(t('the server closed the connection'), true) : new RelayUnreachableError(t('the server closed the connection'));
       answer(this.ended);
     };
   }
@@ -925,7 +956,15 @@ async function openChannel(
     } catch (error) {
       // The relay ends the connection on a wrong token, as it refuses it in the handshake without a channel.
       if (error instanceof RelayError && !(error instanceof RelayUnreachableError && /did not answer/.test(error.message))) {
-        throw new RelayUnreachableError(t('cannot reach the server at {url}, or the token is wrong', { url: relay.url }));
+        const refused = new RelayTokenError(t('cannot reach the server at {url}, or the token is wrong', { url: relay.url }), error instanceof RelayTokenError && error.sure);
+        for (const listener of tokenListeners) {
+          try {
+            listener(relay, refused.sure);
+          } catch {
+            // A listener's own trouble changes nothing here.
+          }
+        }
+        throw refused;
       }
       throw error;
     }
@@ -1988,13 +2027,15 @@ export function openPlaceRefusal(error: unknown): OpenPlaceRefusal | null {
  * that asks, with no invite: makes a token of this phone's own and has the relay add a line for it,
  * from the /join path, which needs no token. Returns the token, for where the relay's token goes,
  * and the name on its line there (`open-` and 8 hex characters). Each call makes a new token, as
- * the relay adds no line for a token it has one for. Throws an OpenPlaceRefusedError (see
- * openPlaceRefusal) when the relay gives no place; a RelayError when it could not add the line
- * (FAILED), or cannot be reached.
+ * the relay adds no line for a token it has one for, but for `again`: the token of a free place
+ * there whose line the relay took out (RelayTokenError), asked for again as it was, so every queue
+ * made with it stays the space's. Throws an OpenPlaceRefusedError (see openPlaceRefusal) when the
+ * relay gives no place; a RelayError when it could not add the line (FAILED, as when it has one
+ * for that token still), or cannot be reached.
  */
-export async function takeOpenPlace(url: string): Promise<{ token: string; name: string }> {
+export async function takeOpenPlace(url: string, again?: string): Promise<{ token: string; name: string }> {
   const relay = relayPath(url, '/join');
-  const token = newPhoneToken();
+  const token = again ?? newPhoneToken();
   let reply: Uint8Array;
   try {
     reply = await request(relay, Uint8Array.of(OPEN, ...sha256Bytes(utf8Encode(token))));
@@ -2012,6 +2053,20 @@ export async function takeOpenPlace(url: string): Promise<{ token: string; name:
   const name = utf8Decode(reply.slice(1));
   if (!/^open-[0-9a-z]+$/i.test(name)) throw new RelayError('open place: unexpected reply');
   return { token, name };
+}
+
+/**
+ * Whether the relay takes `relay.token` now: a channel opened with the token alone, with no request.
+ * False when the relay ended it at the token (RelayTokenError); throws when it could not be reached.
+ */
+export async function tokenTaken(relay: Relay): Promise<boolean> {
+  try {
+    (await RelaySession.open(relay)).close();
+    return true;
+  } catch (error) {
+    if (error instanceof RelayTokenError) return false;
+    throw error;
+  }
 }
 
 /**

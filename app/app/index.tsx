@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatActions, useArrangedChats } from '../components/chat-actions';
 import { ChatRow, MyselfRow } from '../components/chat-row';
 import { NewSmsSheet } from '../components/new-sms-sheet';
-import { FirstHome } from '../components/first-home';
+import { FirstHome, NoPlaceCard } from '../components/first-home';
 import { firstServer, onFirstServer } from '../lib/open-place';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
@@ -155,6 +155,10 @@ function Home() {
   const styles = useStyles(makeStyles);
   const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
+  // LPHL's server for this space, as lib/open-place.ts knows it, followed without reading it again:
+  // a free place it let go and cannot give again now shows above the chats.
+  const [server, setServer] = useState(firstServer);
+  useEffect(() => onFirstServer(() => setServer(firstServer())), []);
   const lock = useLock();
   // Only the modules on show (lib/modules.ts): their chats, tiles, menu and buttons.
   const modules = useModules();
@@ -898,6 +902,8 @@ function Home() {
 
   const header = (
     <View style={styles.headerBlock}>
+      {/* A free place LPHL's server let go and cannot give again now: why, above the chats (the first home says it with none). */}
+      {erevosOn && listed.length > 0 && (server.kind === 'refused' || server.kind === 'failed') ? <NoPlaceCard server={server} /> : null}
       {hasSmsRows && !smsMirrored() && show === 'sms' ? (
         <Row wrap>
           <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} />
