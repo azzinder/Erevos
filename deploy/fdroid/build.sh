@@ -63,12 +63,16 @@ fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
 npx expo prebuild --platform android --no-install --template "$template"
 
 cd android
-# Gradle's own download fails now and then: tried four times.
+# Gradle's own download, and the plugins it fetches before it builds anything (React Native's from
+# the Gradle Plugin Portal), fail now and then: tried four times. `help` builds nothing. Gradle
+# remembers a plugin it did not find, so a try after the first asks for each again.
+refresh=""
 for wait in 15 30 60 0; do
-  gradle --version --no-daemon && break
+  gradle --version --no-daemon && gradle help --no-daemon $refresh -PreactNativeArchitectures=arm64-v8a && break
   [ "$wait" = 0 ] && exit 1
-  echo "Gradle's download failed; again in $wait s"
+  echo "Gradle, or a plugin it needs, could not be fetched; again in $wait s"
   sleep "$wait"
+  refresh=--refresh-dependencies
 done
 gradle assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 sha256sum app/build/outputs/apk/release/app-release-unsigned.apk

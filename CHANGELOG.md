@@ -33,7 +33,8 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   and one the server let go is asked for again with the same token.
 - As in Erevos 3.0.0-rc.4: the F-Droid APK is built from `deploy/fdroid/app.erevos.lite.yml` as F-Droid builds it, with
   no key at hand, then signed apart with the release key and checked as the APK Updates installs is, without the
-  permission to install packages.
+  permission to install packages. Gradle and the plugins it needs are fetched first, tried four times, before the
+  release key is there.
 
 ## 3.0.0-rc.4 (2026-11-27)
 
@@ -266,7 +267,9 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   (`scripts/apk-compare.py`), then signs the first as a release would, with a key made for the test
   (`scripts/fdroid-sign.sh`: the signature alone, nothing else changed), and checks, as F-Droid does, that its signature
   copied onto the second verifies. `checks/fdroid.check.ts` holds the recipes to the release key, the downloads and the
-  NDK, and the signing to Gradle's. Nothing is sent to F-Droid.
+  NDK, and the signing to Gradle's. On 2026-11-27 Erevos's came out the same, byte for byte, in three builds on three
+  machines, two of them with two processors, and the signature of one, copied onto another, verified. Nothing is sent to
+  F-Droid.
 - The release builds its F-Droid APK with `scripts/fdroid-build.sh`, in a job that holds no key (`fdroid`), and signs it
   in the next (`fdroid-sign`) with `scripts/fdroid-sign.sh`: the release key is written to a file for the SDK's
   `apksigner` alone, in that one step, and removed after. Only then is apksigcopier installed, pinned by its SHA-256
@@ -278,6 +281,12 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   `NearbyApk.kt`), and asked about before Android's installer opens (`lib/give-app.ts`). The F-Droid build reads
   Google Drive's settings left by an Erevos installed before it (`lib/google-drive.ts` driveLeftBehind) only to show
   them in Backups and stop them; it sends nothing there.
+- Gradle's own download, and the plugins it fetches before it builds anything, as React Native's from the Gradle Plugin
+  Portal, fail now and then: on 2026-11-27 a plugin was not found twice on GitHub's machines. Every build of the Android
+  app, the release's, the F-Droid build's (`deploy/fdroid/build.sh`), the one that adds an APK a release went out
+  without (`release-android`) and the check build, now fetches them first with `help`, which builds nothing, tried four
+  times, a plugin not found asked for again after the first try; the releases do it before the release key is there
+  (`checks/gradle-fetch.check.ts`).
 
 ## 3.2.0-rc.3 (2026-11-25)
 

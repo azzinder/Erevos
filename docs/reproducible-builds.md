@@ -10,7 +10,7 @@ byte, so that anyone can check that it was built from the code it says, and noth
 | **Web app** (`erevos-web.tar.gz`, what the release key signs and the web server serves) | Yes | `scripts/reproduce-web.sh`. The published 3.3.2 came out the same, all 78 files, built again on another machine on 2026-10-26. |
 | **Desktop apps** (Linux, Windows, macOS) | Their app inside is the same web build; the packages around it are not checked yet | |
 | **Android APK** | Not yet: 3.3.2, built before the path fixes below, came out different on 2026-10-26 | `scripts/reproduce-apk.sh`, or on GitHub `.github/workflows/reproduce-apk.yml` (by hand), which now lists in its log the files that differ. |
-| **F-Droid APK** (`erevos-android-fdroid.apk`, `erevos-lite-android-fdroid.apk`) | Built as F-Droid builds it, for F-Droid to compare with its own build: see below | On GitHub `.github/workflows/fdroid-build.yml` (by hand): two builds on two machines, compared, and one's signature copied onto the other as F-Droid does. |
+| **F-Droid APK** (`erevos-android-fdroid.apk`, `erevos-lite-android-fdroid.apk`) | Built as F-Droid builds it, for F-Droid to compare with its own build: see below. Erevos's, yes: on 2026-11-27 it came out the same, byte for byte, in three builds on three machines, two of them with two processors, and the signature of one, copied onto another, verified. Erevos Lite's is built and checked the same way | On GitHub `.github/workflows/fdroid-build.yml` (by hand): two builds on two machines, compared, and one's signature copied onto the other as F-Droid does. |
 | **Sailfish RPM** | Not yet | |
 | **Relay** | Not checked; whoever runs one builds it from the source anyway | |
 

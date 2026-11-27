@@ -202,6 +202,24 @@ jobs:
           grep -q "expoAutolinking.exclude = \['erevos-phone', 'erevos-sms'\]" android/settings.gradle \
             || { echo "::error::settings.gradle does not leave out the Phone and the SMS"; cat android/settings.gradle; exit 1; }
 
+      # Gradle's own download, and the plugins it fetches before it builds anything (React Native's
+      # from the Gradle Plugin Portal), fail now and then (7.0.0-rc.5: HTTP 504, and the release went
+      # out without its APK; 2026-11-27: a plugin not found): fetched first, before the release key
+      # is there, tried four times. Gradle remembers a plugin it did not find, so a try after the
+      # first asks for each again. `help` builds nothing.
+      - name: Fetch Gradle and its plugins
+        working-directory: app/android
+        run: |
+          refresh=""
+          for wait in 15 30 60 0; do
+            ./gradlew --version --no-daemon && ./gradlew help --no-daemon $refresh -PreactNativeArchitectures=arm64-v8a && exit 0
+            [ "$wait" = 0 ] && break
+            echo "::warning::Gradle, or a plugin it needs, could not be fetched; again in $wait s"
+            sleep "$wait"
+            refresh=--refresh-dependencies
+          done
+          exit 1
+
       - name: Set up the release signing key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -213,12 +231,6 @@ jobs:
             sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' > release-fingerprint
           [ -s release-fingerprint ] || { echo "::error::The release key's fingerprint could not be read"; exit 1; }
           echo "Release key SHA-256: $(cat release-fingerprint)"
-
-      - name: Fetch Gradle
-        working-directory: app/android
-        run: |
-          for wait in 15 30 60 0; do ./gradlew --version --no-daemon && exit 0; [ "$wait" = 0 ] && break; echo "::warning::Gradle's download failed; again in $wait s"; sleep "$wait"; done
-          exit 1
 
       - name: Build the release APK
         working-directory: app/android
