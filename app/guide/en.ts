@@ -613,9 +613,9 @@ runs the server can take any one phone out alone.
   past one of those, Erevos says so, and it goes on the next day. At once it may have 8 MB of messages waiting and 20
   held for later, and open places together keep at most half of what the server keeps of each, and of files, so they
   never fill it for everyone. LPHL's server gives 3000 of them at most, 300 a day and 5 a day to one internet address
-  (an IPv6 one counted with its whole network, by its first 48 bits), another server 1000, 100 and 3, and each takes out
-  one whose phone has not connected for 60 days, or for 7 when it never connected again after the day it was made,
-  unless whoever runs it chose otherwise.
+  (an IPv6 one counted with its whole network, by its first 48 bits), and takes out one whose phone has not connected
+  for 100 days, or for 30 when it never connected again after the day it was made; another server gives 1000, 100 and 3,
+  and takes one out after 60 days, or 7, unless whoever runs it chose otherwise.
   Should it take yours out, Erevos asks for it again by itself, with the same token, the next time it reaches the
   server: your queue, links and contacts stay as they were, as the server keeps queues for months. It counts addresses
   only for the day, in memory, and never writes them down. When it gives none, the home screen says why, above the two

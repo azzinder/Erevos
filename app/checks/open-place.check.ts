@@ -7,8 +7,9 @@
 // makes queues, sends and takes with it, and hands out no access; it refuses one past each of its
 // limits, in all, a day and a day to one address, each refusal told apart by openPlaceRefusal; one
 // that does not give them says so; and what the relay counts, `erevos-relay open-places` tells
-// without naming any place; and the guide says how many LPHL's server gives, and another server,
-// in every language. The relay part is skipped, with a note, when the relay is not built.
+// without naming any place; and the guide says how many LPHL's server gives and for how long it
+// keeps one, and another server, in every language, as What's new does of LPHL's. The relay part is
+// skipped, with a note, when the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -87,16 +88,30 @@ test('only what takeOpenPlace throws for a place not given reads as a refusal', 
   assert.equal(openPlaceRefusal(null), null);
 });
 
-// LPHL's server is set to give 3000 open places, 300 a day and 5 a day to one address
-// (EREVOS_RELAY_OPEN_PLACES, _DAY, _PER_ADDRESS); another server gives what the relay gives unless
-// set otherwise (crates/erevos-relay/src/open.rs).
-test("the guide says how many open places LPHL's server gives, and another server, in every language", () => {
+// LPHL's server is set to give 3000 open places, 300 a day and 5 a day to one address, and to take
+// one out after 100 days without its phone, or 30 when it never came back after its first day
+// (EREVOS_RELAY_OPEN_PLACES, _DAY, _PER_ADDRESS, _UNUSED_DAYS, _FIRST_DAYS); another server gives
+// and takes out what the relay does unless set otherwise (crates/erevos-relay/src/open.rs).
+test("the guide says how many open places LPHL's server gives and how long it keeps them, and another server, in every language", () => {
   const open = readFileSync(new URL('../../crates/erevos-relay/src/open.rs', import.meta.url), 'utf8');
-  const given = ['PLACES', 'DAY', 'PER_ADDRESS'].map((name) => open.match(new RegExp(`pub const DEFAULT_${name}: u64 = (\\d+);`))?.[1]);
-  assert.deepEqual(given, ['1000', '100', '3']);
+  const given = ['PLACES', 'DAY', 'PER_ADDRESS', 'UNUSED_DAYS', 'FIRST_DAYS'].map(
+    (name) => open.match(new RegExp(`pub const DEFAULT_${name}: u64 = (\\d+);`))?.[1],
+  );
+  assert.deepEqual(given, ['1000', '100', '3', '60', '7']);
   for (const lang of ['en', 'de', 'el', 'es', 'fr', 'it', 'pt', 'sh']) {
     const text = readFileSync(new URL(`../guide/${lang}.ts`, import.meta.url), 'utf8').replace(/\s+/g, ' ');
-    assert.match(text, /\bLPHL\b[^.]*?\b3000\b[^.]*?\b300\b[^.]*?\b5\b[^.]*?\b1000, 100 \S+ 3\b/, lang);
+    assert.match(
+      text,
+      /\bLPHL\b[^.]*?\b3000\b[^.]*?\b300\b[^.]*?\b5\b[^.]*?\b100\b[^.]*?\b30\b[^.]*?\b1000, 100 \S+ 3\b[^.]*?\b60\b[^.]*?\b7\b/,
+      lang,
+    );
+  }
+  // What's new says LPHL's days too, in English and in each translation.
+  for (const lang of ['de', 'el', 'es', 'fr', 'it', 'pt', 'sh']) {
+    const lines = readFileSync(new URL(`../i18n/${lang}/whats-new.ts`, import.meta.url), 'utf8').split('\n');
+    const at = lines.findIndex((line) => line.includes("**LPHL's server, by itself**"));
+    assert.ok(at >= 0, lang);
+    for (const line of lines.slice(at, at + 2)) assert.match(line, /\b100\b[^.]*\b30\b/, lang);
   }
 });
 

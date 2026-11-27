@@ -102,9 +102,9 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   20 held for later, and open places together keep at most half of what the server keeps of messages, of files and of
   what is held for later, so they never fill it for everyone. The home screen says what a free place on LPHL's server
   may do each day. LPHL's server gives 3000 at most, 300 a day and 5 a day to one internet address (an IPv6 one by its
-  first 48 bits, its whole network), another server 1000, 100 and 3 unless set otherwise; each counts the addresses only
-  for the day, in memory, and takes out a place whose phone has not connected for 60 days, or for 7 when it never
-  connected again after its first day. Should it take yours out,
+  first 48 bits, its whole network), and takes out a place whose phone has not connected for 100 days, or for 30 when it
+  never connected again after its first day; another server gives 1000, 100 and 3 and takes one out after 60 days, or 7,
+  unless set otherwise. Each counts the addresses only for the day, in memory. Should it take yours out,
   Erevos asks for it again by itself, with the same token, the next time it reaches the server, and your queue, links
   and contacts stay as they were, as the server keeps queues for months. When it gives none, the home screen's dot
   warns, and above the two ways to add someone, or above the chats of a space that has some, it says why, with **Try

@@ -53,7 +53,8 @@
 // only so many in all, a day, and a day to phones from one address, and each place may do only so
 // much a day: make queues, move file bytes, take credentials for the call relay. An open place
 // invites no one, lends no places and has no coupons signed, and its line goes when its token is
-// not used for some time (60 days, unless whoever runs the relay sets otherwise).
+// not used for some time (60 days, or 7 after the day it was made when it never came back, unless
+// whoever runs the relay sets otherwise; LPHL's server 100 and 30).
 //
 // Marks: a send may say what it carries (Mark), for a web app's notice while it is closed
 // (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, word between

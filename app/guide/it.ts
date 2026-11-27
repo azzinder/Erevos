@@ -659,9 +659,9 @@ lì, così chi gestisce il server può togliere un singolo telefono da solo.
   può avere 8 MB di messaggi in attesa e 20 tenuti per dopo, e tutti i posti aperti insieme occupano al massimo la metà
   di ciò che il server tiene di ciascuna cosa, e dei file, così da non riempirlo mai per tutti. Il server di LPHL ne dà
   3000 al massimo, 300 al giorno e 5 al giorno a uno stesso indirizzo internet (uno IPv6 conta con tutta la sua rete,
-  dai suoi primi 48 bit), un altro server 1000, 100 e 3, e ognuno toglie quello il cui telefono non si è collegato da 60
-  giorni, o da 7 se non si è mai più collegato dopo il giorno in cui è stato creato, a meno che chi lo gestisce non
-  abbia scelto altro. Se toglie il tuo, Erevos lo
+  dai suoi primi 48 bit), e toglie quello il cui telefono non si è collegato da 100 giorni, o da 30 se non si è mai più
+  collegato dopo il giorno in cui è stato creato; un altro server ne dà 1000, 100 e 3, e ne toglie uno dopo 60 giorni, o
+  7, a meno che chi lo gestisce non abbia scelto altro. Se toglie il tuo, Erevos lo
   chiede di nuovo da solo, con lo stesso token, la prossima volta che raggiunge il server: la tua coda, i link e i
   contatti restano com’erano, perché il server tiene le code per mesi. Conta gli indirizzi solo per il giorno, in
   memoria, e non li annota mai. Quando non ne dà nessuno, la schermata principale dice perché, sopra i due modi per
