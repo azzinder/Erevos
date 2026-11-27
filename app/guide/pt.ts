@@ -104,8 +104,8 @@ redes, em **Outras redes**, desativadas}. Depois, no espaço:
    app para computador não tem esse passo.
 3. **Mantenha seguro**: uma senha para o Erevos, digitada duas vezes, com um medidor e quatro dicas para uma mais forte,
    a impressão digital ou o rosto, e para onde vão os backups automáticos: **Neste aparelho**, numa pasta que você
-   escolhe, ou **WebDAV** (Nextcloud, ownCloud e outros), cada um configurado na tela de Backups que o **Pronto** abre
-   (veja [Backups](#backup)).
+   escolhe, **WebDAV** (Nextcloud, ownCloud e outros) ou, no Android, **Google Drive**, que primeiro diz o que o Google
+   passa a saber, cada um configurado na tela de Backups que o **Pronto** abre (veja [Backups](#backup)).
 
 Depois a tela inicial diz **Tudo pronto**, com o seu nome, e oferece **Está do meu lado** e **Está longe** para o seu
 primeiro contato, com o que um lugar gratuito no servidor do LPHL pode fazer a cada dia e uma linha para uma permissão
@@ -656,9 +656,12 @@ ali, então quem cuida do servidor pode tirar qualquer celular sozinho.
   ocupam no máximo a metade do que o servidor guarda de cada coisa, e de arquivos, para nunca o encherem para todos. O
   servidor dá 1000 no máximo, 100 por dia e 3 por dia para um mesmo endereço de internet (um IPv6 conta com toda a sua
   rede, pelos seus primeiros 48 bits), e tira aquele cujo celular não se conecta há 60 dias, ou há 7 se nunca mais se
-  conectou depois do dia em que foi criado, a menos que quem cuida dele tenha escolhido outra coisa. Ele conta os
-  endereços só durante o dia, na memória, e nunca os anota. Quando não dá nenhum, a tela inicial diz o porquê, com
-  **Tentar de novo** e **Outro servidor**, e o Erevos tenta de novo toda vez que abre.
+  conectou depois do dia em que foi criado, a menos que quem cuida dele tenha escolhido outra coisa. Se ele tirar o
+  seu, o Erevos o pede de novo sozinho, com o mesmo token, na próxima vez que chegar ao servidor: sua fila, seus links e
+  seus contatos ficam como estavam, porque o servidor guarda as filas por meses. Ele conta os endereços só durante o dia,
+  na memória, e nunca os anota. Quando não dá nenhum, a tela inicial diz o porquê, acima das duas formas de adicionar
+  alguém ou acima das conversas, com **Tentar de novo** e **Outro servidor**, e o Erevos tenta de novo toda vez que
+  abre.
 - **Um convite:** um código QR ou link de um celular que já está no servidor (veja Convidar alguém novo abaixo). Nada para
   digitar, e vocês viram contatos na hora.
 - **Uma conta:** **Entrar com LPHL**, quando o servidor oferece (veja Entrar no servidor abaixo). Qualquer conta LPHL pode,
@@ -3670,7 +3673,18 @@ pasta toda. Fica em **Configurações** → **Dados e dispositivos** →
    menos. Desligar os backups automáticos mantém o servidor, para os backups que você envia; **Parar de enviar** o
    esquece, e os que estão lá ficam. Cada servidor tem uma chave **Pelo Tor**, no seu cartão e no formulário que
    adiciona um, desligada a menos que você a ligue (veja **Num servidor** mais abaixo).
-4. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
+4. **Também para o Google Drive:** no Android, os backups automáticos também podem ir para o seu Google Drive, numa
+   pasta chamada Erevos que o Erevos cria lá, ou só para lá. **Entrar com o Google**, em **Também para o Google Drive**,
+   diz primeiro o que o Google passa a saber, como o **Google Drive** do primeiro início: os backups saem criptografados
+   e o Google não consegue lê-los, mas sabe quem você é, vê quando um chega e qual o tamanho dele, e pode entregar isso
+   se pedirem; no INVISIBLE diz também que o login acontece no seu navegador, fora do Erevos, não pelo Tor. A página do
+   Google pede então, no navegador, que você deixe o Erevos guardar arquivos no seu Google Drive: o Erevos só tem acesso
+   aos arquivos que criou lá, a nada mais do seu Google Drive. Cada backup automático vai então para lá também, enviado
+   e verificado como num servidor, e a pasta guarda os 3 mais recentes. Sem pasta no celular e sem servidor, o cartão
+   deles diz **Só para o Google Drive**. **Parar de enviar** revoga no Google o acesso do Erevos, e os backups que estão
+   lá ficam. Os pedidos ao Google vão como diz a escolha de Tor do espaço, como os backups para um servidor. Não está no
+   Erevos do F-Droid.
+5. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
    uma vez, encontra os arquivos do backup ao lado dele, ou pede que você os escolha, ou a pasta deles (para um backup
    automático, escolha todos os arquivos da pasta, pois alguns dos arquivos dele podem começar como o nome de um
    backup anterior), depois põe o
@@ -3678,7 +3692,8 @@ pasta toda. Fica em **Configurações** → **Dados e dispositivos** →
    então. Se um dos arquivos dele faltar, estiver danificado ou for de outro backup, o Erevos diz qual, e nada muda, a não ser que você escolha restaurar o resto sem ele: então as fotos, os arquivos e as mensagens de voz do celular ficam como estão, e os que ele contém não voltam. **Restaurar de um
    servidor** procura na pasta para onde vão os backups automáticos, ou numa que você indicar com usuário e senha, e
    mostra os backups que estão lá, os mais recentes primeiro: escolha um, digite a senha dele, e ele é restaurado do
-   mesmo jeito, com os arquivos dele de lá.
+   mesmo jeito, com os arquivos dele de lá. **Restaurar do Google Drive** faz o mesmo com os backups da pasta Erevos
+   dele, depois de entrar com o Google quando os backups automáticos não vão para lá.
 
 - **Guarde a senha do backup:** nada abre um backup sem ela, e ninguém pode recuperá-la. Sem bloqueio com senha, a
   senha do backup é tudo o que o protege. Quem tem o arquivo pode testar senhas nele tão rápido quanto o computador
@@ -3709,8 +3724,8 @@ pasta toda. Fica em **Configurações** → **Dados e dispositivos** →
   digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor nenhum arquivo de um backup maior que
   64 MB chega, e direto nenhum maior que 100 MB, o máximo que o Erevos aceita num download: então baixe o backup e os
   arquivos dele do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
-  assim. O Google Drive ficou de fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos
-  apps do Google e de um login no Google no celular.
+  assim. O Google Drive não é um desses servidores: ele tem um lugar próprio, **Também para o Google Drive** acima,
+  porque o Google vincula os backups à sua conta.
   A chave **Pelo Tor** de cada servidor, desligada a menos que você a ligue, vale mais que a escolha do espaço para
   esse servidor: ligada, os backups dele vão só pelo Tor, seja qual for a definição de Tor do espaço, e esperam o Tor
   iniciar, então o servidor não vê o endereço do celular. **Restaurar de um servidor** e o formulário que adiciona um

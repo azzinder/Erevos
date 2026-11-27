@@ -98,8 +98,9 @@ space:
    in turn, as you come back from the one before; **Continue without them** leaves them for **Settings** → **General**
    → **Permissions**. In a browser the step has what the browser asks about; the computer app has no such step.
 3. **Keep it safe**: a password for Erevos, typed twice, with a meter and four tips for a stronger one, the fingerprint
-   or face, and where automatic backups go: **On this device**, in a folder you choose, or **WebDAV** (Nextcloud,
-   ownCloud and others), each set up on the Backups screen that **Done** opens (see [Backups](#backup)).
+   or face, and where automatic backups go: **On this device**, in a folder you choose, **WebDAV** (Nextcloud,
+   ownCloud and others), or on Android **Google Drive**, which first says what Google then knows, each set up on the
+   Backups screen that **Done** opens (see [Backups](#backup)).
 
 Then the home screen says **Ready**, with your name, and offers **They are beside me** and **They are far away** for
 your first contact, with what a free place on LPHL's server may do each day and a line for a permission still missing.
@@ -613,9 +614,12 @@ runs the server can take any one phone out alone.
   held for later, and open places together keep at most half of what the server keeps of each, and of files, so they
   never fill it for everyone. The server gives 1000 of them at most, 100 a day and 3 a day to one internet address (an
   IPv6 one counted with its whole network, by its first 48 bits), and takes out one whose phone has not connected for 60
-  days, or for 7 when it never connected again after the day it was made, unless whoever runs it chose otherwise. It
-  counts addresses only for the day, in memory, and never writes them down. When it gives none, the home screen says
-  why, with **Try again** and **Another server**, and Erevos tries again each time it opens.
+  days, or for 7 when it never connected again after the day it was made, unless whoever runs it chose otherwise.
+  Should it take yours out, Erevos asks for it again by itself, with the same token, the next time it reaches the
+  server: your queue, links and contacts stay as they were, as the server keeps queues for months. It counts addresses
+  only for the day, in memory, and never writes them down. When it gives none, the home screen says why, above the two
+  ways to add someone or above the chats, with **Try again** and **Another server**, and Erevos tries again each time
+  it opens.
 - **An invite:** a QR code or link from a phone already on the server (see Inviting someone new below). Nothing to type,
   and you are contacts at once.
 - **An account:** **Sign in with LPHL**, when the server offers it (see Signing in to the server below). Any LPHL account
@@ -3414,12 +3418,24 @@ automatic backup uses the files of the ones before it too: keep the whole folder
    is on Android. Turning automatic backups off keeps the server, for the backups you send; **Stop sending** forgets
    it, and those there stay. Each server has a **Through Tor** switch, in its card and in the form that adds one, off
    unless you turn it on (see **On a server** below).
-4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
+4. **To Google Drive too:** on Android, automatic backups can also go to your Google Drive, into a folder named Erevos
+   that Erevos makes there, or only there. **Sign in with Google** under **To Google Drive too** first says what Google
+   then knows, as the first start's **Google Drive** does: the backups leave encrypted and Google cannot read them, but
+   it knows who you are, sees when one comes and how big it is, and may hand that over if asked; in INVISIBLE, also
+   that signing in happens in your browser, outside Erevos, not through Tor. Google's page then asks in the browser to
+   let Erevos keep files in your Google Drive: Erevos reaches only the files it made there, nothing else of it. Each
+   automatic backup then goes there too, sent and checked as on a server, and the folder keeps the 3 newest. With no
+   folder on the phone and no server, their card reads **Only to Google Drive**. **Stop sending** takes Erevos's access
+   back at Google, and the backups there stay. Requests to Google go as the space's Tor choice says, as backups to a
+   server do. It is not in the F-Droid build.
+5. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
    backup's files beside it, or asks you to choose them or their folder (for an automatic backup, choose every file of
    the folder, as some of its files may start as an earlier backup's name), then puts the backup in place of everything on
    the phone, and opens as it was when the backup was made, with the passwords used then. With one of its files missing, damaged or another backup's, Erevos says which, and nothing is changed unless you choose to restore the rest without it: then the photos, files and voice messages on the phone stay as they are, and those it holds do not come back. **Restore from a server** looks in the folder automatic
    backups go to, or in one you give with its user name and password, and lists the backups there, newest first:
-   choose one, type its password, and it is restored the same way, with its files from there.
+   choose one, type its password, and it is restored the same way, with its files from there. **Restore from Google
+   Drive** does the same with the backups in its folder Erevos, after a sign-in with Google when automatic backups do
+   not go there.
 
 - **Keep the backup's password:** nothing opens a backup without it, and no one can recover it. Without a password
   lock, the backup's password is all that protects it. Whoever has the file can try passwords on it as fast as their
@@ -3447,8 +3463,8 @@ automatic backup uses the files of the ones before it too: keep the whole folder
   way, through Tor as the space says, and writes nothing there; a password typed for it is used for that restore only
   and not kept. Through Tor no file of a backup larger than 64 MB comes, and straight none larger than 100 MB, the
   most Erevos takes in any download: then download the backup and its files from the server and tap **Restore a
-  backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
-  purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
+  backup**. An Erevos from before this version does not open such a backup. Google Drive is not one of these
+  servers: it has a place of its own, **To Google Drive too** above, as Google ties the backups to your account.
   Each server's **Through Tor** switch, off unless you turn it on, goes before the space's choice for that server: on,
   its backups go only through Tor, whatever the space's Tor setting, and wait for Tor to start, so the server does not
   see the phone's address. **Restore from a server** and the form that adds a server have the same switch, and the

@@ -106,8 +106,9 @@ anderen Netzwerke, unter **Andere Netzwerke**, aus}. Dann, im Bereich:
    Browser hat der Schritt, wonach der Browser fragt; die Desktop-App hat keinen solchen Schritt.
 3. **Halte es sicher**: ein Passwort für Erevos, zweimal eingegeben, mit einer Stärkeanzeige und vier Tipps für ein
    stärkeres, der Fingerabdruck oder das Gesicht, und wohin automatische Backups gehen: **Auf diesem Gerät**, in einen
-   Ordner, den du wählst, oder **WebDAV** (Nextcloud, ownCloud und andere), jedes auf dem Backups-Bildschirm
-   eingerichtet, den **Fertig** öffnet (siehe [Backups](#backup)).
+   Ordner, den du wählst, **WebDAV** (Nextcloud, ownCloud und andere) oder, auf Android, **Google Drive**, das zuerst
+   sagt, was Google dann weiß, jedes auf dem Backups-Bildschirm eingerichtet, den **Fertig** öffnet (siehe
+   [Backups](#backup)).
 
 Dann sagt der Startbildschirm **Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist
 weit weg** für deinen ersten Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und
@@ -699,9 +700,12 @@ Telefons dort, sodass, wer den Server betreibt, jedes einzelne Telefon für sich
   dessen, was der Server davon und an Dateien hält, damit sie ihn nie für alle füllen. Der Server vergibt höchstens 1000
   davon, 100 am Tag und 3 am Tag an eine Internetadresse (eine IPv6-Adresse zählt mit ihrem ganzen Netz, nach ihren
   ersten 48 Bits), und nimmt einen heraus, dessen Telefon sich 60 Tage nicht verbunden hat, oder 7 Tage, wenn es sich
-  nach dem Tag, an dem er entstand, nie wieder verbunden hat, sofern sein Betreiber nichts anderes gewählt hat. Adressen
-  zählt er nur für den Tag, im Speicher, und schreibt sie nie auf. Wenn er keine vergibt, sagt der Startbildschirm
-  warum, mit **Erneut versuchen** und **Anderer Server**, und Erevos versucht es jedes Mal wieder, wenn es sich öffnet.
+  nach dem Tag, an dem er entstand, nie wieder verbunden hat, sofern sein Betreiber nichts anderes gewählt hat. Nimmt er
+  deinen heraus, fragt Erevos von selbst wieder danach, mit demselben Token, sobald es den Server das nächste Mal
+  erreicht: Warteschlange, Links und Kontakte bleiben, wie sie waren, denn der Server hält Warteschlangen monatelang.
+  Adressen zählt er nur für den Tag, im Speicher, und schreibt sie nie auf. Wenn er keine vergibt, sagt der
+  Startbildschirm warum, über den zwei Wegen, jemanden hinzuzufügen, oder über den Chats, mit **Erneut versuchen** und
+  **Anderer Server**, und Erevos versucht es jedes Mal wieder, wenn es sich öffnet.
 - **Eine Einladung:** ein QR-Code oder Link von einem Telefon, das schon auf dem Server ist (siehe „Jemand Neues
   einladen“ weiter unten). Nichts einzutippen, und ihr seid sofort Kontakte.
 - **Ein Konto:** **Mit LPHL anmelden**, wenn der Server es anbietet (siehe „Beim Server anmelden“ weiter unten). Jedes
@@ -3918,14 +3922,28 @@ ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen 
    die automatischen Backups aus, bleibt der Server, für die Backups, die du schickst; **Nicht mehr senden** vergisst
    ihn, und die dort bleiben. Jeder Server hat einen Schalter **Über Tor**, in seiner Karte und im Formular, das einen
    hinzufügt, aus, solange du ihn nicht einschaltest (siehe **Auf einem Server** unten).
-4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
+4. **Auch an Google Drive:** Auf Android können automatische Backups auch an dein Google Drive gehen, in einen Ordner
+   namens Erevos, den Erevos dort anlegt, oder nur dorthin. **Mit Google anmelden** unter **Auch an Google Drive** sagt
+   zuerst, was Google dann weiß, wie das **Google Drive** des ersten Starts: Die Backups gehen verschlüsselt weg und
+   Google kann sie nicht lesen, aber es weiß, wer du bist, sieht, wann eines kommt und wie groß es ist, und gibt das
+   womöglich weiter, wenn es danach gefragt wird; in INVISIBLE sagt es auch, dass die Anmeldung in deinem Browser
+   geschieht, außerhalb von Erevos, nicht über Tor. Die Seite von Google fragt dann im Browser, ob Erevos Dateien in
+   deinem Google Drive halten darf: Erevos hat nur Zugriff auf die Dateien, die es dort selbst angelegt hat, auf sonst
+   nichts darin. Jedes automatische Backup geht dann auch dorthin, gesendet und geprüft wie auf einem Server, und der
+   Ordner behält die 3 neuesten. Ohne Ordner auf dem Telefon und ohne Server steht auf ihrer Karte **Nur an Google
+   Drive**. **Nicht mehr senden** entzieht Erevos bei Google den Zugriff, und die Backups dort bleiben. Anfragen an
+   Google gehen so, wie es die Tor-Wahl des Bereichs sagt, wie Backups an einen Server. Im Erevos aus F-Droid gibt es
+   das nicht.
+5. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
    noch einmal, findet die Dateien des Backups daneben oder bittet dich, sie oder ihren Ordner zu wählen (bei einem
    automatischen Backup wähle jede Datei des Ordners, da manche seiner Dateien wie der Name eines früheren Backups
    anfangen können), setzt dann das
    Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das Backup gemacht wurde, mit den
    damals genutzten Passwörtern. Fehlt eine seiner Dateien, ist sie beschädigt oder gehört sie zu einem anderen Backup, sagt Erevos, welche, und es wird nichts geändert, außer du wählst, den Rest ohne sie wiederherzustellen: Dann bleiben die Fotos, Dateien und Sprachnachrichten auf dem Telefon, wie sie sind, und die in ihr kommen nicht zurück. **Von einem Server wiederherstellen** sieht im Ordner nach, in den automatische Backups gehen,
    oder in einem, den du mit Benutzername und Passwort angibst, und zeigt die Backups dort, die neuesten zuerst: Wähle
-   eines, gib sein Passwort ein, und es wird genauso wiederhergestellt, mit seinen Dateien von dort.
+   eines, gib sein Passwort ein, und es wird genauso wiederhergestellt, mit seinen Dateien von dort. **Von Google Drive
+   wiederherstellen** tut dasselbe mit den Backups im Ordner Erevos dort, nach einer Anmeldung mit Google, wenn
+   automatische Backups nicht dorthin gehen.
 
 - **Bewahre das Passwort des Backups auf:** Nichts öffnet ein Backup ohne es, und niemand kann es wiederherstellen.
   Ohne Passwortsperre ist das Passwort des Backups alles, was es schützt. Wer die Datei hat, kann Passwörter daran so
@@ -3958,8 +3976,8 @@ ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen 
   dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt keine Datei eines Backups über 64 MB, und direkt keine über 100 MB, das Höchste, das
   Erevos bei einem Download annimmt: Dann lade das Backup und seine Dateien vom
   Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos vor dieser Version öffnet ein solches Backup
-  nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
-  Google und eine Google-Anmeldung auf dem Telefon.
+  nicht. Google Drive gehört nicht zu diesen Servern: Es hat einen eigenen Platz, **Auch an Google Drive** oben, da
+  Google die Backups an dein Konto bindet.
   Der Schalter **Über Tor** jedes Servers, aus, solange du ihn nicht einschaltest, geht der Wahl des Bereichs für
   diesen Server vor: Eingeschaltet gehen seine Backups nur über Tor, was auch die Tor-Einstellung des Bereichs sagt,
   und warten, bis Tor startet, der Server sieht die Adresse des Telefons also nicht. **Von einem Server

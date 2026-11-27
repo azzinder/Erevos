@@ -108,8 +108,9 @@ activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensui
    l’app de bureau n’a pas cette étape.
 3. **Garde-le en sécurité** : un mot de passe pour Erevos, tapé deux fois, avec un indicateur et quatre conseils pour en
    avoir un plus solide, l’empreinte ou le visage, et où vont les sauvegardes automatiques : **Sur cet appareil**, dans
-   un dossier que tu choisis, ou **WebDAV** (Nextcloud, ownCloud et d’autres), chacune réglée sur l’écran des
-   Sauvegardes qu’ouvre **Terminé** (voir [Sauvegardes](#backup)).
+   un dossier que tu choisis, **WebDAV** (Nextcloud, ownCloud et d’autres) ou, sur Android, **Google Drive**, qui dit
+   d’abord ce que Google sait alors, chacune réglée sur l’écran des Sauvegardes qu’ouvre **Terminé** (voir
+   [Sauvegardes](#backup)).
 
 Ensuite l’écran d’accueil dit **Prêt**, avec ton nom, et propose **La personne est à côté de moi** et **La personne est
 loin** pour ton premier contact, avec ce qu’une place gratuite sur le serveur de LPHL peut faire chaque jour et une
@@ -694,9 +695,11 @@ téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut r
   le monde. Le serveur en donne 1000 au plus, 100 par jour et 3 par jour à une même adresse internet (une adresse IPv6
   compte avec tout son réseau, par ses 48 premiers bits), et retire celle dont le téléphone ne s’est pas connecté depuis
   60 jours, ou depuis 7 s’il ne s’est jamais reconnecté après le jour où elle a été créée, sauf si celui qui le gère a
-  choisi autrement. Il ne compte les adresses que pour la journée, en mémoire, et ne les note jamais. Quand il n’en
-  donne aucune, l’écran d’accueil dit pourquoi, avec **Réessayer** et **Autre serveur**, et Erevos réessaie à chaque
-  ouverture.
+  choisi autrement. S’il retire la tienne, Erevos la redemande de lui-même, avec le même jeton, la prochaine fois qu’il
+  joint le serveur : ta file, tes liens et tes contacts restent comme ils étaient, car le serveur garde les files des
+  mois durant. Il ne compte les adresses que pour la journée, en mémoire, et ne les note jamais. Quand il n’en donne
+  aucune, l’écran d’accueil dit pourquoi, au-dessus des deux façons d’ajouter quelqu’un ou au-dessus des discussions,
+  avec **Réessayer** et **Autre serveur**, et Erevos réessaie à chaque ouverture.
 - **Une invitation :** un code QR ou un lien d’un téléphone déjà sur le serveur (voir Inviter quelqu’un de nouveau
   ci-dessous). Rien à taper, et vous êtes contacts aussitôt.
 - **Un compte :** **Se connecter avec LPHL**, quand le serveur le propose (voir Se connecter au serveur ci-dessous).
@@ -3891,14 +3894,28 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
    serveur, pour les sauvegardes que tu envoies ; **Ne plus envoyer** l’oublie, et celles qui y sont restent. Chaque
    serveur a un interrupteur **Par Tor**, dans sa carte et dans le formulaire qui en ajoute un, désactivé tant que tu
    ne l’actives pas (voir **Sur un serveur** plus bas).
-4. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
+4. **Aussi vers Google Drive :** sur Android, les sauvegardes automatiques peuvent aussi aller vers ton Google Drive,
+   dans un dossier nommé Erevos qu’Erevos y crée, ou seulement là. **Se connecter avec Google**, sous **Aussi vers
+   Google Drive**, dit d’abord ce que Google sait alors, comme le **Google Drive** du premier démarrage : les
+   sauvegardes partent chiffrées et Google ne peut pas les lire, mais il sait qui tu es, voit quand l’une arrive et
+   quelle taille elle a, et peut le transmettre si on le lui demande ; en INVISIBLE, il dit aussi que la connexion se
+   fait dans ton navigateur, hors d’Erevos, pas par Tor. La page de Google te demande ensuite, dans le navigateur,
+   d’autoriser Erevos à garder des fichiers dans ton Google Drive : Erevos n’accède qu’aux fichiers qu’il y a créés, à
+   rien d’autre dans ton Google Drive. Chaque sauvegarde automatique y va alors aussi, envoyée et vérifiée comme sur un
+   serveur, et le dossier garde les 3 plus récentes. Sans dossier sur le téléphone ni serveur, leur carte dit
+   **Seulement vers Google Drive**. **Ne plus envoyer** retire l’accès d’Erevos chez Google, et les sauvegardes qui y
+   sont restent. Les requêtes vers Google passent comme le dit le choix Tor de l’espace, comme les sauvegardes vers un
+   serveur. Google Drive n’est pas dans l’Erevos de F-Droid.
+5. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
    demande encore une fois, trouve les fichiers de la sauvegarde à côté d’elle, ou te demande de les choisir, ou leur
    dossier (pour une sauvegarde automatique, choisis tous les fichiers du dossier, car certains de ses fichiers
    peuvent commencer par le nom d’une sauvegarde plus ancienne), puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel qu’il était quand la
    sauvegarde a été faite, avec les mots de passe utilisés alors. Si l’un de ses fichiers manque, est abîmé ou appartient à une autre sauvegarde, Erevos dit lequel, et rien n’est changé, sauf si tu choisis de restaurer le reste sans lui : alors les photos, les fichiers et les messages vocaux du téléphone restent tels quels, et ceux qu’il contient ne reviennent pas. **Restaurer depuis un serveur** regarde dans le dossier où
    vont les sauvegardes automatiques, ou dans un dossier que tu donnes avec son nom d’utilisateur et son mot de passe,
    et montre les sauvegardes qui s’y trouvent, les plus récentes d’abord : choisis-en une, tape son mot de passe, et
-   elle est restaurée de la même façon, avec ses fichiers venus de là-bas.
+   elle est restaurée de la même façon, avec ses fichiers venus de là-bas. **Restaurer depuis Google Drive** fait de
+   même avec les sauvegardes de son dossier Erevos, après une connexion avec Google quand les sauvegardes automatiques
+   n’y vont pas.
 
 - **Garde le mot de passe de la sauvegarde :** rien n’ouvre une sauvegarde sans lui, et personne ne peut le récupérer.
   Sans verrou par mot de passe, le mot de passe de la sauvegarde est tout ce qui la protège. Celui qui a le fichier peut
@@ -3929,9 +3946,9 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   l’espace, et n’écrit rien là-bas ; un mot de passe tapé pour cela ne sert qu’à cette restauration et n’est pas
   gardé. Par Tor, aucun fichier d’une sauvegarde de plus de 64 Mo ne vient, et en direct aucun de plus de
   100 Mo, le maximum qu’Erevos accepte pour un téléchargement : télécharge alors la sauvegarde et ses fichiers depuis
-  le serveur et appuie sur **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
-  laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
-  connexion Google sur le téléphone.
+  le serveur et appuie sur **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle
+  sauvegarde. Google Drive n’est pas l’un de ces serveurs : il a sa propre place, **Aussi vers Google Drive** plus haut,
+  car Google lie les sauvegardes à ton compte.
   L’interrupteur **Par Tor** de chaque serveur, désactivé tant que tu ne l’actives pas, passe avant le choix de
   l’espace pour ce serveur : activé, ses sauvegardes passent uniquement par Tor, quel que soit le réglage Tor de
   l’espace, et attendent le démarrage de Tor, donc le serveur ne voit pas l’adresse du téléphone. **Restaurer depuis

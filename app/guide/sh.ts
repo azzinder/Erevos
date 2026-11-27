@@ -99,9 +99,9 @@ SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže**, isklju
    svaki ekran Androidovih postavki, kad se vratite s prethodnog; **Nastavite bez njih** ih ostavlja za **Postavke** →
    **Općenito** → **Dozvole**. U pregledniku korak ima ono što pita preglednik; aplikacija za računar nema taj korak.
 3. **Čuvajte ga sigurnim**: lozinka za Erevos, upisana dva puta, s mjeračem i četiri savjeta za jaču, otisak prsta ili
-   lice, i kamo idu automatske rezervne kopije: **Na ovom uređaju**, u folder koji izaberete, ili **WebDAV** (Nextcloud,
-   ownCloud i drugi), svako postavljeno na ekranu Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne
-   kopije](#backup)).
+   lice, i kamo idu automatske rezervne kopije: **Na ovom uređaju**, u folder koji izaberete, **WebDAV** (Nextcloud,
+   ownCloud i drugi) ili, na Androidu, **Google Drive**, koji prvo kaže što Google tada zna, svako postavljeno na ekranu
+   Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne kopije](#backup)).
 
 Zatim početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko je** za vaš prvi kontakt, s onim
 što besplatno mjesto na LPHL-ovom serveru smije svaki dan i retkom za dozvolu koja još nedostaje. Do **Gotovo** koraci
@@ -639,7 +639,9 @@ onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
   datoteka, da ga nikad ne napune za sve. Server ih daje najviše 1000, 100 dnevno i 3 dnevno jednoj internet adresi
   (IPv6 adresa broji se sa cijelom svojom mrežom, po prvih 48 bita), i uklanja ono čiji se telefon nije povezao 60 dana,
   ili 7 kad se nikad više nije povezao nakon dana kad je napravljeno, osim ako onaj ko ga vodi nije izabrao drugačije.
-  Adrese broji samo za taj dan, u memoriji, i nikad ih ne zapisuje. Kad ne daje nijedno, početni ekran kaže zašto, uz
+  Ako ukloni vaše, Erevos ga sam ponovo traži, s istim tokenom, sljedeći put kad stigne do servera: vaš red, linkovi i
+  kontakti ostaju kakvi su bili, jer server čuva redove mjesecima. Adrese broji samo za taj dan, u memoriji, i nikad ih
+  ne zapisuje. Kad ne daje nijedno, početni ekran kaže zašto, iznad dva načina da dodate nekoga ili iznad razgovora, uz
   **Pokušajte ponovo** i **Drugi server**, a Erevos pokušava ponovo svaki put kad se otvori.
 - **Pozivnica:** QR kod ili link s telefona koji je već na serveru (pogledajte Pozivanje nekoga novog ispod). Ništa se
   ne upisuje, a odmah ste kontakti.
@@ -3527,13 +3529,24 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
    a na Androidu i koliko je to otprilike. Isključivanje automatskih kopija zadržava server, za kopije koje šaljete;
    **Prestani slati** ga zaboravlja, a one koje su tamo ostaju. Svaki server ima prekidač **Preko Tora**, na svojoj
    kartici i u obrascu koji ga dodaje, isključen dok ga ne uključite (vidi **Na serveru** niže).
-4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
+4. **I na Google Drive:** na Androidu, automatske rezervne kopije mogu ići i na vaš Google Drive, u folder po imenu
+   Erevos koji Erevos tamo napravi, ili samo tamo. **Prijavite se na Google**, pod **I na Google Drive**, prvo kaže što
+   Google tada zna, kao **Google Drive** pri prvom pokretanju: kopije odlaze šifrirane i Google ih ne može pročitati,
+   ali zna ko ste, vidi kad jedna stigne i koliko je velika, i može to predati ako se traži; u INVISIBLE kaže još i da
+   se prijava odvija u vašem pregledniku, izvan Erevosa, ne preko Tora. Googleova stranica zatim u pregledniku pita
+   smije li Erevos čuvati datoteke na vašem Google Driveu: Erevos ima pristup samo datotekama koje je tamo napravio,
+   ničemu drugom na vašem Google Driveu. Svaka automatska rezervna kopija tada ide i tamo, poslana i provjerena kao na
+   serveru, a folder čuva 3 najnovije. Bez foldera na telefonu i bez servera, njihova kartica kaže **Samo na Google
+   Drive**. **Prestani slati** oduzima Erevosu pristup kod Googlea, a kopije koje su tamo ostaju. Zahtjevi Googleu idu
+   kako kaže izbor Tora prostora, kao rezervne kopije na server. Nema ga u Erevosu iz F-Droida.
+5. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder (za automatsku kopiju
    izaberite svaku datoteku foldera, jer neke njegove datoteke mogu počinjati kao ime ranije kopije), a zatim stavlja rezervnu
    kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija napravljena, s lozinkama koje
    su se tada koristile. Ako neka od njenih datoteka nedostaje, oštećena je ili pripada drugoj kopiji, Erevos kaže koja, i ništa se ne mijenja, osim ako izaberete da vratite ostalo bez nje: tada fotografije, datoteke i glasovne poruke na telefonu ostaju kakve jesu, a one koje ona sadrži se ne vraćaju. **Vrati sa servera** gleda u folder u koji idu automatske rezervne kopije, ili u onaj koji navedete s
    korisničkim imenom i lozinkom, i prikazuje rezervne kopije koje su tamo, najnovije prve: izaberite jednu, upišite
-   njenu lozinku, i vraća se na isti način, s njenim datotekama odande.
+   njenu lozinku, i vraća se na isti način, s njenim datotekama odande. **Vrati s Google Drivea** radi isto s kopijama u
+   njegovom folderu Erevos, nakon prijave na Google kad automatske kopije ne idu tamo.
 
 - **Čuvajte lozinku rezervne kopije:** bez nje ništa ne otvara rezervnu kopiju, i niko je ne može vratiti. Bez
   zaključavanja lozinkom, lozinka rezervne kopije je sve što je štiti. Ko ima datoteku može na njoj isprobavati lozinke
@@ -3562,8 +3575,8 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
   kaže prostor, i tamo ništa ne piše; lozinka upisana za to koristi se samo za to vraćanje i ne čuva se. Preko Tora
   ne stiže nijedna datoteka rezervne kopije veća od 64 MB, a direktno nijedna veća od 100 MB, koliko Erevos najviše
   prima pri preuzimanju: tada preuzmite kopiju i njene datoteke sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
-  stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
-  ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
+  stariji od ove verzije ne otvara takvu kopiju. Google Drive nije jedan od tih servera: ima svoje mjesto, **I na Google
+  Drive** gore, jer Google vezuje kopije za vaš račun.
   Prekidač **Preko Tora** svakog servera, isključen dok ga ne uključite, ima prednost nad izborom prostora za taj
   server: uključen, njegove rezervne kopije idu samo preko Tora, bez obzira na Tor podešavanje prostora, i čekaju da
   se Tor pokrene, pa server ne vidi adresu telefona. **Vrati sa servera** i obrazac koji dodaje server imaju isti

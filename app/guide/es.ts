@@ -105,8 +105,9 @@ principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después, en e
    la aplicación de escritorio no tiene este paso.
 3. **Mantenlo seguro**: una contraseña para Erevos, escrita dos veces, con un medidor y cuatro consejos para una más
    fuerte, la huella o la cara, y adónde van las copias automáticas: **En este dispositivo**, en una carpeta que eliges,
-   o **WebDAV** (Nextcloud, ownCloud y otros), cada una configurada en la pantalla de Copias de seguridad que abre
-   **Hecho** (ver [Copias de seguridad](#backup)).
+   **WebDAV** (Nextcloud, ownCloud y otros) o, en Android, **Google Drive**, que primero dice lo que Google sabe
+   entonces, cada una configurada en la pantalla de Copias de seguridad que abre **Hecho** (ver [Copias de
+   seguridad](#backup)).
 
 Luego la pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está lejos** para tu primer
 contacto, con lo que puede hacer cada día un sitio gratuito en el servidor de LPHL y una línea para un permiso que aún
@@ -658,9 +659,12 @@ así que quien gestiona el servidor puede sacar a cualquier teléfono por separa
   la mitad de lo que el servidor guarda de cada cosa, y de archivos, para que nunca lo llenen para todos. El servidor da
   1000 como máximo, 100 al día y 3 al día a una misma dirección de internet (una IPv6 cuenta con toda su red, por sus
   primeros 48 bits), y quita uno cuyo teléfono no se ha conectado en 60 días, o en 7 si nunca volvió a conectarse
-  después del día en que se creó, salvo que quien lo gestiona haya elegido otra cosa. Cuenta las direcciones solo
-  durante el día, en memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, con **Volver
-  a intentarlo** y **Otro servidor**, y Erevos lo intenta de nuevo cada vez que se abre.
+  después del día en que se creó, salvo que quien lo gestiona haya elegido otra cosa. Si quita el tuyo, Erevos lo pide
+  de nuevo por sí solo, con el mismo token, la próxima vez que llegue al servidor: tu cola, tus enlaces y tus contactos
+  quedan como estaban, porque el servidor guarda las colas durante meses. Cuenta las direcciones solo durante el día, en
+  memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, encima de las dos formas de
+  añadir a alguien o encima de los chats, con **Volver a intentarlo** y **Otro servidor**, y Erevos lo intenta de nuevo
+  cada vez que se abre.
 - **Una invitación:** un código QR o un enlace de un teléfono que ya está en el servidor (ver Invitar a alguien nuevo más
   abajo). Nada que escribir, y sois contactos al instante.
 - **Una cuenta:** **Iniciar sesión con LPHL**, cuando el servidor lo ofrece (ver Iniciar sesión en el servidor más abajo).
@@ -3693,7 +3697,18 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
    copias que envías; **Dejar de enviar** lo olvida, y las que hay allí se quedan. Cada servidor tiene un interruptor
    **Por Tor**, en su tarjeta y en el formulario que lo añade, desactivado salvo que lo actives (mira **En un
    servidor** más abajo).
-4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
+4. **También a Google Drive:** en Android, las copias automáticas pueden ir también a tu Google Drive, a una carpeta
+   llamada Erevos que Erevos crea allí, o solo allí. **Iniciar sesión con Google**, bajo **También a Google Drive**,
+   dice primero lo que Google sabe entonces, como el **Google Drive** del primer inicio: las copias salen cifradas y
+   Google no puede leerlas, pero sabe quién eres, ve cuándo llega una y cuánto pesa, y puede entregarlo si se lo piden;
+   en INVISIBLE dice además que el inicio de sesión ocurre en tu navegador, fuera de Erevos, no por Tor. La página de
+   Google te pide luego, en el navegador, que permitas a Erevos guardar archivos en tu Google Drive: Erevos solo accede
+   a los archivos que creó allí, a nada más de tu Google Drive. Cada copia automática va entonces también allí, enviada
+   y comprobada como en un servidor, y la carpeta guarda las 3 más recientes. Sin carpeta en el teléfono y sin servidor,
+   su tarjeta dice **Solo a Google Drive**. **Dejar de enviar** retira el acceso de Erevos en Google, y las copias que
+   hay allí se quedan. Las peticiones a Google van como dice la elección de Tor del espacio, igual que las copias a un
+   servidor. No está en el Erevos de F-Droid.
+5. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
    una vez más, encuentra los archivos de la copia junto a ella, o te pide que los elijas a ellos o su carpeta (para
    una copia automática, elige todos los archivos de la carpeta, pues algunos de sus archivos pueden empezar como el
    nombre de una copia anterior), y luego
@@ -3701,7 +3716,8 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
    contraseñas de entonces. Si falta uno de sus archivos, está dañado o es de otra copia, Erevos dice cuál, y no se cambia nada a menos que elijas restaurar el resto sin él: entonces las fotos, los archivos y los mensajes de voz del teléfono quedan como están, y los que contiene no vuelven.
    **Restaurar desde un servidor** mira en la carpeta a la que van las copias automáticas, o en una que des con su
    usuario y contraseña, y muestra las copias que hay allí, las más recientes primero: elige una, escribe su contraseña
-   y se restaura igual, con sus archivos desde allí.
+   y se restaura igual, con sus archivos desde allí. **Restaurar desde Google Drive** hace lo mismo con las copias de su
+   carpeta Erevos, tras iniciar sesión con Google cuando las copias automáticas no van allí.
 
 - **Guarda la contraseña de la copia:** nada abre una copia sin ella, y nadie puede recuperarla. Sin bloqueo con
   contraseña, la contraseña de la copia es lo único que la protege. Quien tenga el archivo puede probar contraseñas en
@@ -3732,8 +3748,8 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
   espacio, y no escribe nada allí; una contraseña escrita para ello se usa solo para esa restauración y no se guarda.
   Por Tor no llega ningún archivo de una copia de más de 64 MB, y directamente ninguno de más de 100 MB, lo máximo que
   Erevos acepta en una descarga: entonces descarga la copia y sus archivos del servidor y toca **Restaurar una copia de
-  seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive queda fuera a propósito: Google
-  ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de Google en el teléfono.
+  seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive no es uno de estos servidores:
+  tiene un sitio propio, **También a Google Drive** más arriba, ya que Google vincula las copias a tu cuenta.
   El interruptor **Por Tor** de cada servidor, desactivado salvo que lo actives, va antes que la elección del espacio
   para ese servidor: activado, sus copias van solo por Tor, diga lo que diga el ajuste de Tor del espacio, y esperan a
   que Tor arranque, así que el servidor no ve la dirección del teléfono. **Restaurar desde un servidor** y el
