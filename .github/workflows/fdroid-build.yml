@@ -5,16 +5,18 @@
 name: fdroid-build
 
 # Checks that an edition's F-Droid APK comes out the same, byte for byte, wherever it is built:
-# builds it twice, on two of GitHub's machines, the second with fewer processors, each time as
-# F-Droid builds it (scripts/fdroid-build.sh: F-Droid's build server image, its `fdroid build`, the
-# recipe in deploy/fdroid/), and compares the two (scripts/apk-compare.py). So a release can build
-# its F-Droid APK the same way and sign it, and F-Droid hand out that signed APK when its own build
-# of the release's commit is the same (docs/reproducible-builds.md): the first build is signed as a
-# release would sign it (scripts/fdroid-sign.sh), with a key made for the test, and its signature,
-# copied onto the second, must verify, as F-Droid checks. With a published F-Droid APK's address it
-# also compares the first build with that one, apart from its signature. No release key is used,
-# and nothing is published or sent anywhere. Only by hand: Actions, fdroid-build, Run workflow;
-# each run takes about two hours of Actions minutes.
+# builds it twice, on two of GitHub's machines, each time as F-Droid builds it
+# (scripts/fdroid-build.sh: F-Droid's build server image, its `fdroid build`, the recipe in
+# deploy/fdroid/), and compares the two (scripts/apk-compare.py). The first takes Maven Central's
+# files from Google's copy of it, as a release does (scripts/maven-central-mirror.gradle); the
+# second takes them from Maven Central itself, as F-Droid does, with fewer processors. So a release
+# can build its F-Droid APK the same way and sign it, and F-Droid hand out that signed APK when its
+# own build of the release's commit is the same (docs/reproducible-builds.md): the first build is
+# signed as a release would sign it (scripts/fdroid-sign.sh), with a key made for the test, and its
+# signature, copied onto the second, must verify, as F-Droid checks. With a published F-Droid APK's
+# address it also compares the first build with that one, apart from its signature. No release key
+# is used, and nothing is published or sent anywhere. Only by hand: Actions, fdroid-build, Run
+# workflow; each run takes about two hours of Actions minutes.
 
 on:
   workflow_dispatch:
@@ -61,11 +63,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # As a release builds it: Maven Central's files from Google's copy of it.
           - name: one
             docker: ''
-          # Fewer processors, so that whatever depends on how many there are shows.
+            mirror: '1'
+          # As F-Droid builds it: Maven Central's files from Maven Central, so that a file Google's
+          # copy had otherwise shows; and fewer processors, so that whatever depends on how many
+          # there are shows too.
           - name: two
             docker: --cpuset-cpus=0-1
+            mirror: ''
     name: build ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 240
@@ -101,6 +108,7 @@ jobs:
           BUILD: ${{ inputs.build }}
           FDROID_DOCKER: ${{ matrix.docker }}
           FDROID_FORCE: ${{ inputs.force && '1' || '' }}
+          FDROID_MAVEN_MIRROR: ${{ matrix.mirror }}
         run: scripts/fdroid-build.sh "$EDITION" "$VERSION" "$BUILD" "unsigned-${{ matrix.name }}.apk"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

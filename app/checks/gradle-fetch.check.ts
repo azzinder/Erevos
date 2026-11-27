@@ -7,7 +7,10 @@
 // GitHub's machines, in a test build of the F-Droid APK and in the check build. Every build of the
 // Android app fetches them first, tried four times, a plugin not found asked for again after the
 // first try (Gradle remembers it otherwise); the releases do so before the release key is there, so
-// that `help` configures the app as an unsigned build and that step holds no secret.
+// that `help` configures the app as an unsigned build and that step holds no secret. On GitHub's
+// machines Maven Central's files come from Google's copy of it (scripts/maven-central-mirror.gradle):
+// Maven Central at times refuses those machines, and Gradle then looks no further down its list,
+// not even on the Gradle Plugin Portal. F-Droid's own build stays with Maven Central.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -29,6 +32,9 @@ const step = (workflow: string, name: string) => {
 };
 
 const FETCH = 'Fetch Gradle and its plugins';
+const MIRROR = 'scripts/maven-central-mirror.gradle';
+// How a workflow's Android job puts it where Gradle applies it to every build, before any Gradle runs.
+const INSTALL = `install -D -m 644 "$GITHUB_WORKSPACE/${MIRROR}" ~/.gradle/init.d/maven-central-mirror.gradle`;
 
 // The loop: Gradle, then `help`, which configures the build and builds nothing; four tries, 15, 30
 // and 60 seconds apart, the plugins asked for again from the second on; failing at the end.
@@ -36,6 +42,10 @@ function assertLoop(text: string, gradle: string, arch: string, inWorkflow: bool
   const lines = text.split('\n').map((line) => line.trim());
   const start = lines.indexOf('refresh=""');
   assert.ok(start >= 0, `${where}: no refresh=""`);
+  // In a workflow Maven Central's files come from Google's copy, from the first Gradle on; F-Droid's
+  // recipe leaves Maven Central as it is.
+  if (inWorkflow) assert.equal(lines[start - 1], INSTALL, `${where}: Google's copy of Maven Central first`);
+  else assert.doesNotMatch(text, /maven-central-mirror|googleapis|init\.d|init-script/, where);
   assert.deepEqual(
     lines.slice(start, start + 8),
     [
@@ -62,6 +72,7 @@ test('the releases fetch Gradle and its plugins first, tried four times, before 
     assert.match(fetch, /\n {8}working-directory: app\/android\n/, name);
     assert.doesNotMatch(fetch, /secrets\.|ANDROID_KEY/, `${name}: no secret where the plugins are fetched`);
     assertLoop(fetch, './gradlew', 'arm64-v8a', true, name);
+    assert.ok(workflow.indexOf(INSTALL) < workflow.indexOf('gradlew'), `${name}: no Gradle before Google's copy`);
     // After the Android project is made, before the key is written and the APK built with it.
     const made = at(workflow, 'Generate the Android project');
     const key = at(workflow, 'Set up the release signing key');
@@ -78,6 +89,7 @@ test('the check build fetches them the same way before it builds', () => {
   assert.ok(fetch, name);
   assert.match(fetch, /\n {8}working-directory: app\/android\n/, name);
   assertLoop(fetch, './gradlew', 'x86_64', true, name);
+  assert.ok(workflow.indexOf(INSTALL) < workflow.indexOf('gradlew'), `${name}: no Gradle before Google's copy`);
   const gradle = at(workflow, 'Gradle');
   assert.ok(gradle > at(workflow, FETCH), `${name}: fetched before it builds`);
   assert.match(step(workflow, 'Gradle'), /\n {8}run: \.\/gradlew assembleDebug -PreactNativeArchitectures=x86_64 --no-daemon/, name);
@@ -90,4 +102,47 @@ test("the F-Droid build fetches them the same way, in F-Droid's Gradle, before i
   const loop = script.indexOf('refresh=""');
   const build = script.indexOf('\ngradle assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a\n');
   assert.ok(loop > script.indexOf('\ncd android\n') && build > loop, `${name}: fetched in android/, before it builds`);
+});
+
+test("on GitHub's machines Maven Central's files come from Google's copy of it, in every build Gradle runs", () => {
+  const script = read(MIRROR);
+  assert.match(script, /^def mirror = 'https:\/\/maven-central\.storage-download\.googleapis\.com\/maven2\/'$/m);
+  assert.match(script, /^def central = \['repo\.maven\.apache\.org', 'repo1\.maven\.org'\]$/m);
+  // Every list of repositories: the settings' (their plugins' among them) and every project's.
+  for (const list of [
+    'settings.buildscript.repositories',
+    'settings.pluginManagement.repositories',
+    'settings.dependencyResolutionManagement.repositories',
+    'project.buildscript.repositories',
+    'project.repositories',
+  ]) {
+    assert.ok(script.includes(`  fromMirror(${list})\n`), `${MIRROR}: ${list}`);
+  }
+  assert.match(script, /repositories\.configureEach \{ repository ->\n {4}if \(repository instanceof MavenArtifactRepository && central\.contains\(repository\.url\.host\)\) \{\n {6}repository\.url = mirror\n/);
+  // F-Droid's scanner reads every .gradle file of the source for repositories it does not know: none
+  // is declared here, Maven Central's address only changes.
+  assert.doesNotMatch(script, /\b(maven|ivy)\s*[({]/, `${MIRROR}: declares no repository`);
+
+  // F-Droid's image, on GitHub's machines: the releases ask for it, the test build's first build too,
+  // and its second takes Maven Central's files from Maven Central, as F-Droid does.
+  for (const name of ['release.yml', 'release-lite.yml']) {
+    const build = step(read(`.github/workflows/${name}`), 'Build as F-Droid builds');
+    assert.match(build, /\n {8}env:\n {10}FDROID_MAVEN_MIRROR: '1'\n {8}run: scripts\/fdroid-build\.sh /, name);
+  }
+  const test = read('.github/workflows/fdroid-build.yml');
+  assert.match(test, /- name: one\n {12}docker: ''\n {12}mirror: '1'\n/);
+  assert.match(test, /- name: two\n {12}docker: --cpuset-cpus=0-1\n {12}mirror: ''\n/);
+  assert.match(step(test, 'Build as F-Droid builds'), /\n {10}FDROID_MAVEN_MIRROR: \$\{\{ matrix\.mirror \}\}\n/);
+  assert.ok(read('scripts/fdroid-build.sh').includes('\n  -e MAVEN_MIRROR="${FDROID_MAVEN_MIRROR:-}" \\\n'), 'fdroid-build.sh');
+  const server = read('deploy/fdroid/buildserver.sh');
+  const install = server.indexOf(
+    `if [ -n "\${MAVEN_MIRROR:-}" ]; then\n  install -D -m 644 /source/${MIRROR} "$home_vagrant/.gradle/init.d/maven-central-mirror.gradle"\nfi\n`,
+  );
+  assert.ok(install >= 0, 'buildserver.sh: only when asked to');
+  assert.ok(install < server.indexOf('\nchown -R vagrant "$home_vagrant"\n'), 'buildserver.sh: before vagrant gets its home');
+  assert.ok(install < server.indexOf('fdroid build --verbose'), 'buildserver.sh: before fdroid build');
+  // F-Droid's recipes, which F-Droid builds with Maven Central itself, do not know of it.
+  for (const name of ['deploy/fdroid/app.erevos.yml', 'deploy/fdroid/app.erevos.lite.yml']) {
+    assert.doesNotMatch(read(name), /maven-central-mirror|googleapis/, name);
+  }
 });

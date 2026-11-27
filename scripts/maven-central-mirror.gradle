@@ -1,0 +1,39 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// Maven Central from Google's copy of it, for the Android builds on GitHub's machines. Gradle
+// applies this script to every build it runs there, React Native's and Expo's plugins' included:
+// the workflows put it in ~/.gradle/init.d, and deploy/fdroid/buildserver.sh does in F-Droid's
+// image when scripts/fdroid-build.sh is asked to (FDROID_MAVEN_MIRROR=1).
+//
+// On 2026-11-27 a plugin only the Gradle Plugin Portal has (foojay-resolver-convention) was "not
+// found" on some of GitHub's machines, every try for minutes. React Native's list of repositories
+// asks Maven Central first; Maven Central answers machines like these "too many requests" (HTTP
+// 429) at times, as other projects saw that month; and once a repository fails, Gradle looks no
+// further down the list (its guide, "Disabled repositories"). Google's copy holds the same files at
+// the same paths, so it takes Maven Central's place in every list, and Maven Central is not asked
+// at all. The APK does not change: F-Droid, whose own build takes them from Maven Central, must get
+// the same one. checks/gradle-fetch.check.ts holds the workflows and buildserver.sh to it.
+
+def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+def central = ['repo.maven.apache.org', 'repo1.maven.org']
+
+def fromMirror = { repositories ->
+  repositories.configureEach { repository ->
+    if (repository instanceof MavenArtifactRepository && central.contains(repository.url.host)) {
+      repository.url = mirror
+    }
+  }
+}
+
+beforeSettings { settings ->
+  fromMirror(settings.buildscript.repositories)
+  fromMirror(settings.pluginManagement.repositories)
+  fromMirror(settings.dependencyResolutionManagement.repositories)
+}
+
+beforeProject { project ->
+  fromMirror(project.buildscript.repositories)
+  fromMirror(project.repositories)
+}

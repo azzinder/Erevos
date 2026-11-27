@@ -10,8 +10,8 @@
 # Gradle version's checksum), fdroidserver from git, and the build itself run as the user vagrant in
 # /home/vagrant, so the source is built in /home/vagrant/build/<app>, as on F-Droid's build server.
 # scripts/fdroid-build.sh starts it with the source at /source (read only), the recipe in /work and
-# APP, BUILD, SERVER (an fdroidserver commit), FORCE and OWNER set; the APK, unsigned, comes out in
-# /work/out, owned by OWNER.
+# APP, BUILD, SERVER (an fdroidserver commit), FORCE, MAVEN_MIRROR and OWNER set; the APK, unsigned,
+# comes out in /work/out, owned by OWNER.
 
 set -euxo pipefail
 
@@ -32,6 +32,11 @@ git config --system --add safe.directory '*'
 
 for d in metadata tmp unsigned logs build .android .gradle; do mkdir -p "$home_vagrant/$d"; done
 cp "/work/$APP.yml" "$home_vagrant/metadata/"
+# When asked to (MAVEN_MIRROR=1, as the releases ask on GitHub's machines), and unlike F-Droid:
+# Maven Central's files from Google's copy of it (scripts/maven-central-mirror.gradle), the same.
+if [ -n "${MAVEN_MIRROR:-}" ]; then
+  install -D -m 644 /source/scripts/maven-central-mirror.gradle "$home_vagrant/.gradle/init.d/maven-central-mirror.gradle"
+fi
 chown -R vagrant "$home_vagrant"
 
 force=()

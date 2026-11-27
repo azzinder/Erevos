@@ -34,7 +34,7 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
 - As in Erevos 3.0.0-rc.4: the F-Droid APK is built from `deploy/fdroid/app.erevos.lite.yml` as F-Droid builds it, with
   no key at hand, then signed apart with the release key and checked as the APK Updates installs is, without the
   permission to install packages. Gradle and the plugins it needs are fetched first, tried four times, before the
-  release key is there.
+  release key is there, and on GitHub's machines Maven Central's files come from Google's copy of it.
 
 ## 3.0.0-rc.4 (2026-11-27)
 
@@ -287,6 +287,12 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   without (`release-android`) and the check build, now fetches them first with `help`, which builds nothing, tried four
   times, a plugin not found asked for again after the first try; the releases do it before the release key is there
   (`checks/gradle-fetch.check.ts`).
+- On GitHub's machines Maven Central's files now come from Google's copy of it, the same files at the same paths, in
+  every build Gradle runs there (`scripts/maven-central-mirror.gradle`): Maven Central at times answers those machines
+  "too many requests", and Gradle then looks no further down its list, not even on the Gradle Plugin Portal, so a
+  plugin only the Portal has was "not found" for minutes, every try. A release's F-Droid build takes them from there
+  too; F-Droid's own build takes them from Maven Central, and the workflow `fdroid-build` now builds its second APK so,
+  to show that both come out the same.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

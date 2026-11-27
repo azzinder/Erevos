@@ -53,7 +53,10 @@ server image (`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie`), as 
 in F-Droid's folder (`/home/vagrant/build/app.erevos`): the same Debian, Java, SDK, NDK and paths
 as F-Droid's own build, so React Native's CMake builds keep the same folder in both. The recipe
 pins what Debian does not: Node by its version and SHA-256, Rust and Go as the source names them,
-Expo's template by its exact version, and Expo's modules built from their source.
+Expo's template by its exact version, and Expo's modules built from their source. On GitHub's
+machines a release takes Maven Central's files from Google's copy of it, the same files at the same
+paths (`scripts/maven-central-mirror.gradle`), as Maven Central at times refuses those machines;
+F-Droid's own build takes them from Maven Central.
 
 That job holds no key. The next one signs the APK with the release key, adding an APK Signature
 Scheme v2 signature, as Gradle signs the release APK, and nothing else (`scripts/fdroid-sign.sh`,
@@ -68,10 +71,11 @@ to Google Drive left from before (`lib/google-drive.ts` driveLeftBehind), and an
 F-Droid asks before it installs F-Droid's from a phone nearby (`lib/give-app.ts`).
 
 The workflow `fdroid-build` (by hand) checks this before a release: it builds an edition's F-Droid
-APK twice, on two of GitHub's machines, the second with fewer processors, compares the two
-(`scripts/apk-compare.py`), then signs the first with a key made for the test and copies that
-signature onto the second, as F-Droid checks a release. Given a published F-Droid APK's address,
-it compares the first with that one too.
+APK twice, on two of GitHub's machines, the first as a release does, the second with fewer
+processors and with Maven Central's files from Maven Central itself, as F-Droid does, compares the
+two (`scripts/apk-compare.py`), then signs the first with a key made for the test and copies that
+signature onto the second, as F-Droid checks a release. Given a published F-Droid APK's address, it
+compares the first with that one too.
 
 ## What makes it the same
 

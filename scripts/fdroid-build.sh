@@ -16,8 +16,11 @@
 #
 # It builds the checkout's last commit, not what is not committed. Needs git and Docker, about 30 GB
 # of disk, and about an hour. FDROID_IMAGE names another image, FDROID_SERVER another fdroidserver
-# commit, FDROID_DOCKER more options for `docker run` (such as --cpuset-cpus=0-1), and FDROID_FORCE=1
-# builds on when F-Droid's scanner finds a problem in the source, for a test only.
+# commit, FDROID_DOCKER more options for `docker run` (such as --cpuset-cpus=0-1), FDROID_FORCE=1
+# builds on when F-Droid's scanner finds a problem in the source, for a test only, and
+# FDROID_MAVEN_MIRROR=1 takes Maven Central's files from Google's copy of it, as the releases do on
+# GitHub's machines (scripts/maven-central-mirror.gradle); F-Droid takes the same files from Maven
+# Central.
 
 set -euo pipefail
 
@@ -51,6 +54,7 @@ docker image inspect --format 'Image: {{index .RepoDigests 0}}' "$image"
 docker run --rm ${FDROID_DOCKER:-} \
   -v "$repo:/source:ro" -v "$work:/work" \
   -e APP="$app" -e BUILD="$build" -e SERVER="$server" -e FORCE="${FDROID_FORCE:-}" -e OWNER="$(id -u):$(id -g)" \
+  -e MAVEN_MIRROR="${FDROID_MAVEN_MIRROR:-}" \
   "$image" bash /source/deploy/fdroid/buildserver.sh
 
 cp "$work/out/${app}_${build}.apk" "$out"
