@@ -8,6 +8,25 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## 3.2.0-rc.4 (2026-11-27)
+
+The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own chats and calls, with what is below.
+
+### For you
+
+- What Erevos 3.0.0-rc.4 brought to chats and calls: **How visible are you?**, with SPEED, ANONYMOUS and INVISIBLE, and
+  with SPEED calls straight from phone to phone; New chat that says what works with no server, and who came in with
+  your invite; server in plain words; the fingerprint or face at once; backups that say why a folder did not take
+  them, and are checked once a cloud app has them; a new first start, in four steps, that takes a place on LPHL's
+  server by itself; and automatic backups only to a server, or to Google Drive too. Nostr on a computer, in the web
+  app and on Sailfish OS is not Erevos Lite's, which is on Android only.
+
+### Under the hood
+
+- As in Erevos 3.0.0-rc.4: the key a fingerprint or face opens is made in the phone's TEE; a call with no server
+  between the phones is set up through Nostr; and a free place on LPHL's server keeps to a share of its own there,
+  and one the server let go is asked for again with the same token.
+
 ## 3.0.0-rc.4 (2026-11-27)
 
 ### For you

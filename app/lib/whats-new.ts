@@ -30,6 +30,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.2.0-rc.4',
+    forYou: [
+      mark("**Release candidate 4**: Erevos Lite with what Erevos 3.0.0-rc.4 brought to its chats: a new first start in four short steps that takes a place on LPHL's server by itself, a choice of how visible you are, with calls straight from phone to phone, the fingerprint or face at once, and backups that say why a folder did not take them."),
+    ],
+    underTheHood: [],
+  },
+  {
     version: '3.0.0-rc.4',
     forYou: [
       mark("**How visible are you?** Three choices at the top of **Settings**, for who sees your phone's internet address, each space its own. **SPEED**: the servers and your contacts see it; Erevos no longer asks first, and calls with a contact go straight from phone to phone where they can, through the call server where they cannot, and work even with no server between you two. **ANONYMOUS**: only the server sees it, never your contacts; Erevos asks first, as before, and calls go through a server. **INVISIBLE**: no one sees it; everything goes through Tor, and there are no voice or video calls. A space is on SPEED until you choose another, unless Tor is on in it. See [How visible are you?](#direct)."),
