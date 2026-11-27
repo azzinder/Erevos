@@ -57,11 +57,15 @@ Expo's template by its exact version, and Expo's modules built from their source
 
 That job holds no key. The next one signs the APK with the release key, adding an APK Signature
 Scheme v2 signature, as Gradle signs the release APK, and nothing else (`scripts/fdroid-sign.sh`,
-which checks that with `apksigcopier compare`). F-Droid's recipe names that file (`Binaries`) and
-the key (`AllowedAPKSigningKeys`): F-Droid builds the same commit, copies the file's signature onto
-its own build and, when it verifies, every other byte being the same, hands out the signed file.
-Erevos from F-Droid, from the releases and Erevos+ then share one key, and each installs over the
-other.
+where only the SDK's apksigner sees the key); the step after it, the key gone, checks that with
+`apksigcopier compare`, installed by its SHA-256 (`scripts/apksigcopier-requirements.txt`).
+F-Droid's recipe names that file (`Binaries`) and the key (`AllowedAPKSigningKeys`): F-Droid builds
+the same commit, copies the file's signature onto its own build and, when it verifies, every other
+byte being the same, hands out the signed file. Erevos from F-Droid and from the releases then share
+one key, as Erevos+ does: each installs over the other, everything kept. What the F-Droid build has
+not (Check for updates, From a phone nearby, Google Drive) then stops: Backups says so of backups
+to Google Drive left from before (`lib/google-drive.ts` driveLeftBehind), and an Erevos not from
+F-Droid asks before it installs F-Droid's from a phone nearby (`lib/give-app.ts`).
 
 The workflow `fdroid-build` (by hand) checks this before a release: it builds an edition's F-Droid
 APK twice, on two of GitHub's machines, the second with fewer processors, compares the two

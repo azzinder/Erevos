@@ -22,7 +22,9 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   app and on Sailfish OS is not Erevos Lite's, which is on Android only.
 - **The F-Droid build, the same file F-Droid hands out**: as Erevos's, `erevos-lite-android-fdroid.apk` is now built as
   F-Droid builds it and signed with the same key, so that Erevos Lite from F-Droid, once it is there, and from the
-  releases page install over each other, keeping everything.
+  releases page install over each other, keeping everything. As in Erevos, the F-Droid one has no Check for updates,
+  no From a phone nearby and no Google Drive: Backups says so, and an Erevos Lite from the releases page asks before it
+  takes F-Droid's from a phone nearby.
 
 ### Under the hood
 
@@ -131,7 +133,11 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
 - **The F-Droid build, the same file F-Droid hands out**: `erevos-android-fdroid.apk`, beside each release, is now built
   as F-Droid builds it and signed with the same key as the other Erevos, so that F-Droid, once Erevos is there, hands
   out that very file. Erevos from F-Droid and from the releases page then install over each other, keeping everything,
-  with no uninstalling (User guide → Updates). It still has no Check for updates and no Google Drive.
+  with no uninstalling (User guide → Updates). It has no Check for updates, no From a phone nearby and no Google Drive,
+  so going to it those stop: Backups then says so of backups that went to Google Drive, whose Stop sending still
+  takes Erevos's access back at Google, and where automatic backups still go. Given to a phone nearby, F-Droid's
+  Erevos says it is F-Droid's, on its screen and on the page, and an Erevos from the releases page asks before it
+  installs it.
 
 ### Under the hood
 
@@ -267,7 +273,11 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   with click (`scripts/apksigcopier-requirements.txt`, which `fdroid-build` uses too), to check that the signature alone
   was added; the job then checks the APK as the apk job does, and that it is `app.erevos` of this build, without the
   permission to install packages. The APK Updates installs is built as before, now alone in its job; Erevos Lite's
-  release does the same.
+  release does the same. A build that hangs holds the release two hours at most.
+- Taken from a phone nearby, F-Droid's build is told by its manifest (no permission to install packages,
+  `NearbyApk.kt`), and asked about before Android's installer opens (`lib/give-app.ts`). The F-Droid build reads
+  Google Drive's settings left by an Erevos installed before it (`lib/google-drive.ts` driveLeftBehind) only to show
+  them in Backups and stop them; it sends nothing there.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

@@ -294,4 +294,10 @@ export const cloudBackup: Record<string, string> = {
   "Google did not take the sign-in: {error}. Start it again.": "Google hat die Anmeldung nicht angenommen: {error}. Starte sie noch einmal.",
   "Erevos was not allowed to keep files in your Google Drive. Sign in again and allow it.":
     "Erevos durfte keine Dateien in deinem Google Drive ablegen. Melde dich wieder an und erlaube es.",
+  "Automatic backups went only to Google Drive, and the Erevos from F-Droid sends none there, so none goes anywhere now. Choose a folder on {device}, or add a server, and they go on there.":
+    "Die automatischen Backups gingen nur an Google Drive, und das Erevos aus F-Droid sendet keine dorthin, also geht jetzt keines irgendwohin. Wähle einen Ordner auf {device} oder füge einen Server hinzu, dann gehen sie dort weiter.",
+  "No longer sent to Google Drive":
+    "Nicht mehr an Google Drive gesendet",
+  "The Erevos from F-Droid keeps to services anyone may run, so it sends no backups to Google Drive. Those already there stay until you delete them. Stop sending also takes back, at Google, Erevos's access to your Google Drive.":
+    "Das Erevos aus F-Droid bleibt bei Diensten, die jeder selbst betreiben kann, daher sendet es keine Backups an Google Drive. Die schon dort sind, bleiben, bis du sie löschst. „Nicht mehr senden“ nimmt Erevos außerdem bei Google den Zugriff auf dein Google Drive wieder.",
 };

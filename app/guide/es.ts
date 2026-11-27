@@ -3708,7 +3708,8 @@ mantén junta toda la carpeta. Está en **Ajustes** → **Datos y dispositivos**
    y comprobada como en un servidor, y la carpeta guarda las 3 más recientes. Sin carpeta en el teléfono y sin servidor,
    su tarjeta dice **Solo a Google Drive**. **Dejar de enviar** retira el acceso de Erevos en Google, y las copias que
    hay allí se quedan. Las peticiones a Google van como dice la elección de Tor del espacio, igual que las copias a un
-   servidor. No está en el Erevos de F-Droid.
+   servidor. No está en el Erevos de F-Droid: instalado sobre un Erevos que enviaba copias allí, no envía ninguna, lo
+   dice en **También a Google Drive**, y su **Dejar de enviar** sigue retirando en Google el acceso de Erevos.
 5. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
    una vez más, encuentra los archivos de la copia junto a ella, o te pide que los elijas a ellos o su carpeta (para
    una copia automática, elige todos los archivos de la carpeta, pues algunos de sus archivos pueden empezar como el
@@ -4706,7 +4707,8 @@ minuto y cubre cualquier sorpresa.
   sin **Buscar actualizaciones**. Está firmado con la misma clave que el Erevos de la página de versiones: F-Droid
   compila de nuevo cada versión desde su código y entrega el archivo firmado de la página de versiones solo cuando su
   propia compilación sale igual. Así cada uno se instala encima del otro y todo se queda: para cambiar, instala el
-  otro, de la misma versión o de una más nueva.
+  otro, de la misma versión o de una más nueva. El de F-Droid no tiene **Buscar actualizaciones**, ni **Desde un
+  teléfono cercano**, ni copias a Google Drive: al pasar a él, eso se detiene, y vuelve con el otro.
 - **Nunca uno más antiguo:** no instales una versión más antigua encima de una más nueva. Sus datos pueden estar en un
   formato que la más antigua no puede leer. Restaura en su lugar una copia hecha con esa versión más antigua.
 - **Una versión a la que le falta tu sistema** lo dice en sus notas: esa compilación falló, así que usa la versión
@@ -4736,8 +4738,9 @@ o el otro en el punto de acceso de este: activa antes el punto de acceso en los 
   propio certificado, así que cuando tengas internet compara el certificado con el de la web o la página de versiones
   de Erevos. El propio Erevos, en **Actualizaciones**, rechaza un paquete firmado de otro modo.
 - **No desde una tienda:** un Erevos instalado en partes, como instalan algunas tiendas, no puede darse entero y lo
-  dice. El Erevos de F-Droid, firmado con la misma clave, se da como cualquier otro. El Erevos de F-Droid no toma nada
-  en **Actualizaciones**: lo actualiza F-Droid.
+  dice. El Erevos de F-Droid, firmado con la misma clave, se da como cualquier otro, pero lo dice en su pantalla y en
+  la página: también en el otro teléfono solo F-Droid lo actualizará después, y un Erevos allí que no sea de F-Droid
+  pregunta antes de instalarlo. El Erevos de F-Droid no toma nada en **Actualizaciones**: lo actualiza F-Droid.
 - Solo en Android. Cualquiera en la misma red que vea el código puede descargar Erevos también; no hay nada más que
   tomar.
 

@@ -28,6 +28,7 @@ import {
   DRIVE_SCOPE,
   DriveError,
   driveFiles,
+  driveLeftBehind,
   driveParts,
   driveRestoreAccount,
   fetchFromDrive,
@@ -663,6 +664,56 @@ test('without a client ID for the app nothing of Google Drive is offered', async
     assert.ok(!lines.some((line) => line.includes('Google Drive')), edition);
   }
   assert.ok(whatsNewOf(VERSIONS, NEXT, '3.0.0-rc.4', 'erevos', true).some((v) => v.forYou.some((line) => line.includes('Google Drive'))));
+});
+
+test('in the F-Droid build, backups to Google Drive from an Erevos before it show, go nowhere, and can still be stopped', async () => {
+  // Here, as in the F-Droid build, there is no app of Google's: what an Erevos installed before it kept
+  // is read only to show it under Backups.
+  setDriveClient(null);
+  assert.equal(await driveLeftBehind(), null);
+  store.set(DRIVE, JSON.stringify({ refresh: 'kept', folder: 'folder', names: [], parts: {}, held: [], unfinished: [], last: NOW, error: '' }));
+  try {
+    assert.deepEqual(await driveLeftBehind(), { last: NOW });
+    // Automatic backups do not load it, so nothing goes there.
+    assert.equal(await loadDriveBackup(), null);
+    // In a build with Google Drive these are its own settings, shown as they are, not as left behind.
+    setDriveClient({ id: CLIENT, package: PACKAGE });
+    assert.equal(await driveLeftBehind(), null);
+  } finally {
+    setDriveClient(null);
+    store.delete(DRIVE);
+  }
+  for (const kept of ['not json', JSON.stringify({ refresh: '', folder: 'folder' }), JSON.stringify({ folder: 'folder' })]) {
+    store.set(DRIVE, kept);
+    try {
+      assert.equal(await driveLeftBehind(), null, kept);
+    } finally {
+      store.delete(DRIVE);
+    }
+  }
+  // Stop sending takes the access back at Google there too, with no app of Google's.
+  const google = fresh();
+  try {
+    const drive = await signedIn(google);
+    setDriveClient(null);
+    assert.deepEqual(await driveLeftBehind(), { last: 0 });
+    assert.equal(await stopDriveBackup(), true);
+    assert.deepEqual(google.revoked, [drive.refresh]);
+    assert.equal(await driveLeftBehind(), null);
+  } finally {
+    done(google);
+  }
+  // Backups reads it only in the F-Droid build and shows it with Stop sending, which forgets it; where
+  // the automatic backups went only there, it says that none goes anywhere now.
+  const backups = read('app/backup.tsx');
+  assert.ok(backups.includes('if (CAN_DRIVE) void loadDriveBackup().then(setDrive);\n    else if (FDROID) void driveLeftBehind().then(setDriveLeft);'));
+  const at = backups.indexOf('{driveLeft && CAN_AUTO_BACKUP ? (');
+  assert.ok(at > 0);
+  const card = backups.slice(at, backups.indexOf(') : null}', at));
+  assert.ok(card.includes('onPress={() => void stopDrive()}'));
+  assert.ok(card.includes('"The Erevos from F-Droid keeps to services anyone may run, so it sends no backups to Google Drive.'));
+  assert.ok(backups.includes('    setDrive(null);\n    setDriveLeft(null);'));
+  assert.ok(backups.includes('{driveLeft && !cloud\n                  ? t(\n                      "Automatic backups went only to Google Drive, and the Erevos from F-Droid sends none there'));
 });
 
 test('Backups warns before every sign-in with Google, as the first start does', () => {

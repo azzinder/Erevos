@@ -3725,7 +3725,8 @@ la cartella. Si trova in **Impostazioni** → **Dati e dispositivi** →
    come su un server, e la cartella tiene i 3 più recenti. Senza cartella sul telefono e senza server, la loro scheda
    dice **Solo su Google Drive**. **Smetti di inviare** revoca presso Google l’accesso di Erevos, e i backup che ci sono
    restano. Le richieste a Google vanno come dice la scelta Tor dello spazio, come i backup su un server. Non c’è
-   nell’Erevos di F-Droid.
+   nell’Erevos di F-Droid: installato sopra un Erevos che vi inviava backup, non ne invia, lo dice sotto **Anche su
+   Google Drive**, e il suo **Smetti di inviare** toglie ancora presso Google l’accesso di Erevos.
 5. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
    volta, trova i file del backup accanto a lui, o ti chiede di sceglierli, o la loro cartella (per un backup
    automatico, scegli ogni file della cartella, perché alcuni dei suoi file possono cominciare come il nome di un
@@ -4721,7 +4722,9 @@ file per ogni sistema. Lì restano le cinque più recenti.
   lo dicono, senza **Cerca aggiornamenti**. È firmato con la stessa chiave dell’Erevos della pagina delle versioni:
   F-Droid ricompila ogni versione dal suo codice e distribuisce il file firmato della pagina delle versioni solo
   quando la sua compilazione risulta uguale. Così ognuno si installa sopra l’altro e tutto resta: per passare dall’uno
-  all’altro, installa l’altro, della stessa versione o di una più recente.
+  all’altro, installa l’altro, della stessa versione o di una più recente. Quello di F-Droid non ha **Cerca
+  aggiornamenti**, né **Da un telefono vicino**, né backup su Google Drive: passando a lui, questi si fermano, e
+  tornano con l’altro.
 - **Mai più vecchio:** non installare una versione più vecchia sopra una più recente. I suoi dati potrebbero essere in
   una forma che quella più vecchia non sa leggere. Ripristina invece un backup fatto con quella versione più vecchia.
 - **Una versione a cui manca il tuo sistema** lo dice nelle sue note: quella build non è riuscita, quindi prendi la
@@ -4751,8 +4754,9 @@ l’altro sull’hotspot di questo: attiva prima l’hotspot nelle impostazioni 
   il proprio certificato, quindi appena hai internet confronta il certificato con quello del sito o della pagina delle
   versioni di Erevos. Erevos stesso, in **Aggiornamenti**, rifiuta un pacchetto firmato diversamente.
 - **Non da uno store:** un Erevos installato in parti, come fanno alcuni store, non può essere dato per intero e lo
-  dice. L’Erevos di F-Droid, firmato con la stessa chiave, si dà come qualsiasi altro. L’Erevos di F-Droid non prende
-  nulla in **Aggiornamenti**: lo aggiorna F-Droid.
+  dice. L’Erevos di F-Droid, firmato con la stessa chiave, si dà come qualsiasi altro, ma lo dice sul suo schermo e
+  sulla pagina: anche sull’altro telefono poi lo aggiornerà solo F-Droid, e un Erevos lì che non viene da F-Droid
+  chiede prima di installarlo. L’Erevos di F-Droid non prende nulla in **Aggiornamenti**: lo aggiorna F-Droid.
 - Solo su Android. Chiunque sulla stessa rete veda il codice può scaricare anche lui Erevos; non c’è altro da prendere.
 
 **Perché:** dove internet è tagliato, o sorvegliato, o un telefono non raggiunge nemmeno il sito, Erevos può comunque

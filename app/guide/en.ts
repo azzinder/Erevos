@@ -3428,7 +3428,8 @@ automatic backup uses the files of the ones before it too: keep the whole folder
    automatic backup then goes there too, sent and checked as on a server, and the folder keeps the 3 newest. With no
    folder on the phone and no server, their card reads **Only to Google Drive**. **Stop sending** takes Erevos's access
    back at Google, and the backups there stay. Requests to Google go as the space's Tor choice says, as backups to a
-   server do. It is not in the F-Droid build.
+   server do. It is not in the F-Droid build: installed over an Erevos that sent backups there, it sends none, says so
+   under **To Google Drive too**, and its **Stop sending** still takes Erevos's access back at Google.
 5. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
    backup's files beside it, or asks you to choose them or their folder (for an automatic backup, choose every file of
    the folder, as some of its files may start as an earlier backup's name), then puts the backup in place of everything on
@@ -4336,7 +4337,8 @@ files \`sha256sum -c --ignore-missing SHA256SUMS\` must say **OK** for each.
   with no **Check for updates**. It is signed with the same key as the Erevos from the releases page: F-Droid builds
   each version again from its source and hands out the releases page's signed file only when its own build comes out
   the same. So each installs over the other, and everything stays: to switch, install the other one, of the same
-  version or newer.
+  version or newer. The F-Droid one has no **Check for updates**, no **From a phone nearby** and no backups to Google
+  Drive: switching to it, those stop, and they come back with the other.
 - **Never older:** do not install an older version over a newer one. Its data may be in a form the older one cannot
   read. Restore a backup made with that older version instead.
 - **A release that lacks your system** says so in its notes: that build failed, so take the release before.
@@ -4364,8 +4366,9 @@ this phone's hotspot: turn the hotspot on in Android's settings first.
   certificate, so once you have internet compare the certificate with the one on Erevos's website or releases page.
   Erevos itself, in **Updates**, refuses a package signed otherwise.
 - **Not from a store:** an Erevos installed in parts, as some stores install apps, cannot be given whole and says so.
-  Erevos from F-Droid, signed with the same key, is given like any other. F-Droid's Erevos takes nothing in
-  **Updates**: F-Droid updates it.
+  Erevos from F-Droid, signed with the same key, is given like any other, but says so on its screen and on the page:
+  on the other phone too, only F-Droid then updates it, and an Erevos there that is not from F-Droid asks before it
+  installs it. F-Droid's Erevos takes nothing in **Updates**: F-Droid updates it.
 - Android only. Anyone on the same network who sees the code can download Erevos too; nothing else is there to take.
 
 **Why:** where the internet is cut, or watched, or a phone may not reach the website at all, Erevos can still go from

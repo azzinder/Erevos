@@ -272,7 +272,9 @@ jobs:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
       EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    # About 35 minutes, as .github/workflows/fdroid-build.yml builds it too; a build that hangs holds
+    # the release two hours at most.
+    timeout-minutes: 120
     permissions:
       contents: read
     steps:
@@ -412,7 +414,7 @@ jobs:
           cat files/version.json
           fdroid=""
           if [ -f files/erevos-lite-android-fdroid.apk ]; then
-            fdroid="- **Android, the F-Droid build**: erevos-lite-android-fdroid.apk, the same Erevos Lite without Check for updates, signed with the same key. F-Droid builds it again from this release's source and hands out this signed copy when the two match."
+            fdroid="- **Android, the F-Droid build**: erevos-lite-android-fdroid.apk, the same Erevos Lite, signed with the same key, without Check for updates, From a phone nearby or backups to Google Drive: it installs over the other with everything kept, and from then on only F-Droid updates it. F-Droid builds it again from this release's source and hands out this signed copy when the two match."
           fi
           cat > notes.md <<NOTES
           **Erevos Lite $EREVOS_VERSION**, $(TZ=Europe/Athens date +%-d/%-m/%Y), from commit ${GITHUB_SHA::7}.

@@ -365,6 +365,23 @@ export async function loadDriveBackup(): Promise<DriveBackup | null> {
   }
 }
 
+/**
+ * In a build without Google Drive, as F-Droid's (lib/google-drive-ids.ts): when the last automatic
+ * backup went to Google Drive (0: none yet), when an Erevos that had it sent them there, as before
+ * F-Droid's was installed over it; null when it did not. None goes there from this build, which
+ * Backups says, and Stop sending (stopDriveBackup) still takes the access back at Google.
+ */
+export async function driveLeftBehind(): Promise<{ last: number } | null> {
+  if (client) return null;
+  try {
+    const value = JSON.parse((await secureGet(DRIVE)) ?? 'null') as Partial<DriveBackup> | null;
+    if (!value || typeof value.refresh !== 'string' || !value.refresh) return null;
+    return { last: sentOf(value).last };
+  } catch {
+    return null;
+  }
+}
+
 /** Keeps Google Drive's settings as they are now. */
 export async function saveDriveBackup(drive: DriveBackup): Promise<void> {
   await secureSet(DRIVE, JSON.stringify(drive));

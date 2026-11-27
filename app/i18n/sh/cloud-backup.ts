@@ -294,4 +294,10 @@ export const cloudBackup: Record<string, string> = {
   "Google did not take the sign-in: {error}. Start it again.": "Google nije prihvatio prijavu: {error}. Počnite ponovo.",
   "Erevos was not allowed to keep files in your Google Drive. Sign in again and allow it.":
     "Erevos nije dobio dopuštenje da čuva datoteke na vašem Google Driveu. Ponovo se prijavite i dopustite to.",
+  "Automatic backups went only to Google Drive, and the Erevos from F-Droid sends none there, so none goes anywhere now. Choose a folder on {device}, or add a server, and they go on there.":
+    "Automatske rezervne kopije išle su samo na Google Drive, a Erevos iz F-Droida tamo ne šalje nijednu, pa sada ne idu nikamo. Izaberite folder na {device} ili dodajte server, i nastavljaju tamo.",
+  "No longer sent to Google Drive":
+    "Više se ne šalju na Google Drive",
+  "The Erevos from F-Droid keeps to services anyone may run, so it sends no backups to Google Drive. Those already there stay until you delete them. Stop sending also takes back, at Google, Erevos's access to your Google Drive.":
+    "Erevos iz F-Droida drži se usluga koje svatko može pokrenuti, pa ne šalje rezervne kopije na Google Drive. One koje su već tamo ostaju dok ih ne obrišete. „Prestani slati“ također oduzima, kod Googlea, Erevosu pristup vašem Google Driveu.",
 };

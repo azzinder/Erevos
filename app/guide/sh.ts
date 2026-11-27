@@ -3539,7 +3539,9 @@ svaka, čija imena počinju kao njeno; automatska kopija koristi i datoteke pret
    ničemu drugom na vašem Google Driveu. Svaka automatska rezervna kopija tada ide i tamo, poslana i provjerena kao na
    serveru, a folder čuva 3 najnovije. Bez foldera na telefonu i bez servera, njihova kartica kaže **Samo na Google
    Drive**. **Prestani slati** oduzima Erevosu pristup kod Googlea, a kopije koje su tamo ostaju. Zahtjevi Googleu idu
-   kako kaže izbor Tora prostora, kao rezervne kopije na server. Nema ga u Erevosu iz F-Droida.
+   kako kaže izbor Tora prostora, kao rezervne kopije na server. Nema ga u Erevosu iz F-Droida: instaliran preko
+   Erevosa koji je tamo slao rezervne kopije, ne šalje nijednu, kaže to pod **I na Google Drive**, a njegovo
+   **Prestani slati** i dalje oduzima Erevosu pristup kod Googlea.
 5. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder (za automatsku kopiju
    izaberite svaku datoteku foldera, jer neke njegove datoteke mogu počinjati kao ime ranije kopije), a zatim stavlja rezervnu
@@ -4490,7 +4492,8 @@ svakog iznenađenja.
   **Provjeri ažuriranja**. Potpisan je istim ključem kao Erevos sa stranice izdanja: F-Droid svaku verziju ponovo
   gradi iz izvornog koda i dijeli potpisanu datoteku sa stranice izdanja samo kad njegova gradnja ispadne ista. Zato
   se svaki instalira preko drugog i sve ostaje: da pređete s jednog na drugi, instalirajte drugi, iste verzije ili
-  novije.
+  novije. Onaj iz F-Droida nema **Provjeri ažuriranja**, ni **S obližnjeg telefona**, ni rezervne kopije na Google
+  Drive: prelaskom na njega to prestaje, a vraća se s drugim.
 - **Nikad starija:** ne instalirajte stariju verziju preko novije. Njeni podaci mogu biti u obliku koji starija ne
   može pročitati. Umjesto toga vratite rezervnu kopiju napravljenu tom starijom verzijom.
 - **Izdanje kojem nedostaje vaš sistem** to kaže u svojim napomenama: ta izgradnja nije uspjela, pa uzmite prethodno
@@ -4519,8 +4522,9 @@ hotspotu ovoga: prvo uključite hotspot u postavkama Androida.
   certifikat, pa čim imate internet usporedite certifikat s onim na web stranici ili stranici izdanja Erevosa. Sam
   Erevos, u **Ažuriranja**, odbija paket potpisan drukčije.
 - **Ne iz trgovine:** Erevos instaliran u dijelovima, kako neke trgovine instaliraju, ne može se dati u cijelosti i to
-  kaže. Erevos iz F-Droida, potpisan istim ključem, daje se kao svaki drugi. F-Droidov Erevos ne prima ništa u
-  **Ažuriranja**: ažurira ga F-Droid.
+  kaže. Erevos iz F-Droida, potpisan istim ključem, daje se kao svaki drugi, ali to kaže na svom ekranu i na stranici:
+  i na drugom telefonu ažurirat će ga onda samo F-Droid, a Erevos tamo koji nije iz F-Droida pita prije nego što ga
+  instalira. F-Droidov Erevos ne prima ništa u **Ažuriranja**: ažurira ga F-Droid.
 - Samo na Androidu. Svatko na istoj mreži tko vidi kod može također preuzeti Erevos; ondje nema ničeg drugog za uzeti.
 
 **Zašto:** gdje je internet prekinut, ili nadziran, ili telefon uopće ne dolazi do web stranice, Erevos i dalje može ići

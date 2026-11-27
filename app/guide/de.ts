@@ -3934,7 +3934,8 @@ ein automatisches Backup nutzt auch die Dateien der früheren: Halte den ganzen 
    Ordner behält die 3 neuesten. Ohne Ordner auf dem Telefon und ohne Server steht auf ihrer Karte **Nur an Google
    Drive**. **Nicht mehr senden** entzieht Erevos bei Google den Zugriff, und die Backups dort bleiben. Anfragen an
    Google gehen so, wie es die Tor-Wahl des Bereichs sagt, wie Backups an einen Server. Im Erevos aus F-Droid gibt es
-   das nicht.
+   das nicht: Über ein Erevos installiert, das Backups dorthin sandte, sendet es keine, sagt das unter **Auch an
+   Google Drive**, und sein **Nicht mehr senden** entzieht Erevos bei Google weiterhin den Zugriff.
 5. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
    noch einmal, findet die Dateien des Backups daneben oder bittet dich, sie oder ihren Ordner zu wählen (bei einem
    automatischen Backup wähle jede Datei des Ordners, da manche seiner Dateien wie der Name eines früheren Backups
@@ -4972,7 +4973,9 @@ heruntergeladenen Dateien muss \`sha256sum -c --ignore-missing SHA256SUMS\` für
   sagen das, ohne **Nach Updates suchen**. Es ist mit demselben Schlüssel signiert wie das Erevos von der
   Release-Seite: F-Droid baut jede Version aus ihrem Quellcode neu und gibt die signierte Datei der Release-Seite nur
   heraus, wenn sein eigener Build gleich herauskommt. So installiert sich jedes über das andere, und alles bleibt: Zum
-  Wechseln installiere das andere, in derselben oder einer neueren Version.
+  Wechseln installiere das andere, in derselben oder einer neueren Version. Das aus F-Droid hat kein **Nach Updates
+  suchen**, kein **Von einem Telefon in der Nähe** und keine Backups an Google Drive: Beim Wechsel dorthin hört das
+  auf und kommt mit dem anderen wieder.
 - **Nie älter:** Installiere keine ältere Version über eine neuere. Ihre Daten können in einer Form sein, die die
   ältere nicht lesen kann. Stelle stattdessen ein Backup wieder her, das mit dieser älteren Version gemacht wurde.
 - **Ein Release, dem dein System fehlt,** sagt das in seinen Hinweisen: Dieser Build ist fehlgeschlagen, also nimm
@@ -5003,7 +5006,9 @@ WLAN sein, oder das andere im Hotspot dieses Telefons: Schalte den Hotspot zuers
   der Release-Seite von Erevos. Erevos selbst lehnt in **Updates** ein anders signiertes Paket ab.
 - **Nicht aus einem Store:** Ein in Teilen installiertes Erevos, wie manche Stores Apps installieren, kann nicht als
   Ganzes gegeben werden und sagt das. Erevos aus F-Droid, mit demselben Schlüssel signiert, wird wie jedes andere
-  gegeben. Das Erevos aus F-Droid nimmt in **Updates** nichts an: F-Droid aktualisiert es.
+  gegeben, sagt das aber auf seinem Bildschirm und auf der Seite: Auch auf dem anderen Telefon aktualisiert es dann
+  nur F-Droid, und ein Erevos dort, das nicht aus F-Droid stammt, fragt, bevor es es installiert. Das Erevos aus
+  F-Droid nimmt in **Updates** nichts an: F-Droid aktualisiert es.
 - Nur auf Android. Wer im selben Netz den Code sieht, kann Erevos ebenfalls herunterladen; sonst gibt es dort nichts.
 
 **Warum:** Wo das Internet abgeschaltet oder überwacht ist oder ein Telefon die Website gar nicht erreicht, kann Erevos

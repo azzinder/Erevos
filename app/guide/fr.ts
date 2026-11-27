@@ -3907,7 +3907,9 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
    serveur, et le dossier garde les 3 plus récentes. Sans dossier sur le téléphone ni serveur, leur carte dit
    **Seulement vers Google Drive**. **Ne plus envoyer** retire l’accès d’Erevos chez Google, et les sauvegardes qui y
    sont restent. Les requêtes vers Google passent comme le dit le choix Tor de l’espace, comme les sauvegardes vers un
-   serveur. Google Drive n’est pas dans l’Erevos de F-Droid.
+   serveur. Google Drive n’est pas dans l’Erevos de F-Droid : installé par-dessus un Erevos qui y envoyait des
+   sauvegardes, il n’en envoie aucune, le dit sous **Aussi vers Google Drive**, et son **Ne plus envoyer** reprend
+   toujours chez Google l’accès d’Erevos.
 5. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
    demande encore une fois, trouve les fichiers de la sauvegarde à côté d’elle, ou te demande de les choisir, ou leur
    dossier (pour une sauvegarde automatique, choisis tous les fichiers du dossier, car certains de ses fichiers
@@ -4962,7 +4964,9 @@ voir [Sauvegardes](#backup). Une mise à jour garde tout, mais une sauvegarde co
   version et le disent, sans **Rechercher des mises à jour**. Il est signé avec la même clé que l’Erevos de la page
   des versions : F-Droid recompile chaque version depuis son code et ne distribue le fichier signé de la page des
   versions que si sa propre compilation en sort identique. Ainsi chacun s’installe par-dessus l’autre, et tout reste :
-  pour passer de l’un à l’autre, installe l’autre, de la même version ou d’une plus récente.
+  pour passer de l’un à l’autre, installe l’autre, de la même version ou d’une plus récente. Celui de F-Droid n’a ni
+  **Rechercher des mises à jour**, ni **Depuis un téléphone proche**, ni sauvegardes vers Google Drive : en passant à
+  lui, cela s’arrête, et revient avec l’autre.
 - **Jamais plus ancien :** n’installe pas une version plus ancienne par-dessus une plus récente. Ses données peuvent
   être sous une forme que l’ancienne ne sait pas lire. Restaure plutôt une sauvegarde faite avec cette version plus
   ancienne.
@@ -4994,8 +4998,10 @@ Wi-Fi, ou l’autre sur le point d’accès de celui-ci : activez d’abord le p
   montrerait son propre certificat ; dès que vous avez internet, comparez donc le certificat avec celui du site ou de
   la page des versions d’Erevos. Erevos lui-même, dans **Mises à jour**, refuse un paquet signé autrement.
 - **Pas depuis un magasin :** un Erevos installé en plusieurs parties, comme le font certains magasins, ne peut pas
-  être donné en entier et le dit. L’Erevos de F-Droid, signé avec la même clé, se donne comme n’importe quel autre.
-  L’Erevos de F-Droid ne prend rien dans **Mises à jour** : F-Droid le met à jour.
+  être donné en entier et le dit. L’Erevos de F-Droid, signé avec la même clé, se donne comme n’importe quel autre,
+  mais le dit sur son écran et sur la page : sur l’autre téléphone aussi, seul F-Droid le mettra ensuite à jour, et un
+  Erevos là-bas qui ne vient pas de F-Droid demande avant de l’installer. L’Erevos de F-Droid ne prend rien dans
+  **Mises à jour** : F-Droid le met à jour.
 - Android seulement. Quiconque sur le même réseau voit le code peut aussi télécharger Erevos ; il n’y a rien d’autre à
   prendre.
 

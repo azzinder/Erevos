@@ -358,8 +358,9 @@ jobs:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
       EREVOS_BUILD: ${{ needs.version.outputs.number }}
     runs-on: ubuntu-latest
-    # About an hour; .github/workflows/fdroid-build.yml builds the same way.
-    timeout-minutes: 240
+    # About 35 minutes, as .github/workflows/fdroid-build.yml builds it too; a build that hangs holds
+    # the release two hours at most.
+    timeout-minutes: 120
     permissions:
       contents: read
     steps:
@@ -773,7 +774,7 @@ jobs:
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }
           package erevos-android.apk "**Android** 7 or newer (64-bit): in Erevos, Updates → Check for updates → Install. Or open this page on the phone and tap erevos-android.apk."
-          package erevos-android-fdroid.apk "**Android, the F-Droid build**: erevos-android-fdroid.apk, the same Erevos without Check for updates, signed with the same key. F-Droid builds it again from this release's source and hands out this signed copy when the two match."
+          package erevos-android-fdroid.apk "**Android, the F-Droid build**: erevos-android-fdroid.apk, the same Erevos, signed with the same key, without Check for updates, From a phone nearby or backups to Google Drive: it installs over the other with everything kept, and from then on only F-Droid updates it. F-Droid builds it again from this release's source and hands out this signed copy when the two match."
           package erevos-linux-x86_64.pacman "**Arch Linux / CachyOS** (x86_64): \`sudo pacman -U erevos-linux-x86_64.pacman\`"
           package erevos-linux-x86_64.AppImage "**Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."
           package erevos-macos.dmg "**macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. It has no paid Apple signature: the first time, and after each update, allow it under System Settings → Privacy & Security → Open Anyway."

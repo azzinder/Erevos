@@ -47,8 +47,10 @@ import {
   type CloudServer,
 } from "../lib/backup-cloud";
 import { canTor } from "../lib/core";
+import { FDROID } from "../lib/distribution";
 import {
   beginDriveSignIn,
+  driveLeftBehind,
   driveParts,
   driveRestoreAccount,
   fetchFromDrive,
@@ -307,6 +309,9 @@ export default function Backups() {
   const [lost, setLost] = useState<{ other: boolean; at: number } | null>(null);
   // Google Drive, which automatic backups go to as well once the owner signed in with Google there.
   const [drive, setDrive] = useState<DriveBackup | null>(null);
+  // In F-Droid's build, which has no Google Drive: when the last backup went there, when they went
+  // there from an Erevos installed before it (lib/google-drive.ts driveLeftBehind).
+  const [driveLeft, setDriveLeft] = useState<{ last: number } | null>(null);
   // The warning before a sign-in with Google, open for what the sign-in is for.
   const [warnDrive, setWarnDrive] = useState<DrivePurpose | null>(null);
   // The backups in a Google Drive to restore from, newest first, once listed, with its account.
@@ -325,6 +330,7 @@ export default function Backups() {
     });
     void loadChecks().then(setChecks);
     if (CAN_DRIVE) void loadDriveBackup().then(setDrive);
+    else if (FDROID) void driveLeftBehind().then(setDriveLeft);
     void backsUpSms().then(setSmsToo);
     void backsUpCalls().then(setCallsToo);
     void Promise.all([restoredFromOther(), lostAt()]).then(([other, at]) =>
@@ -705,6 +711,7 @@ export default function Backups() {
       setBusy(false);
     }
     setDrive(null);
+    setDriveLeft(null);
     if (alone) {
       await stopAutoBackup();
       setAuto(null);
@@ -1712,9 +1719,14 @@ export default function Backups() {
                 {t("No folder on {device} yet", { device: t(THIS_DEVICE) })}
               </Text>
               <Text variant="caption" tone="muted" style={hint}>
-                {t(
-                  "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.",
-                )}
+                {driveLeft && !cloud
+                  ? t(
+                      "Automatic backups went only to Google Drive, and the Erevos from F-Droid sends none there, so none goes anywhere now. Choose a folder on {device}, or add a server, and they go on there.",
+                      { device: t(THIS_DEVICE) },
+                    )
+                  : t(
+                      "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.",
+                    )}
                 {cloud ? ` ${t("Until then they go only to the server.")}` : ""}
               </Text>
               <Row wrap>
@@ -1971,6 +1983,34 @@ export default function Backups() {
                 </Row>
               </>
             )}
+          </Card>
+        </>
+      ) : null}
+
+      {driveLeft && CAN_AUTO_BACKUP ? (
+        <>
+          <SectionTitle title={t("To Google Drive too")} />
+          <Card>
+            <Text variant="bodyStrong">
+              {t("No longer sent to Google Drive")}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {driveLeft.last
+                ? `${t("Last one sent {when}.", { when: whenText(driveLeft.last) })} `
+                : ""}
+              {t(
+                "The Erevos from F-Droid keeps to services anyone may run, so it sends no backups to Google Drive. Those already there stay until you delete them. Stop sending also takes back, at Google, Erevos's access to your Google Drive.",
+              )}
+            </Text>
+            <Row wrap>
+              <Button
+                title={t("Stop sending")}
+                kind="secondary"
+                compact
+                onPress={() => void stopDrive()}
+                disabled={busy}
+              />
+            </Row>
           </Card>
         </>
       ) : null}
