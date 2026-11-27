@@ -241,6 +241,16 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   answers carry no headers, a large one goes as a multipart upload too. Backups there are sent, checked after each, kept
   and deleted as on a server: `sendBare` sends to either place, a `BarePlace` (`lib/backup-cloud.ts`,
   `lib/backup-folder.ts`, `lib/backup-check.ts`, `lib/backup-ledger.ts`).
+- F-Droid's recipes for Erevos and Erevos Lite are in `deploy/fdroid/` (`app.erevos.yml`, `app.erevos.lite.yml`), as
+  F-Droid's list of apps would carry them: Debian's compilers, Go, rustup and Java 17 beside Java 21, Node by its exact
+  version and SHA-256, the NDK React Native names, Expo's modules built from their source and Expo's template by its
+  exact version (`deploy/fdroid/build.sh`). `scripts/fdroid-build.sh` builds one in F-Droid's own build server image,
+  with F-Droid's `fdroid build`, in F-Droid's folder, so the APK comes out as F-Droid's own build of the same commit
+  would; the workflow `fdroid-build`, by hand, builds it twice on two machines and compares the two
+  (`scripts/apk-compare.py`), then signs the first as a release would, with a key made for the test
+  (`scripts/fdroid-sign.sh`: the signature alone, nothing else changed), and checks, as F-Droid does, that its signature
+  copied onto the second verifies. `checks/fdroid.check.ts` holds the recipes to the release key, the downloads and the
+  NDK, and the signing to Gradle's. Nothing is sent to F-Droid.
 
 ## 3.2.0-rc.3 (2026-11-25)
 
