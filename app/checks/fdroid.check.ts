@@ -3,8 +3,9 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // F-Droid's recipes for Erevos and Erevos Lite (deploy/fdroid/), from which scripts/fdroid-build.sh
-// builds the F-Droid APK the way F-Droid does: each names its own app, edition and download, the
-// release key every Android release is signed with (README.md), the NDK React Native builds with,
+// builds the F-Droid APK the way F-Droid does, in each release with no key at hand, which then signs
+// it: each names its own app, edition and download, the release key every Android release is
+// signed with (README.md), the NDK React Native builds with,
 // one Node, checked by its SHA-256, and placeholders that scripts/fdroid-build.sh fills in;
 // deploy/fdroid/build.sh takes Expo's template of the SDK the app is on; and scripts/fdroid-sign.sh
 // signs the APK as Gradle signs the release APK, changing nothing else, which the twin builds of
@@ -18,6 +19,10 @@ import { test } from 'node:test';
 const TOP = join(import.meta.dirname, '../..');
 const read = (path: string) => readFileSync(join(TOP, path), 'utf8');
 const field = (text: string, name: string) => text.match(new RegExp(`^${name}: (.+)$`, 'm'))?.[1];
+// A script's or a workflow's lines without their comments.
+const code = (text: string) => text.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
+// A workflow's job, from its name to the next job.
+const job = (workflow: string, name: string) => workflow.match(new RegExp(`\\n  ${name}:\\n[\\s\\S]*?(?=\\n  [a-z-]+:\\n|$)`))?.[0] ?? '';
 
 const RECIPES = [
   { app: 'app.erevos', edition: 'erevos', name: 'Erevos', repo: 'erevos-releases', file: 'erevos-android-fdroid.apk', workflow: 'release.yml' },
@@ -33,8 +38,14 @@ test("each recipe names its own app, edition and download, and the release key",
     assert.equal(field(recipe, 'AutoName'), name, app);
     assert.equal(field(recipe, 'Repo'), 'https://github.com/azzinder/Erevos.git', app);
     assert.equal(field(recipe, 'Binaries'), `https://github.com/azzinder/${repo}/releases/download/v%v/${file}`, app);
-    // The file the release workflow builds as the F-Droid APK, signed with the release key.
-    assert.match(read(`.github/workflows/${workflow}`), new RegExp(`- distribution: fdroid\\n\\s+file: ${file.replace(/\./g, '\\.')}\\n`), app);
+    // The release workflow builds the F-Droid APK with this recipe, with no secret in that job,
+    // then signs it with the release key under the file name the recipe downloads.
+    const release = read(`.github/workflows/${workflow}`);
+    const build = job(release, 'fdroid'), sign = job(release, 'fdroid-sign');
+    assert.match(build, new RegExp(`\\n\\s+run: scripts/fdroid-build\\.sh ${edition} "\\$EREVOS_VERSION" "\\$EREVOS_BUILD" fdroid-unsigned\\.apk\\n`), app);
+    assert.doesNotMatch(build, /secrets\./, app);
+    assert.match(sign, new RegExp(`\\n\\s+APK: ${file.replace(/\./g, '\\.')}\\n`), app);
+    assert.match(sign, /\n\s+ANDROID_KEYSTORE="\$RUNNER_TEMP\/release\.keystore" scripts\/fdroid-sign\.sh fdroid-unsigned\.apk "\$APK"/, app);
     assert.equal(field(recipe, 'AllowedAPKSigningKeys'), key.replace(/:/g, '').toLowerCase(), app);
     assert.match(recipe, new RegExp(`^      - deploy/fdroid/build\\.sh ${edition} \\$\\$VERSION\\$\\$ \\$\\$VERCODE\\$\\$$`, 'm'), app);
     assert.match(recipe, /^    output: app\/android\/app\/build\/outputs\/apk\/release\/app-release-unsigned\.apk$/m, app);
@@ -76,7 +87,27 @@ test('the APK is signed as the release APK is, nothing else changed, and the twi
   assert.ok(min >= 24, `minSdk ${min}`);
   const sign = read('scripts/fdroid-sign.sh');
   assert.match(sign, /--alignment-preserved true --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \\\n\s+--v4-signing-enabled false /);
-  assert.match(sign, /^apksigcopier compare --unsigned "\$out" "\$in"$/m);
-  // The first build signed with a key made for the test; its signature, copied onto the second, must verify.
-  assert.match(read('.github/workflows/fdroid-build.yml'), /scripts\/fdroid-sign\.sh unsigned-one\.apk signed-one\.apk\n\s+apksigcopier compare --unsigned signed-one\.apk unsigned-two\.apk\n/);
+  // Only the SDK's apksigner sees the key: nothing from outside the runner runs beside it.
+  const fetches = /\b(?:apksigcopier|pip3?|npm|npx|curl|wget)\b/;
+  assert.doesNotMatch(code(sign), fetches);
+  // apksigcopier, and click, which it needs, by their SHA-256, wherever a signed F-Droid APK is checked.
+  const requirements = read('scripts/apksigcopier-requirements.txt');
+  for (const name of ['apksigcopier', 'click']) assert.match(requirements, new RegExp(`^${name}==[\\d.]+ --hash=sha256:[0-9a-f]{64}$`, 'm'));
+  const pinned = '/venv/bin/pip" install --quiet --require-hashes --no-deps --only-binary :all: -r scripts/apksigcopier-requirements.txt';
+  // The twin builds: the first signed with a key made for the test, nothing but its signature
+  // added, and that signature, copied onto the second, must verify.
+  const twins = read('.github/workflows/fdroid-build.yml');
+  assert.ok(twins.includes(pinned));
+  assert.match(twins, /scripts\/fdroid-sign\.sh unsigned-one\.apk signed-one\.apk\n(?:\s+#.*\n)?\s+apksigcopier compare --unsigned signed-one\.apk unsigned-one\.apk\n\s+apksigcopier compare --unsigned signed-one\.apk unsigned-two\.apk\n/);
+  // A release: the key in the one step that signs, apksigcopier installed only after it, to check
+  // that the signature alone was added.
+  for (const { workflow } of RECIPES) {
+    const steps = job(read(`.github/workflows/${workflow}`), 'fdroid-sign').split(/\n {6}- /);
+    const signing = steps.findIndex((step) => step.includes('secrets.ANDROID_KEYSTORE_BASE64'));
+    const checking = steps.findIndex((step) => step.includes(pinned));
+    assert.ok(signing > 0 && checking > signing, workflow);
+    assert.equal(steps.filter((step) => step.includes('secrets.')).length, 1, workflow);
+    assert.doesNotMatch(code(steps[signing]), fetches, workflow);
+    assert.match(steps[checking], /\n\s+apksigcopier compare --unsigned "\$APK" fdroid-unsigned\.apk\n/, workflow);
+  }
 });

@@ -50,8 +50,9 @@ on:
 permissions:
   contents: read
 
+# One run of an edition at a time; Erevos and Lite may build side by side.
 concurrency:
-  group: fdroid-build
+  group: fdroid-build-${{ inputs.edition }}
   cancel-in-progress: false
 
 jobs:
@@ -121,13 +122,13 @@ jobs:
       - name: Compare the two builds
         run: python3 -I scripts/apk-compare.py unsigned-one.apk unsigned-two.apk
 
-      # apksigcopier, with which F-Droid copies a signature onto its build, and apksigner, with
-      # which it checks the result.
+      # apksigcopier, with which F-Droid copies a signature onto its build, by its SHA-256, and
+      # apksigner, with which it checks the result.
       - name: Get apksigcopier and apksigner
         if: always()
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet apksigcopier==1.1.1
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet --require-hashes --no-deps --only-binary :all: -r scripts/apksigcopier-requirements.txt
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)" >> "$GITHUB_PATH"
 
@@ -141,6 +142,8 @@ jobs:
             -alias test -keyalg RSA -keysize 4096 -validity 2 -dname CN=test
           ANDROID_KEYSTORE="$RUNNER_TEMP/test.p12" ANDROID_KEYSTORE_PASSWORD=test-only ANDROID_KEY_ALIAS=test \
             ANDROID_KEY_PASSWORD=test-only scripts/fdroid-sign.sh unsigned-one.apk signed-one.apk
+          # The signature alone was added, as a release checks after signing.
+          apksigcopier compare --unsigned signed-one.apk unsigned-one.apk
           apksigcopier compare --unsigned signed-one.apk unsigned-two.apk
           echo "F-Droid would take it: the first build's signature, copied onto the second, verifies."
 

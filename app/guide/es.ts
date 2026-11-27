@@ -4625,7 +4625,8 @@ En Android, **Actualizaciones** dice también qué versiones se ofrecen a este t
   ofrece **Borrar todo aquí** y **Desinstalar**; un traslado no tomado en un día se borra, y la app antigua se abre
   como antes. Una app nueva ya configurada también pregunta, y lo que trae ocupa el lugar de todo lo que tiene. El
   traslado necesita espacio libre en el teléfono para una copia de todo: Erevos lo dice antes si no alcanza. La
-  versión de F-Droid, firmada con otra clave, no puede trasladarse así: usa las [Copias de seguridad](#backup).
+  versión de F-Droid no tiene **Buscar actualizaciones**, así que no puede empezar un traslado: usa las [Copias de
+  seguridad](#backup).
 - **Versiones beta**: desactivado, solo se ofrecen las versiones normales. Activado, también las betas (como
   **7.0.1-beta.1**): salen antes, para probar, y pueden tener problemas. Una beta lo tiene activado al principio.
   Desactívalo para salir de las betas: la próxima versión normal con un número de compilación mayor que la beta que
@@ -4702,9 +4703,10 @@ minuto y cubre cualquier sorpresa.
   seguridad, desinstala Erevos, instala el de la página de versiones y restaura la copia. Después de eso, cada
   actualización se instala encima.
 - **Erevos de F-Droid**, cuando esté ahí, lo actualiza F-Droid: sus **Actualizaciones** muestran la versión y lo dicen,
-  sin **Buscar actualizaciones**. F-Droid lo firma con una clave propia, así que Android no instala ni ese encima del
-  Erevos de la página de versiones ni este encima de aquel. Para cambiar: haz una copia de seguridad, desinstala Erevos,
-  instala el otro y restaura la copia.
+  sin **Buscar actualizaciones**. Está firmado con la misma clave que el Erevos de la página de versiones: F-Droid
+  compila de nuevo cada versión desde su código y entrega el archivo firmado de la página de versiones solo cuando su
+  propia compilación sale igual. Así cada uno se instala encima del otro y todo se queda: para cambiar, instala el
+  otro, de la misma versión o de una más nueva.
 - **Nunca uno más antiguo:** no instales una versión más antigua encima de una más nueva. Sus datos pueden estar en un
   formato que la más antigua no puede leer. Restaura en su lugar una copia hecha con esa versión más antigua.
 - **Una versión a la que le falta tu sistema** lo dice en sus notas: esa compilación falló, así que usa la versión
@@ -4734,9 +4736,8 @@ o el otro en el punto de acceso de este: activa antes el punto de acceso en los 
   propio certificado, así que cuando tengas internet compara el certificado con el de la web o la página de versiones
   de Erevos. El propio Erevos, en **Actualizaciones**, rechaza un paquete firmado de otro modo.
 - **No desde una tienda:** un Erevos instalado en partes, como instalan algunas tiendas, no puede darse entero y lo
-  dice. El Erevos de F-Droid lo firma F-Droid: puede ir a un teléfono sin Erevos, o sobre el Erevos de F-Droid por el
-  navegador, pero un Erevos de la página de versiones lo rechaza en **Actualizaciones**, como haría Android. El Erevos
-  de F-Droid no toma nada en **Actualizaciones**: lo actualiza F-Droid.
+  dice. El Erevos de F-Droid, firmado con la misma clave, se da como cualquier otro. El Erevos de F-Droid no toma nada
+  en **Actualizaciones**: lo actualiza F-Droid.
 - Solo en Android. Cualquiera en la misma red que vea el código puede descargar Erevos también; no hay nada más que
   tomar.
 

@@ -5,10 +5,12 @@
 # Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 # Signs an F-Droid APK that scripts/fdroid-build.sh built, adding the signature and changing nothing
-# else, then checks that: F-Droid copies the signature onto its own build of the same commit
-# (apksigcopier) and hands out the signed APK only if it then verifies. An APK Signature Scheme v2
-# signature, as Gradle signs the release APK (no v1 from Android 7 up, no v3), so the two are signed
-# alike. Needs the Android SDK's build-tools (ANDROID_HOME) and apksigcopier.
+# else: F-Droid copies the signature onto its own build of the same commit (apksigcopier) and hands
+# out the signed APK only if it then verifies. An APK Signature Scheme v2 signature, as Gradle signs
+# the release APK (no v1 from Android 7 up, no v3), so the two are signed alike. Only the Android
+# SDK's apksigner sees the key (ANDROID_HOME). That nothing else changed is checked after, where the
+# key no longer is: `apksigcopier compare --unsigned <signed APK> <unsigned APK>`, with apksigcopier
+# as scripts/apksigcopier-requirements.txt pins it.
 #
 #   scripts/fdroid-sign.sh <unsigned APK> <signed APK to write>
 #
@@ -27,6 +29,3 @@ apksigner sign --ks "$ANDROID_KEYSTORE" --ks-key-alias "$ANDROID_KEY_ALIAS" \
   --alignment-preserved true --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
   --v4-signing-enabled false --out "$out" "$in"
 apksigner verify --print-certs "$out"
-# The signed APK is the unsigned one and its signature, nothing else.
-apksigcopier compare --unsigned "$out" "$in"
-echo "Signed: the signature copied onto $in verifies."

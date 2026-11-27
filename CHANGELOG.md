@@ -20,12 +20,18 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   them, and are checked once a cloud app has them; a new first start, in four steps, that takes a place on LPHL's
   server by itself; and automatic backups only to a server, or to Google Drive too. Nostr on a computer, in the web
   app and on Sailfish OS is not Erevos Lite's, which is on Android only.
+- **The F-Droid build, the same file F-Droid hands out**: as Erevos's, `erevos-lite-android-fdroid.apk` is now built as
+  F-Droid builds it and signed with the same key, so that Erevos Lite from F-Droid, once it is there, and from the
+  releases page install over each other, keeping everything.
 
 ### Under the hood
 
 - As in Erevos 3.0.0-rc.4: the key a fingerprint or face opens is made in the phone's TEE; a call with no server
   between the phones is set up through Nostr; and a free place on LPHL's server keeps to a share of its own there,
   and one the server let go is asked for again with the same token.
+- As in Erevos 3.0.0-rc.4: the F-Droid APK is built from `deploy/fdroid/app.erevos.lite.yml` as F-Droid builds it, with
+  no key at hand, then signed apart with the release key and checked as the APK Updates installs is, without the
+  permission to install packages.
 
 ## 3.0.0-rc.4 (2026-11-27)
 
@@ -122,6 +128,10 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   in the browser, outside Erevos, not through Tor. **Restore from Google Drive** lists the backups there and puts one
   back, with its photos, files and voice messages. **Stop sending** takes Erevos's access back at Google; the backups
   there stay. It is not in the F-Droid build, which keeps to services anyone may run.
+- **The F-Droid build, the same file F-Droid hands out**: `erevos-android-fdroid.apk`, beside each release, is now built
+  as F-Droid builds it and signed with the same key as the other Erevos, so that F-Droid, once Erevos is there, hands
+  out that very file. Erevos from F-Droid and from the releases page then install over each other, keeping everything,
+  with no uninstalling (User guide → Updates). It still has no Check for updates and no Google Drive.
 
 ### Under the hood
 
@@ -251,6 +261,13 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   (`scripts/fdroid-sign.sh`: the signature alone, nothing else changed), and checks, as F-Droid does, that its signature
   copied onto the second verifies. `checks/fdroid.check.ts` holds the recipes to the release key, the downloads and the
   NDK, and the signing to Gradle's. Nothing is sent to F-Droid.
+- The release builds its F-Droid APK with `scripts/fdroid-build.sh`, in a job that holds no key (`fdroid`), and signs it
+  in the next (`fdroid-sign`) with `scripts/fdroid-sign.sh`: the release key is written to a file for the SDK's
+  `apksigner` alone, in that one step, and removed after. Only then is apksigcopier installed, pinned by its SHA-256
+  with click (`scripts/apksigcopier-requirements.txt`, which `fdroid-build` uses too), to check that the signature alone
+  was added; the job then checks the APK as the apk job does, and that it is `app.erevos` of this build, without the
+  permission to install packages. The APK Updates installs is built as before, now alone in its job; Erevos Lite's
+  release does the same.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

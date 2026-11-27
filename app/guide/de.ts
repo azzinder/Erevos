@@ -4891,8 +4891,8 @@ Unter Android sagt **Updates** auch, welche Versionen diesem Telefon angeboten w
   die neue ihn übernommen hat, bietet die alte **Alles hier löschen** und **Deinstallieren**; ein Umzug, der nicht
   innerhalb eines Tages übernommen wird, wird gelöscht, und die alte App öffnet sich wie vorher. Auch eine neue App,
   die schon eingerichtet ist, fragt, und was sie holt, ersetzt alles, was sie hat. Der Umzug braucht freien Platz auf
-  dem Telefon für eine Kopie von allem: Erevos sagt es vorher, wenn er nicht reicht. Der F-Droid-Build, mit einem
-  anderen Schlüssel signiert, kann so nicht umziehen: Nutze stattdessen [Backups](#backup).
+  dem Telefon für eine Kopie von allem: Erevos sagt es vorher, wenn er nicht reicht. Der F-Droid-Build hat kein **Nach
+  Updates suchen** und kann daher keinen Umzug beginnen: Nutze stattdessen [Backups](#backup).
 - **Beta-Versionen**: aus, nur reguläre Versionen werden angeboten. An, auch Betas (wie **7.0.1-beta.1**): Sie
   erscheinen zuerst, zum Ausprobieren, und können Probleme haben. Eine Beta hat es anfangs an. Schalte es aus, um die
   Betas zu verlassen: Die nächste reguläre Version mit einer höheren Build-Nummer als deine Beta installiert sich
@@ -4969,9 +4969,10 @@ heruntergeladenen Dateien muss \`sha256sum -c --ignore-missing SHA256SUMS\` für
   Backup, deinstalliere Erevos, installiere das von der Release-Seite und stelle das Backup wieder her. Danach
   installiert sich jedes Update darüber.
 - **Erevos aus F-Droid**, sobald es dort ist, wird von F-Droid aktualisiert: Seine **Updates** zeigen die Version und
-  sagen das, ohne **Nach Updates suchen**. F-Droid signiert es mit einem eigenen Schlüssel, also installiert Android
-  weder es über das Erevos von der Release-Seite noch jenes darüber. Zum Wechseln: Mache ein Backup, deinstalliere
-  Erevos, installiere das andere und stelle das Backup wieder her.
+  sagen das, ohne **Nach Updates suchen**. Es ist mit demselben Schlüssel signiert wie das Erevos von der
+  Release-Seite: F-Droid baut jede Version aus ihrem Quellcode neu und gibt die signierte Datei der Release-Seite nur
+  heraus, wenn sein eigener Build gleich herauskommt. So installiert sich jedes über das andere, und alles bleibt: Zum
+  Wechseln installiere das andere, in derselben oder einer neueren Version.
 - **Nie älter:** Installiere keine ältere Version über eine neuere. Ihre Daten können in einer Form sein, die die
   ältere nicht lesen kann. Stelle stattdessen ein Backup wieder her, das mit dieser älteren Version gemacht wurde.
 - **Ein Release, dem dein System fehlt,** sagt das in seinen Hinweisen: Dieser Build ist fehlgeschlagen, also nimm
@@ -5001,10 +5002,8 @@ WLAN sein, oder das andere im Hotspot dieses Telefons: Schalte den Hotspot zuers
   eigenes Zertifikat zeigen; vergleiche das Zertifikat daher, sobald du Internet hast, mit dem auf der Website oder
   der Release-Seite von Erevos. Erevos selbst lehnt in **Updates** ein anders signiertes Paket ab.
 - **Nicht aus einem Store:** Ein in Teilen installiertes Erevos, wie manche Stores Apps installieren, kann nicht als
-  Ganzes gegeben werden und sagt das. Erevos aus F-Droid ist von F-Droid signiert: Es kann an ein Telefon ohne Erevos
-  gehen oder über den Browser über das Erevos aus F-Droid, aber ein Erevos von der Release-Seite lehnt es in
-  **Updates** ab, wie Android es auch täte. Das Erevos aus F-Droid nimmt in **Updates** nichts an: F-Droid
-  aktualisiert es.
+  Ganzes gegeben werden und sagt das. Erevos aus F-Droid, mit demselben Schlüssel signiert, wird wie jedes andere
+  gegeben. Das Erevos aus F-Droid nimmt in **Updates** nichts an: F-Droid aktualisiert es.
 - Nur auf Android. Wer im selben Netz den Code sieht, kann Erevos ebenfalls herunterladen; sonst gibt es dort nichts.
 
 **Warum:** Wo das Internet abgeschaltet oder überwacht ist oder ein Telefon die Website gar nicht erreicht, kann Erevos

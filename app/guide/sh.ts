@@ -4413,8 +4413,8 @@ Na Androidu, **Ažuriranja** kažu i koje se verzije nude ovom telefonu:
   **Otkaži prelazak** je otvara kao prije. Kad ga nova preuzme, stara nudi **Obriši sve ovdje** i **Deinstaliraj**;
   prelazak koji nije preuzet u roku od jednog dana se briše, a stara aplikacija se otvara kao prije. I nova aplikacija
   koja je već podešena pita, a ono što donese zamjenjuje sve što ima. Prelazak traži slobodan prostor na telefonu za
-  kopiju svega: Erevos to kaže unaprijed kad ga nema dovoljno. F-Droid verzija, potpisana drugim ključem, ne može tako
-  preći: koristite [Rezervne kopije](#backup).
+  kopiju svega: Erevos to kaže unaprijed kad ga nema dovoljno. F-Droid verzija nema **Provjeri ažuriranja**, pa ne
+  može započeti prelazak: koristite [Rezervne kopije](#backup).
 - **Beta verzije**: isključeno, nude se samo redovne verzije. Uključeno, i beta verzije (kao **7.0.1-beta.1**): izlaze
   prve, za isprobavanje, i mogu imati problema. Beta ga na početku ima uključenog. Isključite ga da napustite beta
   verzije: sljedeća redovna verzija s brojem builda većim od bete koju imate instalira se preko nje i sve zadržava, bez
@@ -4487,9 +4487,10 @@ svakog iznenađenja.
   deinstalirajte Erevos, instalirajte onaj sa stranice izdanja i vratite rezervnu kopiju. Nakon toga se svako
   ažuriranje instalira preko njega.
 - **Erevos iz F-Droida**, kad bude tamo, ažurira F-Droid: njegova **Ažuriranja** prikazuju verziju i to kažu, bez
-  **Provjeri ažuriranja**. F-Droid ga potpisuje vlastitim ključem, pa Android ne instalira ni njega preko Erevosa sa
-  stranice izdanja ni onaj preko njega. Da pređete s jednog na drugi: napravite rezervnu kopiju, deinstalirajte
-  Erevos, instalirajte drugi i vratite rezervnu kopiju.
+  **Provjeri ažuriranja**. Potpisan je istim ključem kao Erevos sa stranice izdanja: F-Droid svaku verziju ponovo
+  gradi iz izvornog koda i dijeli potpisanu datoteku sa stranice izdanja samo kad njegova gradnja ispadne ista. Zato
+  se svaki instalira preko drugog i sve ostaje: da pređete s jednog na drugi, instalirajte drugi, iste verzije ili
+  novije.
 - **Nikad starija:** ne instalirajte stariju verziju preko novije. Njeni podaci mogu biti u obliku koji starija ne
   može pročitati. Umjesto toga vratite rezervnu kopiju napravljenu tom starijom verzijom.
 - **Izdanje kojem nedostaje vaš sistem** to kaže u svojim napomenama: ta izgradnja nije uspjela, pa uzmite prethodno
@@ -4518,9 +4519,8 @@ hotspotu ovoga: prvo uključite hotspot u postavkama Androida.
   certifikat, pa čim imate internet usporedite certifikat s onim na web stranici ili stranici izdanja Erevosa. Sam
   Erevos, u **Ažuriranja**, odbija paket potpisan drukčije.
 - **Ne iz trgovine:** Erevos instaliran u dijelovima, kako neke trgovine instaliraju, ne može se dati u cijelosti i to
-  kaže. Erevos iz F-Droida potpisuje F-Droid: može otići na telefon bez Erevosa, ili preko F-Droidovog Erevosa kroz
-  preglednik, ali Erevos sa stranice izdanja odbija ga u **Ažuriranja**, kao što bi i Android. F-Droidov Erevos ne
-  prima ništa u **Ažuriranja**: ažurira ga F-Droid.
+  kaže. Erevos iz F-Droida, potpisan istim ključem, daje se kao svaki drugi. F-Droidov Erevos ne prima ništa u
+  **Ažuriranja**: ažurira ga F-Droid.
 - Samo na Androidu. Svatko na istoj mreži tko vidi kod može također preuzeti Erevos; ondje nema ničeg drugog za uzeti.
 
 **Zašto:** gdje je internet prekinut, ili nadziran, ili telefon uopće ne dolazi do web stranice, Erevos i dalje može ići

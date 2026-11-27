@@ -5,9 +5,10 @@
 name: release
 
 # Builds every Erevos package and publishes them together as a GitHub release, v<version>:
-# the Android APK (signed with the release key, see scripts/make-release-keystore.sh), Linux
-# (Arch package and AppImage), the macOS disk image, Windows (installer and portable .exe), the
-# Sailfish OS RPM and the web app (to be signed on the release computer, deploy/web/publish.sh).
+# the Android APK (signed with the release key, see scripts/make-release-keystore.sh) and the
+# F-Droid one (built as F-Droid builds it and signed with the same key, docs/reproducible-builds.md),
+# Linux (Arch package and AppImage), the macOS disk image, Windows (installer and portable .exe),
+# the Sailfish OS RPM and the web app (to be signed on the release computer, deploy/web/publish.sh).
 # Each release lists every file's SHA-256 in SHA256SUMS. A package whose job fails is left out;
 # the others still go out.
 #
@@ -224,29 +225,17 @@ jobs:
   # The Android APK for 64-bit ARM phones (every phone of the last years), signed with the
   # release key. Without the key's four secrets the job stops and the release goes out without
   # an APK, rather than sign with the public debug key, which would let anyone's APK install
-  # over Erevos.
-  # Two APKs from the same commit, both signed with the release key: the one Updates installs, and
-  # the F-Droid one (EREVOS_DISTRIBUTION=fdroid: no Check for updates, no permission to install
-  # packages), which F-Droid builds again from the tag and compares with this one, to hand out
-  # this signed copy (a reproducible build). One key for both, and for Erevos+, so each installs
-  # over the other.
+  # over Erevos. This is the one Updates installs; the F-Droid one (no Check for updates, no
+  # permission to install packages) is built apart, as F-Droid builds it, and signed with the same
+  # key (fdroid and fdroid-sign below). One key for both, and for Erevos+, so each installs over
+  # the other.
   apk:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - distribution: ""
-            file: erevos-android.apk
-          - distribution: fdroid
-            file: erevos-android-fdroid.apk
-    name: apk ${{ matrix.file }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
       EREVOS_BUILD: ${{ needs.version.outputs.number }}
-      EREVOS_DISTRIBUTION: ${{ matrix.distribution }}
-      APK: ${{ matrix.file }}
+      APK: erevos-android.apk
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -323,8 +312,8 @@ jobs:
 
       - name: Build the release APK
         working-directory: app/android
-        # It takes about 25 minutes. On 7.2.0-beta.2 the F-Droid build hung in packageRelease for
-        # 1 h 45 min with no error; stop it sooner so the release still comes out without it.
+        # It takes about 25 minutes. On 7.2.0-beta.2 a build hung in packageRelease for 1 h 45 min
+        # with no error; stop it sooner so the release still comes out without it.
         timeout-minutes: 50
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -351,12 +340,120 @@ jobs:
           fi
           grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
             || { echo "::error::The APK is not signed with the release key"; exit 1; }
+
+      - name: Hand the APK to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "build-$EREVOS_BUILD" "$APK" --clobber
+
+  # The F-Droid APK, built as F-Droid builds it (scripts/fdroid-build.sh: F-Droid's build server
+  # image, its `fdroid build`, the recipe in deploy/fdroid/), so that F-Droid's own build of this
+  # commit comes out the same, byte for byte (docs/reproducible-builds.md). No key here: the job
+  # after it signs it.
+  fdroid:
+    needs: version
+    if: ${{ needs.version.outputs.build == 'true' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
+    runs-on: ubuntu-latest
+    # About an hour; .github/workflows/fdroid-build.yml builds the same way.
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      # F-Droid's image, the source, its packages and the build need more disk than the runner
+      # leaves free; the runner's own Android SDK is not used.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell /usr/local/lib/android
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Build as F-Droid builds
+        run: scripts/fdroid-build.sh erevos "$EREVOS_VERSION" "$EREVOS_BUILD" fdroid-unsigned.apk
+
+      # Kept a day, for the job after this one.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fdroid-unsigned
+          path: fdroid-unsigned.apk
+          retention-days: 1
+
+  # The F-Droid APK signed with the release key, the signature added and nothing else changed
+  # (scripts/fdroid-sign.sh). F-Droid copies this signature onto its own build of the commit and,
+  # when it verifies, hands out this APK: signed as every other Erevos, so each installs over the
+  # other.
+  fdroid-sign:
+    needs: [version, fdroid]
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      EREVOS_BUILD: ${{ needs.version.outputs.number }}
+      APK: erevos-android-fdroid.apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fdroid-unsigned
+
+      - name: Sign it with the release key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!name}" ] || { echo "::error::The secret $name is missing. Make the release key with scripts/make-release-keystore.sh and add the four secrets it names under Settings → Secrets and variables → Actions."; exit 1; }
+          done
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          keytool -list -v -keystore "$RUNNER_TEMP/release.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" |
+            sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' > release-fingerprint
+          status=0
+          if [ -s release-fingerprint ]; then
+            echo "Release key SHA-256: $(cat release-fingerprint)"
+            ANDROID_KEYSTORE="$RUNNER_TEMP/release.keystore" scripts/fdroid-sign.sh fdroid-unsigned.apk "$APK" || status=$?
+          else
+            echo "::error::The release key's fingerprint could not be read"; status=1
+          fi
+          rm -f "$RUNNER_TEMP/release.keystore"
+          exit "$status"
+
+      # Only now, with the key gone, anything from outside the runner: apksigcopier, with which
+      # F-Droid copies a signature onto its build, by its SHA-256. The signed APK must be the
+      # unsigned one and its signature, nothing else.
+      - name: Check that the signature alone was added
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet --require-hashes --no-deps --only-binary :all: -r scripts/apksigcopier-requirements.txt
+          PATH="$RUNNER_TEMP/venv/bin:$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1):$PATH"
+          apksigcopier compare --unsigned "$APK" fdroid-unsigned.apk
+
+      - name: Check the APK
+        run: |
+          # It carries the Rust core, and lyrebird for Tor bridges, compressed (as the apk job checks).
+          unzip -l "$APK" 'lib/arm64-v8a/*' | grep -q 'erevos' \
+            || { echo "::error::The Erevos core is missing from the APK"; unzip -l "$APK" 'lib/*'; exit 1; }
+          unzip -v "$APK" 'lib/arm64-v8a/liblyrebird.so' | grep -q 'Defl.*liblyrebird' \
+            || { echo "::error::lyrebird (Tor bridges) is missing from the APK, or Android would not unpack it"; unzip -v "$APK" 'lib/*'; exit 1; }
+          tools="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$tools/apksigner" verify --print-certs "$APK" | tee signature
+          grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
+            || { echo "::error::The APK is not signed with the release key"; exit 1; }
+          "$tools/aapt2" dump badging "$APK" | tee badging | head -1
+          grep -q "package: name='app.erevos'" badging || { echo "::error::The APK is not app.erevos"; exit 1; }
+          grep -q "versionCode='$EREVOS_BUILD'" badging || { echo "::error::The APK is not build $EREVOS_BUILD"; exit 1; }
           # The F-Droid build may not install packages: F-Droid updates it.
-          if [ "$EREVOS_DISTRIBUTION" = fdroid ]; then
-            aapt2="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt2"
-            if "$aapt2" dump permissions "$APK" | grep -q REQUEST_INSTALL_PACKAGES; then
-              echo "::error::The F-Droid APK asks to install packages"; exit 1
-            fi
+          if "$tools/aapt2" dump permissions "$APK" | grep -q REQUEST_INSTALL_PACKAGES; then
+            echo "::error::The F-Droid APK asks to install packages"; exit 1
           fi
 
       - name: Hand the APK to the publish job
@@ -629,7 +726,7 @@ jobs:
           gh release upload "build-$EREVOS_BUILD" up/* --clobber
 
   publish:
-    needs: [version, apk, linux, macos, windows, sailfish]
+    needs: [version, apk, fdroid-sign, linux, macos, windows, sailfish]
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -685,6 +782,7 @@ jobs:
           package erevos-web.tar.gz "**Web app** (iPhone and any browser): erevos-web.tar.gz is not signed yet. It is served once signed on the release computer: \`deploy/web/publish.sh $EREVOS_VERSION <user@server> <address>\`."
           missing=""
           [ -f files/erevos-android.apk ] || missing="$missing Android,"
+          [ -f files/erevos-android-fdroid.apk ] || missing="$missing Android's F-Droid build,"
           [ -f files/erevos-macos.dmg ] || missing="$missing macOS,"
           [ -f files/erevos-linux-x86_64.AppImage ] || missing="$missing Linux,"
           [ -f files/erevos-windows-x64-setup.exe ] || missing="$missing Windows,"

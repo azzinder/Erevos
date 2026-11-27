@@ -10,11 +10,11 @@ byte, so that anyone can check that it was built from the code it says, and noth
 | **Web app** (`erevos-web.tar.gz`, what the release key signs and the web server serves) | Yes | `scripts/reproduce-web.sh`. The published 3.3.2 came out the same, all 78 files, built again on another machine on 2026-10-26. |
 | **Desktop apps** (Linux, Windows, macOS) | Their app inside is the same web build; the packages around it are not checked yet | |
 | **Android APK** | Not yet: 3.3.2, built before the path fixes below, came out different on 2026-10-26 | `scripts/reproduce-apk.sh`, or on GitHub `.github/workflows/reproduce-apk.yml` (by hand), which now lists in its log the files that differ. |
+| **F-Droid APK** (`erevos-android-fdroid.apk`, `erevos-lite-android-fdroid.apk`) | Built as F-Droid builds it, for F-Droid to compare with its own build: see below | On GitHub `.github/workflows/fdroid-build.yml` (by hand): two builds on two machines, compared, and one's signature copied onto the other as F-Droid does. |
 | **Sailfish RPM** | Not yet | |
 | **Relay** | Not checked; whoever runs one builds it from the source anyway | |
 
-While the repository is private, only those with access to it can build from the source. The
-check needs no secret: the public download repository has everything else.
+The check needs no secret: the source and the public download repository have everything.
 
 ## Check the web app
 
@@ -44,15 +44,30 @@ Actions minutes as a release's Android build.
 
 ## The F-Droid APK
 
-Each release also carries `erevos-android-fdroid.apk`: the same commit built with
-`EREVOS_DISTRIBUTION=fdroid` (no Check for updates, no permission to install packages), signed
-with the same release key. F-Droid builds the release's tag again and, when its APK matches this
-one byte for byte apart from the signature, hands out this signed copy. Erevos from F-Droid,
-from the releases and Erevos+ then share one key, and each installs over the other.
+Each release of Erevos also carries `erevos-android-fdroid.apk`, and each of Erevos Lite
+`erevos-lite-android-fdroid.apk`: the F-Droid build (`EREVOS_DISTRIBUTION=fdroid`: no Check for
+updates, no permission to install packages), built from the release's commit exactly as F-Droid
+builds it. `scripts/fdroid-build.sh` takes the edition's recipe in `deploy/fdroid/`, the one
+F-Droid's list of apps carries, and runs F-Droid's own `fdroid build` on it in F-Droid's build
+server image (`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie`), as F-Droid's user,
+in F-Droid's folder (`/home/vagrant/build/app.erevos`): the same Debian, Java, SDK, NDK and paths
+as F-Droid's own build, so React Native's CMake builds keep the same folder in both. The recipe
+pins what Debian does not: Node by its version and SHA-256, Rust and Go as the source names them,
+Expo's template by its exact version, and Expo's modules built from their source.
 
-F-Droid builds in its own folder (`/home/vagrant/build/app.erevos`), not GitHub's, so everything
-listed below has to hold for any folder, the C++ that CMake builds for React Native's modules
-included, before F-Droid's build can match.
+That job holds no key. The next one signs the APK with the release key, adding an APK Signature
+Scheme v2 signature, as Gradle signs the release APK, and nothing else (`scripts/fdroid-sign.sh`,
+which checks that with `apksigcopier compare`). F-Droid's recipe names that file (`Binaries`) and
+the key (`AllowedAPKSigningKeys`): F-Droid builds the same commit, copies the file's signature onto
+its own build and, when it verifies, every other byte being the same, hands out the signed file.
+Erevos from F-Droid, from the releases and Erevos+ then share one key, and each installs over the
+other.
+
+The workflow `fdroid-build` (by hand) checks this before a release: it builds an edition's F-Droid
+APK twice, on two of GitHub's machines, the second with fewer processors, compares the two
+(`scripts/apk-compare.py`), then signs the first with a key made for the test and copies that
+signature onto the second, as F-Droid checks a release. Given a published F-Droid APK's address,
+it compares the first with that one too.
 
 ## What makes it the same
 
@@ -73,6 +88,6 @@ included, before F-Droid's build can match.
 
 ## Next
 
-Make the Android build the same in any folder (React Native's CMake builds), then check it with
-the F-Droid APK built in `/home/vagrant/build/app.erevos`. Run `reproduce-apk` on the first release built with the Android path fixes, and fix what still differs. Then the desktop packages and
-the Sailfish RPM.
+Run `reproduce-apk` on the first release built with the Android path fixes, and make the APK
+Updates installs the same in any folder too (React Native's CMake builds keep theirs). Put the
+recipes in F-Droid's list of apps (fdroiddata). Then the desktop packages and the Sailfish RPM.

@@ -4641,7 +4641,8 @@ Su Android, **Aggiornamenti** dice anche quali versioni sono proposte a questo t
   **Cancella tutto qui** e **Disinstalla**; un passaggio non preso entro un giorno viene cancellato, e la vecchia app
   si apre come prima. Anche una nuova app già configurata chiede, e ciò che porta prende il posto di tutto ciò che ha.
   Il passaggio richiede spazio libero sul telefono per una copia di tutto: Erevos lo dice prima se non basta. La
-  versione F-Droid, firmata con un'altra chiave, non può passare così: usa invece i [Backup](#backup).
+  versione F-Droid non ha **Cerca aggiornamenti**, quindi non può avviare un passaggio: usa invece i
+  [Backup](#backup).
 - **Versioni beta**: disattivato, sono proposte solo le versioni normali. Attivato, anche le beta (come
   **7.0.1-beta.1**): escono prima, per provare, e possono avere problemi. Una beta lo ha attivato all’inizio.
   Disattivalo per uscire dalle beta: la prossima versione normale con un numero di build più alto della beta che hai si
@@ -4717,9 +4718,10 @@ file per ogni sistema. Lì restano le cinque più recenti.
   installa quello della pagina delle versioni e ripristina il backup. Dopo di che, ogni aggiornamento si installa
   sopra.
 - **Erevos da F-Droid**, quando ci sarà, viene aggiornato da F-Droid: i suoi **Aggiornamenti** mostrano la versione e
-  lo dicono, senza **Cerca aggiornamenti**. F-Droid lo firma con una sua chiave, quindi Android non installa né questo
-  sopra l’Erevos della pagina delle versioni né quello sopra questo. Per passare dall’uno all’altro: fai un backup,
-  disinstalla Erevos, installa l’altro e ripristina il backup.
+  lo dicono, senza **Cerca aggiornamenti**. È firmato con la stessa chiave dell’Erevos della pagina delle versioni:
+  F-Droid ricompila ogni versione dal suo codice e distribuisce il file firmato della pagina delle versioni solo
+  quando la sua compilazione risulta uguale. Così ognuno si installa sopra l’altro e tutto resta: per passare dall’uno
+  all’altro, installa l’altro, della stessa versione o di una più recente.
 - **Mai più vecchio:** non installare una versione più vecchia sopra una più recente. I suoi dati potrebbero essere in
   una forma che quella più vecchia non sa leggere. Ripristina invece un backup fatto con quella versione più vecchia.
 - **Una versione a cui manca il tuo sistema** lo dice nelle sue note: quella build non è riuscita, quindi prendi la
@@ -4749,9 +4751,8 @@ l’altro sull’hotspot di questo: attiva prima l’hotspot nelle impostazioni 
   il proprio certificato, quindi appena hai internet confronta il certificato con quello del sito o della pagina delle
   versioni di Erevos. Erevos stesso, in **Aggiornamenti**, rifiuta un pacchetto firmato diversamente.
 - **Non da uno store:** un Erevos installato in parti, come fanno alcuni store, non può essere dato per intero e lo
-  dice. L’Erevos di F-Droid è firmato da F-Droid: può andare a un telefono senza Erevos, o sopra l’Erevos di F-Droid
-  tramite il browser, ma un Erevos dalla pagina delle versioni lo rifiuta in **Aggiornamenti**, come farebbe Android.
-  L’Erevos di F-Droid non prende nulla in **Aggiornamenti**: lo aggiorna F-Droid.
+  dice. L’Erevos di F-Droid, firmato con la stessa chiave, si dà come qualsiasi altro. L’Erevos di F-Droid non prende
+  nulla in **Aggiornamenti**: lo aggiorna F-Droid.
 - Solo su Android. Chiunque sulla stessa rete veda il codice può scaricare anche lui Erevos; non c’è altro da prendere.
 
 **Perché:** dove internet è tagliato, o sorvegliato, o un telefono non raggiunge nemmeno il sito, Erevos può comunque

@@ -4263,7 +4263,7 @@ On Android, **Updates** also says which releases are offered to this phone:
   before. Once the new one took it, the old one offers **Delete everything here** and **Uninstall**; a move not taken
   within a day is deleted, and the old app opens as before. A new app already set up asks too, and what it brings
   takes the place of everything it has. The move needs free room on the phone for a copy of everything: Erevos says so
-  first when there is not enough. The F-Droid build, signed with another key, cannot move this way: use
+  first when there is not enough. The F-Droid build has no **Check for updates**, so it cannot start a move: use
   [Backups](#backup) instead.
 - **Beta versions**: off, only regular versions are offered. On, betas too (such as **7.0.1-beta.1**): they come out
   first, for trying, and may have problems. A beta has it on at first. Turn it off to leave the betas: the next regular
@@ -4333,9 +4333,10 @@ files \`sha256sum -c --ignore-missing SHA256SUMS\` must say **OK** for each.
   another key, and Android refuses to install over it (**App not installed**). Make a backup, uninstall Erevos,
   install the one from the releases page and restore the backup. After that, every update installs over it.
 - **Erevos from F-Droid**, once it is there, is updated by F-Droid: its **Updates** shows the version and says so,
-  with no **Check for updates**. F-Droid signs it with a key of its own, so Android installs neither it over the
-  Erevos from the releases page nor that one over it. To switch: make a backup, uninstall Erevos, install the other one
-  and restore the backup.
+  with no **Check for updates**. It is signed with the same key as the Erevos from the releases page: F-Droid builds
+  each version again from its source and hands out the releases page's signed file only when its own build comes out
+  the same. So each installs over the other, and everything stays: to switch, install the other one, of the same
+  version or newer.
 - **Never older:** do not install an older version over a newer one. Its data may be in a form the older one cannot
   read. Restore a backup made with that older version instead.
 - **A release that lacks your system** says so in its notes: that build failed, so take the release before.
@@ -4363,9 +4364,8 @@ this phone's hotspot: turn the hotspot on in Android's settings first.
   certificate, so once you have internet compare the certificate with the one on Erevos's website or releases page.
   Erevos itself, in **Updates**, refuses a package signed otherwise.
 - **Not from a store:** an Erevos installed in parts, as some stores install apps, cannot be given whole and says so.
-  Erevos from F-Droid is signed by F-Droid: it can go to a phone without Erevos, or over F-Droid's Erevos through the
-  browser, but an Erevos from the releases page refuses it in **Updates**, as Android would. F-Droid's Erevos takes
-  nothing in **Updates**: F-Droid updates it.
+  Erevos from F-Droid, signed with the same key, is given like any other. F-Droid's Erevos takes nothing in
+  **Updates**: F-Droid updates it.
 - Android only. Anyone on the same network who sees the code can download Erevos too; nothing else is there to take.
 
 **Why:** where the internet is cut, or watched, or a phone may not reach the website at all, Erevos can still go from
