@@ -621,6 +621,9 @@ test('without a client ID for the app nothing of Google Drive is offered', async
   assert.equal(canDrive('ios', CLIENT), false);
   assert.equal(canDrive('web', CLIENT), false);
   assert.equal(canDrive('android', CLIENT), true);
+  // Never in the F-Droid build, which keeps to services anyone may run.
+  assert.equal(canDrive('android', CLIENT, true), false);
+  assert.ok(read('lib/google-drive-ids.ts').includes('canDrive(platform(), DRIVE_CLIENT_ID, fdroidBuild())'));
   // Each edition's app by its package: the bridge, Erevos+ built as app.erevos, is the plain Erevos's.
   const ids = { erevos: 'e.apps.googleusercontent.com', plus: 'p.apps.googleusercontent.com', lite: 'l.apps.googleusercontent.com' };
   assert.equal(driveClientFor('app.erevos', ids), ids.erevos);
@@ -704,8 +707,14 @@ test('the browser’s way back opens its own screen, in each edition', () => {
       const built = appConfig({ config });
       assert.equal(built.android.package, pkg);
       assert.deepEqual(built.android.intentFilters.at(-1), { action: 'VIEW', category: ['BROWSABLE', 'DEFAULT'], data: [{ scheme: pkg }] });
+      // The F-Droid build has no Google Drive, so no way back from Google's page either.
+      process.env.EREVOS_DISTRIBUTION = 'fdroid';
+      const fdroid = appConfig({ config });
+      delete process.env.EREVOS_DISTRIBUTION;
+      assert.deepEqual(fdroid.android.intentFilters, built.android.intentFilters.slice(0, -1));
     }
   } finally {
+    delete process.env.EREVOS_DISTRIBUTION;
     if (was === undefined) delete process.env.EREVOS_EDITION;
     else process.env.EREVOS_EDITION = was;
   }

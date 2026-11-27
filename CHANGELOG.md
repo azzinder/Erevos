@@ -216,7 +216,8 @@ and 0.1.15 never came out.
   (`erevos.backup-drive`, outside the spaces and in backups, sealed with their password), access tokens only in memory,
   asked for again when one runs out or Google refuses it (401), and **Stop sending** revokes it at
   `oauth2.googleapis.com/revoke`. Each edition's Android OAuth client ID goes in `lib/google-drive-ids.ts`, empty for
-  now: `CAN_DRIVE` is false, and nothing of Google Drive shows. Files go as multipart uploads, those above 5 MB as
+  now: `CAN_DRIVE` is false, and nothing of Google Drive shows; it is false in the F-Droid build too, which has no
+  intent filter for it either. Files go as multipart uploads, those above 5 MB as
   resumable ones, through the same HTTP layer as backups to a server, so the space's Tor way applies; through Tor, whose
   answers carry no headers, a large one goes as a multipart upload too. Backups there are sent, checked after each, kept
   and deleted as on a server: `sendBare` sends to either place, a `BarePlace` (`lib/backup-cloud.ts`,

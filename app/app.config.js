@@ -27,7 +27,8 @@ const NAMES = { erevos: 'Erevos', lite: 'Erevos Lite', plus: 'Erevos+' };
 // Where Google's sign-in comes back to (app/lib/google-drive.ts): <package>:/oauth2redirect, as
 // Google wants of an app of the kind Android, so each edition opens with its own package as a
 // scheme. The filter names no path, which Android reads only with a host: any other link of that
-// scheme opens no screen (lib/open-link.ts).
+// scheme opens no screen (lib/open-link.ts). Not in the F-Droid build, which has no Google Drive
+// (lib/google-drive-ids.ts).
 const redirectFilter = (pkg) => ({ action: 'VIEW', category: ['BROWSABLE', 'DEFAULT'], data: [{ scheme: pkg }] });
 // EREVOS_WEB_ORIGIN and EREVOS_START_RELAY name a community's own servers instead of LPHL's
 // (lib/servers.ts): the web server with Erevos's pages and models, which Android then opens in
@@ -62,7 +63,7 @@ module.exports = ({ config }) => {
     android: {
       ...config.android,
       package: PACKAGES[edition],
-      intentFilters: [...intentFilters, redirectFilter(PACKAGES[edition])],
+      intentFilters: fdroid ? intentFilters : [...intentFilters, redirectFilter(PACKAGES[edition])],
       ...(build > 0 ? { versionCode: build } : {}),
       ...(fdroid
         ? {

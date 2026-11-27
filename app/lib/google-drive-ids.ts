@@ -27,9 +27,10 @@ export function driveClientFor(pkg: string, ids: Readonly<Record<UpdateEdition, 
   return edition ? ids[edition] : '';
 }
 
-/** Whether Google Drive is offered: only on Android, and only with a client ID for the app. */
-export function canDrive(os: string, id: string): boolean {
-  return os === 'android' && id !== '';
+/** Whether Google Drive is offered: only on Android, only with a client ID for the app, and never
+ *  in the F-Droid build (`fdroid`), which keeps to services anyone may run. */
+export function canDrive(os: string, id: string, fdroid = false): boolean {
+  return os === 'android' && id !== '' && !fdroid;
 }
 
 // React Native and Expo are asked only when they are there, so the checks, in plain Node, can load
@@ -51,6 +52,16 @@ function appPackage(): string {
   }
 }
 
+// Whether this is the F-Droid build (EREVOS_DISTRIBUTION=fdroid, as lib/distribution.ts reads it).
+function fdroidBuild(): boolean {
+  try {
+    const constants = (require('expo-constants') as typeof import('expo-constants')).default;
+    return constants.expoConfig?.extra?.distribution === 'fdroid';
+  } catch {
+    return false;
+  }
+}
+
 /** This app's Android package, which Google's sign-in comes back to. */
 export const DRIVE_PACKAGE = appPackage();
 
@@ -58,4 +69,4 @@ export const DRIVE_PACKAGE = appPackage();
 export const DRIVE_CLIENT_ID = driveClientFor(DRIVE_PACKAGE);
 
 /** Whether automatic backups can go to Google Drive here. */
-export const CAN_DRIVE = canDrive(platform(), DRIVE_CLIENT_ID);
+export const CAN_DRIVE = canDrive(platform(), DRIVE_CLIENT_ID, fdroidBuild());
