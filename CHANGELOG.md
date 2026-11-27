@@ -33,8 +33,10 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   and one the server let go is asked for again with the same token.
 - As in Erevos 3.0.0-rc.4: the F-Droid APK is built from `deploy/fdroid/app.erevos.lite.yml` as F-Droid builds it, with
   no key at hand, then signed apart with the release key and checked as the APK Updates installs is, without the
-  permission to install packages. Gradle and the plugins it needs are fetched first, tried four times, before the
-  release key is there, and on GitHub's machines Maven Central's files come from Google's copy of it.
+  permission to install packages. On 2026-11-27 it came out the same, byte for byte, in two builds on two machines, one
+  of them with two processors, and the signature of one, copied onto the other, verified. Gradle and the plugins it
+  needs are fetched first, tried four times, before the release key is there, and on GitHub's machines Maven Central's
+  files come from Google's copy of it.
 
 ## 3.0.0-rc.4 (2026-11-27)
 
@@ -268,8 +270,8 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
   (`scripts/fdroid-sign.sh`: the signature alone, nothing else changed), and checks, as F-Droid does, that its signature
   copied onto the second verifies. `checks/fdroid.check.ts` holds the recipes to the release key, the downloads and the
   NDK, and the signing to Gradle's. On 2026-11-27 Erevos's came out the same, byte for byte, in three builds on three
-  machines, two of them with two processors, and the signature of one, copied onto another, verified. Nothing is sent to
-  F-Droid.
+  machines, two of them with two processors, and the signature of one, copied onto another, verified; Erevos Lite's
+  too, in two builds on two machines, one of them with two processors. Nothing is sent to F-Droid.
 - The release builds its F-Droid APK with `scripts/fdroid-build.sh`, in a job that holds no key (`fdroid`), and signs it
   in the next (`fdroid-sign`) with `scripts/fdroid-sign.sh`: the release key is written to a file for the SDK's
   `apksigner` alone, in that one step, and removed after. Only then is apksigcopier installed, pinned by its SHA-256
