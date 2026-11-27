@@ -292,9 +292,11 @@ The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own 
 - On GitHub's machines Maven Central's files now come from Google's copy of it, the same files at the same paths, in
   every build Gradle runs there (`scripts/maven-central-mirror.gradle`): Maven Central at times answers those machines
   "too many requests", and Gradle then looks no further down its list, not even on the Gradle Plugin Portal, so a
-  plugin only the Portal has was "not found" for minutes, every try. A release's F-Droid build takes them from there
-  too; F-Droid's own build takes them from Maven Central, and the workflow `fdroid-build` now builds its second APK so,
-  to show that both come out the same.
+  plugin only the Portal has was "not found" for minutes, every try. The Portal, for its part, sends what it does not
+  hold on to Maven Central, so where Gradle would ask the Portal alone, as for the plugins of the app's own build and
+  of Expo's for modules, Maven Central from Google's copy now comes before it. A release's F-Droid build takes them
+  from there too; F-Droid's own build takes them from Maven Central, and the workflow `fdroid-build` now builds its
+  second APK so, to show that both come out the same.
 
 ## 3.2.0-rc.3 (2026-11-25)
 

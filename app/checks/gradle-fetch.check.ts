@@ -8,9 +8,10 @@
 // Android app fetches them first, tried four times, a plugin not found asked for again after the
 // first try (Gradle remembers it otherwise); the releases do so before the release key is there, so
 // that `help` configures the app as an unsigned build and that step holds no secret. On GitHub's
-// machines Maven Central's files come from Google's copy of it (scripts/maven-central-mirror.gradle):
-// Maven Central at times refuses those machines, and Gradle then looks no further down its list,
-// not even on the Gradle Plugin Portal. F-Droid's own build stays with Maven Central.
+// machines Maven Central's files come from Google's copy of it (scripts/maven-central-mirror.gradle),
+// those the Gradle Plugin Portal would send on to Maven Central too: Maven Central at times refuses
+// those machines, and Gradle then looks no further down its list, not even on the Portal. F-Droid's
+// own build stays with Maven Central.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -119,6 +120,26 @@ test("on GitHub's machines Maven Central's files come from Google's copy of it, 
     assert.ok(script.includes(`  fromMirror(${list})\n`), `${MIRROR}: ${list}`);
   }
   assert.match(script, /repositories\.configureEach \{ repository ->\n {4}if \(repository instanceof MavenArtifactRepository && central\.contains\(repository\.url\.host\)\) \{\n {6}repository\.url = mirror\n/);
+  // The Plugin Portal sends what it does not hold itself on to Maven Central. So Maven Central, which
+  // the lines above move to Google's copy, comes before the Portal: for every build's settings'
+  // plugins (Gradle adds the plugin repositories after the settings' buildscript ones), and for the
+  // projects' plugins of a build that names no plugin repositories, where Gradle takes the Portal
+  // alone. Nothing else is added, and no list that names its own is changed.
+  assert.match(
+    script,
+    /\nbeforeSettings \{ settings ->\n(?: {2}fromMirror\(.*\)\n)+(?: {2}\/\/.*\n)* {2}settings\.buildscript\.repositories\.mavenCentral\(\)\n\}\n/,
+    `${MIRROR}: the settings' plugins`,
+  );
+  assert.match(
+    script,
+    /\nsettingsEvaluated \{ settings ->\n(?: {2}\/\/.*\n)* {2}if \(settings\.pluginManagement\.repositories\.isEmpty\(\)\) \{\n {4}settings\.pluginManagement\.repositories\.mavenCentral\(\)\n {4}settings\.pluginManagement\.repositories\.gradlePluginPortal\(\)\n {2}\}\n\}\n/,
+    `${MIRROR}: the projects' plugins, where no plugin repositories are named`,
+  );
+  assert.deepEqual(
+    script.match(/\b(mavenCentral|gradlePluginPortal|google|mavenLocal|jcenter|add[A-Za-z]*)\(/g),
+    ['mavenCentral(', 'mavenCentral(', 'gradlePluginPortal('],
+    `${MIRROR}: nothing else added`,
+  );
   // F-Droid's scanner reads every .gradle file of the source for repositories it does not know: none
   // is declared here, Maven Central's address only changes.
   assert.doesNotMatch(script, /\b(maven|ivy)\s*[({]/, `${MIRROR}: declares no repository`);

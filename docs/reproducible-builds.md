@@ -55,7 +55,8 @@ as F-Droid's own build, so React Native's CMake builds keep the same folder in b
 pins what Debian does not: Node by its version and SHA-256, Rust and Go as the source names them,
 Expo's template by its exact version, and Expo's modules built from their source. On GitHub's
 machines a release takes Maven Central's files from Google's copy of it, the same files at the same
-paths (`scripts/maven-central-mirror.gradle`), as Maven Central at times refuses those machines;
+paths, those the Gradle Plugin Portal would send on to Maven Central too
+(`scripts/maven-central-mirror.gradle`), as Maven Central at times refuses those machines;
 F-Droid's own build takes them from Maven Central.
 
 That job holds no key. The next one signs the APK with the release key, adding an APK Signature
