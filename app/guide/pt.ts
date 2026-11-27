@@ -654,9 +654,10 @@ ali, então quem cuida do servidor pode tirar qualquer celular sozinho.
   mensagens para outros servidores: ao chegar a um desses limites, o Erevos avisa, e tudo continua no dia seguinte. Ao
   mesmo tempo pode ter 8 MB de mensagens esperando e 20 guardadas para mais tarde, e todos os lugares abertos juntos
   ocupam no máximo a metade do que o servidor guarda de cada coisa, e de arquivos, para nunca o encherem para todos. O
-  servidor dá 1000 no máximo, 100 por dia e 3 por dia para um mesmo endereço de internet (um IPv6 conta com toda a sua
-  rede, pelos seus primeiros 48 bits), e tira aquele cujo celular não se conecta há 60 dias, ou há 7 se nunca mais se
-  conectou depois do dia em que foi criado, a menos que quem cuida dele tenha escolhido outra coisa. Se ele tirar o
+  servidor do LPHL dá 3000 no máximo, 300 por dia e 5 por dia para um mesmo endereço de internet (um IPv6 conta com toda
+  a sua rede, pelos seus primeiros 48 bits), outro servidor 1000, 100 e 3, e cada um tira aquele cujo celular não se
+  conecta há 60 dias, ou há 7 se nunca mais se conectou depois do dia em que foi criado, a menos que quem cuida dele
+  tenha escolhido outra coisa. Se ele tirar o
   seu, o Erevos o pede de novo sozinho, com o mesmo token, na próxima vez que chegar ao servidor: sua fila, seus links e
   seus contatos ficam como estavam, porque o servidor guarda as filas por meses. Ele conta os endereços só durante o dia,
   na memória, e nunca os anota. Quando não dá nenhum, a tela inicial diz o porquê, acima das duas formas de adicionar

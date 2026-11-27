@@ -697,10 +697,11 @@ Telefons dort, sodass, wer den Server betreibt, jedes einzelne Telefon für sich
   den Server schicken, 30-mal nehmen, was ein Anruf über den Server braucht, und 5000 Nachrichten an andere Server
   weitergeben: Ist eines davon erreicht, sagt Erevos es, und am nächsten Tag geht es weiter. Zugleich darf er 8 MB an
   wartenden Nachrichten und 20 für später gehaltene haben, und alle offenen Plätze zusammen belegen höchstens die Hälfte
-  dessen, was der Server davon und an Dateien hält, damit sie ihn nie für alle füllen. Der Server vergibt höchstens 1000
-  davon, 100 am Tag und 3 am Tag an eine Internetadresse (eine IPv6-Adresse zählt mit ihrem ganzen Netz, nach ihren
-  ersten 48 Bits), und nimmt einen heraus, dessen Telefon sich 60 Tage nicht verbunden hat, oder 7 Tage, wenn es sich
-  nach dem Tag, an dem er entstand, nie wieder verbunden hat, sofern sein Betreiber nichts anderes gewählt hat. Nimmt er
+  dessen, was der Server davon und an Dateien hält, damit sie ihn nie für alle füllen. Der Server von LPHL vergibt
+  höchstens 3000 davon, 300 am Tag und 5 am Tag an eine Internetadresse (eine IPv6-Adresse zählt mit ihrem ganzen Netz,
+  nach ihren ersten 48 Bits), ein anderer Server 1000, 100 und 3, und jeder nimmt einen heraus, dessen Telefon sich 60
+  Tage nicht verbunden hat, oder 7 Tage, wenn es sich nach dem Tag, an dem er entstand, nie wieder verbunden hat, sofern
+  sein Betreiber nichts anderes gewählt hat. Nimmt er
   deinen heraus, fragt Erevos von selbst wieder danach, mit demselben Token, sobald es den Server das nächste Mal
   erreicht: Warteschlange, Links und Kontakte bleiben, wie sie waren, denn der Server hält Warteschlangen monatelang.
   Adressen zählt er nur für den Tag, im Speicher, und schreibt sie nie auf. Wenn er keine vergibt, sagt der

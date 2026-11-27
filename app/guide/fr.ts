@@ -692,10 +692,11 @@ téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut r
   messages vers d’autres serveurs : au-delà de l’une de ces limites, Erevos le dit, et ça reprend le lendemain. En même
   temps, elle peut avoir 8 Mo de messages en attente et 20 gardés pour plus tard, et toutes les places ouvertes ensemble
   occupent au plus la moitié de ce que le serveur garde de chacun, et de fichiers, pour ne jamais le remplir pour tout
-  le monde. Le serveur en donne 1000 au plus, 100 par jour et 3 par jour à une même adresse internet (une adresse IPv6
-  compte avec tout son réseau, par ses 48 premiers bits), et retire celle dont le téléphone ne s’est pas connecté depuis
-  60 jours, ou depuis 7 s’il ne s’est jamais reconnecté après le jour où elle a été créée, sauf si celui qui le gère a
-  choisi autrement. S’il retire la tienne, Erevos la redemande de lui-même, avec le même jeton, la prochaine fois qu’il
+  le monde. Le serveur de LPHL en donne 3000 au plus, 300 par jour et 5 par jour à une même adresse internet (une
+  adresse IPv6 compte avec tout son réseau, par ses 48 premiers bits), un autre serveur 1000, 100 et 3, et chacun retire
+  celle dont le téléphone ne s’est pas connecté depuis 60 jours, ou depuis 7 s’il ne s’est jamais reconnecté après le
+  jour où elle a été créée, sauf si celui qui le gère a choisi autrement. S’il retire la tienne, Erevos la redemande de
+  lui-même, avec le même jeton, la prochaine fois qu’il
   joint le serveur : ta file, tes liens et tes contacts restent comme ils étaient, car le serveur garde les files des
   mois durant. Il ne compte les adresses que pour la journée, en mémoire, et ne les note jamais. Quand il n’en donne
   aucune, l’écran d’accueil dit pourquoi, au-dessus des deux façons d’ajouter quelqu’un ou au-dessus des discussions,

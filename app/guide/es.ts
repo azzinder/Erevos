@@ -656,10 +656,11 @@ así que quien gestiona el servidor puede sacar a cualquier teléfono por separa
   mover 50 MB de archivos por el servidor, tomar 30 veces lo que necesita una llamada por el servidor y enviar 5000
   mensajes a otros servidores: al llegar a uno de esos límites, Erevos lo dice, y sigue al día siguiente. A la vez puede
   tener 8 MB de mensajes esperando y 20 guardados para más tarde, y todos los sitios abiertos juntos ocupan como máximo
-  la mitad de lo que el servidor guarda de cada cosa, y de archivos, para que nunca lo llenen para todos. El servidor da
-  1000 como máximo, 100 al día y 3 al día a una misma dirección de internet (una IPv6 cuenta con toda su red, por sus
-  primeros 48 bits), y quita uno cuyo teléfono no se ha conectado en 60 días, o en 7 si nunca volvió a conectarse
-  después del día en que se creó, salvo que quien lo gestiona haya elegido otra cosa. Si quita el tuyo, Erevos lo pide
+  la mitad de lo que el servidor guarda de cada cosa, y de archivos, para que nunca lo llenen para todos. El servidor de
+  LPHL da 3000 como máximo, 300 al día y 5 al día a una misma dirección de internet (una IPv6 cuenta con toda su red,
+  por sus primeros 48 bits), otro servidor 1000, 100 y 3, y cada uno quita uno cuyo teléfono no se ha conectado en 60
+  días, o en 7 si nunca volvió a conectarse después del día en que se creó, salvo que quien lo gestiona haya elegido
+  otra cosa. Si quita el tuyo, Erevos lo pide
   de nuevo por sí solo, con el mismo token, la próxima vez que llegue al servidor: tu cola, tus enlaces y tus contactos
   quedan como estaban, porque el servidor guarda las colas durante meses. Cuenta las direcciones solo durante el día, en
   memoria, y nunca las anota. Cuando no da ninguno, la pantalla de inicio dice por qué, encima de las dos formas de

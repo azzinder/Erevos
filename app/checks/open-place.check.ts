@@ -7,7 +7,8 @@
 // makes queues, sends and takes with it, and hands out no access; it refuses one past each of its
 // limits, in all, a day and a day to one address, each refusal told apart by openPlaceRefusal; one
 // that does not give them says so; and what the relay counts, `erevos-relay open-places` tells
-// without naming any place. The relay part is skipped, with a note, when the relay is not built.
+// without naming any place; and the guide says how many LPHL's server gives, and another server,
+// in every language. The relay part is skipped, with a note, when the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -84,6 +85,19 @@ test('only what takeOpenPlace throws for a place not given reads as a refusal', 
   assert.equal(openPlaceRefusal(new RelayUnreachableError('no connection')), null);
   assert.equal(openPlaceRefusal(new Error('something else')), null);
   assert.equal(openPlaceRefusal(null), null);
+});
+
+// LPHL's server is set to give 3000 open places, 300 a day and 5 a day to one address
+// (EREVOS_RELAY_OPEN_PLACES, _DAY, _PER_ADDRESS); another server gives what the relay gives unless
+// set otherwise (crates/erevos-relay/src/open.rs).
+test("the guide says how many open places LPHL's server gives, and another server, in every language", () => {
+  const open = readFileSync(new URL('../../crates/erevos-relay/src/open.rs', import.meta.url), 'utf8');
+  const given = ['PLACES', 'DAY', 'PER_ADDRESS'].map((name) => open.match(new RegExp(`pub const DEFAULT_${name}: u64 = (\\d+);`))?.[1]);
+  assert.deepEqual(given, ['1000', '100', '3']);
+  for (const lang of ['en', 'de', 'el', 'es', 'fr', 'it', 'pt', 'sh']) {
+    const text = readFileSync(new URL(`../guide/${lang}.ts`, import.meta.url), 'utf8').replace(/\s+/g, ' ');
+    assert.match(text, /\bLPHL\b[^.]*?\b3000\b[^.]*?\b300\b[^.]*?\b5\b[^.]*?\b1000, 100 \S+ 3\b/, lang);
+  }
 });
 
 // A relay that gives open places, invites and lends: Alice has a line of her own on it, and a new

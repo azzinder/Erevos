@@ -636,9 +636,10 @@ onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
   server 50 MB datoteka, 30 puta uzeti ono što treba pozivu preko servera i poslati 5000 poruka na druge servere: kad
   dosegne jedno od toga, Erevos to kaže, a sutradan se nastavlja. Istovremeno može imati 8 MB poruka koje čekaju i 20
   zadržanih za kasnije, a sva otvorena mjesta zajedno zauzimaju najviše polovinu onoga što server čuva od svakog, i od
-  datoteka, da ga nikad ne napune za sve. Server ih daje najviše 1000, 100 dnevno i 3 dnevno jednoj internet adresi
-  (IPv6 adresa broji se sa cijelom svojom mrežom, po prvih 48 bita), i uklanja ono čiji se telefon nije povezao 60 dana,
-  ili 7 kad se nikad više nije povezao nakon dana kad je napravljeno, osim ako onaj ko ga vodi nije izabrao drugačije.
+  datoteka, da ga nikad ne napune za sve. LPHL-ov server ih daje najviše 3000, 300 dnevno i 5 dnevno jednoj internet
+  adresi (IPv6 adresa broji se sa cijelom svojom mrežom, po prvih 48 bita), neki drugi server 1000, 100 i 3, i svaki
+  uklanja ono čiji se telefon nije povezao 60 dana, ili 7 kad se nikad više nije povezao nakon dana kad je napravljeno,
+  osim ako onaj ko ga vodi nije izabrao drugačije.
   Ako ukloni vaše, Erevos ga sam ponovo traži, s istim tokenom, sljedeći put kad stigne do servera: vaš red, linkovi i
   kontakti ostaju kakvi su bili, jer server čuva redove mjesecima. Adrese broji samo za taj dan, u memoriji, i nikad ih
   ne zapisuje. Kad ne daje nijedno, početni ekran kaže zašto, iznad dva načina da dodate nekoga ili iznad razgovora, uz
