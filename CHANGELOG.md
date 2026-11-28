@@ -8,6 +8,25 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## 3.2.0-rc.5 (2026-11-28)
+
+The fifth release candidate of Erevos Lite: Erevos 3.0.0-rc.5 for Erevos's own chats and calls, with what is below.
+
+### For you
+
+- What Erevos 3.0.0-rc.5 brought: **Back and Next at the first start**: its four steps, **Welcome to Erevos**, **How
+  visible are you?**, **Miss nothing** and **Keep it safe**, now come before the first space opens, and the back arrow
+  beside the main button, or Android's back key, goes back a step with everything as you left it. Nothing of them is
+  used until **Done**: then the first space opens already as visible as you chose, locked with your password if you
+  typed one, without asking for it again. Should Erevos Lite close in between, it starts again at the step you left,
+  with what you chose, but for the password, which is never kept.
+
+### Under the hood
+
+- As in Erevos 3.0.0-rc.5: the first start's choices are kept until **Done** only on the device, in its keystore, and
+  the password only in memory; the first space is made at **Done** with its mode written into it, so it reaches no
+  server before then, and with INVISIBLE the place on LPHL's server is asked for only through Tor.
+
 ## 3.0.0-rc.5 (2026-11-28)
 
 ### For you

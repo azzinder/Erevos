@@ -30,6 +30,13 @@ export const NEXT: Changes = {
 
 export const VERSIONS: WhatsNew[] = [
   {
+    version: '3.2.0-rc.5',
+    forYou: [
+      mark("**Release candidate 5**: Erevos Lite with what Erevos 3.0.0-rc.5 brought to its chats: Back and Next at the first start, whose four steps now all come before the first space opens, with nothing used until **Done**; the space then opens already as visible as you chose and locked with your password if you typed one, without asking for it again. See [Getting started](#start)."),
+    ],
+    underTheHood: [],
+  },
+  {
     version: '3.0.0-rc.5',
     forYou: [
       mark("**Back and Next at the first start**: all its steps now come before the first space opens, and the back arrow, or Android's back key, goes back a step with everything as you left it. Nothing is used until **Done**: then the space opens already as visible as you chose, locked with your password if you typed one, without asking for it again. Should Erevos close in between, it starts again at the step you left. See [Getting started](#start)."),
