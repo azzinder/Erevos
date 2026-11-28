@@ -97,4 +97,7 @@ export const setupText: Record<string, string> = {
   'What you leave off does not run at all. Change them any time.':
     'Ono što ostavite isključeno uopće ne radi. Možete to promijeniti u bilo kojem trenutku.',
   'Other networks': 'Druge mreže',
+  'Another server · you set it once the setup is done': 'Drugi server · podešavate ga kad završite',
+  'Erevos closed before the password was kept: type it again.': 'Erevos se zatvorio prije nego što je lozinka sačuvana: upišite je ponovno.',
+  'To open it with your fingerprint or face too, turn that on here.': 'Da se otvara i otiskom prsta ili licem, uključite to ovdje.',
 };

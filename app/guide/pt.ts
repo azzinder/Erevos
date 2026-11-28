@@ -84,33 +84,39 @@ própria um lugar para as suas mensagens no servidor do LPHL, sem número de tel
 alguém que já o usa, um código QR ou link, coloca você dentro na hora, com essa pessoa como contato (veja Convidar
 alguém novo, em [Conversar por um servidor](#relay)).
 
-Na primeiríssima vez que inicia, o Erevos se configura em poucos passos curtos, com um ponto para cada um. Antes de
-abrir o primeiro espaço: **Boas-vindas ao Erevos**, com o que você não entrega (nem número de telefone, nem e-mail, nem
-nome de usuário, nem conta: você adiciona pessoas com um código QR ou um link) e um nome para seus contatos se você
+Na primeiríssima vez que inicia, o Erevos se configura em poucos passos curtos, com um ponto para cada um, todos antes
+de abrir o primeiro espaço: **Boas-vindas ao Erevos**, com o que você não entrega (nem número de telefone, nem e-mail,
+nem nome de usuário, nem conta: você adiciona pessoas com um código QR ou um link) e um nome para seus contatos se você
 quiser um, com o idioma no alto{~; depois **O que você vai usar?**, os módulos (veja [Módulos](#modules)): o que você
 desativa não roda de jeito nenhum. As conversas do Erevos, o Telefone, os SMS e a Coleção começam ativados}{+, as outras
-redes, em **Outras redes**, desativadas}. Depois, no espaço:
+redes, em **Outras redes**, desativadas}. Depois:
 
-1. **Quão visível você é?**: as três escolhas de [Quão visível você é?](#direct), com SPEED já escolhida. Ao continuar,
-   o Erevos pega por conta própria um lugar para as suas mensagens no servidor do LPHL, sem convite e sem conta (veja
-   **Um lugar aberto** em [Conversar por um servidor](#relay)), a menos que o convite com que o Erevos foi aberto traga
-   um servidor próprio. **Outro servidor (para usuários avançados)**, abaixo das escolhas, abre as outras formas de
-   entrar: uma conta num servidor ou um servidor seu.
+1. **Quão visível você é?**: as três escolhas de [Quão visível você é?](#direct), com SPEED já escolhida. Quando os
+   passos terminam, o Erevos pega por conta própria um lugar para as suas mensagens no servidor do LPHL, sem convite e
+   sem conta (veja **Um lugar aberto** em [Conversar por um servidor](#relay)), a menos que o convite com que o Erevos
+   foi aberto traga um servidor próprio. **Outro servidor (para usuários avançados)**, abaixo das escolhas, escolhe em
+   vez disso as outras formas de entrar, uma conta num servidor ou um servidor seu, cuja página abre quando os passos
+   terminam; **Usar o servidor do LPHL** volta ao do LPHL.
 2. **Não perca nada**: cada permissão que o Erevos pede, em cinco grupos conforme para que servem (Notificações,
    Chamadas, Mensagens, Em segundo plano, Lembretes), com quantas estão permitidas. **Permitir tudo** faz primeiro as
    perguntas que o Android faz no próprio Erevos{~, depois as do Erevos como app de telefone e como app de SMS}, e então
    abre cada tela das configurações do Android em sequência, quando você volta da anterior; **Continuar sem eles** as
-   deixa para **Configurações** → **Geral** → **Permissões**. Num navegador, o passo tem o que o navegador pergunta; o
-   app para computador não tem esse passo.
+   deixa para **Configurações** → **Geral** → **Permissões**. Num navegador, o passo tem o que o navegador pergunta,
+   menos as notificações com o app web fechado, que passam pelo servidor: a tela inicial as oferece quando os passos
+   terminam. O app para computador não tem esse passo.
 3. **Mantenha seguro**: uma senha para o Erevos, digitada duas vezes, com um medidor e quatro dicas para uma mais forte,
    a impressão digital ou o rosto, e para onde vão os backups automáticos: **Neste aparelho**, numa pasta que você
    escolhe, **WebDAV** (Nextcloud, ownCloud e outros) ou, no Android, **Google Drive**, que primeiro diz o que o Google
    passa a saber, cada um configurado na tela de Backups que o **Pronto** abre (veja [Backups](#backup)).
 
-Depois a tela inicial diz **Tudo pronto**, com o seu nome, e oferece **Está do meu lado** e **Está longe** para o seu
-primeiro contato, com o que um lugar gratuito no servidor do LPHL pode fazer a cada dia e uma linha para uma permissão
-que ainda falta. Até o **Pronto**, os passos aparecem de novo quando o Erevos inicia. Aberto com um convite, o Erevos o
-mostra quando os passos terminam.
+A seta de voltar, ao lado do botão principal em cada passo depois do primeiro, e o botão de voltar do Android voltam um
+passo, com tudo como você deixou, e nada disso é usado antes do **Pronto**. Então o primeiro espaço abre já tão visível
+quanto você escolheu, bloqueado com a sua senha se você digitou uma, que ele não pede de novo, e com a impressão digital
+ou o rosto ativado se você escolheu. A tela inicial diz **Tudo pronto**, com o seu nome, e oferece **Está do meu lado**
+e **Está longe** para o seu primeiro contato, com o que um lugar gratuito no servidor do LPHL pode fazer a cada dia e
+uma linha para uma permissão que ainda falta. Até o **Pronto**, o Erevos recomeça no passo em que você parou, com o que
+você escolheu, menos a senha, que nunca é guardada: você a digita de novo. Aberto com um convite, o Erevos o mostra
+quando os passos terminam.
 
 - **O nome:** não é um nome de usuário: ninguém o procura, e ele não precisa ser único. Ele vai, criptografado, só para
   quem você adiciona, e **O meu nome**, em Configurações → Privacidade e segurança, o muda.
@@ -646,7 +652,7 @@ Um servidor que pede um token deixa um celular entrar de quatro formas. Cada for
 ali, então quem cuida do servidor pode tirar qualquer celular sozinho.
 
 - **Um lugar aberto:** um servidor que os dá, como o do LPHL, dá por conta própria um lugar a um celular que não tem um
-  ali, sem convite e sem conta. No primeiro início, quando você escolhe o quanto é visível, o Erevos pega um no servidor
+  ali, sem convite e sem conta. No primeiro início, quando os passos terminam, o Erevos pega um no servidor
   do LPHL e cria ali a sua fila (veja [Primeiros passos](#start)); **Usar o servidor do LPHL**, na tela inicial de um
   espaço sem servidor e sem conversas, também pega um. O celular faz o próprio token e dá ao servidor só o SHA-256 dele.
   Um lugar assim é para as suas próprias conversas: ele não pode convidar nem emprestar lugares. A cada dia pode criar

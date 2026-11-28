@@ -85,33 +85,38 @@ sul server di LPHL, senza numero di telefono, e-mail o account. Un invito da qua
 link, ti porta dentro subito, con quella persona già tra i tuoi contatti (vedi Invitare qualcuno di nuovo, in [Chat
 tramite un server](#relay)).
 
-La primissima volta che si avvia, Erevos si configura in pochi brevi passi, con un punto per ciascuno. Prima che si apra
-il suo primo spazio: **Benvenuto in Erevos**, con ciò che non dai (né numero di telefono, né e-mail, né nome utente, né
-account: aggiungi persone con un codice QR o un link) e un nome per i tuoi contatti se lo vuoi, con la lingua in alto{~;
-poi **Cosa userai?**, i moduli (vedi [Moduli](#modules)): ciò che disattivi non funziona affatto. Le chat di Erevos, il
-Telefono, gli SMS e la Raccolta sono attivi all’inizio}{+, le altre reti, sotto **Altre reti**, disattivate}. Poi, nello
-spazio:
+La primissima volta che si avvia, Erevos si configura in pochi brevi passi, con un punto per ciascuno, tutti prima che
+si apra il suo primo spazio: **Benvenuto in Erevos**, con ciò che non dai (né numero di telefono, né e-mail, né nome
+utente, né account: aggiungi persone con un codice QR o un link) e un nome per i tuoi contatti se lo vuoi, con la lingua
+in alto{~; poi **Cosa userai?**, i moduli (vedi [Moduli](#modules)): ciò che disattivi non funziona affatto. Le chat di
+Erevos, il Telefono, gli SMS e la Raccolta sono attivi all’inizio}{+, le altre reti, sotto **Altre reti**, disattivate}.
+Poi:
 
-1. **Quanto sei visibile?**: le tre scelte di [Quanto sei visibile?](#direct), con SPEED già scelta. Quando continui,
+1. **Quanto sei visibile?**: le tre scelte di [Quanto sei visibile?](#direct), con SPEED già scelta. A passi finiti,
    Erevos prende da solo un posto per i tuoi messaggi sul server di LPHL, senza invito e senza account (vedi **Un posto
    aperto** in [Chat tramite un server](#relay)), a meno che l’invito con cui Erevos è stato aperto non porti un server
-   suo. **Altro server (per utenti esperti)**, sotto le scelte, apre gli altri modi per entrare: un account su un
-   server, o un server tuo.
+   suo. **Altro server (per utenti esperti)**, sotto le scelte, sceglie invece gli altri modi per entrare, un account su
+   un server o un server tuo, la cui pagina si apre a passi finiti; **Usa il server di LPHL** torna a quello di LPHL.
 2. **Non perdere niente**: ogni autorizzazione che Erevos chiede, in cinque gruppi secondo ciò a cui servono (Notifiche,
    Chiamate, Messaggi, In background, Promemoria), con quante sono consentite. **Consenti tutto** pone prima le domande
    che Android pone in Erevos stesso{~, poi per Erevos come app Telefono e come app SMS}, poi apre una dopo l’altra ogni
    schermata delle impostazioni di Android, quando torni da quella prima; **Continua senza** le lascia a
-   **Impostazioni** → **Generali** → **Autorizzazioni**. In un browser il passo ha ciò che chiede il browser; l’app per
+   **Impostazioni** → **Generali** → **Autorizzazioni**. In un browser il passo ha ciò che chiede il browser, tranne le
+   notifiche a web app chiusa, che passano dal server: le offre la schermata principale a passi finiti. L’app per
    computer non ha questo passo.
 3. **Tienilo al sicuro**: una password per Erevos, digitata due volte, con un indicatore e quattro consigli per averne
    una più forte, l’impronta o il volto, e dove vanno i backup automatici: **Su questo dispositivo**, in una cartella
    che scegli, **WebDAV** (Nextcloud, ownCloud e altri) o, su Android, **Google Drive**, che prima dice che cosa Google
    sa allora, ciascuno impostato nella schermata Backup che apre **Fatto** (vedi [Backup](#backup)).
 
-Poi la schermata principale dice **Pronto**, con il tuo nome, e offre **È accanto a me** e **È lontano** per il tuo
-primo contatto, con ciò che un posto gratuito sul server di LPHL può fare ogni giorno e una riga per un’autorizzazione
-ancora mancante. Fino a **Fatto**, i passi ricompaiono all’avvio di Erevos. Aperto con un invito, Erevos lo mostra a
-passi finiti.
+La freccia indietro, accanto al pulsante principale in ogni passo dopo il primo, e il tasto indietro di Android tornano
+di un passo, con tutto come l’hai lasciato, e niente ne viene usato prima di **Fatto**. Allora il primo spazio si apre
+già visibile quanto hai scelto, bloccato con la tua password se ne hai scritta una, che non chiede di nuovo, e con
+l’impronta o il volto attivi se l’hai scelto. La schermata principale dice **Pronto**, con il tuo nome, e offre **È
+accanto a me** e **È lontano** per il tuo primo contatto, con ciò che un posto gratuito sul server di LPHL può fare ogni
+giorno e una riga per un’autorizzazione ancora mancante. Fino a **Fatto**, Erevos riparte dal passo in cui l’hai
+lasciato, con ciò che hai scelto, tranne la password, che non viene mai conservata: la scrivi di nuovo. Aperto con un
+invito, Erevos lo mostra a passi finiti.
 
 - **Il nome:** non è un nome utente: nessuno lo cerca, e non deve essere unico. Va, cifrato, solo a chi aggiungi, e **Il
   mio nome** sotto Impostazioni → Privacy e sicurezza lo cambia.
@@ -650,7 +655,7 @@ Un server che richiede un token fa entrare un telefono in quattro modi. Ogni mod
 lì, così chi gestisce il server può togliere un singolo telefono da solo.
 
 - **Un posto aperto:** un server che li dà, come quello di LPHL, dà da solo un posto a un telefono che lì non ne ha uno,
-  senza invito e senza account. Al primo avvio, quando scegli quanto sei visibile, Erevos ne prende uno sul server di
+  senza invito e senza account. Al primo avvio, a passi finiti, Erevos ne prende uno sul server di
   LPHL e ci crea la tua coda (vedi [Per iniziare](#start)); **Usa il server di LPHL**, nella schermata principale di uno
   spazio senza server e senza chat, ne prende uno anch’esso. Il telefono fa il suo token da solo e dà al server solo il
   suo SHA-256. Un posto così è per le tue chat: non può invitare né prestare posti. Ogni giorno può creare 20 code, far

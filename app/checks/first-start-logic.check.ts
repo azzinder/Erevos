@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-// The first start's steps and colours (lib/first-start.ts), its permissions in five groups and the
-// order Allow all goes in (lib/permission-groups.ts), and when an invite Erevos was first opened
-// with brings the first space's server instead of LPHL's open one (lib/invite-server.ts).
+// The first start's steps and colours (lib/first-start.ts), the whole setup kept as it is chosen
+// before the first space opens, the password never with it (lib/setup-draft.ts), its permissions
+// in five groups and the order Allow all goes in (lib/permission-groups.ts), and when an invite
+// Erevos was first opened with brings the first space's server instead of LPHL's open one
+// (lib/invite-server.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -15,11 +17,18 @@ import { randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { startLook, startSteps, stepAt, TILES } from '../lib/first-start';
 import { bringsServer } from '../lib/invite-server';
+import type { Module } from '../lib/modules';
 import { linkHref } from '../lib/open-link';
 import type { Check, CheckId } from '../lib/permission-checks';
 import { allAllowed, askedInApp, countAllowed, nextSettingsScreen, permissionGroups, type RowId } from '../lib/permission-groups';
+import { draftNow, dropDraft, forgetPassword, keepDraft, loadDraft, newDraft, parseDraft, typedPassword, typePassword, type SetupDraft } from '../lib/setup-draft';
 import { textInviteLink, type TextInvite } from '../lib/text-invite';
 import { welcomeLink } from '../lib/welcome';
+import { slow, store } from './secure-memory';
+
+const DRAFT = 'erevos.setup-draft';
+const HERE: Module[] = ['erevos', 'phone', 'sms', 'collection'];
+const later = (ms = 0) => new Promise((done) => setTimeout(done, ms));
 
 test('five steps, four without modules to choose, the mode left out after a restore, the permissions where they are looked at', () => {
   assert.deepEqual(startSteps({ choice: true, checks: true }), ['welcome', 'modules', 'mode', 'permissions', 'keep']);
@@ -33,6 +42,62 @@ test('five steps, four without modules to choose, the mode left out after a rest
   assert.deepEqual(stepAt(steps, 'welcome'), { n: 1, of: 4 });
   assert.deepEqual(stepAt(steps, 'mode'), { n: 2, of: 4 });
   assert.deepEqual(stepAt(steps, 'keep'), { n: 4, of: 4 });
+});
+
+test('the whole setup is kept as it is chosen, each step as it was left, and read back with only what there is', async () => {
+  // A new one: on the welcome, SPEED, LPHL's server, no lock yet, no backups; the modules in their order.
+  assert.deepEqual(newDraft(HERE), { step: 'welcome', name: '', modules: HERE, mode: 'speed', server: 'lphl', lock: false, fingerprint: true, backup: null });
+  assert.deepEqual(newDraft(['collection', 'erevos']).modules, ['erevos', 'collection']);
+  const left: SetupDraft = { step: 'keep', name: 'Anna', modules: ['erevos', 'sms'], mode: 'invisible', server: 'other', lock: true, fingerprint: false, backup: 'webdav' };
+  try {
+    keepDraft(left);
+    assert.deepEqual(draftNow(), left);
+    await later();
+    assert.deepEqual(parseDraft(store.get(DRAFT) ?? null, HERE), left);
+    // As Erevos starts again, before the setup shows: as it was left, with only the modules this device runs.
+    assert.deepEqual((await loadDraft(['erevos']))?.modules, ['erevos']);
+    assert.deepEqual(await loadDraft(HERE), left);
+    assert.deepEqual(draftNow(), left);
+  } finally {
+    await dropDraft();
+  }
+  assert.equal(store.has(DRAFT), false);
+  assert.equal(draftNow(), null);
+  assert.equal(await loadDraft(HERE), null);
+  // What is not one.
+  for (const raw of [null, '', 'nope', '[]', '3', 'null', JSON.stringify({ ...left, step: 'done' }), JSON.stringify({ ...left, mode: 'loud' }), JSON.stringify({ ...left, modules: 'erevos' })]) {
+    assert.equal(parseDraft(raw, HERE), null, String(raw));
+  }
+  // A server or backups not known: LPHL's, and none.
+  assert.deepEqual(parseDraft(JSON.stringify({ ...left, server: 'x', backup: 'cloud', fingerprint: 'yes', lock: 1 }), HERE), { ...left, server: 'lphl', backup: null, fingerprint: false, lock: false });
+});
+
+test('the setup is written one change at a time, the last one last, and goes once done; the password stays in memory only', async () => {
+  slow.set = 20;
+  try {
+    const one = newDraft(['erevos']);
+    keepDraft({ ...one, name: 'A' });
+    keepDraft({ ...one, name: 'An' });
+    keepDraft({ ...one, step: 'keep', lock: true, name: 'Ann' });
+    typePassword({ password: 'moon-ladder-orange-7', again: 'moon-ladder-orange-7' });
+    await later(150);
+    assert.equal(parseDraft(store.get(DRAFT) ?? null, ['erevos'])?.name, 'Ann');
+    assert.ok(![...store.values()].some((value) => value.includes('moon-ladder')));
+    assert.deepEqual(typedPassword(), { password: 'moon-ladder-orange-7', again: 'moon-ladder-orange-7' });
+    // Done while a write goes on: nothing is left of it, and the password stays for the first steps.
+    keepDraft({ ...one, name: 'Anna' });
+    await dropDraft();
+    assert.equal(store.has(DRAFT), false);
+    await later(80);
+    assert.equal(store.has(DRAFT), false);
+    assert.equal(typedPassword().password, 'moon-ladder-orange-7');
+    forgetPassword();
+    assert.deepEqual(typedPassword(), { password: '', again: '' });
+  } finally {
+    slow.set = 0;
+    await dropDraft();
+    forgetPassword();
+  }
 });
 
 test("each edition in its own colours, Erevos and Erevos Lite alike, over a ground dark or light", () => {

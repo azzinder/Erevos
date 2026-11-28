@@ -182,6 +182,18 @@ test('the first start leaves its steps for once the space is open: kept as given
   assert.deepEqual(parseSetupAfter(JSON.stringify({ modules: ['sms'], restore: 'maybe', linkPhone: 'yes', invite: 'https://example.org' })), { name: '', modules: ['sms'] });
   assert.equal(parseSetupAfter(JSON.stringify({ name: '', modules: [], linkPhone: true }))?.linkPhone, true);
   for (const raw of [null, '', 'nope', '[]', '3', 'null']) assert.equal(parseSetupAfter(raw), null, String(raw));
+  // What the whole setup chose before the space opened, as chosen; a server or backups not known
+  // are LPHL's and none; nothing for what is not one.
+  const chosen = { mode: 'invisible', server: 'other', lock: true, fingerprint: false, backup: 'drive' } as const;
+  assert.deepEqual(parseSetupAfter(JSON.stringify({ name: '', modules: ['erevos'], chosen }))?.chosen, chosen);
+  assert.deepEqual(parseSetupAfter(JSON.stringify({ name: '', modules: ['erevos'], chosen: { mode: 'speed', server: 'x', lock: 'yes', fingerprint: 1, backup: 'cloud' } }))?.chosen, {
+    mode: 'speed',
+    server: 'lphl',
+    lock: false,
+    fingerprint: false,
+    backup: null,
+  });
+  for (const odd of [{ ...chosen, mode: 'loud' }, 'speed', [chosen], null]) assert.equal(parseSetupAfter(JSON.stringify({ name: '', modules: ['erevos'], chosen: odd }))?.chosen, undefined, JSON.stringify(odd));
 });
 
 test('a screen for each module chosen, in their order, then the lock and the backups, then what is done', () => {

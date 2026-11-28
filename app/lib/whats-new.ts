@@ -24,8 +24,12 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
-  underTheHood: [],
+  forYou: [
+    mark("**Back and Next at the first start**: all its steps now come before the first space opens, and the back arrow, or Android's back key, goes back a step with everything as you left it. Nothing is used until **Done**: then the space opens already as visible as you chose, locked with your password if you typed one, without asking for it again. Should Erevos close in between, it starts again at the step you left. See [Getting started](#start)."),
+  ],
+  underTheHood: [
+    mark("Until **Done**, the first start's choices are kept only on this device and the password only in memory; the first space is made then, already as visible as chosen, so it reaches no server before, and with INVISIBLE only through Tor."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

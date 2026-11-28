@@ -86,34 +86,43 @@ selbst einen Platz für deine Nachrichten auf dem Server von LPHL, ohne Telefonn
 von jemandem, der es nutzt, ein QR-Code oder Link, holt dich sofort herein, mit dieser Person als Kontakt (siehe „Jemand
 Neues einladen“ unter [Chat über einen Server](#relay)).
 
-Beim allerersten Start richtet Erevos sich in ein paar kurzen Schritten ein, mit einem Punkt für jeden. Bevor sein
+Beim allerersten Start richtet Erevos sich in ein paar kurzen Schritten ein, mit einem Punkt für jeden, alle, bevor sein
 erster Bereich öffnet: **Willkommen bei Erevos**, mit dem, was du nicht hergibst (keine Telefonnummer, E-Mail, kein
 Benutzername und kein Konto: du fügst Leute per QR-Code oder Link hinzu), und einem Namen für deine Kontakte, wenn du
 einen möchtest, mit der Sprache oben{~; dann **Was wirst du nutzen?**, die Module (siehe [Module](#modules)): Was du
 ausschaltest, läuft gar nicht. Die Chats von Erevos, das Telefon, die SMS und die Sammlung sind zuerst an}{+, die
-anderen Netzwerke, unter **Andere Netzwerke**, aus}. Dann, im Bereich:
+anderen Netzwerke, unter **Andere Netzwerke**, aus}. Dann:
 
 1. **Wie sichtbar bist du?**: die drei Wahlmöglichkeiten von [Wie sichtbar bist du?](#direct), mit SPEED schon gewählt.
-   Wenn du weitergehst, nimmt Erevos sich von selbst einen Platz für deine Nachrichten auf dem Server von LPHL, ohne
-   Einladung und ohne Konto (siehe **Ein offener Platz** unter [Chat über einen Server](#relay)), es sei denn, die
-   Einladung, mit der Erevos geöffnet wurde, bringt einen eigenen Server mit. **Anderer Server (für Fortgeschrittene)**
-   unter den Wahlmöglichkeiten öffnet die anderen Wege hinein: ein Konto auf einem Server oder ein eigener Server.
+   Sobald die Schritte durch sind, nimmt Erevos sich von selbst einen Platz für deine Nachrichten auf dem Server von
+   LPHL, ohne Einladung und ohne Konto (siehe **Ein offener Platz** unter [Chat über einen Server](#relay)), es sei
+   denn, die Einladung, mit der Erevos geöffnet wurde, bringt einen eigenen Server mit. **Anderer Server (für
+   Fortgeschrittene)** unter den Wahlmöglichkeiten wählt stattdessen die anderen Wege hinein, ein Konto auf einem Server
+   oder einen eigenen Server, deren Seite sich öffnet, sobald die Schritte durch sind; **Server von LPHL nutzen** geht
+   zu dem von LPHL zurück.
 2. **Verpasse nichts**: jede Berechtigung, um die Erevos bittet, in fünf Gruppen nach dem, wofür sie sind
    (Benachrichtigungen, Anrufe, Nachrichten, Im Hintergrund, Erinnerungen), mit der Zahl der erlaubten. **Alle
    erlauben** stellt zuerst die Fragen, die Android in Erevos selbst stellt{~, dann für Erevos als Telefon-App und als
    SMS-App}, und öffnet dann jeden Bildschirm der Android-Einstellungen nacheinander, wenn du von dem davor
    zurückkommst; **Ohne sie weiter** überlässt sie **Einstellungen** → **Allgemein** → **Berechtigungen**. In einem
-   Browser hat der Schritt, wonach der Browser fragt; die Desktop-App hat keinen solchen Schritt.
+   Browser hat der Schritt, wonach der Browser fragt, außer den Benachrichtigungen bei geschlossener Web-App, die über
+   den Server gehen: Die bietet der Startbildschirm an, sobald die Schritte durch sind. Die Desktop-App hat keinen
+   solchen Schritt.
 3. **Halte es sicher**: ein Passwort für Erevos, zweimal eingegeben, mit einer Stärkeanzeige und vier Tipps für ein
    stärkeres, der Fingerabdruck oder das Gesicht, und wohin automatische Backups gehen: **Auf diesem Gerät**, in einen
    Ordner, den du wählst, **WebDAV** (Nextcloud, ownCloud und andere) oder, auf Android, **Google Drive**, das zuerst
    sagt, was Google dann weiß, jedes auf dem Backups-Bildschirm eingerichtet, den **Fertig** öffnet (siehe
    [Backups](#backup)).
 
-Dann sagt der Startbildschirm **Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist
-weit weg** für deinen ersten Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und
-einer Zeile für eine noch fehlende Berechtigung. Bis **Fertig** erscheinen die Schritte beim Start von Erevos wieder.
-Wird Erevos mit einer Einladung geöffnet, zeigt es sie, sobald die Schritte durch sind.
+Der Zurück-Pfeil neben dem Hauptknopf, auf jedem Schritt nach dem ersten, und die Zurück-Taste von Android gehen einen
+Schritt zurück, mit allem, wie du es gelassen hast, und nichts davon wird vor **Fertig** verwendet. Dann öffnet der
+erste Bereich schon so sichtbar, wie du gewählt hast, mit deinem Passwort gesperrt, wenn du eines eingegeben hast, nach
+dem er nicht noch einmal fragt, und mit Fingerabdruck oder Gesicht, wenn du das gewählt hast. Der Startbildschirm sagt
+**Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist weit weg** für deinen ersten
+Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und einer Zeile für eine noch
+fehlende Berechtigung. Bis **Fertig** startet Erevos wieder bei dem Schritt, bei dem du aufgehört hast, mit dem, was du
+gewählt hast, außer dem Passwort, das nie gespeichert wird: Du gibst es noch einmal ein. Wird Erevos mit einer Einladung
+geöffnet, zeigt es sie, sobald die Schritte durch sind.
 
 - **Der Name:** er ist kein Benutzername: niemand sucht danach, und er muss nicht eindeutig sein. Er geht verschlüsselt
   nur an die, die du hinzufügst, und **Mein Name** unter Einstellungen → Datenschutz und Sicherheit ändert ihn.
@@ -689,8 +698,8 @@ Ein Server, der ein Token braucht, lässt ein Telefon auf vier Wegen herein. Jed
 Telefons dort, sodass, wer den Server betreibt, jedes einzelne Telefon für sich allein herausnehmen kann.
 
 - **Ein offener Platz:** Ein Server, der sie vergibt, wie der von LPHL, gibt einem Telefon, das dort noch keinen Platz
-  hat, von selbst einen, ohne Einladung und ohne Konto. Beim ersten Start, sobald du gewählt hast, wie sichtbar du bist,
-  nimmt Erevos einen auf dem Server von LPHL und legt dort deine Warteschlange an (siehe [Erste Schritte](#start));
+  hat, von selbst einen, ohne Einladung und ohne Konto. Beim ersten Start, sobald seine Schritte durch sind, nimmt
+  Erevos einen auf dem Server von LPHL und legt dort deine Warteschlange an (siehe [Erste Schritte](#start));
   **Server von LPHL nutzen** auf dem Startbildschirm eines Bereichs ohne Server und ohne Chats nimmt auch einen. Das
   Telefon macht sein Token selbst und gibt dem Server nur dessen SHA-256. Ein solcher Platz ist für deine eigenen Chats:
   Er kann niemanden einladen und keine Plätze verleihen. Am Tag darf er 20 Warteschlangen machen, 50 MB an Dateien über

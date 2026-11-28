@@ -88,34 +88,40 @@ comme plus bas, Erevos prend de lui-même une place pour tes messages sur le ser
 e-mail ni compte. Une invitation de quelqu’un qui l’utilise, un code QR ou un lien, te fait entrer tout de suite, avec
 cette personne comme contact (voir Inviter quelqu’un de nouveau, sous [Discuter par un serveur](#relay)).
 
-Au tout premier démarrage, Erevos se configure en quelques courtes étapes, avec un point pour chacune. Avant l’ouverture
-de son premier espace : **Bienvenue sur Erevos**, avec ce que tu ne donnes pas (ni numéro de téléphone, ni e-mail, ni
-nom d’utilisateur, ni compte : tu ajoutes des gens avec un code QR ou un lien) et un nom pour tes contacts si tu en veux
-un, avec la langue en haut{~ ; puis **Que vas-tu utiliser ?**, les modules (voir [Modules](#modules)) : ce que tu
-désactives ne tourne pas du tout. Les discussions d’Erevos, le Téléphone, les SMS et la Collection sont d’abord
-activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensuite, dans l’espace :
+Au tout premier démarrage, Erevos se configure en quelques courtes étapes, avec un point pour chacune, toutes avant
+l’ouverture de son premier espace : **Bienvenue sur Erevos**, avec ce que tu ne donnes pas (ni numéro de téléphone, ni
+e-mail, ni nom d’utilisateur, ni compte : tu ajoutes des gens avec un code QR ou un lien) et un nom pour tes contacts si
+tu en veux un, avec la langue en haut{~ ; puis **Que vas-tu utiliser ?**, les modules (voir [Modules](#modules)) : ce
+que tu désactives ne tourne pas du tout. Les discussions d’Erevos, le Téléphone, les SMS et la Collection sont d’abord
+activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensuite :
 
 1. **À quel point es-tu visible ?** : les trois choix de [À quel point es-tu visible ?](#direct), avec SPEED déjà
-   choisi. Quand tu continues, Erevos prend de lui-même une place pour tes messages sur le serveur de LPHL, sans
-   invitation ni compte (voir **Une place ouverte** sous [Discuter par un serveur](#relay)), sauf si l’invitation avec
-   laquelle Erevos a été ouvert apporte un serveur à elle. **Autre serveur (pour les utilisateurs avancés)**, sous les
-   choix, ouvre les autres façons d’entrer : un compte sur un serveur, ou un serveur à toi.
+   choisi. Une fois les étapes terminées, Erevos prend de lui-même une place pour tes messages sur le serveur de LPHL,
+   sans invitation ni compte (voir **Une place ouverte** sous [Discuter par un serveur](#relay)), sauf si l’invitation
+   avec laquelle Erevos a été ouvert apporte un serveur à elle. **Autre serveur (pour les utilisateurs avancés)**, sous
+   les choix, choisit à la place les autres façons d’entrer, un compte sur un serveur ou un serveur à toi, dont la page
+   s’ouvre une fois les étapes terminées ; **Utiliser le serveur de LPHL** revient à celui de LPHL.
 2. **Ne rate rien** : toutes les autorisations qu’Erevos demande, en cinq groupes selon leur usage (Notifications,
    Appels, Messages, En arrière-plan, Rappels), avec le nombre de celles qui sont accordées. **Tout autoriser** pose
    d’abord les questions qu’Android pose dans Erevos même{~, puis pour Erevos comme app Téléphone et comme app SMS},
    puis ouvre chaque écran des réglages d’Android à la suite, quand tu reviens du précédent ; **Continuer sans** les
-   laisse à **Réglages** → **Général** → **Autorisations**. Dans un navigateur, l’étape a ce que demande le navigateur ;
-   l’app de bureau n’a pas cette étape.
+   laisse à **Réglages** → **Général** → **Autorisations**. Dans un navigateur, l’étape a ce que demande le navigateur,
+   sauf les notifications quand l’app web est fermée, qui passent par le serveur : l’écran d’accueil les propose une
+   fois les étapes terminées. L’app de bureau n’a pas cette étape.
 3. **Garde-le en sécurité** : un mot de passe pour Erevos, tapé deux fois, avec un indicateur et quatre conseils pour en
    avoir un plus solide, l’empreinte ou le visage, et où vont les sauvegardes automatiques : **Sur cet appareil**, dans
    un dossier que tu choisis, **WebDAV** (Nextcloud, ownCloud et d’autres) ou, sur Android, **Google Drive**, qui dit
    d’abord ce que Google sait alors, chacune réglée sur l’écran des Sauvegardes qu’ouvre **Terminé** (voir
    [Sauvegardes](#backup)).
 
-Ensuite l’écran d’accueil dit **Prêt**, avec ton nom, et propose **La personne est à côté de moi** et **La personne est
-loin** pour ton premier contact, avec ce qu’une place gratuite sur le serveur de LPHL peut faire chaque jour et une
-ligne pour une autorisation qui manque encore. Jusqu’à **Terminé**, les étapes réapparaissent au démarrage d’Erevos.
-Ouvert avec une invitation, Erevos la montre une fois les étapes terminées.
+La flèche retour, à côté du bouton principal à chaque étape après la première, et la touche retour d’Android reviennent
+d’une étape, avec tout comme tu l’as laissé, et rien n’en est utilisé avant **Terminé**. Alors le premier espace s’ouvre
+déjà aussi visible que tu l’as choisi, verrouillé par ton mot de passe si tu en as tapé un, qu’il ne redemande pas, et
+avec l’empreinte ou le visage activé si tu l’as choisi. L’écran d’accueil dit **Prêt**, avec ton nom, et propose **La
+personne est à côté de moi** et **La personne est loin** pour ton premier contact, avec ce qu’une place gratuite sur le
+serveur de LPHL peut faire chaque jour et une ligne pour une autorisation qui manque encore. Jusqu’à **Terminé**, Erevos
+redémarre à l’étape où tu t’es arrêté, avec ce que tu as choisi, sauf le mot de passe, qui n’est jamais gardé : tu le
+tapes à nouveau. Ouvert avec une invitation, Erevos la montre une fois les étapes terminées.
 
 - **Le nom :** ce n’est pas un nom d’utilisateur : personne ne le cherche, et il n’a pas besoin d’être unique. Il part,
   chiffré, seulement vers ceux que tu ajoutes, et **Mon nom**, sous Réglages → Confidentialité et sécurité, le change.
@@ -683,8 +689,8 @@ Un serveur qui demande un jeton laisse entrer un téléphone de quatre façons. 
 téléphone sur ce serveur, si bien que celui qui fait tourner le serveur peut retirer n’importe quel téléphone à lui seul.
 
 - **Une place ouverte :** un serveur qui en donne, comme celui de LPHL, donne de lui-même une place à un téléphone qui
-  n’en a pas là-bas, sans invitation ni compte. Au premier démarrage, une fois que tu as choisi à quel point tu es
-  visible, Erevos en prend une sur le serveur de LPHL et y crée ta file d’attente (voir [Premiers pas](#start)) ;
+  n’en a pas là-bas, sans invitation ni compte. Au premier démarrage, une fois ses étapes terminées, Erevos en prend une
+  sur le serveur de LPHL et y crée ta file d’attente (voir [Premiers pas](#start)) ;
   **Utiliser le serveur de LPHL**, sur l’écran d’accueil d’un espace sans serveur et sans discussions, en prend une
   aussi. Le téléphone fait son jeton lui-même et ne donne au serveur que son SHA-256. Une telle place est pour tes
   propres discussions : elle ne peut ni inviter ni prêter de places. Chaque jour, elle peut créer 20 files d’attente,

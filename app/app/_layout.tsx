@@ -25,6 +25,7 @@ import { armCurtain, awayClock, awayLong, CURTAIN_END, curtainBack, curtainDown,
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
 import { directOf, setDirect } from '../lib/direct';
+import { modeChange } from '../lib/modes';
 import { endGroupCall } from '../lib/group-calls';
 import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '../lib/hidden-ring';
 import { tellShareTexts } from '../lib/share-texts';
@@ -79,22 +80,23 @@ import { startLinkedAccounts } from '../lib/linked-accounts';
 import '../lib/sms-share';
 import { startChunkChannel } from '../lib/chunk-channel';
 import { followModuleIcons } from '../lib/module-icons';
-import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules } from '../lib/modules';
+import { loadModules, moduleOn, modulesChosen, modulesHere, onModulesChange, screenModule, setModules, useModules } from '../lib/modules';
 import { bringsServer } from '../lib/invite-server';
-import { retryFirstServer, wantFirstServer } from '../lib/open-place';
+import { firstServerDone, retryFirstServer, wantFirstServer } from '../lib/open-place';
 import { keepSetupAfter } from '../lib/setup-after';
+import { dropDraft, forgetPassword, loadDraft, typedPassword } from '../lib/setup-draft';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWays } from '../lib/ways-read';
 import { forgetWelcome } from '../lib/welcome';
 import { dropKey, forgetDropKey, publishDropKey } from '../lock/camera-drop';
-import { hardenLock, loadLockConfig, type LockConfig, type Unlocked } from '../lock/config';
+import { hardenLock, loadLockConfig, lockWithPassword, type LockConfig, type Unlocked } from '../lock/config';
 import { LockContext, useLock, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
-import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData, updateSpaceData } from '../lock/space-data';
+import { firstSpaceKey, firstStart, loadSpaceData, prepareSpaces, updateCurrentSpaceData, updateSpaceData } from '../lock/space-data';
 import { ModuleOff } from '../components/module-off';
 import { Setup, type SetupChoice } from '../components/setup';
 import { MovedOut, MoveFound } from '../components/moved-out';
@@ -134,7 +136,7 @@ let pendingSwept = false;
 
 type Phase =
   | { kind: 'loading' }
-  // Erevos's very first start: a name, and which modules to use (components/setup.tsx); the rest once the space is open (app/first-steps.tsx).
+  // Erevos's very first start: the whole setup, before the first space opens (components/setup.tsx); what needs it open, once it is (app/first-steps.tsx).
   | { kind: 'setup' }
   // `behind`: the space that goes on behind the password screen, until its password opens it again.
   | { kind: 'locked'; config: LockConfig; behind?: number }
@@ -332,7 +334,9 @@ export default function RootLayout() {
       await show(await loadLockScreenLook());
       setPhase({ kind: 'locked', config });
     } else if (!modulesChosen() && (await firstStart())) {
-      // The very first start: the modules first, then the first space opens.
+      // The very first start: the whole setup first, as far as it went before (lib/setup-draft.ts),
+      // then the first space opens with it.
+      await loadDraft(modulesHere());
       await show(await loadLockScreenLook());
       setPhase({ kind: 'setup' });
     } else {
@@ -340,27 +344,58 @@ export default function RootLayout() {
     }
   }, [openSpace, show]);
 
-  // The first start's modules were chosen: kept, then Erevos opens with them, and the setup goes
-  // on in the space (app/first-steps.tsx). An invite that opened Erevos for the first time opens
-  // once that is done, however long it took (lib/setup-after.ts).
+  // The first start's setup is done: what it chose is kept for once the first space is open
+  // (lib/setup-after.ts), then the space is made with it and opens, and what needs it open goes on
+  // there (app/first-steps.tsx). The whole setup: the space opens already in the mode chosen, and
+  // locked with the password typed, as Settings locks it (app/security.tsx), so nothing goes out
+  // before in another mode, and the password is not asked for again. Moving from another phone, or
+  // linking to it: the space opens as a new one, and the rest follows the backup, or the phone.
+  // An invite that opened Erevos for the first time opens once that is done, however long it took.
   const setupDone = useCallback(
-    async ({ modules, name, restore, linkPhone }: SetupChoice) => {
-      await setModules(modules);
+    async ({ modules, name, restore, linkPhone, chosen }: SetupChoice) => {
       const invite = peekLink() ?? undefined;
       // Erevos's own chats, for a new start: the first space takes a place on LPHL's open server
-      // once its mode is chosen (lib/open-place.ts), unless the invite it opened with brings a server.
-      if (modules.includes('erevos') && !restore && !linkPhone && !bringsServer(invite)) await wantFirstServer(0).catch(() => undefined);
-      const kept = await keepSetupAfter({ name, modules, ...(restore ? { restore: 'wanted' as const } : {}), ...(linkPhone ? { linkPhone } : {}), ...(invite ? { invite } : {}) }).then(
+      // once it is open (lib/open-place.ts), unless another server was chosen, or the invite it
+      // opened with brings one.
+      const lphl = modules.includes('erevos') && !restore && !linkPhone && !bringsServer(invite) && chosen?.server !== 'other';
+      const kept = await keepSetupAfter({
+        name,
+        modules,
+        ...(restore ? { restore: 'wanted' as const } : {}),
+        ...(linkPhone ? { linkPhone } : {}),
+        ...(invite ? { invite } : {}),
+        ...(chosen ? { chosen } : {}),
+      }).then(
         () => true,
         () => false,
       );
+      await (lphl ? wantFirstServer(0) : firstServerDone()).catch(() => undefined);
+      await setModules(modules);
       if (kept) {
         dropLink();
         keepLink('erevos://first-steps');
       } else setupKeepsLink();
-      await start();
+      if (!chosen) {
+        await dropDraft();
+        forgetPassword();
+        await start();
+        return;
+      }
+      const key = await firstSpaceKey();
+      await updateSpaceData(0, key, modeChange(await loadSpaceData(0, key), chosen.mode));
+      const password = chosen.lock ? typedPassword().password : '';
+      if (password) {
+        // No other space has a password at the first start: none can be opened with it instead.
+        await lockWithPassword(0, password, key);
+        // The spaces second passwords open exist from now on, used or not.
+        await prepareSpaces(1);
+        // Kept only for the fingerprint or face, which the space turns on once open.
+        if (!chosen.fingerprint) forgetPassword();
+      }
+      await dropDraft();
+      await openSpace(0, !!password, key);
     },
-    [start],
+    [start, openSpace],
   );
 
   // The password screen in front of the open space, which goes on behind it. Its contacts' names
@@ -727,7 +762,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onMoveLater, 
   /** Not now to a move another edition made for this app. */
   onMoveLater: () => void;
   /** What the first start's setup chose. */
-  onSetup: (choice: SetupChoice) => void;
+  onSetup: (choice: SetupChoice) => Promise<void>;
 }) {
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();

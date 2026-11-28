@@ -2,34 +2,44 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { tap } from '../lib/haptics';
 import { editionName, EDITION } from '../lib/edition';
 import { findMoves, type FoundMove } from '../lib/edition-move';
-import { startSteps, stepAt, type StartStep } from '../lib/first-start';
+import { startSteps, stepAt } from '../lib/first-start';
 import { updateEditionName } from '../lib/update-channel';
 import { LANG_LABELS, lang, t } from '../lib/i18n';
+import { bringsServer } from '../lib/invite-server';
 import { modulesHere, type Module } from '../lib/modules';
 import { linkParts, peekLink } from '../lib/open-link';
 import { HAS_CHECKS } from '../lib/permissions';
+import type { SetupChosen } from '../lib/setup-after';
+import { draftNow, forgetPassword, keepDraft, newDraft, typedPassword, typePassword, type SetupDraft } from '../lib/setup-draft';
 import { welcomeOf } from '../lib/welcome';
 import { MAX_NAME } from '../lock/e2e-data';
 import { useStartLook, Dots, Emblem, FooterLink, Glass, Hero, Icon, L, MainButton, NavRow, noOutline, StartScreen, StartToggle, Tile, type IconName } from './first-start-look';
+import { askInvisible } from './mode-picker';
 import { moduleAbout, moduleName } from './module-texts';
+import { MIN_PASSWORD } from './PasswordSheet';
 import { LanguageSheet, languageTitle } from './settings-list';
+import { KeepStep, ModeStep, PermissionsStep } from './start-steps';
 import type { Tile as TileColour } from '../lib/first-start';
 
-// Erevos's very first start (app/_layout.tsx), before its first space opens, in the first start's
-// look (components/first-start-look.tsx, lib/first-start.ts): the welcome, with what Erevos is and
-// is not (no identity to give away), an optional name for the contacts, and its language; then
-// What will you use?, the modules (lib/modules.ts), any of them, Erevos's own too, at least one for
-// chats. The rest needs the space open, so it follows once it is (app/first-steps.tsx): how
-// visible you are, every permission, the password lock and the backups. Moving from another phone
-// skips the name and the modules, which come with the backup; on a computer or in a browser,
-// linking it to the phone does too. Nothing is kept until a choice is made, and all of it can be
-// changed later in Settings.
+// Erevos's very first start (app/_layout.tsx), all of it before its first space opens, in the
+// first start's look (components/first-start-look.tsx, lib/first-start.ts): the welcome, with what
+// Erevos is and is not (no identity to give away), an optional name for the contacts, and its
+// language; What will you use?, the modules (lib/modules.ts), any of them, Erevos's own too, at
+// least one for chats; then How visible are you?, every permission, and Keep it safe, the password
+// lock and the backups (components/start-steps.tsx). Each step only chooses: the choices are kept
+// as they are made (lib/setup-draft.ts), Next and Back go through the steps as they were left,
+// Android's back key too, and nothing is used, nor does anything leave the phone, until the last
+// step's Done. Then the first space is made with them, opening in its mode and locked with its
+// password, and the rest follows once it is open (app/first-steps.tsx): the fingerprint or face,
+// the server, the backups. Moving from another phone skips the rest, which comes with the backup;
+// on a computer or in a browser, linking it to the phone does too. All of it can be changed later
+// in Settings.
 
 /** What the first start's setup chose. */
 export type SetupChoice = {
@@ -40,9 +50,10 @@ export type SetupChoice = {
   restore: boolean;
   /** A computer or a browser linked to the phone next. */
   linkPhone: boolean;
+  /** The rest of the whole setup, chosen before the space opens, which it opens with; none moving
+   *  from another phone or linking to it, whose steps come once the space is open. */
+  chosen?: SetupChosen;
 };
-
-type Step = Extract<StartStep, 'welcome' | 'modules'>;
 
 // The screens an invite opens (lib/open-link.ts): Erevos opened with one waits to show it.
 const INVITES = new Set(['/welcome', '/text-invite', '/contact', '/c', '/i', '/join', '/relay-invite']);
@@ -88,16 +99,21 @@ function GroupLabel({ children }: { children: string }) {
   );
 }
 
-export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
+export function Setup({ onDone }: { onDone: (choice: SetupChoice) => Promise<void> }) {
   const look = useStartLook();
   const here = modulesHere();
-  const [step, setStep] = useState<Step>('welcome');
-  const [chosen, setChosen] = useState<ReadonlySet<Module>>(() => new Set(here.filter((m) => MAIN.includes(m))));
-  const [name, setName] = useState('');
+  // The setup as it was left, or a new one (lib/setup-draft.ts); the password typed, in memory only.
+  const [draft, setDraft] = useState<SetupDraft>(() => draftNow() ?? newDraft(here.filter((m) => MAIN.includes(m))));
+  const [typed, setTyped] = useState(typedPassword);
   const [languages, setLanguages] = useState(false);
-  const [invite] = useState(() => inviteFrom(peekLink()));
+  const [link] = useState(() => peekLink());
+  const invite = inviteFrom(link);
   // Another edition on this phone that made a move for this one (lib/edition-move.ts).
   const [move, setMove] = useState<FoundMove | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  // INVISIBLE was asked about, and chosen so, since it was chosen last.
+  const invisibleAsked = useRef(false);
   useEffect(() => {
     let active = true;
     void findMoves().then((found) => active && setMove(found[0] ?? null), () => undefined);
@@ -105,38 +121,139 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
       active = false;
     };
   }, []);
-  // Android's back key goes back to the welcome from the modules.
-  useEffect(() => {
-    if (step !== 'modules') return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      setStep('welcome');
-      return true;
-    });
-    return () => subscription.remove();
-  }, [step]);
-  const list = here.filter((m) => chosen.has(m));
-  // The Collection alone leaves no chat to open (lib/modules.ts).
-  const nothing = list.every((m) => m === 'collection');
+  // Each choice kept as it is made.
+  useEffect(() => keepDraft(draft), [draft]);
+  const change = (patch: Partial<SetupDraft>) => setDraft((was) => ({ ...was, ...patch }));
+
   // With one module only (Erevos Lite, lib/edition.ts, or a device with Erevos's own chats alone)
   // there is nothing to choose: no step for the modules.
   const single = here.length === 1;
-  // The same steps app/first-steps.tsx counts, for the dots (the welcome has none).
   const steps = startSteps({ choice: !single, restored: false, checks: HAS_CHECKS });
-  const at = stepAt(steps, 'modules');
+  const step = steps.includes(draft.step) ? draft.step : 'welcome';
+  const at = steps.indexOf(step);
+  const dots = stepAt(steps, step);
+  const go = (to: number) => {
+    setNote('');
+    change({ step: steps[Math.max(0, Math.min(to, steps.length - 1))] });
+  };
+  const next = () => go(at + 1);
+  const back = at > 0 && !busy ? () => go(at - 1) : undefined;
+  const list = here.filter((m) => draft.modules.includes(m));
+  // The Collection alone leaves no chat to open (lib/modules.ts).
+  const nothing = list.every((m) => m === 'collection');
   const mains = here.filter((m) => MAIN.includes(m));
   const others = here.filter((m) => !MAIN.includes(m));
+  // LPHL's server, with Erevos's own chats, unless the invite Erevos opened with brings one
+  // (lib/invite-server.ts): taken once the space is open, or another chosen instead.
+  const serves = list.includes('erevos') && !bringsServer(link ?? undefined);
+
+  // Android's back key goes back a step; on the welcome it leaves, and the setup waits as it was.
+  const backKey = useRef(back);
+  backKey.current = back;
+  useEffect(() => {
+    if (at === 0) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      backKey.current?.();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [at]);
 
   function toggle(module: Module) {
     tap();
-    setChosen((was) => {
-      const next = new Set(was);
-      if (next.has(module)) next.delete(module);
-      else next.add(module);
-      return next;
-    });
+    change({ modules: here.filter((m) => (m === module ? !draft.modules.includes(m) : draft.modules.includes(m))) });
   }
 
-  const moveHere = () => onDone({ modules: here, name: '', restore: true, linkPhone: false });
+  // Moving from another phone, or linking to it: the rest comes with the backup, or from the phone.
+  const moveHere = () => void onDone({ modules: here, name: '', restore: true, linkPhone: false });
+
+  // How visible: INVISIBLE asks first, once for each time it is chosen.
+  async function continueMode() {
+    if (draft.mode === 'invisible' && !invisibleAsked.current) {
+      if (!(await askInvisible())) return;
+      invisibleAsked.current = true;
+    }
+    next();
+  }
+
+  // Done: the password checked as Settings checks it, then the first space is made with all of it.
+  async function done() {
+    if (busy) return;
+    setNote('');
+    if (draft.lock) {
+      if ([...typed.password].length < MIN_PASSWORD) return setNote(t('Use at least {n} characters.', { n: MIN_PASSWORD }));
+      if (typed.password !== typed.again) return setNote(t('The passwords do not match.'));
+    } else forgetPassword();
+    setBusy(true);
+    try {
+      await onDone({
+        modules: list,
+        name: draft.name.trim(),
+        restore: false,
+        linkPhone: false,
+        chosen: { mode: draft.mode, server: serves ? draft.server : 'lphl', lock: draft.lock, fingerprint: draft.lock && draft.fingerprint, backup: draft.backup },
+      });
+    } catch (error) {
+      // Nothing of the setup is lost: it says why, and Done tries again.
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (step === 'mode') {
+    return (
+      <ModeStep
+        dots={dots}
+        choice={draft.mode}
+        onChoose={(mode) => {
+          if (mode !== draft.mode) invisibleAsked.current = false;
+          change({ mode });
+        }}
+        status={!serves ? null : draft.server === 'other' ? t('Another server · you set it once the setup is done') : t('LPHL’s server is waiting for you · free')}
+        link={
+          !serves
+            ? undefined
+            : draft.server === 'other'
+              ? { text: t('Use LPHL’s server'), onPress: () => change({ server: 'lphl' }) }
+              : { text: t('Another server (for advanced users)'), onPress: () => change({ server: 'other' }) }
+        }
+        note={note}
+        onNote={setNote}
+        onBack={back}
+        onContinue={() => void continueMode()}
+      />
+    );
+  }
+
+  if (step === 'permissions') {
+    return <PermissionsStep dots={dots} modules={list} before onBack={back} onContinue={next} />;
+  }
+
+  if (step === 'keep') {
+    return (
+      <KeepStep
+        dots={dots}
+        lock={{ on: draft.lock, password: typed.password, again: typed.again, fingerprint: draft.fingerprint, locked: false }}
+        onLock={({ on, password, again, fingerprint }) => {
+          if (on !== undefined) change({ lock: on });
+          if (fingerprint !== undefined) change({ fingerprint });
+          if (password !== undefined || again !== undefined) {
+            const now = { password: password ?? typed.password, again: again ?? typed.again };
+            typePassword(now);
+            setTyped(now);
+          }
+        }}
+        backup={draft.backup}
+        onBackup={(backup) => change({ backup })}
+        mode={draft.mode}
+        error={note}
+        busy={busy}
+        onBack={back}
+        onDone={() => void done()}
+      />
+    );
+  }
 
   if (step === 'welcome') {
     return (
@@ -144,13 +261,13 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
         <StartScreen
           footer={
             <>
-              <MainButton title={t('Get started')} onPress={() => (single ? onDone({ modules: list, name: name.trim(), restore: false, linkPhone: false }) : setStep('modules'))} />
+              <MainButton title={t('Get started')} onPress={next} />
               {Platform.OS === 'android' ? (
                 // The name and the modules come with the backup.
                 <FooterLink text={t('I already have Erevos on another phone')} link={t('Move it here')} onPress={moveHere} />
               ) : (
                 // A computer or a browser beside the phone: the phone's modules are the ones that count.
-                <FooterLink link={t('Link to my phone')} onPress={() => onDone({ modules: here, name: '', restore: false, linkPhone: true })} />
+                <FooterLink link={t('Link to my phone')} onPress={() => void onDone({ modules: here, name: '', restore: false, linkPhone: true })} />
               )}
             </>
           }
@@ -237,8 +354,8 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
           >
             <Icon name="user" size={18} color={look.primary} />
             <TextInput
-              value={name}
-              onChangeText={setName}
+              value={draft.name}
+              onChangeText={(name) => change({ name })}
               placeholder={t('Your name (optional)')}
               placeholderTextColor={look.faint}
               maxLength={MAX_NAME}
@@ -254,7 +371,7 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
   }
 
   const row = (module: Module) => {
-    const on = chosen.has(module);
+    const on = draft.modules.includes(module);
     const look_ = MODULE_TILES[module] ?? { tile: 'slate' as const, icon: 'globe' as const };
     // Erevos+'s own chats are called by its name (lib/edition.ts).
     const title = module === 'erevos' ? t('Erevos chats') : moduleName(module);
@@ -286,12 +403,12 @@ export function Setup({ onDone }: { onDone: (choice: SetupChoice) => void }) {
   return (
     <StartScreen
       footer={
-        <NavRow onBack={() => setStep('welcome')}>
-          <MainButton title={t('Continue')} disabled={nothing} onPress={() => onDone({ modules: list, name: name.trim(), restore: false, linkPhone: false })} />
+        <NavRow onBack={back}>
+          <MainButton title={t('Continue')} disabled={nothing} onPress={next} />
         </NavRow>
       }
     >
-      <Dots n={at.n} of={at.of} />
+      <Dots n={dots.n} of={dots.of} />
       <Hero
         emblem={<Emblem tile={EDITION === 'plus' ? 'violet' : 'blue'} icon="chat" />}
         title={t('What will you use?')}

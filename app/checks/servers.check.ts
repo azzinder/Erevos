@@ -199,6 +199,8 @@ test('a phone with no relay yet is offered every way to begin on one page, in pl
   const first = read('../app/first-steps.tsx');
   assert.ok(first.includes("t('Another server (for advanced users)')"));
   assert.ok(first.includes("router.push('/chat?setup=relay')"));
+  // In the whole setup, before the space opens, the link only chooses it, and the page opens once it is.
+  assert.ok(read('../components/setup.tsx').includes("{ text: t('Another server (for advanced users)'), onPress: () => change({ server: 'other' }) }"));
   assert.ok(chat.includes("relaySettings={setup === 'relay'}") && chat.includes("useState<Door>(relaySettings || nearbyOpen ? 'advanced'"));
   // Whoever has neither an account nor a server is told which way is theirs, where that way is offered.
   const own = read('../components/own-server.tsx');

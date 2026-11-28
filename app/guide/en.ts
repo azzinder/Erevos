@@ -80,31 +80,37 @@ iPhone. If you are new to it, just open it: at its first start, as below, Erevos
 LPHL's server by itself, with no phone number, email or account. An invite from someone who uses it, one QR code or
 link, brings you in with them as a contact at once (see Inviting someone new, under [Chat through a server](#relay)).
 
-The very first time Erevos starts, it sets itself up in a few short steps, with a dot for each. Before its first space
-opens: **Welcome to Erevos**, with what you do not give (no phone number, email, user name or account: you add people
-with a QR code or a link) and a name for your contacts if you want one, with the language at the top{~; then **What
-will you use?**, the modules (see [Modules](#modules)): what you turn off does not run at all. Erevos's chats, the
-Phone, the SMS and the Collection are on at first}{+, the other networks, under **Other networks**, off}. Then, in the
-space:
+The very first time Erevos starts, it sets itself up in a few short steps, with a dot for each, all of them before its
+first space opens: **Welcome to Erevos**, with what you do not give (no phone number, email, user name or account: you
+add people with a QR code or a link) and a name for your contacts if you want one, with the language at the top{~; then
+**What will you use?**, the modules (see [Modules](#modules)): what you turn off does not run at all. Erevos's chats,
+the Phone, the SMS and the Collection are on at first}{+, the other networks, under **Other networks**, off}. Then:
 
-1. **How visible are you?**: the three choices of [How visible are you?](#direct), with SPEED chosen already. As you
-   continue, Erevos takes a place for your messages on LPHL's server by itself, with no invite and no account (see
-   **An open place** under [Chat through a server](#relay)), unless the invite Erevos was opened with brings a server
-   of its own. **Another server (for advanced users)**, under the choices, opens the other ways in: an account at a
-   server, or a server of your own.
-2. **Miss nothing**: every permission Erevos asks for, in five groups by what they are for (Notices, Calls, Messages,
-   In the background, Reminders), with how many are allowed. **Allow all** asks the questions Android asks in Erevos
-   itself first{~, then for Erevos as the phone app and as the SMS app}, then opens each screen of Android's settings
-   in turn, as you come back from the one before; **Continue without them** leaves them for **Settings** → **General**
-   → **Permissions**. In a browser the step has what the browser asks about; the computer app has no such step.
+1. **How visible are you?**: the three choices of [How visible are you?](#direct), with SPEED chosen already. Once the
+   steps are done, Erevos takes a place for your messages on LPHL's server by itself, with no invite and no account (see
+   **An open place** under [Chat through a server](#relay)), unless the invite Erevos was opened with brings a server of
+   its own. **Another server (for advanced users)**, under the choices, chooses the other ways in instead, an account at
+   a server or a server of your own, whose page opens once the steps are done; **Use LPHL’s server** goes back to
+   LPHL's.
+2. **Miss nothing**: every permission Erevos asks for, in five groups by what they are for (Notices, Calls, Messages, In
+   the background, Reminders), with how many are allowed. **Allow all** asks the questions Android asks in Erevos itself
+   first{~, then for Erevos as the phone app and as the SMS app}, then opens each screen of Android's settings in turn,
+   as you come back from the one before; **Continue without them** leaves them for **Settings** → **General** →
+   **Permissions**. In a browser the step has what the browser asks about, but for notifications while the web app is
+   closed, which go through the server: the home screen offers them once the steps are done. The computer app has no
+   such step.
 3. **Keep it safe**: a password for Erevos, typed twice, with a meter and four tips for a stronger one, the fingerprint
    or face, and where automatic backups go: **On this device**, in a folder you choose, **WebDAV** (Nextcloud,
    ownCloud and others), or on Android **Google Drive**, which first says what Google then knows, each set up on the
    Backups screen that **Done** opens (see [Backups](#backup)).
 
-Then the home screen says **Ready**, with your name, and offers **They are beside me** and **They are far away** for
-your first contact, with what a free place on LPHL's server may do each day and a line for a permission still missing.
-Until **Done**, the steps show again when Erevos starts. Opened with an invite, Erevos shows it once the steps are done.
+The back arrow, beside the main button on every step after the first, and Android's back key go back a step, with
+everything as you left it, and nothing of it is used until **Done**. Then the first space opens already as visible as
+you chose, locked with your password if you typed one, which it does not ask for again, and with the fingerprint or face
+turned on if you chose it. The home screen says **Ready**, with your name, and offers **They are beside me** and **They
+are far away** for your first contact, with what a free place on LPHL's server may do each day and a line for a
+permission still missing. Until **Done**, Erevos starts again at the step you left, with what you chose, but for the
+password, which is never kept: you type it again. Opened with an invite, Erevos shows it once the steps are done.
 
 - **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
   those you add, and **My name** under Settings → Privacy and security changes it.
@@ -605,7 +611,7 @@ A server that needs a token lets a phone in four ways. Each way ends with a toke
 runs the server can take any one phone out alone.
 
 - **An open place:** a server that gives them, as LPHL's does, gives a phone with no place there one by itself, with no
-  invite and no account. At the first start, once you choose how visible you are, Erevos takes one on LPHL's server and
+  invite and no account. At the first start, once its steps are done, Erevos takes one on LPHL's server and
   makes your queue there (see [Getting started](#start)); **Use LPHL’s server**, on the home screen of a space with no
   server and no chats, takes one too. The phone makes its token itself and gives the server only its SHA-256. Such a
   place is for your own chats: it cannot invite or lend places. Each day it may make 20 queues, move 50 MB of files

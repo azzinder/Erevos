@@ -8,6 +8,30 @@ Until then releases were numbered `0.1.<run of the release workflow>`, so some n
 and 0.1.15 never came out.
 4.0.0-rc.6 is the first release with a macOS build. After 4.0.0-rc.10 comes 6.0.0-rc.1, and after 7.0.2 comes 7.2.0-beta.1 (7.1 and 7.3 are Erevos+). After 7.2.0-rc.2 comes 3.0.0-beta.1: since then the second number says the edition (3.0.x Erevos, 3.1.x Erevos+, 3.2.x Erevos Lite), and What's new in the app starts again there. **Not audited.**
 
+## Unreleased
+
+### For you
+
+- **Back and Next at the first start** (#79): all its steps, **Welcome to Erevos**, **What will you use?** (not in
+  Erevos Lite), **How visible are you?**, **Miss nothing** and **Keep it safe**, now come before the first space opens,
+  and the back arrow beside the main button, or Android's back key, goes back a step with everything as you left it:
+  until now the space opened before **How visible are you?**, where the back arrow had nothing behind it. Nothing of
+  them is used until **Done**: then the first space is made and opens already as visible as you chose, locked with your
+  password if you typed one, without asking for it again, and the fingerprint or face, LPHL's server or the page of
+  another server, and the Backups screen follow. Should Erevos close, or Android take it away while its settings show,
+  it starts again at the step you left, with what you chose, but for the password, which is never kept: you type it
+  again. In a browser, notifications while the web app is closed are offered on the home screen once the space is open,
+  as they need its server.
+
+### Under the hood
+
+- The first start's choices are kept until **Done** only on the device, in its keystore, written one at a time with the
+  last one last, and taken out at **Done**, or when the start turns into a move from another phone or a linked device
+  instead; the password is held in memory only. At **Done** the first space is made with its mode written into it before
+  it opens, so it reaches no server before then, and with INVISIBLE the place on LPHL's server is asked for only through
+  Tor, once Tor is ready or after two minutes. A first start left half way by an earlier version, with its space open
+  already, goes on as before.
+
 ## 3.2.0-rc.4 (2026-11-27)
 
 The fourth release candidate of Erevos Lite: Erevos 3.0.0-rc.4 for Erevos's own chats and calls, with what is below.

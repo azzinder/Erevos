@@ -85,33 +85,39 @@ solo un sitio para tus mensajes en el servidor de LPHL, sin número de teléfono
 alguien que lo use, un código QR o un enlace, te mete dentro al instante, con esa persona como contacto (ver Invitar a
 alguien nuevo, en [Chatear a través de un servidor](#relay)).
 
-La primera vez que se inicia, Erevos se configura en unos pocos pasos cortos, con un punto para cada uno. Antes de que
-se abra su primer espacio: **Te damos la bienvenida a Erevos**, con lo que no entregas (ni número de teléfono, ni
+La primera vez que se inicia, Erevos se configura en unos pocos pasos cortos, con un punto para cada uno, todos antes de
+que se abra su primer espacio: **Te damos la bienvenida a Erevos**, con lo que no entregas (ni número de teléfono, ni
 correo, ni nombre de usuario, ni cuenta: añades gente con un código QR o un enlace) y un nombre para tus contactos si
 quieres uno, con el idioma arriba{~; luego **¿Qué vas a usar?**, los módulos (ver [Módulos](#modules)): lo que
 desactivas no funciona en absoluto. Los chats de Erevos, el Teléfono, los SMS y la Colección están activados al
-principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después, en el espacio:
+principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después:
 
-1. **¿Cuánto se te ve?**: las tres opciones de [¿Cuánto se te ve?](#direct), con SPEED ya elegida. Al continuar, Erevos
-   toma por sí solo un sitio para tus mensajes en el servidor de LPHL, sin invitación ni cuenta (ver **Un sitio
-   abierto** en [Chatear a través de un servidor](#relay)), salvo que la invitación con la que se abrió Erevos traiga un
-   servidor propio. **Otro servidor (para usuarios avanzados)**, bajo las opciones, abre las otras formas de entrar: una
-   cuenta en un servidor o un servidor propio.
+1. **¿Cuánto se te ve?**: las tres opciones de [¿Cuánto se te ve?](#direct), con SPEED ya elegida. Cuando terminan los
+   pasos, Erevos toma por sí solo un sitio para tus mensajes en el servidor de LPHL, sin invitación ni cuenta (ver **Un
+   sitio abierto** en [Chatear a través de un servidor](#relay)), salvo que la invitación con la que se abrió Erevos
+   traiga un servidor propio. **Otro servidor (para usuarios avanzados)**, bajo las opciones, elige en su lugar las
+   otras formas de entrar, una cuenta en un servidor o un servidor propio, cuya página se abre cuando terminan los
+   pasos; **Usar el servidor de LPHL** vuelve al de LPHL.
 2. **No te pierdas nada**: cada permiso que pide Erevos, en cinco grupos según para qué sirven (Notificaciones,
    Llamadas, Mensajes, En segundo plano, Recordatorios), con cuántos están permitidos. **Permitir todo** hace primero
    las preguntas que hace Android en el propio Erevos{~, luego las de Erevos como app de teléfono y como app de SMS}, y
    después abre cada pantalla de los ajustes de Android una tras otra, al volver de la anterior; **Continuar sin ellos**
-   los deja para **Ajustes** → **General** → **Permisos**. En un navegador el paso tiene lo que pregunta el navegador;
-   la aplicación de escritorio no tiene este paso.
+   los deja para **Ajustes** → **General** → **Permisos**. En un navegador el paso tiene lo que pregunta el navegador,
+   salvo las notificaciones con la app web cerrada, que pasan por el servidor: las ofrece la pantalla de inicio cuando
+   terminan los pasos. La aplicación de escritorio no tiene este paso.
 3. **Mantenlo seguro**: una contraseña para Erevos, escrita dos veces, con un medidor y cuatro consejos para una más
    fuerte, la huella o la cara, y adónde van las copias automáticas: **En este dispositivo**, en una carpeta que eliges,
    **WebDAV** (Nextcloud, ownCloud y otros) o, en Android, **Google Drive**, que primero dice lo que Google sabe
    entonces, cada una configurada en la pantalla de Copias de seguridad que abre **Hecho** (ver [Copias de
    seguridad](#backup)).
 
-Luego la pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está lejos** para tu primer
-contacto, con lo que puede hacer cada día un sitio gratuito en el servidor de LPHL y una línea para un permiso que aún
-falte. Hasta **Hecho**, los pasos vuelven a salir cuando se inicia Erevos. Si Erevos se abrió con una invitación, la
+La flecha de volver, junto al botón principal en cada paso después del primero, y el botón de atrás de Android vuelven
+un paso, con todo como lo dejaste, y nada de ello se usa antes de **Hecho**. Entonces el primer espacio se abre ya tan
+visible como elegiste, bloqueado con tu contraseña si escribiste una, que no vuelve a pedir, y con la huella o la cara
+activada si lo elegiste. La pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está
+lejos** para tu primer contacto, con lo que puede hacer cada día un sitio gratuito en el servidor de LPHL y una línea
+para un permiso que aún falte. Hasta **Hecho**, Erevos vuelve a empezar en el paso donde lo dejaste, con lo que
+elegiste, salvo la contraseña, que nunca se guarda: la escribes de nuevo. Si Erevos se abrió con una invitación, la
 muestra cuando terminan los pasos.
 
 - **El nombre:** no es un nombre de usuario: nadie lo busca, y no tiene que ser único. Va, cifrado, solo a quienes
@@ -649,7 +655,7 @@ Un servidor que pide token deja entrar a un teléfono de cuatro formas. Cada for
 así que quien gestiona el servidor puede sacar a cualquier teléfono por separado.
 
 - **Un sitio abierto:** un servidor que los da, como el de LPHL, da por sí solo uno a un teléfono que no tiene sitio
-  allí, sin invitación ni cuenta. En el primer inicio, cuando eliges cuánto se te ve, Erevos toma uno en el servidor de
+  allí, sin invitación ni cuenta. En el primer inicio, cuando terminan sus pasos, Erevos toma uno en el servidor de
   LPHL y crea allí tu cola (ver [Primeros pasos](#start)); **Usar el servidor de LPHL**, en la pantalla de inicio de un
   espacio sin servidor y sin chats, también toma uno. El teléfono crea su token él mismo y da al servidor solo su
   SHA-256. Un sitio así es para tus propios chats: no puede invitar ni prestar sitios. Cada día puede crear 20 colas,

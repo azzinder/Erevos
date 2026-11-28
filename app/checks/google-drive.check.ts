@@ -650,7 +650,7 @@ test('without a client ID for the app nothing of Google Drive is offered', async
     store.delete(DRIVE);
   }
   // Not on the first start's last step, nor under Backups, nor in What's new.
-  const steps = read('app/first-steps.tsx');
+  const steps = read('components/start-steps.tsx');
   assert.ok(steps.includes("...(CAN_DRIVE ? [{ id: 'drive' as const,"));
   assert.equal(steps.split("id: 'drive'").length, 2);
   const backups = read('app/backup.tsx');
@@ -725,7 +725,7 @@ test('Backups warns before every sign-in with Google, as the first start does', 
   assert.ok(backups.includes('onPress={() => setWarnDrive("backup")}'));
   assert.ok(backups.includes('else setWarnDrive("restore");'));
   // The same words as the first start's warning, with INVISIBLE's in both.
-  const steps = read('app/first-steps.tsx');
+  const steps = read('components/start-steps.tsx');
   for (const words of [
     'The backups leave **encrypted**. Google cannot read them.',
     'But Google **knows who you are**. It sees that you use Erevos, when you make a backup and how big it is, and may hand that over if asked.',

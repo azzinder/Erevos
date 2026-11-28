@@ -83,29 +83,36 @@ za vaše poruke na LPHL-ovom serveru, bez broja telefona, e-pošte ili računa. 
 kod ili link, odmah vas uvodi unutra, s tom osobom kao kontaktom (pogledajte Pozivanje nekoga novog, pod [Razgovor preko
 servera](#relay)).
 
-Pri sasvim prvom pokretanju Erevos se postavlja u nekoliko kratkih koraka, s tačkom za svaki. Prije nego se otvori
-njegov prvi prostor: **Dobro došli u Erevos**, s onim što ne dajete (ni broj telefona, ni e-poštu, ni korisničko ime, ni
-račun: ljude dodajete QR kodom ili linkom) i imenom za vaše kontakte ako ga želite, s jezikom na vrhu{~; zatim **Što
-ćete koristiti?**, moduli (pogledajte [Moduli](#modules)): ono što isključite uopće ne radi. Razgovori Erevosa, Telefon,
-SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže**, isključene}. Zatim, u prostoru:
+Pri sasvim prvom pokretanju Erevos se postavlja u nekoliko kratkih koraka, s tačkom za svaki, i svi su prije nego se
+otvori njegov prvi prostor: **Dobro došli u Erevos**, s onim što ne dajete (ni broj telefona, ni e-poštu, ni korisničko
+ime, ni račun: ljude dodajete QR kodom ili linkom) i imenom za vaše kontakte ako ga želite, s jezikom na vrhu{~; zatim
+**Što ćete koristiti?**, moduli (pogledajte [Moduli](#modules)): ono što isključite uopće ne radi. Razgovori Erevosa,
+Telefon, SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže**, isključene}. Zatim:
 
-1. **Koliko ste vidljivi?**: tri izbora iz [Koliko ste vidljivi?](#direct), s već izabranim SPEED. Kad nastavite, Erevos
-   sam uzima mjesto za vaše poruke na LPHL-ovom serveru, bez pozivnice i bez računa (pogledajte **Otvoreno mjesto** pod
-   [Razgovor preko servera](#relay)), osim ako pozivnica s kojom je Erevos otvoren ne donosi vlastiti server. **Drugi
-   server (za napredne korisnike)**, ispod izbora, otvara druge načine ulaska: račun na serveru ili vlastiti server.
+1. **Koliko ste vidljivi?**: tri izbora iz [Koliko ste vidljivi?](#direct), s već izabranim SPEED. Kad se koraci završe,
+   Erevos sam uzima mjesto za vaše poruke na LPHL-ovom serveru, bez pozivnice i bez računa (pogledajte **Otvoreno
+   mjesto** pod [Razgovor preko servera](#relay)), osim ako pozivnica s kojom je Erevos otvoren ne donosi vlastiti
+   server. **Drugi server (za napredne korisnike)**, ispod izbora, umjesto toga bira druge načine ulaska, račun na
+   serveru ili vlastiti server, čija se stranica otvara kad se koraci završe; **Koristi LPHL-ov server** vraća na
+   LPHL-ov.
 2. **Ne propustite ništa**: svaka dozvola koju Erevos traži, u pet grupa prema tome čemu služe (Obavijesti, Pozivi,
    Poruke, U pozadini, Podsjetnici), s brojem dozvoljenih. **Dopusti sve** prvo postavlja pitanja koja Android postavlja
    u samom Erevosu{~, zatim za Erevos kao aplikaciju za telefon i kao aplikaciju za SMS}, pa jedan za drugim otvara
    svaki ekran Androidovih postavki, kad se vratite s prethodnog; **Nastavite bez njih** ih ostavlja za **Postavke** →
-   **Općenito** → **Dozvole**. U pregledniku korak ima ono što pita preglednik; aplikacija za računar nema taj korak.
+   **Općenito** → **Dozvole**. U pregledniku korak ima ono što pita preglednik, osim obavijesti dok je web aplikacija
+   zatvorena, koje idu preko servera: nudi ih početni ekran kad se koraci završe. Aplikacija za računar nema taj korak.
 3. **Čuvajte ga sigurnim**: lozinka za Erevos, upisana dva puta, s mjeračem i četiri savjeta za jaču, otisak prsta ili
    lice, i kamo idu automatske rezervne kopije: **Na ovom uređaju**, u folder koji izaberete, **WebDAV** (Nextcloud,
    ownCloud i drugi) ili, na Androidu, **Google Drive**, koji prvo kaže što Google tada zna, svako postavljeno na ekranu
    Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne kopije](#backup)).
 
-Zatim početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko je** za vaš prvi kontakt, s onim
-što besplatno mjesto na LPHL-ovom serveru smije svaki dan i retkom za dozvolu koja još nedostaje. Do **Gotovo** koraci
-se opet prikazuju kad se Erevos pokrene. Otvoren s pozivnicom, Erevos je prikazuje kad se koraci završe.
+Strelica nazad, pored glavnog dugmeta na svakom koraku poslije prvog, i Androidova tipka nazad vraćaju za jedan korak,
+sa svim kako ste ostavili, i ništa od toga se ne koristi prije **Gotovo**. Tada se prvi prostor otvara već onoliko
+vidljiv koliko ste izabrali, zaključan vašom lozinkom ako ste je upisali, koju ne traži ponovo, i s uključenim otiskom
+prsta ili licem ako ste to izabrali. Početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko
+je** za vaš prvi kontakt, s onim što besplatno mjesto na LPHL-ovom serveru smije svaki dan i retkom za dozvolu koja još
+nedostaje. Do **Gotovo** Erevos se ponovo pokreće na koraku na kojem ste stali, s onim što ste izabrali, osim lozinke,
+koja se nikad ne čuva: upišete je ponovo. Otvoren s pozivnicom, Erevos je prikazuje kad se koraci završe.
 
 - **Ime:** nije korisničko ime: nitko ga ne traži i ne mora biti jedinstveno. Ide, šifrirano, samo onima koje dodate, a
   mijenja ga **Moje ime** pod Postavke → Privatnost i sigurnost.
@@ -629,7 +636,7 @@ Server koji traži token pušta telefon na četiri načina. Svaki način završa
 onaj ko vodi server može ukloniti bilo koji pojedinačni telefon.
 
 - **Otvoreno mjesto:** server koji ih daje, kao LPHL-ov, sam daje mjesto telefonu koji ga tamo nema, bez pozivnice i bez
-  računa. Pri prvom pokretanju, kad izaberete koliko ste vidljivi, Erevos uzima jedno na LPHL-ovom serveru i tamo pravi
+  računa. Pri prvom pokretanju, kad se koraci završe, Erevos uzima jedno na LPHL-ovom serveru i tamo pravi
   vaš red (pogledajte [Prvi koraci](#start)); **Koristi LPHL-ov server**, na početnom ekranu prostora bez servera i bez
   razgovora, također uzima jedno. Telefon sam pravi svoj token i serveru daje samo njegov SHA-256. Takvo mjesto je za
   vaše vlastite razgovore: ne može pozivati ni posuđivati mjesta. Svaki dan može napraviti 20 redova, provući kroz

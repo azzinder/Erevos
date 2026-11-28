@@ -263,7 +263,7 @@ onTokenRefused((relay, sure) => {
 });
 
 /** As a space opens (app/_layout.tsx): a place still wanted once the first start's steps are done is
- *  taken now. While they are not, the mode step takes it, once the mode is chosen. */
+ *  taken now. While they are not, the first steps take it, once the space is in its mode (app/first-steps.tsx). */
 export async function retryFirstServer(): Promise<void> {
   // What was known is of the space open before.
   if (!taking && !reopening) state = { kind: 'none' };
