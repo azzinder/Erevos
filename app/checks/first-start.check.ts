@@ -101,7 +101,8 @@ test('Done makes the first space with the whole setup: in its mode and locked wi
     'const password = chosen.lock ? typedPassword().password : \'\';',
     'await lockWithPassword(0, password, key);',
     'await prepareSpaces(1);',
-    'if (!chosen.fingerprint) forgetPassword();',
+    // Kept for the fingerprint only when the first steps will be there to forget it.
+    'if (!chosen.fingerprint || !kept) forgetPassword();',
     'await dropDraft();',
     'await openSpace(0, !!password, key);',
   ]);

@@ -115,7 +115,8 @@ activés}{+, les autres réseaux, sous **Autres réseaux**, désactivés}. Ensui
    [Sauvegardes](#backup)).
 
 La flèche retour, à côté du bouton principal à chaque étape après la première, et la touche retour d’Android reviennent
-d’une étape, avec tout comme tu l’as laissé, et rien n’en est utilisé avant **Terminé**. Alors le premier espace s’ouvre
+d’une étape, avec tout comme tu l’as laissé, et rien n’en est utilisé avant **Terminé**, sauf les autorisations{~, avec
+Erevos comme app Téléphone et comme app SMS}, qu’Android garde dès que tu les accordes. Alors le premier espace s’ouvre
 déjà aussi visible que tu l’as choisi, verrouillé par ton mot de passe si tu en as tapé un, qu’il ne redemande pas, et
 avec l’empreinte ou le visage activé si tu l’as choisi. L’écran d’accueil dit **Prêt**, avec ton nom, et propose **La
 personne est à côté de moi** et **La personne est loin** pour ton premier contact, avec ce qu’une place gratuite sur le

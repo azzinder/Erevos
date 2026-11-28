@@ -110,8 +110,9 @@ Poi:
    sa allora, ciascuno impostato nella schermata Backup che apre **Fatto** (vedi [Backup](#backup)).
 
 La freccia indietro, accanto al pulsante principale in ogni passo dopo il primo, e il tasto indietro di Android tornano
-di un passo, con tutto come l’hai lasciato, e niente ne viene usato prima di **Fatto**. Allora il primo spazio si apre
-già visibile quanto hai scelto, bloccato con la tua password se ne hai scritta una, che non chiede di nuovo, e con
+di un passo, con tutto come l’hai lasciato, e niente ne viene usato prima di **Fatto**, tranne le autorizzazioni{~, con
+Erevos come app Telefono e come app SMS}, che Android mantiene dal momento in cui le concedi. Allora il primo spazio si
+apre già visibile quanto hai scelto, bloccato con la tua password se ne hai scritta una, che non chiede di nuovo, e con
 l’impronta o il volto attivi se l’hai scelto. La schermata principale dice **Pronto**, con il tuo nome, e offre **È
 accanto a me** e **È lontano** per il tuo primo contatto, con ciò che un posto gratuito sul server di LPHL può fare ogni
 giorno e una riga per un’autorizzazione ancora mancante. Fino a **Fatto**, Erevos riparte dal passo in cui l’hai

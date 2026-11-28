@@ -34,12 +34,12 @@ import type { Tile as TileColour } from '../lib/first-start';
 // least one for chats; then How visible are you?, every permission, and Keep it safe, the password
 // lock and the backups (components/start-steps.tsx). Each step only chooses: the choices are kept
 // as they are made (lib/setup-draft.ts), Next and Back go through the steps as they were left,
-// Android's back key too, and nothing is used, nor does anything leave the phone, until the last
-// step's Done. Then the first space is made with them, opening in its mode and locked with its
-// password, and the rest follows once it is open (app/first-steps.tsx): the fingerprint or face,
-// the server, the backups. Moving from another phone skips the rest, which comes with the backup;
-// on a computer or in a browser, linking it to the phone does too. All of it can be changed later
-// in Settings.
+// Android's back key too, and nothing is used but the permissions Android keeps once given, nor
+// does anything leave the phone, until the last step's Done. Then the first space is made with
+// them, opening in its mode and locked with its password, and the rest follows once it is open
+// (app/first-steps.tsx): the fingerprint or face, the server, the backups. Moving from another
+// phone skips the rest, which comes with the backup; on a computer or in a browser, linking it to
+// the phone does too. All of it can be changed later in Settings.
 
 /** What the first start's setup chose. */
 export type SetupChoice = {

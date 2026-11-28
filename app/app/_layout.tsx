@@ -389,8 +389,9 @@ export default function RootLayout() {
         await lockWithPassword(0, password, key);
         // The spaces second passwords open exist from now on, used or not.
         await prepareSpaces(1);
-        // Kept only for the fingerprint or face, which the space turns on once open.
-        if (!chosen.fingerprint) forgetPassword();
+        // Kept only for the fingerprint or face, which the space turns on once open
+        // (app/first-steps.tsx), and only when what the setup chose was kept for it.
+        if (!chosen.fingerprint || !kept) forgetPassword();
       }
       await dropDraft();
       await openSpace(0, !!password, key);

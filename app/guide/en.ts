@@ -105,12 +105,14 @@ the Phone, the SMS and the Collection are on at first}{+, the other networks, un
    Backups screen that **Done** opens (see [Backups](#backup)).
 
 The back arrow, beside the main button on every step after the first, and Android's back key go back a step, with
-everything as you left it, and nothing of it is used until **Done**. Then the first space opens already as visible as
-you chose, locked with your password if you typed one, which it does not ask for again, and with the fingerprint or face
-turned on if you chose it. The home screen says **Ready**, with your name, and offers **They are beside me** and **They
-are far away** for your first contact, with what a free place on LPHL's server may do each day and a line for a
-permission still missing. Until **Done**, Erevos starts again at the step you left, with what you chose, but for the
-password, which is never kept: you type it again. Opened with an invite, Erevos shows it once the steps are done.
+everything as you left it, and nothing of it is used until **Done**, but for the permissions{~, with Erevos as the phone
+app and as the SMS app}, which Android keeps from the moment you allow them. Then the first space opens already as
+visible as you chose, locked with your password if you typed one, which it does not ask for again, and with the
+fingerprint or face turned on if you chose it. The home screen says **Ready**, with your name, and offers **They are
+beside me** and **They are far away** for your first contact, with what a free place on LPHL's server may do each day
+and a line for a permission still missing. Until **Done**, Erevos starts again at the step you left, with what you
+chose, but for the password, which is never kept: you type it again. Opened with an invite, Erevos shows it once the
+steps are done.
 
 - **The name:** it is not a user name: no one searches for it, and it need not be unique. It goes, encrypted, only to
   those you add, and **My name** under Settings → Privacy and security changes it.

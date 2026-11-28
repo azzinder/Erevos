@@ -110,13 +110,14 @@ redes, em **Outras redes**, desativadas}. Depois:
    passa a saber, cada um configurado na tela de Backups que o **Pronto** abre (veja [Backups](#backup)).
 
 A seta de voltar, ao lado do botão principal em cada passo depois do primeiro, e o botão de voltar do Android voltam um
-passo, com tudo como você deixou, e nada disso é usado antes do **Pronto**. Então o primeiro espaço abre já tão visível
-quanto você escolheu, bloqueado com a sua senha se você digitou uma, que ele não pede de novo, e com a impressão digital
-ou o rosto ativado se você escolheu. A tela inicial diz **Tudo pronto**, com o seu nome, e oferece **Está do meu lado**
-e **Está longe** para o seu primeiro contato, com o que um lugar gratuito no servidor do LPHL pode fazer a cada dia e
-uma linha para uma permissão que ainda falta. Até o **Pronto**, o Erevos recomeça no passo em que você parou, com o que
-você escolheu, menos a senha, que nunca é guardada: você a digita de novo. Aberto com um convite, o Erevos o mostra
-quando os passos terminam.
+passo, com tudo como você deixou, e nada disso é usado antes do **Pronto**, exceto as permissões{~, com o Erevos como
+app de telefone e como app de SMS}, que o Android mantém a partir do momento em que você as concede. Então o primeiro
+espaço abre já tão visível quanto você escolheu, bloqueado com a sua senha se você digitou uma, que ele não pede de
+novo, e com a impressão digital ou o rosto ativado se você escolheu. A tela inicial diz **Tudo pronto**, com o seu nome,
+e oferece **Está do meu lado** e **Está longe** para o seu primeiro contato, com o que um lugar gratuito no servidor do
+LPHL pode fazer a cada dia e uma linha para uma permissão que ainda falta. Até o **Pronto**, o Erevos recomeça no passo
+em que você parou, com o que você escolheu, menos a senha, que nunca é guardada: você a digita de novo. Aberto com um
+convite, o Erevos o mostra quando os passos terminam.
 
 - **O nome:** não é um nome de usuário: ninguém o procura, e ele não precisa ser único. Ele vai, criptografado, só para
   quem você adiciona, e **O meu nome**, em Configurações → Privacidade e segurança, o muda.

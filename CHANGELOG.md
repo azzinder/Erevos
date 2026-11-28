@@ -17,9 +17,10 @@ The fifth release candidate of Erevos Lite: Erevos 3.0.0-rc.5 for Erevos's own c
 - What Erevos 3.0.0-rc.5 brought: **Back and Next at the first start**: its four steps, **Welcome to Erevos**, **How
   visible are you?**, **Miss nothing** and **Keep it safe**, now come before the first space opens, and the back arrow
   beside the main button, or Android's back key, goes back a step with everything as you left it. Nothing of them is
-  used until **Done**: then the first space opens already as visible as you chose, locked with your password if you
-  typed one, without asking for it again. Should Erevos Lite close in between, it starts again at the step you left,
-  with what you chose, but for the password, which is never kept.
+  used until **Done**, but for the permissions, which Android keeps from the moment you allow them, also when you go
+  back: then the first space opens already as visible as you chose, locked with your password if you typed one, without
+  asking for it again. Should Erevos Lite close in between, it starts again at the step you left, with what you chose,
+  but for the password, which is never kept.
 
 ### Under the hood
 
@@ -35,12 +36,13 @@ The fifth release candidate of Erevos Lite: Erevos 3.0.0-rc.5 for Erevos's own c
   Erevos Lite), **How visible are you?**, **Miss nothing** and **Keep it safe**, now come before the first space opens,
   and the back arrow beside the main button, or Android's back key, goes back a step with everything as you left it:
   until now the space opened before **How visible are you?**, where the back arrow had nothing behind it. Nothing of
-  them is used until **Done**: then the first space is made and opens already as visible as you chose, locked with your
-  password if you typed one, without asking for it again, and the fingerprint or face, LPHL's server or the page of
-  another server, and the Backups screen follow. Should Erevos close, or Android take it away while its settings show,
-  it starts again at the step you left, with what you chose, but for the password, which is never kept: you type it
-  again. In a browser, notifications while the web app is closed are offered on the home screen once the space is open,
-  as they need its server.
+  them is used until **Done**, but for the permissions, and Erevos as the phone app and the SMS app, which Android keeps
+  from the moment you allow them, also when you go back: then the first space is made and opens already as visible as
+  you chose, locked with your password if you typed one, without asking for it again, and the fingerprint or face,
+  LPHL's server or the page of another server, and the Backups screen follow. Should Erevos close, or Android take it
+  away while its settings show, it starts again at the step you left, with what you chose, but for the password, which
+  is never kept: you type it again. In a browser, notifications while the web app is closed are offered on the home
+  screen once the space is open, as they need its server.
 
 ### Under the hood
 

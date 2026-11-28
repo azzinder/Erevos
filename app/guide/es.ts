@@ -112,9 +112,10 @@ principio}{+, las otras redes, en **Otras redes**, desactivadas}. Después:
    seguridad](#backup)).
 
 La flecha de volver, junto al botón principal en cada paso después del primero, y el botón de atrás de Android vuelven
-un paso, con todo como lo dejaste, y nada de ello se usa antes de **Hecho**. Entonces el primer espacio se abre ya tan
-visible como elegiste, bloqueado con tu contraseña si escribiste una, que no vuelve a pedir, y con la huella o la cara
-activada si lo elegiste. La pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está
+un paso, con todo como lo dejaste, y nada de ello se usa antes de **Hecho**, salvo los permisos{~, con Erevos como app
+de teléfono y como app de SMS}, que Android mantiene desde el momento en que los das. Entonces el primer espacio se abre
+ya tan visible como elegiste, bloqueado con tu contraseña si escribiste una, que no vuelve a pedir, y con la huella o la
+cara activada si lo elegiste. La pantalla de inicio dice **Listo**, con tu nombre, y ofrece **Está a mi lado** y **Está
 lejos** para tu primer contacto, con lo que puede hacer cada día un sitio gratuito en el servidor de LPHL y una línea
 para un permiso que aún falte. Hasta **Hecho**, Erevos vuelve a empezar en el paso donde lo dejaste, con lo que
 elegiste, salvo la contraseña, que nunca se guarda: la escribes de nuevo. Si Erevos se abrió con una invitación, la

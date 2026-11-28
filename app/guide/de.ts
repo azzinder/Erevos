@@ -115,11 +115,12 @@ anderen Netzwerke, unter **Andere Netzwerke**, aus}. Dann:
    [Backups](#backup)).
 
 Der Zurück-Pfeil neben dem Hauptknopf, auf jedem Schritt nach dem ersten, und die Zurück-Taste von Android gehen einen
-Schritt zurück, mit allem, wie du es gelassen hast, und nichts davon wird vor **Fertig** verwendet. Dann öffnet der
-erste Bereich schon so sichtbar, wie du gewählt hast, mit deinem Passwort gesperrt, wenn du eines eingegeben hast, nach
-dem er nicht noch einmal fragt, und mit Fingerabdruck oder Gesicht, wenn du das gewählt hast. Der Startbildschirm sagt
-**Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist weit weg** für deinen ersten
-Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und einer Zeile für eine noch
+Schritt zurück, mit allem, wie du es gelassen hast, und nichts davon wird vor **Fertig** verwendet, außer den
+Berechtigungen{~, samt Erevos als Telefon-App und als SMS-App}, die Android behält, sobald du sie erlaubst. Dann öffnet
+der erste Bereich schon so sichtbar, wie du gewählt hast, mit deinem Passwort gesperrt, wenn du eines eingegeben hast,
+nach dem er nicht noch einmal fragt, und mit Fingerabdruck oder Gesicht, wenn du das gewählt hast. Der Startbildschirm
+sagt **Bereit**, mit deinem Namen, und bietet **Die Person ist neben mir** und **Die Person ist weit weg** für deinen
+ersten Kontakt an, mit dem, was ein kostenloser Platz auf dem Server von LPHL am Tag darf, und einer Zeile für eine noch
 fehlende Berechtigung. Bis **Fertig** startet Erevos wieder bei dem Schritt, bei dem du aufgehört hast, mit dem, was du
 gewählt hast, außer dem Passwort, das nie gespeichert wird: Du gibst es noch einmal ein. Wird Erevos mit einer Einladung
 geöffnet, zeigt es sie, sobald die Schritte durch sind.

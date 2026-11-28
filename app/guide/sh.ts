@@ -107,7 +107,8 @@ Telefon, SMS i Zbirka isprva su uključeni}{+, druge mreže, pod **Druge mreže*
    Rezervnih kopija koji otvara **Gotovo** (pogledajte [Rezervne kopije](#backup)).
 
 Strelica nazad, pored glavnog dugmeta na svakom koraku poslije prvog, i Androidova tipka nazad vraćaju za jedan korak,
-sa svim kako ste ostavili, i ništa od toga se ne koristi prije **Gotovo**. Tada se prvi prostor otvara već onoliko
+sa svim kako ste ostavili, i ništa od toga se ne koristi prije **Gotovo**, osim dozvola{~, zajedno s Erevosom kao
+aplikacijom za telefon i za SMS}, koje Android zadržava od trenutka kad ih date. Tada se prvi prostor otvara već onoliko
 vidljiv koliko ste izabrali, zaključan vašom lozinkom ako ste je upisali, koju ne traži ponovo, i s uključenim otiskom
 prsta ili licem ako ste to izabrali. Početni ekran kaže **Spremno**, s vašim imenom, i nudi **Uz mene je** i **Daleko
 je** za vaš prvi kontakt, s onim što besplatno mjesto na LPHL-ovom serveru smije svaki dan i retkom za dozvolu koja još
